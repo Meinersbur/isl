@@ -227,11 +227,6 @@ unsigned isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap)
 	return bmap ? isl_space_dim(bmap->dim, isl_dim_all) + bmap->n_div : 0;
 }
 
-unsigned isl_map_n_param(__isl_keep const isl_map *map)
-{
-	return map ? map->dim->nparam : 0;
-}
-
 /* Return the number of equality constraints in the description of "bmap".
  * Return -1 on error.
  */
