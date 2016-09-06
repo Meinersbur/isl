@@ -1227,6 +1227,14 @@ static int room_for_con(struct isl_basic_map *bmap, unsigned n)
 	return bmap->n_eq + bmap->n_ineq + n <= bmap->c_size;
 }
 
+/* Check that "map" has only named parameters, reporting an error
+ * if it does not.
+ */
+isl_stat isl_map_check_named_params(__isl_keep isl_map *map)
+{
+	return isl_space_check_named_params(isl_map_peek_space(map));
+}
+
 __isl_give isl_map *isl_map_align_params_map_map_and(
 	__isl_take isl_map *map1, __isl_take isl_map *map2,
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
@@ -1236,10 +1244,10 @@ __isl_give isl_map *isl_map_align_params_map_map_and(
 		goto error;
 	if (isl_space_match(map1->dim, isl_dim_param, map2->dim, isl_dim_param))
 		return fn(map1, map2);
-	if (!isl_space_has_named_params(map1->dim) ||
-	    !isl_space_has_named_params(map2->dim))
-		isl_die(map1->ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
+	if (isl_map_check_named_params(map1) < 0)
+		goto error;
+	if (isl_map_check_named_params(map2) < 0)
+		goto error;
 	map1 = isl_map_align_params(map1, isl_map_get_space(map2));
 	map2 = isl_map_align_params(map2, isl_map_get_space(map1));
 	return fn(map1, map2);
@@ -1259,10 +1267,10 @@ isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 		return isl_bool_error;
 	if (isl_space_match(map1->dim, isl_dim_param, map2->dim, isl_dim_param))
 		return fn(map1, map2);
-	if (!isl_space_has_named_params(map1->dim) ||
-	    !isl_space_has_named_params(map2->dim))
-		isl_die(map1->ctx, isl_error_invalid,
-			"unaligned unnamed parameters", return isl_bool_error);
+	if (isl_map_check_named_params(map1) < 0)
+		return isl_bool_error;
+	if (isl_map_check_named_params(map2) < 0)
+		return isl_bool_error;
 	map1 = isl_map_copy(map1);
 	map2 = isl_map_copy(map2);
 	map1 = isl_map_align_params(map1, isl_map_get_space(map2));
@@ -11158,9 +11166,8 @@ __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
 	if (!isl_space_has_named_params(model))
 		isl_die(ctx, isl_error_invalid,
 			"model has unnamed parameters", goto error);
-	if (!isl_space_has_named_params(map->dim))
-		isl_die(ctx, isl_error_invalid,
-			"relation has unnamed parameters", goto error);
+	if (isl_map_check_named_params(map) < 0)
+		goto error;
 	if (!isl_space_match(map->dim, isl_dim_param, model, isl_dim_param)) {
 		isl_reordering *exp;
 
@@ -12645,8 +12652,9 @@ __isl_give isl_map *isl_map_preimage_multi_aff(__isl_take isl_map *map,
 	if (isl_space_match(map->dim, isl_dim_param, ma->space, isl_dim_param))
 		return map_preimage_multi_aff(map, type, ma);
 
-	if (!isl_space_has_named_params(map->dim) ||
-	    !isl_space_has_named_params(ma->space))
+	if (isl_map_check_named_params(map) < 0)
+		goto error;
+	if (!isl_space_has_named_params(ma->space))
 		isl_die(map->ctx, isl_error_invalid,
 			"unaligned unnamed parameters", goto error);
 	map = isl_map_align_params(map, isl_multi_aff_get_space(ma));
@@ -12764,8 +12772,9 @@ __isl_give isl_map *isl_map_preimage_pw_multi_aff(__isl_take isl_map *map,
 	if (isl_space_match(map->dim, isl_dim_param, pma->dim, isl_dim_param))
 		return isl_map_preimage_pw_multi_aff_aligned(map, type, pma);
 
-	if (!isl_space_has_named_params(map->dim) ||
-	    !isl_space_has_named_params(pma->dim))
+	if (isl_map_check_named_params(map) < 0)
+		goto error;
+	if (!isl_space_has_named_params(pma->dim))
 		isl_die(map->ctx, isl_error_invalid,
 			"unaligned unnamed parameters", goto error);
 	map = isl_map_align_params(map, isl_pw_multi_aff_get_space(pma));
