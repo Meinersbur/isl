@@ -10826,13 +10826,13 @@ error:
 	return isl_stat_error;
 }
 
-int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
+isl_stat isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n, int *signs)
 {
 	if (!bset || !signs)
-		return -1;
+		return isl_stat_error;
 	isl_assert(bset->ctx, first + n <= isl_basic_set_dim(bset, type),
-		return -1);
+		return isl_stat_error);
 
 	first += pos(bset->dim, type) - 1;
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);
