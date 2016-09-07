@@ -10075,8 +10075,9 @@ isl_bool isl_map_plain_is_equal(__isl_keep isl_map *map1,
 
 	if (map1 == map2)
 		return isl_bool_true;
-	if (!isl_space_is_equal(map1->dim, map2->dim))
-		return isl_bool_false;
+	equal = isl_map_has_equal_space(map1, map2);
+	if (equal < 0 || !equal)
+		return equal;
 
 	map1 = isl_map_copy(map1);
 	map2 = isl_map_copy(map2);
