@@ -233,6 +233,14 @@ isl_bool isl_map_has_equal_params(__isl_keep isl_map *map1,
 	return isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
 }
 
+/* Do "map" and "set" have the same parameters?
+ */
+static isl_bool isl_map_set_has_equal_params(__isl_keep isl_map *map,
+	__isl_keep isl_set *set)
+{
+	return isl_map_has_equal_params(map, set_to_map(set));
+}
+
 isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
 	__isl_keep isl_set *set)
 {
