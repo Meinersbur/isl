@@ -10614,7 +10614,7 @@ error:
 __isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	unsigned n_div;
 
 	set = set_from_map(isl_map_align_divs_internal(set_to_map(set)));
@@ -10627,12 +10627,12 @@ __isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
 		return NULL;
 
 	n_div = set->p[0]->n_div;
-	dim = isl_set_get_space(set);
-	dim = isl_space_lift(dim, n_div);
-	if (!dim)
+	space = isl_set_get_space(set);
+	space = isl_space_lift(space, n_div);
+	if (!space)
 		goto error;
 	isl_space_free(set->dim);
-	set->dim = dim;
+	set->dim = space;
 
 	for (i = 0; i < set->n; ++i) {
 		set->p[i] = isl_basic_set_lift(set->p[i]);
