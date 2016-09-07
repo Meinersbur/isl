@@ -13098,22 +13098,24 @@ __isl_give isl_basic_map *isl_basic_map_preimage_range_multi_aff(
 
 /* Check if the range of "ma" is compatible with the domain or range
  * (depending on "type") of "map".
- * Return -1 if anything is wrong.
+ * Return isl_stat_error if anything is wrong.
  */
-static int check_map_compatible_range_multi_aff(
+static isl_stat check_map_compatible_range_multi_aff(
 	__isl_keep isl_map *map, enum isl_dim_type type,
 	__isl_keep isl_multi_aff *ma)
 {
-	int m;
+	isl_bool m;
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
 	m = isl_space_tuple_is_equal(map->dim, type, ma_space, isl_dim_out);
 	isl_space_free(ma_space);
-	if (m >= 0 && !m)
+	if (m < 0)
+		return isl_stat_error;
+	if (!m)
 		isl_die(isl_map_get_ctx(map), isl_error_invalid,
-			"spaces don't match", return -1);
-	return m;
+			"spaces don't match", return isl_stat_error);
+	return isl_stat_ok;
 }
 
 /* Compute the preimage of the domain or range (depending on "type")
