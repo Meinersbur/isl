@@ -8758,10 +8758,7 @@ isl_bool isl_map_has_equal_space(__isl_keep isl_map *map1,
 isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2)
 {
-	if (!set1 || !set2)
-		return isl_bool_error;
-
-	return isl_space_is_equal(set1->dim, set2->dim);
+	return isl_map_has_equal_space(set_to_map(set1), set_to_map(set2));
 }
 
 static isl_bool map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
