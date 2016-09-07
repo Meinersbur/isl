@@ -3096,6 +3096,7 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
 
 #include <isl_pw_templ.c>
 #include <isl_pw_eval.c>
+#include <isl_pw_lift_templ.c>
 #include <isl_pw_morph_templ.c>
 
 #undef BASE
