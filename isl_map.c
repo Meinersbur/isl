@@ -8040,17 +8040,17 @@ __isl_give isl_map *isl_map_apply_domain(__isl_take isl_map *map1,
 static __isl_give isl_map *map_apply_range(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	isl_space *dim_result;
+	isl_space *space;
 	struct isl_map *result;
 	int i, j;
 
 	if (!map1 || !map2)
 		goto error;
 
-	dim_result = isl_space_join(isl_space_copy(map1->dim),
+	space = isl_space_join(isl_space_copy(map1->dim),
 				  isl_space_copy(map2->dim));
 
-	result = isl_map_alloc_space(dim_result, map1->n * map2->n, 0);
+	result = isl_map_alloc_space(space, map1->n * map2->n, 0);
 	if (!result)
 		goto error;
 	for (i = 0; i < map1->n; ++i)
