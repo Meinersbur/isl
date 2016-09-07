@@ -7521,7 +7521,7 @@ struct isl_set *isl_set_compute_divs(struct isl_set *set)
 	return set_from_map(isl_map_compute_divs(set_to_map(set)));
 }
 
-struct isl_set *isl_map_domain(struct isl_map *map)
+__isl_give isl_set *isl_map_domain(__isl_take isl_map *map)
 {
 	int i;
 	struct isl_set *set;
