@@ -3406,7 +3406,7 @@ error:
  */
 static int domain_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 {
-	return isl_space_tuple_is_equal(map->dim, isl_dim_in,
+	return isl_map_space_tuple_is_equal(map, isl_dim_in,
 					space, isl_dim_out);
 }
 
@@ -3414,7 +3414,7 @@ static int domain_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
  */
 static int range_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 {
-	return isl_space_tuple_is_equal(map->dim, isl_dim_out,
+	return isl_map_space_tuple_is_equal(map, isl_dim_out,
 					space, isl_dim_out);
 }
 
@@ -3422,7 +3422,7 @@ static int range_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
  */
 static int set_match(__isl_keep isl_map *map, __isl_keep isl_space *space)
 {
-	return isl_space_tuple_is_equal(map->dim, isl_dim_set,
+	return isl_map_space_tuple_is_equal(map, isl_dim_set,
 					space, isl_dim_out);
 }
 

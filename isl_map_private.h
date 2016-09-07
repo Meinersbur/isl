@@ -551,6 +551,9 @@ int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
 	isl_int max, isl_int *count);
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
 
+isl_bool isl_map_space_tuple_is_equal(__isl_keep isl_map *map,
+	enum isl_dim_type type1, __isl_keep isl_space *space,
+	enum isl_dim_type type2);
 isl_bool isl_map_tuple_is_equal(__isl_keep isl_map *map1,
 	enum isl_dim_type type1, __isl_keep isl_map *map2,
 	enum isl_dim_type type2);

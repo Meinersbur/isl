@@ -8535,6 +8535,19 @@ error:
 	return NULL;
 }
 
+/* Is the tuple of type "type1" of "map" the same as
+ * the tuple of type "type2" of "space"?
+ */
+isl_bool isl_map_space_tuple_is_equal(__isl_keep isl_map *map,
+	enum isl_dim_type type1, __isl_keep isl_space *space,
+	enum isl_dim_type type2)
+{
+	isl_space *map_space;
+
+	map_space = isl_map_peek_space(map);
+	return isl_space_tuple_is_equal(map_space, type1, space, type2);
+}
+
 /* Is the tuple of type "type1" of "map1" the same as
  * the tuple of type "type2" of "map2"?
  */
@@ -13761,7 +13774,7 @@ static isl_stat check_map_compatible_range_multi_aff(
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
-	m = isl_space_tuple_is_equal(map->dim, type, ma_space, isl_dim_out);
+	m = isl_map_space_tuple_is_equal(map, type, ma_space, isl_dim_out);
 	isl_space_free(ma_space);
 	if (m < 0)
 		return isl_stat_error;
