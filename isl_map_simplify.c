@@ -1740,25 +1740,6 @@ struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
 	return bset_from_bmap(isl_basic_map_finalize(bset_to_bmap(bset)));
 }
 
-struct isl_map *isl_map_finalize(struct isl_map *map)
-{
-	int i;
-
-	if (!map)
-		return NULL;
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_finalize(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
-
 /* Remove definition of any div that is defined in terms of the given variable.
  * The div itself is not removed.  Functions such as
  * eliminate_divs_ineq depend on the other divs remaining in place.

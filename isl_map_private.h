@@ -157,7 +157,6 @@ __isl_give isl_map *isl_map_alloc(isl_ctx *ctx,
 __isl_give isl_map *isl_map_add_basic_map(__isl_take isl_map *map,
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_dup(__isl_keep isl_map *map);
-__isl_give isl_map *isl_map_finalize(__isl_take isl_map *map);
 
 __isl_give isl_basic_set *isl_basic_set_from_underlying_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *like);
