@@ -3538,8 +3538,8 @@ isl_bool isl_basic_set_contains(__isl_keep isl_basic_set *bset,
 	return isl_basic_map_contains(bset_to_bmap(bset), vec);
 }
 
-struct isl_basic_map *isl_basic_map_intersect(
-		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+__isl_give isl_basic_map *isl_basic_map_intersect(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
 	struct isl_vec *sample = NULL;
 
