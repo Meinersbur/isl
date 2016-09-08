@@ -150,7 +150,6 @@ __isl_give isl_set *isl_set_alloc(isl_ctx *ctx,
 	unsigned nparam, unsigned dim, int n, unsigned flags);
 __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *bset);
-__isl_give isl_set *isl_set_finalize(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_dup(__isl_keep isl_set *set);
 
 __isl_give isl_map *isl_map_alloc(isl_ctx *ctx,

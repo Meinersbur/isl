@@ -1740,23 +1740,6 @@ struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
 	return bset_from_bmap(isl_basic_map_finalize(bset_to_bmap(bset)));
 }
 
-struct isl_set *isl_set_finalize(struct isl_set *set)
-{
-	int i;
-
-	if (!set)
-		return NULL;
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_finalize(set->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-	return set;
-error:
-	isl_set_free(set);
-	return NULL;
-}
-
 struct isl_map *isl_map_finalize(struct isl_map *map)
 {
 	int i;
