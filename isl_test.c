@@ -5383,7 +5383,7 @@ static int test_residue_class(isl_ctx *ctx)
 	const char *str;
 	isl_set *set;
 	isl_int m, r;
-	int res;
+	isl_stat res;
 
 	str = "{ [i,j] : j = 4 i + 1 and 0 <= i <= 100; "
 		"[i,j] : j = 4 i + 3 and 500 <= i <= 600 }";
@@ -5394,7 +5394,7 @@ static int test_residue_class(isl_ctx *ctx)
 	if (res >= 0 &&
 	    (isl_int_cmp_si(m, 2) != 0 || isl_int_cmp_si(r, 1) != 0))
 		isl_die(ctx, isl_error_unknown, "incorrect residue class",
-			res = -1);
+			res = isl_stat_error);
 	isl_int_clear(r);
 	isl_int_clear(m);
 	isl_set_free(set);

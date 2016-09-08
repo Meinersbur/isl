@@ -813,7 +813,7 @@ error:
  * If i_dim does not belong to such a residue class, then *modulo
  * is set to 1 and *residue is set to 0.
  */
-int isl_set_dim_residue_class(__isl_keep isl_set *set,
+isl_stat isl_set_dim_residue_class(__isl_keep isl_set *set,
 	int pos, isl_int *modulo, isl_int *residue)
 {
 	isl_int m;
@@ -821,22 +821,22 @@ int isl_set_dim_residue_class(__isl_keep isl_set *set,
 	int i;
 
 	if (!set || !modulo || !residue)
-		return -1;
+		return isl_stat_error;
 
 	if (set->n == 0) {
 		isl_int_set_si(*modulo, 0);
 		isl_int_set_si(*residue, 0);
-		return 0;
+		return isl_stat_ok;
 	}
 
 	if (isl_basic_set_dim_residue_class(set->p[0], pos, modulo, residue)<0)
-		return -1;
+		return isl_stat_error;
 
 	if (set->n == 1)
-		return 0;
+		return isl_stat_ok;
 
 	if (isl_int_is_one(*modulo))
-		return 0;
+		return isl_stat_ok;
 
 	isl_int_init(m);
 	isl_int_init(r);
@@ -856,11 +856,11 @@ int isl_set_dim_residue_class(__isl_keep isl_set *set,
 	isl_int_clear(m);
 	isl_int_clear(r);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_int_clear(m);
 	isl_int_clear(r);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Check if dimension "dim" belongs to a residue class
