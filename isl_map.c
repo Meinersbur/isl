@@ -5599,21 +5599,6 @@ error:
 	return NULL;
 }
 
-struct isl_map *isl_map_alloc(struct isl_ctx *ctx,
-		unsigned nparam, unsigned in, unsigned out, int n,
-		unsigned flags)
-{
-	struct isl_map *map;
-	isl_space *dims;
-
-	dims = isl_space_alloc(ctx, nparam, in, out);
-	if (!dims)
-		return NULL;
-
-	map = isl_map_alloc_space(dims, n, flags);
-	return map;
-}
-
 __isl_give isl_basic_map *isl_basic_map_empty(__isl_take isl_space *dim)
 {
 	struct isl_basic_map *bmap;
