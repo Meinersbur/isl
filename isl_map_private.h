@@ -500,7 +500,7 @@ __isl_give isl_basic_map *isl_basic_map_plain_affine_hull(
 
 isl_stat isl_basic_set_dim_residue_class(__isl_keep isl_basic_set *bset,
 	int pos, isl_int *modulo, isl_int *residue);
-int isl_set_dim_residue_class(struct isl_set *set,
+int isl_set_dim_residue_class(__isl_keep isl_set *set,
 	int pos, isl_int *modulo, isl_int *residue);
 
 __isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
