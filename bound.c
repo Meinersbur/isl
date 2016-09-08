@@ -72,7 +72,7 @@ static isl_stat verify_point(__isl_take isl_point *pnt, void *user)
 	isl_set *dom = NULL;
 	isl_printer *p;
 	const char *minmax;
-	int bounded;
+	isl_bool bounded;
 	int sign;
 	int ok;
 	FILE *out = vpb->options->print_all ? stdout : stderr;

@@ -959,19 +959,19 @@ isl_bool isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 
 /* Is the set bounded for each value of the parameters?
  */
-int isl_set_is_bounded(__isl_keep isl_set *set)
+isl_bool isl_set_is_bounded(__isl_keep isl_set *set)
 {
 	int i;
 
 	if (!set)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < set->n; ++i) {
-		int bounded = isl_basic_set_is_bounded(set->p[i]);
+		isl_bool bounded = isl_basic_set_is_bounded(set->p[i]);
 		if (!bounded || bounded < 0)
 			return bounded;
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 /* Compute the lineality space of the convex hull of bset1 and bset2.
@@ -1837,6 +1837,7 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
  */
 static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
+	isl_bool bounded;
 	struct isl_basic_set *convex_hull = NULL;
 	struct isl_basic_set *lin;
 
@@ -1858,8 +1859,10 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set);
 
-	if (isl_set_is_bounded(set) &&
-	    set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
+	bounded = isl_set_is_bounded(set);
+	if (bounded < 0)
+		goto error;
+	if (bounded && set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
 		return uset_convex_hull_wrap(set);
 
 	lin = uset_combined_lineality_space(isl_set_copy(set));

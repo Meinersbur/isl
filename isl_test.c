@@ -290,7 +290,7 @@ static int test_read(isl_ctx *ctx)
 static int test_bounded(isl_ctx *ctx)
 {
 	isl_set *set;
-	int bounded;
+	isl_bool bounded;
 
 	set = isl_set_read_from_str(ctx, "[n] -> {[i] : 0 <= i <= n }");
 	bounded = isl_set_is_bounded(set);
