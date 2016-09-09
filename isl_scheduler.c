@@ -3550,7 +3550,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 /* Add constraints to graph->lp that force all (conditional) validity
  * dependences to be respected and attempt to carry them.
  */
-static int add_all_constraints(struct isl_sched_graph *graph)
+static isl_stat add_all_constraints(struct isl_sched_graph *graph)
 {
 	int i, j;
 	int pos;
@@ -3571,15 +3571,15 @@ static int add_all_constraints(struct isl_sched_graph *graph)
 
 			if (edge->src == edge->dst &&
 			    add_intra_constraints(graph, edge, map, pos) < 0)
-				return -1;
+				return isl_stat_error;
 			if (edge->src != edge->dst &&
 			    add_inter_constraints(graph, edge, map, pos) < 0)
-				return -1;
+				return isl_stat_error;
 			++pos;
 		}
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Count the number of equality and inequality constraints
