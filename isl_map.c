@@ -8935,7 +8935,7 @@ __isl_give isl_set *isl_set_apply( __isl_take isl_set *set,
 /* There is no need to cow as removing empty parts doesn't change
  * the meaning of the set.
  */
-struct isl_map *isl_map_remove_empty_parts(struct isl_map *map)
+__isl_give isl_map *isl_map_remove_empty_parts(__isl_take isl_map *map)
 {
 	int i;
 
