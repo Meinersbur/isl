@@ -8485,7 +8485,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	return dst;
 }
 
-struct isl_map *isl_map_align_divs(struct isl_map *map)
+__isl_give isl_map *isl_map_align_divs(__isl_take isl_map *map)
 {
 	int i;
 
