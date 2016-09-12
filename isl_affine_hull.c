@@ -961,7 +961,8 @@ __isl_give isl_basic_set *isl_basic_set_plain_affine_hull(
  * equalities), we compute the additional equalities satisfied by
  * the integer points (if any) and add the original equalities back in.
  */
-struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_affine_hull(
+	__isl_take isl_basic_map *bmap)
 {
 	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_plain_affine_hull(bmap);
