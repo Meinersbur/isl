@@ -872,8 +872,8 @@ error:
 /* Detect and make explicit all equalities satisfied by the (integer)
  * points in bmap.
  */
-struct isl_basic_map *isl_basic_map_detect_equalities(
-						struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_detect_equalities(
+	__isl_take isl_basic_map *bmap)
 {
 	int i, j;
 	struct isl_basic_set *hull = NULL;
