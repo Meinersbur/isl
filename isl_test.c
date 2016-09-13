@@ -2802,6 +2802,8 @@ static int test_lexmin(struct isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, str);
 	map = isl_map_lexmin(map);
 	isl_map_free(map);
+	if (!map)
+		return -1;
 
 	str = "[C] -> { [obj,a,b,c] : obj <= 38 a + 7 b + 10 c and "
 	    "a + b <= 1 and c <= 10 b and c <= C and a,b,c,C >= 0 }";
