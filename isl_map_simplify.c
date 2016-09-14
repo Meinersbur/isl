@@ -3695,10 +3695,8 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	isl_size total;
 	int i;
 
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
 		return isl_bool_error;
-	isl_assert(bmap1->ctx, isl_space_is_equal(bmap1->dim, bmap2->dim),
-			return isl_bool_error);
 	if (bmap1->n_div || bmap2->n_div)
 		return isl_bool_false;
 	if (!bmap1->n_eq && !bmap2->n_eq)

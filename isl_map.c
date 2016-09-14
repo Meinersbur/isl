@@ -3587,9 +3587,9 @@ __isl_give isl_basic_map *isl_basic_map_intersect(
 	if (dim1 == nparam1 && dim2 != nparam2)
 		return isl_basic_map_intersect(bmap2, bmap1);
 
-	if (dim2 != nparam2)
-		isl_assert(bmap1->ctx,
-			    isl_space_is_equal(bmap1->dim, bmap2->dim), goto error);
+	if (dim2 != nparam2 &&
+	    isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
+		goto error;
 
 	if (isl_basic_map_plain_is_empty(bmap1)) {
 		isl_basic_map_free(bmap2);
@@ -4685,11 +4685,8 @@ __isl_give isl_basic_map *isl_basic_map_sum(__isl_take isl_basic_map *bmap1,
 	struct isl_dim_map *dim_map1, *dim_map2;
 	int i;
 
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
 		goto error;
-
-	isl_assert(bmap1->ctx, isl_space_is_equal(bmap1->dim, bmap2->dim),
-		goto error);
 
 	nparam = isl_basic_map_dim(bmap1, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
@@ -8747,6 +8744,13 @@ isl_bool isl_set_is_empty(__isl_keep isl_set *set)
 }
 
 #undef TYPE
+#define TYPE	isl_basic_map
+
+static
+#include "isl_type_has_equal_space_bin_templ.c"
+#include "isl_type_check_equal_space_templ.c"
+
+#undef TYPE
 #define TYPE	isl_map
 
 #include "isl_type_has_equal_space_bin_templ.c"
@@ -9005,10 +9009,9 @@ __isl_give isl_map *isl_basic_map_union(__isl_take isl_basic_map *bmap1,
 	__isl_take isl_basic_map *bmap2)
 {
 	struct isl_map *map;
-	if (!bmap1 || !bmap2)
-		goto error;
 
-	isl_assert(bmap1->ctx, isl_space_is_equal(bmap1->dim, bmap2->dim), goto error);
+	if (isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
+		goto error;
 
 	map = isl_map_alloc_space(isl_space_copy(bmap1->dim), 2, 0);
 	if (!map)
