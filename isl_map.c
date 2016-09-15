@@ -5991,9 +5991,9 @@ __isl_give isl_set *isl_set_nat_universe(__isl_take isl_space *dim)
 	return isl_map_nat_universe(dim);
 }
 
-__isl_give isl_map *isl_map_empty(__isl_take isl_space *dim)
+__isl_give isl_map *isl_map_empty(__isl_take isl_space *space)
 {
-	return isl_map_alloc_space(dim, 0, ISL_MAP_DISJOINT);
+	return isl_map_alloc_space(space, 0, ISL_MAP_DISJOINT);
 }
 
 __isl_give isl_set *isl_set_empty(__isl_take isl_space *space)
