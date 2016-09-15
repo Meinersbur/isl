@@ -1295,7 +1295,7 @@ error:
  * with C either the simple hull of the domain and range of the entire
  * map or the simple hull of domain and range of map_i.
  */
-static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
+static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
 	__isl_keep isl_map *map, int *exact, int project)
 {
 	int i;
@@ -1308,12 +1308,14 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
 	isl_map *res = NULL;
 
 	if (!project)
-		return construct_projected_component(dim, map, exact, project);
+		return construct_projected_component(space, map, exact,
+							project);
 
 	if (!map)
 		goto error;
 	if (map->n <= 1)
-		return construct_projected_component(dim, map, exact, project);
+		return construct_projected_component(space, map, exact,
+							project);
 
 	d = isl_map_dim(map, isl_dim_in);
 
@@ -1324,7 +1326,8 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
 	if (!ran || !dom || !left || !right)
 		goto error;
 
-	if (incremental_on_entire_domain(dim, map, dom, ran, left, right, &res) < 0)
+	if (incremental_on_entire_domain(space, map, dom, ran, left, right,
+					&res) < 0)
 		goto error;
 
 	for (i = 0; !res && i < map->n; ++i) {
@@ -1358,7 +1361,7 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
 				goto error;
 			continue;
 		}
-		qc = q_closure(isl_space_copy(dim), C, map->p[i], &exact_i);
+		qc = q_closure(isl_space_copy(space), C, map->p[i], &exact_i);
 		if (!qc)
 			goto error;
 		if (!exact_i) {
@@ -1383,7 +1386,7 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
 			isl_map_free(qc);
 			continue;
 		}
-		res = compute_incremental(isl_space_copy(dim), map, i, qc,
+		res = compute_incremental(isl_space_copy(space), map, i, qc,
 				(comp & LEFT) ? left : NULL,
 				(comp & RIGHT) ? right : NULL, &exact_i);
 		if (!res)
@@ -1404,11 +1407,11 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
 	free(right);
 
 	if (res) {
-		isl_space_free(dim);
+		isl_space_free(space);
 		return res;
 	}
 
-	return construct_projected_component(dim, map, exact, project);
+	return construct_projected_component(space, map, exact, project);
 error:
 	if (dom)
 		for (i = 0; i < map->n; ++i)
@@ -1420,7 +1423,7 @@ error:
 	free(ran);
 	free(left);
 	free(right);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
