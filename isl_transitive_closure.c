@@ -1152,7 +1152,7 @@ static __isl_give isl_map *compose(__isl_keep isl_map *map, int i,
  * depending on whether left or right are NULL.
  */
 static __isl_give isl_map *compute_incremental(
-	__isl_take isl_space *dim, __isl_keep isl_map *map,
+	__isl_take isl_space *space, __isl_keep isl_map *map,
 	int i, __isl_take isl_map *qc, int *left, int *right, int *exact)
 {
 	isl_map *map_i;
@@ -1164,7 +1164,7 @@ static __isl_give isl_map *compute_incremental(
 	isl_assert(map->ctx, left || right, goto error);
 
 	map_i = isl_map_from_basic_map(isl_basic_map_copy(map->p[i]));
-	tc = construct_projected_component(isl_space_copy(dim), map_i,
+	tc = construct_projected_component(isl_space_copy(space), map_i,
 						exact, 1);
 	isl_map_free(map_i);
 
@@ -1172,7 +1172,7 @@ static __isl_give isl_map *compute_incremental(
 		qc = isl_map_transitive_closure(qc, exact);
 
 	if (!*exact) {
-		isl_space_free(dim);
+		isl_space_free(space);
 		isl_map_free(tc);
 		isl_map_free(qc);
 		return isl_map_universe(isl_map_get_space(map));
@@ -1187,11 +1187,11 @@ static __isl_give isl_map *compute_incremental(
 		qc = isl_map_apply_range(qc, rtc);
 	qc = isl_map_union(tc, qc);
 
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	return qc;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_map_free(qc);
 	return NULL;
 }
