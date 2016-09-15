@@ -1211,7 +1211,7 @@ error:
  * after computing the integer divisions, is smaller than the number
  * of basic maps in the input map.
  */
-static int incremental_on_entire_domain(__isl_keep isl_space *dim,
+static int incremental_on_entire_domain(__isl_keep isl_space *space,
 	__isl_keep isl_map *map,
 	isl_set **dom, isl_set **ran, int *left, int *right,
 	__isl_give isl_map **res)
@@ -1242,7 +1242,7 @@ static int incremental_on_entire_domain(__isl_keep isl_space *dim,
 					isl_basic_map_copy(map->p[i])));
 		ran[i] = isl_set_from_basic_set(isl_basic_map_range(
 					isl_basic_map_copy(map->p[i])));
-		qc = q_closure(isl_space_copy(dim), isl_set_copy(C),
+		qc = q_closure(isl_space_copy(space), isl_set_copy(C),
 				map->p[i], &exact_i);
 		if (!qc)
 			goto error;
@@ -1269,7 +1269,7 @@ static int incremental_on_entire_domain(__isl_keep isl_space *dim,
 			isl_map_free(qc);
 			continue;
 		}
-		*res = compute_incremental(isl_space_copy(dim), map, i, qc,
+		*res = compute_incremental(isl_space_copy(space), map, i, qc,
 				left, right, &exact_i);
 		if (!*res)
 			goto error;
