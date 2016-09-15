@@ -751,7 +751,7 @@ static int is_acyclic(__isl_take isl_map *path)
  * Since each of these paths performs an addition, composition is
  * symmetric and we can simply compose all resulting paths in any order.
  */
-static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
+static __isl_give isl_map *construct_extended_path(__isl_take isl_space *space,
 	__isl_keep isl_map *map, int *project)
 {
 	struct isl_mat *steps = NULL;
@@ -764,7 +764,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 
 	d = isl_map_dim(map, isl_dim_in);
 
-	path = isl_map_identity(isl_space_copy(dim));
+	path = isl_map_identity(isl_space_copy(space));
 
 	steps = isl_mat_alloc(map->ctx, map->n, d);
 	if (!steps)
@@ -792,7 +792,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 
 		if (j < d) {
 			path = isl_map_apply_range(path,
-				path_along_delta(isl_space_copy(dim), delta));
+				path_along_delta(isl_space_copy(space), delta));
 			path = isl_map_coalesce(path);
 		} else {
 			isl_basic_set_free(delta);
@@ -803,7 +803,7 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 	if (n > 0) {
 		steps->n_row = n;
 		path = isl_map_apply_range(path,
-				path_along_steps(isl_space_copy(dim), steps));
+				path_along_steps(isl_space_copy(space), steps));
 	}
 
 	if (project && *project) {
@@ -812,11 +812,11 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *dim,
 			goto error;
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(steps);
 	return path;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(steps);
 	isl_map_free(path);
 	return NULL;
