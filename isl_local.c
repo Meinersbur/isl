@@ -10,6 +10,7 @@
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#include <isl_vec_private.h>
 #include <isl_mat_private.h>
 #include <isl_seq.h>
 #include <isl_local.h>
@@ -181,4 +182,49 @@ int isl_local_cmp(__isl_keep isl_local *local1, __isl_keep isl_local *local2)
 	}
 
 	return 0;
+}
+
+/* Extend a vector "v" representing an integer point
+ * in the domain space of "local"
+ * to one that also includes values for the local variables.
+ * All local variables are required to have an explicit representation.
+ */
+__isl_give isl_vec *isl_local_extend_point_vec(__isl_keep isl_local *local,
+	__isl_take isl_vec *v)
+{
+	unsigned n_div;
+	isl_bool known;
+	isl_mat *mat = local;
+
+	if (!local || !v)
+		return isl_vec_free(v);
+	known = isl_local_divs_known(local);
+	if (known < 0)
+		return isl_vec_free(v);
+	if (!known)
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
+			"unknown local variables", return isl_vec_free(v));
+	if (isl_vec_size(v) != 1 + isl_local_dim(local, isl_dim_set))
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
+			"incorrect size", return isl_vec_free(v));
+	if (!isl_int_is_one(v->el[0]))
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
+			"expecting integer point", return isl_vec_free(v));
+	n_div = isl_local_dim(local, isl_dim_div);
+	if (n_div != 0) {
+		int i;
+		unsigned dim = isl_local_dim(local, isl_dim_set);
+		v = isl_vec_add_els(v, n_div);
+		if (!v)
+			return NULL;
+
+		for (i = 0; i < n_div; ++i) {
+			isl_seq_inner_product(mat->row[i] + 1, v->el,
+						1 + dim + i, &v->el[1+dim+i]);
+			isl_int_fdiv_q(v->el[1+dim+i], v->el[1+dim+i],
+					mat->row[i][0]);
+		}
+	}
+
+	return v;
 }

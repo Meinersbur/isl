@@ -3129,21 +3129,7 @@ __isl_give isl_val *isl_qpolynomial_eval(__isl_take isl_qpolynomial *qp,
 	if (is_void)
 		return eval_void(qp, pnt);
 
-	ext = isl_vec_copy(pnt->vec);
-	if (qp->div->n_row != 0) {
-		int i;
-		unsigned dim = isl_space_dim(qp->dim, isl_dim_all);
-		ext = isl_vec_add_els(ext, qp->div->n_row);
-		if (!ext)
-			goto error;
-
-		for (i = 0; i < qp->div->n_row; ++i) {
-			isl_seq_inner_product(qp->div->row[i] + 1, ext->el,
-						1 + dim + i, &ext->el[1+dim+i]);
-			isl_int_fdiv_q(ext->el[1+dim+i], ext->el[1+dim+i],
-					qp->div->row[i][0]);
-		}
-	}
+	ext = isl_local_extend_point_vec(qp->div, isl_vec_copy(pnt->vec));
 
 	v = isl_upoly_eval(isl_upoly_copy(qp->upoly), ext);
 
