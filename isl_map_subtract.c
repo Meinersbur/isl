@@ -261,7 +261,7 @@ static int n_non_redundant(isl_ctx *ctx, struct isl_tab *tab,
  * return a negative value.
  */
 struct isl_diff_collector {
-	int (*add)(struct isl_diff_collector *dc,
+	isl_stat (*add)(struct isl_diff_collector *dc,
 		    __isl_take isl_basic_map *bmap);
 };
 
@@ -471,7 +471,7 @@ struct isl_subtract_diff_collector {
 
 /* isl_subtract_diff_collector callback.
  */
-static int basic_map_subtract_add(struct isl_diff_collector *dc,
+static isl_stat basic_map_subtract_add(struct isl_diff_collector *dc,
 			    __isl_take isl_basic_map *bmap)
 {
 	struct isl_subtract_diff_collector *sdc;
@@ -480,7 +480,7 @@ static int basic_map_subtract_add(struct isl_diff_collector *dc,
 	sdc->diff = isl_map_union_disjoint(sdc->diff,
 			isl_map_from_basic_map(bmap));
 
-	return sdc->diff ? 0 : -1;
+	return sdc->diff ? isl_stat_ok : isl_stat_error;
 }
 
 /* Return the set difference between bmap and map.
@@ -656,7 +656,7 @@ struct isl_is_empty_diff_collector {
 
 /* isl_is_empty_diff_collector callback.
  */
-static int basic_map_is_empty_add(struct isl_diff_collector *dc,
+static isl_stat basic_map_is_empty_add(struct isl_diff_collector *dc,
 			    __isl_take isl_basic_map *bmap)
 {
 	struct isl_is_empty_diff_collector *edc;
@@ -665,7 +665,7 @@ static int basic_map_is_empty_add(struct isl_diff_collector *dc,
 	edc->empty = 0;
 
 	isl_basic_map_free(bmap);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Check if bmap \ map is empty by computing this set difference
