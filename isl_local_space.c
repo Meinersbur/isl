@@ -876,18 +876,9 @@ isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div)
  */
 isl_bool isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 {
-	int i;
-
 	if (!ls)
 		return isl_bool_error;
-
-	for (i = 0; i < ls->div->n_row; ++i) {
-		isl_bool unknown = isl_local_space_div_is_marked_unknown(ls, i);
-		if (unknown < 0 || unknown)
-			return isl_bool_not(unknown);
-	}
-
-	return isl_bool_true;
+	return isl_local_divs_known(ls->div);
 }
 
 __isl_give isl_local_space *isl_local_space_domain(

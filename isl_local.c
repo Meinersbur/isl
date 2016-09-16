@@ -1,10 +1,13 @@
 /*
+ * Copyright 2011      INRIA Saclay
  * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
- * Written by Sven Verdoolaege,
- * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
+ * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
+ * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <isl_mat_private.h>
@@ -104,6 +107,25 @@ isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 		known = isl_local_div_is_known(local, i);
 		if (known < 0 || !known)
 			return known;
+	}
+
+	return isl_bool_true;
+}
+
+/* Does "local" have an explicit representation for all local variables?
+ */
+isl_bool isl_local_divs_known(__isl_keep isl_local *local)
+{
+	int i, n;
+
+	if (!local)
+		return isl_bool_error;
+
+	n = isl_local_dim(local, isl_dim_div);
+	for (i = 0; i < n; ++i) {
+		isl_bool unknown = isl_local_div_is_marked_unknown(local, i);
+		if (unknown < 0 || unknown)
+			return isl_bool_not(unknown);
 	}
 
 	return isl_bool_true;
