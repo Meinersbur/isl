@@ -106,7 +106,7 @@ error:
  * tab_add_constraints (and later removed again), so there should
  * already be a row available for the constraint.
  */
-static int tab_add_constraint(struct isl_tab *tab,
+static isl_stat tab_add_constraint(struct isl_tab *tab,
 	__isl_keep isl_basic_map *bmap, int *div_map, int c, int oppose)
 {
 	unsigned dim;
@@ -116,7 +116,7 @@ static int tab_add_constraint(struct isl_tab *tab,
 	isl_stat r;
 
 	if (!tab || !bmap)
-		return -1;
+		return isl_stat_error;
 
 	tab_total = isl_basic_map_total_dim(tab->bmap);
 	bmap_total = isl_basic_map_total_dim(bmap);
@@ -124,7 +124,7 @@ static int tab_add_constraint(struct isl_tab *tab,
 
 	v = isl_vec_alloc(bmap->ctx, 1 + tab_total);
 	if (!v)
-		return -1;
+		return isl_stat_error;
 
 	if (c < 2 * bmap->n_eq) {
 		if ((c % 2) != oppose)
