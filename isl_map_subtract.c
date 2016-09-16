@@ -159,8 +159,8 @@ static int tab_add_constraint(struct isl_tab *tab,
 	return r;
 }
 
-static int tab_add_divs(struct isl_tab *tab, __isl_keep isl_basic_map *bmap,
-	int **div_map)
+static isl_stat tab_add_divs(struct isl_tab *tab,
+	__isl_keep isl_basic_map *bmap, int **div_map)
 {
 	int i, j;
 	struct isl_vec *vec;
@@ -168,20 +168,20 @@ static int tab_add_divs(struct isl_tab *tab, __isl_keep isl_basic_map *bmap,
 	unsigned dim;
 
 	if (!bmap)
-		return -1;
+		return isl_stat_error;
 	if (!bmap->n_div)
-		return 0;
+		return isl_stat_ok;
 
 	if (!*div_map)
 		*div_map = isl_alloc_array(bmap->ctx, int, bmap->n_div);
 	if (!*div_map)
-		return -1;
+		return isl_stat_error;
 
 	total = isl_basic_map_total_dim(tab->bmap);
 	dim = total - tab->bmap->n_div;
 	vec = isl_vec_alloc(bmap->ctx, 2 + total + bmap->n_div);
 	if (!vec)
-		return -1;
+		return isl_stat_error;
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		isl_seq_cpy(vec->el, bmap->div[i], 2 + dim);
@@ -203,11 +203,11 @@ static int tab_add_divs(struct isl_tab *tab, __isl_keep isl_basic_map *bmap,
 
 	isl_vec_free(vec);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_vec_free(vec);
 
-	return -1;
+	return isl_stat_error;
 }
 
 /* Freeze all constraints of tableau tab.
