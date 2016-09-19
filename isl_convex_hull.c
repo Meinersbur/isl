@@ -2979,7 +2979,7 @@ error:
 
 /* Return a sequence of the basic maps that make up the maps in "list".
  */
-static __isl_give isl_basic_set_list *collect_basic_maps(
+static __isl_give isl_basic_map_list *collect_basic_maps(
 	__isl_take isl_map_list *list)
 {
 	int i, n;
