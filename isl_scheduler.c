@@ -3624,7 +3624,7 @@ static int count_carry_edges(struct isl_sched_graph *graph)
 
 	n_edge = 0;
 	for (i = 0; i < graph->n_edge; ++i)
-		n_edge += graph->edge[i].map->n;
+		n_edge += isl_map_n_basic_map(graph->edge[i].map);
 
 	return n_edge;
 }
