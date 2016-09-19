@@ -3030,8 +3030,8 @@ static __isl_give isl_basic_map *gist_strides(__isl_take isl_basic_map *bmap,
  * also simplified with respecting to the other equality constraints
  * in "bmap" and with respect to all equality constraints in "context".
  */
-struct isl_basic_map *isl_basic_map_gist(struct isl_basic_map *bmap,
-	struct isl_basic_map *context)
+__isl_give isl_basic_map *isl_basic_map_gist(__isl_take isl_basic_map *bmap,
+	__isl_take isl_basic_map *context)
 {
 	isl_basic_set *bset, *eq;
 	isl_basic_map *eq_bmap;
