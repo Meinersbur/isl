@@ -5191,24 +5191,6 @@ struct isl_basic_set *isl_basic_set_drop_redundant_divs(
 	return bset_from_bmap(isl_basic_map_drop_redundant_divs(bmap));
 }
 
-struct isl_map *isl_map_drop_redundant_divs(struct isl_map *map)
-{
-	int i;
-
-	if (!map)
-		return NULL;
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_drop_redundant_divs(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
 /* Does "bmap" satisfy any equality that involves more than 2 variables
  * and/or has coefficients different from -1 and 1?
  */
