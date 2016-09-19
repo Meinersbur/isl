@@ -2043,7 +2043,7 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
  *
  * "use_coincidence" is set if we should take into account coincidence edges.
  */
-static int count_map_constraints(struct isl_sched_graph *graph,
+static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
 	int *n_eq, int *n_ineq, int carry, int use_coincidence)
 {
@@ -2052,7 +2052,7 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 
 	if (f == 0) {
 		isl_map_free(map);
-		return 0;
+		return isl_stat_ok;
 	}
 
 	if (edge->src == edge->dst)
@@ -2060,12 +2060,12 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 	else
 		coef = inter_coefficients(graph, edge, map);
 	if (!coef)
-		return -1;
+		return isl_stat_error;
 	*n_eq += f * coef->n_eq;
 	*n_ineq += f * coef->n_ineq;
 	isl_basic_set_free(coef);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Count the number of equality and inequality constraints
