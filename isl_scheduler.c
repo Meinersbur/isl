@@ -3586,7 +3586,7 @@ static isl_stat add_all_constraints(struct isl_sched_graph *graph)
  * that will be added to the carry_lp problem.
  * We count each edge exactly once.
  */
-static int count_all_constraints(struct isl_sched_graph *graph,
+static isl_stat count_all_constraints(struct isl_sched_graph *graph,
 	int *n_eq, int *n_ineq)
 {
 	int i, j;
@@ -3607,11 +3607,11 @@ static int count_all_constraints(struct isl_sched_graph *graph,
 
 			if (count_map_constraints(graph, edge, map,
 						  n_eq, n_ineq, 1, 0) < 0)
-				    return -1;
+				    return isl_stat_error;
 		}
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Construct an LP problem for finding schedule coefficients
