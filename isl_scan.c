@@ -65,7 +65,7 @@ static int add_solution(struct isl_tab *tab, struct isl_scan_callback *callback)
 	return callback->add(callback, sample);
 }
 
-static int scan_0D(struct isl_basic_set *bset,
+static int scan_0D(__isl_take isl_basic_set *bset,
 	struct isl_scan_callback *callback)
 {
 	struct isl_vec *sample;
