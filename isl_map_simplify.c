@@ -5209,11 +5209,6 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_drop_redundant_divs(struct isl_set *set)
-{
-	return set_from_map(isl_map_drop_redundant_divs(set_to_map(set)));
-}
-
 /* Does "bmap" satisfy any equality that involves more than 2 variables
  * and/or has coefficients different from -1 and 1?
  */
