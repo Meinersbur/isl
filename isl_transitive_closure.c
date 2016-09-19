@@ -1574,8 +1574,9 @@ static void floyd_warshall_iterate(isl_map ***grid, int n, int *exact)
  * the input relation by the cross product with the unit length relation
  * { [i] -> [i + 1] }.
  */
-static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_space *dim,
-	__isl_keep isl_map *map, int *exact, int project, int *group, int n)
+static __isl_give isl_map *floyd_warshall_with_groups(
+	__isl_take isl_space *space, __isl_keep isl_map *map,
+	int *exact, int project, int *group, int n)
 {
 	int i, j, k;
 	isl_map ***grid = NULL;
@@ -1586,7 +1587,7 @@ static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_space *dim,
 
 	if (n == 1) {
 		free(group);
-		return incremental_closure(dim, map, exact, project);
+		return incremental_closure(space, map, exact, project);
 	}
 
 	grid = isl_calloc_array(map->ctx, isl_map **, n);
@@ -1623,7 +1624,7 @@ static __isl_give isl_map *floyd_warshall_with_groups(__isl_take isl_space *dim,
 	free(grid);
 
 	free(group);
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	return app;
 error:
@@ -1637,7 +1638,7 @@ error:
 		}
 	free(grid);
 	free(group);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
