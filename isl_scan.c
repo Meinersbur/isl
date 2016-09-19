@@ -220,7 +220,8 @@ error:
 	return isl_stat_error;
 }
 
-int isl_set_scan(__isl_take isl_set *set, struct isl_scan_callback *callback)
+isl_stat isl_set_scan(__isl_take isl_set *set,
+	struct isl_scan_callback *callback)
 {
 	int i;
 
@@ -239,10 +240,10 @@ int isl_set_scan(__isl_take isl_set *set, struct isl_scan_callback *callback)
 			goto error;
 
 	isl_set_free(set);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_set_free(set);
-	return -1;
+	return isl_stat_error;
 }
 
 int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
