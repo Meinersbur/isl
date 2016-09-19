@@ -302,7 +302,7 @@ error:
 __isl_give isl_basic_set *isl_basic_set_coefficients(
 	__isl_take isl_basic_set *bset)
 {
-	isl_space *dim;
+	isl_space *space;
 
 	if (!bset)
 		return NULL;
@@ -311,10 +311,10 @@ __isl_give isl_basic_set *isl_basic_set_coefficients(
 			"input set not allowed to have local variables",
 			goto error);
 
-	dim = isl_basic_set_get_space(bset);
-	dim = isl_space_coefficients(dim);
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_coefficients(space);
 
-	return farkas(dim, bset, 1);
+	return farkas(space, bset, 1);
 error:
 	isl_basic_set_free(bset);
 	return NULL;
