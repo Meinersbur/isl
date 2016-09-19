@@ -5184,13 +5184,6 @@ __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs(
 	return isl_basic_map_drop_redundant_divs(bmap);
 }
 
-struct isl_basic_set *isl_basic_set_drop_redundant_divs(
-	struct isl_basic_set *bset)
-{
-	isl_basic_map *bmap = bset_to_bmap(bset);
-	return bset_from_bmap(isl_basic_map_drop_redundant_divs(bmap));
-}
-
 /* Does "bmap" satisfy any equality that involves more than 2 variables
  * and/or has coefficients different from -1 and 1?
  */
