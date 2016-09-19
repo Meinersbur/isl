@@ -3614,6 +3614,21 @@ static int count_all_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
+/* Return the total number of edges that carry_dependences will
+ * attempt to carry.
+ */
+static int count_carry_edges(struct isl_sched_graph *graph)
+{
+	int i;
+	int n_edge;
+
+	n_edge = 0;
+	for (i = 0; i < graph->n_edge; ++i)
+		n_edge += graph->edge[i].map->n;
+
+	return n_edge;
+}
+
 /* Construct an LP problem for finding schedule coefficients
  * such that the schedule carries as many dependences as possible.
  * In particular, for each dependence i, we bound the dependence distance
@@ -3655,9 +3670,7 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 	int n_eq, n_ineq;
 	int n_edge;
 
-	n_edge = 0;
-	for (i = 0; i < graph->n_edge; ++i)
-		n_edge += graph->edge[i].map->n;
+	n_edge = count_carry_edges(graph);
 
 	total = 3 + n_edge;
 	for (i = 0; i < graph->n; ++i) {
@@ -4122,7 +4135,6 @@ error:
 static __isl_give isl_schedule_node *carry_dependences(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	int i;
 	int n_edge;
 	int trivial;
 	isl_ctx *ctx;
@@ -4132,9 +4144,7 @@ static __isl_give isl_schedule_node *carry_dependences(
 	if (!node)
 		return NULL;
 
-	n_edge = 0;
-	for (i = 0; i < graph->n_edge; ++i)
-		n_edge += graph->edge[i].map->n;
+	n_edge = count_carry_edges(graph);
 
 	ctx = isl_schedule_node_get_ctx(node);
 	if (setup_carry_lp(ctx, graph) < 0)
