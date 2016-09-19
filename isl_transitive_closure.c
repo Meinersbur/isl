@@ -1714,7 +1714,7 @@ error:
  * calls inside the Floyd-Warshall algorithm typically result in
  * non-linear path lengths quite quickly.
  */
-static __isl_give isl_map *floyd_warshall(__isl_take isl_space *dim,
+static __isl_give isl_map *floyd_warshall(__isl_take isl_space *space,
 	__isl_keep isl_map *map, int *exact, int project)
 {
 	int i;
@@ -1725,7 +1725,7 @@ static __isl_give isl_map *floyd_warshall(__isl_take isl_space *dim,
 	if (!map)
 		goto error;
 	if (map->n <= 1)
-		return incremental_closure(dim, map, exact, project);
+		return incremental_closure(space, map, exact, project);
 
 	group = setup_groups(map->ctx, map->p, map->n, &set, &n);
 	if (!group)
@@ -1736,9 +1736,9 @@ static __isl_give isl_map *floyd_warshall(__isl_take isl_space *dim,
 
 	free(set);
 
-	return floyd_warshall_with_groups(dim, map, exact, project, group, n);
+	return floyd_warshall_with_groups(space, map, exact, project, group, n);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
