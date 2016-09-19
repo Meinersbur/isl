@@ -99,7 +99,7 @@ static int scan_0D(struct isl_basic_set *bset,
  * Solutions are added in the leaves of the search tree, i.e., after
  * we have fixed a value in each direction of the basis.
  */
-int isl_basic_set_scan(struct isl_basic_set *bset,
+int isl_basic_set_scan(__isl_take isl_basic_set *bset,
 	struct isl_scan_callback *callback)
 {
 	unsigned dim;
