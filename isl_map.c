@@ -1694,23 +1694,9 @@ int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 	return isl_basic_map_alloc_div(bset_to_bmap(bset));
 }
 
-/* Check that there are "n" dimensions of type "type" starting at "first"
- * in "bmap".
- */
-isl_stat isl_basic_map_check_range(__isl_keep isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	unsigned dim;
-
-	if (!bmap)
-		return isl_stat_error;
-	dim = isl_basic_map_dim(bmap, type);
-	if (first + n > dim || first + n < first)
-		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"position or range out of bounds",
-			return isl_stat_error);
-	return isl_stat_ok;
-}
+#undef TYPE
+#define TYPE	isl_basic_map
+#include "check_type_range_templ.c"
 
 /* Insert an extra integer division, prescribed by "div", to "bmap"
  * at (integer division) position "pos".
@@ -2183,20 +2169,10 @@ error:
 	return NULL;
 }
 
-/* Check that there are "n" dimensions of type "type" starting at "first"
- * in "map".
- */
-static isl_stat isl_map_check_range(__isl_keep isl_map *map,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	if (!map)
-		return isl_stat_error;
-	if (first + n > isl_map_dim(map, type) || first + n < first)
-		isl_die(isl_map_get_ctx(map), isl_error_invalid,
-			"position or range out of bounds",
-			return isl_stat_error);
-	return isl_stat_ok;
-}
+#undef TYPE
+#define TYPE	isl_map
+static
+#include "check_type_range_templ.c"
 
 /* Drop "n" dimensions of type "type" starting at "first".
  * Perform the core computation, without cowing or
