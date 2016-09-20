@@ -14,11 +14,7 @@ ISL_DECLARE_LIST(schedule_tree)
 /* A schedule (sub)tree.
  *
  * The leaves of a tree are not explicitly represented inside
- * the isl_schedule_tree.  If a tree consists of only a leaf,
- * then it is equal to the static object isl_schedule_tree_empty.
- *
- * ctx may be NULL if type is isl_schedule_node_leaf.
- * In this case, ref has a negative value.
+ * the isl_schedule_tree, except when the tree consists of only a leaf.
  *
  * The "band" field is valid when type is isl_schedule_node_band.
  * The "context" field is valid when type is isl_schedule_node_context
@@ -115,6 +111,9 @@ __isl_give isl_schedule_tree *isl_schedule_tree_from_pair(
 __isl_give isl_schedule_tree *isl_schedule_tree_sequence_pair(
 	__isl_take isl_schedule_tree *tree1,
 	__isl_take isl_schedule_tree *tree2);
+__isl_give isl_schedule_tree *isl_schedule_tree_set_pair(
+	__isl_take isl_schedule_tree *tree1,
+	__isl_take isl_schedule_tree *tree2);
 
 isl_bool isl_schedule_tree_is_subtree_anchored(
 	__isl_keep isl_schedule_tree *tree);
@@ -143,6 +142,8 @@ __isl_give isl_union_set *isl_schedule_tree_band_get_ast_build_options(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_set_ast_build_options(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *options);
+__isl_give isl_set *isl_schedule_tree_band_get_ast_isolate_option(
+	__isl_keep isl_schedule_tree *tree, int depth);
 __isl_give isl_set *isl_schedule_tree_context_get_context(
 	__isl_keep isl_schedule_tree *tree);
 __isl_give isl_union_set *isl_schedule_tree_domain_get_domain(
@@ -231,7 +232,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_shift(
 	__isl_take isl_schedule_tree *tree,
 	__isl_take isl_multi_union_pw_aff *shift);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_split(
-	__isl_take isl_schedule_tree *tree, int pos);
+	__isl_take isl_schedule_tree *tree, int pos, int depth);
 __isl_give isl_schedule_tree *isl_schedule_tree_band_gist(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *context);
 

@@ -113,7 +113,7 @@ struct isl_tab_undo {
  * However, the basic operations do not ensure that all dead columns
  * or all redundant rows are detected.
  * isl_tab_detect_implicit_equalities and isl_tab_detect_redundant can be used
- * to perform and exhaustive search for dead columns and redundant rows.
+ * to perform an exhaustive search for dead columns and redundant rows.
  *
  * The samples matrix contains "n_sample" integer points that have at some
  * point been elements satisfying the tableau.  The first "n_outside"
@@ -235,6 +235,8 @@ enum isl_ineq_type isl_tab_ineq_type(struct isl_tab *tab, isl_int *ineq);
 
 struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab);
 int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap) WARN_UNUSED;
+isl_bool isl_tab_need_undo(struct isl_tab *tab);
+void isl_tab_clear_undo(struct isl_tab *tab);
 
 int isl_tab_relax(struct isl_tab *tab, int con) WARN_UNUSED;
 int isl_tab_select_facet(struct isl_tab *tab, int con) WARN_UNUSED;
@@ -242,12 +244,18 @@ int isl_tab_unrestrict(struct isl_tab *tab, int con) WARN_UNUSED;
 
 void isl_tab_dump(__isl_keep struct isl_tab *tab);
 
-struct isl_map *isl_tab_basic_map_partial_lexopt(
-		struct isl_basic_map *bmap, struct isl_basic_set *dom,
-		struct isl_set **empty, int max);
-__isl_give isl_pw_multi_aff *isl_basic_map_partial_lexopt_pw_multi_aff(
+/* Compute maximum instead of minimum. */
+#define ISL_OPT_MAX		(1 << 0)
+/* Compute full instead of partial optimum; also, domain argument is NULL. */
+#define ISL_OPT_FULL		(1 << 1)
+/* Result should be free of (unknown) quantified variables. */
+#define ISL_OPT_QE		(1 << 2)
+__isl_give isl_map *isl_tab_basic_map_partial_lexopt(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max);
+	__isl_give isl_set **empty, unsigned flags);
+__isl_give isl_pw_multi_aff *isl_tab_basic_map_partial_lexopt_pw_multi_aff(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, unsigned flags);
 
 /* An isl_region represents a sequence of consecutive variables.
  * pos is the location (starting at 0) of the first variable in the sequence.
@@ -263,6 +271,17 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	int (*conflict)(int con, void *user), void *user);
 __isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
 	__isl_take isl_basic_set *bset);
+
+struct isl_tab_lexmin;
+typedef struct isl_tab_lexmin isl_tab_lexmin;
+
+__isl_give isl_tab_lexmin *isl_tab_lexmin_from_basic_set(
+	__isl_take isl_basic_set *bset);
+int isl_tab_lexmin_dim(__isl_keep isl_tab_lexmin *tl);
+__isl_give isl_tab_lexmin *isl_tab_lexmin_add_eq(__isl_take isl_tab_lexmin *tl,
+	isl_int *eq);
+__isl_give isl_vec *isl_tab_lexmin_get_solution(__isl_keep isl_tab_lexmin *tl);
+__isl_null isl_tab_lexmin *isl_tab_lexmin_free(__isl_take isl_tab_lexmin *tl);
 
 /* private */
 
@@ -301,8 +320,9 @@ struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 int isl_tab_push_callback(struct isl_tab *tab,
 	struct isl_tab_callback *callback) WARN_UNUSED;
 
-int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div,
+int isl_tab_insert_div(struct isl_tab *tab, int pos, __isl_keep isl_vec *div,
 	int (*add_ineq)(void *user, isl_int *), void *user);
+int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div);
 
 int isl_tab_shift_var(struct isl_tab *tab, int pos, isl_int shift) WARN_UNUSED;
 

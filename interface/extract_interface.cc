@@ -64,6 +64,11 @@
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Frontend/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
+#ifdef HAVE_LEX_PREPROCESSOROPTIONS_H
+#include <clang/Lex/PreprocessorOptions.h>
+#else
+#include <clang/Frontend/PreprocessorOptions.h>
+#endif
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Parse/ParseAST.h>
 #include <clang/Sema/Sema.h>
@@ -117,12 +122,14 @@ static bool is_exported(Decl *decl)
 }
 
 /* Collect all types and functions that are annotated "isl_export"
- * in "types" and "function".
+ * in "exported_types" and "exported_function".  Collect all function
+ * declarations in "functions".
  *
  * We currently only consider single declarations.
  */
 struct MyASTConsumer : public ASTConsumer {
-	set<RecordDecl *> types;
+	set<RecordDecl *> exported_types;
+	set<FunctionDecl *> exported_functions;
 	set<FunctionDecl *> functions;
 
 	virtual HandleTopLevelDeclReturn HandleTopLevelDecl(DeclGroupRef D) {
@@ -131,14 +138,16 @@ struct MyASTConsumer : public ASTConsumer {
 		if (!D.isSingleDecl())
 			return HandleTopLevelDeclContinue;
 		decl = D.getSingleDecl();
+		if (isa<FunctionDecl>(decl))
+			functions.insert(cast<FunctionDecl>(decl));
 		if (!is_exported(decl))
 			return HandleTopLevelDeclContinue;
 		switch (decl->getKind()) {
 		case Decl::Record:
-			types.insert(cast<RecordDecl>(decl));
+			exported_types.insert(cast<RecordDecl>(decl));
 			break;
 		case Decl::Function:
-			functions.insert(cast<FunctionDecl>(decl));
+			exported_functions.insert(cast<FunctionDecl>(decl));
 			break;
 		default:
 			break;
@@ -339,6 +348,27 @@ static void create_main_file_id(SourceManager &SM, const FileEntry *file)
 
 #endif
 
+#ifdef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
+
+static void set_lang_defaults(CompilerInstance *Clang)
+{
+	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
+	TargetOptions &TO = Clang->getTargetOpts();
+	llvm::Triple T(TO.Triple);
+	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C, T, PO,
+					    LangStandard::lang_unspecified);
+}
+
+#else
+
+static void set_lang_defaults(CompilerInstance *Clang)
+{
+	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
+					    LangStandard::lang_unspecified);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -355,8 +385,7 @@ int main(int argc, char *argv[])
 	Clang->createSourceManager(Clang->getFileManager());
 	TargetInfo *target = create_target_info(Clang, Diags);
 	Clang->setTarget(target);
-	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
-					    LangStandard::lang_unspecified);
+	set_lang_defaults(Clang);
 	HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
 	LangOptions &LO = Clang->getLangOpts();
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
@@ -393,7 +422,8 @@ int main(int argc, char *argv[])
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
 
-	generate_python(consumer.types, consumer.functions);
+	generate_python(consumer.exported_types, consumer.exported_functions,
+			consumer.functions);
 
 	delete sema;
 	delete Clang;

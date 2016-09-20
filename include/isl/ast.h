@@ -83,6 +83,8 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr);
 void isl_ast_expr_dump(__isl_keep isl_ast_expr *expr);
 __isl_give char *isl_ast_expr_to_str(__isl_keep isl_ast_expr *expr);
+__isl_export
+__isl_give char *isl_ast_expr_to_C_str(__isl_keep isl_ast_expr *expr);
 
 __isl_give isl_ast_node *isl_ast_node_alloc_user(__isl_take isl_ast_expr *expr);
 __isl_give isl_ast_node *isl_ast_node_copy(__isl_keep isl_ast_node *node);
@@ -125,9 +127,14 @@ __isl_give isl_ast_node *isl_ast_node_mark_get_node(
 __isl_give isl_ast_expr *isl_ast_node_user_get_expr(
 	__isl_keep isl_ast_node *node);
 
+isl_stat isl_ast_node_foreach_descendant_top_down(
+	__isl_keep isl_ast_node *node,
+	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user);
+
 __isl_give isl_printer *isl_printer_print_ast_node(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node *node);
 void isl_ast_node_dump(__isl_keep isl_ast_node *node);
+__isl_give char *isl_ast_node_to_str(__isl_keep isl_ast_node *node);
 
 __isl_give isl_ast_print_options *isl_ast_print_options_alloc(isl_ctx *ctx);
 __isl_give isl_ast_print_options *isl_ast_print_options_copy(
@@ -150,10 +157,20 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 		__isl_keep isl_ast_node *node, void *user),
 	void *user);
 
+isl_stat isl_options_set_ast_print_macro_once(isl_ctx *ctx, int val);
+int isl_options_get_ast_print_macro_once(isl_ctx *ctx);
+
+isl_stat isl_ast_expr_foreach_ast_op_type(__isl_keep isl_ast_expr *expr,
+	isl_stat (*fn)(enum isl_ast_op_type type, void *user), void *user);
 isl_stat isl_ast_node_foreach_ast_op_type(__isl_keep isl_ast_node *node,
 	isl_stat (*fn)(enum isl_ast_op_type type, void *user), void *user);
+__isl_give isl_printer *isl_ast_op_type_set_print_name(
+	__isl_take isl_printer *p, enum isl_ast_op_type type,
+	__isl_keep const char *name);
 __isl_give isl_printer *isl_ast_op_type_print_macro(
 	enum isl_ast_op_type type, __isl_take isl_printer *p);
+__isl_give isl_printer *isl_ast_expr_print_macros(
+	__isl_keep isl_ast_expr *expr, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_node_print_macros(
 	__isl_keep isl_ast_node *node, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_node_print(__isl_keep isl_ast_node *node,
@@ -165,6 +182,9 @@ __isl_give isl_printer *isl_ast_node_for_print(__isl_keep isl_ast_node *node,
 __isl_give isl_printer *isl_ast_node_if_print(__isl_keep isl_ast_node *node,
 	__isl_take isl_printer *p,
 	__isl_take isl_ast_print_options *options);
+
+__isl_export
+__isl_give char *isl_ast_node_to_C_str(__isl_keep isl_ast_node *node);
 
 #if defined(__cplusplus)
 }

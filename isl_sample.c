@@ -209,6 +209,9 @@ static struct isl_mat *initial_basis(struct isl_tab *tab)
 
 /* Compute the minimum of the current ("level") basis row over "tab"
  * and store the result in position "level" of "min".
+ *
+ * This function assumes that at least one more row and at least
+ * one more element in the constraint array are available in the tableau.
  */
 static enum isl_lp_result compute_min(isl_ctx *ctx, struct isl_tab *tab,
 	__isl_keep isl_vec *min, int level)
@@ -219,6 +222,9 @@ static enum isl_lp_result compute_min(isl_ctx *ctx, struct isl_tab *tab,
 
 /* Compute the maximum of the current ("level") basis row over "tab"
  * and store the result in position "level" of "max".
+ *
+ * This function assumes that at least one more row and at least
+ * one more element in the constraint array are available in the tableau.
  */
 static enum isl_lp_result compute_max(isl_ctx *ctx, struct isl_tab *tab,
 	__isl_keep isl_vec *max, int level)
@@ -1214,6 +1220,8 @@ __isl_give isl_basic_map *isl_basic_map_sample(__isl_take isl_basic_map *bmap)
 		isl_vec_free(sample_vec);
 		return isl_basic_map_set_to_empty(bmap);
 	}
+	isl_vec_free(bmap->sample);
+	bmap->sample = isl_vec_copy(sample_vec);
 	bset = isl_basic_set_from_vec(sample_vec);
 	return isl_basic_map_overlying_set(bset, bmap);
 error:

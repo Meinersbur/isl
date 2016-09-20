@@ -4,4 +4,5 @@
 using namespace std;
 using namespace clang;
 
-void generate_python(set<RecordDecl *> &types, set<FunctionDecl *> functions);
+void generate_python(set<RecordDecl *> &exported_types,
+	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions);

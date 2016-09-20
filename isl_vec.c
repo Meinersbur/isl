@@ -20,6 +20,16 @@ isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec)
 	return vec ? vec->ctx : NULL;
 }
 
+/* Return a hash value that digests "vec".
+ */
+uint32_t isl_vec_get_hash(__isl_keep isl_vec *vec)
+{
+	if (!vec)
+		return 0;
+
+	return isl_seq_get_hash(vec->el, vec->size);
+}
+
 struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 {
 	struct isl_vec *vec;
@@ -41,6 +51,7 @@ struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 	return vec;
 error:
 	isl_blk_free(ctx, vec->block);
+	free(vec);
 	return NULL;
 }
 
@@ -66,6 +77,53 @@ __isl_give isl_vec *isl_vec_extend(__isl_take isl_vec *vec, unsigned size)
 error:
 	isl_vec_free(vec);
 	return NULL;
+}
+
+/* Apply the expansion specified by "exp" to the "n" elements starting at "pos".
+ * "expanded" it the number of elements that need to replace those "n"
+ * elements.  The entries in "exp" have increasing values between
+ * 0 and "expanded".
+ */
+__isl_give isl_vec *isl_vec_expand(__isl_take isl_vec *vec, int pos, int n,
+	int *exp, int expanded)
+{
+	int i, j;
+	int old_size, extra;
+
+	if (!vec)
+		return NULL;
+	if (expanded < n)
+		isl_die(isl_vec_get_ctx(vec), isl_error_invalid,
+			"not an expansion", isl_vec_free(vec));
+	if (expanded == n)
+		return vec;
+	if (pos < 0 || n < 0 || pos + n > vec->size)
+		isl_die(isl_vec_get_ctx(vec), isl_error_invalid,
+			"position out of bounds", return isl_vec_free(vec));
+
+	old_size = vec->size;
+	extra = expanded - n;
+	vec = isl_vec_extend(vec, old_size + extra);
+	vec = isl_vec_cow(vec);
+	if (!vec)
+		return NULL;
+
+	for (i = old_size - 1; i >= pos + n; --i)
+		isl_int_set(vec->el[i + extra], vec->el[i]);
+
+	j = n - 1;
+	for (i = expanded - 1; i >= 0; --i) {
+		if (j >= 0 && exp[j] == i) {
+			if (i != j)
+				isl_int_swap(vec->el[pos + i],
+					     vec->el[pos + j]);
+			j--;
+		} else {
+			isl_int_set_si(vec->el[pos + i], 0);
+		}
+	}
+
+	return vec;
 }
 
 __isl_give isl_vec *isl_vec_zero_extend(__isl_take isl_vec *vec, unsigned size)

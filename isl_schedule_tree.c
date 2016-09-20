@@ -140,21 +140,12 @@ __isl_take isl_schedule_tree *isl_schedule_tree_dup(
 
 /* Return an isl_schedule_tree that is equal to "tree" and that has only
  * a single reference.
- *
- * This function is called before a tree is modified.
- * A static tree (with negative reference count) should never be modified,
- * so it is not allowed to call this function on a static tree.
  */
 __isl_give isl_schedule_tree *isl_schedule_tree_cow(
 	__isl_take isl_schedule_tree *tree)
 {
 	if (!tree)
 		return NULL;
-
-	if (tree->ref < 0)
-		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"static trees cannot be modified",
-			return isl_schedule_tree_free(tree));
 
 	if (tree->ref == 1)
 		return tree;
@@ -163,18 +154,12 @@ __isl_give isl_schedule_tree *isl_schedule_tree_cow(
 }
 
 /* Return a new reference to "tree".
- *
- * A static tree (with negative reference count) does not keep track
- * of the number of references and should not be modified.
  */
 __isl_give isl_schedule_tree *isl_schedule_tree_copy(
 	__isl_keep isl_schedule_tree *tree)
 {
 	if (!tree)
 		return NULL;
-
-	if (tree->ref < 0)
-		return tree;
 
 	tree->ref++;
 	return tree;
@@ -186,8 +171,6 @@ __isl_null isl_schedule_tree *isl_schedule_tree_free(
 	__isl_take isl_schedule_tree *tree)
 {
 	if (!tree)
-		return NULL;
-	if (tree->ref < 0)
 		return NULL;
 	if (--tree->ref > 0)
 		return NULL;
@@ -606,6 +589,18 @@ __isl_give isl_schedule_tree *isl_schedule_tree_sequence_pair(
 {
 	return isl_schedule_tree_from_pair(isl_schedule_node_sequence,
 						tree1, tree2);
+}
+
+/* Construct a tree with a set root node and as children
+ * "tree1" and "tree2".
+ * If the root of one (or both) of the input trees is itself a set,
+ * then the tree is replaced by its children.
+ */
+__isl_give isl_schedule_tree *isl_schedule_tree_set_pair(
+	__isl_take isl_schedule_tree *tree1,
+	__isl_take isl_schedule_tree *tree2)
+{
+	return isl_schedule_tree_from_pair(isl_schedule_node_set, tree1, tree2);
 }
 
 /* Return the isl_ctx to which "tree" belongs.
@@ -1287,6 +1282,22 @@ error:
 	isl_schedule_tree_free(tree);
 	isl_union_set_free(options);
 	return NULL;
+}
+
+/* Return the "isolate" option associated to the band tree root of "tree",
+ * which is assumed to appear at schedule depth "depth".
+ */
+__isl_give isl_set *isl_schedule_tree_band_get_ast_isolate_option(
+	__isl_keep isl_schedule_tree *tree, int depth)
+{
+	if (!tree)
+		return NULL;
+
+	if (tree->type != isl_schedule_node_band)
+		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
+			"not a band node", return NULL);
+
+	return isl_schedule_band_get_ast_isolate_option(tree->band, depth);
 }
 
 /* Return the context of the context tree root.
@@ -2169,14 +2180,95 @@ error:
 	return NULL;
 }
 
+/* Given an isolate AST generation option "isolate" for a band of size pos + n,
+ * return the corresponding option for a band covering the first "pos"
+ * members.
+ *
+ * The input isolate option is of the form
+ *
+ *	isolate[[flattened outer bands] -> [pos; n]]
+ *
+ * The output isolate option is of the form
+ *
+ *	isolate[[flattened outer bands] -> [pos]]
+ */
+static __isl_give isl_set *isolate_initial(__isl_keep isl_set *isolate,
+	int pos, int n)
+{
+	isl_id *id;
+	isl_map *map;
+
+	isolate = isl_set_copy(isolate);
+	id = isl_set_get_tuple_id(isolate);
+	map = isl_set_unwrap(isolate);
+	map = isl_map_project_out(map, isl_dim_out, pos, n);
+	isolate = isl_map_wrap(map);
+	isolate = isl_set_set_tuple_id(isolate, id);
+
+	return isolate;
+}
+
+/* Given an isolate AST generation option "isolate" for a band of size pos + n,
+ * return the corresponding option for a band covering the final "n"
+ * members within a band covering the first "pos" members.
+ *
+ * The input isolate option is of the form
+ *
+ *	isolate[[flattened outer bands] -> [pos; n]]
+ *
+ * The output isolate option is of the form
+ *
+ *	isolate[[flattened outer bands; pos] -> [n]]
+ *
+ *
+ * The range is first split into
+ *
+ *	isolate[[flattened outer bands] -> [[pos] -> [n]]]
+ *
+ * and then the first pos members are moved to the domain
+ *
+ *	isolate[[[flattened outer bands] -> [pos]] -> [n]]
+ *
+ * after which the domain is flattened to obtain the desired output.
+ */
+static __isl_give isl_set *isolate_final(__isl_keep isl_set *isolate,
+	int pos, int n)
+{
+	isl_id *id;
+	isl_space *space;
+	isl_multi_aff *ma1, *ma2;
+	isl_map *map;
+
+	isolate = isl_set_copy(isolate);
+	id = isl_set_get_tuple_id(isolate);
+	map = isl_set_unwrap(isolate);
+	space = isl_space_range(isl_map_get_space(map));
+	ma1 = isl_multi_aff_project_out_map(isl_space_copy(space),
+						   isl_dim_set, pos, n);
+	ma2 = isl_multi_aff_project_out_map(space, isl_dim_set, 0, pos);
+	ma1 = isl_multi_aff_range_product(ma1, ma2);
+	map = isl_map_apply_range(map, isl_map_from_multi_aff(ma1));
+	map = isl_map_uncurry(map);
+	map = isl_map_flatten_domain(map);
+	isolate = isl_map_wrap(map);
+	isolate = isl_set_set_tuple_id(isolate, id);
+
+	return isolate;
+}
+
 /* Split the band root node of "tree" into two nested band nodes,
  * one with the first "pos" dimensions and
  * one with the remaining dimensions.
+ * The tree is itself positioned at schedule depth "depth".
+ *
+ * The loop AST generation type options and the isolate option
+ * are split over the the two band nodes.
  */
 __isl_give isl_schedule_tree *isl_schedule_tree_band_split(
-	__isl_take isl_schedule_tree *tree, int pos)
+	__isl_take isl_schedule_tree *tree, int pos, int depth)
 {
 	int n;
+	isl_set *isolate, *tree_isolate, *child_isolate;
 	isl_schedule_tree *child;
 
 	if (!tree)
@@ -2197,8 +2289,16 @@ __isl_give isl_schedule_tree *isl_schedule_tree_band_split(
 	if (!tree || !child)
 		goto error;
 
+	isolate = isl_schedule_tree_band_get_ast_isolate_option(tree, depth);
+	tree_isolate = isolate_initial(isolate, pos, n - pos);
+	child_isolate = isolate_final(isolate, pos, n - pos);
 	child->band = isl_schedule_band_drop(child->band, 0, pos);
+	child->band = isl_schedule_band_replace_ast_build_option(child->band,
+					isl_set_copy(isolate), child_isolate);
 	tree->band = isl_schedule_band_drop(tree->band, pos, n - pos);
+	tree->band = isl_schedule_band_replace_ast_build_option(tree->band,
+					isl_set_copy(isolate), tree_isolate);
+	isl_set_free(isolate);
 	if (!child->band || !tree->band)
 		goto error;
 

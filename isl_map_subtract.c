@@ -98,6 +98,10 @@ error:
  * The position of the constraint is specified by "c", where
  * the equalities of bmap are counted twice, once for the inequality
  * that is equal to the equality, and once for its negation.
+ *
+ * Each of these constraints has been added to "tab" before by
+ * tab_add_constraints (and later removed again), so there should
+ * already be a row available for the constraint.
  */
 static int tab_add_constraint(struct isl_tab *tab,
 	__isl_keep isl_basic_map *bmap, int *div_map, int c, int oppose)
@@ -189,7 +193,7 @@ static int tab_add_divs(struct isl_tab *tab, __isl_keep isl_basic_map *bmap,
 		(*div_map)[i] = j;
 		if (j == tab->bmap->n_div) {
 			vec->size = 2 + dim + tab->bmap->n_div;
-			if (isl_tab_add_div(tab, vec, NULL, NULL) < 0)
+			if (isl_tab_add_div(tab, vec) < 0)
 				goto error;
 		}
 	}

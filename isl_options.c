@@ -157,6 +157,9 @@ ISL_ARG_BOOL(struct isl_options, schedule_maximize_coincidence, 0,
 ISL_ARG_BOOL(struct isl_options, schedule_split_scaled, 0,
 	"schedule-split-scaled", 1,
 	"split non-tilable bands with scaled schedules")
+ISL_ARG_BOOL(struct isl_options, schedule_treat_coalescing, 0,
+	"schedule-treat-coalescing", 1,
+	"try and prevent or adjust schedules that perform loop coalescing")
 ISL_ARG_BOOL(struct isl_options, schedule_separate_components, 0,
 	"schedule-separate-components", 1,
 	"separate components in dependence graph")
@@ -182,10 +185,14 @@ ISL_ARG_STR(struct isl_options, ast_iterator_type, 0,
 ISL_ARG_BOOL(struct isl_options, ast_always_print_block, 0,
 	"ast-always-print-block", 0, "print for and if bodies as a block "
 	"regardless of the number of statements in the body")
+ISL_ARG_BOOL(struct isl_options, ast_print_macro_once, 0,
+	"ast-print-macro-once", 0, "only print macro definitions once")
 ISL_ARG_BOOL(struct isl_options, ast_build_atomic_upper_bound, 0,
 	"ast-build-atomic-upper-bound", 1, "generate atomic upper bounds")
 ISL_ARG_BOOL(struct isl_options, ast_build_prefer_pdiv, 0,
 	"ast-build-prefer-pdiv", 1, "prefer pdiv operation over fdiv")
+ISL_ARG_BOOL(struct isl_options, ast_build_detect_min_max, 0,
+	"ast-build-detect-min-max", 0, "detect min/max expressions")
 ISL_ARG_BOOL(struct isl_options, ast_build_exploit_nested_bounds, 0,
 	"ast-build-exploit-nested-bounds", 1,
 	"simplify conditions based on bounds of nested for loops")
@@ -223,6 +230,11 @@ ISL_CTX_GET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	on_error)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	pip_symmetry)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	pip_symmetry)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	coalesce_bounded_wrapping)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	coalesce_bounded_wrapping)
@@ -256,6 +268,11 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_split_scaled)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_split_scaled)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_treat_coalescing)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	schedule_treat_coalescing)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	schedule_separate_components)
@@ -303,6 +320,11 @@ ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_prefer_pdiv)
 
 ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_detect_min_max)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_build_detect_min_max)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_exploit_nested_bounds)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_exploit_nested_bounds)
@@ -321,6 +343,11 @@ ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_always_print_block)
 ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_always_print_block)
+
+ISL_CTX_SET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_print_macro_once)
+ISL_CTX_GET_BOOL_DEF(isl_options, struct isl_options, isl_options_args,
+	ast_print_macro_once)
 
 ISL_CTX_SET_CHOICE_DEF(isl_options, struct isl_options, isl_options_args,
 	ast_build_separation_bounds)

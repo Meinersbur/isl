@@ -1,6 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
+ * Copyright 2016      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -52,13 +53,12 @@ __isl_give isl_schedule *isl_schedule_from_schedule_tree(isl_ctx *ctx,
 	if (!schedule)
 		goto error;
 
-	schedule->leaf.ctx = ctx;
-	isl_ctx_ref(ctx);
 	schedule->ref = 1;
 	schedule->root = tree;
-	schedule->leaf.ref = -1;
-	schedule->leaf.type = isl_schedule_node_leaf;
+	schedule->leaf = isl_schedule_tree_leaf(ctx);
 
+	if (!schedule->leaf)
+		return isl_schedule_free(schedule);
 	return schedule;
 error:
 	isl_schedule_tree_free(tree);
@@ -134,7 +134,7 @@ __isl_null isl_schedule *isl_schedule_free(__isl_take isl_schedule *sched)
 
 	isl_band_list_free(sched->band_forest);
 	isl_schedule_tree_free(sched->root);
-	isl_ctx_deref(sched->leaf.ctx);
+	isl_schedule_tree_free(sched->leaf);
 	free(sched);
 	return NULL;
 }
@@ -166,18 +166,15 @@ error:
 
 isl_ctx *isl_schedule_get_ctx(__isl_keep isl_schedule *schedule)
 {
-	return schedule ? schedule->leaf.ctx : NULL;
+	return schedule ? isl_schedule_tree_get_ctx(schedule->leaf) : NULL;
 }
 
 /* Return a pointer to the leaf of "schedule".
- *
- * Even though these leaves are not reference counted, we still
- * indicate that this function does not return a copy.
  */
 __isl_keep isl_schedule_tree *isl_schedule_peek_leaf(
 	__isl_keep isl_schedule *schedule)
 {
-	return schedule ? &schedule->leaf : NULL;
+	return schedule ? schedule->leaf : NULL;
 }
 
 /* Are "schedule1" and "schedule2" obviously equal to each other?
@@ -445,6 +442,40 @@ __isl_give isl_schedule *isl_schedule_pullback_union_pw_multi_aff(
 	schedule = isl_schedule_map_schedule_node_bottom_up(schedule,
 						&pullback_upma, upma);
 	isl_union_pw_multi_aff_free(upma);
+	return schedule;
+}
+
+/* Expand the schedule "schedule" by extending all leaves
+ * with an expansion node with as subtree the tree of "expansion".
+ * The expansion of the expansion node is determined by "contraction"
+ * and the domain of "expansion".  That is, the domain of "expansion"
+ * is contracted according to "contraction".
+ *
+ * Call isl_schedule_node_expand after extracting the required
+ * information from "expansion".
+ */
+__isl_give isl_schedule *isl_schedule_expand(__isl_take isl_schedule *schedule,
+	__isl_take isl_union_pw_multi_aff *contraction,
+	__isl_take isl_schedule *expansion)
+{
+	isl_union_set *domain;
+	isl_schedule_node *node;
+	isl_schedule_tree *tree;
+
+	domain = isl_schedule_get_domain(expansion);
+
+	node = isl_schedule_get_root(expansion);
+	node = isl_schedule_node_child(node, 0);
+	tree = isl_schedule_node_get_tree(node);
+	isl_schedule_node_free(node);
+	isl_schedule_free(expansion);
+
+	node = isl_schedule_get_root(schedule);
+	isl_schedule_free(schedule);
+	node = isl_schedule_node_expand(node, contraction, domain, tree);
+	schedule = isl_schedule_node_get_schedule(node);
+	isl_schedule_node_free(node);
+
 	return schedule;
 }
 
@@ -1119,36 +1150,6 @@ __isl_give isl_printer *isl_printer_print_schedule(__isl_take isl_printer *p,
 	return p;
 }
 
-void isl_schedule_dump(__isl_keep isl_schedule *schedule)
-{
-	isl_printer *printer;
-
-	if (!schedule)
-		return;
-
-	printer = isl_printer_to_file(isl_schedule_get_ctx(schedule), stderr);
-	printer = isl_printer_set_yaml_style(printer, ISL_YAML_STYLE_BLOCK);
-	printer = isl_printer_print_schedule(printer, schedule);
-
-	isl_printer_free(printer);
-}
-
-/* Return a string representation of "schedule".
- * Print the schedule in flow format.
- */
-__isl_give char *isl_schedule_to_str(__isl_keep isl_schedule *schedule)
-{
-	isl_printer *printer;
-	char *s;
-
-	if (!schedule)
-		return NULL;
-
-	printer = isl_printer_to_str(isl_schedule_get_ctx(schedule));
-	printer = isl_printer_set_yaml_style(printer, ISL_YAML_STYLE_FLOW);
-	printer = isl_printer_print_schedule(printer, schedule);
-	s = isl_printer_get_str(printer);
-	isl_printer_free(printer);
-
-	return s;
-}
+#undef BASE
+#define BASE schedule
+#include <print_templ_yaml.c>
