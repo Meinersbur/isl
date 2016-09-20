@@ -6011,13 +6011,13 @@ __isl_give isl_map *isl_map_universe(__isl_take isl_space *dim)
 	return map;
 }
 
-__isl_give isl_set *isl_set_universe(__isl_take isl_space *dim)
+__isl_give isl_set *isl_set_universe(__isl_take isl_space *space)
 {
 	struct isl_set *set;
-	if (!dim)
+	if (!space)
 		return NULL;
-	set = isl_set_alloc_space(isl_space_copy(dim), 1, ISL_MAP_DISJOINT);
-	set = isl_set_add_basic_set(set, isl_basic_set_universe(dim));
+	set = isl_set_alloc_space(isl_space_copy(space), 1, ISL_MAP_DISJOINT);
+	set = isl_set_add_basic_set(set, isl_basic_set_universe(space));
 	return set;
 }
 
