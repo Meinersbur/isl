@@ -8248,6 +8248,14 @@ error:
 	return NULL;
 }
 
+/* Sort the local variables of "bset".
+ */
+__isl_give isl_basic_set *isl_basic_set_sort_divs(
+	__isl_take isl_basic_set *bset)
+{
+	return bset_from_bmap(isl_basic_map_sort_divs(bset_to_bmap(bset)));
+}
+
 /* Apply the expansion computed by isl_merge_divs.
  * The expansion itself is given by "exp" while the resulting
  * list of divs is given by "div".
