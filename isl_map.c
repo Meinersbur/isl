@@ -6001,13 +6001,13 @@ __isl_give isl_set *isl_set_empty(__isl_take isl_space *space)
 	return isl_set_alloc_space(space, 0, ISL_MAP_DISJOINT);
 }
 
-__isl_give isl_map *isl_map_universe(__isl_take isl_space *dim)
+__isl_give isl_map *isl_map_universe(__isl_take isl_space *space)
 {
 	struct isl_map *map;
-	if (!dim)
+	if (!space)
 		return NULL;
-	map = isl_map_alloc_space(isl_space_copy(dim), 1, ISL_MAP_DISJOINT);
-	map = isl_map_add_basic_map(map, isl_basic_map_universe(dim));
+	map = isl_map_alloc_space(isl_space_copy(space), 1, ISL_MAP_DISJOINT);
+	map = isl_map_add_basic_map(map, isl_basic_map_universe(space));
 	return map;
 }
 
