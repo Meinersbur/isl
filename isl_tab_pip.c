@@ -4173,6 +4173,11 @@ error:
  * We make sure the divs in the domain are properly ordered,
  * because they will be added one by one in the given order
  * during the construction of the solution map.
+ * Furthermore, make sure that the known integer divisions
+ * appear before any unknown integer division because the solution
+ * may depend on the known integer divisions, while anything that
+ * depends on any variable starting from the first unknown integer
+ * division is ignored in sol_pma_add.
  */
 static struct isl_sol *basic_map_partial_lexopt_base_sol(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
@@ -4185,7 +4190,7 @@ static struct isl_sol *basic_map_partial_lexopt_base_sol(
 	struct isl_context *context;
 
 	if (dom->n_div) {
-		dom = isl_basic_set_order_divs(dom);
+		dom = isl_basic_set_sort_divs(dom);
 		bmap = align_context_divs(bmap, dom);
 	}
 	sol = init(bmap, dom, !!empty, max);
