@@ -8058,31 +8058,17 @@ __isl_give isl_set *isl_set_compute_divs(__isl_take isl_set *set)
 
 __isl_give isl_set *isl_map_domain(__isl_take isl_map *map)
 {
-	int i;
-	struct isl_set *set;
+	isl_space *space;
+	isl_size n_out;
 
-	if (!map)
-		goto error;
+	n_out = isl_map_dim(map, isl_dim_out);
+	if (n_out < 0)
+		return set_from_map(isl_map_free(map));
+	space = isl_space_domain(isl_map_get_space(map));
 
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
+	map = isl_map_project_out(map, isl_dim_out, 0, n_out);
 
-	set = set_from_map(map);
-	set->dim = isl_space_domain(set->dim);
-	if (!set->dim)
-		goto error;
-	for (i = 0; i < map->n; ++i) {
-		set->p[i] = isl_basic_map_domain(map->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-	ISL_F_CLR(set, ISL_MAP_DISJOINT);
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-	return set;
-error:
-	isl_map_free(map);
-	return NULL;
+	return set_from_map(isl_map_reset_space(map, space));
 }
 
 /* Return the union of "map1" and "map2", where we assume for now that
