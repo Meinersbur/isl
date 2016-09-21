@@ -4711,7 +4711,7 @@ error:
 /* Given a map A -> f(A) and an integer d, construct a map
  * A -> floor(f(A)/d).
  */
-struct isl_map *isl_map_floordiv(struct isl_map *map, isl_int d)
+__isl_give isl_map *isl_map_floordiv(__isl_take isl_map *map, isl_int d)
 {
 	int i;
 
