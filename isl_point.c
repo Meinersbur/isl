@@ -392,18 +392,19 @@ isl_bool isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 	return contains;
 }
 
-int isl_map_contains_point(__isl_keep isl_map *map, __isl_keep isl_point *point)
+isl_bool isl_map_contains_point(__isl_keep isl_map *map,
+	__isl_keep isl_point *point)
 {
 	int i;
-	int found = 0;
+	isl_bool found = isl_bool_false;
 
 	if (!map || !point)
-		return -1;
+		return isl_bool_error;
 
 	map = isl_map_copy(map);
 	map = isl_map_compute_divs(map);
 	if (!map)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < map->n; ++i) {
 		found = isl_basic_map_contains_point(map->p[i], point);
@@ -417,7 +418,7 @@ int isl_map_contains_point(__isl_keep isl_map *map, __isl_keep isl_point *point)
 	return found;
 error:
 	isl_map_free(map);
-	return -1;
+	return isl_bool_error;
 }
 
 isl_bool isl_set_contains_point(__isl_keep isl_set *set,
