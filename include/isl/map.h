@@ -227,8 +227,8 @@ __isl_give isl_basic_map *isl_basic_map_upper_bound_si(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, int value);
 
-struct isl_basic_map *isl_basic_map_sum(
-		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2);
+__isl_give isl_basic_map *isl_basic_map_sum(__isl_take isl_basic_map *bmap1,
+	__isl_take isl_basic_map *bmap2);
 __isl_give isl_basic_map *isl_basic_map_neg(__isl_take isl_basic_map *bmap);
 
 __isl_give isl_map *isl_map_sum(__isl_take isl_map *map1,
