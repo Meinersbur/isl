@@ -4628,7 +4628,7 @@ __isl_give isl_basic_set *isl_basic_set_neg(__isl_take isl_basic_set *bset)
 
 /* Given a map A -> f(A), construct A -> -f(A).
  */
-struct isl_map *isl_map_neg(struct isl_map *map)
+__isl_give isl_map *isl_map_neg(__isl_take isl_map *map)
 {
 	int i;
 
