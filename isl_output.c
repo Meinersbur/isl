@@ -2214,7 +2214,7 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_set *set)
+	__isl_keep isl_space *space, __isl_keep isl_set *set)
 {
 	int i;
 
@@ -2229,7 +2229,7 @@ static __isl_give isl_printer *print_set_c(__isl_take isl_printer *p,
 			p = isl_printer_print_str(p, " || ");
 		if (set->n > 1)
 			p = isl_printer_print_str(p, "(");
-		p = print_basic_set_c(p, dim, set->p[i]);
+		p = print_basic_set_c(p, space, set->p[i]);
 		if (set->n > 1)
 			p = isl_printer_print_str(p, ")");
 	}
