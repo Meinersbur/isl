@@ -4821,16 +4821,16 @@ static __isl_give isl_map *split_domain(__isl_take isl_map *opt,
 {
 	int n_in;
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	isl_map *res;
 
 	if (!opt || !min_expr || !cst)
 		goto error;
 
 	n_in = isl_map_dim(opt, isl_dim_in);
-	dim = isl_map_get_space(opt);
-	dim = isl_space_drop_dims(dim, isl_dim_in, n_in - 1, 1);
-	res = isl_map_empty(dim);
+	space = isl_map_get_space(opt);
+	space = isl_space_drop_dims(space, isl_dim_in, n_in - 1, 1);
+	res = isl_map_empty(space);
 
 	for (i = 0; i < opt->n; ++i) {
 		isl_map *map;
