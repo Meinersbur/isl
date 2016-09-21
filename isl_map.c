@@ -3353,7 +3353,7 @@ __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset)
 	return isl_map_from_basic_map(bset);
 }
 
-struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
+__isl_give isl_map *isl_map_from_basic_map(__isl_take isl_basic_map *bmap)
 {
 	struct isl_map *map;
 
