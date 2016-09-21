@@ -6077,7 +6077,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_fix_si(struct isl_basic_map *bmap,
+__isl_give isl_basic_map *isl_basic_map_fix_si(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value)
 {
 	if (isl_basic_map_check_range(bmap, type, pos, 1) < 0)
