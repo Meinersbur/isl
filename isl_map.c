@@ -5087,29 +5087,29 @@ __isl_give isl_map *isl_map_lex_le(__isl_take isl_space *set_dim)
 	return map_lex_lte(isl_space_map_from_set(set_dim), 1);
 }
 
-static __isl_give isl_map *map_lex_gte_first(__isl_take isl_space *dims,
+static __isl_give isl_map *map_lex_gte_first(__isl_take isl_space *space,
 	unsigned n, int equal)
 {
 	struct isl_map *map;
 	int i;
 
 	if (n == 0 && equal)
-		return isl_map_universe(dims);
+		return isl_map_universe(space);
 
-	map = isl_map_alloc_space(isl_space_copy(dims), n, ISL_MAP_DISJOINT);
+	map = isl_map_alloc_space(isl_space_copy(space), n, ISL_MAP_DISJOINT);
 
 	for (i = 0; i + 1 < n; ++i)
 		map = isl_map_add_basic_map(map,
-				  isl_basic_map_more_at(isl_space_copy(dims), i));
+				  isl_basic_map_more_at(isl_space_copy(space), i));
 	if (n > 0) {
 		if (equal)
 			map = isl_map_add_basic_map(map,
-			      isl_basic_map_more_or_equal_at(dims, n - 1));
+			      isl_basic_map_more_or_equal_at(space, n - 1));
 		else
 			map = isl_map_add_basic_map(map,
-			      isl_basic_map_more_at(dims, n - 1));
+			      isl_basic_map_more_at(space, n - 1));
 	} else
-		isl_space_free(dims);
+		isl_space_free(space);
 
 	return map;
 }
