@@ -6030,35 +6030,17 @@ isl_bool isl_map_is_set(__isl_keep isl_map *map)
 
 __isl_give isl_set *isl_map_range(__isl_take isl_map *map)
 {
-	int i;
-	isl_bool is_set;
-	struct isl_set *set;
+	isl_space *space;
+	isl_size n_in;
 
-	is_set = isl_map_is_set(map);
-	if (is_set < 0)
-		goto error;
-	if (is_set)
-		return set_from_map(map);
+	n_in = isl_map_dim(map, isl_dim_in);
+	if (n_in < 0)
+		return set_from_map(isl_map_free(map));
+	space = isl_space_range(isl_map_get_space(map));
 
-	map = isl_map_cow(map);
-	if (!map)
-		goto error;
+	map = isl_map_project_out(map, isl_dim_in, 0, n_in);
 
-	set = set_from_map(map);
-	set->dim = isl_space_range(set->dim);
-	if (!set->dim)
-		goto error;
-	for (i = 0; i < map->n; ++i) {
-		set->p[i] = isl_basic_map_range(map->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-	ISL_F_CLR(set, ISL_MAP_DISJOINT);
-	ISL_F_CLR(set, ISL_SET_NORMALIZED);
-	return set;
-error:
-	isl_map_free(map);
-	return NULL;
+	return set_from_map(isl_map_reset_space(map, space));
 }
 
 /* Transform "map" by applying "fn_space" to its space and "fn_bmap"
