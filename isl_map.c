@@ -8157,7 +8157,7 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	__isl_take isl_basic_map *bmap)
 {
 	int i, k;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *domain;
 	int nparam, n;
 	unsigned total;
@@ -8170,8 +8170,9 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n = isl_basic_map_dim(bmap, isl_dim_in);
 
-	dim = isl_space_from_range(isl_space_domain(isl_basic_map_get_space(bmap)));
-	domain = isl_basic_map_universe(dim);
+	space = isl_basic_map_get_space(bmap);
+	space = isl_space_from_range(isl_space_domain(space));
+	domain = isl_basic_map_universe(space);
 
 	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
 	bmap = isl_basic_map_apply_range(bmap, domain);
