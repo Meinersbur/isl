@@ -8292,7 +8292,6 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 {
 	int i;
 	isl_space *space;
-	isl_space *domain_space;
 
 	if (isl_map_check_equal_tuples(map) < 0)
 		return isl_map_free(map);
@@ -8308,10 +8307,8 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 	}
 	map = isl_map_unmark_normalized(map);
 
-	domain_space = isl_space_domain(isl_map_get_space(map));
 	space = isl_map_take_space(map);
-	space = isl_space_from_domain(isl_space_wrap(space));
-	space = isl_space_join(space, isl_space_from_range(domain_space));
+	space = isl_space_range_map(space);
 	map = isl_map_restore_space(map, space);
 
 	return map;
