@@ -7858,7 +7858,7 @@ __isl_give isl_map *isl_map_apply_range(__isl_take isl_map *map1,
 /*
  * returns range - domain
  */
-struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
+__isl_give isl_basic_set *isl_basic_map_deltas(__isl_take isl_basic_map *bmap)
 {
 	isl_space *target_space;
 	struct isl_basic_set *bset;
