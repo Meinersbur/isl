@@ -2973,22 +2973,6 @@ struct isl_set *isl_set_grow(struct isl_set *set, int n)
 	return set_from_map(isl_map_grow(set_to_map(set), n));
 }
 
-struct isl_set *isl_set_dup(struct isl_set *set)
-{
-	int i;
-	struct isl_set *dup;
-
-	if (!set)
-		return NULL;
-
-	dup = isl_set_alloc_space(isl_space_copy(set->dim), set->n, set->flags);
-	if (!dup)
-		return NULL;
-	for (i = 0; i < set->n; ++i)
-		dup = isl_set_add_basic_set(dup, isl_basic_set_copy(set->p[i]));
-	return dup;
-}
-
 struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset)
 {
 	return isl_map_from_basic_map(bset);
