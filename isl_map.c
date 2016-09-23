@@ -2937,20 +2937,6 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_alloc(struct isl_ctx *ctx,
-		unsigned nparam, unsigned dim, int n, unsigned flags)
-{
-	struct isl_set *set;
-	isl_space *dims;
-
-	dims = isl_space_alloc(ctx, nparam, 0, dim);
-	if (!dims)
-		return NULL;
-
-	set = isl_set_alloc_space(dims, n, flags);
-	return set;
-}
-
 /* Make sure "map" has room for at least "n" more basic maps.
  */
 struct isl_map *isl_map_grow(struct isl_map *map, int n)
