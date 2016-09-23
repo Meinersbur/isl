@@ -8577,8 +8577,8 @@ isl_bool isl_basic_set_is_empty(__isl_keep isl_basic_set *bset)
 	return isl_basic_map_is_empty(bset_to_bmap(bset));
 }
 
-struct isl_map *isl_basic_map_union(
-	struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+__isl_give isl_map *isl_basic_map_union(__isl_take isl_basic_map *bmap1,
+	__isl_take isl_basic_map *bmap2)
 {
 	struct isl_map *map;
 	if (!bmap1 || !bmap2)
