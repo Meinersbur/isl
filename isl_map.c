@@ -13470,129 +13470,19 @@ __isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
 	return isl_basic_map_get_div(bset, pos);
 }
 
-/* Plug in "subs" for set dimension "pos" of "bset".
- *
- * Let i be the dimension to replace and let "subs" be of the form
- *
- *	f/d
- *
- * Any integer division with a non-zero coefficient for i,
- *
- *	floor((a i + g)/m)
- *
- * is replaced by
- *
- *	floor((a f + d g)/(m d))
- *
- * Constraints of the form
- *
- *	a i + g
- *
- * are replaced by
- *
- *	a f + d g
- *
- * We currently require that "subs" is an integral expression.
- * Handling rational expressions may require us to add stride constraints
- * as we do in isl_basic_set_preimage_multi_aff.
- */
-static __isl_give isl_basic_set *isl_basic_set_substitute(
-	__isl_take isl_basic_set *bset,
-	unsigned pos, __isl_keep isl_aff *subs)
-{
-	int i;
-	isl_int v;
-	isl_ctx *ctx;
-	isl_size n_div;
-
-	if (bset && isl_basic_set_plain_is_empty(bset))
-		return bset;
-
-	bset = isl_basic_set_cow(bset);
-	if (!bset || !subs)
-		goto error;
-
-	ctx = isl_basic_set_get_ctx(bset);
-	if (!isl_space_is_equal(bset->dim, subs->ls->dim))
-		isl_die(ctx, isl_error_invalid,
-			"spaces don't match", goto error);
-	n_div = isl_local_space_dim(subs->ls, isl_dim_div);
-	if (n_div < 0)
-		goto error;
-	if (n_div != 0)
-		isl_die(ctx, isl_error_unsupported,
-			"cannot handle divs yet", goto error);
-	if (!isl_int_is_one(subs->v->el[0]))
-		isl_die(ctx, isl_error_invalid,
-			"can only substitute integer expressions", goto error);
-
-	pos += isl_basic_set_offset(bset, isl_dim_set);
-
-	isl_int_init(v);
-
-	for (i = 0; i < bset->n_eq; ++i) {
-		if (isl_int_is_zero(bset->eq[i][pos]))
-			continue;
-		isl_int_set(v, bset->eq[i][pos]);
-		isl_int_set_si(bset->eq[i][pos], 0);
-		isl_seq_combine(bset->eq[i], subs->v->el[0], bset->eq[i],
-				v, subs->v->el + 1, subs->v->size - 1);
-	}
-
-	for (i = 0; i < bset->n_ineq; ++i) {
-		if (isl_int_is_zero(bset->ineq[i][pos]))
-			continue;
-		isl_int_set(v, bset->ineq[i][pos]);
-		isl_int_set_si(bset->ineq[i][pos], 0);
-		isl_seq_combine(bset->ineq[i], subs->v->el[0], bset->ineq[i],
-				v, subs->v->el + 1, subs->v->size - 1);
-	}
-
-	for (i = 0; i < bset->n_div; ++i) {
-		if (isl_int_is_zero(bset->div[i][1 + pos]))
-			continue;
-		isl_int_set(v, bset->div[i][1 + pos]);
-		isl_int_set_si(bset->div[i][1 + pos], 0);
-		isl_seq_combine(bset->div[i] + 1,
-				subs->v->el[0], bset->div[i] + 1,
-				v, subs->v->el + 1, subs->v->size - 1);
-		isl_int_mul(bset->div[i][0], bset->div[i][0], subs->v->el[0]);
-	}
-
-	isl_int_clear(v);
-
-	bset = isl_basic_set_simplify(bset);
-	return isl_basic_set_finalize(bset);
-error:
-	isl_basic_set_free(bset);
-	return NULL;
-}
-
 /* Plug in "subs" for set dimension "pos" of "set".
  */
 __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 	unsigned pos, __isl_keep isl_aff *subs)
 {
-	int i;
+	isl_multi_aff *ma;
 
 	if (set && isl_set_plain_is_empty(set))
 		return set;
 
-	set = isl_set_cow(set);
-	if (!set || !subs)
-		goto error;
-
-	for (i = set->n - 1; i >= 0; --i) {
-		set->p[i] = isl_basic_set_substitute(set->p[i], pos, subs);
-		set = set_from_map(remove_if_empty(set_to_map(set), i));
-		if (!set)
-			return NULL;
-	}
-
-	return set;
-error:
-	isl_set_free(set);
-	return NULL;
+	ma = isl_multi_aff_identity_on_domain_space(isl_set_get_space(set));
+	ma = isl_multi_aff_set_aff(ma, pos, isl_aff_copy(subs));
+	return isl_set_preimage_multi_aff(set, ma);
 }
 
 /* Check if the range of "ma" is compatible with the domain or range
