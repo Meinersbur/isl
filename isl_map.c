@@ -9016,7 +9016,7 @@ static isl_bool isl_basic_map_plain_has_fixed_var(
 	return isl_bool_false;
 }
 
-static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
+static isl_bool isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 	unsigned pos, isl_int *val)
 {
 	int i;
@@ -9025,9 +9025,9 @@ static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 	isl_bool fixed;
 
 	if (!map)
-		return -1;
+		return isl_bool_error;
 	if (map->n == 0)
-		return 0;
+		return isl_bool_false;
 	if (map->n == 1)
 		return isl_basic_map_plain_has_fixed_var(map->p[0], pos, val); 
 	isl_int_init(v);
