@@ -10636,7 +10636,7 @@ static isl_bool basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 	return lower && upper;
 }
 
-int isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
+isl_bool isl_basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos)
 {
 	return basic_map_dim_is_bounded(bmap, type, pos, 0, 0);
@@ -10663,7 +10663,7 @@ int isl_map_dim_is_bounded(__isl_keep isl_map *map,
 		return -1;
 
 	for (i = 0; i < map->n; ++i) {
-		int bounded;
+		isl_bool bounded;
 		bounded = isl_basic_map_dim_is_bounded(map->p[i], type, pos);
 		if (bounded < 0 || !bounded)
 			return bounded;
