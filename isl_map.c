@@ -11608,28 +11608,28 @@ static isl_bool basic_map_dim_is_bounded(__isl_keep isl_basic_map *bmap,
 {
 	int i;
 	isl_size n_div;
+	isl_size off;
 
 	if (isl_basic_map_check_range(bmap, type, pos, 1) < 0)
 		return isl_bool_error;
 
-	pos += isl_basic_map_offset(bmap, type);
-
+	off = isl_basic_map_var_offset(bmap, type);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	if (n_div < 0)
+	if (off < 0 || n_div < 0)
 		return isl_bool_error;
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
-		if (!isl_int_is_zero(bmap->div[i][1 + pos]))
+		if (!isl_int_is_zero(bmap->div[i][1 + 1 + off + pos]))
 			return isl_bool_true;
 	}
 
 	for (i = 0; i < bmap->n_eq; ++i)
-		if (!isl_int_is_zero(bmap->eq[i][pos]))
+		if (!isl_int_is_zero(bmap->eq[i][1 + off + pos]))
 			return isl_bool_true;
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
-		int sgn = isl_int_sgn(bmap->ineq[i][pos]);
+		int sgn = isl_int_sgn(bmap->ineq[i][1 + off + pos]);
 		if (sgn > 0)
 			lower = 1;
 		if (sgn < 0)
