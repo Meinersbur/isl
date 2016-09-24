@@ -10654,13 +10654,13 @@ isl_bool isl_basic_map_dim_has_upper_bound(__isl_keep isl_basic_map *bmap,
 	return basic_map_dim_is_bounded(bmap, type, pos, 1, 0);
 }
 
-int isl_map_dim_is_bounded(__isl_keep isl_map *map,
+isl_bool isl_map_dim_is_bounded(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos)
 {
 	int i;
 
 	if (!map)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < map->n; ++i) {
 		isl_bool bounded;
@@ -10669,7 +10669,7 @@ int isl_map_dim_is_bounded(__isl_keep isl_map *map,
 			return bounded;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Return 1 if the specified dim is involved in both an upper bound
