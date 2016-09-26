@@ -5431,6 +5431,7 @@ error:
  * existentially quantified variables, in which case they also appear
  * in "dom".  These need to be removed before creating the affine
  * expression because an affine expression cannot be defined in terms
+ * of existentially quantified variables without a known representation.
  * Since newly added integer divisions are inserted before these
  * existentially quantified variables, they are still in the final
  * positions and the corresponding final columns "M" are zero
