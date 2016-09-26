@@ -5363,6 +5363,27 @@ error:
 	sol->sol.error = 1;
 }
 
+/* Check that the final columns of "M", starting at "first", are zero.
+ */
+static isl_stat check_final_columns_are_zero(__isl_keep isl_mat *M,
+	unsigned first)
+{
+	int i;
+	unsigned rows, cols, n;
+
+	if (!M)
+		return isl_stat_error;
+	rows = isl_mat_rows(M);
+	cols = isl_mat_cols(M);
+	n = cols - first;
+	for (i = 0; i < rows; ++i)
+		if (isl_seq_first_non_zero(M->row[i] + first, n) != -1)
+			isl_die(isl_mat_get_ctx(M), isl_error_internal,
+				"final columns should be zero",
+				return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Set the affine expressions in "ma" according to the rows in "M", which
  * are defined over the local space "ls".
  * The matrix "M" may have extra (zero) columns beyond the number
@@ -5379,6 +5400,8 @@ static __isl_give isl_multi_aff *set_from_affine_matrix(
 		goto error;
 
 	dim = isl_local_space_dim(ls, isl_dim_all);
+	if (check_final_columns_are_zero(M, 1 + dim) < 0)
+		goto error;
 	for (i = 1; i < M->n_row; ++i) {
 		aff = isl_aff_alloc(isl_local_space_copy(ls));
 		if (aff) {
