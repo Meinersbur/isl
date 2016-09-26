@@ -444,10 +444,6 @@ isl_stat isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 	isl_stat (*fn)(__isl_take isl_basic_set *dom,
 		__isl_take isl_aff_list *list, void *user),
 	void *user);
-isl_stat isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
-	isl_stat (*fn)(__isl_take isl_basic_set *dom,
-		__isl_take isl_aff_list *list, void *user),
-	void *user);
 
 __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs);
