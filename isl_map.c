@@ -11270,12 +11270,12 @@ isl_bool isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
 	return isl_bool_true;
 }
 
-int isl_set_is_box(__isl_keep isl_set *set)
+isl_bool isl_set_is_box(__isl_keep isl_set *set)
 {
 	if (!set)
-		return -1;
+		return isl_bool_error;
 	if (set->n != 1)
-		return 0;
+		return isl_bool_false;
 
 	return isl_basic_set_is_box(set->p[0]);
 }
