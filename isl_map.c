@@ -7024,9 +7024,9 @@ static __isl_give isl_pw_aff *map_dim_opt(__isl_take isl_map *map, int pos,
 		return NULL;
 
 	if (map->n == 0) {
-		isl_space *dim = isl_map_get_space(map);
+		isl_space *space = isl_map_get_space(map);
 		isl_map_free(map);
-		return isl_pw_aff_empty(dim);
+		return isl_pw_aff_empty(space);
 	}
 
 	pwaff = basic_map_dim_opt(map->p[0], max);
