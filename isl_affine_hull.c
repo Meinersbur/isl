@@ -26,6 +26,7 @@
 
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
+#include <set_to_map.c>
 
 struct isl_basic_map *isl_basic_map_implicit_equalities(
 						struct isl_basic_map *bmap)
@@ -1186,7 +1187,7 @@ __isl_give isl_map *isl_map_detect_equalities(__isl_take isl_map *map)
 
 __isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set)
 {
-	return (isl_set *)isl_map_detect_equalities((isl_map *)set);
+	return (isl_set *)isl_map_detect_equalities(set_to_map(set));
 }
 
 /* Return the superset of "bmap" described by the equalities
@@ -1469,5 +1470,5 @@ error:
 
 struct isl_basic_set *isl_set_affine_hull(struct isl_set *set)
 {
-	return bset_from_bmap(isl_map_affine_hull((struct isl_map *) set));
+	return bset_from_bmap(isl_map_affine_hull(set_to_map(set)));
 }

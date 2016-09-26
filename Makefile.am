@@ -364,6 +364,7 @@ EXTRA_DIST = \
 	isl_pw_hash.c \
 	isl_pw_union_opt.c \
 	read_in_string_templ.c \
+	set_to_map.c \
 	isl_tab_lexopt_templ.c \
 	isl_union_macro.h \
 	isl_union_templ.c \
