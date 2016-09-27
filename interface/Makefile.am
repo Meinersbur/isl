@@ -22,6 +22,11 @@ extract_interface_LDADD = \
 
 CLEANFILES = isl.py
 
+EXTRA_DIST = \
+	all.h \
+	isl.py.top \
+	isl.py
+
 test: extract_interface
 	./extract_interface$(EXEEXT) $(includes) $(srcdir)/all.h
 
@@ -29,6 +34,3 @@ isl.py: extract_interface isl.py.top
 	(cat $(srcdir)/isl.py.top; \
 		./extract_interface$(EXEEXT) $(includes) $(srcdir)/all.h) \
 			> isl.py
-
-dist-hook: isl.py
-	cp isl.py $(distdir)/

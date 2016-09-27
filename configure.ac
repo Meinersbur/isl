@@ -276,9 +276,7 @@ AH_BOTTOM([#include <isl_config_post.h>])
 AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
-AM_COND_IF([HAVE_CLANG], [
-	AC_CONFIG_FILES(interface/Makefile)
-]);
+AC_CONFIG_FILES(interface/Makefile)
 AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
 AC_CONFIG_FILES([codegen_test.sh], [chmod +x codegen_test.sh])
 AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])

@@ -1,15 +1,8 @@
 if HAVE_CLANG
     MAYBE_INTERFACE = interface
 endif
-SUBDIRS = $(MAYBE_INTERFACE) doc
-
-# Do not traverse optional subdirectories with 'make dist'
-# These might not be configured, therefore would fail
-# In order to ensure that their content lands in the distribution, their content
-# is added to EXTRA_DIST
-# NOTE: The automake manual says there is no reason to not include all of 
-# SUBDIRS to DIST_SUBDIRS, but 'make distcheck' won't work otherwise.
-DIST_SUBDIRS = doc
+SUBDIRS = . $(MAYBE_INTERFACE) doc
+DIST_SUBDIRS = interface doc
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = nostdinc subdir-objects
@@ -196,6 +189,7 @@ libisl_la_SOURCES = \
 	isl_vertices_private.h \
 	isl_vertices.c \
 	isl_yaml.h
+
 libisl_la_LIBADD = @MP_LIBS@
 libisl_la_LDFLAGS = -version-info @versioninfo@ \
 	@MP_LDFLAGS@
@@ -393,12 +387,17 @@ EXTRA_DIST = \
 	imath/imrat.h \
 	interface/all.h \
 	interface/isl.py.top \
+	interface/extract_interface.cc \
+	interface/extract_interface.h \
+	interface/isl.py \
+	interface/Makefile.am \
+	interface/Makefile.in \
+	interface/python.cc \
+	interface/python.h \
 	test_inputs
 
 dist-hook:
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
-	(cd doc; make manual.pdf)
-	cp doc/manual.pdf $(distdir)/doc/
 
 pkgconfigdir=$(pkgconfig_libdir)
 pkgconfig_DATA = $(pkgconfig_libfile)
