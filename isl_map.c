@@ -4140,7 +4140,7 @@ static __isl_give isl_basic_map *insert_div_rows(__isl_take isl_basic_map *bmap,
 	if (!bmap)
 		return NULL;
 
-	row_size = 1 + isl_space_dim(bmap->dim, isl_dim_all) + bmap->extra;
+	row_size = isl_basic_map_offset(bmap, isl_dim_div) + bmap->extra;
 	old = bmap->block2.data;
 	bmap->block2 = isl_blk_extend(bmap->ctx, bmap->block2,
 					(bmap->extra + n) * (1 + row_size));
