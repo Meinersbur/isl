@@ -209,6 +209,18 @@ unsigned isl_map_n_param(const struct isl_map *map)
 	return map ? map->dim->nparam : 0;
 }
 
+/* Do "bmap1" and "bmap2" have the same parameters?
+ */
+static isl_bool isl_basic_map_has_equal_params(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
+{
+	isl_space *space1, *space2;
+
+	space1 = isl_basic_map_peek_space(bmap1);
+	space2 = isl_basic_map_peek_space(bmap2);
+	return isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
+}
+
 isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
 	__isl_keep isl_set *set)
 {
@@ -228,7 +240,7 @@ isl_bool isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
 	isl_bool m;
 	if (!bmap || !bset)
 		return isl_bool_error;
-	m = isl_space_match(bmap->dim, isl_dim_param, bset->dim, isl_dim_param);
+	m = isl_basic_map_has_equal_params(bmap, bset_to_bmap(bset));
 	if (m < 0 || !m)
 		return m;
 	return isl_space_tuple_is_equal(bmap->dim, isl_dim_in,
@@ -254,7 +266,7 @@ isl_bool isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
 	isl_bool m;
 	if (!bmap || !bset)
 		return isl_bool_error;
-	m = isl_space_match(bmap->dim, isl_dim_param, bset->dim, isl_dim_param);
+	m = isl_basic_map_has_equal_params(bmap, bset_to_bmap(bset));
 	if (m < 0 || !m)
 		return m;
 	return isl_space_tuple_is_equal(bmap->dim, isl_dim_out,
@@ -1242,11 +1254,8 @@ static isl_stat isl_basic_map_check_equal_params(
 	__isl_keep isl_basic_map *bmap1, __isl_keep isl_basic_map *bmap2)
 {
 	isl_bool match;
-	isl_space *space1, *space2;
 
-	space1 = isl_basic_map_peek_space(bmap1);
-	space2 = isl_basic_map_peek_space(bmap2);
-	match = isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
+	match = isl_basic_map_has_equal_params(bmap1, bmap2);
 	if (match < 0)
 		return isl_stat_error;
 	if (!match)
