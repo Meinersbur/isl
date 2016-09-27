@@ -152,7 +152,7 @@ unsigned isl_basic_set_n_param(__isl_keep isl_basic_set *bset)
 	return isl_basic_set_dim(bset, isl_dim_param);
 }
 
-unsigned isl_basic_set_total_dim(const struct isl_basic_set *bset)
+unsigned isl_basic_set_total_dim(__isl_keep const isl_basic_set *bset)
 {
 	if (!bset)
 		return 0;
