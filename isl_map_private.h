@@ -164,6 +164,9 @@ __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
 __isl_give isl_map *isl_map_reset(__isl_take isl_map *map,
 	enum isl_dim_type type);
 
+__isl_keep isl_space *isl_basic_map_peek_space(
+	__isl_keep const isl_basic_map *bmap);
+
 __isl_give isl_basic_set *isl_basic_set_reset_space(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
 __isl_give isl_basic_map *isl_basic_map_reset_space(

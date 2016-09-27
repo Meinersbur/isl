@@ -274,11 +274,17 @@ isl_ctx *isl_set_get_ctx(__isl_keep isl_set *set)
 	return set ? set->ctx : NULL;
 }
 
+/* Return the space of "bmap".
+ */
+__isl_keep isl_space *isl_basic_map_peek_space(
+	__isl_keep const isl_basic_map *bmap)
+{
+	return bmap ? bmap->dim : NULL;
+}
+
 __isl_give isl_space *isl_basic_map_get_space(__isl_keep isl_basic_map *bmap)
 {
-	if (!bmap)
-		return NULL;
-	return isl_space_copy(bmap->dim);
+	return isl_space_copy(isl_basic_map_peek_space(bmap));
 }
 
 __isl_give isl_space *isl_basic_set_get_space(__isl_keep isl_basic_set *bset)
