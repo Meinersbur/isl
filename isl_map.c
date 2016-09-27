@@ -239,12 +239,12 @@ int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set)
 					set->dim, isl_dim_set);
 }
 
-int isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
+isl_bool isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *bset)
 {
-	int m;
+	isl_bool m;
 	if (!bmap || !bset)
-		return -1;
+		return isl_bool_error;
 	m = isl_space_match(bmap->dim, isl_dim_param, bset->dim, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
@@ -3100,6 +3100,23 @@ error:
 	return NULL;
 }
 
+/* Check that the space of "bset" is the same as that of the range of "bmap".
+ */
+static isl_stat isl_basic_map_check_compatible_range(
+	__isl_keep isl_basic_map *bmap, __isl_keep isl_basic_set *bset)
+{
+	isl_bool ok;
+
+	ok = isl_basic_map_compatible_range(bmap, bset);
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"incompatible spaces", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 struct isl_basic_map *isl_basic_map_intersect_range(
 		struct isl_basic_map *bmap, struct isl_basic_set *bset)
 {
@@ -3111,9 +3128,9 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 	isl_assert(bset->ctx, isl_space_match(bmap->dim, isl_dim_param,
 					bset->dim, isl_dim_param), goto error);
 
-	if (isl_space_dim(bset->dim, isl_dim_set) != 0)
-		isl_assert(bset->ctx,
-		    isl_basic_map_compatible_range(bmap, bset), goto error);
+	if (isl_space_dim(bset->dim, isl_dim_set) != 0 &&
+	    isl_basic_map_check_compatible_range(bmap, bset) < 0)
+		goto error;
 
 	if (isl_basic_set_plain_is_universe(bset)) {
 		isl_basic_set_free(bset);
