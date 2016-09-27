@@ -5287,7 +5287,7 @@ __isl_give isl_basic_map *isl_basic_map_overlying_set(
 {
 	struct isl_basic_map *bmap;
 	struct isl_ctx *ctx;
-	unsigned total;
+	unsigned dim, total;
 	int i;
 
 	if (!bset || !like)
@@ -5296,8 +5296,8 @@ __isl_give isl_basic_map *isl_basic_map_overlying_set(
 	if (isl_basic_set_check_no_params(bset) < 0 ||
 	    isl_basic_set_check_no_locals(bset) < 0)
 		goto error;
-	isl_assert(ctx, bset->dim->n_out == isl_basic_map_total_dim(like),
-			goto error);
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	isl_assert(ctx, dim == isl_basic_map_total_dim(like), goto error);
 	if (like->n_div == 0) {
 		isl_space *space = isl_basic_map_get_space(like);
 		isl_basic_map_free(like);
@@ -5306,7 +5306,7 @@ __isl_give isl_basic_map *isl_basic_map_overlying_set(
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		goto error;
-	total = bset->dim->n_out + bset->extra;
+	total = dim + bset->extra;
 	bmap = bset_to_bmap(bset);
 	isl_space_free(bmap->dim);
 	bmap->dim = isl_space_copy(like->dim);
