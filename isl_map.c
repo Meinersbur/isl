@@ -126,10 +126,10 @@ unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
 {
 	isl_space *space;
 
-	if (!bmap)
+	space = isl_basic_map_peek_space(bmap);
+	if (!space)
 		return 0;
 
-	space = bmap->dim;
 	switch (type) {
 	case isl_dim_cst:	return 0;
 	case isl_dim_param:
