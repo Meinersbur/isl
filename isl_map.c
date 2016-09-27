@@ -4094,6 +4094,7 @@ error:
 static __isl_give isl_basic_map *move_last(__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	isl_space *space;
 	struct isl_dim_map *dim_map;
 	struct isl_basic_map *res;
 	enum isl_dim_type t;
@@ -4109,19 +4110,20 @@ static __isl_give isl_basic_map *move_last(__isl_take isl_basic_map *bmap,
 	dim_map = isl_dim_map_alloc(bmap->ctx, total);
 
 	off = 0;
+	space = isl_basic_map_peek_space(bmap);
 	for (t = isl_dim_param; t <= isl_dim_out; ++t) {
-		unsigned size = isl_space_dim(bmap->dim, t);
+		unsigned size = isl_space_dim(space, t);
 		if (t == type) {
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					    0, first, off);
 			off += first;
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					    first, n, total - bmap->n_div - n);
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					    first + n, size - (first + n), off);
 			off += size - (first + n);
 		} else {
-			isl_dim_map_dim(dim_map, bmap->dim, t, off);
+			isl_dim_map_dim(dim_map, space, t, off);
 			off += size;
 		}
 	}
