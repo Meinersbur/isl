@@ -3497,17 +3497,20 @@ __isl_give isl_basic_map *isl_basic_map_intersect(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
 	struct isl_vec *sample = NULL;
+	isl_space *space1, *space2;
 
 	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-	if (isl_space_dim(bmap1->dim, isl_dim_all) ==
-				isl_space_dim(bmap1->dim, isl_dim_param) &&
-	    isl_space_dim(bmap2->dim, isl_dim_all) !=
-				isl_space_dim(bmap2->dim, isl_dim_param))
+	space1 = isl_basic_map_peek_space(bmap1);
+	space2 = isl_basic_map_peek_space(bmap2);
+	if (isl_space_dim(space1, isl_dim_all) ==
+				isl_space_dim(space1, isl_dim_param) &&
+	    isl_space_dim(space2, isl_dim_all) !=
+				isl_space_dim(space2, isl_dim_param))
 		return isl_basic_map_intersect(bmap2, bmap1);
 
-	if (isl_space_dim(bmap2->dim, isl_dim_all) !=
-					isl_space_dim(bmap2->dim, isl_dim_param))
+	if (isl_space_dim(space2, isl_dim_all) !=
+					isl_space_dim(space2, isl_dim_param))
 		isl_assert(bmap1->ctx,
 			    isl_space_is_equal(bmap1->dim, bmap2->dim), goto error);
 
