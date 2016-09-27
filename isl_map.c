@@ -5316,10 +5316,10 @@ struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 	return isl_basic_map_reset_space(bmap, space);
 }
 
-int isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	return isl_space_may_be_set(bmap->dim);
 }
 
