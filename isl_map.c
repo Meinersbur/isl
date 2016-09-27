@@ -125,7 +125,7 @@ unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 	}
 }
 
-unsigned isl_basic_set_offset(struct isl_basic_set *bset,
+unsigned isl_basic_set_offset(__isl_keep isl_basic_set *bset,
 					enum isl_dim_type type)
 {
 	return isl_basic_map_offset(bset, type);
