@@ -2078,15 +2078,16 @@ error:
 	return NULL;
 }
 
-int isl_space_is_named_or_nested(__isl_keep isl_space *dim, enum isl_dim_type type)
+int isl_space_is_named_or_nested(__isl_keep isl_space *space,
+	enum isl_dim_type type)
 {
 	if (type != isl_dim_in && type != isl_dim_out)
 		return 0;
-	if (!dim)
+	if (!space)
 		return -1;
-	if (dim->tuple_id[type - isl_dim_in])
+	if (space->tuple_id[type - isl_dim_in])
 		return 1;
-	if (dim->nested[type - isl_dim_in])
+	if (space->nested[type - isl_dim_in])
 		return 1;
 	return 0;
 }
