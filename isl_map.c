@@ -3425,7 +3425,7 @@ __isl_give isl_basic_map *isl_basic_map_intersect_range(
 	if (isl_basic_map_check_equal_params(bmap, bset_to_bmap(bset)) < 0)
 		goto error;
 
-	if (isl_space_dim(bset->dim, isl_dim_set) != 0 &&
+	if (isl_basic_set_dim(bset, isl_dim_set) != 0 &&
 	    isl_basic_map_check_compatible_range(bmap, bset) < 0)
 		goto error;
 
