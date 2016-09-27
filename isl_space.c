@@ -2092,20 +2092,20 @@ isl_bool isl_space_is_named_or_nested(__isl_keep isl_space *space,
 	return isl_bool_false;
 }
 
-int isl_space_may_be_set(__isl_keep isl_space *space)
+isl_bool isl_space_may_be_set(__isl_keep isl_space *space)
 {
 	isl_bool nested;
 
 	if (!space)
-		return -1;
+		return isl_bool_error;
 	if (isl_space_is_set(space))
-		return 1;
+		return isl_bool_true;
 	if (isl_space_dim(space, isl_dim_in) != 0)
-		return 0;
+		return isl_bool_false;
 	nested = isl_space_is_named_or_nested(space, isl_dim_in);
 	if (nested < 0 || nested)
 		return isl_bool_not(nested);
-	return 1;
+	return isl_bool_true;
 }
 
 __isl_give isl_space *isl_space_reset(__isl_take isl_space *dim,
