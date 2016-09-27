@@ -191,8 +191,8 @@ int isl_map_may_be_set(__isl_keep isl_map *map);
 int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set);
 isl_bool isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *bset);
-int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
-		struct isl_basic_set *bset);
+int isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_basic_set *bset);
 
 struct isl_basic_map *isl_basic_map_extend_space(struct isl_basic_map *base,
 		__isl_take isl_space *dim, unsigned extra,

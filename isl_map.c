@@ -239,8 +239,8 @@ int isl_map_compatible_range(__isl_keep isl_map *map, __isl_keep isl_set *set)
 					set->dim, isl_dim_set);
 }
 
-int isl_basic_map_compatible_range(struct isl_basic_map *bmap,
-		struct isl_basic_set *bset)
+int isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_basic_set *bset)
 {
 	int m;
 	if (!bmap || !bset)
