@@ -7014,7 +7014,7 @@ static __isl_give isl_basic_set *basic_set_append_equalities(
 	if (!bset)
 		goto error;
 
-	len = 1 + isl_space_dim(bset->dim, isl_dim_all) + bset->extra;
+	len = isl_basic_set_offset(bset, isl_dim_div) + bset->extra;
 	for (i = 0; i < eq->n_row; ++i) {
 		k = isl_basic_set_alloc_equality(bset);
 		if (k < 0)
