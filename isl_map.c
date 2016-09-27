@@ -1818,37 +1818,37 @@ struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
 }
 
 __isl_give isl_basic_map *isl_basic_map_extend_space(
-	__isl_take isl_basic_map *base, __isl_take isl_space *dim,
+	__isl_take isl_basic_map *base, __isl_take isl_space *space,
 	unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *ext;
 	unsigned flags;
 	int dims_ok;
 
-	if (!dim)
+	if (!space)
 		goto error;
 
 	if (!base)
 		goto error;
 
-	dims_ok = isl_space_is_equal(base->dim, dim) &&
+	dims_ok = isl_space_is_equal(base->dim, space) &&
 		  base->extra >= base->n_div + extra;
 
 	if (dims_ok && room_for_con(base, n_eq + n_ineq) &&
 		       room_for_ineq(base, n_ineq)) {
-		isl_space_free(dim);
+		isl_space_free(space);
 		return base;
 	}
 
-	isl_assert(base->ctx, base->dim->nparam <= dim->nparam, goto error);
-	isl_assert(base->ctx, base->dim->n_in <= dim->n_in, goto error);
-	isl_assert(base->ctx, base->dim->n_out <= dim->n_out, goto error);
+	isl_assert(base->ctx, base->dim->nparam <= space->nparam, goto error);
+	isl_assert(base->ctx, base->dim->n_in <= space->n_in, goto error);
+	isl_assert(base->ctx, base->dim->n_out <= space->n_out, goto error);
 	extra += base->extra;
 	n_eq += base->n_eq;
 	n_ineq += base->n_ineq;
 
-	ext = isl_basic_map_alloc_space(dim, extra, n_eq, n_ineq);
-	dim = NULL;
+	ext = isl_basic_map_alloc_space(space, extra, n_eq, n_ineq);
+	space = NULL;
 	if (!ext)
 		goto error;
 
@@ -1864,7 +1864,7 @@ __isl_give isl_basic_map *isl_basic_map_extend_space(
 	return ext;
 
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_basic_map_free(base);
 	return NULL;
 }

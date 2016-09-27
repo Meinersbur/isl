@@ -195,7 +195,7 @@ isl_bool isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *bset);
 
 __isl_give isl_basic_map *isl_basic_map_extend_space(
-	__isl_take isl_basic_map *base, __isl_take isl_space *dim,
+	__isl_take isl_basic_map *base, __isl_take isl_space *space,
 	unsigned extra, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_set *isl_basic_set_extend_space(
 	__isl_take isl_basic_set *base,
