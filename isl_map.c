@@ -8474,6 +8474,23 @@ isl_bool isl_basic_map_is_transformation(__isl_keep isl_basic_map *bmap)
 	return isl_space_tuple_is_equal(space, isl_dim_in, space, isl_dim_out);
 }
 
+/* Check that "bmap" is a transformation, i.e.,
+ * that it relates elements from the same space.
+ */
+static isl_stat isl_basic_map_check_transformation(
+	__isl_keep isl_basic_map *bmap)
+{
+	isl_bool equal;
+
+	equal = isl_basic_map_is_transformation(bmap);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"domain and range don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /*
  * returns range - domain
  */
@@ -8486,10 +8503,8 @@ __isl_give isl_basic_set *isl_basic_map_deltas(__isl_take isl_basic_map *bmap)
 	isl_size total;
 	int i;
 
-	if (!bmap)
-		goto error;
-	isl_assert(bmap->ctx, isl_basic_map_is_transformation(bmap),
-		   goto error);
+	if (isl_basic_map_check_transformation(bmap) < 0)
+		return isl_basic_map_free(bmap);
 	dim = isl_basic_map_dim(bmap, isl_dim_in);
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	if (dim < 0 || nparam < 0)
@@ -8580,9 +8595,8 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	isl_size nparam, n;
 	isl_size total;
 
-	if (!isl_basic_map_is_transformation(bmap))
-		isl_die(bmap->ctx, isl_error_invalid,
-			"domain and range don't match", goto error);
+	if (isl_basic_map_check_transformation(bmap) < 0)
+		return isl_basic_map_free(bmap);
 
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n = isl_basic_map_dim(bmap, isl_dim_in);
