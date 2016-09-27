@@ -2078,30 +2078,33 @@ error:
 	return NULL;
 }
 
-int isl_space_is_named_or_nested(__isl_keep isl_space *space,
+isl_bool isl_space_is_named_or_nested(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
 	if (type != isl_dim_in && type != isl_dim_out)
-		return 0;
+		return isl_bool_false;
 	if (!space)
-		return -1;
+		return isl_bool_error;
 	if (space->tuple_id[type - isl_dim_in])
-		return 1;
+		return isl_bool_true;
 	if (space->nested[type - isl_dim_in])
-		return 1;
-	return 0;
+		return isl_bool_true;
+	return isl_bool_false;
 }
 
 int isl_space_may_be_set(__isl_keep isl_space *space)
 {
+	isl_bool nested;
+
 	if (!space)
 		return -1;
 	if (isl_space_is_set(space))
 		return 1;
 	if (isl_space_dim(space, isl_dim_in) != 0)
 		return 0;
-	if (isl_space_is_named_or_nested(space, isl_dim_in))
-		return 0;
+	nested = isl_space_is_named_or_nested(space, isl_dim_in);
+	if (nested < 0 || nested)
+		return isl_bool_not(nested);
 	return 1;
 }
 
