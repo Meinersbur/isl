@@ -9895,6 +9895,7 @@ __isl_give isl_basic_set *isl_basic_set_flat_product(
 __isl_give isl_basic_map *isl_basic_map_domain_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
+	isl_space *space1, *space2;
 	isl_space *space_result = NULL;
 	isl_basic_map *bmap;
 	unsigned in1, in2, out, nparam, total, pos;
@@ -9903,8 +9904,9 @@ __isl_give isl_basic_map *isl_basic_map_domain_product(
 	if (!bmap1 || !bmap2)
 		goto error;
 
-	space_result = isl_space_domain_product(isl_space_copy(bmap1->dim),
-						isl_space_copy(bmap2->dim));
+	space1 = isl_basic_map_get_space(bmap1);
+	space2 = isl_basic_map_get_space(bmap2);
+	space_result = isl_space_domain_product(space1, space2);
 
 	in1 = isl_basic_map_dim(bmap1, isl_dim_in);
 	in2 = isl_basic_map_dim(bmap2, isl_dim_in);
