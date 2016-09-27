@@ -1765,9 +1765,9 @@ struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
 						bset_to_bmap(bset2), 0, pos));
 }
 
-struct isl_basic_map *isl_basic_map_extend_space(struct isl_basic_map *base,
-		__isl_take isl_space *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
+__isl_give isl_basic_map *isl_basic_map_extend_space(
+	__isl_take isl_basic_map *base, __isl_take isl_space *dim,
+	unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *ext;
 	unsigned flags;
