@@ -416,7 +416,7 @@ isl_bool isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 isl_bool isl_set_contains_point(__isl_keep isl_set *set,
 	__isl_keep isl_point *point);
 
-int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
+isl_stat isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 	unsigned first, unsigned n, int *signs);
 int isl_set_foreach_orthant(__isl_keep isl_set *set,
 	int (*fn)(__isl_take isl_set *orthant, int *signs, void *user),

@@ -10770,7 +10770,7 @@ isl_bool isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
  *	-1 means that the variable is non-positive
  *	0 means the variable attains both positive and negative values.
  */
-int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
+isl_stat isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 	unsigned first, unsigned n, int *signs)
 {
 	isl_vec *bound = NULL;
@@ -10779,7 +10779,7 @@ int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 	int i;
 
 	if (!bset || !signs)
-		return -1;
+		return isl_stat_error;
 
 	bound = isl_vec_alloc(bset->ctx, 1 + isl_basic_set_total_dim(bset));
 	tab = isl_tab_from_basic_set(bset, 0);
@@ -10819,11 +10819,11 @@ int isl_basic_set_vars_get_sign(__isl_keep isl_basic_set *bset,
 
 	isl_tab_free(tab);
 	isl_vec_free(bound);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_tab_free(tab);
 	isl_vec_free(bound);
-	return -1;
+	return isl_stat_error;
 }
 
 int isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
