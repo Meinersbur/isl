@@ -1207,7 +1207,7 @@ static void dup_constraints(
 	ISL_F_SET(dst, ISL_BASIC_SET_FINAL);
 }
 
-struct isl_basic_map *isl_basic_map_dup(struct isl_basic_map *bmap)
+__isl_give isl_basic_map *isl_basic_map_dup(__isl_keep isl_basic_map *bmap)
 {
 	struct isl_basic_map *dup;
 
