@@ -283,9 +283,7 @@ __isl_give isl_space *isl_basic_map_get_space(__isl_keep isl_basic_map *bmap)
 
 __isl_give isl_space *isl_basic_set_get_space(__isl_keep isl_basic_set *bset)
 {
-	if (!bset)
-		return NULL;
-	return isl_space_copy(bset->dim);
+	return isl_basic_map_get_space(bset_to_bmap(bset));
 }
 
 /* Extract the divs in "bmap" as a matrix.
