@@ -5306,20 +5306,26 @@ int isl_basic_map_may_be_set(__isl_keep isl_basic_map *bmap)
  * Users should never call this function.  Outside of isl,
  * the type should indicate whether something is a set or a map.
  */
-int isl_basic_map_is_set(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_is_set(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_bool_error;
 	return isl_space_is_set(bmap->dim);
 }
 
 struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
 {
-	if (!bmap)
-		return NULL;
-	if (isl_basic_map_is_set(bmap))
+	isl_bool is_set;
+
+	is_set = isl_basic_map_is_set(bmap);
+	if (is_set < 0)
+		goto error;
+	if (is_set)
 		return bmap;
 	return isl_basic_map_domain(isl_basic_map_reverse(bmap));
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 __isl_give isl_basic_map *isl_basic_map_domain_map(
