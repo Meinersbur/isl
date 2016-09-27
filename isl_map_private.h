@@ -440,8 +440,6 @@ isl_bool isl_basic_set_eq_is_stride(__isl_keep isl_basic_set *bset, int i);
 
 isl_bool isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 	isl_int *constraint, unsigned div);
-isl_bool isl_basic_set_is_div_constraint(__isl_keep isl_basic_set *bset,
-	isl_int *constraint, unsigned div);
 
 __isl_give isl_basic_set *isl_basic_set_from_local_space(
 	__isl_take isl_local_space *ls);
