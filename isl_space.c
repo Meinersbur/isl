@@ -2092,15 +2092,15 @@ int isl_space_is_named_or_nested(__isl_keep isl_space *space,
 	return 0;
 }
 
-int isl_space_may_be_set(__isl_keep isl_space *dim)
+int isl_space_may_be_set(__isl_keep isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return -1;
-	if (isl_space_is_set(dim))
+	if (isl_space_is_set(space))
 		return 1;
-	if (isl_space_dim(dim, isl_dim_in) != 0)
+	if (isl_space_dim(space, isl_dim_in) != 0)
 		return 0;
-	if (isl_space_is_named_or_nested(dim, isl_dim_in))
+	if (isl_space_is_named_or_nested(space, isl_dim_in))
 		return 0;
 	return 1;
 }

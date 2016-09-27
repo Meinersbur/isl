@@ -41,7 +41,7 @@ __isl_give isl_space *isl_space_as_set_space(__isl_take isl_space *dim);
 
 unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type);
 
-int isl_space_may_be_set(__isl_keep isl_space *dim);
+int isl_space_may_be_set(__isl_keep isl_space *space);
 int isl_space_is_named_or_nested(__isl_keep isl_space *space,
 	enum isl_dim_type type);
 int isl_space_has_named_params(__isl_keep isl_space *dim);
