@@ -3416,8 +3416,8 @@ void isl_map_print_internal(struct isl_map *map, FILE *out, int indent)
 	}
 }
 
-struct isl_basic_map *isl_basic_map_intersect_domain(
-		struct isl_basic_map *bmap, struct isl_basic_set *bset)
+__isl_give isl_basic_map *isl_basic_map_intersect_domain(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap_domain;
 
