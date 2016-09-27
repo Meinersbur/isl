@@ -2150,12 +2150,12 @@ __isl_give isl_basic_map *isl_basic_map_swap_div(__isl_take isl_basic_map *bmap,
 	int a, int b)
 {
 	int i;
-	unsigned off;
+	int off;
 
-	if (!bmap)
-		return NULL;
+	off = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (off < 0)
+		return isl_basic_map_free(bmap);
 
-	off = isl_space_dim(bmap->dim, isl_dim_all);
 	swap_div(bmap, a, b);
 
 	for (i = 0; i < bmap->n_eq; ++i)
