@@ -947,10 +947,10 @@ int isl_set_has_rational(__isl_keep isl_set *set)
 
 /* Is this basic set a parameter domain?
  */
-int isl_basic_set_is_params(__isl_keep isl_basic_set *bset)
+isl_bool isl_basic_set_is_params(__isl_keep isl_basic_set *bset)
 {
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 	return isl_space_is_params(bset->dim);
 }
 
@@ -5225,10 +5225,14 @@ __isl_give isl_set *isl_set_reset_space(__isl_take isl_set *set,
  */
 __isl_give isl_basic_set *isl_basic_set_params(__isl_take isl_basic_set *bset)
 {
+	isl_bool is_params;
 	isl_space *space;
 	unsigned n;
 
-	if (isl_basic_set_is_params(bset))
+	is_params = isl_basic_set_is_params(bset);
+	if (is_params < 0)
+		return isl_basic_set_free(bset);
+	if (is_params)
 		return bset;
 
 	n = isl_basic_set_dim(bset, isl_dim_set);
