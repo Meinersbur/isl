@@ -12545,6 +12545,7 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 {
 	isl_ctx *ctx;
 	isl_bool equal_params;
+	isl_space *bmap_space;
 
 	if (!bmap || !model)
 		goto error;
@@ -12555,16 +12556,17 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 			"model has unnamed parameters", goto error);
 	if (isl_basic_map_check_named_params(bmap) < 0)
 		goto error;
-	equal_params = isl_space_has_equal_params(bmap->dim, model);
+	bmap_space = isl_basic_map_peek_space(bmap);
+	equal_params = isl_space_has_equal_params(bmap_space, model);
 	if (equal_params < 0)
 		goto error;
 	if (!equal_params) {
 		isl_reordering *exp;
 		struct isl_dim_map *dim_map;
 
-		exp = isl_parameter_alignment_reordering(bmap->dim, model);
+		exp = isl_parameter_alignment_reordering(bmap_space, model);
 		exp = isl_reordering_extend_space(exp,
-					isl_basic_map_get_space(bmap));
+					isl_space_copy(bmap_space));
 		dim_map = isl_dim_map_from_reordering(exp);
 		bmap = isl_basic_map_realign(bmap,
 				    isl_reordering_get_space(exp),
