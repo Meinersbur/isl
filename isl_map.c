@@ -2421,10 +2421,12 @@ __isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	__isl_take isl_basic_map *bmap)
 {
-	if (!bmap)
-		return NULL;
-	bmap = isl_basic_map_eliminate_vars(bmap,
-			    isl_space_dim(bmap->dim, isl_dim_all), bmap->n_div);
+	int v_div;
+
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
+	bmap = isl_basic_map_eliminate_vars(bmap, v_div, bmap->n_div);
 	if (!bmap)
 		return NULL;
 	bmap->n_div = 0;
