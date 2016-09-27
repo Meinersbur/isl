@@ -5405,7 +5405,7 @@ __isl_give isl_basic_map *isl_basic_map_overlying_set(
 	total = dim + bset->extra;
 	bmap = bset_to_bmap(bset);
 	isl_space_free(bmap->dim);
-	bmap->dim = isl_space_copy(like->dim);
+	bmap->dim = isl_basic_map_get_space(like);
 	if (!bmap->dim)
 		goto error;
 	bmap->n_div = like->n_div;
