@@ -3461,8 +3461,8 @@ static isl_stat isl_basic_map_check_compatible_range(
 	return isl_stat_ok;
 }
 
-struct isl_basic_map *isl_basic_map_intersect_range(
-		struct isl_basic_map *bmap, struct isl_basic_set *bset)
+__isl_give isl_basic_map *isl_basic_map_intersect_range(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *bset)
 {
 	struct isl_basic_map *bmap_range;
 
