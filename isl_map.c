@@ -3930,6 +3930,7 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	isl_space *space;
 	struct isl_dim_map *dim_map;
 	struct isl_basic_map *res;
 	enum isl_dim_type t;
@@ -3972,27 +3973,28 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	dim_map = isl_dim_map_alloc(bmap->ctx, total);
 
 	off = 0;
+	space = isl_basic_map_peek_space(bmap);
 	for (t = isl_dim_param; t <= isl_dim_out; ++t) {
-		unsigned size = isl_space_dim(bmap->dim, t);
+		unsigned size = isl_space_dim(space, t);
 		if (t == dst_type) {
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					    0, dst_pos, off);
 			off += dst_pos;
-			isl_dim_map_dim_range(dim_map, bmap->dim, src_type,
+			isl_dim_map_dim_range(dim_map, space, src_type,
 					    src_pos, n, off);
 			off += n;
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					    dst_pos, size - dst_pos, off);
 			off += size - dst_pos;
 		} else if (t == src_type) {
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					    0, src_pos, off);
 			off += src_pos;
-			isl_dim_map_dim_range(dim_map, bmap->dim, t,
+			isl_dim_map_dim_range(dim_map, space, t,
 					src_pos + n, size - src_pos - n, off);
 			off += size - src_pos - n;
 		} else {
-			isl_dim_map_dim(dim_map, bmap->dim, t, off);
+			isl_dim_map_dim(dim_map, space, t, off);
 			off += size;
 		}
 	}
