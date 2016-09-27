@@ -4102,8 +4102,8 @@ static __isl_give isl_basic_map *move_last(__isl_take isl_basic_map *bmap,
 
 	if (!bmap)
 		return NULL;
-	if (pos(bmap->dim, type) + first + n ==
-				1 + isl_space_dim(bmap->dim, isl_dim_all))
+	if (isl_basic_map_offset(bmap, type) + first + n ==
+				isl_basic_map_offset(bmap, isl_dim_div))
 		return bmap;
 
 	total = isl_basic_map_total_dim(bmap);
