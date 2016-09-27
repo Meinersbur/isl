@@ -5061,15 +5061,15 @@ __isl_give isl_basic_map *isl_basic_map_reset_space(
 	__isl_take isl_basic_map *bmap, __isl_take isl_space *space)
 {
 	isl_bool equal;
+	isl_space *bmap_space;
 
-	if (!bmap)
-		goto error;
-	equal = isl_space_is_equal(bmap->dim, space);
+	bmap_space = isl_basic_map_peek_space(bmap);
+	equal = isl_space_is_equal(bmap_space, space);
 	if (equal >= 0 && equal)
-		equal = isl_space_match(bmap->dim, isl_dim_in,
+		equal = isl_space_match(bmap_space, isl_dim_in,
 					space, isl_dim_in);
 	if (equal >= 0 && equal)
-		equal = isl_space_match(bmap->dim, isl_dim_out,
+		equal = isl_space_match(bmap_space, isl_dim_out,
 					space, isl_dim_out);
 	if (equal < 0)
 		goto error;
