@@ -4399,8 +4399,8 @@ struct isl_basic_map *isl_basic_map_apply_range(
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
 			"spaces don't match", goto error);
 
-	space_result = isl_space_join(isl_space_copy(bmap1->dim),
-				  isl_space_copy(bmap2->dim));
+	space_result = isl_space_join(isl_basic_map_get_space(bmap1),
+				  isl_basic_map_get_space(bmap2));
 
 	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap2, isl_dim_out);
