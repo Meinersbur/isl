@@ -289,6 +289,13 @@ __isl_keep isl_space *isl_basic_map_peek_space(
 	return bmap ? bmap->dim : NULL;
 }
 
+/* Return the space of "bset".
+ */
+__isl_keep isl_space *isl_basic_set_peek_space(__isl_keep isl_basic_set *bset)
+{
+	return isl_basic_map_peek_space(bset_to_bmap(bset));
+}
+
 __isl_give isl_space *isl_basic_map_get_space(__isl_keep isl_basic_map *bmap)
 {
 	return isl_space_copy(isl_basic_map_peek_space(bmap));
