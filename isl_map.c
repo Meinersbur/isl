@@ -1235,6 +1235,26 @@ isl_stat isl_map_check_named_params(__isl_keep isl_map *map)
 	return isl_space_check_named_params(isl_map_peek_space(map));
 }
 
+/* Check that "bmap1" and "bmap2" have the same parameters,
+ * reporting an error if they do not.
+ */
+static isl_stat isl_basic_map_check_equal_params(
+	__isl_keep isl_basic_map *bmap1, __isl_keep isl_basic_map *bmap2)
+{
+	isl_bool match;
+	isl_space *space1, *space2;
+
+	space1 = isl_basic_map_peek_space(bmap1);
+	space2 = isl_basic_map_peek_space(bmap2);
+	match = isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
+	if (match < 0)
+		return isl_stat_error;
+	if (!match)
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"parameters don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 __isl_give isl_map *isl_map_align_params_map_map_and(
 	__isl_take isl_map *map1, __isl_take isl_map *map2,
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
@@ -3059,11 +3079,8 @@ struct isl_basic_map *isl_basic_map_intersect_domain(
 {
 	struct isl_basic_map *bmap_domain;
 
-	if (!bmap || !bset)
+	if (isl_basic_map_check_equal_params(bmap, bset_to_bmap(bset)) < 0)
 		goto error;
-
-	isl_assert(bset->ctx, isl_space_match(bmap->dim, isl_dim_param,
-					bset->dim, isl_dim_param), goto error);
 
 	if (isl_space_dim(bset->dim, isl_dim_set) != 0)
 		isl_assert(bset->ctx,
@@ -3107,11 +3124,8 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 {
 	struct isl_basic_map *bmap_range;
 
-	if (!bmap || !bset)
+	if (isl_basic_map_check_equal_params(bmap, bset_to_bmap(bset)) < 0)
 		goto error;
-
-	isl_assert(bset->ctx, isl_space_match(bmap->dim, isl_dim_param,
-					bset->dim, isl_dim_param), goto error);
 
 	if (isl_space_dim(bset->dim, isl_dim_set) != 0 &&
 	    isl_basic_map_check_compatible_range(bmap, bset) < 0)
@@ -3186,11 +3200,8 @@ struct isl_basic_map *isl_basic_map_intersect(
 {
 	struct isl_vec *sample = NULL;
 
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-
-	isl_assert(bmap1->ctx, isl_space_match(bmap1->dim, isl_dim_param,
-				     bmap2->dim, isl_dim_param), goto error);
 	if (isl_space_dim(bmap1->dim, isl_dim_all) ==
 				isl_space_dim(bmap1->dim, isl_dim_param) &&
 	    isl_space_dim(bmap2->dim, isl_dim_all) !=
@@ -4044,12 +4055,8 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	unsigned n_in, n_out, n, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
 
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-	if (!isl_space_match(bmap1->dim, isl_dim_param,
-				bmap2->dim, isl_dim_param))
-		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
-			"parameters don't match", goto error);
 	if (!isl_space_tuple_is_equal(bmap1->dim, isl_dim_out,
 				    bmap2->dim, isl_dim_in))
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
@@ -4111,13 +4118,8 @@ error:
 struct isl_basic_map *isl_basic_map_apply_domain(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-
-	if (!isl_space_match(bmap1->dim, isl_dim_param,
-				bmap2->dim, isl_dim_param))
-		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
-			"parameters don't match", goto error);
 	if (!isl_space_tuple_is_equal(bmap1->dim, isl_dim_in,
 					bmap2->dim, isl_dim_in))
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
@@ -9379,11 +9381,8 @@ struct isl_basic_map *isl_basic_map_product(
 	unsigned in1, in2, out1, out2, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
 
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-
-	isl_assert(bmap1->ctx, isl_space_match(bmap1->dim, isl_dim_param,
-				     bmap2->dim, isl_dim_param), goto error);
 	dim_result = isl_space_product(isl_space_copy(bmap1->dim),
 						   isl_space_copy(bmap2->dim));
 
@@ -9495,10 +9494,8 @@ __isl_give isl_basic_map *isl_basic_map_range_product(
 	if (!bmap1 || !bmap2 || rational < 0)
 		goto error;
 
-	if (!isl_space_match(bmap1->dim, isl_dim_param,
-			    bmap2->dim, isl_dim_param))
-		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
-			"parameters don't match", goto error);
+	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
+		goto error;
 
 	dim_result = isl_space_range_product(isl_space_copy(bmap1->dim),
 					   isl_space_copy(bmap2->dim));
