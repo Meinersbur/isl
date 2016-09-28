@@ -420,7 +420,6 @@ __isl_give isl_basic_map *isl_basic_map_mark_div_unknown(
 	__isl_take isl_basic_map *bmap, int div);
 isl_bool isl_basic_map_div_is_marked_unknown(__isl_keep isl_basic_map *bmap,
 	int div);
-isl_bool isl_basic_set_div_is_known(__isl_keep isl_basic_set *bset, int div);
 isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div);
 int isl_basic_set_first_unknown_div(__isl_keep isl_basic_set *bset);
 int isl_basic_map_first_unknown_div(__isl_keep isl_basic_map *bmap);

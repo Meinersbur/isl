@@ -2647,13 +2647,6 @@ isl_bool isl_basic_map_div_is_known(__isl_keep isl_basic_map *bmap, int div)
 	return isl_bool_true;
 }
 
-/* Does local variable "div" of "bset" have a complete explicit representation?
- */
-isl_bool isl_basic_set_div_is_known(__isl_keep isl_basic_set *bset, int div)
-{
-	return isl_basic_map_div_is_known(bset, div);
-}
-
 /* Remove all divs that are unknown or defined in terms of unknown divs.
  */
 __isl_give isl_basic_map *isl_basic_map_remove_unknown_divs(
