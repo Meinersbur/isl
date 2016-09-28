@@ -95,7 +95,8 @@ __isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *space);
 __isl_give isl_basic_set *isl_basic_set_universe(__isl_take isl_space *space);
-__isl_give isl_basic_set *isl_basic_set_nat_universe(__isl_take isl_space *dim);
+__isl_give isl_basic_set *isl_basic_set_nat_universe(
+	__isl_take isl_space *space);
 __isl_give isl_basic_set *isl_basic_set_positive_orthant(
 	__isl_take isl_space *space);
 void isl_basic_set_print_internal(__isl_keep isl_basic_set *bset,
