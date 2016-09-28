@@ -46,6 +46,7 @@
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
 #include <set_to_map.c>
+#include <set_from_map.c>
 
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
@@ -511,8 +512,8 @@ const char *isl_map_get_tuple_name(__isl_keep isl_map *map,
 __isl_give isl_set *isl_set_set_tuple_name(__isl_take isl_set *set,
 	const char *s)
 {
-	return (isl_set *)isl_map_set_tuple_name(set_to_map(set),
-						isl_dim_set, s);
+	return set_from_map(isl_map_set_tuple_name(set_to_map(set),
+						isl_dim_set, s));
 }
 
 __isl_give isl_map *isl_map_set_tuple_id(__isl_take isl_map *map,
@@ -690,7 +691,8 @@ __isl_give isl_basic_set *isl_basic_set_set_dim_name(
 __isl_give isl_set *isl_set_set_dim_name(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
-	return (isl_set *)isl_map_set_dim_name(set_to_map(set), type, pos, s);
+	return set_from_map(isl_map_set_dim_name(set_to_map(set),
+							type, pos, s));
 }
 
 isl_bool isl_basic_map_has_dim_id(__isl_keep isl_basic_map *bmap,
@@ -1963,7 +1965,7 @@ error:
 __isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_set *)isl_map_eliminate(set_to_map(set), type, first, n);
+	return set_from_map(isl_map_eliminate(set_to_map(set), type, first, n));
 }
 
 /* Eliminate the specified n dimensions starting at first from the
@@ -2329,8 +2331,8 @@ error:
 __isl_give isl_set *isl_set_remove_divs_involving_dims(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_set *)isl_map_remove_divs_involving_dims(set_to_map(set),
-							      type, first, n);
+	return set_from_map(isl_map_remove_divs_involving_dims(set_to_map(set),
+							      type, first, n));
 }
 
 /* Does the desciption of "bmap" depend on the specified dimensions?
@@ -2494,7 +2496,7 @@ error:
 
 __isl_give isl_set *isl_set_remove_unknown_divs(__isl_take isl_set *set)
 {
-	return (isl_set *)isl_map_remove_unknown_divs(set_to_map(set));
+	return set_from_map(isl_map_remove_unknown_divs(set_to_map(set)));
 }
 
 __isl_give isl_basic_set *isl_basic_set_remove_dims(
@@ -2535,7 +2537,8 @@ error:
 __isl_give isl_set *isl_set_remove_dims(__isl_take isl_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_set *)isl_map_remove_dims(set_to_map(bset), type, first, n);
+	return set_from_map(isl_map_remove_dims(set_to_map(bset),
+						type, first, n));
 }
 
 /* Project out n inputs starting at first using Fourier-Motzkin */
@@ -2767,7 +2770,7 @@ error:
  */
 struct isl_set *isl_set_grow(struct isl_set *set, int n)
 {
-	return (struct isl_set *)isl_map_grow(set_to_map(set), n);
+	return set_from_map(isl_map_grow(set_to_map(set), n));
 }
 
 struct isl_set *isl_set_dup(struct isl_set *set)
@@ -2805,8 +2808,8 @@ struct isl_map *isl_map_from_basic_map(struct isl_basic_map *bmap)
 __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 						__isl_take isl_basic_set *bset)
 {
-	return (struct isl_set *)isl_map_add_basic_map(set_to_map(set),
-						bset_to_bmap(bset));
+	return set_from_map(isl_map_add_basic_map(set_to_map(set),
+						bset_to_bmap(bset)));
 }
 
 __isl_null isl_set *isl_set_free(__isl_take isl_set *set)
@@ -3183,9 +3186,8 @@ __isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,
 
 struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
 {
-	return (struct isl_set *)
-		isl_map_intersect(set_to_map(set1),
-				  set_to_map(set2));
+	return set_from_map(isl_map_intersect(set_to_map(set1),
+					      set_to_map(set2)));
 }
 
 /* map_intersect_internal accepts intersections
@@ -3381,7 +3383,7 @@ __isl_give isl_set *isl_set_add_dims(__isl_take isl_set *set,
 	if (!set)
 		return NULL;
 	isl_assert(set->ctx, type != isl_dim_in, goto error);
-	return (isl_set *)isl_map_add_dims(set_to_map(set), type, n);
+	return set_from_map(isl_map_add_dims(set_to_map(set), type, n));
 error:
 	isl_set_free(set);
 	return NULL;
@@ -3495,8 +3497,8 @@ __isl_give isl_set *isl_set_move_dims(__isl_take isl_set *set,
 	if (!set)
 		return NULL;
 	isl_assert(set->ctx, dst_type != isl_dim_in, goto error);
-	return (isl_set *)isl_map_move_dims(set_to_map(set), dst_type, dst_pos,
-					src_type, src_pos, n);
+	return set_from_map(isl_map_move_dims(set_to_map(set),
+				    dst_type, dst_pos, src_type, src_pos, n));
 error:
 	isl_set_free(set);
 	return NULL;
@@ -3768,7 +3770,8 @@ error:
 __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_set *)isl_map_project_out(set_to_map(set), type, first, n);
+	return set_from_map(isl_map_project_out(set_to_map(set),
+						type, first, n));
 }
 
 /* Return a map that projects the elements in "set" onto their
@@ -4013,7 +4016,7 @@ error:
 __isl_give isl_set *isl_set_sum(__isl_take isl_set *set1,
 	__isl_take isl_set *set2)
 {
-	return (isl_set *)isl_map_sum(set_to_map(set1), set_to_map(set2));
+	return set_from_map(isl_map_sum(set_to_map(set1), set_to_map(set2)));
 }
 
 /* Given a basic map A -> f(A), construct A -> -f(A).
@@ -4071,7 +4074,7 @@ error:
 
 __isl_give isl_set *isl_set_neg(__isl_take isl_set *set)
 {
-	return (isl_set *)isl_map_neg(set_to_map(set));
+	return set_from_map(isl_map_neg(set_to_map(set)));
 }
 
 /* Given a basic map A -> f(A) and an integer d, construct a basic map
@@ -4893,7 +4896,7 @@ struct isl_set *isl_map_underlying_set(struct isl_map *map)
 	}
 	if (!map->dim)
 		goto error;
-	return (struct isl_set *)map;
+	return set_from_map(map);
 error:
 	isl_map_free(map);
 	return NULL;
@@ -4901,7 +4904,7 @@ error:
 
 struct isl_set *isl_set_to_underlying_set(struct isl_set *set)
 {
-	return (struct isl_set *)isl_map_underlying_set(set_to_map(set));
+	return set_from_map(isl_map_underlying_set(set_to_map(set)));
 }
 
 /* Replace the space of "bmap" by "space".
@@ -4980,7 +4983,7 @@ error:
 __isl_give isl_set *isl_set_reset_space(__isl_take isl_set *set,
 	__isl_take isl_space *dim)
 {
-	return (struct isl_set *) isl_map_reset_space(set_to_map(set), dim);
+	return set_from_map(isl_map_reset_space(set_to_map(set), dim));
 }
 
 /* Compute the parameter domain of the given basic set.
@@ -5203,13 +5206,13 @@ struct isl_set *isl_map_range(struct isl_map *map)
 	if (!map)
 		goto error;
 	if (isl_map_is_set(map))
-		return (isl_set *)map;
+		return set_from_map(map);
 
 	map = isl_map_cow(map);
 	if (!map)
 		goto error;
 
-	set = (struct isl_set *) map;
+	set = set_from_map(map);
 	set->dim = isl_space_range(set->dim);
 	if (!set->dim)
 		goto error;
@@ -5778,8 +5781,7 @@ error:
 __isl_give isl_set *isl_set_fix_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value)
 {
-	return (struct isl_set *)
-		isl_map_fix_si(set_to_map(set), type, pos, value);
+	return set_from_map(isl_map_fix_si(set_to_map(set), type, pos, value));
 }
 
 __isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
@@ -5807,7 +5809,7 @@ error:
 __isl_give isl_set *isl_set_fix(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, isl_int value)
 {
-	return (struct isl_set *)isl_map_fix(set_to_map(set), type, pos, value);
+	return set_from_map(isl_map_fix(set_to_map(set), type, pos, value));
 }
 
 /* Fix the value of the variable at position "pos" of type "type" of "map"
@@ -5860,8 +5862,8 @@ struct isl_map *isl_map_fix_input_si(struct isl_map *map,
 
 struct isl_set *isl_set_fix_dim_si(struct isl_set *set, unsigned dim, int value)
 {
-	return (struct isl_set *)
-		isl_map_fix_si(set_to_map(set), isl_dim_set, dim, value);
+	return set_from_map(isl_map_fix_si(set_to_map(set),
+						isl_dim_set, dim, value));
 }
 
 static __isl_give isl_basic_map *basic_map_bound_si(
@@ -5968,8 +5970,8 @@ __isl_give isl_map *isl_map_upper_bound_si(__isl_take isl_map *map,
 __isl_give isl_set *isl_set_lower_bound_si(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value)
 {
-	return (struct isl_set *)
-		isl_map_lower_bound_si(set_to_map(set), type, pos, value);
+	return set_from_map(isl_map_lower_bound_si(set_to_map(set),
+							type, pos, value));
 }
 
 __isl_give isl_set *isl_set_upper_bound_si(__isl_take isl_set *set,
@@ -6322,18 +6324,16 @@ __isl_give isl_set *isl_set_partial_lexmin(
 		__isl_take isl_set *set, __isl_take isl_set *dom,
 		__isl_give isl_set **empty)
 {
-	return (struct isl_set *)
-		isl_map_partial_lexmin(set_to_map(set),
-			dom, empty);
+	return set_from_map(isl_map_partial_lexmin(set_to_map(set),
+						    dom, empty));
 }
 
 __isl_give isl_set *isl_set_partial_lexmax(
 		__isl_take isl_set *set, __isl_take isl_set *dom,
 		__isl_give isl_set **empty)
 {
-	return (struct isl_set *)
-		isl_map_partial_lexmax(set_to_map(set),
-			dom, empty);
+	return set_from_map(isl_map_partial_lexmax(set_to_map(set),
+						    dom, empty));
 }
 
 /* Compute the lexicographic minimum (or maximum if "flags" includes
@@ -6352,12 +6352,12 @@ __isl_give isl_map *isl_basic_map_lexmax(__isl_take isl_basic_map *bmap)
 
 __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)
 {
-	return (isl_set *)isl_basic_map_lexmin(bset_to_bmap(bset));
+	return set_from_map(isl_basic_map_lexmin(bset_to_bmap(bset)));
 }
 
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset)
 {
-	return (isl_set *)isl_basic_map_lexmax(bset_to_bmap(bset));
+	return set_from_map(isl_basic_map_lexmax(bset_to_bmap(bset)));
 }
 
 /* Compute the lexicographic minimum of "bset" over its parametric domain
@@ -7109,14 +7109,12 @@ struct isl_map *isl_map_compute_divs(struct isl_map *map)
 
 struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset)
 {
-	return (struct isl_set *)
-		isl_basic_map_compute_divs(bset_to_bmap(bset));
+	return set_from_map(isl_basic_map_compute_divs(bset_to_bmap(bset)));
 }
 
 struct isl_set *isl_set_compute_divs(struct isl_set *set)
 {
-	return (struct isl_set *)
-		isl_map_compute_divs(set_to_map(set));
+	return set_from_map(isl_map_compute_divs(set_to_map(set)));
 }
 
 struct isl_set *isl_map_domain(struct isl_map *map)
@@ -7131,7 +7129,7 @@ struct isl_set *isl_map_domain(struct isl_map *map)
 	if (!map)
 		return NULL;
 
-	set = (struct isl_set *)map;
+	set = set_from_map(map);
 	set->dim = isl_space_domain(set->dim);
 	if (!set->dim)
 		goto error;
@@ -7293,15 +7291,13 @@ __isl_give isl_map *isl_map_union(__isl_take isl_map *map1,
 struct isl_set *isl_set_union_disjoint(
 			struct isl_set *set1, struct isl_set *set2)
 {
-	return (struct isl_set *)
-		isl_map_union_disjoint(
-			set_to_map(set1), set_to_map(set2));
+	return set_from_map(isl_map_union_disjoint(set_to_map(set1),
+						    set_to_map(set2)));
 }
 
 struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2)
 {
-	return (struct isl_set *)
-		isl_map_union(set_to_map(set1), set_to_map(set2));
+	return set_from_map(isl_map_union(set_to_map(set1), set_to_map(set2)));
 }
 
 /* Apply "fn" to pairs of elements from "map" and "set" and collect
@@ -8195,9 +8191,8 @@ error:
 struct isl_set *isl_basic_set_union(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
-	return (struct isl_set *)isl_basic_map_union(
-					    bset_to_bmap(bset1),
-					    bset_to_bmap(bset2));
+	return set_from_map(isl_basic_map_union(bset_to_bmap(bset1),
+						bset_to_bmap(bset2)));
 }
 
 /* Order divs such that any div only depends on previous divs */
@@ -8437,7 +8432,7 @@ struct isl_map *isl_map_align_divs(struct isl_map *map)
 
 struct isl_set *isl_set_align_divs(struct isl_set *set)
 {
-	return (struct isl_set *)isl_map_align_divs(set_to_map(set));
+	return set_from_map(isl_map_align_divs(set_to_map(set)));
 }
 
 /* Align the divs of the basic maps in "map" to those
@@ -8532,8 +8527,7 @@ struct isl_map *isl_map_remove_empty_parts(struct isl_map *map)
 
 struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 {
-	return (struct isl_set *)
-		isl_map_remove_empty_parts(set_to_map(set));
+	return set_from_map(isl_map_remove_empty_parts(set_to_map(set)));
 }
 
 struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map)
@@ -8581,8 +8575,8 @@ error:
 struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 						struct isl_basic_set *bset)
 {
-	return (struct isl_set *)isl_map_drop_basic_map(set_to_map(set),
-						bset_to_bmap(bset));
+	return set_from_map(isl_map_drop_basic_map(set_to_map(set),
+						bset_to_bmap(bset)));
 }
 
 /* Given two basic sets bset1 and bset2, compute the maximal difference
@@ -9307,7 +9301,7 @@ error:
 
 struct isl_set *isl_set_normalize(struct isl_set *set)
 {
-	return (struct isl_set *)isl_map_normalize(set_to_map(set));
+	return set_from_map(isl_map_normalize(set_to_map(set)));
 }
 
 isl_bool isl_map_plain_is_equal(__isl_keep isl_map *map1,
@@ -11283,7 +11277,7 @@ __isl_give isl_map *isl_map_flatten(__isl_take isl_map *map)
 
 __isl_give isl_set *isl_set_flatten(__isl_take isl_set *set)
 {
-	return (isl_set *)isl_map_flatten(set_to_map(set));
+	return set_from_map(isl_map_flatten(set_to_map(set)));
 }
 
 __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
@@ -11398,7 +11392,7 @@ error:
 __isl_give isl_set *isl_set_realign(__isl_take isl_set *set,
 	__isl_take isl_reordering *r)
 {
-	return (isl_set *)isl_map_realign(set_to_map(set), r);
+	return set_from_map(isl_map_realign(set_to_map(set), r));
 }
 
 __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,

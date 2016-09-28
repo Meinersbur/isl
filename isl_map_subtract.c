@@ -16,6 +16,7 @@
 #include <isl_vec_private.h>
 
 #include <set_to_map.c>
+#include <set_from_map.c>
 
 /* Expand the constraint "c" into "v".  The initial "dim" dimensions
  * are the same, but "v" may have more divs than "c" and the divs of "c"
@@ -581,9 +582,8 @@ __isl_give isl_map *isl_map_subtract( __isl_take isl_map *map1,
 
 struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
 {
-	return (struct isl_set *)
-		isl_map_subtract(
-			set_to_map(set1), set_to_map(set2));
+	return set_from_map(isl_map_subtract(set_to_map(set1),
+					    set_to_map(set2)));
 }
 
 /* Remove the elements of "dom" from the domain of "map".
@@ -911,7 +911,7 @@ __isl_give isl_map *isl_map_make_disjoint(__isl_take isl_map *map)
 
 __isl_give isl_set *isl_set_make_disjoint(__isl_take isl_set *set)
 {
-	return (struct isl_set *)isl_map_make_disjoint(set_to_map(set));
+	return set_from_map(isl_map_make_disjoint(set_to_map(set)));
 }
 
 __isl_give isl_map *isl_map_complement(__isl_take isl_map *map)

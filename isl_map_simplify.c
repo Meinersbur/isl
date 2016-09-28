@@ -26,6 +26,7 @@
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
 #include <set_to_map.c>
+#include <set_from_map.c>
 
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 {
@@ -261,7 +262,7 @@ error:
 struct isl_set *isl_set_drop(struct isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_set *)isl_map_drop(set_to_map(set), type, first, n);
+	return set_from_map(isl_map_drop(set_to_map(set), type, first, n));
 }
 
 struct isl_map *isl_map_drop_inputs(
@@ -3653,8 +3654,8 @@ struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
 __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *context)
 {
-	return (struct isl_set *)isl_map_gist_basic_map(set_to_map(set),
-					bset_to_bmap(context));
+	return set_from_map(isl_map_gist_basic_map(set_to_map(set),
+					bset_to_bmap(context)));
 }
 
 __isl_give isl_set *isl_set_gist_params_basic_set(__isl_take isl_set *set,
@@ -3669,8 +3670,7 @@ __isl_give isl_set *isl_set_gist_params_basic_set(__isl_take isl_set *set,
 __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 	__isl_take isl_set *context)
 {
-	return (struct isl_set *)isl_map_gist(set_to_map(set),
-					set_to_map(context));
+	return set_from_map(isl_map_gist(set_to_map(set), set_to_map(context)));
 }
 
 /* Compute the gist of "bmap" with respect to the constraints "context"
@@ -5124,8 +5124,7 @@ error:
 
 struct isl_set *isl_set_drop_redundant_divs(struct isl_set *set)
 {
-	return (struct isl_set *)
-	    isl_map_drop_redundant_divs(set_to_map(set));
+	return set_from_map(isl_map_drop_redundant_divs(set_to_map(set)));
 }
 
 /* Does "bmap" satisfy any equality that involves more than 2 variables

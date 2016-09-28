@@ -28,6 +28,7 @@
 #include <isl_equalities.h>
 
 #include <set_to_map.c>
+#include <set_from_map.c>
 
 #define STATUS_ERROR		-1
 #define STATUS_REDUNDANT	 1
@@ -3216,5 +3217,5 @@ error:
  */
 struct isl_set *isl_set_coalesce(struct isl_set *set)
 {
-	return (struct isl_set *)isl_map_coalesce(set_to_map(set));
+	return set_from_map(isl_map_coalesce(set_to_map(set)));
 }
