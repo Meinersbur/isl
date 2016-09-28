@@ -3348,7 +3348,7 @@ struct isl_set *isl_set_grow(struct isl_set *set, int n)
 	return set_from_map(isl_map_grow(set_to_map(set), n));
 }
 
-struct isl_set *isl_set_from_basic_set(struct isl_basic_set *bset)
+__isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset)
 {
 	return isl_map_from_basic_map(bset);
 }
