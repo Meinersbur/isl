@@ -6602,7 +6602,7 @@ static __isl_give isl_set *isl_basic_set_lexmin_compute_divs(
  * This domain is known to be disjoint from other domains
  * because of the way isl_basic_map_foreach_lexmax works.
  */
-static int update_dim_opt(__isl_take isl_basic_set *dom,
+static isl_stat update_dim_opt(__isl_take isl_basic_set *dom,
 	__isl_take isl_aff_list *list, void *user)
 {
 	isl_ctx *ctx = isl_basic_set_get_ctx(dom);
@@ -6623,11 +6623,11 @@ static int update_dim_opt(__isl_take isl_basic_set *dom,
 
 	isl_aff_list_free(list);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_basic_set_free(dom);
 	isl_aff_list_free(list);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Given a basic map with one output dimension, compute the minimum or
@@ -6641,7 +6641,7 @@ static __isl_give isl_pw_aff *basic_map_dim_opt(__isl_keep isl_basic_map *bmap,
 {
 	isl_space *dim = isl_basic_map_get_space(bmap);
 	isl_pw_aff *pwaff;
-	int r;
+	isl_stat r;
 
 	dim = isl_space_from_domain(isl_space_domain(dim));
 	dim = isl_space_add_dims(dim, isl_dim_out, 1);

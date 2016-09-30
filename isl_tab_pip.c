@@ -4900,7 +4900,7 @@ static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap,
 
 struct isl_sol_for {
 	struct isl_sol	sol;
-	int		(*fn)(__isl_take isl_basic_set *dom,
+	isl_stat	(*fn)(__isl_take isl_basic_set *dom,
 				__isl_take isl_aff_list *list, void *user);
 	void		*user;
 };
@@ -4962,8 +4962,8 @@ static void sol_for_add_wrap(struct isl_sol *sol,
 }
 
 static struct isl_sol_for *sol_for_init(__isl_keep isl_basic_map *bmap, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
-		  void *user),
+	isl_stat (*fn)(__isl_take isl_basic_set *dom,
+		__isl_take isl_aff_list *list, void *user),
 	void *user)
 {
 	struct isl_sol_for *sol_for = NULL;
@@ -4999,9 +4999,9 @@ static void sol_for_find_solutions(struct isl_sol_for *sol_for,
 	find_solutions_main(&sol_for->sol, tab);
 }
 
-int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
-		  void *user),
+isl_stat isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
+	isl_stat (*fn)(__isl_take isl_basic_set *dom,
+		__isl_take isl_aff_list *list, void *user),
 	void *user)
 {
 	struct isl_sol_for *sol_for = NULL;
@@ -5009,7 +5009,7 @@ int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_detect_equalities(bmap);
 	if (!bmap)
-		return -1;
+		return isl_stat_error;
 
 	sol_for = sol_for_init(bmap, max, fn, user);
 	if (!sol_for)
@@ -5030,16 +5030,16 @@ int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
 
 	sol_free(&sol_for->sol);
 	isl_basic_map_free(bmap);
-	return 0;
+	return isl_stat_ok;
 error:
 	sol_free(&sol_for->sol);
 	isl_basic_map_free(bmap);
-	return -1;
+	return isl_stat_error;
 }
 
-int isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
-		  void *user),
+isl_stat isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
+	isl_stat (*fn)(__isl_take isl_basic_set *dom,
+		__isl_take isl_aff_list *list, void *user),
 	void *user)
 {
 	return isl_basic_map_foreach_lexopt(bset, max, fn, user);

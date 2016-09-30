@@ -464,13 +464,13 @@ isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2,
 	isl_bool (*fn)(__isl_keep isl_map *map1, __isl_keep isl_map *map2));
 
-int isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
-		  void *user),
+isl_stat isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
+	isl_stat (*fn)(__isl_take isl_basic_set *dom,
+		__isl_take isl_aff_list *list, void *user),
 	void *user);
-int isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
-	int (*fn)(__isl_take isl_basic_set *dom, __isl_take isl_aff_list *list,
-		  void *user),
+isl_stat isl_basic_set_foreach_lexopt(__isl_keep isl_basic_set *bset, int max,
+	isl_stat (*fn)(__isl_take isl_basic_set *dom,
+		__isl_take isl_aff_list *list, void *user),
 	void *user);
 
 __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
