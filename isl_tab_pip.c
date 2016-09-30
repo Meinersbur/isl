@@ -215,6 +215,8 @@ static void sol_free(struct isl_sol *sol)
 
 /* Push a partial solution represented by a domain and mapping M
  * onto the stack of partial solutions.
+ * If "M" is NULL, then "dom" represents a part of the domain
+ * with no solution.
  */
 static void sol_push_sol(struct isl_sol *sol,
 	__isl_take isl_basic_set *dom, __isl_take isl_mat *M)
