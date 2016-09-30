@@ -25,6 +25,7 @@
 #include <isl_vec_private.h>
 
 #include <bset_to_bmap.c>
+#include <bset_from_bmap.c>
 
 struct isl_basic_map *isl_basic_map_implicit_equalities(
 						struct isl_basic_map *bmap)
@@ -59,8 +60,8 @@ error:
 struct isl_basic_set *isl_basic_set_implicit_equalities(
 						struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_implicit_equalities(bset_to_bmap(bset));
+	return bset_from_bmap(
+		isl_basic_map_implicit_equalities(bset_to_bmap(bset)));
 }
 
 struct isl_map *isl_map_implicit_equalities(struct isl_map *map)
@@ -1173,8 +1174,8 @@ error:
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset)
 {
-	return (isl_basic_set *)
-		isl_basic_map_detect_equalities(bset_to_bmap(bset));
+	return bset_from_bmap(
+		isl_basic_map_detect_equalities(bset_to_bmap(bset)));
 }
 
 __isl_give isl_map *isl_map_detect_equalities(__isl_take isl_map *map)
@@ -1223,8 +1224,7 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_affine_hull(bset_to_bmap(bset));
+	return bset_from_bmap(isl_basic_map_affine_hull(bset_to_bmap(bset)));
 }
 
 /* Given a rational affine matrix "M", add stride constraints to "bmap"
@@ -1469,6 +1469,5 @@ error:
 
 struct isl_basic_set *isl_set_affine_hull(struct isl_set *set)
 {
-	return (struct isl_basic_set *)
-		isl_map_affine_hull((struct isl_map *)set);
+	return bset_from_bmap(isl_map_affine_hull((struct isl_map *) set));
 }

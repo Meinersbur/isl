@@ -25,6 +25,8 @@
 #include <isl/union_set.h>
 #include <isl/deprecated/union_map_int.h>
 
+#include <bset_from_bmap.c>
+
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
  */
@@ -2442,7 +2444,7 @@ error:
 
 __isl_give isl_basic_set *isl_union_set_sample(__isl_take isl_union_set *uset)
 {
-	return (isl_basic_set *)isl_union_map_sample(uset);
+	return bset_from_bmap(isl_union_map_sample(uset));
 }
 
 /* Return an element in "uset" in the form of an isl_point.

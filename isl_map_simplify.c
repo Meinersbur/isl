@@ -24,6 +24,7 @@
 #include <isl_vec_private.h>
 
 #include <bset_to_bmap.c>
+#include <bset_from_bmap.c>
 
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 {
@@ -214,8 +215,8 @@ error:
 __isl_give isl_basic_set *isl_basic_set_drop(__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_basic_set *)isl_basic_map_drop(bset_to_bmap(bset),
-							type, first, n);
+	return bset_from_bmap(isl_basic_map_drop(bset_to_bmap(bset),
+							type, first, n));
 }
 
 struct isl_basic_map *isl_basic_map_drop_inputs(
@@ -374,8 +375,8 @@ struct isl_basic_map *isl_basic_map_normalize_constraints(
 struct isl_basic_set *isl_basic_set_normalize_constraints(
 	struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)isl_basic_map_normalize_constraints(
-		bset_to_bmap(bset));
+	isl_basic_map *bmap = bset_to_bmap(bset);
+	return bset_from_bmap(isl_basic_map_normalize_constraints(bmap));
 }
 
 /* Assuming the variable at position "pos" has an integer coefficient
@@ -747,8 +748,8 @@ struct isl_basic_map *isl_basic_map_gauss(
 struct isl_basic_set *isl_basic_set_gauss(
 	struct isl_basic_set *bset, int *progress)
 {
-	return (struct isl_basic_set*)isl_basic_map_gauss(
-			bset_to_bmap(bset), progress);
+	return bset_from_bmap(isl_basic_map_gauss(bset_to_bmap(bset),
+							progress));
 }
 
 
@@ -1510,8 +1511,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_simplify(bset_to_bmap(bset));
+	return bset_from_bmap(isl_basic_map_simplify(bset_to_bmap(bset)));
 }
 
 
@@ -1637,8 +1637,7 @@ struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
 
 struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_finalize(bset_to_bmap(bset));
+	return bset_from_bmap(isl_basic_map_finalize(bset_to_bmap(bset)));
 }
 
 struct isl_set *isl_set_finalize(struct isl_set *set)
@@ -1801,8 +1800,8 @@ error:
 struct isl_basic_set *isl_basic_set_eliminate_vars(
 	struct isl_basic_set *bset, unsigned pos, unsigned n)
 {
-	return (struct isl_basic_set *)isl_basic_map_eliminate_vars(
-			bset_to_bmap(bset), pos, n);
+	return bset_from_bmap(isl_basic_map_eliminate_vars(bset_to_bmap(bset),
+								pos, n));
 }
 
 /* Eliminate the specified n dimensions starting at first from the
@@ -3646,8 +3645,8 @@ __isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
 						struct isl_basic_set *context)
 {
-	return (struct isl_basic_set *)isl_basic_map_gist(
-		bset_to_bmap(bset), bset_to_bmap(context));
+	return bset_from_bmap(isl_basic_map_gist(bset_to_bmap(bset),
+						bset_to_bmap(context)));
 }
 
 __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
@@ -5101,8 +5100,8 @@ __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs(
 struct isl_basic_set *isl_basic_set_drop_redundant_divs(
 	struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-	    isl_basic_map_drop_redundant_divs(bset_to_bmap(bset));
+	isl_basic_map *bmap = bset_to_bmap(bset);
+	return bset_from_bmap(isl_basic_map_drop_redundant_divs(bmap));
 }
 
 struct isl_map *isl_map_drop_redundant_divs(struct isl_map *map)

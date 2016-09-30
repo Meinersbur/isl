@@ -21,6 +21,7 @@
 #include <isl/deprecated/constraint_int.h>
 
 #include <bset_to_bmap.c>
+#include <bset_from_bmap.c>
 
 #undef BASE
 #define BASE constraint
@@ -352,9 +353,8 @@ error:
 struct isl_basic_set *isl_basic_set_add_constraint(
 	struct isl_basic_set *bset, struct isl_constraint *constraint)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_add_constraint(bset_to_bmap(bset),
-						constraint);
+	return bset_from_bmap(isl_basic_map_add_constraint(bset_to_bmap(bset),
+							    constraint));
 }
 
 __isl_give isl_map *isl_map_add_constraint(__isl_take isl_map *map,
@@ -833,7 +833,7 @@ struct isl_basic_set *isl_basic_set_from_constraint(
 	if (isl_constraint_dim(constraint, isl_dim_in) != 0)
 		isl_die(isl_constraint_get_ctx(constraint), isl_error_invalid,
 			"not a set constraint", goto error);
-	return (isl_basic_set *)isl_basic_map_from_constraint(constraint);
+	return bset_from_bmap(isl_basic_map_from_constraint(constraint));
 error:
 	isl_constraint_free(constraint);
 	return NULL;

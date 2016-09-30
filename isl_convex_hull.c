@@ -24,6 +24,7 @@
 #include <isl_sort.h>
 
 #include <bset_to_bmap.c>
+#include <bset_from_bmap.c>
 
 static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
 
@@ -128,8 +129,8 @@ error:
 __isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 	__isl_take isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_remove_redundancies(bset_to_bmap(bset));
+	return bset_from_bmap(
+		isl_basic_map_remove_redundancies(bset_to_bmap(bset)));
 }
 
 /* Remove redundant constraints in each of the basic maps.
@@ -938,7 +939,7 @@ int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_move_dims(bmap, isl_dim_param, nparam,
 					isl_dim_in, 0, n_in);
-	bounded = isl_basic_set_is_bounded((isl_basic_set *)bmap);
+	bounded = isl_basic_set_is_bounded(bset_from_bmap(bmap));
 	isl_basic_map_free(bmap);
 
 	return bounded;
@@ -1989,8 +1990,7 @@ error:
 
 struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 {
-	return (struct isl_basic_set *)
-		isl_map_convex_hull((struct isl_map *)set);
+	return bset_from_bmap(isl_map_convex_hull((struct isl_map *) set));
 }
 
 __isl_give isl_basic_map *isl_map_polyhedral_hull(__isl_take isl_map *map)
@@ -2003,7 +2003,7 @@ __isl_give isl_basic_map *isl_map_polyhedral_hull(__isl_take isl_map *map)
 
 __isl_give isl_basic_set *isl_set_polyhedral_hull(__isl_take isl_set *set)
 {
-	return (isl_basic_set *)isl_map_polyhedral_hull((isl_map *)set);
+	return bset_from_bmap(isl_map_polyhedral_hull((isl_map *) set));
 }
 
 struct sh_data_entry {
@@ -2479,8 +2479,7 @@ __isl_give isl_basic_map *isl_map_simple_hull(__isl_take isl_map *map)
 
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
 {
-	return (struct isl_basic_set *)
-		isl_map_simple_hull((struct isl_map *)set);
+	return bset_from_bmap(isl_map_simple_hull((struct isl_map *) set));
 }
 
 /* Compute a superset of the convex hull of map that is described
