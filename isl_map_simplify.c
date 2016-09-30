@@ -23,6 +23,8 @@
 #include <isl_mat_private.h>
 #include <isl_vec_private.h>
 
+#include <bset_to_bmap.c>
+
 static void swap_equality(struct isl_basic_map *bmap, int a, int b)
 {
 	isl_int *t = bmap->eq[a];
@@ -212,7 +214,7 @@ error:
 __isl_give isl_basic_set *isl_basic_set_drop(__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	return (isl_basic_set *)isl_basic_map_drop((isl_basic_map *)bset,
+	return (isl_basic_set *)isl_basic_map_drop(bset_to_bmap(bset),
 							type, first, n);
 }
 
@@ -373,7 +375,7 @@ struct isl_basic_set *isl_basic_set_normalize_constraints(
 	struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)isl_basic_map_normalize_constraints(
-		(struct isl_basic_map *)bset);
+		bset_to_bmap(bset));
 }
 
 /* Assuming the variable at position "pos" has an integer coefficient
@@ -746,7 +748,7 @@ struct isl_basic_set *isl_basic_set_gauss(
 	struct isl_basic_set *bset, int *progress)
 {
 	return (struct isl_basic_set*)isl_basic_map_gauss(
-			(struct isl_basic_map *)bset, progress);
+			bset_to_bmap(bset), progress);
 }
 
 
@@ -1509,7 +1511,7 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_simplify((struct isl_basic_map *)bset);
+		isl_basic_map_simplify(bset_to_bmap(bset));
 }
 
 
@@ -1636,7 +1638,7 @@ struct isl_basic_map *isl_basic_map_finalize(struct isl_basic_map *bmap)
 struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_finalize((struct isl_basic_map *)bset);
+		isl_basic_map_finalize(bset_to_bmap(bset));
 }
 
 struct isl_set *isl_set_finalize(struct isl_set *set)
@@ -1800,7 +1802,7 @@ struct isl_basic_set *isl_basic_set_eliminate_vars(
 	struct isl_basic_set *bset, unsigned pos, unsigned n)
 {
 	return (struct isl_basic_set *)isl_basic_map_eliminate_vars(
-			(struct isl_basic_map *)bset, pos, n);
+			bset_to_bmap(bset), pos, n);
 }
 
 /* Eliminate the specified n dimensions starting at first from the
@@ -1949,7 +1951,7 @@ static void compute_elimination_index(struct isl_basic_map *bmap, int *elim)
 
 static void set_compute_elimination_index(struct isl_basic_set *bset, int *elim)
 {
-	compute_elimination_index((struct isl_basic_map *)bset, elim);
+	compute_elimination_index(bset_to_bmap(bset), elim);
 }
 
 static int reduced_using_equalities(isl_int *dst, isl_int *src,
@@ -1978,7 +1980,7 @@ static int set_reduced_using_equalities(isl_int *dst, isl_int *src,
 	struct isl_basic_set *bset, int *elim)
 {
 	return reduced_using_equalities(dst, src,
-					(struct isl_basic_map *)bset, elim);
+					bset_to_bmap(bset), elim);
 }
 
 static struct isl_basic_set *isl_basic_set_reduce_using_equalities(
@@ -3645,14 +3647,14 @@ struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
 						struct isl_basic_set *context)
 {
 	return (struct isl_basic_set *)isl_basic_map_gist(
-		(struct isl_basic_map *)bset, (struct isl_basic_map *)context);
+		bset_to_bmap(bset), bset_to_bmap(context));
 }
 
 __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *context)
 {
 	return (struct isl_set *)isl_map_gist_basic_map((struct isl_map *)set,
-					(struct isl_basic_map *)context);
+					bset_to_bmap(context));
 }
 
 __isl_give isl_set *isl_set_gist_params_basic_set(__isl_take isl_set *set,
@@ -3787,8 +3789,8 @@ error:
 int isl_basic_set_plain_is_disjoint(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2)
 {
-	return isl_basic_map_plain_is_disjoint((struct isl_basic_map *)bset1,
-					      (struct isl_basic_map *)bset2);
+	return isl_basic_map_plain_is_disjoint(bset_to_bmap(bset1),
+					      bset_to_bmap(bset2));
 }
 
 /* Does "test" hold for all pairs of basic maps in "map1" and "map2"?
@@ -5100,7 +5102,7 @@ struct isl_basic_set *isl_basic_set_drop_redundant_divs(
 	struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-	    isl_basic_map_drop_redundant_divs((struct isl_basic_map *)bset);
+	    isl_basic_map_drop_redundant_divs(bset_to_bmap(bset));
 }
 
 struct isl_map *isl_map_drop_redundant_divs(struct isl_map *map)

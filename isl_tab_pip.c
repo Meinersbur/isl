@@ -23,6 +23,8 @@
 #include <isl_options_private.h>
 #include <isl_config.h>
 
+#include <bset_to_bmap.c>
+
 /*
  * The implementation of parametric integer linear programming in this file
  * was inspired by the paper "Parametric Integer Programming" and the
@@ -2634,7 +2636,7 @@ static struct isl_tab *context_tab_for_lexmin(struct isl_basic_set *bset)
 
 	if (!bset)
 		return NULL;
-	tab = tab_for_lexmin((struct isl_basic_map *)bset, NULL, 1, 0);
+	tab = tab_for_lexmin(bset_to_bmap(bset), NULL, 1, 0);
 	if (!tab)
 		goto error;
 	if (isl_tab_track_bset(tab, bset) < 0)
@@ -4546,7 +4548,7 @@ static int need_split_basic_map(__isl_keep isl_basic_map *bmap,
 static int need_split_basic_set(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_mat *cst)
 {
-	return need_split_basic_map((isl_basic_map *)bset, cst);
+	return need_split_basic_map(bset_to_bmap(bset), cst);
 }
 
 /* Given that the last set variable of "set" represents the minimum

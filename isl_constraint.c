@@ -20,6 +20,8 @@
 #include <isl_vec_private.h>
 #include <isl/deprecated/constraint_int.h>
 
+#include <bset_to_bmap.c>
+
 #undef BASE
 #define BASE constraint
 
@@ -132,7 +134,7 @@ error:
 struct isl_constraint *isl_basic_set_constraint(struct isl_basic_set *bset,
 	isl_int **line)
 {
-	return isl_basic_map_constraint((struct isl_basic_map *)bset, line);
+	return isl_basic_map_constraint(bset_to_bmap(bset), line);
 }
 
 __isl_give isl_constraint *isl_constraint_alloc_equality(
@@ -248,7 +250,7 @@ isl_stat isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 isl_stat isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,
 	isl_stat (*fn)(__isl_take isl_constraint *c, void *user), void *user)
 {
-	return isl_basic_map_foreach_constraint((isl_basic_map *)bset, fn, user);
+	return isl_basic_map_foreach_constraint(bset_to_bmap(bset), fn, user);
 }
 
 /* Add the constraint to the list that "user" points to, if it is not
@@ -351,7 +353,7 @@ struct isl_basic_set *isl_basic_set_add_constraint(
 	struct isl_basic_set *bset, struct isl_constraint *constraint)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_add_constraint((struct isl_basic_map *)bset,
+		isl_basic_map_add_constraint(bset_to_bmap(bset),
 						constraint);
 }
 
@@ -877,7 +879,7 @@ int isl_basic_set_has_defining_equality(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type type, int pos,
 	__isl_give isl_constraint **c)
 {
-	return isl_basic_map_has_defining_equality((isl_basic_map *)bset,
+	return isl_basic_map_has_defining_equality(bset_to_bmap(bset),
 						    type, pos, c);
 }
 

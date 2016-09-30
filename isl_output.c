@@ -32,6 +32,8 @@
 #include <isl_sort.h>
 #include <isl_output_private.h>
 
+#include <bset_to_bmap.c>
+
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
 static const char *s_or[2] = { " or ", " \\vee " };
@@ -100,7 +102,7 @@ static __isl_give isl_printer *print_constraints_polylib(
 static __isl_give isl_printer *bset_print_constraints_polylib(
 	struct isl_basic_set *bset, __isl_take isl_printer *p)
 {
-	return print_constraints_polylib((struct isl_basic_map *)bset, p);
+	return print_constraints_polylib(bset_to_bmap(bset), p);
 }
 
 static __isl_give isl_printer *isl_basic_map_print_polylib(
@@ -132,7 +134,7 @@ static __isl_give isl_printer *isl_basic_map_print_polylib(
 static __isl_give isl_printer *isl_basic_set_print_polylib(
 	__isl_keep isl_basic_set *bset, __isl_take isl_printer *p, int ext)
 {
-	return isl_basic_map_print_polylib((struct isl_basic_map *)bset, p, ext);
+	return isl_basic_map_print_polylib(bset_to_bmap(bset), p, ext);
 }
 
 static __isl_give isl_printer *isl_map_print_polylib(__isl_keep isl_map *map,

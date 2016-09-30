@@ -19,6 +19,8 @@
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
 
+#include <bset_to_bmap.c>
+
 enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,
 				      isl_int *opt_denom,
@@ -78,7 +80,7 @@ enum isl_lp_result isl_basic_set_solve_lp(struct isl_basic_set *bset, int max,
 				      isl_int *opt_denom,
 				      struct isl_vec **sol)
 {
-	return isl_basic_map_solve_lp((struct isl_basic_map *)bset, max,
+	return isl_basic_map_solve_lp(bset_to_bmap(bset), max,
 					f, d, opt, opt_denom, sol);
 }
 

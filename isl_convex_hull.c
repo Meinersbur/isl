@@ -23,6 +23,8 @@
 #include "isl_tab.h"
 #include <isl_sort.h>
 
+#include <bset_to_bmap.c>
+
 static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
 
 /* Return 1 if constraint c is redundant with respect to the constraints
@@ -127,7 +129,7 @@ __isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 	__isl_take isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_remove_redundancies((struct isl_basic_map *)bset);
+		isl_basic_map_remove_redundancies(bset_to_bmap(bset));
 }
 
 /* Remove redundant constraints in each of the basic maps.

@@ -43,6 +43,8 @@
 #include <isl/deprecated/map_int.h>
 #include <isl/deprecated/set_int.h>
 
+#include <bset_to_bmap.c>
+
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	switch (type) {
@@ -679,7 +681,7 @@ __isl_give isl_basic_set *isl_basic_set_set_dim_name(
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	return (isl_basic_set *)isl_basic_map_set_dim_name(
-		(isl_basic_map *)bset, type, pos, s);
+		bset_to_bmap(bset), type, pos, s);
 }
 
 __isl_give isl_set *isl_set_set_dim_name(__isl_take isl_set *set,
@@ -1122,7 +1124,7 @@ struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset)
 {
 	struct isl_basic_map *dup;
 
-	dup = isl_basic_map_dup((struct isl_basic_map *)bset);
+	dup = isl_basic_map_dup(bset_to_bmap(bset));
 	return (struct isl_basic_set *)dup;
 }
 
@@ -1193,7 +1195,7 @@ __isl_null isl_basic_map *isl_basic_map_free(__isl_take isl_basic_map *bmap)
 
 __isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset)
 {
-	return isl_basic_map_free((struct isl_basic_map *)bset);
+	return isl_basic_map_free(bset_to_bmap(bset));
 }
 
 static int room_for_con(struct isl_basic_map *bmap, unsigned n)
@@ -1282,7 +1284,7 @@ int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
 
 int isl_basic_set_alloc_equality(struct isl_basic_set *bset)
 {
-	return isl_basic_map_alloc_equality((struct isl_basic_map *)bset);
+	return isl_basic_map_alloc_equality(bset_to_bmap(bset));
 }
 
 int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n)
@@ -1296,7 +1298,7 @@ int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n)
 
 int isl_basic_set_free_equality(struct isl_basic_set *bset, unsigned n)
 {
-	return isl_basic_map_free_equality((struct isl_basic_map *)bset, n);
+	return isl_basic_map_free_equality(bset_to_bmap(bset), n);
 }
 
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
@@ -1317,7 +1319,7 @@ int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 
 int isl_basic_set_drop_equality(struct isl_basic_set *bset, unsigned pos)
 {
-	return isl_basic_map_drop_equality((struct isl_basic_map *)bset, pos);
+	return isl_basic_map_drop_equality(bset_to_bmap(bset), pos);
 }
 
 /* Turn inequality "pos" of "bmap" into an equality.
@@ -1369,7 +1371,7 @@ int isl_basic_map_alloc_inequality(struct isl_basic_map *bmap)
 
 int isl_basic_set_alloc_inequality(struct isl_basic_set *bset)
 {
-	return isl_basic_map_alloc_inequality((struct isl_basic_map *)bset);
+	return isl_basic_map_alloc_inequality(bset_to_bmap(bset));
 }
 
 int isl_basic_map_free_inequality(struct isl_basic_map *bmap, unsigned n)
@@ -1383,7 +1385,7 @@ int isl_basic_map_free_inequality(struct isl_basic_map *bmap, unsigned n)
 
 int isl_basic_set_free_inequality(struct isl_basic_set *bset, unsigned n)
 {
-	return isl_basic_map_free_inequality((struct isl_basic_map *)bset, n);
+	return isl_basic_map_free_inequality(bset_to_bmap(bset), n);
 }
 
 int isl_basic_map_drop_inequality(struct isl_basic_map *bmap, unsigned pos)
@@ -1405,7 +1407,7 @@ int isl_basic_map_drop_inequality(struct isl_basic_map *bmap, unsigned pos)
 
 int isl_basic_set_drop_inequality(struct isl_basic_set *bset, unsigned pos)
 {
-	return isl_basic_map_drop_inequality((struct isl_basic_map *)bset, pos);
+	return isl_basic_map_drop_inequality(bset_to_bmap(bset), pos);
 }
 
 __isl_give isl_basic_map *isl_basic_map_add_eq(__isl_take isl_basic_map *bmap,
@@ -1430,7 +1432,7 @@ __isl_give isl_basic_set *isl_basic_set_add_eq(__isl_take isl_basic_set *bset,
 	isl_int *eq)
 {
 	return (isl_basic_set *)
-		isl_basic_map_add_eq((isl_basic_map *)bset, eq);
+		isl_basic_map_add_eq(bset_to_bmap(bset), eq);
 }
 
 __isl_give isl_basic_map *isl_basic_map_add_ineq(__isl_take isl_basic_map *bmap,
@@ -1455,7 +1457,7 @@ __isl_give isl_basic_set *isl_basic_set_add_ineq(__isl_take isl_basic_set *bset,
 	isl_int *ineq)
 {
 	return (isl_basic_set *)
-		isl_basic_map_add_ineq((isl_basic_map *)bset, ineq);
+		isl_basic_map_add_ineq(bset_to_bmap(bset), ineq);
 }
 
 int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
@@ -1472,7 +1474,7 @@ int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
 
 int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 {
-	return isl_basic_map_alloc_div((struct isl_basic_map *)bset);
+	return isl_basic_map_alloc_div(bset_to_bmap(bset));
 }
 
 /* Insert an extra integer division, prescribed by "div", to "bmap"
@@ -1523,7 +1525,7 @@ int isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 
 int isl_basic_set_free_div(struct isl_basic_set *bset, unsigned n)
 {
-	return isl_basic_map_free_div((struct isl_basic_map *)bset, n);
+	return isl_basic_map_free_div(bset_to_bmap(bset), n);
 }
 
 /* Copy constraint from src to dst, putting the vars of src at offset
@@ -1627,8 +1629,8 @@ struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
 		struct isl_basic_set *bset2, unsigned pos)
 {
 	return (struct isl_basic_set *)
-		add_constraints((struct isl_basic_map *)bset1,
-				(struct isl_basic_map *)bset2, 0, pos);
+		add_constraints(bset_to_bmap(bset1),
+				bset_to_bmap(bset2), 0, pos);
 }
 
 struct isl_basic_map *isl_basic_map_extend_space(struct isl_basic_map *base,
@@ -1688,7 +1690,7 @@ struct isl_basic_set *isl_basic_set_extend_space(struct isl_basic_set *base,
 		unsigned n_eq, unsigned n_ineq)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_extend_space((struct isl_basic_map *)base, dim,
+		isl_basic_map_extend_space(bset_to_bmap(base), dim,
 							extra, n_eq, n_ineq);
 }
 
@@ -1726,7 +1728,7 @@ struct isl_basic_set *isl_basic_set_extend(struct isl_basic_set *base,
 		unsigned n_eq, unsigned n_ineq)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_extend((struct isl_basic_map *)base,
+		isl_basic_map_extend(bset_to_bmap(base),
 					nparam, 0, dim, extra, n_eq, n_ineq);
 }
 
@@ -1734,14 +1736,14 @@ struct isl_basic_set *isl_basic_set_extend_constraints(
 		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_extend_constraints((struct isl_basic_map *)base,
+		isl_basic_map_extend_constraints(bset_to_bmap(base),
 						    n_eq, n_ineq);
 }
 
 struct isl_basic_set *isl_basic_set_cow(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_cow((struct isl_basic_map *)bset);
+		isl_basic_map_cow(bset_to_bmap(bset));
 }
 
 struct isl_basic_map *isl_basic_map_cow(struct isl_basic_map *bmap)
@@ -1883,7 +1885,7 @@ error:
 struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_set_to_empty((struct isl_basic_map *)bset);
+		isl_basic_map_set_to_empty(bset_to_bmap(bset));
 }
 
 /* Swap divs "a" and "b" in "bmap" (without modifying any of the constraints
@@ -1995,7 +1997,7 @@ __isl_give isl_basic_set *isl_basic_set_remove_divs(
 	__isl_take isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)isl_basic_map_remove_divs(
-			(struct isl_basic_map *)bset);
+			bset_to_bmap(bset));
 }
 
 __isl_give isl_map *isl_map_remove_divs(__isl_take isl_map *map)
@@ -2505,7 +2507,7 @@ __isl_give isl_basic_set *isl_basic_set_remove_dims(
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	return (isl_basic_set *)
-	    isl_basic_map_remove_dims((isl_basic_map *)bset, type, first, n);
+	    isl_basic_map_remove_dims(bset_to_bmap(bset), type, first, n);
 }
 
 struct isl_map *isl_map_remove_dims(struct isl_map *map,
@@ -2675,7 +2677,7 @@ void isl_basic_set_print_internal(struct isl_basic_set *bset,
 	fprintf(out, "ref: %d, nparam: %d, dim: %d, extra: %d, flags: %x\n",
 			bset->ref, bset->dim->nparam, bset->dim->n_out,
 			bset->extra, bset->flags);
-	dump((struct isl_basic_map *)bset, out, indent);
+	dump(bset_to_bmap(bset), out, indent);
 }
 
 void isl_basic_map_print_internal(struct isl_basic_map *bmap,
@@ -2808,7 +2810,7 @@ __isl_give isl_set *isl_set_add_basic_set(__isl_take isl_set *set,
 						__isl_take isl_basic_set *bset)
 {
 	return (struct isl_set *)isl_map_add_basic_map((struct isl_map *)set,
-						(struct isl_basic_map *)bset);
+						bset_to_bmap(bset));
 }
 
 __isl_null isl_set *isl_set_free(__isl_take isl_set *set)
@@ -2964,7 +2966,7 @@ isl_bool isl_basic_map_contains(__isl_keep isl_basic_map *bmap,
 isl_bool isl_basic_set_contains(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_vec *vec)
 {
-	return isl_basic_map_contains((struct isl_basic_map *)bset, vec);
+	return isl_basic_map_contains(bset_to_bmap(bset), vec);
 }
 
 struct isl_basic_map *isl_basic_map_intersect(
@@ -3034,9 +3036,8 @@ struct isl_basic_set *isl_basic_set_intersect(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_intersect(
-			(struct isl_basic_map *)bset1,
-			(struct isl_basic_map *)bset2);
+		isl_basic_map_intersect(bset_to_bmap(bset1),
+					bset_to_bmap(bset2));
 }
 
 __isl_give isl_basic_set *isl_basic_set_intersect_params(
@@ -3487,7 +3488,7 @@ __isl_give isl_basic_set *isl_basic_set_move_dims(__isl_take isl_basic_set *bset
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
 	return (isl_basic_set *)isl_basic_map_move_dims(
-		(isl_basic_map *)bset, dst_type, dst_pos, src_type, src_pos, n);
+		bset_to_bmap(bset), dst_type, dst_pos, src_type, src_pos, n);
 }
 
 __isl_give isl_set *isl_set_move_dims(__isl_take isl_set *set,
@@ -3725,7 +3726,7 @@ struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
 		enum isl_dim_type type, unsigned first, unsigned n)
 {
 	return (isl_basic_set *)isl_basic_map_project_out(
-			(isl_basic_map *)bset, type, first, n);
+			bset_to_bmap(bset), type, first, n);
 }
 
 /* Turn the n dimensions of type type, starting at first
@@ -3886,7 +3887,7 @@ struct isl_basic_set *isl_basic_set_apply(
 		    goto error);
 
 	return (struct isl_basic_set *)
-		isl_basic_map_apply_range((struct isl_basic_map *)bset, bmap);
+		isl_basic_map_apply_range(bset_to_bmap(bset), bmap);
 error:
 	isl_basic_set_free(bset);
 	isl_basic_map_free(bmap);
@@ -4563,7 +4564,7 @@ __isl_give isl_basic_map *isl_basic_map_from_basic_set(
 
 	isl_assert(bset->ctx, isl_space_compatible(bset->dim, dim), goto error);
 	isl_space_free(bset->dim);
-	bmap = (struct isl_basic_map *) bset;
+	bmap = bset_to_bmap(bset);
 	bmap->dim = dim;
 	return isl_basic_map_finalize(bmap);
 error:
@@ -4634,7 +4635,7 @@ int isl_basic_map_add_div_constraints_var(__isl_keep isl_basic_map *bmap,
 int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *div)
 {
-	return isl_basic_map_add_div_constraints_var((isl_basic_map *)bset,
+	return isl_basic_map_add_div_constraints_var(bset_to_bmap(bset),
 							pos, div);
 }
 
@@ -4736,7 +4737,7 @@ error:
 __isl_give isl_basic_set *isl_basic_set_underlying_set(
 		__isl_take isl_basic_set *bset)
 {
-	return isl_basic_map_underlying_set((isl_basic_map *)bset);
+	return isl_basic_map_underlying_set(bset_to_bmap(bset));
 }
 
 /* Replace each element in "list" by the result of applying
@@ -4787,7 +4788,7 @@ struct isl_basic_map *isl_basic_map_overlying_set(
 	if (!bset)
 		goto error;
 	total = bset->dim->n_out + bset->extra;
-	bmap = (struct isl_basic_map *)bset;
+	bmap = bset_to_bmap(bset);
 	isl_space_free(bmap->dim);
 	bmap->dim = isl_space_copy(like->dim);
 	if (!bmap->dim)
@@ -4830,7 +4831,7 @@ struct isl_basic_set *isl_basic_set_from_underlying_set(
 	struct isl_basic_set *bset, struct isl_basic_set *like)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_overlying_set(bset, (struct isl_basic_map *)like);
+		isl_basic_map_overlying_set(bset, bset_to_bmap(like));
 }
 
 struct isl_set *isl_set_from_underlying_set(
@@ -4882,8 +4883,8 @@ struct isl_set *isl_map_underlying_set(struct isl_map *map)
 		isl_assert(map->ctx, map->p[0]->n_div == map->p[i]->n_div,
 				goto error);
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = (struct isl_basic_map *)
-				isl_basic_map_underlying_set(map->p[i]);
+		map->p[i] = bset_to_bmap(
+				isl_basic_map_underlying_set(map->p[i]));
 		if (!map->p[i])
 			goto error;
 	}
@@ -4950,7 +4951,7 @@ error:
 __isl_give isl_basic_set *isl_basic_set_reset_space(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim)
 {
-	return (isl_basic_set *)isl_basic_map_reset_space((isl_basic_map *)bset,
+	return (isl_basic_set *)isl_basic_map_reset_space(bset_to_bmap(bset),
 							dim);
 }
 
@@ -5339,7 +5340,7 @@ __isl_give isl_basic_map *isl_basic_map_from_range(
 	space = isl_basic_set_get_space(bset);
 	space = isl_space_from_range(space);
 	bset = isl_basic_set_reset_space(bset, space);
-	return (isl_basic_map *)bset;
+	return bset_to_bmap(bset);
 }
 
 /* Create a relation with the given set as range.
@@ -5680,7 +5681,7 @@ struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_fix_si((struct isl_basic_map *)bset,
+		isl_basic_map_fix_si(bset_to_bmap(bset),
 					type, pos, value);
 }
 
@@ -5688,7 +5689,7 @@ __isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, isl_int value)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_fix((struct isl_basic_map *)bset,
+		isl_basic_map_fix(bset_to_bmap(bset),
 					type, pos, value);
 }
 
@@ -5702,7 +5703,7 @@ struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 		unsigned dim, int value)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_fix_si((struct isl_basic_map *)bset,
+		isl_basic_map_fix_si(bset_to_bmap(bset),
 					isl_dim_set, dim, value);
 }
 
@@ -6357,12 +6358,12 @@ __isl_give isl_map *isl_basic_map_lexmax(__isl_take isl_basic_map *bmap)
 
 __isl_give isl_set *isl_basic_set_lexmin(__isl_take isl_basic_set *bset)
 {
-	return (isl_set *)isl_basic_map_lexmin((isl_basic_map *)bset);
+	return (isl_set *)isl_basic_map_lexmin(bset_to_bmap(bset));
 }
 
 __isl_give isl_set *isl_basic_set_lexmax(__isl_take isl_basic_set *bset)
 {
-	return (isl_set *)isl_basic_map_lexmax((isl_basic_map *)bset);
+	return (isl_set *)isl_basic_map_lexmax(bset_to_bmap(bset));
 }
 
 /* Compute the lexicographic minimum of "bset" over its parametric domain
@@ -7115,7 +7116,7 @@ struct isl_map *isl_map_compute_divs(struct isl_map *map)
 struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset)
 {
 	return (struct isl_set *)
-		isl_basic_map_compute_divs((struct isl_basic_map *)bset);
+		isl_basic_map_compute_divs(bset_to_bmap(bset));
 }
 
 struct isl_set *isl_set_compute_divs(struct isl_set *set)
@@ -7885,7 +7886,7 @@ isl_bool isl_basic_set_is_equal(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2)
 {
 	return isl_basic_map_is_equal(
-		(struct isl_basic_map *)bset1, (struct isl_basic_map *)bset2);
+		bset_to_bmap(bset1), bset_to_bmap(bset2));
 }
 
 isl_bool isl_map_is_empty(__isl_keep isl_map *map)
@@ -8173,7 +8174,7 @@ isl_bool isl_basic_map_plain_is_non_empty(__isl_keep isl_basic_map *bmap)
 
 isl_bool isl_basic_set_is_empty(__isl_keep isl_basic_set *bset)
 {
-	return isl_basic_map_is_empty((struct isl_basic_map *)bset);
+	return isl_basic_map_is_empty(bset_to_bmap(bset));
 }
 
 struct isl_map *isl_basic_map_union(
@@ -8201,8 +8202,8 @@ struct isl_set *isl_basic_set_union(
 		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
 {
 	return (struct isl_set *)isl_basic_map_union(
-					    (struct isl_basic_map *)bset1,
-					    (struct isl_basic_map *)bset2);
+					    bset_to_bmap(bset1),
+					    bset_to_bmap(bset2));
 }
 
 /* Order divs such that any div only depends on previous divs */
@@ -8237,7 +8238,7 @@ struct isl_basic_map *isl_basic_map_order_divs(struct isl_basic_map *bmap)
 struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)
-		isl_basic_map_order_divs((struct isl_basic_map *)bset);
+		isl_basic_map_order_divs(bset_to_bmap(bset));
 }
 
 __isl_give isl_map *isl_map_order_divs(__isl_take isl_map *map)
@@ -8413,7 +8414,7 @@ struct isl_basic_set *isl_basic_set_align_divs(
 		struct isl_basic_set *dst, struct isl_basic_set *src)
 {
 	return (struct isl_basic_set *)isl_basic_map_align_divs(
-		(struct isl_basic_map *)dst, (struct isl_basic_map *)src);
+		bset_to_bmap(dst), bset_to_bmap(src));
 }
 
 struct isl_map *isl_map_align_divs(struct isl_map *map)
@@ -8589,7 +8590,7 @@ struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 						struct isl_basic_set *bset)
 {
 	return (struct isl_set *)isl_map_drop_basic_map((struct isl_map *)set,
-						(struct isl_basic_map *)bset);
+						bset_to_bmap(bset));
 }
 
 /* Given two basic sets bset1 and bset2, compute the maximal difference
@@ -8817,7 +8818,7 @@ static int isl_map_plain_has_fixed_var(__isl_keep isl_map *map,
 static int isl_basic_set_plain_has_fixed_var(__isl_keep isl_basic_set *bset,
 	unsigned pos, isl_int *val)
 {
-	return isl_basic_map_plain_has_fixed_var((struct isl_basic_map *)bset,
+	return isl_basic_map_plain_has_fixed_var(bset_to_bmap(bset),
 						pos, val);
 }
 
@@ -9102,7 +9103,7 @@ __isl_give isl_basic_set *isl_basic_set_sort_constraints(
 	__isl_take isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)isl_basic_map_sort_constraints(
-						(struct isl_basic_map *)bset);
+						bset_to_bmap(bset));
 }
 
 struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
@@ -9121,7 +9122,7 @@ struct isl_basic_map *isl_basic_map_normalize(struct isl_basic_map *bmap)
 struct isl_basic_set *isl_basic_set_normalize(struct isl_basic_set *bset)
 {
 	return (struct isl_basic_set *)isl_basic_map_normalize(
-						(struct isl_basic_map *)bset);
+						bset_to_bmap(bset));
 }
 
 int isl_basic_map_plain_cmp(const __isl_keep isl_basic_map *bmap1,
@@ -9211,8 +9212,8 @@ isl_bool isl_basic_map_plain_is_equal(__isl_keep isl_basic_map *bmap1,
 isl_bool isl_basic_set_plain_is_equal(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2)
 {
-	return isl_basic_map_plain_is_equal((isl_basic_map *)bset1,
-					    (isl_basic_map *)bset2);
+	return isl_basic_map_plain_is_equal(bset_to_bmap(bset1),
+					    bset_to_bmap(bset2));
 }
 
 static int qsort_bmap_cmp(const void *p1, const void *p2)
@@ -10049,7 +10050,7 @@ uint32_t isl_basic_map_get_hash(__isl_keep isl_basic_map *bmap)
 
 uint32_t isl_basic_set_get_hash(__isl_keep isl_basic_set *bset)
 {
-	return isl_basic_map_get_hash((isl_basic_map *)bset);
+	return isl_basic_map_get_hash(bset_to_bmap(bset));
 }
 
 uint32_t isl_map_get_hash(__isl_keep isl_map *map)
@@ -11128,7 +11129,7 @@ __isl_give isl_basic_map *isl_basic_set_unwrap(__isl_take isl_basic_set *bset)
 
 	bset = isl_basic_set_finalize(bset);
 
-	return (isl_basic_map *)bset;
+	return bset_to_bmap(bset);
 error:
 	isl_basic_set_free(bset);
 	return NULL;
@@ -11224,7 +11225,7 @@ error:
 
 __isl_give isl_basic_set *isl_basic_set_flatten(__isl_take isl_basic_set *bset)
 {
-	return (isl_basic_set *)isl_basic_map_flatten((isl_basic_map *)bset);
+	return (isl_basic_set *)isl_basic_map_flatten(bset_to_bmap(bset));
 }
 
 __isl_give isl_basic_map *isl_basic_map_flatten_domain(
@@ -11646,7 +11647,7 @@ __isl_give isl_mat *isl_basic_set_equalities_matrix(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type c1,
 	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4)
 {
-	return isl_basic_map_equalities_matrix((isl_basic_map *)bset,
+	return isl_basic_map_equalities_matrix(bset_to_bmap(bset),
 						c1, c2, c3, c4, isl_dim_in);
 }
 
@@ -11654,7 +11655,7 @@ __isl_give isl_mat *isl_basic_set_inequalities_matrix(
 	__isl_keep isl_basic_set *bset, enum isl_dim_type c1,
 	enum isl_dim_type c2, enum isl_dim_type c3, enum isl_dim_type c4)
 {
-	return isl_basic_map_inequalities_matrix((isl_basic_map *)bset,
+	return isl_basic_map_inequalities_matrix(bset_to_bmap(bset),
 						 c1, c2, c3, c4, isl_dim_in);
 }
 

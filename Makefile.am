@@ -339,6 +339,7 @@ EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
 	basis_reduction_templ.c \
+	bset_to_bmap.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \
