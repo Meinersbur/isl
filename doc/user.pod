@@ -2362,7 +2362,8 @@ Points can be copied or freed using
 
 	__isl_give isl_point *isl_point_copy(
 		__isl_keep isl_point *pnt);
-	void isl_point_free(__isl_take isl_point *pnt);
+	__isl_null isl_point *isl_point_free(
+		__isl_take isl_point *pnt);
 
 A singleton set can be created from a point using
 
