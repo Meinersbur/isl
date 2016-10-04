@@ -13413,6 +13413,22 @@ isl_bool isl_basic_map_equal_div_expr_except_constant(
 						2, total);
 }
 
+/* Replace the numerator of the constant term of the integer division
+ * expression at position "div" in "bmap" by "value".
+ * The caller guarantees that this does not change the meaning
+ * of the input.
+ */
+__isl_give isl_basic_map *isl_basic_map_set_div_expr_constant_num_si_inplace(
+	__isl_take isl_basic_map *bmap, int div, int value)
+{
+	if (isl_basic_map_check_range(bmap, isl_dim_div, div, 1) < 0)
+		return isl_basic_map_free(bmap);
+
+	isl_int_set_si(bmap->div[div][1], value);
+
+	return bmap;
+}
+
 /* Is the point "inner" internal to inequality constraint "ineq"
  * of "bset"?
  * The point is considered to be internal to the inequality constraint,

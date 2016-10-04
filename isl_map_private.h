@@ -534,5 +534,7 @@ isl_bool isl_basic_map_equal_div_expr_part(__isl_keep isl_basic_map *bmap1,
 isl_bool isl_basic_map_equal_div_expr_except_constant(
 	__isl_keep isl_basic_map *bmap1, int pos1,
 	__isl_keep isl_basic_map *bmap2, int pos2);
+__isl_give isl_basic_map *isl_basic_map_set_div_expr_constant_num_si_inplace(
+	__isl_take isl_basic_map *bmap, int div, int value);
 
 #endif
