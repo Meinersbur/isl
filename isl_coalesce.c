@@ -29,6 +29,7 @@
 #include <isl_vec_private.h>
 #include <isl_aff_private.h>
 #include <isl_equalities.h>
+#include <isl_constraint_private.h>
 
 #include <set_to_map.c>
 #include <set_from_map.c>
@@ -2201,6 +2202,112 @@ static isl_stat shift_div(struct isl_coalesce_info *info, int div,
 	return isl_stat_ok;
 }
 
+/* If the integer division at position "div" is defined by an equality,
+ * i.e., a stride constraint, then change the integer division expression
+ * to have a constant term equal to zero.
+ *
+ * Let the equality constraint be
+ *
+ *	c + f + m a = 0
+ *
+ * The integer division expression is then of the form
+ *
+ *	a = floor((-f - c')/m)
+ *
+ * The integer division is first shifted by t = floor(c/m),
+ * turning the equality constraint into
+ *
+ *	c - m floor(c/m) + f + m a' = 0
+ *
+ * i.e.,
+ *
+ *	(c mod m) + f + m a' = 0
+ *
+ * That is,
+ *
+ *	a' = (-f - (c mod m))/m = floor((-f)/m)
+ *
+ * because a' is an integer and 0 <= (c mod m) < m.
+ * The constant term of a' can therefore be zeroed out.
+ */
+static isl_stat normalize_stride_div(struct isl_coalesce_info *info, int div)
+{
+	isl_bool defined;
+	isl_stat r;
+	isl_constraint *c;
+	isl_int shift, stride;
+
+	defined = isl_basic_map_has_defining_equality(info->bmap, isl_dim_div,
+							div, &c);
+	if (defined < 0)
+		return isl_stat_error;
+	if (!defined)
+		return isl_stat_ok;
+	if (!c)
+		return isl_stat_error;
+	isl_int_init(shift);
+	isl_int_init(stride);
+	isl_constraint_get_constant(c, &shift);
+	isl_constraint_get_coefficient(c, isl_dim_div, div, &stride);
+	isl_int_fdiv_q(shift, shift, stride);
+	r = shift_div(info, div, shift);
+	isl_int_clear(stride);
+	isl_int_clear(shift);
+	isl_constraint_free(c);
+	if (r < 0)
+		return isl_stat_error;
+	info->bmap = isl_basic_map_set_div_expr_constant_num_si_inplace(
+							    info->bmap, div, 0);
+	if (!info->bmap)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* The basic maps represented by "info1" and "info2" are known
+ * to have the same number of integer divisions.
+ * Check if pairs of integer divisions are equal to each other
+ * despite the fact that they differ by a rational constant.
+ *
+ * In particular, look for any pair of integer divisions that
+ * only differ in their constant terms.
+ * If either of these integer divisions is defined
+ * by stride constraints, then modify it to have a zero constant term.
+ * If both are defined by stride constraints then in the end they will have
+ * the same (zero) constant term.
+ */
+static isl_stat harmonize_stride_divs(struct isl_coalesce_info *info1,
+	struct isl_coalesce_info *info2)
+{
+	int i, n;
+	int total;
+
+	total = isl_basic_map_total_dim(info1->bmap);
+	n = isl_basic_map_dim(info1->bmap, isl_dim_div);
+	for (i = 0; i < n; ++i) {
+		isl_bool known, harmonize;
+
+		known = isl_basic_map_div_is_known(info1->bmap, i);
+		if (known >= 0 && known)
+			known = isl_basic_map_div_is_known(info2->bmap, i);
+		if (known < 0)
+			return isl_stat_error;
+		if (!known)
+			continue;
+		harmonize = isl_basic_map_equal_div_expr_except_constant(
+					    info1->bmap, i, info2->bmap, i);
+		if (harmonize < 0)
+			return isl_stat_error;
+		if (!harmonize)
+			continue;
+		if (normalize_stride_div(info1, i) < 0)
+			return isl_stat_error;
+		if (normalize_stride_div(info2, i) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* If "shift" is an integer constant, then shift the integer division
  * at position "div" of the basic map represented by "info" by "shift".
  * If "shift" is not an integer constant, then do nothing.
@@ -2333,7 +2440,11 @@ static isl_stat harmonize_divs_with_hulls(struct isl_coalesce_info *info1,
  * constraints of the other basic map, one is equal to the other
  * plus a constant.
  *
- * Extract the equality constraints and continue with
+ * First check if pairs of integer divisions are equal to each other
+ * despite the fact that they differ by a rational constant.
+ * If so, try and arrange for them to have the same constant term.
+ *
+ * Then, extract the equality constraints and continue with
  * harmonize_divs_with_hulls.
  */
 static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
@@ -2350,6 +2461,9 @@ static isl_stat harmonize_divs(struct isl_coalesce_info *info1,
 		return isl_stat_ok;
 	if (info1->bmap->n_div == 0)
 		return isl_stat_ok;
+
+	if (harmonize_stride_divs(info1, info2) < 0)
+		return isl_stat_error;
 
 	bmap1 = isl_basic_map_copy(info1->bmap);
 	bmap2 = isl_basic_map_copy(info2->bmap);
