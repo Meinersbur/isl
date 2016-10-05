@@ -2366,6 +2366,7 @@ static enum isl_change coalesce_with_expanded_divs(
 	init_status(info_i);
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_expand_divs(bmap, isl_mat_copy(div), exp);
+	bmap = isl_basic_map_mark_final(bmap);
 
 	if (!bmap)
 		goto error;
