@@ -2298,10 +2298,20 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	return 1;
 }
 
-/* Expand info->tab and info->bmap in the same way "bmap" was expanded
- * in isl_basic_map_expand_divs using the expansion "exp" and
+/* Description of an integer division that is added
+ * during an expansion.
+ * "pos" is the position of the corresponding variable.
+ */
+struct isl_expanded {
+	int pos;
+};
+
+/* Insert the "n" integer division variables "expanded"
+ * into info->tab and info->bmap and
  * update info->ineq with respect to the redundant constraints
- * in the resulting tableau.  info->bmap is the original version
+ * in the resulting tableau.
+ * "bmap" contains the result of this insertion in info->bmap,
+ * while info->bmap is the original version
  * of "bmap", i.e., the one that corresponds to the current
  * state of info->tab.  The number of constraints in info->bmap
  * is assumed to be the same as the number of constraints
@@ -2319,12 +2329,10 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
  * There is no need to check the newly added div constraints
  * since they cannot be redundant.
  */
-static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
-	__isl_take isl_basic_map *bmap)
+static isl_stat tab_insert_divs(struct isl_coalesce_info *info,
+	int n, struct isl_expanded *expanded, __isl_take isl_basic_map *bmap)
 {
-	unsigned total, pos, n_div;
-	int extra_var;
-	int i, n, j, n_ineq;
+	int i, n_ineq;
 	unsigned n_eq;
 
 	if (!bmap)
@@ -2334,24 +2342,13 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 			"original tableau does not correspond "
 			"to original basic map", goto error);
 
-	total = isl_basic_map_dim(bmap, isl_dim_all);
-	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	pos = total - n_div;
-	extra_var = total - info->tab->n_var;
-	n = n_div - extra_var;
-
-	if (isl_tab_extend_vars(info->tab, extra_var) < 0)
+	if (isl_tab_extend_vars(info->tab, n) < 0)
 		goto error;
-	if (isl_tab_extend_cons(info->tab, 2 * extra_var) < 0)
+	if (isl_tab_extend_cons(info->tab, 2 * n) < 0)
 		goto error;
 
-	i = 0;
-	for (j = 0; j < n_div; ++j) {
-		if (i < n && exp[i] == j) {
-			++i;
-			continue;
-		}
-		if (isl_tab_insert_var(info->tab, pos + j) < 0)
+	for (i = 0; i < n; ++i) {
+		if (isl_tab_insert_var(info->tab, expanded[i].pos) < 0)
 			goto error;
 	}
 
@@ -2370,6 +2367,60 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	}
 
 	return isl_stat_ok;
+error:
+	isl_basic_map_free(bmap);
+	return isl_stat_error;
+}
+
+/* Expand info->tab and info->bmap in the same way "bmap" was expanded
+ * in isl_basic_map_expand_divs using the expansion "exp" and
+ * update info->ineq with respect to the redundant constraints
+ * in the resulting tableau. info->bmap is the original version
+ * of "bmap", i.e., the one that corresponds to the current
+ * state of info->tab.  The number of constraints in info->bmap
+ * is assumed to be the same as the number of constraints
+ * in info->tab.  This is required to be able to detect
+ * the extra constraints in "bmap".
+ *
+ * Extract the positions where extra local variables are introduced
+ * from "exp" and call tab_insert_divs.
+ */
+static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
+	__isl_take isl_basic_map *bmap)
+{
+	isl_ctx *ctx;
+	struct isl_expanded *expanded;
+	int i, j, k, n;
+	int extra_var;
+	unsigned total, pos, n_div;
+	isl_stat r;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	pos = total - n_div;
+	extra_var = total - info->tab->n_var;
+	n = n_div - extra_var;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	expanded = isl_calloc_array(ctx, struct isl_expanded, extra_var);
+	if (extra_var && !expanded)
+		goto error;
+
+	i = 0;
+	k = 0;
+	for (j = 0; j < n_div; ++j) {
+		if (i < n && exp[i] == j) {
+			++i;
+			continue;
+		}
+		expanded[k++].pos = pos + j;
+	}
+
+	r = tab_insert_divs(info, extra_var, expanded, bmap);
+
+	free(expanded);
+
+	return r;
 error:
 	isl_basic_map_free(bmap);
 	return isl_stat_error;
