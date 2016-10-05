@@ -2298,20 +2298,21 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	return 1;
 }
 
-/* Expand info->tab in the same way info->bmap was expanded in
- * isl_basic_map_expand_divs using the expansion "exp" and
+/* Expand info->tab and info->bmap in the same way "bmap" was expanded
+ * in isl_basic_map_expand_divs using the expansion "exp" and
  * update info->ineq with respect to the redundant constraints
- * in the resulting tableau. "bmap" is the original version
- * of info->bmap, i.e., the one that corresponds to the current
- * state of info->tab.  The number of constraints in "bmap"
+ * in the resulting tableau.  info->bmap is the original version
+ * of "bmap", i.e., the one that corresponds to the current
+ * state of info->tab.  The number of constraints in info->bmap
  * is assumed to be the same as the number of constraints
  * in info->tab.  This is required to be able to detect
- * the extra constraints in info->bmap.
+ * the extra constraints in "bmap".
  *
  * In particular, introduce extra variables corresponding
  * to the extra integer divisions and add the div constraints
- * that were added to info->bmap after info->tab was created
- * from the original info->bmap.
+ * that were added to "bmap" after info->tab was created
+ * from info->bmap.
+ * Replace info->bmap by "bmap" to match the changes to info->tab.
  * info->ineq was computed without a tableau and therefore
  * does not take into account the redundant constraints
  * in the tableau.  Mark them here.
@@ -2328,13 +2329,13 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 
 	if (!bmap)
 		return isl_stat_error;
-	if (bmap->n_eq + bmap->n_ineq != info->tab->n_con)
+	if (info->bmap->n_eq + info->bmap->n_ineq != info->tab->n_con)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
 			"original tableau does not correspond "
 			"to original basic map", return isl_stat_error);
 
-	total = isl_basic_map_dim(info->bmap, isl_dim_all);
-	n_div = isl_basic_map_dim(info->bmap, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	pos = total - n_div;
 	extra_var = total - info->tab->n_var;
 	n = n_div - extra_var;
@@ -2355,9 +2356,14 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	}
 
 	n_ineq = info->tab->n_con - info->tab->n_eq;
-	for (i = n_ineq; i < info->bmap->n_ineq; ++i)
-		if (isl_tab_add_ineq(info->tab, info->bmap->ineq[i]) < 0)
+	for (i = n_ineq; i < bmap->n_ineq; ++i)
+		if (isl_tab_add_ineq(info->tab, bmap->ineq[i]) < 0)
 			return isl_stat_error;
+
+	isl_basic_map_free(info->bmap);
+	info->bmap = isl_basic_map_copy(bmap);
+	if (!info->bmap)
+		return isl_stat_error;
 
 	n_eq = info->bmap->n_eq;
 	for (i = 0; i < n_ineq; ++i) {
@@ -2414,10 +2420,9 @@ static enum isl_change coalesce_expand_tab_divs(__isl_take isl_basic_map *bmap,
 		return known < 0 ? isl_change_error : isl_change_none;
 	}
 
-	bmap_i = info[i].bmap;
-	info[i].bmap = isl_basic_map_copy(bmap);
+	bmap_i = isl_basic_map_copy(info[i].bmap);
 	snap = isl_tab_snap(info[i].tab);
-	if (!info[i].bmap || expand_tab(&info[i], exp, bmap_i) < 0)
+	if (expand_tab(&info[i], exp, bmap) < 0)
 		change = isl_change_error;
 
 	init_status(&info[j]);
