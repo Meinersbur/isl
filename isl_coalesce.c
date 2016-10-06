@@ -2320,7 +2320,7 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
  * since they cannot be redundant.
  */
 static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
-	__isl_keep isl_basic_map *bmap)
+	__isl_take isl_basic_map *bmap)
 {
 	unsigned total, pos, n_div;
 	int extra_var;
@@ -2332,7 +2332,7 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	if (info->bmap->n_eq + info->bmap->n_ineq != info->tab->n_con)
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
 			"original tableau does not correspond "
-			"to original basic map", return isl_stat_error);
+			"to original basic map", goto error);
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
@@ -2341,9 +2341,9 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	n = n_div - extra_var;
 
 	if (isl_tab_extend_vars(info->tab, extra_var) < 0)
-		return isl_stat_error;
+		goto error;
 	if (isl_tab_extend_cons(info->tab, 2 * extra_var) < 0)
-		return isl_stat_error;
+		goto error;
 
 	i = 0;
 	for (j = 0; j < n_div; ++j) {
@@ -2352,18 +2352,16 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 			continue;
 		}
 		if (isl_tab_insert_var(info->tab, pos + j) < 0)
-			return isl_stat_error;
+			goto error;
 	}
 
 	n_ineq = info->tab->n_con - info->tab->n_eq;
 	for (i = n_ineq; i < bmap->n_ineq; ++i)
 		if (isl_tab_add_ineq(info->tab, bmap->ineq[i]) < 0)
-			return isl_stat_error;
+			goto error;
 
 	isl_basic_map_free(info->bmap);
-	info->bmap = isl_basic_map_copy(bmap);
-	if (!info->bmap)
-		return isl_stat_error;
+	info->bmap = bmap;
 
 	n_eq = info->bmap->n_eq;
 	for (i = 0; i < n_ineq; ++i) {
@@ -2372,6 +2370,9 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	}
 
 	return isl_stat_ok;
+error:
+	isl_basic_map_free(bmap);
+	return isl_stat_error;
 }
 
 /* Check if the union of the basic maps represented by info[i] and info[j]
@@ -2440,7 +2441,6 @@ static enum isl_change coalesce_expand_tab_divs(__isl_take isl_basic_map *bmap,
 			change = isl_change_error;
 	}
 
-	isl_basic_map_free(bmap);
 	return change;
 }
 
