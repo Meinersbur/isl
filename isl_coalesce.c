@@ -2315,6 +2315,8 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
  * info->ineq was computed without a tableau and therefore
  * does not take into account the redundant constraints
  * in the tableau.  Mark them here.
+ * There is no need to check the newly added div constraints
+ * since they cannot be redundant.
  */
 static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	__isl_keep isl_basic_map *bmap)
@@ -2358,7 +2360,7 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 			return isl_stat_error;
 
 	n_eq = info->bmap->n_eq;
-	for (i = 0; i < info->bmap->n_ineq; ++i) {
+	for (i = 0; i < n_ineq; ++i) {
 		if (isl_tab_is_redundant(info->tab, n_eq + i))
 			info->ineq[i] = STATUS_REDUNDANT;
 	}
