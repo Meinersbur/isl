@@ -2298,6 +2298,25 @@ static int same_divs(__isl_keep isl_basic_map *bmap1,
 	return 1;
 }
 
+/* Assuming that "tab" contains the equality constraints and
+ * the initial inequality constraints of "bmap", copy the remaining
+ * inequality constraints of "bmap" to "Tab".
+ */
+static isl_stat copy_ineq(struct isl_tab *tab, __isl_keep isl_basic_map *bmap)
+{
+	int i, n_ineq;
+
+	if (!bmap)
+		return isl_stat_error;
+
+	n_ineq = tab->n_con - tab->n_eq;
+	for (i = n_ineq; i < bmap->n_ineq; ++i)
+		if (isl_tab_add_ineq(tab, bmap->ineq[i]) < 0)
+			return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Description of an integer division that is added
  * during an expansion.
  * "pos" is the position of the corresponding variable.
@@ -2353,9 +2372,8 @@ static isl_stat tab_insert_divs(struct isl_coalesce_info *info,
 	}
 
 	n_ineq = info->tab->n_con - info->tab->n_eq;
-	for (i = n_ineq; i < bmap->n_ineq; ++i)
-		if (isl_tab_add_ineq(info->tab, bmap->ineq[i]) < 0)
-			goto error;
+	if (copy_ineq(info->tab, bmap) < 0)
+		goto error;
 
 	isl_basic_map_free(info->bmap);
 	info->bmap = bmap;
