@@ -13384,6 +13384,35 @@ isl_bool isl_basic_map_equal_div_expr_part(__isl_keep isl_basic_map *bmap1,
 			  bmap2->div[pos2] + first, n);
 }
 
+/* Are the integer division expressions at position "pos1" in "bmap1" and
+ * "pos2" in "bmap2" equal to each other, except that the constant terms
+ * are different?
+ */
+isl_bool isl_basic_map_equal_div_expr_except_constant(
+	__isl_keep isl_basic_map *bmap1, int pos1,
+	__isl_keep isl_basic_map *bmap2, int pos2)
+{
+	isl_bool equal;
+	unsigned total;
+
+	if (!bmap1 || !bmap2)
+		return isl_bool_error;
+	total = isl_basic_map_total_dim(bmap1);
+	if (total != isl_basic_map_total_dim(bmap2))
+		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
+			"incomparable div expressions", return isl_bool_error);
+	equal = isl_basic_map_equal_div_expr_part(bmap1, pos1, bmap2, pos2,
+						0, 1);
+	if (equal < 0 || !equal)
+		return equal;
+	equal = isl_basic_map_equal_div_expr_part(bmap1, pos1, bmap2, pos2,
+						1, 1);
+	if (equal < 0 || equal)
+		return isl_bool_not(equal);
+	return isl_basic_map_equal_div_expr_part(bmap1, pos1, bmap2, pos2,
+						2, total);
+}
+
 /* Is the point "inner" internal to inequality constraint "ineq"
  * of "bset"?
  * The point is considered to be internal to the inequality constraint,
