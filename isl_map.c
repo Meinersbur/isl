@@ -4553,7 +4553,7 @@ __isl_give isl_map *isl_map_lex_gt_map(__isl_take isl_map *map1,
 	return map;
 }
 
-__isl_give isl_basic_map *isl_basic_map_from_basic_set(
+static __isl_give isl_basic_map *basic_map_from_basic_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim)
 {
 	struct isl_basic_map *bmap;
@@ -4571,6 +4571,12 @@ error:
 	isl_basic_set_free(bset);
 	isl_space_free(dim);
 	return NULL;
+}
+
+__isl_give isl_basic_map *isl_basic_map_from_basic_set(
+	__isl_take isl_basic_set *bset, __isl_take isl_space *space)
+{
+	return basic_map_from_basic_set(bset, space);
 }
 
 /* For a div d = floor(f/m), add the constraint
@@ -5313,7 +5319,7 @@ __isl_give isl_map *isl_map_from_set(__isl_take isl_set *set,
 	isl_assert(set->ctx, isl_space_compatible(set->dim, dim), goto error);
 	map = set_to_map(set);
 	for (i = 0; i < set->n; ++i) {
-		map->p[i] = isl_basic_map_from_basic_set(
+		map->p[i] = basic_map_from_basic_set(
 				set->p[i], isl_space_copy(dim));
 		if (!map->p[i])
 			goto error;
