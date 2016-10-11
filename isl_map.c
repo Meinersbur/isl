@@ -2914,7 +2914,7 @@ struct isl_basic_map *isl_basic_map_intersect_range(
 		goto error;
 	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
 			bset->n_div, bset->n_eq, bset->n_ineq);
-	bmap_range = isl_basic_map_from_basic_set(bset, isl_space_copy(bset->dim));
+	bmap_range = bset_to_bmap(bset);
 	bmap = add_constraints(bmap, bmap_range, 0, 0);
 
 	bmap = isl_basic_map_simplify(bmap);
