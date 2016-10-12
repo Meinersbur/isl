@@ -5255,7 +5255,7 @@ struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
 		return NULL;
 	space = isl_space_domain(isl_basic_map_get_space(bmap));
 
-	n_out = isl_basic_map_n_out(bmap);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	bmap = isl_basic_map_project_out(bmap, isl_dim_out, 0, n_out);
 
 	return isl_basic_map_reset_space(bmap, space);
