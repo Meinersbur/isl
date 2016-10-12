@@ -202,26 +202,6 @@ unsigned isl_set_n_param(__isl_keep isl_set *set)
 	return isl_set_dim(set, isl_dim_param);
 }
 
-unsigned isl_basic_map_n_in(__isl_keep const isl_basic_map *bmap)
-{
-	return bmap ? bmap->dim->n_in : 0;
-}
-
-unsigned isl_basic_map_n_out(__isl_keep const isl_basic_map *bmap)
-{
-	return bmap ? bmap->dim->n_out : 0;
-}
-
-unsigned isl_basic_map_n_param(__isl_keep const isl_basic_map *bmap)
-{
-	return bmap ? bmap->dim->nparam : 0;
-}
-
-unsigned isl_basic_map_n_div(__isl_keep const isl_basic_map *bmap)
-{
-	return bmap ? bmap->n_div : 0;
-}
-
 unsigned isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap)
 {
 	return bmap ? isl_space_dim(bmap->dim, isl_dim_all) + bmap->n_div : 0;

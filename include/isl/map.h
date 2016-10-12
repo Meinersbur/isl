@@ -30,14 +30,6 @@
 extern "C" {
 #endif
 
-ISL_DEPRECATED
-unsigned isl_basic_map_n_in(__isl_keep const isl_basic_map *bmap);
-ISL_DEPRECATED
-unsigned isl_basic_map_n_out(__isl_keep const isl_basic_map *bmap);
-ISL_DEPRECATED
-unsigned isl_basic_map_n_param(__isl_keep const isl_basic_map *bmap);
-ISL_DEPRECATED
-unsigned isl_basic_map_n_div(__isl_keep const isl_basic_map *bmap);
 unsigned isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap);
 unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 				enum isl_dim_type type);
