@@ -9411,11 +9411,11 @@ struct isl_basic_map *isl_basic_map_product(
 	dim_result = isl_space_product(isl_space_copy(bmap1->dim),
 						   isl_space_copy(bmap2->dim));
 
-	in1 = isl_basic_map_n_in(bmap1);
-	in2 = isl_basic_map_n_in(bmap2);
-	out1 = isl_basic_map_n_out(bmap1);
-	out2 = isl_basic_map_n_out(bmap2);
-	nparam = isl_basic_map_n_param(bmap1);
+	in1 = isl_basic_map_dim(bmap1, isl_dim_in);
+	in2 = isl_basic_map_dim(bmap2, isl_dim_in);
+	out1 = isl_basic_map_dim(bmap1, isl_dim_out);
+	out2 = isl_basic_map_dim(bmap2, isl_dim_out);
+	nparam = isl_basic_map_dim(bmap1, isl_dim_param);
 
 	total = nparam + in1 + in2 + out1 + out2 + bmap1->n_div + bmap2->n_div;
 	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
