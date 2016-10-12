@@ -2827,9 +2827,9 @@ static void dump_term(struct isl_basic_map *bmap,
 			isl_int c, int pos, FILE *out)
 {
 	const char *name;
-	unsigned in = isl_basic_map_n_in(bmap);
-	unsigned dim = in + isl_basic_map_n_out(bmap);
-	unsigned nparam = isl_basic_map_n_param(bmap);
+	unsigned in = isl_basic_map_dim(bmap, isl_dim_in);
+	unsigned dim = in + isl_basic_map_dim(bmap, isl_dim_out);
+	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	if (!pos)
 		isl_int_print(out, c, 0);
 	else {
