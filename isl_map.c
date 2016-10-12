@@ -1622,12 +1622,12 @@ static void copy_constraint(struct isl_basic_map *dst_map, isl_int *dst,
 			    struct isl_basic_map *src_map, isl_int *src,
 			    unsigned in_off, unsigned out_off, unsigned div_off)
 {
-	unsigned src_nparam = isl_basic_map_n_param(src_map);
-	unsigned dst_nparam = isl_basic_map_n_param(dst_map);
-	unsigned src_in = isl_basic_map_n_in(src_map);
-	unsigned dst_in = isl_basic_map_n_in(dst_map);
-	unsigned src_out = isl_basic_map_n_out(src_map);
-	unsigned dst_out = isl_basic_map_n_out(dst_map);
+	unsigned src_nparam = isl_basic_map_dim(src_map, isl_dim_param);
+	unsigned dst_nparam = isl_basic_map_dim(dst_map, isl_dim_param);
+	unsigned src_in = isl_basic_map_dim(src_map, isl_dim_in);
+	unsigned dst_in = isl_basic_map_dim(dst_map, isl_dim_in);
+	unsigned src_out = isl_basic_map_dim(src_map, isl_dim_out);
+	unsigned dst_out = isl_basic_map_dim(dst_map, isl_dim_out);
 	isl_int_set(dst[0], src[0]);
 	isl_seq_cpy(dst+1, src+1, isl_min(dst_nparam, src_nparam));
 	if (dst_nparam > src_nparam)
