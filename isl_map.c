@@ -4455,8 +4455,8 @@ static struct isl_basic_map *var_less(struct isl_basic_map *bmap, unsigned pos)
 	i = isl_basic_map_alloc_inequality(bmap);
 	if (i < 0)
 		goto error;
-	nparam = isl_basic_map_n_param(bmap);
-	n_in = isl_basic_map_n_in(bmap);
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	isl_seq_clr(bmap->ineq[i], 1 + isl_basic_map_total_dim(bmap));
 	isl_int_set_si(bmap->ineq[i][0], -1);
 	isl_int_set_si(bmap->ineq[i][1+nparam+pos], -1);
