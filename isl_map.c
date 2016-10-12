@@ -4562,7 +4562,8 @@ static __isl_give isl_basic_map *basic_map_from_basic_set(
 	if (!bset || !dim)
 		goto error;
 
-	isl_assert(bset->ctx, isl_space_compatible(bset->dim, dim), goto error);
+	isl_assert(bset->ctx, isl_space_compatible_internal(bset->dim, dim),
+		goto error);
 	isl_space_free(bset->dim);
 	bmap = bset_to_bmap(bset);
 	bmap->dim = dim;
@@ -5316,7 +5317,8 @@ __isl_give isl_map *isl_map_from_set(__isl_take isl_set *set,
 	set = isl_set_cow(set);
 	if (!set || !dim)
 		goto error;
-	isl_assert(set->ctx, isl_space_compatible(set->dim, dim), goto error);
+	isl_assert(set->ctx, isl_space_compatible_internal(set->dim, dim),
+		goto error);
 	map = set_to_map(set);
 	for (i = 0; i < set->n; ++i) {
 		map->p[i] = basic_map_from_basic_set(
