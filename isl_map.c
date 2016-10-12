@@ -7541,8 +7541,8 @@ struct isl_basic_set *isl_basic_map_deltas(struct isl_basic_map *bmap)
 						  bmap->dim, isl_dim_out),
 		   goto error);
 	target_space = isl_space_domain(isl_basic_map_get_space(bmap));
-	dim = isl_basic_map_n_in(bmap);
-	nparam = isl_basic_map_n_param(bmap);
+	dim = isl_basic_map_dim(bmap, isl_dim_in);
+	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	bmap = isl_basic_map_from_range(isl_basic_map_wrap(bmap));
 	bmap = isl_basic_map_add_dims(bmap, isl_dim_in, dim);
 	bmap = isl_basic_map_extend_constraints(bmap, dim, 0);
