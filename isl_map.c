@@ -4094,10 +4094,10 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	dim_result = isl_space_join(isl_space_copy(bmap1->dim),
 				  isl_space_copy(bmap2->dim));
 
-	n_in = isl_basic_map_n_in(bmap1);
-	n_out = isl_basic_map_n_out(bmap2);
-	n = isl_basic_map_n_out(bmap1);
-	nparam = isl_basic_map_n_param(bmap1);
+	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap2, isl_dim_out);
+	n = isl_basic_map_dim(bmap1, isl_dim_out);
+	nparam = isl_basic_map_dim(bmap1, isl_dim_param);
 
 	total = nparam + n_in + n_out + bmap1->n_div + bmap2->n_div + n;
 	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
