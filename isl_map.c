@@ -4180,9 +4180,9 @@ struct isl_basic_map *isl_basic_map_sum(
 	isl_assert(bmap1->ctx, isl_space_is_equal(bmap1->dim, bmap2->dim),
 		goto error);
 
-	nparam = isl_basic_map_n_param(bmap1);
-	n_in = isl_basic_map_n_in(bmap1);
-	n_out = isl_basic_map_n_out(bmap1);
+	nparam = isl_basic_map_dim(bmap1, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap1, isl_dim_out);
 
 	total = nparam + n_in + n_out + bmap1->n_div + bmap2->n_div + 2 * n_out;
 	dim_map1 = isl_dim_map_alloc(bmap1->ctx, total);
