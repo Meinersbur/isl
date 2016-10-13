@@ -66,7 +66,7 @@ struct isl_vertex_list {
 	struct isl_vertex_list *next;
 };
 
-static void free_vertex_list(struct isl_vertex_list *list)
+static struct isl_vertex_list *free_vertex_list(struct isl_vertex_list *list)
 {
 	struct isl_vertex_list *next;
 
@@ -76,6 +76,8 @@ static void free_vertex_list(struct isl_vertex_list *list)
 		isl_basic_set_free(list->v.dom);
 		free(list);
 	}
+
+	return NULL;
 }
 
 static __isl_give isl_vertices *vertices_from_list(__isl_keep isl_basic_set *bset,
