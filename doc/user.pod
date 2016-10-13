@@ -4287,10 +4287,14 @@ the internal representation of the inputs has not changed), but may
 change over different versions of C<isl>.
 
 	#include <isl/aff.h>
+	int isl_multi_aff_plain_cmp(
+		__isl_keep isl_multi_aff *ma1,
+		__isl_keep isl_multi_aff *ma2);
 	int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
 		__isl_keep isl_pw_aff *pa2);
 
-The function C<isl_pw_aff_plain_cmp> can be used to sort
+The functions C<isl_multi_aff_plain_cmp> and
+C<isl_pw_aff_plain_cmp> can be used to sort C<isl_multi_aff>s and
 C<isl_pw_aff>s.  The order is not strictly defined.
 The current order sorts expressions that only involve
 earlier dimensions before those that involve later dimensions.

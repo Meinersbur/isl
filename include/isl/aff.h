@@ -346,6 +346,7 @@ __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 	__isl_take isl_pw_aff_list *list2);
 
 ISL_DECLARE_MULTI(aff)
+ISL_DECLARE_MULTI_CMP(aff)
 ISL_DECLARE_MULTI_NEG(aff)
 ISL_DECLARE_MULTI_DIMS(aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(aff)
