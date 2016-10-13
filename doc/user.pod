@@ -7705,7 +7705,8 @@ the following.
 
 	int isl_vertices_get_n_vertices(
 		__isl_keep isl_vertices *vertices);
-	void isl_vertices_free(__isl_take isl_vertices *vertices);
+	__isl_null isl_vertices *isl_vertices_free(
+		__isl_take isl_vertices *vertices);
 
 Vertices can be inspected and destroyed using the following functions.
 
