@@ -7618,7 +7618,7 @@ library.
 
 The function C<isl_basic_set_compute_vertices> performs the
 actual computation of the parametric vertices and the chamber
-decomposition and store the result in an C<isl_vertices> object.
+decomposition and stores the result in an C<isl_vertices> object.
 This information can be queried by either iterating over all
 the vertices or iterating over all the chambers or cells
 and then iterating over all vertices that are active on the chamber.
