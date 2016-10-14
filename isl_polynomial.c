@@ -4601,7 +4601,7 @@ static __isl_give isl_pw_qpolynomial *compressed_multiplicative_call(
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
 	space = isl_basic_set_get_space(bset);
-	space = isl_space_domain(space);
+	space = isl_space_params(space);
 	set = isl_set_universe(isl_space_copy(space));
 	qp = isl_qpolynomial_one_on_domain(space);
 	pwqp = isl_pw_qpolynomial_alloc(set, qp);
