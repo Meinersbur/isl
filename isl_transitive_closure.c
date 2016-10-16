@@ -1855,8 +1855,9 @@ error:
  * order, at each join also taking in the union of both arguments
  * to allow for paths that do not go through one of the two arguments.
  */
-static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
-	__isl_keep isl_map *map, int *exact, int project)
+static __isl_give isl_map *construct_power_components(
+	__isl_take isl_space *space, __isl_keep isl_map *map, int *exact,
+	int project)
 {
 	int i, n, c;
 	struct isl_map *path = NULL;
@@ -1868,7 +1869,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 	if (!map)
 		goto error;
 	if (map->n <= 1)
-		return floyd_warshall(dim, map, exact, project);
+		return floyd_warshall(space, map, exact, project);
 
 	data.list = map->p;
 	data.check_closed = 0;
@@ -1886,7 +1887,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 	if (project)
 		path = isl_map_empty(isl_map_get_space(map));
 	else
-		path = isl_map_empty(isl_space_copy(dim));
+		path = isl_map_empty(isl_space_copy(space));
 	path = anonymize(path);
 	while (n) {
 		struct isl_map *comp;
@@ -1898,7 +1899,7 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 			--n;
 			++i;
 		}
-		path_comp = floyd_warshall(isl_space_copy(dim),
+		path_comp = floyd_warshall(isl_space_copy(space),
 						comp, exact, project);
 		path_comp = anonymize(path_comp);
 		path_comb = isl_map_apply_range(isl_map_copy(path),
@@ -1919,17 +1920,17 @@ static __isl_give isl_map *construct_power_components(__isl_take isl_space *dim,
 		if (!closed) {
 			isl_tarjan_graph_free(g);
 			isl_map_free(path);
-			return floyd_warshall(dim, map, orig_exact, project);
+			return floyd_warshall(space, map, orig_exact, project);
 		}
 	}
 
 	isl_tarjan_graph_free(g);
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	return path;
 error:
 	isl_tarjan_graph_free(g);
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_map_free(path);
 	return NULL;
 }
