@@ -1970,20 +1970,20 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
 	int *exact, int project)
 {
 	struct isl_map *app = NULL;
-	isl_space *dim = NULL;
+	isl_space *space = NULL;
 
 	if (!map)
 		return NULL;
 
-	dim = isl_map_get_space(map);
+	space = isl_map_get_space(map);
 
-	dim = isl_space_add_dims(dim, isl_dim_in, 1);
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
+	space = isl_space_add_dims(space, isl_dim_in, 1);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
 
-	app = construct_power_components(isl_space_copy(dim), map,
+	app = construct_power_components(isl_space_copy(space), map,
 					exact, project);
 
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	return app;
 }
