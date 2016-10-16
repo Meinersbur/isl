@@ -39,9 +39,9 @@
 #include <isl_ast_build_expr.h>
 #include <isl/options.h>
 
-#define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
+#include "isl_srcdir.c"
 
-static char *srcdir;
+#define ARRAY_SIZE(array) (sizeof(array)/sizeof(*array))
 
 static char *get_filename(isl_ctx *ctx, const char *name, const char *suffix) {
 	char *filename;
@@ -6753,9 +6753,6 @@ int main(int argc, char **argv)
 	int i;
 	struct isl_ctx *ctx;
 	struct isl_options *options;
-
-	srcdir = getenv("srcdir");
-	assert(srcdir);
 
 	options = isl_options_new_with_defaults();
 	assert(options);
