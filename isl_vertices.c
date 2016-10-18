@@ -109,15 +109,18 @@ error:
 }
 
 /* Prepend a vertex to the linked list "list" based on the equalities in "tab".
+ * Return isl_bool_true if the vertex was actually added, which is
+ * currently always the case.
+ * Return isl_bool_error on error.
  */
-static int add_vertex(struct isl_vertex_list **list,
+static isl_bool add_vertex(struct isl_vertex_list **list,
 	__isl_keep isl_basic_set *bset, struct isl_tab *tab)
 {
 	unsigned nvar;
 	struct isl_vertex_list *v = NULL;
 
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
-		return -1;
+		return isl_bool_error;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
@@ -141,10 +144,10 @@ static int add_vertex(struct isl_vertex_list **list,
 	v->next = *list;
 	*list = v;
 
-	return 0;
+	return isl_bool_true;
 error:
 	free_vertex_list(v);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Compute the parametric vertices and the chamber decomposition
@@ -466,9 +469,11 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 		}
 		if (selected == nvar) {
 			if (tab->n_dead == nvar) {
-				if (add_vertex(&list, bset, tab) < 0)
+				isl_bool added = add_vertex(&list, bset, tab);
+				if (added < 0)
 					goto error;
-				n_vertices++;
+				if (added)
+					n_vertices++;
 			}
 			init = 0;
 			continue;
