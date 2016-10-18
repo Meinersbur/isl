@@ -109,8 +109,10 @@ error:
 }
 
 /* Prepend a vertex to the linked list "list" based on the equalities in "tab".
- * Return isl_bool_true if the vertex was actually added, which is
- * currently always the case.
+ * Return isl_bool_true if the vertex was actually added and
+ * isl_bool_false otherwise.
+ * In particular, vertices with a lower-dimensional activity domain are
+ * not added to the list because they would not be included in any chamber.
  * Return isl_bool_error on error.
  */
 static isl_bool add_vertex(struct isl_vertex_list **list,
@@ -140,6 +142,11 @@ static isl_bool add_vertex(struct isl_vertex_list **list,
 	v->v.dom = isl_basic_set_params(v->v.dom);
 	if (!v->v.dom)
 		goto error;
+
+	if (v->v.dom->n_eq > 0) {
+		free_vertex_list(v);
+		return isl_bool_false;
+	}
 
 	v->next = *list;
 	*list = v;
@@ -571,12 +578,18 @@ error:
 
 /* Can "tab" be intersected with "bset" without resulting in
  * a lower-dimensional set.
+ * "bset" itself is assumed to be full-dimensional.
  */
 static isl_bool can_intersect(struct isl_tab *tab,
 	__isl_keep isl_basic_set *bset)
 {
 	int i;
 	struct isl_tab_undo *snap;
+
+	if (bset->n_eq > 0)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_internal,
+			"expecting full-dimensional input",
+			return isl_bool_error);
 
 	if (isl_tab_extend_cons(tab, bset->n_ineq) < 0)
 		return isl_bool_error;
