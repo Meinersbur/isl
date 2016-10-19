@@ -55,11 +55,11 @@ unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 				enum isl_dim_type type);
 
 ISL_DEPRECATED
-unsigned isl_map_n_in(const struct isl_map *map);
+unsigned isl_map_n_in(__isl_keep const isl_map *map);
 ISL_DEPRECATED
-unsigned isl_map_n_out(const struct isl_map *map);
+unsigned isl_map_n_out(__isl_keep const isl_map *map);
 ISL_DEPRECATED
-unsigned isl_map_n_param(const struct isl_map *map);
+unsigned isl_map_n_param(__isl_keep const isl_map *map);
 unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
