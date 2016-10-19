@@ -8546,7 +8546,7 @@ struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 	return set_from_map(isl_map_remove_empty_parts(set_to_map(set)));
 }
 
-struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map)
+static __isl_give isl_basic_map *map_copy_basic_map(__isl_keep isl_map *map)
 {
 	struct isl_basic_map *bmap;
 	if (!map || map->n == 0)
@@ -8556,9 +8556,14 @@ struct isl_basic_map *isl_map_copy_basic_map(struct isl_map *map)
 	return isl_basic_map_copy(bmap);
 }
 
+__isl_give isl_basic_map *isl_map_copy_basic_map(__isl_keep isl_map *map)
+{
+	return map_copy_basic_map(map);
+}
+
 struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set)
 {
-	return bset_from_bmap(isl_map_copy_basic_map(set_to_map(set)));
+	return bset_from_bmap(map_copy_basic_map(set_to_map(set)));
 }
 
 __isl_give isl_map *isl_map_drop_basic_map(__isl_take isl_map *map,
