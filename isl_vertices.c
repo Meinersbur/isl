@@ -567,13 +567,14 @@ error:
 /* Can "tab" be intersected with "bset" without resulting in
  * a lower-dimensional set.
  */
-static int can_intersect(struct isl_tab *tab, __isl_keep isl_basic_set *bset)
+static isl_bool can_intersect(struct isl_tab *tab,
+	__isl_keep isl_basic_set *bset)
 {
 	int i;
 	struct isl_tab_undo *snap;
 
 	if (isl_tab_extend_cons(tab, bset->n_ineq) < 0)
-		return -1;
+		return isl_bool_error;
 
 	snap = isl_tab_snap(tab);
 
@@ -581,18 +582,18 @@ static int can_intersect(struct isl_tab *tab, __isl_keep isl_basic_set *bset)
 		if (isl_tab_ineq_type(tab, bset->ineq[i]) == isl_ineq_redundant)
 			continue;
 		if (isl_tab_add_ineq(tab, bset->ineq[i]) < 0)
-			return -1;
+			return isl_bool_error;
 	}
 
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
-		return -1;
+		return isl_bool_error;
 	if (tab->n_dead) {
 		if (isl_tab_rollback(tab, snap) < 0)
-			return -1;
-		return 0;
+			return isl_bool_error;
+		return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 static int add_chamber(struct isl_chamber_list **list,
