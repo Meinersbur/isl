@@ -54,8 +54,11 @@ unsigned isl_basic_map_total_dim(const struct isl_basic_map *bmap);
 unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 				enum isl_dim_type type);
 
+ISL_DEPRECATED
 unsigned isl_map_n_in(const struct isl_map *map);
+ISL_DEPRECATED
 unsigned isl_map_n_out(const struct isl_map *map);
+ISL_DEPRECATED
 unsigned isl_map_n_param(const struct isl_map *map);
 unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 
