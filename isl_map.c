@@ -9449,6 +9449,41 @@ __isl_give isl_basic_set *isl_basic_set_list_intersect(
 	return isl_basic_map_list_intersect(list);
 }
 
+/* Return the union of the elements of "list".
+ * The list is required to have at least one element.
+ */
+__isl_give isl_set *isl_basic_set_list_union(
+	__isl_take isl_basic_set_list *list)
+{
+	int i, n;
+	isl_space *space;
+	isl_basic_set *bset;
+	isl_set *set;
+
+	if (!list)
+		return NULL;
+	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 1)
+		isl_die(isl_basic_set_list_get_ctx(list), isl_error_invalid,
+			"expecting non-empty list", goto error);
+
+	bset = isl_basic_set_list_get_basic_set(list, 0);
+	space = isl_basic_set_get_space(bset);
+	isl_basic_set_free(bset);
+
+	set = isl_set_alloc_space(space, n, 0);
+	for (i = 0; i < n; ++i) {
+		bset = isl_basic_set_list_get_basic_set(list, i);
+		set = isl_set_add_basic_set(set, bset);
+	}
+
+	isl_basic_set_list_free(list);
+	return set;
+error:
+	isl_basic_set_list_free(list);
+	return NULL;
+}
+
 /* Return the union of the elements in the non-empty list "list".
  * All elements are assumed to live in the same space.
  */
