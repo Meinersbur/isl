@@ -401,7 +401,9 @@ struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset);
 __isl_give isl_set *isl_set_compute_divs(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_align_divs(__isl_take isl_set *set);
 
+ISL_DEPRECATED
 struct isl_basic_set *isl_set_copy_basic_set(struct isl_set *set);
+ISL_DEPRECATED
 struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 						struct isl_basic_set *bset);
 
