@@ -688,11 +688,47 @@ static struct isl_basic_map *eliminate_divs_ineq(
 	return bmap;
 }
 
+/* Does the equality constraint at position "eq" in "bmap" involve
+ * any local variables in the range [first, first + n)
+ * that are not marked as having an explicit representation?
+ */
+static isl_bool bmap_eq_involves_unknown_divs(__isl_keep isl_basic_map *bmap,
+	int eq, unsigned first, unsigned n)
+{
+	unsigned o_div;
+	int i;
+
+	if (!bmap)
+		return isl_bool_error;
+
+	o_div = isl_basic_map_offset(bmap, isl_dim_div);
+	for (i = 0; i < n; ++i) {
+		isl_bool unknown;
+
+		if (isl_int_is_zero(bmap->eq[eq][o_div + first + i]))
+			continue;
+		unknown = isl_basic_map_div_is_marked_unknown(bmap, first + i);
+		if (unknown < 0)
+			return isl_bool_error;
+		if (unknown)
+			return isl_bool_true;
+	}
+
+	return isl_bool_false;
+}
+
 /* The last local variable involved in the equality constraint
  * at position "eq" in "bmap" is the local variable at position "div".
  * It can therefore be used to extract an explicit representation
  * for that variable.
- * Do so unless the local variable already has an explicit representation.
+ * Do so unless the local variable already has an explicit representation or
+ * the explicit representation would involve any other local variables
+ * that in turn do not have an explicit representation.
+ * An equality constraint involving local variables without an explicit
+ * representation can be used in isl_basic_map_drop_redundant_divs
+ * to separate out an independent local variable.  Introducing
+ * an explicit representation here would block this transformation,
+ * while the partial explicit representation in itself is not very useful.
  * Set *progress if anything is changed.
  *
  * The equality constraint is of the form
@@ -708,11 +744,18 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
 	int div, int eq, int *progress)
 {
 	unsigned total, o_div;
+	isl_bool involves;
 
 	if (!bmap)
 		return NULL;
 
 	if (!isl_int_is_zero(bmap->div[div][0]))
+		return bmap;
+
+	involves = bmap_eq_involves_unknown_divs(bmap, eq, 0, div);
+	if (involves < 0)
+		return isl_basic_map_free(bmap);
+	if (involves)
 		return bmap;
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
