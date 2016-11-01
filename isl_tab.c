@@ -3049,6 +3049,30 @@ static int update_con_after_move(struct isl_tab *tab, int i, int old)
 	return 0;
 }
 
+/* Interchange constraints "con1" and "con2" in "tab".
+ * In particular, interchange the contents of these entries in tab->con.
+ * Since tab->col_var and tab->row_var point back into this array,
+ * they need to be updated accordingly.
+ */
+isl_stat isl_tab_swap_constraints(struct isl_tab *tab, int con1, int con2)
+{
+	struct isl_tab_var var;
+
+	if (isl_tab_check_con(tab, con1) < 0 ||
+	    isl_tab_check_con(tab, con2) < 0)
+		return isl_stat_error;
+
+	var = tab->con[con1];
+	tab->con[con1] = tab->con[con2];
+	if (update_con_after_move(tab, con1, con2) < 0)
+		return isl_stat_error;
+	tab->con[con2] = var;
+	if (update_con_after_move(tab, con2, con1) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Rotate the "n" constraints starting at "first" to the right,
  * putting the last constraint in the position of the first constraint.
  */
