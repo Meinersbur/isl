@@ -317,6 +317,13 @@ __isl_give isl_basic_set *isl_basic_set_recession_cone(
 	__isl_take isl_basic_set *bset)
 {
 	int i;
+	isl_bool empty;
+
+	empty = isl_basic_set_plain_is_empty(bset);
+	if (empty < 0)
+		return isl_basic_set_free(bset);
+	if (empty)
+		return bset;
 
 	bset = isl_basic_set_cow(bset);
 	if (isl_basic_set_check_no_locals(bset) < 0)
