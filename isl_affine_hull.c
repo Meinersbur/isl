@@ -297,7 +297,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_recession_cone(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_recession_cone(
+	__isl_take isl_basic_set *bset)
 {
 	int i;
 
