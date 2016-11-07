@@ -373,6 +373,22 @@ __isl_give isl_mat *isl_mat_diag(isl_ctx *ctx, unsigned n_row, isl_int d)
 	return mat;
 }
 
+/* Create an "n_row" by "n_col" matrix with zero elements.
+ */
+__isl_give isl_mat *isl_mat_zero(isl_ctx *ctx, unsigned n_row, unsigned n_col)
+{
+	int i;
+	isl_mat *mat;
+
+	mat = isl_mat_alloc(ctx, n_row, n_col);
+	if (!mat)
+		return NULL;
+	for (i = 0; i < n_row; ++i)
+		isl_seq_clr(mat->row[i], n_col);
+
+	return mat;
+}
+
 __isl_give isl_mat *isl_mat_identity(isl_ctx *ctx, unsigned n_row)
 {
 	if (!ctx)
