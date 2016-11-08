@@ -7988,17 +7988,18 @@ error:
 	return NULL;
 }
 
-static int foreach_orthant(__isl_take isl_set *set, int *signs, int first,
-	int len, int (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
+static isl_stat foreach_orthant(__isl_take isl_set *set, int *signs, int first,
+	int len,
+	isl_stat (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
 	void *user)
 {
 	isl_set *half;
 
 	if (!set)
-		return -1;
+		return isl_stat_error;
 	if (isl_set_plain_is_empty(set)) {
 		isl_set_free(set);
-		return 0;
+		return isl_stat_ok;
 	}
 	if (first == len)
 		return fn(set, signs, user);
@@ -8017,7 +8018,7 @@ static int foreach_orthant(__isl_take isl_set *set, int *signs, int first,
 	return foreach_orthant(half, signs, first + 1, len, fn, user);
 error:
 	isl_set_free(set);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Call "fn" on the intersections of "set" with each of the orthants
@@ -8025,19 +8026,19 @@ error:
  * by the signs array, with each entry having value 1 or -1 according
  * to the sign of the corresponding variable.
  */
-int isl_set_foreach_orthant(__isl_keep isl_set *set,
-	int (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
+isl_stat isl_set_foreach_orthant(__isl_keep isl_set *set,
+	isl_stat (*fn)(__isl_take isl_set *orthant, int *signs, void *user),
 	void *user)
 {
 	unsigned nparam;
 	unsigned nvar;
 	int *signs;
-	int r;
+	isl_stat r;
 
 	if (!set)
-		return -1;
+		return isl_stat_error;
 	if (isl_set_plain_is_empty(set))
-		return 0;
+		return isl_stat_ok;
 
 	nparam = isl_set_dim(set, isl_dim_param);
 	nvar = isl_set_dim(set, isl_dim_set);

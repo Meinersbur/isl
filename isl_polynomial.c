@@ -4865,8 +4865,8 @@ struct isl_to_poly_data {
  * overapproximated by a/m, while in the second it is underapproximated
  * by (a-(m-1))/m.
  */
-static int to_polynomial_on_orthant(__isl_take isl_set *orthant, int *signs,
-	void *user)
+static isl_stat to_polynomial_on_orthant(__isl_take isl_set *orthant,
+	int *signs, void *user)
 {
 	struct isl_to_poly_data *data = user;
 	isl_pw_qpolynomial *t;
@@ -4886,7 +4886,7 @@ static int to_polynomial_on_orthant(__isl_take isl_set *orthant, int *signs,
 	t = isl_pw_qpolynomial_alloc(orthant, qp);
 	data->res = isl_pw_qpolynomial_add_disjoint(data->res, t);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Approximate each quasipolynomial by a polynomial.  If "sign" is positive,
