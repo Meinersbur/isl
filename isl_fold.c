@@ -259,12 +259,12 @@ error:
  */
 static int isl_qpolynomial_cst_sign(__isl_keep isl_qpolynomial *qp)
 {
-	struct isl_upoly_cst *cst;
+	isl_poly_cst *cst;
 
 	if (isl_qpolynomial_is_nan(qp))
 		return 0;
 
-	cst = isl_upoly_as_cst(qp->upoly);
+	cst = isl_poly_as_cst(qp->poly);
 	if (!cst)
 		return 0;
 
@@ -332,7 +332,7 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 	int d;
 	int i;
 	int is;
-	struct isl_upoly_rec *rec;
+	isl_poly_rec *rec;
 	isl_vec *v;
 	isl_int l;
 	enum isl_lp_result res;
@@ -353,7 +353,7 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 	if (qp->div->n_row > 0)
 		return 0;
 
-	rec = isl_upoly_as_rec(qp->upoly);
+	rec = isl_poly_as_rec(qp->poly);
 	if (!rec)
 		return 0;
 
@@ -364,7 +364,7 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 
 	isl_seq_clr(v->el + 1, 1 + d);
 	isl_int_set_si(v->el[0], 1);
-	isl_int_set_si(v->el[2 + qp->upoly->var], 1);
+	isl_int_set_si(v->el[2 + qp->poly->var], 1);
 
 	isl_int_init(l);
 
@@ -377,16 +377,16 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 
 		min = isl_qpolynomial_cst_on_domain(isl_space_copy(qp->dim), l);
 		base = isl_qpolynomial_var_pow_on_domain(isl_space_copy(qp->dim),
-						qp->upoly->var, 1);
+						qp->poly->var, 1);
 
 		r = isl_qpolynomial_alloc(isl_space_copy(qp->dim), 0,
-					  isl_upoly_copy(rec->p[rec->n - 1]));
+					  isl_poly_copy(rec->p[rec->n - 1]));
 		q = isl_qpolynomial_copy(r);
 
 		for (i = rec->n - 2; i >= 0; --i) {
 			r = isl_qpolynomial_mul(r, isl_qpolynomial_copy(min));
 			t = isl_qpolynomial_alloc(isl_space_copy(qp->dim), 0,
-						  isl_upoly_copy(rec->p[i]));
+						  isl_poly_copy(rec->p[i]));
 			r = isl_qpolynomial_add(r, t);
 			if (i == 0)
 				break;
