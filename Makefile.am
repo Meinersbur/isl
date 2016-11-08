@@ -15,7 +15,8 @@ AUTOMAKE_OPTIONS = nostdinc subdir-objects
 lib_LTLIBRARIES = libisl.la
 noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_minimize isl_polytope_scan \
-	isl_polyhedron_detect_equalities isl_cat \
+	isl_polyhedron_detect_equalities \
+	isl_polyhedron_remove_redundant_equalities isl_cat \
 	isl_closure isl_bound isl_schedule isl_codegen isl_test_int \
 	isl_flow isl_flow_cmp isl_schedule_cmp
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
@@ -288,6 +289,10 @@ isl_polytope_scan_SOURCES = \
 isl_polyhedron_detect_equalities_LDADD = libisl.la
 isl_polyhedron_detect_equalities_SOURCES = \
 	polyhedron_detect_equalities.c
+
+isl_polyhedron_remove_redundant_equalities_LDADD = libisl.la
+isl_polyhedron_remove_redundant_equalities_SOURCES = \
+	polyhedron_remove_redundant_equalities.c
 
 isl_cat_LDADD = libisl.la
 isl_cat_SOURCES = \
