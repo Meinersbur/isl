@@ -1368,15 +1368,24 @@ __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp)
 	return qp;
 }
 
+/* Return a copy of the polynomial expression of "qp".
+ */
+__isl_give isl_poly *isl_qpolynomial_get_poly(__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_poly_copy(qp->poly) : NULL;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp)
 {
+	isl_poly *poly;
 	struct isl_qpolynomial *dup;
 
 	if (!qp)
 		return NULL;
 
+	poly = isl_qpolynomial_get_poly(qp);
 	dup = isl_qpolynomial_alloc(isl_space_copy(qp->dim), qp->div->n_row,
-				    isl_poly_copy(qp->poly));
+				    poly);
 	if (!dup)
 		return NULL;
 	isl_mat_free(dup->div);
@@ -1737,7 +1746,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 	if (!compatible)
 		return with_merged_divs(isl_qpolynomial_add, qp1, qp2);
 
-	qp1->poly = isl_poly_sum(qp1->poly, isl_poly_copy(qp2->poly));
+	qp1->poly = isl_poly_sum(qp1->poly, isl_qpolynomial_get_poly(qp2));
 	if (!qp1->poly)
 		goto error;
 
@@ -1911,7 +1920,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	if (!compatible)
 		return with_merged_divs(isl_qpolynomial_mul, qp1, qp2);
 
-	qp1->poly = isl_poly_mul(qp1->poly, isl_poly_copy(qp2->poly));
+	qp1->poly = isl_poly_mul(qp1->poly, isl_qpolynomial_get_poly(qp2));
 	if (!qp1->poly)
 		goto error;
 
@@ -3340,7 +3349,7 @@ __isl_give isl_val *isl_qpolynomial_eval(__isl_take isl_qpolynomial *qp,
 
 	ext = isl_local_extend_point_vec(qp->div, isl_vec_copy(pnt->vec));
 
-	v = isl_poly_eval(isl_poly_copy(qp->poly), ext);
+	v = isl_poly_eval(isl_qpolynomial_get_poly(qp), ext);
 
 	isl_qpolynomial_free(qp);
 	isl_point_free(pnt);
@@ -3691,6 +3700,7 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 {
 	isl_space *space;
 	isl_local_space *ls;
+	isl_poly *poly;
 	isl_qpolynomial *polynomial;
 
 	if (!qp || !bset)
@@ -3701,7 +3711,8 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 
 	space = isl_space_copy(qp->dim);
 	space = isl_space_add_dims(space, isl_dim_set, qp->div->n_row);
-	polynomial = isl_qpolynomial_alloc(space, 0, isl_poly_copy(qp->poly));
+	poly = isl_qpolynomial_get_poly(qp);
+	polynomial = isl_qpolynomial_alloc(space, 0, poly);
 	bset = isl_basic_set_copy(bset);
 	ls = isl_qpolynomial_get_domain_local_space(qp);
 	bset = isl_local_space_lift_basic_set(ls, bset);
