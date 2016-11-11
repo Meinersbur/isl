@@ -565,7 +565,7 @@ static enum isl_change check_facets(int i, int j,
  * (as an inequality) and its negation.  Make sure the
  * equality is returned to its original state before returning.
  */
-static int contains(struct isl_coalesce_info *info, struct isl_tab *tab)
+static isl_bool contains(struct isl_coalesce_info *info, struct isl_tab *tab)
 {
 	int k;
 	unsigned dim;
@@ -578,14 +578,14 @@ static int contains(struct isl_coalesce_info *info, struct isl_tab *tab)
 		stat = status_in(bmap->eq[k], tab);
 		isl_seq_neg(bmap->eq[k], bmap->eq[k], 1 + dim);
 		if (stat < 0)
-			return -1;
+			return isl_bool_error;
 		if (stat != STATUS_VALID)
-			return 0;
+			return isl_bool_false;
 		stat = status_in(bmap->eq[k], tab);
 		if (stat < 0)
-			return -1;
+			return isl_bool_error;
 		if (stat != STATUS_VALID)
-			return 0;
+			return isl_bool_false;
 	}
 
 	for (k = 0; k < bmap->n_ineq; ++k) {
@@ -594,11 +594,11 @@ static int contains(struct isl_coalesce_info *info, struct isl_tab *tab)
 			continue;
 		stat = status_in(bmap->ineq[k], tab);
 		if (stat < 0)
-			return -1;
+			return isl_bool_error;
 		if (stat != STATUS_VALID)
-			return 0;
+			return isl_bool_false;
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 /* Basic map "i" has an inequality (say "k") that is adjacent
@@ -649,7 +649,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	unsigned n_eq = info[i].bmap->n_eq;
 	unsigned total = isl_basic_map_total_dim(info[i].bmap);
 	int r;
-	int super;
+	isl_bool super;
 
 	if (isl_tab_extend_cons(info[i].tab, 1 + info[j].bmap->n_ineq) < 0)
 		return isl_change_error;
@@ -1042,7 +1042,7 @@ static enum isl_change is_relaxed_extension(int i, int j, int n, int *relax,
 	struct isl_coalesce_info *info)
 {
 	int l;
-	int super;
+	isl_bool super;
 	struct isl_tab_undo *snap, *snap2;
 	unsigned n_eq = info[i].bmap->n_eq;
 
