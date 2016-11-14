@@ -535,15 +535,15 @@ isl_bool isl_aff_plain_is_equal(__isl_keep isl_aff *aff1,
  *
  * We cannot return anything meaningful in case of a NaN.
  */
-int isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v)
+isl_stat isl_aff_get_denominator(__isl_keep isl_aff *aff, isl_int *v)
 {
 	if (!aff)
-		return -1;
+		return isl_stat_error;
 	if (isl_aff_is_nan(aff))
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"cannot get denominator of NaN", return -1);
+			"cannot get denominator of NaN", return isl_stat_error);
 	isl_int_set(*v, aff->v->el[0]);
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Return the common denominator of "aff".
