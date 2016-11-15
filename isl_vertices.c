@@ -1217,6 +1217,9 @@ static __isl_give isl_vec *isl_basic_set_interior_point(
  *
  * We pick an interior point from one of the chambers and then make
  * all constraints that do not satisfy this point strict.
+ * For constraints that saturate the interior point, the sign
+ * of the first non-zero coefficient is used to determine which
+ * of the two (internal) constraints should be tightened.
  */
 int isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
 	int (*fn)(__isl_take isl_cell *cell, void *user), void *user)
