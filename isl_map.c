@@ -13048,6 +13048,23 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 	return isl_map_preimage_multi_pw_aff(set, isl_dim_set, mpa);
 }
 
+/* Is the point "inner" internal to inequality constraint "ineq"
+ * of "bset"?
+ */
+static isl_bool is_internal(__isl_keep isl_vec *inner,
+	__isl_keep isl_basic_set *bset, int ineq)
+{
+	isl_ctx *ctx;
+
+	if (!inner || !bset)
+		return isl_bool_error;
+
+	ctx = isl_basic_set_get_ctx(bset);
+	isl_seq_inner_product(inner->el, bset->ineq[ineq], inner->size,
+				&ctx->normalize_gcd);
+	return isl_int_is_nonneg(ctx->normalize_gcd);
+}
+
 /* Tighten the inequality constraints of "bset" that are outward with respect
  * to the point "vec".
  * That is, tighten the constraints that are not satisfied by "vec".
@@ -13055,17 +13072,18 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 __isl_give isl_basic_set *isl_basic_set_tighten_outward(
 	__isl_take isl_basic_set *bset, __isl_keep isl_vec *vec)
 {
-	isl_ctx *ctx;
 	int j;
 
 	bset = isl_basic_set_cow(bset);
 	if (!bset)
 		return NULL;
-	ctx = isl_basic_set_get_ctx(bset);
 	for (j = 0; j < bset->n_ineq; ++j) {
-		isl_seq_inner_product(vec->el, bset->ineq[j], vec->size,
-					&ctx->normalize_gcd);
-		if (!isl_int_is_neg(ctx->normalize_gcd))
+		isl_bool internal;
+
+		internal = is_internal(vec, bset, j);
+		if (internal < 0)
+			return isl_basic_set_free(bset);
+		if (internal)
 			continue;
 		isl_int_sub_ui(bset->ineq[j][0], bset->ineq[j][0], 1);
 	}
