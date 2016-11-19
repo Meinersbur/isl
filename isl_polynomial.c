@@ -517,18 +517,28 @@ static
 
 #undef PEEK_SPACE
 
+/* Return a copy of the local variables of "qp".
+ */
+__isl_keep isl_local *isl_qpolynomial_get_local(
+	__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? isl_local_copy(qp->div) : NULL;
+}
+
 /* Return a copy of the local space on which "qp" is defined.
  */
 static __isl_give isl_local_space *isl_qpolynomial_get_domain_local_space(
 	__isl_keep isl_qpolynomial *qp)
 {
 	isl_space *space;
+	isl_local *local;
 
 	if (!qp)
 		return NULL;
 
 	space = isl_qpolynomial_get_domain_space(qp);
-	return isl_local_space_alloc_div(space, isl_mat_copy(qp->div));
+	local = isl_qpolynomial_get_local(qp);
+	return isl_local_space_alloc_div(space, local);
 }
 
 __isl_give isl_space *isl_qpolynomial_get_space(__isl_keep isl_qpolynomial *qp)
@@ -1443,7 +1453,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp)
 	if (!dup)
 		return NULL;
 	isl_mat_free(dup->div);
-	dup->div = isl_mat_copy(qp->div);
+	dup->div = isl_qpolynomial_get_local(qp);
 	if (!dup->div)
 		goto error;
 
@@ -3890,7 +3900,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 	if (!c)
 		return NULL;
 	isl_mat_free(c->div);
-	c->div = isl_mat_copy(qp->div);
+	c->div = isl_qpolynomial_get_local(qp);
 	if (!c->div)
 		goto error;
 	return c;
@@ -4261,12 +4271,14 @@ error:
 isl_stat isl_qpolynomial_foreach_term(__isl_keep isl_qpolynomial *qp,
 	isl_stat (*fn)(__isl_take isl_term *term, void *user), void *user)
 {
+	isl_local *local;
 	isl_term *term;
 
 	if (!qp)
 		return isl_stat_error;
 
-	term = isl_term_alloc(isl_space_copy(qp->dim), isl_mat_copy(qp->div));
+	local = isl_qpolynomial_get_local(qp);
+	term = isl_term_alloc(isl_space_copy(qp->dim), local);
 	if (!term)
 		return isl_stat_error;
 
