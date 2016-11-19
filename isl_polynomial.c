@@ -1375,6 +1375,60 @@ __isl_give isl_poly *isl_qpolynomial_get_poly(__isl_keep isl_qpolynomial *qp)
 	return qp ? isl_poly_copy(qp->poly) : NULL;
 }
 
+/* Return the polynomial expression of "qp".
+ * This may be either a copy or the polynomial expression itself
+ * if there is only one reference to "qp".
+ * This allows the polynomial expression to be modified inplace
+ * if both the quasi-polynomial and its polynomial expression
+ * have only a single reference.
+ * The caller is not allowed to modify "qp" between this call and
+ * a subsequent call to isl_qpolynomial_restore_poly.
+ * The only exception is that isl_qpolynomial_free can be called instead.
+ */
+static __isl_give isl_poly *isl_qpolynomial_take_poly(
+	__isl_keep isl_qpolynomial *qp)
+{
+	isl_poly *poly;
+
+	if (!qp)
+		return NULL;
+	if (qp->ref != 1)
+		return isl_qpolynomial_get_poly(qp);
+	poly = qp->poly;
+	qp->poly = NULL;
+	return poly;
+}
+
+/* Set the polynomial expression of "qp" to "space",
+ * where the polynomial expression of "qp" may be missing
+ * due to a preceding call to isl_qpolynomial_take_poly.
+ * However, in this case, "qp" only has a single reference and
+ * then the call to isl_qpolynomial_cow has no effect.
+ */
+static __isl_give isl_qpolynomial *isl_qpolynomial_restore_poly(
+	__isl_keep isl_qpolynomial *qp, __isl_take isl_poly *poly)
+{
+	if (!qp || !poly)
+		goto error;
+
+	if (qp->poly == poly) {
+		isl_poly_free(poly);
+		return qp;
+	}
+
+	qp = isl_qpolynomial_cow(qp);
+	if (!qp)
+		goto error;
+	isl_poly_free(qp->poly);
+	qp->poly = poly;
+
+	return qp;
+error:
+	isl_qpolynomial_free(qp);
+	isl_poly_free(poly);
+	return NULL;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp)
 {
 	isl_poly *poly;
@@ -1731,8 +1785,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
 	isl_bool compatible;
-
-	qp1 = isl_qpolynomial_cow(qp1);
+	isl_poly *poly;
 
 	if (isl_qpolynomial_check_equal_space(qp1, qp2) < 0)
 		goto error;
@@ -1746,9 +1799,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 	if (!compatible)
 		return with_merged_divs(isl_qpolynomial_add, qp1, qp2);
 
-	qp1->poly = isl_poly_sum(qp1->poly, isl_qpolynomial_get_poly(qp2));
-	if (!qp1->poly)
-		goto error;
+	poly = isl_qpolynomial_take_poly(qp1);
+	poly = isl_poly_sum(poly, isl_qpolynomial_get_poly(qp2));
+	qp1 = isl_qpolynomial_restore_poly(qp1, poly);
 
 	isl_qpolynomial_free(qp2);
 
@@ -1778,22 +1831,16 @@ __isl_give isl_qpolynomial *isl_qpolynomial_sub(__isl_take isl_qpolynomial *qp1,
 __isl_give isl_qpolynomial *isl_qpolynomial_add_isl_int(
 	__isl_take isl_qpolynomial *qp, isl_int v)
 {
+	isl_poly *poly;
+
 	if (isl_int_is_zero(v))
 		return qp;
 
-	qp = isl_qpolynomial_cow(qp);
-	if (!qp)
-		return NULL;
-
-	qp->poly = isl_poly_add_isl_int(qp->poly, v);
-	if (!qp->poly)
-		goto error;
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = isl_poly_add_isl_int(poly, v);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 
 	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
-
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_neg(__isl_take isl_qpolynomial *qp)
@@ -1807,6 +1854,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_neg(__isl_take isl_qpolynomial *qp)
 __isl_give isl_qpolynomial *isl_qpolynomial_mul_isl_int(
 	__isl_take isl_qpolynomial *qp, isl_int v)
 {
+	isl_poly *poly;
+
 	if (isl_int_is_one(v))
 		return qp;
 
@@ -1816,19 +1865,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul_isl_int(
 		isl_qpolynomial_free(qp);
 		return zero;
 	}
-	
-	qp = isl_qpolynomial_cow(qp);
-	if (!qp)
-		return NULL;
 
-	qp->poly = isl_poly_mul_isl_int(qp->poly, v);
-	if (!qp->poly)
-		goto error;
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = isl_poly_mul_isl_int(poly, v);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 
 	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_scale(
@@ -1842,6 +1884,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_scale(
 __isl_give isl_qpolynomial *isl_qpolynomial_scale_val(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_val *v)
 {
+	isl_poly *poly;
+
 	if (!qp || !v)
 		goto error;
 
@@ -1863,13 +1907,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_scale_val(
 		return isl_qpolynomial_zero_on_domain(space);
 	}
 
-	qp = isl_qpolynomial_cow(qp);
-	if (!qp)
-		goto error;
-
-	qp->poly = isl_poly_scale_val(qp->poly, v);
-	if (!qp->poly)
-		qp = isl_qpolynomial_free(qp);
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = isl_poly_scale_val(poly, v);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 
 	isl_val_free(v);
 	return qp;
@@ -1905,8 +1945,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
 	isl_bool compatible;
-
-	qp1 = isl_qpolynomial_cow(qp1);
+	isl_poly *poly;
 
 	if (isl_qpolynomial_check_equal_space(qp1, qp2) < 0)
 		goto error;
@@ -1920,9 +1959,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	if (!compatible)
 		return with_merged_divs(isl_qpolynomial_mul, qp1, qp2);
 
-	qp1->poly = isl_poly_mul(qp1->poly, isl_qpolynomial_get_poly(qp2));
-	if (!qp1->poly)
-		goto error;
+	poly = isl_qpolynomial_take_poly(qp1);
+	poly = isl_poly_mul(poly, isl_qpolynomial_get_poly(qp2));
+	qp1 = isl_qpolynomial_restore_poly(qp1, poly);
 
 	isl_qpolynomial_free(qp2);
 
@@ -1936,19 +1975,13 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_pow(__isl_take isl_qpolynomial *qp,
 	unsigned power)
 {
-	qp = isl_qpolynomial_cow(qp);
+	isl_poly *poly;
 
-	if (!qp)
-		return NULL;
-
-	qp->poly = isl_poly_pow(qp->poly, power);
-	if (!qp->poly)
-		goto error;
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = isl_poly_pow(poly, power);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 
 	return qp;
-error:
-	isl_qpolynomial_free(qp);
-	return NULL;
 }
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
@@ -3485,6 +3518,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	isl_size src_off, dst_off;
 	int *reordering;
 	isl_space *space;
+	isl_poly *poly;
 
 	if (!qp)
 		return NULL;
@@ -3532,10 +3566,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (!reordering)
 		return isl_qpolynomial_free(qp);
 
-	qp->poly = reorder(qp->poly, reordering);
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = reorder(poly, reordering);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 	free(reordering);
-	if (!qp->poly)
-		return isl_qpolynomial_free(qp);
 
 	space = isl_qpolynomial_take_domain_space(qp);
 	space = isl_space_move_dims(space, dst_type, dst_pos,
@@ -3638,12 +3672,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 	__isl_keep isl_qpolynomial **subs)
 {
 	int i;
+	isl_poly *poly;
 	isl_poly **polys;
 
 	if (n == 0)
 		return qp;
 
-	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		return NULL;
 
@@ -3675,12 +3709,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 	for (i = 0; i < n; ++i)
 		polys[i] = subs[i]->poly;
 
-	qp->poly = isl_poly_subs(qp->poly, first, n, polys);
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = isl_poly_subs(poly, first, n, polys);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 
 	free(polys);
-
-	if (!qp->poly)
-		goto error;
 
 	return qp;
 error:
@@ -4528,6 +4561,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_reordering *r)
 {
 	isl_space *space;
+	isl_poly *poly;
 
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
@@ -4541,9 +4575,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
 	if (!qp->div)
 		goto error;
 
-	qp->poly = reorder(qp->poly, r->pos);
-	if (!qp->poly)
-		goto error;
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = reorder(poly, r->pos);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
 
 	space = isl_reordering_get_space(r);
 	qp = isl_qpolynomial_reset_domain_space(qp, space);
