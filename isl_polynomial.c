@@ -464,6 +464,27 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 	return isl_space_dim(qp->dim, type);
 }
 
+/* Return the offset of the first coefficient of type "type" in
+ * the domain of "qp".
+ */
+unsigned isl_qpolynomial_domain_offset(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type)
+{
+	if (!qp)
+		return 0;
+	switch (type) {
+	case isl_dim_cst:
+		return 0;
+	case isl_dim_param:
+	case isl_dim_set:
+		return 1 + isl_space_offset(qp->dim, type);
+	case isl_dim_div:
+		return 1 + isl_space_dim(qp->dim, isl_dim_all);
+	default:
+		return 0;
+	}
+}
+
 isl_bool isl_qpolynomial_is_zero(__isl_keep isl_qpolynomial *qp)
 {
 	return qp ? isl_upoly_is_zero(qp->upoly) : isl_bool_error;
