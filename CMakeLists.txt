@@ -2,6 +2,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 cmake_minimum_required(VERSION 3.2)
 
 project("isl" C)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
   set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
 elseif (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl_ctx.c")
@@ -328,6 +329,7 @@ endif ()
 
 
 add_library(isl ${libisl_sources})
+set_target_properties(isl PROPERTIES FOLDER "Integer Set Library")
 
 target_include_directories(isl PRIVATE "${ISL_BINARY_DIR}" "${ISL_SOURCE_DIR}" ${PIPLIB_INCLUDE_DIRS})
 target_include_directories(isl PUBLIC "${ISL_BINARY_DIR}/include" "${ISL_SOURCE_DIR}/include")
@@ -349,6 +351,7 @@ endif ()
 macro (add_isl_executable _name)
   set(_sources ${ARGN})
   add_executable("${_name}" ${_sources})
+  set_target_properties("${_name}" PROPERTIES FOLDER "Integer Set Library")
   target_include_directories("${_name}" PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${GMP_INCLUDE_DIRS} ${PIPLIB_INCLUDE_DIRS})
   target_link_libraries("${_name}" isl)
 endmacro ()
