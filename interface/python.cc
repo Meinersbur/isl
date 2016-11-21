@@ -570,8 +570,8 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 
 	if (drop_user) {
 		printf("        if exc_info[0] != None:\n");
-		printf("            raise exc_info[0][0], "
-			"exc_info[0][1], exc_info[0][2]\n");
+		printf("            raise (exc_info[0][0], "
+			"exc_info[0][1], exc_info[0][2])\n");
 	}
 
 	print_method_return(method);
