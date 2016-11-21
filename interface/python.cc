@@ -722,6 +722,8 @@ static void print_class_header(const string &name, const vector<string> &super)
 			printf("%s", type2python(super[i]).c_str());
 		}
 		printf(")");
+	} else {
+		printf("(object)");
 	}
 	printf(":\n");
 }
