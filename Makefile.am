@@ -371,22 +371,12 @@ EXTRA_DIST = \
 	isl_union_eval.c \
 	isl_union_neg.c \
 	isl.py \
-	doc/CodingStyle \
-	doc/SubmittingPatches \
-	doc/implementation.tex \
-	doc/isl.bib \
-	doc/mypod2latex \
-	doc/manual.tex \
-	doc/reading.tex \
-	doc/user.pod \
 	imath/gmp_compat.c \
 	imath/gmp_compat.h \
 	imath/imath.c \
 	imath/imath.h \
 	imath/imrat.c \
 	imath/imrat.h \
-	interface/all.h \
-	interface/isl.py.top \
 	interface/extract_interface.cc \
 	interface/extract_interface.h \
 	interface/isl.py \
