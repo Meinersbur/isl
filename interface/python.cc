@@ -490,7 +490,9 @@ static void print_method_return(FunctionDecl *method)
 /* Print a python method corresponding to the C function "method".
  * "super" contains the superclasses of the class to which the method belongs,
  * with the first element corresponding to the annotation that appears
- * closest to the annotated type.
+ * closest to the annotated type.  This superclass is the least
+ * general extension of the annotated type in the linearization
+ * of the class hierarchy.
  *
  * If the first argument of "method" is something other than an instance
  * of the class, then mark the python method as static.
