@@ -2274,11 +2274,11 @@ static __isl_give isl_qpolynomial *substitute_non_divs(
  * inside the division, so we need to add floor(e/d) * x outside.
  * That is, we replace q by q' + floor(e/d) * x and we therefore need
  * to adjust the coefficient of x in each later div that depends on the
- * current div "div" and also in the affine expression "aff"
- * (if it too depends on "div").
+ * current div "div" and also in the affine expressions in the rows of "mat"
+ * (if they too depend on "div").
  */
 static void reduce_div(__isl_keep isl_qpolynomial *qp, int div,
-	__isl_keep isl_vec *aff)
+	__isl_keep isl_mat **mat)
 {
 	int i, j;
 	isl_int v;
@@ -2292,8 +2292,7 @@ static void reduce_div(__isl_keep isl_qpolynomial *qp, int div,
 		isl_int_fdiv_q(v, qp->div->row[div][1 + i], qp->div->row[div][0]);
 		isl_int_fdiv_r(qp->div->row[div][1 + i],
 				qp->div->row[div][1 + i], qp->div->row[div][0]);
-		if (!isl_int_is_zero(aff->el[1 + total + div]))
-			isl_int_addmul(aff->el[i], v, aff->el[1 + total + div]);
+		*mat = isl_mat_col_addmul(*mat, i, v, 1 + total + div);
 		for (j = div + 1; j < qp->div->n_row; ++j) {
 			if (isl_int_is_zero(qp->div->row[j][2 + total + div]))
 				continue;
@@ -2333,11 +2332,11 @@ static int needs_invert(__isl_keep isl_mat *div, int row)
 
 /* Replace div "div" q = [e/d] by -[(-e+(d-1))/d].
  * We only invert the coefficients of e (and the coefficient of q in
- * later divs and in "aff").  After calling this function, the
+ * later divs and in the rows of "mat").  After calling this function, the
  * coefficients of e should be reduced again.
  */
 static void invert_div(__isl_keep isl_qpolynomial *qp, int div,
-	__isl_keep isl_vec *aff)
+	__isl_keep isl_mat **mat)
 {
 	unsigned total = qp->div->n_col - qp->div->n_row - 2;
 
@@ -2346,15 +2345,18 @@ static void invert_div(__isl_keep isl_qpolynomial *qp, int div,
 	isl_int_sub_ui(qp->div->row[div][1], qp->div->row[div][1], 1);
 	isl_int_add(qp->div->row[div][1],
 		    qp->div->row[div][1], qp->div->row[div][0]);
-	if (!isl_int_is_zero(aff->el[1 + total + div]))
-		isl_int_neg(aff->el[1 + total + div], aff->el[1 + total + div]);
+	*mat = isl_mat_col_neg(*mat, 1 + total + div);
 	isl_mat_col_mul(qp->div, 2 + total + div,
 			qp->div->ctx->negone, 2 + total + div);
 }
 
-/* Assuming "qp" is a monomial, reduce all its divs to have coefficients
+/* Reduce all divs of "qp" to have coefficients
  * in the interval [0, d-1], with d the denominator and such that the
  * last non-zero coefficient that is not equal to d/2 is smaller than d/2.
+ * The modifications to the integer divisions need to be reflected
+ * in the factors of the polynomial that refer to the original
+ * integer divisions.  To this end, the modifications are collected
+ * as a set of affine expressions and then plugged into the polynomial.
  *
  * After the reduction, some divs may have become redundant or identical,
  * so we call substitute_non_divs and sort_divs.  If these functions
@@ -2366,40 +2368,48 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 {
 	int i;
 	isl_ctx *ctx;
-	isl_vec *aff = NULL;
-	struct isl_upoly *s;
-	unsigned n_div, total;
+	isl_mat *mat;
+	struct isl_upoly **s;
+	unsigned o_div, n_div, total;
 
 	if (!qp)
 		return NULL;
 
 	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
+	n_div = isl_qpolynomial_domain_dim(qp, isl_dim_div);
+	o_div = isl_qpolynomial_domain_offset(qp, isl_dim_div);
 	ctx = isl_qpolynomial_get_ctx(qp);
-	aff = isl_vec_alloc(ctx, 1 + total);
-	aff = isl_vec_clr(aff);
-	if (!aff)
-		goto error;
+	mat = isl_mat_zero(ctx, n_div, 1 + total);
 
-	isl_int_set_si(aff->el[1 + qp->upoly->var], 1);
+	for (i = 0; i < n_div; ++i)
+		mat = isl_mat_set_element_si(mat, i, o_div + i, 1);
 
 	for (i = 0; i < qp->div->n_row; ++i) {
 		normalize_div(qp, i);
-		reduce_div(qp, i, aff);
+		reduce_div(qp, i, &mat);
 		if (needs_invert(qp->div, i)) {
-			invert_div(qp, i, aff);
-			reduce_div(qp, i, aff);
+			invert_div(qp, i, &mat);
+			reduce_div(qp, i, &mat);
 		}
 	}
+	if (!mat)
+		goto error;
 
-	s = isl_upoly_from_affine(ctx, aff->el, ctx->one, 1 + total);
-	qp->upoly = isl_upoly_subs(qp->upoly, qp->upoly->var, 1, &s);
-	isl_upoly_free(s);
+	s = isl_alloc_array(ctx, struct isl_upoly *, n_div);
+	if (n_div && !s)
+		goto error;
+	for (i = 0; i < n_div; ++i)
+		s[i] = isl_upoly_from_affine(ctx, mat->row[i], ctx->one,
+					    1 + total);
+	qp->upoly = isl_upoly_subs(qp->upoly, o_div - 1, n_div, s);
+	for (i = 0; i < n_div; ++i)
+		isl_upoly_free(s[i]);
+	free(s);
 	if (!qp->upoly)
 		goto error;
 
-	isl_vec_free(aff);
+	isl_mat_free(mat);
 
-	n_div = isl_qpolynomial_domain_dim(qp, isl_dim_div);
 	qp = substitute_non_divs(qp);
 	qp = sort_divs(qp);
 	if (qp && isl_qpolynomial_domain_dim(qp, isl_dim_div) < n_div)
@@ -2408,7 +2418,7 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 	return qp;
 error:
 	isl_qpolynomial_free(qp);
-	isl_vec_free(aff);
+	isl_mat_free(mat);
 	return NULL;
 }
 
