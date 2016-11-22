@@ -1553,6 +1553,27 @@ __isl_give isl_mat *isl_mat_col_addmul(__isl_take isl_mat *mat, int dst_col,
 	return mat;
 }
 
+/* Negate column "col" of "mat" and return the result.
+ */
+__isl_give isl_mat *isl_mat_col_neg(__isl_take isl_mat *mat, int col)
+{
+	int i;
+
+	if (check_col(mat, col) < 0)
+		return isl_mat_free(mat);
+
+	for (i = 0; i < mat->n_row; ++i) {
+		if (isl_int_is_zero(mat->row[i][col]))
+			continue;
+		mat = isl_mat_cow(mat);
+		if (!mat)
+			return NULL;
+		isl_int_neg(mat->row[i][col], mat->row[i][col]);
+	}
+
+	return mat;
+}
+
 struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row)
 {
 	int r;
