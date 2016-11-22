@@ -2229,13 +2229,21 @@ __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 }
 
 /* Return a basic set containing those elements in the domain space
+ * of "aff" where it is positive.
+ */
+__isl_give isl_basic_set *isl_aff_pos_basic_set(__isl_take isl_aff *aff)
+{
+	aff = isl_aff_add_constant_num_si(aff, -1);
+	return isl_aff_nonneg_basic_set(aff);
+}
+
+/* Return a basic set containing those elements in the domain space
  * of aff where it is negative.
  */
 __isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff)
 {
 	aff = isl_aff_neg(aff);
-	aff = isl_aff_add_constant_num_si(aff, -1);
-	return isl_aff_nonneg_basic_set(aff);
+	return isl_aff_pos_basic_set(aff);
 }
 
 /* Return a basic set containing those elements in the space
