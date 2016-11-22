@@ -259,6 +259,18 @@ int isl_mat_cols(__isl_keep isl_mat *mat)
 	return mat ? mat->n_col : -1;
 }
 
+/* Check that "col" is a valid column position for "mat".
+ */
+static isl_stat check_col(__isl_keep isl_mat *mat, int col)
+{
+	if (!mat)
+		return isl_stat_error;
+	if (col < 0 || col >= mat->n_col)
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+			"column out of range", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
 {
 	if (!mat)
@@ -266,9 +278,8 @@ int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
 	if (row < 0 || row >= mat->n_row)
 		isl_die(mat->ctx, isl_error_invalid, "row out of range",
 			return -1);
-	if (col < 0 || col >= mat->n_col)
-		isl_die(mat->ctx, isl_error_invalid, "column out of range",
-			return -1);
+	if (check_col(mat, col) < 0)
+		return -1;
 	isl_int_set(*v, mat->row[row][col]);
 	return 0;
 }
@@ -286,9 +297,8 @@ __isl_give isl_val *isl_mat_get_element_val(__isl_keep isl_mat *mat,
 	if (row < 0 || row >= mat->n_row)
 		isl_die(ctx, isl_error_invalid, "row out of range",
 			return NULL);
-	if (col < 0 || col >= mat->n_col)
-		isl_die(ctx, isl_error_invalid, "column out of range",
-			return NULL);
+	if (check_col(mat, col) < 0)
+		return NULL;
 	return isl_val_int_from_isl_int(ctx, mat->row[row][col]);
 }
 
@@ -301,9 +311,8 @@ __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
 	if (row < 0 || row >= mat->n_row)
 		isl_die(mat->ctx, isl_error_invalid, "row out of range",
 			goto error);
-	if (col < 0 || col >= mat->n_col)
-		isl_die(mat->ctx, isl_error_invalid, "column out of range",
-			goto error);
+	if (check_col(mat, col) < 0)
+		return isl_mat_free(mat);
 	isl_int_set(mat->row[row][col], v);
 	return mat;
 error:
@@ -320,9 +329,8 @@ __isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 	if (row < 0 || row >= mat->n_row)
 		isl_die(mat->ctx, isl_error_invalid, "row out of range",
 			goto error);
-	if (col < 0 || col >= mat->n_col)
-		isl_die(mat->ctx, isl_error_invalid, "column out of range",
-			goto error);
+	if (check_col(mat, col) < 0)
+		return isl_mat_free(mat);
 	isl_int_set_si(mat->row[row][col], v);
 	return mat;
 error:
