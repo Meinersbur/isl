@@ -1530,6 +1530,29 @@ void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col)
 		isl_int_mul(mat->row[i][dst_col], f, mat->row[i][src_col]);
 }
 
+/* Add "f" times column "src_col" to column "dst_col" of "mat" and
+ * return the result.
+ */
+__isl_give isl_mat *isl_mat_col_addmul(__isl_take isl_mat *mat, int dst_col,
+	isl_int f, int src_col)
+{
+	int i;
+
+	if (check_col(mat, dst_col) < 0 || check_col(mat, src_col) < 0)
+		return isl_mat_free(mat);
+
+	for (i = 0; i < mat->n_row; ++i) {
+		if (isl_int_is_zero(mat->row[i][src_col]))
+			continue;
+		mat = isl_mat_cow(mat);
+		if (!mat)
+			return NULL;
+		isl_int_addmul(mat->row[i][dst_col], f, mat->row[i][src_col]);
+	}
+
+	return mat;
+}
+
 struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row)
 {
 	int r;

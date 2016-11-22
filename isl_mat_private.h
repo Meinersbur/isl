@@ -44,6 +44,8 @@ isl_stat isl_mat_row_gcd(__isl_keep isl_mat *mat, int row, isl_int *gcd);
 void isl_mat_col_mul(struct isl_mat *mat, int dst_col, isl_int f, int src_col);
 void isl_mat_col_submul(struct isl_mat *mat,
 			int dst_col, isl_int f, int src_col);
+__isl_give isl_mat *isl_mat_col_addmul(__isl_take isl_mat *mat, int dst_col,
+	isl_int f, int src_col);
 
 int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v);
 __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
