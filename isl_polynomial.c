@@ -456,6 +456,11 @@ unsigned isl_qpolynomial_domain_dim(__isl_keep isl_qpolynomial *qp,
 {
 	if (!qp)
 		return 0;
+	if (type == isl_dim_div)
+		return qp->div->n_row;
+	if (type == isl_dim_all)
+		return isl_space_dim(qp->dim, isl_dim_all) +
+				    isl_qpolynomial_domain_dim(qp, isl_dim_div);
 	return isl_space_dim(qp->dim, type);
 }
 
