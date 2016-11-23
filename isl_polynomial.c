@@ -2367,12 +2367,13 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 	int i;
 	isl_vec *aff = NULL;
 	struct isl_upoly *s;
-	unsigned n_div;
+	unsigned n_div, total;
 
 	if (!qp)
 		return NULL;
 
-	aff = isl_vec_alloc(qp->div->ctx, qp->div->n_col - 1);
+	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
+	aff = isl_vec_alloc(qp->div->ctx, 1 + total);
 	aff = isl_vec_clr(aff);
 	if (!aff)
 		goto error;
@@ -2389,7 +2390,7 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 	}
 
 	s = isl_upoly_from_affine(qp->div->ctx, aff->el,
-				  qp->div->ctx->one, aff->size);
+				  qp->div->ctx->one, 1 + total);
 	qp->upoly = isl_upoly_subs(qp->upoly, qp->upoly->var, 1, &s);
 	isl_upoly_free(s);
 	if (!qp->upoly)
@@ -2397,10 +2398,10 @@ static __isl_give isl_qpolynomial *reduce_divs(__isl_take isl_qpolynomial *qp)
 
 	isl_vec_free(aff);
 
-	n_div = qp->div->n_row;
+	n_div = isl_qpolynomial_domain_dim(qp, isl_dim_div);
 	qp = substitute_non_divs(qp);
 	qp = sort_divs(qp);
-	if (qp && qp->div->n_row < n_div)
+	if (qp && isl_qpolynomial_domain_dim(qp, isl_dim_div) < n_div)
 		return reduce_divs(qp);
 
 	return qp;
