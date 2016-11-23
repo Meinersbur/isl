@@ -6594,7 +6594,7 @@ const char *chambers_tests[] = {
 
 /* Add the domain of "cell" to "cells".
  */
-static isl_stat add_cell(__isl_take isl_cell *cell, void *user)
+static int add_cell(__isl_take isl_cell *cell, void *user)
 {
 	isl_basic_set_list **cells = user;
 	isl_basic_set *dom;
@@ -6603,7 +6603,7 @@ static isl_stat add_cell(__isl_take isl_cell *cell, void *user)
 	isl_cell_free(cell);
 	*cells = isl_basic_set_list_add(*cells, dom);
 
-	return *cells ? isl_stat_ok : isl_stat_error;
+	return *cells ? 0 : -1;
 }
 
 /* Check that the elements of "list" are pairwise disjoint.
