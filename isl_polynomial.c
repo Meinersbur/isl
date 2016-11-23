@@ -449,6 +449,16 @@ __isl_give isl_space *isl_qpolynomial_get_space(__isl_keep isl_qpolynomial *qp)
 	return space;
 }
 
+/* Return the number of variables of the given type in the domain of "qp".
+ */
+unsigned isl_qpolynomial_domain_dim(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type)
+{
+	if (!qp)
+		return 0;
+	return isl_space_dim(qp->dim, type);
+}
+
 /* Externally, an isl_qpolynomial has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */
@@ -461,7 +471,7 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 		return 1;
 	if (type == isl_dim_in)
 		type = isl_dim_set;
-	return isl_space_dim(qp->dim, type);
+	return isl_qpolynomial_domain_dim(qp, type);
 }
 
 /* Return the offset of the first coefficient of type "type" in
