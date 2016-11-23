@@ -3552,6 +3552,30 @@ static isl_stat test_pwqp_gist(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Perform a basic isl_pw_qpolynomial_max test.
+ */
+static isl_stat test_pwqp_max(isl_ctx *ctx)
+{
+	const char *str;
+	isl_pw_qpolynomial *pwqp;
+	isl_val *v;
+	int ok;
+
+	str = "{ [x=2:9, y] -> floor((x + 1)/4)^3 - floor((2x)/3)^2 }";
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+	v = isl_pw_qpolynomial_max(pwqp);
+	ok = isl_val_cmp_si(v, -1) == 0;
+	isl_val_free(v);
+
+	if (!v)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(ctx, isl_error_unknown, "unexpected maximum",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 static int test_pwqp(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -3634,6 +3658,9 @@ static int test_pwqp(struct isl_ctx *ctx)
 		return -1;
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	if (test_pwqp_max(ctx) < 0)
+		return -1;
 
 	return 0;
 }
