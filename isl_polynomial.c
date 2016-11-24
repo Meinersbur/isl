@@ -2676,6 +2676,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		return NULL;
+	if (type == isl_dim_out)
+		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
+			"cannot set name of output/set dimension",
+			return isl_qpolynomial_free(qp));
+	if (type == isl_dim_in)
+		type = isl_dim_set;
 	qp->dim = isl_space_set_dim_name(qp->dim, type, pos, s);
 	if (!qp->dim)
 		goto error;
