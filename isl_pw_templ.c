@@ -438,6 +438,7 @@ error:
 #define TYPE	PW
 
 #include "isl_type_has_equal_space_bin_templ.c"
+#include "isl_type_check_equal_space_templ.c"
 
 static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
 	__isl_take PW *pw2)
@@ -683,7 +684,7 @@ static __isl_give PW *FN(PW,on_shared_domain)(__isl_take PW *pw1,
 {
 	isl_space *space;
 
-	if (!pw1 || !pw2)
+	if (FN(PW,check_equal_space)(pw1, pw2) < 0)
 		goto error;
 
 	space = isl_space_copy(pw1->dim);
