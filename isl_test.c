@@ -32,7 +32,7 @@
 #include <isl/schedule.h>
 #include <isl/schedule_node.h>
 #include <isl_options_private.h>
-#include <isl/vertices.h>
+#include <isl_vertices_private.h>
 #include <isl/ast_build.h>
 #include <isl/val.h>
 #include <isl/ilp.h>
@@ -6675,6 +6675,94 @@ static int test_universe(isl_ctx *ctx)
 	return 0;
 }
 
+/* Sets for which chambers are computed and checked.
+ */
+const char *chambers_tests[] = {
+	"[A, B, C] -> { [x, y, z] : x >= 0 and y >= 0 and y <= A - x and "
+				"z >= 0 and z <= C - y and z <= B - x - y }",
+};
+
+/* Add the domain of "cell" to "cells".
+ */
+static int add_cell(__isl_take isl_cell *cell, void *user)
+{
+	isl_basic_set_list **cells = user;
+	isl_basic_set *dom;
+
+	dom = isl_cell_get_domain(cell);
+	isl_cell_free(cell);
+	*cells = isl_basic_set_list_add(*cells, dom);
+
+	return *cells ? 0 : -1;
+}
+
+/* Check that the elements of "list" are pairwise disjoint.
+ */
+static isl_stat check_pairwise_disjoint(__isl_keep isl_basic_set_list *list)
+{
+	int i, j, n;
+
+	if (!list)
+		return isl_stat_error;
+
+	n = isl_basic_set_list_n_basic_set(list);
+	for (i = 0; i < n; ++i) {
+		isl_basic_set *bset_i;
+
+		bset_i = isl_basic_set_list_get_basic_set(list, i);
+		for (j = i + 1; j < n; ++j) {
+			isl_basic_set *bset_j;
+			isl_bool disjoint;
+
+			bset_j = isl_basic_set_list_get_basic_set(list, j);
+			disjoint = isl_basic_set_is_disjoint(bset_i, bset_j);
+			isl_basic_set_free(bset_j);
+			if (!disjoint)
+				isl_die(isl_basic_set_list_get_ctx(list),
+					isl_error_unknown, "not disjoint",
+					break);
+			if (disjoint < 0 || !disjoint)
+				break;
+		}
+		isl_basic_set_free(bset_i);
+		if (j < n)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Check that the chambers computed by isl_vertices_foreach_disjoint_cell
+ * are pairwise disjoint.
+ */
+static int test_chambers(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(chambers_tests); ++i) {
+		isl_basic_set *bset;
+		isl_vertices *vertices;
+		isl_basic_set_list *cells;
+		isl_stat ok;
+
+		bset = isl_basic_set_read_from_str(ctx, chambers_tests[i]);
+		vertices = isl_basic_set_compute_vertices(bset);
+		cells = isl_basic_set_list_alloc(ctx, 0);
+		if (isl_vertices_foreach_disjoint_cell(vertices, &add_cell,
+							&cells) < 0)
+			cells = isl_basic_set_list_free(cells);
+		ok = check_pairwise_disjoint(cells);
+		isl_basic_set_list_free(cells);
+		isl_vertices_free(vertices);
+		isl_basic_set_free(bset);
+
+		if (ok < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 struct {
 	const char *name;
 	int (*fn)(isl_ctx *ctx);
@@ -6706,6 +6794,7 @@ struct {
 	{ "sample", &test_sample },
 	{ "output", &test_output },
 	{ "vertices", &test_vertices },
+	{ "chambers", &test_chambers },
 	{ "fixed", &test_fixed },
 	{ "equal", &test_equal },
 	{ "disjoint", &test_disjoint },
