@@ -620,13 +620,13 @@ __isl_give struct isl_upoly *isl_upoly_cow(__isl_take struct isl_upoly *up)
 	return isl_upoly_dup(up);
 }
 
-void isl_upoly_free(__isl_take struct isl_upoly *up)
+__isl_null struct isl_upoly *isl_upoly_free(__isl_take struct isl_upoly *up)
 {
 	if (!up)
-		return;
+		return NULL;
 
 	if (--up->ref > 0)
-		return;
+		return NULL;
 
 	if (up->var < 0)
 		upoly_free_cst((struct isl_upoly_cst *)up);
@@ -635,6 +635,7 @@ void isl_upoly_free(__isl_take struct isl_upoly *up)
 
 	isl_ctx_deref(up->ctx);
 	free(up);
+	return NULL;
 }
 
 static void isl_upoly_cst_reduce(__isl_keep struct isl_upoly_cst *cst)
