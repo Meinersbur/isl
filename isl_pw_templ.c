@@ -1593,10 +1593,10 @@ __isl_give PW *FN(PW,reset_user)(__isl_take PW *pw)
 	return FN(PW,reset_space)(pw, space);
 }
 
-int FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
+isl_bool FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 {
 	if (!pw1 || !pw2)
-		return -1;
+		return isl_bool_error;
 
 	return isl_space_is_equal(pw1->dim, pw2->dim);
 }
