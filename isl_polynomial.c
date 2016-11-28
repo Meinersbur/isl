@@ -3085,15 +3085,35 @@ error:
 	return NULL;
 }
 
+/* Evaluate "qp" in the void point "pnt".
+ * In particular, return the value NaN.
+ */
+static __isl_give isl_val *eval_void(__isl_take isl_qpolynomial *qp,
+	__isl_take isl_point *pnt)
+{
+	isl_ctx *ctx;
+
+	ctx = isl_point_get_ctx(pnt);
+	isl_qpolynomial_free(qp);
+	isl_point_free(pnt);
+	return isl_val_nan(ctx);
+}
+
 __isl_give isl_val *isl_qpolynomial_eval(__isl_take isl_qpolynomial *qp,
 	__isl_take isl_point *pnt)
 {
+	isl_bool is_void;
 	isl_vec *ext;
 	isl_val *v;
 
 	if (!qp || !pnt)
 		goto error;
 	isl_assert(pnt->dim->ctx, isl_space_is_equal(pnt->dim, qp->dim), goto error);
+	is_void = isl_point_is_void(pnt);
+	if (is_void < 0)
+		goto error;
+	if (is_void)
+		return eval_void(qp, pnt);
 
 	if (qp->div->n_row == 0)
 		ext = isl_vec_copy(pnt->vec);
