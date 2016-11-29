@@ -129,7 +129,7 @@ struct isl_class {
 	void print_method_type(FunctionDecl *fd);
 	void print_method_types();
 	void print_method(FunctionDecl *method, vector<string> super);
-	void print_method_overload(FunctionDecl *method, vector<string> super);
+	void print_method_overload(FunctionDecl *method);
 	void print_method(const string &fullname,
 		const set<FunctionDecl *> &methods, vector<string> super);
 };
@@ -573,14 +573,12 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 
 /* Print part of an overloaded python method corresponding to the C function
  * "method".
- * "super" contains the superclasses of the class to which the method belongs.
  *
  * In particular, print code to test whether the arguments passed to
  * the python method correspond to the arguments expected by "method"
  * and to call "method" if they do.
  */
-void isl_class::print_method_overload(FunctionDecl *method,
-	vector<string> super)
+void isl_class::print_method_overload(FunctionDecl *method)
 {
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
@@ -643,7 +641,7 @@ void isl_class::print_method(const string &fullname,
 	print_method_header(is_static(any_method), cname, num_params);
 
 	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method_overload(*it, super);
+		print_method_overload(*it);
 }
 
 /* Print part of the constructor for this isl_class.
