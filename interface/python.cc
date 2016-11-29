@@ -53,6 +53,10 @@ static void die(const char *msg)
 
 /* Return a sequence of the types of which the given type declaration is
  * marked as being a subtype.
+ * The order of the types is the opposite of the order in which they
+ * appear in the source.  In particular, the first annotation
+ * is the one that is closest to the annotated type and the corresponding
+ * type is then also the first that will appear in the sequence of types.
  */
 static vector<string> find_superclasses(RecordDecl *decl)
 {
@@ -484,7 +488,9 @@ static void print_method_return(FunctionDecl *method)
 }
 
 /* Print a python method corresponding to the C function "method".
- * "super" contains the superclasses of the class to which the method belongs.
+ * "super" contains the superclasses of the class to which the method belongs,
+ * with the first element corresponding to the annotation that appears
+ * closest to the annotated type.
  *
  * If the first argument of "method" is something other than an instance
  * of the class, then mark the python method as static.
@@ -700,6 +706,8 @@ void isl_class::print_constructor(FunctionDecl *cons)
 }
 
 /* Print the header of the class "name" with superclasses "super".
+ * The order of the superclasses is the opposite of the order
+ * in which the corresponding annotations appear in the source code.
  */
 static void print_class_header(const string &name, const vector<string> &super)
 {
