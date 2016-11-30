@@ -208,6 +208,9 @@ isl_bool isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
 
 isl_bool isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 
+__isl_give isl_pw_aff *isl_pw_aff_project_domain_on_params(
+	__isl_take isl_pw_aff *pa);
+
 __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_space *model);
 

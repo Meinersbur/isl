@@ -4405,6 +4405,9 @@ parameters.
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_project_domain_on_params(
 		__isl_take isl_aff *aff);
+	__isl_give isl_pw_aff *
+	isl_pw_aff_project_domain_on_params(
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_project_domain_on_params(
 		__isl_take isl_pw_multi_aff *pma);
