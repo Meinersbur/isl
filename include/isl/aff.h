@@ -9,6 +9,7 @@
 #include <isl/multi.h>
 #include <isl/union_set_type.h>
 #include <isl/val.h>
+#include <isl/point.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -133,6 +134,9 @@ __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
 __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
+
+__isl_give isl_val *isl_aff_eval(__isl_take isl_aff *aff,
+	__isl_take isl_point *pnt);
 
 __isl_give isl_aff *isl_aff_pullback_aff(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);

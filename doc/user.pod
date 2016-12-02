@@ -5751,6 +5751,11 @@ elements in the argument.
 
 The following functions evaluate a function in a point.
 
+	#include <isl/aff.h>
+	__isl_give isl_val *isl_aff_eval(
+		__isl_take isl_aff *aff,
+		__isl_take isl_point *pnt);
+
 	#include <isl/polynomial.h>
 	__isl_give isl_val *isl_pw_qpolynomial_eval(
 		__isl_take isl_pw_qpolynomial *pwqp,

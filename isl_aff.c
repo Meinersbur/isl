@@ -27,6 +27,7 @@
 #include <isl_seq.h>
 #include <isl/set.h>
 #include <isl_val_private.h>
+#include <isl_point_private.h>
 #include <isl_config.h>
 
 #undef BASE
@@ -9392,5 +9393,93 @@ __isl_give isl_multi_pw_aff *isl_multi_union_pw_aff_extract_multi_pw_aff(
 error:
 	isl_space_free(space_mpa);
 	isl_space_free(space);
+	return NULL;
+}
+
+/* Evaluate the affine function "aff" in the void point "pnt".
+ * In particular, return the value NaN.
+ */
+static __isl_give isl_val *eval_void(__isl_take isl_aff *aff,
+	__isl_take isl_point *pnt)
+{
+	isl_ctx *ctx;
+
+	ctx = isl_point_get_ctx(pnt);
+	isl_aff_free(aff);
+	isl_point_free(pnt);
+	return isl_val_nan(ctx);
+}
+
+/* Evaluate the affine expression "aff"
+ * in the coordinates (with denominator) "pnt".
+ */
+static __isl_give isl_val *eval(__isl_keep isl_vec *aff,
+	__isl_keep isl_vec *pnt)
+{
+	isl_int n, d;
+	isl_ctx *ctx;
+	isl_val *v;
+
+	if (!aff || !pnt)
+		return NULL;
+
+	ctx = isl_vec_get_ctx(aff);
+	isl_int_init(n);
+	isl_int_init(d);
+	isl_seq_inner_product(aff->el + 1, pnt->el, pnt->size, &n);
+	isl_int_mul(d, aff->el[0], pnt->el[0]);
+	v = isl_val_rat_from_isl_int(ctx, n, d);
+	v = isl_val_normalize(v);
+	isl_int_clear(n);
+	isl_int_clear(d);
+
+	return v;
+}
+
+/* Check that the domain space of "aff" is equal to "space".
+ */
+static isl_stat isl_aff_check_has_domain_space(__isl_keep isl_aff *aff,
+	__isl_keep isl_space *space)
+{
+	isl_bool ok;
+
+	ok = isl_space_is_equal(isl_aff_peek_domain_space(aff), space);
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"incompatible spaces", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Evaluate the affine function "aff" in "pnt".
+ */
+__isl_give isl_val *isl_aff_eval(__isl_take isl_aff *aff,
+	__isl_take isl_point *pnt)
+{
+	isl_bool is_void;
+	isl_val *v;
+	isl_local_space *ls;
+
+	if (isl_aff_check_has_domain_space(aff, isl_point_peek_space(pnt)) < 0)
+		goto error;
+	is_void = isl_point_is_void(pnt);
+	if (is_void < 0)
+		goto error;
+	if (is_void)
+		return eval_void(aff, pnt);
+
+	ls = isl_aff_get_domain_local_space(aff);
+	pnt = isl_local_space_lift_point(ls, pnt);
+
+	v = eval(aff->v, isl_point_peek_vec(pnt));
+
+	isl_aff_free(aff);
+	isl_point_free(pnt);
+
+	return v;
+error:
+	isl_aff_free(aff);
+	isl_point_free(pnt);
 	return NULL;
 }
