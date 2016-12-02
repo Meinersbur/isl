@@ -2323,6 +2323,15 @@ __isl_give isl_basic_set *isl_aff_le_basic_set(__isl_take isl_aff *aff1,
 	return isl_aff_ge_basic_set(aff2, aff1);
 }
 
+/* Return a basic set containing those elements in the shared domain space
+ * of "aff1" and "aff2" where "aff1" is smaller than "aff2".
+ */
+__isl_give isl_basic_set *isl_aff_lt_basic_set(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	return isl_aff_gt_basic_set(aff2, aff1);
+}
+
 /* Return a set containing those elements in the shared space
  * of aff1 and aff2 where aff1 is smaller than or equal to aff2.
  */

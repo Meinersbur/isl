@@ -138,6 +138,8 @@ __isl_give isl_basic_set *isl_aff_le_basic_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_set *isl_aff_le_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
+__isl_give isl_basic_set *isl_aff_lt_basic_set(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2);
 __isl_give isl_basic_set *isl_aff_ge_basic_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_give isl_set *isl_aff_ge_set(__isl_take isl_aff *aff1,
