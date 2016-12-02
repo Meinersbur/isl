@@ -720,14 +720,14 @@ __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 	isl_bool is_void;
 	isl_bool found;
 	isl_ctx *ctx;
-	isl_space *pnt_dim = NULL;
+	isl_space *pnt_space = NULL;
 	isl_val *v;
 
 	if (!pw || !pnt)
 		goto error;
 	ctx = isl_point_get_ctx(pnt);
-	pnt_dim = isl_point_get_space(pnt);
-	isl_assert(ctx, isl_space_is_domain_internal(pnt_dim, pw->dim),
+	pnt_space = isl_point_get_space(pnt);
+	isl_assert(ctx, isl_space_is_domain_internal(pnt_space, pw->dim),
 		    goto error);
 	is_void = isl_point_is_void(pnt);
 	if (is_void < 0)
@@ -749,12 +749,12 @@ __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 	else
 		v = isl_val_zero(ctx);
 	FN(PW,free)(pw);
-	isl_space_free(pnt_dim);
+	isl_space_free(pnt_space);
 	isl_point_free(pnt);
 	return v;
 error:
 	FN(PW,free)(pw);
-	isl_space_free(pnt_dim);
+	isl_space_free(pnt_space);
 	isl_point_free(pnt);
 	return NULL;
 }
