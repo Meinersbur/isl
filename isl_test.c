@@ -4970,7 +4970,7 @@ int test_union_pw(isl_ctx *ctx)
 /* Test that isl_union_pw_qpolynomial_eval picks up the function
  * defined over the correct domain space.
  */
-static int test_eval(isl_ctx *ctx)
+static int test_eval_1(isl_ctx *ctx)
 {
 	const char *str;
 	isl_point *pnt;
@@ -4993,6 +4993,45 @@ static int test_eval(isl_ctx *ctx)
 	if (cmp != 0)
 		isl_die(ctx, isl_error_unknown, "unexpected value", return -1);
 
+	return 0;
+}
+
+/* Check that isl_qpolynomial_eval handles getting called on a void point.
+ */
+static int test_eval_2(isl_ctx *ctx)
+{
+	const char *str;
+	isl_point *pnt;
+	isl_set *set;
+	isl_qpolynomial *qp;
+	isl_val *v;
+	isl_bool ok;
+
+	str = "{ A[x] -> [x] }";
+	qp = isl_qpolynomial_from_aff(isl_aff_read_from_str(ctx, str));
+	str = "{ A[x] : false }";
+	set = isl_set_read_from_str(ctx, str);
+	pnt = isl_set_sample_point(set);
+	v = isl_qpolynomial_eval(qp, pnt);
+	ok = isl_val_is_nan(v);
+	isl_val_free(v);
+
+	if (ok < 0)
+		return -1;
+	if (!ok)
+		isl_die(ctx, isl_error_unknown, "expecting NaN", return -1);
+
+	return 0;
+}
+
+/* Perform basic polynomial evaluation tests.
+ */
+static int test_eval(isl_ctx *ctx)
+{
+	if (test_eval_1(ctx) < 0)
+		return -1;
+	if (test_eval_2(ctx) < 0)
+		return -1;
 	return 0;
 }
 

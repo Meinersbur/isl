@@ -1145,7 +1145,7 @@ static struct isl_tab *tab_for_shifted_cone(__isl_keep isl_basic_set *bset)
 
 	if (!bset)
 		return NULL;
-	tab = isl_tab_alloc(bset->ctx, bset->n_ineq + 1,
+	tab = isl_tab_alloc(bset->ctx, bset->n_eq + bset->n_ineq + 1,
 			    1 + isl_basic_set_total_dim(bset), 0);
 	if (!tab)
 		return NULL;
