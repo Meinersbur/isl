@@ -673,8 +673,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 
 #undef PW
 #define PW isl_pw_qpolynomial_fold
-#undef EL
-#define EL isl_qpolynomial_fold
+#undef BASE
+#define BASE qpolynomial_fold
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_empty
 #undef ZERO

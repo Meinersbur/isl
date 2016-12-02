@@ -3085,8 +3085,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 
 #undef PW
 #define PW isl_pw_qpolynomial
-#undef EL
-#define EL isl_qpolynomial
+#undef BASE
+#define BASE qpolynomial
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_zero
 #undef ZERO

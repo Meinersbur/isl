@@ -2675,8 +2675,8 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 
 #undef PW
 #define PW isl_pw_aff
-#undef EL
-#define EL isl_aff
+#undef BASE
+#define BASE aff
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_empty
 #undef ZERO
@@ -4317,8 +4317,8 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 
 #undef PW
 #define PW isl_pw_multi_aff
-#undef EL
-#define EL isl_multi_aff
+#undef BASE
+#define BASE multi_aff
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_empty
 #undef ZERO
