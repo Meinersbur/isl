@@ -6479,6 +6479,25 @@ static isl_stat test_aff_set_tuple_id(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Check that affine expressions get normalized on addition/subtraction.
+ * In particular, check that (final) unused integer divisions get removed
+ * such that an expression derived from expressions with integer divisions
+ * is found to be obviously equal to one that is created directly.
+ */
+static isl_stat test_aff_normalize(isl_ctx *ctx)
+{
+	isl_aff *aff, *aff2;
+	isl_stat ok;
+
+	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x//2] }");
+	aff2 = isl_aff_read_from_str(ctx, "{ [x] -> [1 + x//2] }");
+	aff = isl_aff_sub(aff2, aff);
+	ok = aff_check_plain_equal(aff, "{ [x] -> [1] }");
+	isl_aff_free(aff);
+
+	return ok;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -6556,6 +6575,8 @@ int test_aff(isl_ctx *ctx)
 		return -1;
 
 	if (test_aff_set_tuple_id(ctx) < 0)
+		return -1;
+	if (test_aff_normalize(ctx) < 0)
 		return -1;
 
 	return 0;

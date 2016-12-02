@@ -1804,6 +1804,7 @@ static __isl_give isl_aff *add_expanded(__isl_take isl_aff *aff1,
 	isl_int_clear(gcd);
 
 	isl_aff_free(aff2);
+	aff1 = isl_aff_normalize(aff1);
 	return aff1;
 error:
 	isl_aff_free(aff1);
