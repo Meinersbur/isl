@@ -1499,9 +1499,16 @@ __isl_give isl_val *FN(PW,min)(__isl_take PW *pw)
 }
 #endif
 
+/* Return the space of "pw".
+ */
+__isl_keep isl_space *FN(PW,peek_space)(__isl_keep PW *pw)
+{
+	return pw ? pw->dim : NULL;
+}
+
 __isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
 {
-	return pw ? isl_space_copy(pw->dim) : NULL;
+	return isl_space_copy(FN(PW,peek_space)(pw));
 }
 
 __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
