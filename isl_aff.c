@@ -4348,6 +4348,84 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_union_multi.c>
 #include <isl_union_neg.c>
 
+/* Generic function for extracting a factor from a product "pma".
+ * "check_space" checks that the space is that of the right kind of product.
+ * "space_factor" extracts the factor from the space.
+ * "multi_aff_factor" extracts the factor from the constituent functions.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_factor(
+	__isl_take isl_pw_multi_aff *pma,
+	isl_stat (*check_space)(__isl_keep isl_pw_multi_aff *pma),
+	__isl_give isl_space *(*space_factor)(__isl_take isl_space *space),
+	__isl_give isl_multi_aff *(*multi_aff_factor)(
+		__isl_take isl_multi_aff *ma))
+{
+	int i;
+	isl_space *space;
+
+	if (check_space(pma) < 0)
+		return isl_pw_multi_aff_free(pma);
+
+	space = isl_pw_multi_aff_take_space(pma);
+	space = space_factor(space);
+
+	for (i = 0; pma && i < pma->n; ++i) {
+		isl_multi_aff *ma;
+
+		ma = isl_pw_multi_aff_take_base_at(pma, i);
+		ma = multi_aff_factor(ma);
+		pma = isl_pw_multi_aff_restore_base_at(pma, i, ma);
+	}
+
+	pma = isl_pw_multi_aff_restore_space(pma, space);
+
+	return pma;
+}
+
+/* Is the range of "pma" a wrapped relation?
+ */
+static isl_bool isl_pw_multi_aff_range_is_wrapping(
+	__isl_keep isl_pw_multi_aff *pma)
+{
+	return isl_space_range_is_wrapping(isl_pw_multi_aff_peek_space(pma));
+}
+
+/* Check that the range of "pma" is a product.
+ */
+static isl_stat pw_multi_aff_check_range_product(
+	__isl_keep isl_pw_multi_aff *pma)
+{
+	isl_bool wraps;
+
+	wraps = isl_pw_multi_aff_range_is_wrapping(pma);
+	if (wraps < 0)
+		return isl_stat_error;
+	if (!wraps)
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"range is not a product", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Given a function A -> [B -> C], extract the function A -> B.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_domain(
+	__isl_take isl_pw_multi_aff *pma)
+{
+	return pw_multi_aff_factor(pma, &pw_multi_aff_check_range_product,
+				&isl_space_range_factor_domain,
+				&isl_multi_aff_range_factor_domain);
+}
+
+/* Given a function A -> [B -> C], extract the function A -> C.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_range(
+	__isl_take isl_pw_multi_aff *pma)
+{
+	return pw_multi_aff_factor(pma, &pw_multi_aff_check_range_product,
+				&isl_space_range_factor_range,
+				&isl_multi_aff_range_factor_range);
+}
+
 static __isl_give isl_pw_multi_aff *pw_multi_aff_union_lexmax(
 	__isl_take isl_pw_multi_aff *pma1,
 	__isl_take isl_pw_multi_aff *pma2)

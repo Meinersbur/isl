@@ -650,6 +650,12 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
 __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
+__isl_export
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_domain(
+	__isl_take isl_pw_multi_aff *pma);
+__isl_export
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_range(
+	__isl_take isl_pw_multi_aff *pma);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_intersect_params(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
