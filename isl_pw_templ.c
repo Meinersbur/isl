@@ -1497,6 +1497,57 @@ __isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
 	return isl_space_copy(FN(PW,peek_space)(pw));
 }
 
+/* Return the space of "pw".
+ * This may be either a copy or the space itself
+ * if there is only one reference to "pw".
+ * This allows the space to be modified inplace
+ * if both the piecewise expression and its space have only a single reference.
+ * The caller is not allowed to modify "pw" between this call and
+ * a subsequent call to isl_pw_*_restore_*.
+ * The only exception is that isl_pw_*_free can be called instead.
+ */
+__isl_give isl_space *FN(PW,take_space)(__isl_keep PW *pw)
+{
+	isl_space *space;
+
+	if (!pw)
+		return NULL;
+	if (pw->ref != 1)
+		return FN(PW,get_space)(pw);
+	space = pw->dim;
+	pw->dim = NULL;
+	return space;
+}
+
+/* Set the space of "pw" to "space", where the space of "pw" may be missing
+ * due to a preceding call to isl_pw_*_take_space.
+ * However, in this case, "pw" only has a single reference and
+ * then the call to isl_pw_*_cow has no effect.
+ */
+__isl_give PW *FN(PW,restore_space)(__isl_take PW *pw,
+	__isl_take isl_space *space)
+{
+	if (!pw || !space)
+		goto error;
+
+	if (pw->dim == space) {
+		isl_space_free(space);
+		return pw;
+	}
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+	isl_space_free(pw->dim);
+	pw->dim = space;
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	isl_space_free(space);
+	return NULL;
+}
+
 __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
 {
 	return pw ? isl_space_domain(isl_space_copy(pw->dim)) : NULL;
