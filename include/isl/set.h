@@ -226,7 +226,7 @@ isl_bool isl_basic_set_is_universe(__isl_keep isl_basic_set *bset);
 isl_bool isl_basic_set_plain_is_empty(__isl_keep isl_basic_set *bset);
 __isl_export
 isl_bool isl_basic_set_is_empty(__isl_keep isl_basic_set *bset);
-int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset);
+isl_bool isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset);
 __isl_export
 isl_bool isl_basic_set_is_subset(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2);

@@ -4650,7 +4650,7 @@ __isl_give isl_pw_qpolynomial *isl_basic_set_multiplicative_call(
 	__isl_take isl_basic_set *bset,
 	__isl_give isl_pw_qpolynomial *(*fn)(__isl_take isl_basic_set *bset))
 {
-	int bounded;
+	isl_bool bounded;
 	isl_morph *morph;
 	isl_pw_qpolynomial *pwqp;
 
