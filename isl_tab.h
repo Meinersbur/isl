@@ -192,7 +192,7 @@ __isl_give struct isl_tab *isl_tab_from_basic_set(
 	__isl_keep isl_basic_set *bset, int track);
 struct isl_tab *isl_tab_from_recession_cone(struct isl_basic_set *bset,
 	int parametric);
-int isl_tab_cone_is_bounded(struct isl_tab *tab);
+isl_bool isl_tab_cone_is_bounded(struct isl_tab *tab);
 struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 	struct isl_tab *tab);
 struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,

@@ -2474,16 +2474,16 @@ error:
 /* Assuming "tab" is the tableau of a cone, check if the cone is
  * bounded, i.e., if it is empty or only contains the origin.
  */
-int isl_tab_cone_is_bounded(struct isl_tab *tab)
+isl_bool isl_tab_cone_is_bounded(struct isl_tab *tab)
 {
 	int i;
 
 	if (!tab)
-		return -1;
+		return isl_bool_error;
 	if (tab->empty)
-		return 1;
+		return isl_bool_true;
 	if (tab->n_dead == tab->n_col)
-		return 1;
+		return isl_bool_true;
 
 	for (;;) {
 		for (i = tab->n_redundant; i < tab->n_row; ++i) {
@@ -2494,17 +2494,17 @@ int isl_tab_cone_is_bounded(struct isl_tab *tab)
 				continue;
 			sgn = sign_of_max(tab, var);
 			if (sgn < -1)
-				return -1;
+				return isl_bool_error;
 			if (sgn != 0)
-				return 0;
+				return isl_bool_false;
 			if (close_row(tab, var, 0) < 0)
-				return -1;
+				return isl_bool_error;
 			break;
 		}
 		if (tab->n_dead == tab->n_col)
-			return 1;
+			return isl_bool_true;
 		if (i == tab->n_row)
-			return 0;
+			return isl_bool_false;
 	}
 }
 

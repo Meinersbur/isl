@@ -925,7 +925,7 @@ error:
 int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 {
 	struct isl_tab *tab;
-	int bounded;
+	isl_bool bounded;
 
 	if (!bset)
 		return -1;
