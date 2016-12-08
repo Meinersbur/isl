@@ -12,12 +12,14 @@
  */
 
 #include <isl/ctx.h>
+#include <isl/val.h>
 #include <isl_aff_private.h>
 #include <isl/map.h>
 #include <isl/set.h>
 #include <isl/schedule.h>
 #include <isl/schedule_node.h>
 #include <isl_sort.h>
+#include <isl/printer.h>
 #include <isl_schedule_private.h>
 #include <isl_schedule_tree.h>
 #include <isl_schedule_node_private.h>
