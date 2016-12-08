@@ -1321,15 +1321,6 @@ error:
 	return NULL;
 }
 
-/* Given a space of the form [A -> B] -> [C -> D], return the space A -> C.
- */
-__isl_give isl_space *isl_space_factor_domain(__isl_take isl_space *space)
-{
-	space = isl_space_domain_factor_domain(space);
-	space = isl_space_range_factor_domain(space);
-	return space;
-}
-
 /* Given a space of the form [A -> B] -> C, return the space A -> C.
  */
 __isl_give isl_space *isl_space_domain_factor_domain(
@@ -1444,6 +1435,15 @@ error:
 	isl_space_free(space);
 	isl_space_free(domain);
 	return NULL;
+}
+
+/* Given a space of the form [A -> B] -> [C -> D], return the space A -> C.
+ */
+__isl_give isl_space *isl_space_factor_domain(__isl_take isl_space *space)
+{
+	space = isl_space_domain_factor_domain(space);
+	space = isl_space_range_factor_domain(space);
+	return space;
 }
 
 /* Internal function that selects the range of the map that is
