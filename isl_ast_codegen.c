@@ -11,6 +11,8 @@
  */
 
 #include <limits.h>
+#include <isl/val.h>
+#include <isl/space.h>
 #include <isl/aff.h>
 #include <isl/constraint.h>
 #include <isl/set.h>
