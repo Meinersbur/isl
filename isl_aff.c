@@ -3,6 +3,7 @@
  * Copyright 2011      Sven Verdoolaege
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      Sven Verdoolaege
  * Copyright 2018      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
@@ -3900,6 +3901,36 @@ error:
 	isl_mat_free(mat);
 	isl_multi_aff_free(ma);
 	return NULL;
+}
+
+/* Return the constant terms of the affine expressions of "ma".
+ */
+__isl_give isl_multi_val *isl_multi_aff_get_constant_multi_val(
+	__isl_keep isl_multi_aff *ma)
+{
+	int i;
+	isl_size n;
+	isl_space *space;
+	isl_multi_val *mv;
+
+	n = isl_multi_aff_size(ma);
+	if (n < 0)
+		return NULL;
+	space = isl_space_range(isl_multi_aff_get_space(ma));
+	space = isl_space_drop_all_params(space);
+	mv = isl_multi_val_zero(space);
+
+	for (i = 0; i < n; ++i) {
+		isl_aff *aff;
+		isl_val *val;
+
+		aff = isl_multi_aff_get_at(ma, i);
+		val = isl_aff_get_constant_val(aff);
+		isl_aff_free(aff);
+		mv = isl_multi_val_set_at(mv, i, val);
+	}
+
+	return mv;
 }
 
 /* Remove any internal structure of the domain of "ma".
