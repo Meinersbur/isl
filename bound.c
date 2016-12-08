@@ -3,6 +3,7 @@
 #include <isl_map_private.h>
 #include <isl_polynomial_private.h>
 #include <isl_scan.h>
+#include <isl/val.h>
 #include <isl/options.h>
 #include <isl/deprecated/point_int.h>
 #include <isl/deprecated/polynomial_int.h>
