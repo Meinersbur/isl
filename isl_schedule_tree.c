@@ -13,6 +13,8 @@
  * CS 42112, 75589 Paris Cedex 12, France
  */
 
+#include <isl/val.h>
+#include <isl/space.h>
 #include <isl/map.h>
 #include <isl_schedule_band.h>
 #include <isl_schedule_private.h>
