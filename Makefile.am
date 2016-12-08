@@ -318,6 +318,7 @@ pkginclude_HEADERS = \
 	include/isl/union_set.h \
 	include/isl/union_set_type.h \
 	include/isl/val.h \
+	include/isl/val_type.h \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h

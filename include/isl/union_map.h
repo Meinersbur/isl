@@ -7,7 +7,7 @@
 #include <isl/map_type.h>
 #include <isl/union_map_type.h>
 #include <isl/printer.h>
-#include <isl/val.h>
+#include <isl/val_type.h>
 
 #if defined(__cplusplus)
 extern "C" {

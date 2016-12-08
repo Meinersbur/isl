@@ -21,7 +21,7 @@
 #include <isl/aff_type.h>
 #include <isl/list.h>
 #include <isl/map_type.h>
-#include <isl/val.h>
+#include <isl/val_type.h>
 #include <isl/stdint.h>
 #include <isl/stride_info.h>
 

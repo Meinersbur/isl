@@ -10,7 +10,7 @@
 #include <isl/union_set_type.h>
 #include <isl/aff_type.h>
 #include <isl/polynomial_type.h>
-#include <isl/val.h>
+#include <isl/val_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
