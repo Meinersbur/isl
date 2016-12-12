@@ -86,7 +86,7 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
  * Since some constraints may be mutually redundant, sort the constraints
  * first such that constraints that involve existentially quantified
  * variables are considered for removal before those that do not.
- * The sorting is also need for the use in map_simple_hull.
+ * The sorting is also needed for the use in map_simple_hull.
  *
  * Alternatively, we could have intersected the basic map with the
  * corresponding equality and then checked if the dimension was that
