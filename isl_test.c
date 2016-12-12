@@ -2430,6 +2430,33 @@ static int test_min_special(isl_ctx *ctx)
 	return 0;
 }
 
+/* A specialized isl_set_min_val test case that would return an error
+ * in earlier versions of isl.
+ */
+static int test_min_special2(isl_ctx *ctx)
+{
+	const char *str;
+	isl_basic_set *bset;
+	isl_aff *obj;
+	isl_val *res;
+
+	str = "{ [i, j, k] : 2j = i and 2k = i + 1 and i >= 2 }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+
+	obj = isl_aff_read_from_str(ctx, "{ [i, j, k] -> [i] }");
+
+	res = isl_basic_set_max_val(bset, obj);
+
+	isl_basic_set_free(bset);
+	isl_aff_free(obj);
+	isl_val_free(res);
+
+	if (!res)
+		return -1;
+
+	return 0;
+}
+
 struct {
 	const char *set;
 	const char *obj;
@@ -2475,6 +2502,8 @@ static int test_min(struct isl_ctx *ctx)
 	}
 
 	if (test_min_special(ctx) < 0)
+		return -1;
+	if (test_min_special2(ctx) < 0)
 		return -1;
 
 	return 0;
