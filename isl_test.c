@@ -4550,6 +4550,36 @@ int test_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the computation below results in a single expression.
+ * One or two expressions may result depending on which constraint
+ * ends up being considered as redundant with respect to the other
+ * constraints after the projection that is performed internally
+ * by isl_set_dim_min.
+ */
+static int test_dim_max_1(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_pw_aff *pa;
+	int n;
+
+	str = "[n] -> { [a, b] : n >= 0 and 4a >= -4 + n and b >= 0 and "
+				"-4a <= b <= 3 and b < n - 4a }";
+	set = isl_set_read_from_str(ctx, str);
+	pa = isl_set_dim_min(set, 0);
+	n = isl_pw_aff_n_piece(pa);
+	isl_pw_aff_dump(pa);
+	isl_pw_aff_free(pa);
+
+	if (!pa)
+		return -1;
+	if (n != 1)
+		isl_die(ctx, isl_error_unknown, "expecting single expression",
+			return -1);
+
+	return 0;
+}
+
 int test_dim_max(isl_ctx *ctx)
 {
 	int equal;
@@ -4558,6 +4588,9 @@ int test_dim_max(isl_ctx *ctx)
 	isl_set *set;
 	isl_map *map;
 	isl_pw_aff *pwaff;
+
+	if (test_dim_max_1(ctx) < 0)
+		return -1;
 
 	str = "[N] -> { [i] : 0 <= i <= min(N,10) }";
 	set = isl_set_read_from_str(ctx, str);
