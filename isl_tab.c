@@ -3452,6 +3452,36 @@ static int perform_undo_var(struct isl_tab *tab, struct isl_tab_undo *undo)
 	return 0;
 }
 
+/* Restore all rows that have been marked redundant by isl_tab_mark_redundant
+ * and that have been preserved in the tableau.
+ * Note that isl_tab_mark_redundant may also have marked some variables
+ * as being non-negative before marking them redundant.  These need
+ * to be removed as well as otherwise some constraints could end up
+ * getting marked redundant with respect to the variable.
+ */
+isl_stat isl_tab_restore_redundant(struct isl_tab *tab)
+{
+	if (!tab)
+		return isl_stat_error;
+
+	if (tab->need_undo)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"manually restoring redundant constraints "
+			"interferes with undo history",
+			return isl_stat_error);
+
+	while (tab->n_redundant > 0) {
+		if (tab->row_var[tab->n_redundant - 1] >= 0) {
+			struct isl_tab_var *var;
+
+			var = isl_tab_var_from_row(tab, tab->n_redundant - 1);
+			var->is_nonneg = 0;
+		}
+		restore_last_redundant(tab);
+	}
+	return isl_stat_ok;
+}
+
 /* Undo the addition of an integer division to the basic map representation
  * of "tab" in position "pos".
  */
