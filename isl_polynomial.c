@@ -1280,7 +1280,7 @@ error:
 static int compatible_divs(__isl_keep isl_mat *div1, __isl_keep isl_mat *div2)
 {
 	int n_row, n_col;
-	int equal;
+	isl_bool equal;
 
 	isl_assert(div1->ctx, div1->n_row >= div2->n_row &&
 				div1->n_col >= div2->n_col, return -1);

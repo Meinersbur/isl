@@ -730,7 +730,7 @@ __isl_give isl_local_space *isl_local_space_intersect(
 	int *exp1 = NULL;
 	int *exp2 = NULL;
 	isl_mat *div = NULL;
-	int equal;
+	isl_bool equal;
 
 	if (!ls1 || !ls2)
 		goto error;
