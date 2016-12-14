@@ -51,6 +51,7 @@ void isl_mat_col_submul(struct isl_mat *mat,
 __isl_give isl_mat *isl_mat_col_addmul(__isl_take isl_mat *mat, int dst_col,
 	isl_int f, int src_col);
 __isl_give isl_mat *isl_mat_col_neg(__isl_take isl_mat *mat, int col);
+__isl_give isl_mat *isl_mat_row_neg(__isl_take isl_mat *mat, int row);
 
 int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v);
 __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,

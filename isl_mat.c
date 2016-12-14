@@ -1539,6 +1539,21 @@ __isl_give isl_mat *isl_mat_col_neg(__isl_take isl_mat *mat, int col)
 	return mat;
 }
 
+/* Negate row "row" of "mat" and return the result.
+ */
+__isl_give isl_mat *isl_mat_row_neg(__isl_take isl_mat *mat, int row)
+{
+	if (check_row(mat, row) < 0)
+		return isl_mat_free(mat);
+	if (isl_seq_first_non_zero(mat->row[row], mat->n_col) == -1)
+		return mat;
+	mat = isl_mat_cow(mat);
+	if (!mat)
+		return NULL;
+	isl_seq_neg(mat->row[row], mat->row[row], mat->n_col);
+	return mat;
+}
+
 __isl_give isl_mat *isl_mat_unimodular_complete(__isl_take isl_mat *M, int row)
 {
 	int r;
