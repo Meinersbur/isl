@@ -4597,7 +4597,6 @@ static int test_dim_max_1(isl_ctx *ctx)
 	set = isl_set_read_from_str(ctx, str);
 	pa = isl_set_dim_min(set, 0);
 	n = isl_pw_aff_n_piece(pa);
-	isl_pw_aff_dump(pa);
 	isl_pw_aff_free(pa);
 
 	if (!pa)
