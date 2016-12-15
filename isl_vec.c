@@ -126,6 +126,19 @@ __isl_give isl_vec *isl_vec_expand(__isl_take isl_vec *vec, int pos, int n,
 	return vec;
 }
 
+/* Create a vector of size "size" with zero-valued elements.
+ */
+__isl_give isl_vec *isl_vec_zero(isl_ctx *ctx, unsigned size)
+{
+	isl_vec *vec;
+
+	vec = isl_vec_alloc(ctx, size);
+	if (!vec)
+		return NULL;
+	isl_seq_clr(vec->el, size);
+	return vec;
+}
+
 __isl_give isl_vec *isl_vec_zero_extend(__isl_take isl_vec *vec, unsigned size)
 {
 	int extra;
