@@ -342,6 +342,22 @@ static __isl_give LIST(EL) *FN(FN(LIST(EL),restore),BASE)(
 	return FN(FN(LIST(EL),set),BASE)(list, index, el);
 }
 
+/* Swap the elements of "list" in positions "pos1" and "pos2".
+ */
+__isl_give LIST(EL) *FN(LIST(EL),swap)(__isl_take LIST(EL) *list,
+	unsigned pos1, unsigned pos2)
+{
+	EL *el1, *el2;
+
+	if (pos1 == pos2)
+		return list;
+	el1 = FN(FN(LIST(EL),take),BASE)(list, pos1);
+	el2 = FN(FN(LIST(EL),take),BASE)(list, pos2);
+	list = FN(FN(LIST(EL),restore),BASE)(list, pos1, el2);
+	list = FN(FN(LIST(EL),restore),BASE)(list, pos2, el1);
+	return list;
+}
+
 isl_stat FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	isl_stat (*fn)(__isl_take EL *el, void *user), void *user)
 {
