@@ -583,7 +583,6 @@ __isl_give isl_printer *isl_printer_print_point(
 	struct isl_print_space_data data = { 0 };
 	int i;
 	unsigned nparam;
-	unsigned dim;
 
 	if (!pnt)
 		return p;
@@ -593,7 +592,6 @@ __isl_give isl_printer *isl_printer_print_point(
 	}
 
 	nparam = isl_space_dim(pnt->dim, isl_dim_param);
-	dim = isl_space_dim(pnt->dim, isl_dim_set);
 	if (nparam > 0) {
 		p = isl_printer_print_str(p, "[");
 		for (i = 0; i < nparam; ++i) {
