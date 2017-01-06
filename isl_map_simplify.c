@@ -2646,7 +2646,6 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 	isl_basic_set *combined = NULL;
 	struct isl_tab *tab = NULL;
 	unsigned n_eq, context_ineq;
-	unsigned total;
 
 	if (!bset || !ineq || !context)
 		goto error;
@@ -2696,7 +2695,6 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 		goto error;
 	if (isl_tab_detect_redundant(tab) < 0)
 		goto error;
-	total = isl_basic_set_total_dim(bset);
 	for (i = bset->n_ineq - 1; i >= 0; --i) {
 		isl_basic_set *test;
 		int is_empty;
