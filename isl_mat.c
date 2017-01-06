@@ -420,7 +420,8 @@ int isl_mat_is_scaled_identity(__isl_keep isl_mat *mat)
 	return 1;
 }
 
-struct isl_vec *isl_mat_vec_product(struct isl_mat *mat, struct isl_vec *vec)
+__isl_give isl_vec *isl_mat_vec_product(__isl_take isl_mat *mat,
+	__isl_take isl_vec *vec)
 {
 	int i;
 	struct isl_vec *prod;
