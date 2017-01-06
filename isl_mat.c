@@ -1028,7 +1028,7 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_transpose(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_transpose(__isl_take isl_mat *mat)
 {
 	struct isl_mat *transpose = NULL;
 	int i, j;

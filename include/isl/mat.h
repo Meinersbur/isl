@@ -66,7 +66,7 @@ __isl_give isl_mat *isl_mat_inverse_product(__isl_take isl_mat *left,
 	__isl_take isl_mat *right);
 __isl_give isl_mat *isl_mat_product(__isl_take isl_mat *left,
 	__isl_take isl_mat *right);
-struct isl_mat *isl_mat_transpose(struct isl_mat *mat);
+__isl_give isl_mat *isl_mat_transpose(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_inverse(__isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
