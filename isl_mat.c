@@ -833,8 +833,8 @@ static void inv_subtract(struct isl_mat *left, struct isl_mat *right,
 
 /* Compute inv(left)*right
  */
-struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
-	struct isl_mat *right)
+__isl_give isl_mat *isl_mat_inverse_product(__isl_take isl_mat *left,
+	__isl_take isl_mat *right)
 {
 	int row;
 	isl_int a, b;
