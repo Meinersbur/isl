@@ -476,7 +476,8 @@ error:
 	return NULL;
 }
 
-struct isl_vec *isl_vec_mat_product(struct isl_vec *vec, struct isl_mat *mat)
+__isl_give isl_vec *isl_vec_mat_product(__isl_take isl_vec *vec,
+	__isl_take isl_mat *mat)
 {
 	int i, j;
 	struct isl_vec *prod;

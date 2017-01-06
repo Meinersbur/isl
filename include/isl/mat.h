@@ -49,7 +49,8 @@ struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j);
 
 __isl_give isl_vec *isl_mat_vec_product(__isl_take isl_mat *mat,
 	__isl_take isl_vec *vec);
-struct isl_vec *isl_vec_mat_product(struct isl_vec *vec, struct isl_mat *mat);
+__isl_give isl_vec *isl_vec_mat_product(__isl_take isl_vec *vec,
+	__isl_take isl_mat *mat);
 __isl_give isl_vec *isl_mat_vec_inverse_product(__isl_take isl_mat *mat,
 						__isl_take isl_vec *vec);
 struct isl_mat *isl_mat_aff_direct_sum(struct isl_mat *left,
