@@ -1077,7 +1077,8 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j)
+__isl_give isl_mat *isl_mat_swap_rows(__isl_take isl_mat *mat,
+	unsigned i, unsigned j)
 {
 	isl_int *t;
 

@@ -46,7 +46,8 @@ __isl_give isl_mat *isl_mat_set_element_val(__isl_take isl_mat *mat,
 
 __isl_give isl_mat *isl_mat_swap_cols(__isl_take isl_mat *mat,
 	unsigned i, unsigned j);
-struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j);
+__isl_give isl_mat *isl_mat_swap_rows(__isl_take isl_mat *mat,
+	unsigned i, unsigned j);
 
 __isl_give isl_vec *isl_mat_vec_product(__isl_take isl_mat *mat,
 	__isl_take isl_vec *vec);
