@@ -718,7 +718,7 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_lin_to_aff(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_lin_to_aff(__isl_take isl_mat *mat)
 {
 	int i;
 	struct isl_mat *mat2;
