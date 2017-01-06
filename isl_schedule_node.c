@@ -2254,7 +2254,6 @@ static __isl_give isl_schedule_node *update_ancestors(
 {
 	int i, n;
 	int is_leaf;
-	isl_ctx *ctx;
 	isl_schedule_tree *tree;
 	isl_schedule_node *pos = NULL;
 
@@ -2265,7 +2264,6 @@ static __isl_give isl_schedule_node *update_ancestors(
 	if (!node)
 		return isl_schedule_node_free(pos);
 
-	ctx = isl_schedule_node_get_ctx(node);
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
 	tree = isl_schedule_tree_copy(node->tree);
 
