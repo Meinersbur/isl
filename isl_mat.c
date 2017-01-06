@@ -505,8 +505,8 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_aff_direct_sum(struct isl_mat *left,
-	struct isl_mat *right)
+__isl_give isl_mat *isl_mat_aff_direct_sum(__isl_take isl_mat *left,
+	__isl_take isl_mat *right)
 {
 	int i;
 	struct isl_mat *sum;
