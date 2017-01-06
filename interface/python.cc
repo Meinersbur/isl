@@ -217,23 +217,6 @@ static bool is_isl_bool(QualType type)
 	return s == "isl_bool";
 }
 
-/* Is "type" that of a pointer to char.
- */
-static bool is_string_type(QualType type)
-{
-	if (type->isPointerType()) {
-		string s;
-
-		type = type->getPointeeType();
-		if (type->isFunctionType())
-			return false;
-		s = type.getAsString();
-		return s == "const char" || "char";
-	}
-
-	return false;
-}
-
 /* Is "type" that of a pointer to a function?
  */
 static bool is_callback(QualType type)
@@ -469,7 +452,7 @@ static void print_method_return(FunctionDecl *method)
 
 		type = type2python(extract_type(return_type));
 		printf("        return %s(ctx=ctx, ptr=res)\n", type.c_str());
-	} else if (is_string_type(return_type)) {
+	} else if (is_string(return_type)) {
 		printf("        if res == 0:\n");
 		printf("            raise\n");
 		printf("        string = str(cast(res, c_char_p).value)\n");
@@ -743,7 +726,7 @@ static void print_restype(FunctionDecl *fd)
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
 	else if (is_isl_bool(type))
 		printf("isl.%s.restype = c_bool\n", fullname.c_str());
-	else if (is_string_type(type))
+	else if (is_string(type))
 		printf("isl.%s.restype = POINTER(c_char)\n", fullname.c_str());
 }
 
