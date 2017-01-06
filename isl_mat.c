@@ -611,8 +611,8 @@ static void oppose(struct isl_mat *M, struct isl_mat **U,
  * column.
  * If U or Q are NULL, then these matrices are not computed.
  */
-struct isl_mat *isl_mat_left_hermite(struct isl_mat *M, int neg,
-	struct isl_mat **U, struct isl_mat **Q)
+__isl_give isl_mat *isl_mat_left_hermite(__isl_take isl_mat *M, int neg,
+	__isl_give isl_mat **U, __isl_give isl_mat **Q)
 {
 	isl_int c;
 	int row, col;

@@ -58,8 +58,8 @@ __isl_give isl_mat *isl_mat_aff_direct_sum(__isl_take isl_mat *left,
 	__isl_take isl_mat *right);
 __isl_give isl_mat *isl_mat_diagonal(__isl_take isl_mat *mat1,
 	__isl_take isl_mat *mat2);
-struct isl_mat *isl_mat_left_hermite(struct isl_mat *M,
-	int neg, struct isl_mat **U, struct isl_mat **Q);
+__isl_give isl_mat *isl_mat_left_hermite(__isl_take isl_mat *M, int neg,
+	__isl_give isl_mat **U, __isl_give isl_mat **Q);
 struct isl_mat *isl_mat_lin_to_aff(struct isl_mat *mat);
 struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 	struct isl_mat *right);
