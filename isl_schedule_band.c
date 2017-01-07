@@ -257,7 +257,7 @@ __isl_give isl_schedule_band *isl_schedule_band_member_set_coincident(
 	if (pos < 0 || pos >= band->n)
 		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
 			"invalid member position",
-			isl_schedule_band_free(band));
+			return isl_schedule_band_free(band));
 
 	band->coincident[pos] = coincident;
 
