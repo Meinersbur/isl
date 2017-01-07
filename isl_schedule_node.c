@@ -1934,14 +1934,14 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 	type = isl_schedule_node_get_type(node);
 	if (type != isl_schedule_node_band)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a band node", isl_schedule_node_free(node));
+			"not a band node", return isl_schedule_node_free(node));
 	anchored = isl_schedule_node_is_subtree_anchored(node);
 	if (anchored < 0)
 		return isl_schedule_node_free(node);
 	if (anchored)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"cannot sink band node in anchored subtree",
-			isl_schedule_node_free(node));
+			return isl_schedule_node_free(node));
 	if (isl_schedule_tree_n_children(node->tree) == 0)
 		return node;
 
