@@ -2988,7 +2988,7 @@ static struct isl_basic_set *set_bounds(struct isl_set *set, int dim)
  * resulting hull is bounded by a symbolic constant.  If not, the
  * hull is intersected with the corresponding bounds on the whole set.
  */
-struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set)
+__isl_give isl_basic_set *isl_set_bounded_simple_hull(__isl_take isl_set *set)
 {
 	int i, j;
 	struct isl_basic_set *hull;
