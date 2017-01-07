@@ -304,7 +304,7 @@ __isl_give isl_union_map *isl_union_map_align_params(
 
 	data.res = isl_union_map_alloc(isl_reordering_get_space(data.exp),
 					umap->table.n);
-	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table,
+	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap), &umap->table,
 					&align_entry, &data) < 0)
 		goto error;
 
