@@ -1578,7 +1578,8 @@ static __isl_give isl_union_map *un_op(__isl_take isl_union_map *umap,
 	if (!umap)
 		return NULL;
 
-	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table, fn, NULL) < 0)
+	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap),
+				    &umap->table, fn, NULL) < 0)
 		goto error;
 
 	return umap;
