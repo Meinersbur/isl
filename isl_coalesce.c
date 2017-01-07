@@ -2331,9 +2331,7 @@ static isl_stat harmonize_stride_divs(struct isl_coalesce_info *info1,
 	struct isl_coalesce_info *info2)
 {
 	int i, n;
-	int total;
 
-	total = isl_basic_map_total_dim(info1->bmap);
 	n = isl_basic_map_dim(info1->bmap, isl_dim_div);
 	for (i = 0; i < n; ++i) {
 		isl_bool known, harmonize;
