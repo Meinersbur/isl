@@ -1529,7 +1529,8 @@ static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
 		return NULL;
 
 	res = isl_union_map_alloc(isl_space_copy(umap->dim), umap->table.n);
-	if (isl_hash_table_foreach(umap->dim->ctx, &umap->table, fn, &res) < 0)
+	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap),
+				    &umap->table, fn, &res) < 0)
 		goto error;
 
 	isl_union_map_free(umap);
