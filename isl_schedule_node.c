@@ -2205,12 +2205,14 @@ __isl_give isl_schedule_node *isl_schedule_node_sequence_splice_child(
 		return NULL;
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a sequence node", isl_schedule_node_free(node));
+			"not a sequence node",
+			return isl_schedule_node_free(node));
 	node = isl_schedule_node_child(node, pos);
 	node = isl_schedule_node_child(node, 0);
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a sequence node", isl_schedule_node_free(node));
+			"not a sequence node",
+			return isl_schedule_node_free(node));
 	child = isl_schedule_node_copy(node);
 	node = isl_schedule_node_parent(node);
 	filter = isl_schedule_node_filter_get_filter(node);
