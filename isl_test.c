@@ -352,7 +352,7 @@ static int test_construction(isl_ctx *ctx)
 	isl_int_set_si(v, 1);
 	isl_constraint_set_coefficient(c, isl_dim_set, 0, v);
 	isl_int_set_si(v, -5);
-	isl_constraint_set_constant(c, v);
+	c = isl_constraint_set_constant(c, v);
 	bset = isl_basic_set_add_constraint(bset, c);
 
 	isl_local_space_free(ls);
