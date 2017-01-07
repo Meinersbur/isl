@@ -1426,14 +1426,12 @@ error:
 
 static isl_stat add_pwqp(__isl_take isl_pw_qpolynomial *pwqp, void *user)
 {
-	isl_ctx *ctx;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_union_pw_qpolynomial_fold **upwf;
 	struct isl_hash_table_entry *entry;
 
 	upwf = (isl_union_pw_qpolynomial_fold **)user;
 
-	ctx = pwqp->dim->ctx;
 	entry = isl_union_pw_qpolynomial_fold_find_part_entry(*upwf,
 			 pwqp->dim, 1);
 	if (!entry)
