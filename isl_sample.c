@@ -851,7 +851,8 @@ error:
 /* Concatenate two integer vectors, i.e., two vectors with denominator
  * (stored in element 0) equal to 1.
  */
-static struct isl_vec *vec_concat(struct isl_vec *vec1, struct isl_vec *vec2)
+static __isl_give isl_vec *vec_concat(__isl_take isl_vec *vec1,
+	__isl_take isl_vec *vec2)
 {
 	struct isl_vec *vec;
 
