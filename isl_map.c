@@ -1920,7 +1920,7 @@ __isl_give isl_set *isl_set_cow(__isl_take isl_set *set)
  *
  * Otherwise, create a duplicate (without any cached information).
  */
-struct isl_map *isl_map_cow(struct isl_map *map)
+__isl_give isl_map *isl_map_cow(__isl_take isl_map *map)
 {
 	if (!map)
 		return NULL;
