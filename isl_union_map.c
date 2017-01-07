@@ -621,8 +621,9 @@ static isl_stat subtract_entry(void **entry, void *user)
 
 	space = isl_map_get_space(map);
 	hash = isl_space_get_hash(space);
-	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_space, space, 0);
+	entry2 = isl_hash_table_find(isl_union_map_get_ctx(data->umap2),
+				     &data->umap2->table, hash,
+				     &has_space, space, 0);
 	isl_space_free(space);
 	map = isl_map_copy(map);
 	if (entry2) {
