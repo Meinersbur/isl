@@ -945,7 +945,7 @@ __isl_give isl_schedule_band *isl_schedule_band_replace_ast_build_option(
 
 	band = isl_schedule_band_cow(band);
 	if (!band)
-		return NULL;
+		goto error;
 
 	options = band->ast_build_options;
 	options = isl_union_set_subtract(options, isl_union_set_from_set(drop));
@@ -956,6 +956,11 @@ __isl_give isl_schedule_band *isl_schedule_band_replace_ast_build_option(
 		return isl_schedule_band_free(band);
 
 	return band;
+error:
+	isl_schedule_band_free(band);
+	isl_set_free(drop);
+	isl_set_free(add);
+	return NULL;
 }
 
 /* Multiply the partial schedule of "band" with the factors in "mv".
