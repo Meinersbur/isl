@@ -1267,7 +1267,7 @@ __isl_give isl_basic_map *isl_basic_map_copy(__isl_keep isl_basic_map *bmap)
 	return bmap;
 }
 
-struct isl_map *isl_map_copy(struct isl_map *map)
+__isl_give isl_map *isl_map_copy(__isl_keep isl_map *map)
 {
 	if (!map)
 		return NULL;
