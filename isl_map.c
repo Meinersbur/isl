@@ -1905,7 +1905,7 @@ static __isl_give isl_map *clear_caches(__isl_take isl_map *map)
 	return map;
 }
 
-struct isl_set *isl_set_cow(struct isl_set *set)
+__isl_give isl_set *isl_set_cow(__isl_take isl_set *set)
 {
 	return isl_map_cow(set);
 }

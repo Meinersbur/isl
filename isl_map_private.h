@@ -253,7 +253,7 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos);
 
 __isl_give isl_basic_set *isl_basic_set_cow(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_cow(__isl_take isl_basic_map *bmap);
-struct isl_set *isl_set_cow(struct isl_set *set);
+__isl_give isl_set *isl_set_cow(__isl_take isl_set *set);
 struct isl_map *isl_map_cow(struct isl_map *map);
 
 uint32_t isl_basic_map_get_hash(__isl_keep isl_basic_map *bmap);
