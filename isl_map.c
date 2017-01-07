@@ -1243,7 +1243,7 @@ __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset)
 	return isl_basic_set_dup(bset);
 }
 
-struct isl_set *isl_set_copy(struct isl_set *set)
+__isl_give isl_set *isl_set_copy(__isl_keep isl_set *set)
 {
 	if (!set)
 		return NULL;
