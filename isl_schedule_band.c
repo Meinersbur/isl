@@ -450,7 +450,7 @@ isl_schedule_band_member_set_isolate_ast_loop_type(
 	if (pos < 0 || pos >= band->n)
 		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
 			"invalid member position",
-			isl_schedule_band_free(band));
+			return isl_schedule_band_free(band));
 
 	band = isl_schedule_band_cow(band);
 	if (!band)
