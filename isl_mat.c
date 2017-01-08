@@ -949,7 +949,7 @@ void isl_mat_col_combine(struct isl_mat *mat, unsigned dst,
 	isl_int_clear(tmp);
 }
 
-struct isl_mat *isl_mat_right_inverse(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_right_inverse(__isl_take isl_mat *mat)
 {
 	struct isl_mat *inv;
 	int row;
