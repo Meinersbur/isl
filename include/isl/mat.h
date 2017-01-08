@@ -93,7 +93,7 @@ __isl_give isl_mat *isl_mat_add_zero_rows(__isl_take isl_mat *mat, unsigned n);
 
 void isl_mat_col_add(__isl_keep isl_mat *mat, int dst_col, int src_col);
 
-struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row);
+__isl_give isl_mat *isl_mat_unimodular_complete(__isl_take isl_mat *M, int row);
 
 __isl_give isl_mat *isl_mat_from_row_vec(__isl_take isl_vec *vec);
 __isl_give isl_mat *isl_mat_concat(__isl_take isl_mat *top,

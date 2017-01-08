@@ -1545,7 +1545,7 @@ __isl_give isl_mat *isl_mat_col_neg(__isl_take isl_mat *mat, int col)
 	return mat;
 }
 
-struct isl_mat *isl_mat_unimodular_complete(struct isl_mat *M, int row)
+__isl_give isl_mat *isl_mat_unimodular_complete(__isl_take isl_mat *M, int row)
 {
 	int r;
 	struct isl_mat *H = NULL, *Q = NULL;
