@@ -523,14 +523,12 @@ static __isl_give isl_union_set *add_loop_types(
 	int isolate)
 {
 	int i;
-	isl_ctx *ctx;
 
 	if (!type)
 		return options;
 	if (!options)
 		return NULL;
 
-	ctx = isl_union_set_get_ctx(options);
 	for (i = 0; i < n; ++i) {
 		int first;
 		isl_space *space;
