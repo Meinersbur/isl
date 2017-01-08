@@ -194,7 +194,7 @@ void isl_mat_sub_neg(struct isl_ctx *ctx, isl_int **dst, isl_int **src,
 		isl_seq_neg(dst[i]+dst_col, src[i]+src_col, n_col);
 }
 
-struct isl_mat *isl_mat_copy(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat)
 {
 	if (!mat)
 		return NULL;
