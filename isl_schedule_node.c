@@ -3139,7 +3139,7 @@ __isl_give isl_schedule_node *isl_schedule_node_group(
 	if (!disjoint)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"group instances already reach node",
-			isl_schedule_node_free(node));
+			return isl_schedule_node_free(node));
 
 	return node;
 error:
