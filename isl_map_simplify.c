@@ -656,7 +656,7 @@ static int ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
 	return 1;
 }
 
-/* Elimininate divs based on equalities
+/* Eliminate divs based on equalities
  */
 static struct isl_basic_map *eliminate_divs_eq(
 		struct isl_basic_map *bmap, int *progress)
