@@ -485,7 +485,7 @@ isl_bool isl_map_compatible_range(__isl_keep isl_map *map,
 isl_bool isl_basic_map_plain_is_non_empty(__isl_keep isl_basic_map *bmap);
 isl_bool isl_basic_map_plain_is_single_valued(__isl_keep isl_basic_map *bmap);
 
-int isl_map_is_set(__isl_keep isl_map *map);
+isl_bool isl_map_is_set(__isl_keep isl_map *map);
 
 isl_bool isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
 	unsigned dim, isl_int *val);

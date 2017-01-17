@@ -4633,9 +4633,11 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	int n;
 	int n_in;
 	isl_pw_multi_aff *pma;
-	int is_set;
+	isl_bool is_set;
 
 	is_set = isl_map_is_set(map);
+	if (is_set < 0)
+		goto error;
 
 	offset = isl_basic_map_offset(hull, isl_dim_out);
 	ctx = isl_map_get_ctx(map);
@@ -4669,6 +4671,10 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	pma = isl_pw_multi_aff_pullback_multi_aff(pma, ma);
 
 	return pma;
+error:
+	isl_map_free(map);
+	isl_basic_map_free(hull);
+	return NULL;
 }
 
 /* Is constraint "c" of the form
@@ -4904,9 +4910,11 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
 	unsigned n_in;
 	unsigned o_out;
 	unsigned n_out;
-	int is_set;
+	isl_bool is_set;
 
 	is_set = isl_map_is_set(map);
+	if (is_set < 0)
+		goto error;
 
 	n_in = isl_basic_map_dim(hull, isl_dim_in);
 	n_out = isl_basic_map_dim(hull, isl_dim_out);
@@ -4952,6 +4960,10 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_stride(
 
 	isl_basic_map_free(hull);
 	return pma;
+error:
+	isl_map_free(map);
+	isl_basic_map_free(hull);
+	return NULL;
 }
 
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.

@@ -5424,21 +5424,23 @@ int isl_map_may_be_set(__isl_keep isl_map *map)
  * Users should never call this function.  Outside of isl,
  * the type should indicate whether something is a set or a map.
  */
-int isl_map_is_set(__isl_keep isl_map *map)
+isl_bool isl_map_is_set(__isl_keep isl_map *map)
 {
 	if (!map)
-		return -1;
+		return isl_bool_error;
 	return isl_space_is_set(map->dim);
 }
 
 struct isl_set *isl_map_range(struct isl_map *map)
 {
 	int i;
+	isl_bool is_set;
 	struct isl_set *set;
 
-	if (!map)
+	is_set = isl_map_is_set(map);
+	if (is_set < 0)
 		goto error;
-	if (isl_map_is_set(map))
+	if (is_set)
 		return set_from_map(map);
 
 	map = isl_map_cow(map);
