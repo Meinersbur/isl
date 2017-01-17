@@ -716,12 +716,12 @@ static isl_stat compute_max_row(struct isl_sched_graph *graph,
 
 /* Does "bset" have any defining equalities for its set variables?
  */
-static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
+static isl_bool has_any_defining_equality(__isl_keep isl_basic_set *bset)
 {
 	int i, n;
 
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 
 	n = isl_basic_set_dim(bset, isl_dim_set);
 	for (i = 0; i < n; ++i) {
@@ -733,7 +733,7 @@ static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
 			return has;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Set the entries of node->max to the value of the schedule_max_coefficient
@@ -966,7 +966,7 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 static isl_stat extract_node(__isl_take isl_set *set, void *user)
 {
 	int nvar;
-	int has_equality;
+	isl_bool has_equality;
 	isl_basic_set *hull;
 	isl_set *hull_set;
 	isl_morph *morph;
