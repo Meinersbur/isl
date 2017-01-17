@@ -88,6 +88,13 @@ unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 	}
 }
 
+/* Return the space of "map".
+ */
+__isl_keep isl_space *isl_map_peek_space(__isl_keep const isl_map *map)
+{
+	return map ? map->dim : NULL;
+}
+
 unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type)
 {
 	return map ? n(map->dim, type) : 0;
@@ -413,9 +420,7 @@ __isl_give isl_basic_set *isl_basic_set_from_local_space(
 
 __isl_give isl_space *isl_map_get_space(__isl_keep isl_map *map)
 {
-	if (!map)
-		return NULL;
-	return isl_space_copy(map->dim);
+	return isl_space_copy(isl_map_peek_space(map));
 }
 
 __isl_give isl_space *isl_set_get_space(__isl_keep isl_set *set)
