@@ -849,7 +849,7 @@ isl_bool isl_map_is_rational(__isl_keep isl_map *map)
 
 		rational_i = isl_basic_map_is_rational(map->p[i]);
 		if (rational_i < 0)
-			return rational;
+			return rational_i;
 		if (rational != rational_i)
 			isl_die(isl_map_get_ctx(map), isl_error_unsupported,
 				"mixed rational and integer basic maps "
