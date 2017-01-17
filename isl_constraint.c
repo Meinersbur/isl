@@ -773,9 +773,11 @@ int isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
 		return 0;
 	n_div = isl_constraint_dim(constraint, isl_dim_div);
 	for (i = 0; i < n_div; ++i) {
-		if (isl_local_space_is_div_constraint(constraint->ls,
-							constraint->v->el, i))
-			return 1;
+		isl_bool is_div;
+		is_div = isl_local_space_is_div_constraint(constraint->ls,
+							constraint->v->el, i);
+		if (is_div < 0 || is_div)
+			return is_div;
 	}
 
 	return 0;

@@ -1126,16 +1126,16 @@ __isl_give isl_local_space *isl_local_space_insert_dims(
  * or
  *		-(f-(m-1)) + m d >= 0
  */
-int isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
+isl_bool isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
 	isl_int *constraint, unsigned div)
 {
 	unsigned pos;
 
 	if (!ls)
-		return -1;
+		return isl_bool_error;
 
 	if (isl_int_is_zero(ls->div->row[div][0]))
-		return 0;
+		return isl_bool_false;
 
 	pos = isl_local_space_offset(ls, isl_dim_div) + div;
 
@@ -1149,20 +1149,20 @@ int isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
 		isl_int_add(ls->div->row[div][1],
 				ls->div->row[div][1], ls->div->row[div][0]);
 		if (!neg)
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(constraint+pos+1,
 					    ls->div->n_row-div-1) != -1)
-			return 0;
+			return isl_bool_false;
 	} else if (isl_int_abs_eq(constraint[pos], ls->div->row[div][0])) {
 		if (!isl_seq_eq(constraint, ls->div->row[div]+1, pos))
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(constraint+pos+1,
 					    ls->div->n_row-div-1) != -1)
-			return 0;
+			return isl_bool_false;
 	} else
-		return 0;
+		return isl_bool_false;
 
-	return 1;
+	return isl_bool_true;
 }
 
 /*
