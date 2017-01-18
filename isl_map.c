@@ -202,7 +202,7 @@ unsigned isl_map_n_param(const struct isl_map *map)
 	return map ? map->dim->nparam : 0;
 }
 
-int isl_map_compatible_domain(struct isl_map *map, struct isl_set *set)
+int isl_map_compatible_domain(__isl_keep isl_map *map, __isl_keep isl_set *set)
 {
 	int m;
 	if (!map || !set)
