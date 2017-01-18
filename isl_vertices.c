@@ -1505,6 +1505,8 @@ static int triangulate(__isl_keep isl_cell *cell, __isl_keep isl_vec *v,
 	bset = cell->vertices->bset;
 
 	ids = isl_alloc_array(ctx, int, n_other - 1);
+	if (!ids)
+		goto error;
 	for (i = 0; i < bset->n_ineq; ++i) {
 		if (isl_seq_first_non_zero(bset->ineq[i] + 1 + nparam, d) == -1)
 			continue;

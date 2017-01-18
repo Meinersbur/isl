@@ -470,7 +470,7 @@ __isl_give isl_union_set *isl_union_set_from_point(__isl_take isl_point *pnt)
 __isl_give isl_basic_set *isl_basic_set_box_from_points(
 	__isl_take isl_point *pnt1, __isl_take isl_point *pnt2)
 {
-	isl_basic_set *bset;
+	isl_basic_set *bset = NULL;
 	unsigned total;
 	int i;
 	int k;
@@ -548,6 +548,7 @@ error:
 	isl_point_free(pnt1);
 	isl_point_free(pnt2);
 	isl_int_clear(t);
+	isl_basic_set_free(bset);
 	return NULL;
 }
 

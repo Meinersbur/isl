@@ -3139,5 +3139,6 @@ struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set)
 	return hull;
 error:
 	isl_set_free(set);
+	isl_basic_set_free(hull);
 	return NULL;
 }

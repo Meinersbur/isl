@@ -849,7 +849,7 @@ isl_bool isl_map_is_rational(__isl_keep isl_map *map)
 
 		rational_i = isl_basic_map_is_rational(map->p[i]);
 		if (rational_i < 0)
-			return rational;
+			return rational_i;
 		if (rational != rational_i)
 			isl_die(isl_map_get_ctx(map), isl_error_unsupported,
 				"mixed rational and integer basic maps "
@@ -1880,7 +1880,8 @@ struct isl_basic_map *isl_basic_map_set_to_empty(struct isl_basic_map *bmap)
 	if (!bmap)
 		goto error;
 	total = isl_basic_map_total_dim(bmap);
-	isl_basic_map_free_div(bmap, bmap->n_div);
+	if (isl_basic_map_free_div(bmap, bmap->n_div) < 0)
+		return isl_basic_map_free(bmap);
 	isl_basic_map_free_inequality(bmap, bmap->n_ineq);
 	if (bmap->n_eq > 0)
 		isl_basic_map_free_equality(bmap, bmap->n_eq-1);
@@ -3147,7 +3148,7 @@ isl_bool isl_basic_map_contains(__isl_keep isl_basic_map *bmap,
 
 	total = 1 + isl_basic_map_total_dim(bmap);
 	if (total != vec->size)
-		return isl_bool_error;
+		return isl_bool_false;
 
 	isl_int_init(s);
 

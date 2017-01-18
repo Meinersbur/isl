@@ -200,7 +200,8 @@ struct isl_basic_map *isl_basic_map_drop(struct isl_basic_map *bmap,
 		bmap = move_divs_last(bmap, first, n);
 		if (!bmap)
 			goto error;
-		isl_basic_map_free_div(bmap, n);
+		if (isl_basic_map_free_div(bmap, n) < 0)
+			return isl_basic_map_free(bmap);
 	} else
 		bmap->dim = isl_space_drop_dims(bmap->dim, type, first, n);
 	if (!bmap->dim)
@@ -647,7 +648,7 @@ static int ok_to_eliminate_div(struct isl_basic_map *bmap, isl_int *eq,
 
 	for (k = 0; k <= last_div; ++k) {
 		if (isl_int_is_zero(bmap->div[k][0]))
-			return 1;
+			continue;
 		if (!isl_int_is_zero(bmap->div[k][1 + 1 + pos]))
 			return 0;
 	}
@@ -1168,7 +1169,7 @@ static struct isl_basic_map *normalize_divs(
 	struct isl_mat *C = NULL;
 	struct isl_mat *C2 = NULL;
 	isl_int v;
-	int *pos;
+	int *pos = NULL;
 	int dropped, needed;
 
 	if (!bmap)
@@ -1299,6 +1300,7 @@ done:
 
 	return bmap;
 error:
+	free(pos);
 	isl_mat_free(C);
 	isl_mat_free(C2);
 	isl_mat_free(T);
@@ -1606,10 +1608,13 @@ struct isl_basic_map *isl_basic_map_simplify(struct isl_basic_map *bmap)
 	if (!bmap)
 		return NULL;
 	while (progress) {
+		isl_bool empty;
+
 		progress = 0;
-		if (!bmap)
-			break;
-		if (isl_basic_map_plain_is_empty(bmap))
+		empty = isl_basic_map_plain_is_empty(bmap);
+		if (empty < 0)
+			return isl_basic_map_free(bmap);
+		if (empty)
 			break;
 		bmap = isl_basic_map_normalize_constraints(bmap);
 		bmap = reduce_div_coefficients(bmap);
@@ -4594,8 +4599,10 @@ static struct isl_basic_map *coalesce_or_drop_more_redundant_divs(
 		}
 	}
 
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
+	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY)) {
+		free(pairs);
 		return bmap;
+	}
 
 	return drop_more_redundant_divs(bmap, pairs, n);
 }

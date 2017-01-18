@@ -729,7 +729,7 @@ __isl_give isl_local_space *isl_local_space_intersect(
 	isl_ctx *ctx;
 	int *exp1 = NULL;
 	int *exp2 = NULL;
-	isl_mat *div;
+	isl_mat *div = NULL;
 	int equal;
 
 	if (!ls1 || !ls2)
@@ -777,6 +777,7 @@ __isl_give isl_local_space *isl_local_space_intersect(
 error:
 	free(exp1);
 	free(exp2);
+	isl_mat_free(div);
 	isl_local_space_free(ls1);
 	isl_local_space_free(ls2);
 	return NULL;

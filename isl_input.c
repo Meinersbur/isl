@@ -412,7 +412,7 @@ static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
 			isl_stream_push_token(s, tok);
 			goto error;
 		}
-		isl_pw_aff_scale_down(pwaff,  tok->u.v);
+		pwaff = isl_pw_aff_scale_down(pwaff,  tok->u.v);
 		isl_token_free(tok);
 	}
 

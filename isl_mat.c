@@ -799,11 +799,15 @@ static int row_abs_min_non_zero(isl_int **row, unsigned n_row, unsigned col)
 	return min;
 }
 
-static void inv_exchange(struct isl_mat *left, struct isl_mat *right,
-	unsigned i, unsigned j)
+static isl_stat inv_exchange(__isl_keep isl_mat **left,
+	__isl_keep isl_mat **right, unsigned i, unsigned j)
 {
-	left = isl_mat_swap_rows(left, i, j);
-	right = isl_mat_swap_rows(right, i, j);
+	*left = isl_mat_swap_rows(*left, i, j);
+	*right = isl_mat_swap_rows(*right, i, j);
+
+	if (!*left || !*right)
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 static void inv_oppose(
@@ -861,7 +865,8 @@ struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 		}
 		pivot += row;
 		if (pivot != row)
-			inv_exchange(left, right, pivot, row);
+			if (inv_exchange(&left, &right, pivot, row) < 0)
+				goto error;
 		if (isl_int_is_neg(left->row[row][row]))
 			inv_oppose(left, right, row);
 		first = row+1;
@@ -871,10 +876,12 @@ struct isl_mat *isl_mat_inverse_product(struct isl_mat *left,
 			isl_int_fdiv_q(a, left->row[first][row],
 					left->row[row][row]);
 			inv_subtract(left, right, row, first, a);
-			if (!isl_int_is_zero(left->row[first][row]))
-				inv_exchange(left, right, row, first);
-			else
+			if (!isl_int_is_zero(left->row[first][row])) {
+				if (inv_exchange(&left, &right, row, first) < 0)
+					goto error;
+			} else {
 				++first;
+			}
 		}
 		for (i = 0; i < row; ++i) {
 			if (isl_int_is_zero(left->row[i][row]))
