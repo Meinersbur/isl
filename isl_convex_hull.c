@@ -941,7 +941,7 @@ isl_bool isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 /* Is the image bounded for each value of the parameters and
  * the domain variables?
  */
-int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 {
 	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
