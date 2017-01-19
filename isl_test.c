@@ -4942,7 +4942,7 @@ int test_equal(isl_ctx *ctx)
 static int test_plain_fixed(isl_ctx *ctx, __isl_take isl_map *map,
 	enum isl_dim_type type, unsigned pos, int fixed)
 {
-	int test;
+	isl_bool test;
 
 	test = isl_map_plain_is_fixed(map, type, pos, NULL);
 	isl_map_free(map);

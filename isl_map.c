@@ -9096,11 +9096,12 @@ __isl_give isl_val *isl_basic_map_plain_get_val_if_fixed(
 	return isl_val_nan(ctx);
 }
 
-int isl_map_plain_is_fixed(__isl_keep isl_map *map,
+isl_bool isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
 	if (pos >= isl_map_dim(map, type))
-		return -1;
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"position out of bounds", return isl_bool_error);
 	return isl_map_plain_has_fixed_var(map,
 		map_offset(map, type) - 1 + pos, val);
 }
@@ -9114,7 +9115,7 @@ __isl_give isl_val *isl_map_plain_get_val_if_fixed(__isl_keep isl_map *map,
 {
 	isl_ctx *ctx;
 	isl_val *v;
-	int fixed;
+	isl_bool fixed;
 
 	if (!map)
 		return NULL;
