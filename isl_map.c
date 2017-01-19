@@ -10672,10 +10672,10 @@ isl_bool isl_map_dim_is_bounded(__isl_keep isl_map *map,
 	return isl_bool_true;
 }
 
-/* Return 1 if the specified dim is involved in both an upper bound
+/* Return true if the specified dim is involved in both an upper bound
  * and a lower bound.
  */
-int isl_set_dim_is_bounded(__isl_keep isl_set *set,
+isl_bool isl_set_dim_is_bounded(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos)
 {
 	return isl_map_dim_is_bounded(set_to_map(set), type, pos);

@@ -410,7 +410,7 @@ struct isl_set *isl_set_drop_basic_set(struct isl_set *set,
 
 __isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
-int isl_set_dim_is_bounded(__isl_keep isl_set *set,
+isl_bool isl_set_dim_is_bounded(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
 isl_bool isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
