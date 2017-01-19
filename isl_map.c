@@ -9058,11 +9058,11 @@ static int isl_set_plain_has_fixed_var(__isl_keep isl_set *set, unsigned pos,
 	return isl_map_plain_has_fixed_var(set_to_map(set), pos, val);
 }
 
-int isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
+isl_bool isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
-	if (pos >= isl_basic_map_dim(bmap, type))
-		return -1;
+	if (isl_basic_map_check_range(bmap, type, pos, 1) < 0)
+		return isl_bool_error;
 	return isl_basic_map_plain_has_fixed_var(bmap,
 		isl_basic_map_offset(bmap, type) - 1 + pos, val);
 }
@@ -9077,7 +9077,7 @@ __isl_give isl_val *isl_basic_map_plain_get_val_if_fixed(
 {
 	isl_ctx *ctx;
 	isl_val *v;
-	int fixed;
+	isl_bool fixed;
 
 	if (!bmap)
 		return NULL;
