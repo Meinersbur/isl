@@ -9144,7 +9144,7 @@ __isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
 	return isl_map_plain_get_val_if_fixed(set, type, pos);
 }
 
-int isl_set_plain_is_fixed(__isl_keep isl_set *set,
+isl_bool isl_set_plain_is_fixed(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
 	return isl_map_plain_is_fixed(set, type, pos, val);
