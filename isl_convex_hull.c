@@ -945,7 +945,7 @@ int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 {
 	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
-	int bounded;
+	isl_bool bounded;
 
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_cow(bmap);
