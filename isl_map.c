@@ -8136,10 +8136,11 @@ isl_bool isl_map_has_equal_space(__isl_keep isl_map *map1,
 	return isl_space_is_equal(map1->dim, map2->dim);
 }
 
-int isl_set_has_equal_space(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
+isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
+	__isl_keep isl_set *set2)
 {
 	if (!set1 || !set2)
-		return -1;
+		return isl_bool_error;
 
 	return isl_space_is_equal(set1->dim, set2->dim);
 }
