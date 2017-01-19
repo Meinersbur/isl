@@ -1277,13 +1277,15 @@ error:
 	return NULL;
 }
 
-static int compatible_divs(__isl_keep isl_mat *div1, __isl_keep isl_mat *div2)
+static isl_bool compatible_divs(__isl_keep isl_mat *div1,
+	__isl_keep isl_mat *div2)
 {
 	int n_row, n_col;
 	isl_bool equal;
 
 	isl_assert(div1->ctx, div1->n_row >= div2->n_row &&
-				div1->n_col >= div2->n_col, return -1);
+				div1->n_col >= div2->n_col,
+		    return isl_bool_error);
 
 	if (div1->n_row == div2->n_row)
 		return isl_mat_is_equal(div1, div2);
@@ -1509,6 +1511,8 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
+	isl_bool compatible;
+
 	qp1 = isl_qpolynomial_cow(qp1);
 
 	if (!qp1 || !qp2)
@@ -1518,7 +1522,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 		return isl_qpolynomial_add(qp2, qp1);
 
 	isl_assert(qp1->dim->ctx, isl_space_is_equal(qp1->dim, qp2->dim), goto error);
-	if (!compatible_divs(qp1->div, qp2->div))
+	compatible = compatible_divs(qp1->div, qp2->div);
+	if (compatible < 0)
+		goto error;
+	if (!compatible)
 		return with_merged_divs(isl_qpolynomial_add, qp1, qp2);
 
 	qp1->upoly = isl_upoly_sum(qp1->upoly, isl_upoly_copy(qp2->upoly));
@@ -1679,6 +1686,8 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 	__isl_take isl_qpolynomial *qp2)
 {
+	isl_bool compatible;
+
 	qp1 = isl_qpolynomial_cow(qp1);
 
 	if (!qp1 || !qp2)
@@ -1688,7 +1697,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 		return isl_qpolynomial_mul(qp2, qp1);
 
 	isl_assert(qp1->dim->ctx, isl_space_is_equal(qp1->dim, qp2->dim), goto error);
-	if (!compatible_divs(qp1->div, qp2->div))
+	compatible = compatible_divs(qp1->div, qp2->div);
+	if (compatible < 0)
+		goto error;
+	if (!compatible)
 		return with_merged_divs(isl_qpolynomial_mul, qp1, qp2);
 
 	qp1->upoly = isl_upoly_mul(qp1->upoly, isl_upoly_copy(qp2->upoly));
