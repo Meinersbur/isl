@@ -8970,12 +8970,6 @@ static isl_bool isl_basic_set_plain_has_fixed_var(
 						pos, val);
 }
 
-static int isl_set_plain_has_fixed_var(__isl_keep isl_set *set, unsigned pos,
-	isl_int *val)
-{
-	return isl_map_plain_has_fixed_var(set_to_map(set), pos, val);
-}
-
 isl_bool isl_basic_map_plain_is_fixed(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
@@ -9076,15 +9070,6 @@ isl_bool isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
 {
 	return isl_basic_set_plain_has_fixed_var(bset,
 					isl_basic_set_n_param(bset) + dim, val);
-}
-
-/* Check if dimension dim has fixed value and if so and if val is not NULL,
- * then return this fixed value in *val.
- */
-int isl_set_plain_dim_is_fixed(__isl_keep isl_set *set,
-	unsigned dim, isl_int *val)
-{
-	return isl_set_plain_has_fixed_var(set, isl_set_n_param(set) + dim, val);
 }
 
 /* Return -1 if the constraint "c1" should be sorted before "c2"
