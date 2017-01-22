@@ -271,3 +271,17 @@ static isl::schedule_node test_schedule_tree_generic(isl::ctx ctx)
 
 	return root;
 }
+
+/* Test basic AST generation from a schedule tree that is independent
+ * of the type of bindings.
+ *
+ * In particular, create a simple schedule tree and
+ * - generate an AST from the schedule tree
+ */
+static void test_ast_build(isl::ctx ctx)
+{
+	auto schedule = construct_schedule_tree(ctx);
+
+	auto build = isl::ast_build(ctx);
+	auto ast = build.node_from(schedule);
+}
