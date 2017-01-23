@@ -5060,11 +5060,11 @@ static __isl_give isl_map *map_lex_lte_first(__isl_take isl_space *space,
 	return map;
 }
 
-static __isl_give isl_map *map_lex_lte(__isl_take isl_space *dims, int equal)
+static __isl_give isl_map *map_lex_lte(__isl_take isl_space *space, int equal)
 {
-	if (!dims)
+	if (!space)
 		return NULL;
-	return map_lex_lte_first(dims, dims->n_out, equal);
+	return map_lex_lte_first(space, space->n_out, equal);
 }
 
 __isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *dim, unsigned n)
