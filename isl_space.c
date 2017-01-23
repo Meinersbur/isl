@@ -328,6 +328,24 @@ isl_size isl_space_dim(__isl_keep isl_space *space, enum isl_dim_type type)
 	return n(space, type);
 }
 
+/* Return the dimensionality of tuple "inner" within the wrapped relation
+ * inside tuple "outer".
+ */
+isl_size isl_space_wrapped_dim(__isl_keep isl_space *space,
+	enum isl_dim_type outer, enum isl_dim_type inner)
+{
+	int pos;
+
+	if (!space)
+		return isl_size_error;
+	if (outer != isl_dim_in && outer != isl_dim_out)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"only input, output and set tuples "
+			"can have nested relations", return isl_size_error);
+	pos = outer - isl_dim_in;
+	return isl_space_dim(isl_space_peek_nested(space, pos), inner);
+}
+
 unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	if (!dim)
