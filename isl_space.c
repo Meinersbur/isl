@@ -243,13 +243,14 @@ static unsigned offset(__isl_keep isl_space *dim, enum isl_dim_type type)
 	}
 }
 
-static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
+static unsigned n(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	switch (type) {
-	case isl_dim_param:	return dim->nparam;
-	case isl_dim_in:	return dim->n_in;
-	case isl_dim_out:	return dim->n_out;
-	case isl_dim_all:	return dim->nparam + dim->n_in + dim->n_out;
+	case isl_dim_param:	return space->nparam;
+	case isl_dim_in:	return space->n_in;
+	case isl_dim_out:	return space->n_out;
+	case isl_dim_all:
+		return space->nparam + space->n_in + space->n_out;
 	default:		return 0;
 	}
 }
