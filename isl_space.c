@@ -26,29 +26,29 @@ isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space)
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out)
 {
-	isl_space *dim;
+	isl_space *space;
 
-	dim = isl_alloc_type(ctx, struct isl_space);
-	if (!dim)
+	space = isl_alloc_type(ctx, struct isl_space);
+	if (!space)
 		return NULL;
 
-	dim->ctx = ctx;
+	space->ctx = ctx;
 	isl_ctx_ref(ctx);
-	dim->ref = 1;
-	dim->nparam = nparam;
-	dim->n_in = n_in;
-	dim->n_out = n_out;
+	space->ref = 1;
+	space->nparam = nparam;
+	space->n_in = n_in;
+	space->n_out = n_out;
 
-	dim->tuple_id[0] = NULL;
-	dim->tuple_id[1] = NULL;
+	space->tuple_id[0] = NULL;
+	space->tuple_id[1] = NULL;
 
-	dim->nested[0] = NULL;
-	dim->nested[1] = NULL;
+	space->nested[0] = NULL;
+	space->nested[1] = NULL;
 
-	dim->n_id = 0;
-	dim->ids = NULL;
+	space->n_id = 0;
+	space->ids = NULL;
 
-	return dim;
+	return space;
 }
 
 /* Mark the space as being that of a set, by setting the domain tuple
