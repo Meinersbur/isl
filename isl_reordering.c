@@ -46,7 +46,7 @@ __isl_give isl_reordering *isl_reordering_dup(__isl_keep isl_reordering *r)
 	if (!r)
 		return NULL;
 
-	dup = isl_reordering_alloc(r->dim->ctx, r->len);
+	dup = isl_reordering_alloc(isl_reordering_get_ctx(r), r->len);
 	if (!dup)
 		return NULL;
 
@@ -81,6 +81,13 @@ void *isl_reordering_free(__isl_take isl_reordering *exp)
 	isl_space_free(exp->dim);
 	free(exp);
 	return NULL;
+}
+
+/* Return the isl_ctx to which "r" belongs.
+ */
+isl_ctx *isl_reordering_get_ctx(__isl_keep isl_reordering *r)
+{
+	return isl_space_get_ctx(isl_reordering_peek_space(r));
 }
 
 /* Return the space of "r".
@@ -150,6 +157,7 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	unsigned extra)
 {
 	int i;
+	isl_ctx *ctx;
 	isl_space *space;
 	isl_reordering *res;
 	int offset;
@@ -159,9 +167,10 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	if (extra == 0)
 		return exp;
 
+	ctx = isl_reordering_get_ctx(exp);
 	space = isl_reordering_peek_space(exp);
 	offset = isl_space_dim(space, isl_dim_all) - exp->len;
-	res = isl_reordering_alloc(exp->dim->ctx, exp->len + extra);
+	res = isl_reordering_alloc(ctx, exp->len + extra);
 	if (!res)
 		goto error;
 	res->dim = isl_space_copy(exp->dim);

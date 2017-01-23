@@ -222,7 +222,7 @@ __isl_give isl_dim_map *isl_dim_map_from_reordering(
 	if (!exp)
 		return NULL;
 
-	ctx = isl_space_get_ctx(exp->dim);
+	ctx = isl_reordering_get_ctx(exp);
 	space = isl_reordering_peek_space(exp);
 	dim_map = isl_dim_map_alloc(ctx, isl_space_dim(space, isl_dim_all));
 	if (!dim_map)
