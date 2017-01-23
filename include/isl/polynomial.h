@@ -32,14 +32,20 @@ __isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned pos, const char *s);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(
+	__isl_take isl_space *domain);
 __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	__isl_take isl_space *space, __isl_take isl_val *val);
-__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
+	__isl_take isl_space *domain,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);
 __isl_null isl_qpolynomial *isl_qpolynomial_free(
