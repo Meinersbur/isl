@@ -290,29 +290,32 @@ static __isl_give isl_space *copy_ids(__isl_take isl_space *dst,
 	return dst;
 }
 
-__isl_take isl_space *isl_space_dup(__isl_keep isl_space *dim)
+__isl_take isl_space *isl_space_dup(__isl_keep isl_space *space)
 {
 	isl_space *dup;
-	if (!dim)
+	if (!space)
 		return NULL;
-	dup = isl_space_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
+	dup = isl_space_alloc(space->ctx,
+				space->nparam, space->n_in, space->n_out);
 	if (!dup)
 		return NULL;
-	if (dim->tuple_id[0] &&
-	    !(dup->tuple_id[0] = isl_id_copy(dim->tuple_id[0])))
+	if (space->tuple_id[0] &&
+	    !(dup->tuple_id[0] = isl_id_copy(space->tuple_id[0])))
 		goto error;
-	if (dim->tuple_id[1] &&
-	    !(dup->tuple_id[1] = isl_id_copy(dim->tuple_id[1])))
+	if (space->tuple_id[1] &&
+	    !(dup->tuple_id[1] = isl_id_copy(space->tuple_id[1])))
 		goto error;
-	if (dim->nested[0] && !(dup->nested[0] = isl_space_copy(dim->nested[0])))
+	if (space->nested[0] &&
+	    !(dup->nested[0] = isl_space_copy(space->nested[0])))
 		goto error;
-	if (dim->nested[1] && !(dup->nested[1] = isl_space_copy(dim->nested[1])))
+	if (space->nested[1] &&
+	    !(dup->nested[1] = isl_space_copy(space->nested[1])))
 		goto error;
-	if (!dim->ids)
+	if (!space->ids)
 		return dup;
-	dup = copy_ids(dup, isl_dim_param, 0, dim, isl_dim_param);
-	dup = copy_ids(dup, isl_dim_in, 0, dim, isl_dim_in);
-	dup = copy_ids(dup, isl_dim_out, 0, dim, isl_dim_out);
+	dup = copy_ids(dup, isl_dim_param, 0, space, isl_dim_param);
+	dup = copy_ids(dup, isl_dim_in, 0, space, isl_dim_in);
+	dup = copy_ids(dup, isl_dim_out, 0, space, isl_dim_out);
 	return dup;
 error:
 	isl_space_free(dup);
