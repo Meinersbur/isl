@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-isl_ctx *isl_space_get_ctx(__isl_keep isl_space *dim);
+isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space);
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out);
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,

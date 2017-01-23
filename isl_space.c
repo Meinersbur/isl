@@ -18,9 +18,9 @@
 #include <isl_id_private.h>
 #include <isl_reordering.h>
 
-isl_ctx *isl_space_get_ctx(__isl_keep isl_space *dim)
+isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space)
 {
-	return dim ? dim->ctx : NULL;
+	return space ? space->ctx : NULL;
 }
 
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
