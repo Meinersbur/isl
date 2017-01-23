@@ -112,7 +112,7 @@ int isl_map_find_dim_by_name(__isl_keep isl_map *map, enum isl_dim_type type,
 
 isl_bool isl_basic_map_is_rational(__isl_keep isl_basic_map *bmap);
 
-__isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *dim);
+__isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space);
 __isl_null isl_basic_map *isl_basic_map_free(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_copy(__isl_keep isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_equal(
