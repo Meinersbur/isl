@@ -116,30 +116,33 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 {
 	int i, j;
 	isl_reordering *exp;
+	isl_size n_alignee, n_aligner;
 
-	if (!alignee || !aligner)
+	n_alignee = isl_space_dim(alignee, isl_dim_param);
+	n_aligner = isl_space_dim(aligner, isl_dim_param);
+	if (n_alignee < 0 || n_aligner < 0)
 		return NULL;
 
-	exp = isl_reordering_alloc(alignee->ctx, alignee->nparam);
+	exp = isl_reordering_alloc(alignee->ctx, n_alignee);
 	if (!exp)
 		return NULL;
 
 	exp->space = isl_space_params(isl_space_copy(aligner));
 
-	for (i = 0; i < alignee->nparam; ++i) {
+	for (i = 0; i < n_alignee; ++i) {
 		isl_id *id_i;
 		id_i = isl_space_get_dim_id(alignee, isl_dim_param, i);
 		if (!id_i)
 			isl_die(alignee->ctx, isl_error_invalid,
 				"cannot align unnamed parameters", goto error);
-		for (j = 0; j < aligner->nparam; ++j) {
+		for (j = 0; j < n_aligner; ++j) {
 			isl_id *id_j;
 			id_j = isl_space_get_dim_id(aligner, isl_dim_param, j);
 			isl_id_free(id_j);
 			if (id_i == id_j)
 				break;
 		}
-		if (j < aligner->nparam) {
+		if (j < n_aligner) {
 			exp->pos[i] = j;
 			isl_id_free(id_i);
 		} else {
