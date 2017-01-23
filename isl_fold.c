@@ -498,6 +498,24 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 	return sgn;
 }
 
+/* Check that "fold1" and "fold2" have the same type.
+ */
+static isl_stat isl_qpolynomial_fold_check_equal_type(
+	__isl_keep isl_qpolynomial_fold *fold1,
+	__isl_keep isl_qpolynomial_fold *fold2)
+{
+	enum isl_fold type1, type2;
+
+	type1 = isl_qpolynomial_fold_get_type(fold1);
+	type2 = isl_qpolynomial_fold_get_type(fold2);
+	if (type1 < 0 || type2 < 0)
+		return isl_stat_error;
+	if (type1 != type2)
+		isl_die(isl_qpolynomial_fold_get_ctx(fold1), isl_error_invalid,
+			"fold types don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Combine "fold1" and "fold2" into a single reduction, eliminating
  * those elements of one reduction that are already covered by the other
  * reduction on "set".
@@ -516,10 +534,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	struct isl_qpolynomial_fold *res = NULL;
 	int better;
 
-	if (!fold1 || !fold2)
+	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
 		goto error;
 
-	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
 	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
 			goto error);
 
@@ -911,10 +928,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 	int i;
 	struct isl_qpolynomial_fold *res = NULL;
 
-	if (!fold1 || !fold2)
+	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
 		goto error;
 
-	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
 	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
 			goto error);
 
