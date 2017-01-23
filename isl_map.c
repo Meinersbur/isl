@@ -8124,8 +8124,8 @@ __isl_give isl_basic_set *isl_basic_set_positive_orthant(
 
 	if (!space)
 		return NULL;
-	nparam = space->nparam;
-	dim = space->n_out;
+	nparam = isl_space_dim(space, isl_dim_param);
+	dim = isl_space_dim(space, isl_dim_set);
 	bset = isl_basic_set_alloc_space(space, 0, 0, dim);
 	if (!bset)
 		return NULL;
