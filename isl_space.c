@@ -541,12 +541,12 @@ error:
 	return NULL;
 }
 
-isl_bool isl_space_has_dim_id(__isl_keep isl_space *dim,
+isl_bool isl_space_has_dim_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!space)
 		return isl_bool_error;
-	return get_id(dim, type, pos) != NULL;
+	return get_id(space, type, pos) != NULL;
 }
 
 __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *dim,
