@@ -433,24 +433,24 @@ __isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *space,
 	return isl_id_copy(space->tuple_id[type - isl_dim_in]);
 }
 
-__isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *space,
 	enum isl_dim_type type, __isl_take isl_id *id)
 {
-	dim = isl_space_cow(dim);
-	if (!dim || !id)
+	space = isl_space_cow(space);
+	if (!space || !id)
 		goto error;
 	if (type != isl_dim_in && type != isl_dim_out)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"only input, output and set tuples can have names",
 			goto error);
 
-	isl_id_free(dim->tuple_id[type - isl_dim_in]);
-	dim->tuple_id[type - isl_dim_in] = id;
+	isl_id_free(space->tuple_id[type - isl_dim_in]);
+	space->tuple_id[type - isl_dim_in] = id;
 
-	return dim;
+	return space;
 error:
 	isl_id_free(id);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
