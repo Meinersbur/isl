@@ -339,18 +339,18 @@ static __isl_give isl_printer *print_affine(__isl_take isl_printer *p,
 	return print_affine_of_len(space, div, p, c, len);
 }
 
-/* offset is the offset of local_dim inside data->type of data->space.
+/* offset is the offset of local_space inside data->type of data->space.
  */
 static __isl_give isl_printer *print_nested_var_list(__isl_take isl_printer *p,
-	__isl_keep isl_space *local_dim, enum isl_dim_type local_type,
+	__isl_keep isl_space *local_space, enum isl_dim_type local_type,
 	struct isl_print_space_data *data, int offset)
 {
 	int i;
 
-	if (data->space != local_dim && local_type == isl_dim_out)
-		offset += local_dim->n_in;
+	if (data->space != local_space && local_type == isl_dim_out)
+		offset += local_space->n_in;
 
-	for (i = 0; i < isl_space_dim(local_dim, local_type); ++i) {
+	for (i = 0; i < isl_space_dim(local_space, local_type); ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ", ");
 		if (data->print_dim)
