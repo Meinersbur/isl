@@ -409,12 +409,12 @@ static int space_can_have_id(__isl_keep isl_space *space,
 
 /* Does the tuple have an id?
  */
-isl_bool isl_space_has_tuple_id(__isl_keep isl_space *dim,
+isl_bool isl_space_has_tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
-	if (!space_can_have_id(dim, type))
+	if (!space_can_have_id(space, type))
 		return isl_bool_error;
-	return dim->tuple_id[type - isl_dim_in] != NULL;
+	return space->tuple_id[type - isl_dim_in] != NULL;
 }
 
 __isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *dim,
