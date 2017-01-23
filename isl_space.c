@@ -549,15 +549,15 @@ isl_bool isl_space_has_dim_id(__isl_keep isl_space *space,
 	return get_id(space, type, pos) != NULL;
 }
 
-__isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *dim,
+__isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!get_id(dim, type, pos))
-		isl_die(dim->ctx, isl_error_invalid,
+	if (!get_id(space, type, pos))
+		isl_die(space->ctx, isl_error_invalid,
 			"dim has no id", return NULL);
-	return isl_id_copy(get_id(dim, type, pos));
+	return isl_id_copy(get_id(space, type, pos));
 }
 
 __isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
