@@ -516,6 +516,26 @@ static isl_stat isl_qpolynomial_fold_check_equal_type(
 	return isl_stat_ok;
 }
 
+/* Check that "fold1" and "fold2" have the same (domain) space.
+ */
+static isl_stat isl_qpolynomial_fold_check_equal_space(
+	__isl_keep isl_qpolynomial_fold *fold1,
+	__isl_keep isl_qpolynomial_fold *fold2)
+{
+	isl_bool equal;
+	isl_space *space1, *space2;
+
+	space1 = isl_qpolynomial_fold_peek_domain_space(fold1);
+	space2 = isl_qpolynomial_fold_peek_domain_space(fold2);
+	equal = isl_space_is_equal(space1, space2);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_qpolynomial_fold_get_ctx(fold1), isl_error_invalid,
+			"spaces don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Combine "fold1" and "fold2" into a single reduction, eliminating
  * those elements of one reduction that are already covered by the other
  * reduction on "set".
@@ -536,9 +556,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 
 	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
 		goto error;
-
-	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
-			goto error);
+	if (isl_qpolynomial_fold_check_equal_space(fold1, fold2) < 0)
+		goto error;
 
 	better = fold1->type == isl_fold_max ? -1 : 1;
 
@@ -930,9 +949,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 
 	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
 		goto error;
-
-	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
-			goto error);
+	if (isl_qpolynomial_fold_check_equal_space(fold1, fold2) < 0)
+		goto error;
 
 	if (isl_qpolynomial_fold_is_empty(fold1)) {
 		isl_qpolynomial_fold_free(fold1);
