@@ -138,6 +138,56 @@ __isl_null MULTI(BASE) *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 	return NULL;
 }
 
+/* Return the space of "multi".
+ * The caller is not allowed to modify "multi" between this call
+ * and the call to *_restore_space because the number
+ * of references needs to stay the same.
+ * The only exception is that isl_multi_*_free can be called instead.
+ * No copy is taken of multi->space if "multi" has only one reference
+ * such that it can be modified inplace if both have only a single reference.
+ */
+__isl_give isl_space *FN(MULTI(BASE),take_space)(__isl_keep MULTI(BASE) *multi)
+{
+	isl_space *space;
+
+	if (!multi)
+		return NULL;
+	if (multi->ref != 1)
+		return FN(MULTI(BASE),get_space)(multi);
+	space = multi->space;
+	multi->space = NULL;
+	return space;
+}
+
+/* Set the space of "multi" to "space", where the space of "multi"
+ * may be missing due to a preceding call to isl_multi_*_take_space.
+ * However, in this case, "multi" only has a single reference and
+ * then the call to isl_multi_*_cow has no effect.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),restore_space)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_space *space)
+{
+	if (!multi || !space)
+		goto error;
+
+	if (multi->space == space) {
+		isl_space_free(space);
+		return multi;
+	}
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		goto error;
+	isl_space_free(multi->space);
+	multi->space = space;
+
+	return multi;
+error:
+	FN(MULTI(BASE),free)(multi);
+	isl_space_free(space);
+	return NULL;
+}
+
 isl_size FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
 {
@@ -312,15 +362,12 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space_and_domain)(
 		if (!multi->u.p[i])
 			goto error;
 	}
-	if (FN(MULTI(BASE),has_explicit_domain)(multi)) {
+	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		multi = FN(MULTI(BASE),reset_explicit_domain_space)(multi,
 							isl_space_copy(domain));
-		if (!multi)
-			goto error;
-	}
 	isl_space_free(domain);
-	isl_space_free(multi->space);
-	multi->space = space;
+
+	multi = FN(MULTI(BASE),restore_space)(multi, space);
 
 	return multi;
 error:
@@ -524,6 +571,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	isl_space *space;
 	isl_size size;
 	int i;
 
@@ -531,9 +579,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	if (FN(MULTI(BASE),check_range)(multi, type, first, n) < 0)
 		return FN(MULTI(BASE),free)(multi);
 
-	multi->space = isl_space_drop_dims(multi->space, type, first, n);
-	if (!multi->space)
-		return FN(MULTI(BASE),free)(multi);
+	space = FN(MULTI(BASE),take_space)(multi);
+	space = isl_space_drop_dims(space, type, first, n);
+	multi = FN(MULTI(BASE),restore_space)(multi, space);
 
 	if (type == isl_dim_out)
 		return FN(MULTI(BASE),drop_output_dims)(multi, first, n);
@@ -703,19 +751,11 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),factor_range)(
 __isl_give MULTI(BASE) *FN(MULTI(BASE),flatten_range)(
 	__isl_take MULTI(BASE) *multi)
 {
-	if (!multi)
-		return NULL;
+	isl_space *space;
 
-	if (!multi->space->nested[1])
-		return multi;
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	multi->space = isl_space_flatten_range(multi->space);
-	if (!multi->space)
-		return FN(MULTI(BASE),free)(multi);
+	space = FN(MULTI(BASE),take_space)(multi);
+	space = isl_space_flatten_range(space);
+	multi = FN(MULTI(BASE),restore_space)(multi, space);
 
 	return multi;
 }

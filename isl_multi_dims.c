@@ -45,6 +45,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	isl_space *space;
 	isl_size size;
 	int i;
 
@@ -58,13 +59,12 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	if (n == 0 && !isl_space_is_named_or_nested(multi->space, type))
 		return multi;
 
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
+	space = FN(MULTI(BASE),take_space)(multi);
+	space = isl_space_insert_dims(space, type, first, n);
+	multi = FN(MULTI(BASE),restore_space)(multi, space);
 
-	multi->space = isl_space_insert_dims(multi->space, type, first, n);
-	if (!multi->space)
-		return FN(MULTI(BASE),free)(multi);
+	multi = FN(MULTI(BASE),cow)(multi);
+
 	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		multi = FN(MULTI(BASE),insert_explicit_domain_dims)(multi,
 								type, first, n);

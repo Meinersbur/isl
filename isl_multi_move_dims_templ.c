@@ -20,6 +20,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	isl_space *space;
 	isl_size size;
 	int i;
 
@@ -47,14 +48,13 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 			"moving dims within the same type not supported",
 			return FN(MULTI(BASE),free)(multi));
 
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	multi->space = isl_space_move_dims(multi->space, dst_type, dst_pos,
+	space = FN(MULTI(BASE),take_space)(multi);
+	space = isl_space_move_dims(space, dst_type, dst_pos,
 						src_type, src_pos, n);
-	if (!multi->space)
-		return FN(MULTI(BASE),free)(multi);
+	multi = FN(MULTI(BASE),restore_space)(multi, space);
+
+	multi = FN(MULTI(BASE),cow)(multi);
+
 	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		multi = FN(MULTI(BASE),move_explicit_domain_dims)(multi,
 				dst_type, dst_pos, src_type, src_pos, n);

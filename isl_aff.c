@@ -6144,10 +6144,9 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	space = isl_space_lift(isl_space_domain(space), n_div);
 	space = isl_space_extend_domain_with_range(space,
 						isl_multi_aff_get_space(maff));
-	if (!space)
-		return isl_multi_aff_free(maff);
-	isl_space_free(maff->space);
-	maff->space = space;
+	maff = isl_multi_aff_restore_space(maff, space);
+	if (!maff)
+		return NULL;
 
 	if (ls) {
 		aff = isl_multi_aff_peek_at(maff, 0);
