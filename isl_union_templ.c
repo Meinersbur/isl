@@ -61,19 +61,19 @@ int FN(UNION,find_dim_by_name)(__isl_keep UNION *u, enum isl_dim_type type,
 }
 
 #ifdef HAS_TYPE
-static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim,
+static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space,
 	enum isl_fold type, int size)
 #else
-static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim, int size)
+static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space, int size)
 #endif
 {
 	UNION *u;
 
-	dim = isl_space_params(dim);
-	if (!dim)
+	space = isl_space_params(space);
+	if (!space)
 		return NULL;
 
-	u = isl_calloc_type(dim->ctx, UNION);
+	u = isl_calloc_type(space->ctx, UNION);
 	if (!u)
 		goto error;
 
@@ -81,13 +81,13 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *dim, int size)
 #ifdef HAS_TYPE
 	u->type = type;
 #endif
-	u->space = dim;
-	if (isl_hash_table_init(dim->ctx, &u->table, size) < 0)
+	u->space = space;
+	if (isl_hash_table_init(space->ctx, &u->table, size) < 0)
 		return FN(UNION,free)(u);
 
 	return u;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
