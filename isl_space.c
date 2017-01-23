@@ -417,20 +417,20 @@ isl_bool isl_space_has_tuple_id(__isl_keep isl_space *space,
 	return space->tuple_id[type - isl_dim_in] != NULL;
 }
 
-__isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *dim,
+__isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
 	int has_id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	has_id = isl_space_has_tuple_id(dim, type);
+	has_id = isl_space_has_tuple_id(space, type);
 	if (has_id < 0)
 		return NULL;
 	if (!has_id)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"tuple has no id", return NULL);
-	return isl_id_copy(dim->tuple_id[type - isl_dim_in]);
+	return isl_id_copy(space->tuple_id[type - isl_dim_in]);
 }
 
 __isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *dim,
