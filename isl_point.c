@@ -123,12 +123,12 @@ __isl_null isl_point *isl_point_free(__isl_take isl_point *pnt)
 	return NULL;
 }
 
-__isl_give isl_point *isl_point_void(__isl_take isl_space *dim)
+__isl_give isl_point *isl_point_void(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	return isl_point_alloc(dim, isl_vec_alloc(dim->ctx, 0));
+	return isl_point_alloc(space, isl_vec_alloc(space->ctx, 0));
 }
 
 isl_bool isl_point_is_void(__isl_keep isl_point *pnt)
