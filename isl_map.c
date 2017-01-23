@@ -5114,11 +5114,11 @@ static __isl_give isl_map *map_lex_gte_first(__isl_take isl_space *space,
 	return map;
 }
 
-static __isl_give isl_map *map_lex_gte(__isl_take isl_space *dims, int equal)
+static __isl_give isl_map *map_lex_gte(__isl_take isl_space *space, int equal)
 {
-	if (!dims)
+	if (!space)
 		return NULL;
-	return map_lex_gte_first(dims, dims->n_out, equal);
+	return map_lex_gte_first(space, space->n_out, equal);
 }
 
 __isl_give isl_map *isl_map_lex_gt_first(__isl_take isl_space *dim, unsigned n)
