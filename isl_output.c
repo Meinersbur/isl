@@ -1729,15 +1729,15 @@ error:
 }
 
 static __isl_give isl_printer *print_base(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_mat *div, int var)
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, int var)
 {
 	unsigned total;
 
-	total = isl_space_dim(dim, isl_dim_all);
+	total = isl_space_dim(space, isl_dim_all);
 	if (var < total)
-		p = print_term(dim, NULL, dim->ctx->one, 1 + var, p, 0);
+		p = print_term(space, NULL, space->ctx->one, 1 + var, p, 0);
 	else
-		p = print_div(dim, div, var - total, p);
+		p = print_div(space, div, var - total, p);
 	return p;
 }
 
