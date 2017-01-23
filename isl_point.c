@@ -59,20 +59,20 @@ error:
 	return NULL;
 }
 
-__isl_give isl_point *isl_point_zero(__isl_take isl_space *dim)
+__isl_give isl_point *isl_point_zero(__isl_take isl_space *space)
 {
 	isl_vec *vec;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	vec = isl_vec_alloc(dim->ctx, 1 + isl_space_dim(dim, isl_dim_all));
+	vec = isl_vec_alloc(space->ctx, 1 + isl_space_dim(space, isl_dim_all));
 	if (!vec)
 		goto error;
 	isl_int_set_si(vec->el[0], 1);
 	isl_seq_clr(vec->el + 1, vec->size - 1);
-	return isl_point_alloc(dim, vec);
+	return isl_point_alloc(space, vec);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
