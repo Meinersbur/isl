@@ -233,12 +233,12 @@ static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 	return space->ids[pos];
 }
 
-static unsigned offset(__isl_keep isl_space *dim, enum isl_dim_type type)
+static unsigned offset(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	switch (type) {
 	case isl_dim_param:	return 0;
-	case isl_dim_in:	return dim->nparam;
-	case isl_dim_out:	return dim->nparam + dim->n_in;
+	case isl_dim_in:	return space->nparam;
+	case isl_dim_out:	return space->nparam + space->n_in;
 	default:		return 0;
 	}
 }
