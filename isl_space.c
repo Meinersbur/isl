@@ -560,24 +560,24 @@ __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
 	return isl_id_copy(get_id(space, type, pos));
 }
 
-__isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *space,
 	enum isl_dim_type type, const char *s)
 {
 	isl_id *id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
 	if (!s)
-		return isl_space_reset_tuple_id(dim, type);
+		return isl_space_reset_tuple_id(space, type);
 
-	if (!name_ok(dim->ctx, s))
+	if (!name_ok(space->ctx, s))
 		goto error;
 
-	id = isl_id_alloc(dim->ctx, s, NULL);
-	return isl_space_set_tuple_id(dim, type, id);
+	id = isl_id_alloc(space->ctx, s, NULL);
+	return isl_space_set_tuple_id(space, type, id);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
