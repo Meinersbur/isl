@@ -255,11 +255,10 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 		return 0;
 	switch (type) {
 	case isl_dim_cst:	return 0;
-	case isl_dim_param:	return 1;
-	case isl_dim_in:	return 1 + space->nparam;
-	case isl_dim_out:	return 1 + space->nparam + space->n_in;
-	case isl_dim_div:
-		return 1 + space->nparam + space->n_in + space->n_out;
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:	return 1 + isl_space_offset(space, type);
+	case isl_dim_div:	return 1 + isl_space_dim(space, isl_dim_all);
 	default:		return 0;
 	}
 }
