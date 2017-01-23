@@ -61,17 +61,6 @@ static __isl_keep const isl_basic_map *const_bset_to_bmap(
 	return (const isl_basic_map *) bset;
 }
 
-static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
-{
-	switch (type) {
-	case isl_dim_param:	return dim->nparam;
-	case isl_dim_in:	return dim->n_in;
-	case isl_dim_out:	return dim->n_out;
-	case isl_dim_all:	return dim->nparam + dim->n_in + dim->n_out;
-	default:		return 0;
-	}
-}
-
 static unsigned pos(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	switch (type) {
@@ -114,7 +103,7 @@ __isl_keep isl_space *isl_set_peek_space(__isl_keep isl_set *set)
 
 unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type)
 {
-	return map ? n(map->dim, type) : 0;
+	return isl_space_dim(isl_map_peek_space(map), type);
 }
 
 unsigned isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
