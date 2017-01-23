@@ -3332,19 +3332,19 @@ error:
 	return NULL;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_space *dim,
-	isl_int *f, isl_int denom)
+__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(
+	__isl_take isl_space *space, isl_int *f, isl_int denom)
 {
 	struct isl_upoly *up;
 
-	dim = isl_space_domain(dim);
-	if (!dim)
+	space = isl_space_domain(space);
+	if (!space)
 		return NULL;
 
-	up = isl_upoly_from_affine(dim->ctx, f, denom,
-					1 + isl_space_dim(dim, isl_dim_all));
+	up = isl_upoly_from_affine(space->ctx, f, denom,
+					1 + isl_space_dim(space, isl_dim_all));
 
-	return isl_qpolynomial_alloc(dim, 0, up);
+	return isl_qpolynomial_alloc(space, 0, up);
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_from_aff(__isl_take isl_aff *aff)

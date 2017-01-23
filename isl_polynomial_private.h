@@ -172,8 +172,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 
 __isl_give isl_vec *isl_qpolynomial_extract_affine(
 	__isl_keep isl_qpolynomial *qp);
-__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_space *dim,
-	isl_int *f, isl_int denom);
+__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(
+	__isl_take isl_space *space, isl_int *f, isl_int denom);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_cow(
 	__isl_take isl_pw_qpolynomial *pwqp);
