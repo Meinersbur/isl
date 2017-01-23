@@ -401,7 +401,7 @@ __isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
 }
 
 /* Reorder the coefficients of the affine expression based
- * on the given reodering.
+ * on the given reordering.
  * The reordering r is assumed to have been extended with the local
  * variables.
  */
