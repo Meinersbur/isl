@@ -8244,9 +8244,13 @@ static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *space)
 
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
 {
+	unsigned n_in, n_out;
+
 	if (!space)
 		return NULL;
-	if (space->n_in != space->n_out)
+	n_in = isl_space_dim(space, isl_dim_in);
+	n_out = isl_space_dim(space, isl_dim_out);
+	if (n_in != n_out)
 		isl_die(space->ctx, isl_error_invalid,
 			"number of input and output dimensions needs to be "
 			"the same", goto error);
