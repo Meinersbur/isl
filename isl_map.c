@@ -131,7 +131,7 @@ unsigned isl_basic_set_offset(struct isl_basic_set *bset,
 	return isl_basic_map_offset(bset, type);
 }
 
-static unsigned map_offset(struct isl_map *map, enum isl_dim_type type)
+static unsigned map_offset(__isl_keep isl_map *map, enum isl_dim_type type)
 {
 	return pos(map->dim, type);
 }
