@@ -40,15 +40,15 @@ enum isl_fold isl_fold_type_negate(enum isl_fold type)
 }
 
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
-	enum isl_fold type, __isl_take isl_space *dim, int n)
+	enum isl_fold type, __isl_take isl_space *space, int n)
 {
 	isl_qpolynomial_fold *fold;
 
-	if (!dim)
+	if (!space)
 		goto error;
 
-	isl_assert(dim->ctx, n >= 0, goto error);
-	fold = isl_calloc(dim->ctx, struct isl_qpolynomial_fold,
+	isl_assert(space->ctx, n >= 0, goto error);
+	fold = isl_calloc(space->ctx, struct isl_qpolynomial_fold,
 			sizeof(struct isl_qpolynomial_fold) +
 			(n - 1) * sizeof(struct isl_qpolynomial *));
 	if (!fold)
@@ -58,11 +58,11 @@ static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 	fold->size = n;
 	fold->n = 0;
 	fold->type = type;
-	fold->dim = dim;
+	fold->dim = space;
 
 	return fold;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
