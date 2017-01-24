@@ -65,7 +65,7 @@ int isl_space_find_dim_by_name(__isl_keep isl_space *space,
 
 isl_bool isl_space_has_dim_name(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos);
-__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *space,
 				 enum isl_dim_type type, unsigned pos,
 				 __isl_keep const char *name);
 __isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,

@@ -606,22 +606,22 @@ __isl_keep const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
 	return id ? id->name : NULL;
 }
 
-__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *space,
 				 enum isl_dim_type type, unsigned pos,
 				 const char *s)
 {
 	isl_id *id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (!s)
-		return isl_space_reset_dim_id(dim, type, pos);
-	if (!name_ok(dim->ctx, s))
+		return isl_space_reset_dim_id(space, type, pos);
+	if (!name_ok(space->ctx, s))
 		goto error;
-	id = isl_id_alloc(dim->ctx, s, NULL);
-	return isl_space_set_dim_id(dim, type, pos, id);
+	id = isl_id_alloc(space->ctx, s, NULL);
+	return isl_space_set_dim_id(space, type, pos, id);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
