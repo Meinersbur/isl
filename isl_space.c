@@ -594,15 +594,15 @@ isl_bool isl_space_has_tuple_name(__isl_keep isl_space *space,
 	return id && id->name;
 }
 
-__isl_keep const char *isl_space_get_tuple_name(__isl_keep isl_space *dim,
+__isl_keep const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
 	 enum isl_dim_type type)
 {
 	isl_id *id;
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (type != isl_dim_in && type != isl_dim_out)
 		return NULL;
-	id = dim->tuple_id[type - isl_dim_in];
+	id = space->tuple_id[type - isl_dim_in];
 	return id ? id->name : NULL;
 }
 
