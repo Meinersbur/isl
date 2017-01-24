@@ -3679,17 +3679,15 @@ isl_bool isl_aff_matching_params(__isl_keep isl_aff *aff,
 }
 
 /* Check that the domain space of "aff" matches "space".
- *
- * Return 0 on success and -1 on error.
  */
-int isl_aff_check_match_domain_space(__isl_keep isl_aff *aff,
+isl_stat isl_aff_check_match_domain_space(__isl_keep isl_aff *aff,
 	__isl_keep isl_space *space)
 {
 	isl_space *aff_space;
 	isl_bool match;
 
 	if (!aff || !space)
-		return -1;
+		return isl_stat_error;
 
 	aff_space = isl_aff_get_domain_space(aff);
 
@@ -3707,10 +3705,10 @@ int isl_aff_check_match_domain_space(__isl_keep isl_aff *aff,
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"domains don't match", goto error);
 	isl_space_free(aff_space);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_space_free(aff_space);
-	return -1;
+	return isl_stat_error;
 }
 
 #undef BASE
@@ -6062,17 +6060,15 @@ isl_bool isl_pw_aff_matching_params(__isl_keep isl_pw_aff *pa,
 }
 
 /* Check that the domain space of "pa" matches "space".
- *
- * Return 0 on success and -1 on error.
  */
-int isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
+isl_stat isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
 	__isl_keep isl_space *space)
 {
 	isl_space *pa_space;
 	isl_bool match;
 
 	if (!pa || !space)
-		return -1;
+		return isl_stat_error;
 
 	pa_space = isl_pw_aff_get_space(pa);
 
@@ -6090,10 +6086,10 @@ int isl_pw_aff_check_match_domain_space(__isl_keep isl_pw_aff *pa,
 		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
 			"domains don't match", goto error);
 	isl_space_free(pa_space);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_space_free(pa_space);
-	return -1;
+	return isl_stat_error;
 }
 
 #undef BASE
@@ -7275,8 +7271,6 @@ isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
 
 /* Check that the domain space of "upa" matches "space".
  *
- * Return 0 on success and -1 on error.
- *
  * This function is called from isl_multi_union_pw_aff_set_union_pw_aff and
  * can in principle never fail since the space "space" is that
  * of the isl_multi_union_pw_aff and is a set space such that
@@ -7285,18 +7279,18 @@ isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
  * We check the parameters and double-check that "space" is
  * indeed that of a set.
  */
-static int isl_union_pw_aff_check_match_domain_space(
+static isl_stat isl_union_pw_aff_check_match_domain_space(
 	__isl_keep isl_union_pw_aff *upa, __isl_keep isl_space *space)
 {
 	isl_space *upa_space;
 	isl_bool match;
 
 	if (!upa || !space)
-		return -1;
+		return isl_stat_error;
 
 	match = isl_space_is_set(space);
 	if (match < 0)
-		return -1;
+		return isl_stat_error;
 	if (!match)
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"expecting set space", return -1);
@@ -7310,10 +7304,10 @@ static int isl_union_pw_aff_check_match_domain_space(
 			"parameters don't match", goto error);
 
 	isl_space_free(upa_space);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_space_free(upa_space);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Do the parameters of "upa" match those of "space"?
