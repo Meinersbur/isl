@@ -1497,7 +1497,7 @@ static isl_bool join_compatible(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
 	isl_bool m;
-	m = isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
+	m = isl_space_has_equal_params(space1, space2);
 	if (m < 0 || !m)
 		return m;
 	return isl_space_tuple_is_equal(space1, isl_dim_out,

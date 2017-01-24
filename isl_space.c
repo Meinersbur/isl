@@ -851,6 +851,17 @@ static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	return isl_bool_true;
 }
 
+/* Do "space1" and "space2" have the same parameters?
+ */
+isl_bool isl_space_has_equal_params(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	if (!space1 || !space2)
+		return isl_bool_error;
+
+	return match(space1, isl_dim_param, space2, isl_dim_param);
+}
+
 isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
@@ -1152,7 +1163,7 @@ isl_stat isl_space_check_equal_params(__isl_keep isl_space *space1,
 {
 	isl_bool equal;
 
-	equal = match(space1, isl_dim_param, space2, isl_dim_param);
+	equal = isl_space_has_equal_params(space1, space2);
 	if (equal < 0)
 		return isl_stat_error;
 	if (!equal)
@@ -1832,7 +1843,7 @@ isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 		return isl_bool_error;
 	if (space1 == space2)
 		return isl_bool_true;
-	equal = match(space1, isl_dim_param, space2, isl_dim_param);
+	equal = isl_space_has_equal_params(space1, space2);
 	if (equal < 0 || !equal)
 		return equal;
 	return isl_space_has_equal_tuples(space1, space2);
@@ -1846,12 +1857,16 @@ isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 isl_bool isl_space_is_domain_internal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
+	isl_bool equal_params;
+
 	if (!space1 || !space2)
 		return isl_bool_error;
 	if (!isl_space_is_set(space1))
 		return isl_bool_false;
-	return match(space1, isl_dim_param, space2, isl_dim_param) &&
-	       isl_space_tuple_is_equal(space1, isl_dim_set,
+	equal_params = isl_space_has_equal_params(space1, space2);
+	if (equal_params < 0 || !equal_params)
+		return equal_params;
+	return isl_space_tuple_is_equal(space1, isl_dim_set,
 					space2, isl_dim_in);
 }
 
@@ -1875,12 +1890,16 @@ isl_bool isl_space_is_domain(__isl_keep isl_space *space1,
 isl_bool isl_space_is_range_internal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
+	isl_bool equal_params;
+
 	if (!space1 || !space2)
 		return isl_bool_error;
 	if (!isl_space_is_set(space1))
 		return isl_bool_false;
-	return match(space1, isl_dim_param, space2, isl_dim_param) &&
-	       isl_space_tuple_is_equal(space1, isl_dim_set,
+	equal_params = isl_space_has_equal_params(space1, space2);
+	if (equal_params < 0 || !equal_params)
+		return equal_params;
+	return isl_space_tuple_is_equal(space1, isl_dim_set,
 					space2, isl_dim_out);
 }
 
