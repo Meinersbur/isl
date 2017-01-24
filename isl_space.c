@@ -642,20 +642,20 @@ __isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *dim,
 	return id ? id->name : NULL;
 }
 
-int isl_space_find_dim_by_id(__isl_keep isl_space *dim, enum isl_dim_type type,
-	__isl_keep isl_id *id)
+int isl_space_find_dim_by_id(__isl_keep isl_space *space,
+	enum isl_dim_type type, __isl_keep isl_id *id)
 {
 	int i;
 	int offset;
 	int n;
 
-	if (!dim || !id)
+	if (!space || !id)
 		return -1;
 
-	offset = isl_space_offset(dim, type);
-	n = isl_space_dim(dim, type);
-	for (i = 0; i < n && offset + i < dim->n_id; ++i)
-		if (dim->ids[offset + i] == id)
+	offset = isl_space_offset(space, type);
+	n = isl_space_dim(space, type);
+	for (i = 0; i < n && offset + i < space->n_id; ++i)
+		if (space->ids[offset + i] == id)
 			return i;
 
 	return -1;
