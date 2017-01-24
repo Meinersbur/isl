@@ -3665,7 +3665,7 @@ int isl_aff_matching_params(__isl_keep isl_aff *aff,
 	__isl_keep isl_space *space)
 {
 	isl_space *aff_space;
-	int match;
+	isl_bool match;
 
 	if (!aff || !space)
 		return -1;
@@ -6048,7 +6048,7 @@ int isl_pw_aff_matching_params(__isl_keep isl_pw_aff *pa,
 	__isl_keep isl_space *space)
 {
 	isl_space *pa_space;
-	int match;
+	isl_bool match;
 
 	if (!pa || !space)
 		return -1;
@@ -7322,7 +7322,7 @@ static int isl_union_pw_aff_matching_params(__isl_keep isl_union_pw_aff *upa,
 	__isl_keep isl_space *space)
 {
 	isl_space *upa_space;
-	int match;
+	isl_bool match;
 
 	if (!upa || !space)
 		return -1;
