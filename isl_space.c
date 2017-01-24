@@ -917,37 +917,37 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_add_dims(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_add_dims(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned n)
 {
-	dim = isl_space_reset(dim, type);
-	if (!dim)
+	space = isl_space_reset(space, type);
+	if (!space)
 		return NULL;
 	switch (type) {
 	case isl_dim_param:
-		dim = isl_space_extend(dim,
-					dim->nparam + n, dim->n_in, dim->n_out);
-		if (dim && dim->nested[0] &&
-		    !(dim->nested[0] = isl_space_add_dims(dim->nested[0],
+		space = isl_space_extend(space,
+				space->nparam + n, space->n_in, space->n_out);
+		if (space && space->nested[0] &&
+		    !(space->nested[0] = isl_space_add_dims(space->nested[0],
 						    isl_dim_param, n)))
 			goto error;
-		if (dim && dim->nested[1] &&
-		    !(dim->nested[1] = isl_space_add_dims(dim->nested[1],
+		if (space && space->nested[1] &&
+		    !(space->nested[1] = isl_space_add_dims(space->nested[1],
 						    isl_dim_param, n)))
 			goto error;
-		return dim;
+		return space;
 	case isl_dim_in:
-		return isl_space_extend(dim,
-					dim->nparam, dim->n_in + n, dim->n_out);
+		return isl_space_extend(space,
+				space->nparam, space->n_in + n, space->n_out);
 	case isl_dim_out:
-		return isl_space_extend(dim,
-					dim->nparam, dim->n_in, dim->n_out + n);
+		return isl_space_extend(space,
+				space->nparam, space->n_in, space->n_out + n);
 	default:
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"cannot add dimensions of specified type", goto error);
 	}
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
