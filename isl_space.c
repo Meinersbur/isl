@@ -830,25 +830,25 @@ int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	return isl_space_tuple_is_equal(space1, type1, space2, type2);
 }
 
-static int match(__isl_keep isl_space *space1, enum isl_dim_type type1,
+static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
 	int i;
 
 	if (space1 == space2 && type1 == type2)
-		return 1;
+		return isl_bool_true;
 
 	if (!isl_space_tuple_is_equal(space1, type1, space2, type2))
-		return 0;
+		return isl_bool_false;
 
 	if (!space1->ids && !space2->ids)
-		return 1;
+		return isl_bool_true;
 
 	for (i = 0; i < n(space1, type1); ++i) {
 		if (get_id(space1, type1, i) != get_id(space2, type2, i))
-			return 0;
+			return isl_bool_false;
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
