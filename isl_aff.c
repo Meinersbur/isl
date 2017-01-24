@@ -3661,14 +3661,14 @@ __isl_give isl_pw_aff_list *isl_pw_aff_list_set_rational(
 
 /* Do the parameters of "aff" match those of "space"?
  */
-int isl_aff_matching_params(__isl_keep isl_aff *aff,
+isl_bool isl_aff_matching_params(__isl_keep isl_aff *aff,
 	__isl_keep isl_space *space)
 {
 	isl_space *aff_space;
 	isl_bool match;
 
 	if (!aff || !space)
-		return -1;
+		return isl_bool_error;
 
 	aff_space = isl_aff_get_domain_space(aff);
 
@@ -6044,14 +6044,14 @@ error:
 
 /* Do the parameters of "pa" match those of "space"?
  */
-int isl_pw_aff_matching_params(__isl_keep isl_pw_aff *pa,
+isl_bool isl_pw_aff_matching_params(__isl_keep isl_pw_aff *pa,
 	__isl_keep isl_space *space)
 {
 	isl_space *pa_space;
 	isl_bool match;
 
 	if (!pa || !space)
-		return -1;
+		return isl_bool_error;
 
 	pa_space = isl_pw_aff_get_space(pa);
 
@@ -7318,14 +7318,14 @@ error:
 
 /* Do the parameters of "upa" match those of "space"?
  */
-static int isl_union_pw_aff_matching_params(__isl_keep isl_union_pw_aff *upa,
-	__isl_keep isl_space *space)
+static isl_bool isl_union_pw_aff_matching_params(
+	__isl_keep isl_union_pw_aff *upa, __isl_keep isl_space *space)
 {
 	isl_space *upa_space;
 	isl_bool match;
 
 	if (!upa || !space)
-		return -1;
+		return isl_bool_error;
 
 	upa_space = isl_union_pw_aff_get_space(upa);
 
@@ -7371,7 +7371,7 @@ static __isl_give isl_union_pw_aff *isl_union_pw_aff_reset_domain_space(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_space *space)
 {
 	struct isl_union_pw_aff_reset_params_data data = { space };
-	int match;
+	isl_bool match;
 
 	match = isl_union_pw_aff_matching_params(upa, space);
 	if (match < 0)

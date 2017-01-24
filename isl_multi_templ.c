@@ -291,7 +291,7 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 {
 	isl_space *multi_space = NULL;
 	isl_space *el_space = NULL;
-	int match;
+	isl_bool match;
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !el)
