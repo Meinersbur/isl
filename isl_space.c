@@ -638,10 +638,10 @@ isl_bool isl_space_has_dim_name(__isl_keep isl_space *space,
 	return id && id->name;
 }
 
-__isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *dim,
+__isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	isl_id *id = get_id(dim, type, pos);
+	isl_id *id = get_id(space, type, pos);
 	return id ? id->name : NULL;
 }
 
