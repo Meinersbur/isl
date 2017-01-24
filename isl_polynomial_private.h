@@ -5,6 +5,7 @@
 #include <isl_morph.h>
 #include <isl/polynomial.h>
 #include <isl_reordering.h>
+#include "isl_list_private.h"
 
 struct isl_poly {
 	int ref;
@@ -294,3 +295,5 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul_isl_int(
 __isl_give isl_union_pw_qpolynomial_fold *
 isl_union_pw_qpolynomial_fold_mul_isl_int(
 	__isl_take isl_union_pw_qpolynomial_fold *upwf, isl_int v);
+
+ISL_DECLARE_LIST_FN_PRIVATE(qpolynomial)
