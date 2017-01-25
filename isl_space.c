@@ -1993,15 +1993,15 @@ static uint32_t isl_hash_space_domain(uint32_t hash,
 	return hash;
 }
 
-uint32_t isl_space_get_hash(__isl_keep isl_space *dim)
+uint32_t isl_space_get_hash(__isl_keep isl_space *space)
 {
 	uint32_t hash;
 
-	if (!dim)
+	if (!space)
 		return 0;
 
 	hash = isl_hash_init();
-	hash = isl_hash_space(hash, dim);
+	hash = isl_hash_space(hash, space);
 
 	return hash;
 }
