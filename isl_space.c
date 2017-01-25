@@ -2207,23 +2207,23 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *space)
 {
 	isl_space *unwrap;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	if (!isl_space_is_wrapping(dim))
-		isl_die(dim->ctx, isl_error_invalid, "not a wrapping space",
+	if (!isl_space_is_wrapping(space))
+		isl_die(space->ctx, isl_error_invalid, "not a wrapping space",
 			goto error);
 
-	unwrap = isl_space_copy(dim->nested[1]);
-	isl_space_free(dim);
+	unwrap = isl_space_copy(space->nested[1]);
+	isl_space_free(space);
 
 	return unwrap;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
