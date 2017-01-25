@@ -153,18 +153,15 @@ static unsigned global_pos(__isl_keep isl_space *space,
 {
 	struct isl_ctx *ctx = space->ctx;
 
+	if (isl_space_check_range(space, type, pos, 1) < 0)
+		return isl_space_dim(space, isl_dim_all);
+
 	switch (type) {
 	case isl_dim_param:
-		isl_assert(ctx, pos < space->nparam,
-			    return isl_space_dim(space, isl_dim_all));
 		return pos;
 	case isl_dim_in:
-		isl_assert(ctx, pos < space->n_in,
-			    return isl_space_dim(space, isl_dim_all));
 		return pos + space->nparam;
 	case isl_dim_out:
-		isl_assert(ctx, pos < space->n_out,
-			    return isl_space_dim(space, isl_dim_all));
 		return pos + space->nparam + space->n_in;
 	default:
 		isl_assert(ctx, 0, return isl_space_dim(space, isl_dim_all));
@@ -1034,6 +1031,10 @@ static int valid_dim_type(enum isl_dim_type type)
 	}
 }
 
+#undef TYPE
+#define TYPE	isl_space
+#include "check_type_range_templ.c"
+
 /* Insert "n" dimensions of type "type" at position "pos".
  * If we are inserting parameters, then they are also inserted in
  * any nested spaces.
@@ -1043,7 +1044,6 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 {
 	isl_ctx *ctx;
 	isl_id **ids = NULL;
-	unsigned total;
 
 	if (!space)
 		return NULL;
@@ -1056,12 +1056,8 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 			"cannot insert dimensions of specified type",
 			goto error);
 
-	total = isl_space_dim(space, isl_dim_all);
-	if (total + n < total)
-		isl_die(ctx, isl_error_invalid,
-			"overflow in total number of dimensions",
-			return isl_space_free(space));
-	isl_assert(ctx, pos <= isl_space_dim(space, type), goto error);
+	if (isl_space_check_range(space, type, pos, 0) < 0)
+		return isl_space_free(space);
 
 	space = isl_space_cow(space);
 	if (!space)
@@ -1133,8 +1129,8 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *space,
 	if (n == 0)
 		return space;
 
-	isl_assert(space->ctx, src_pos + n <= isl_space_dim(space, src_type),
-		goto error);
+	if (isl_space_check_range(space, src_type, src_pos, n) < 0)
+		return isl_space_free(space);
 
 	if (dst_type == src_type && dst_pos == src_pos)
 		return space;
@@ -1738,9 +1734,8 @@ __isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *space,
 		isl_die(space->ctx, isl_error_invalid,
 			"cannot drop dimensions of specified type", goto error);
 
-	if (first + num > n(space, type) || first + num < first)
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"index out of bounds", return isl_space_free(space));
+	if (isl_space_check_range(space, type, first, num) < 0)
+		return isl_space_free(space);
 	space = isl_space_cow(space);
 	if (!space)
 		goto error;

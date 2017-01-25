@@ -2120,7 +2120,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
 {
 	if (isl_space_check_is_set(domain ) < 0)
 		goto error;
-	isl_assert(domain->ctx, pos < isl_space_dim(domain, type), goto error);
+	if (isl_space_check_range(domain, type, pos, 1) < 0)
+		goto error;
 
 	if (type == isl_dim_set)
 		pos += isl_space_dim(domain, isl_dim_param);

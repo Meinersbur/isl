@@ -4001,11 +4001,10 @@ __isl_give isl_multi_aff *isl_multi_aff_project_out_map(
 	if (type != isl_dim_set)
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"only set dimensions can be projected out", goto error);
+	if (isl_space_check_range(space, type, first, n) < 0)
+		goto error;
 
 	dim = isl_space_dim(space, isl_dim_set);
-	if (first + n > dim)
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"range out of bounds", goto error);
 
 	space = isl_space_from_domain(space);
 	space = isl_space_add_dims(space, isl_dim_out, dim - n);

@@ -12210,15 +12210,9 @@ static __isl_give isl_basic_map *equator(__isl_take isl_space *space,
 	isl_basic_map *bmap = NULL;
 	int i;
 
-	if (!space)
-		return NULL;
-
-	if (pos1 >= isl_space_dim(space, type1))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"index out of bounds", goto error);
-	if (pos2 >= isl_space_dim(space, type2))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_space_check_range(space, type1, pos1, 1) < 0 ||
+	    isl_space_check_range(space, type2, pos2, 1) < 0)
+		goto error;
 
 	if (type1 == type2 && pos1 == pos2)
 		return isl_basic_map_universe(space);
@@ -12311,17 +12305,13 @@ static __isl_give isl_constraint *constraint_order_ge(
 {
 	isl_constraint *c;
 
+	if (isl_space_check_range(space, type1, pos1, 1) < 0 ||
+	    isl_space_check_range(space, type2, pos2, 1) < 0)
+		space = isl_space_free(space);
 	if (!space)
 		return NULL;
 
 	c = isl_constraint_alloc_inequality(isl_local_space_from_space(space));
-
-	if (pos1 >= isl_constraint_dim(c, type1))
-		isl_die(isl_constraint_get_ctx(c), isl_error_invalid,
-			"index out of bounds", return isl_constraint_free(c));
-	if (pos2 >= isl_constraint_dim(c, type2))
-		isl_die(isl_constraint_get_ctx(c), isl_error_invalid,
-			"index out of bounds", return isl_constraint_free(c));
 
 	if (type1 == type2 && pos1 == pos2)
 		return c;
@@ -12386,15 +12376,9 @@ static __isl_give isl_basic_map *greator(__isl_take isl_space *space,
 	isl_basic_map *bmap = NULL;
 	int i;
 
-	if (!space)
-		return NULL;
-
-	if (pos1 >= isl_space_dim(space, type1))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"index out of bounds", goto error);
-	if (pos2 >= isl_space_dim(space, type2))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_space_check_range(space, type1, pos1, 1) < 0 ||
+	    isl_space_check_range(space, type2, pos2, 1) < 0)
+		goto error;
 
 	if (type1 == type2 && pos1 == pos2)
 		return isl_basic_map_empty(space);
