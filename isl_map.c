@@ -12743,7 +12743,7 @@ static int check_basic_map_compatible_range_multi_aff(
 	__isl_keep isl_basic_map *bmap, enum isl_dim_type type,
 	__isl_keep isl_multi_aff *ma)
 {
-	int m;
+	isl_bool m;
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
