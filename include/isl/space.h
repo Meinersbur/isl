@@ -117,6 +117,7 @@ __isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *dim,
 ISL_DEPRECATED
 __isl_give isl_space *isl_space_drop_inputs(__isl_take isl_space *dim,
 		unsigned first, unsigned n);
+ISL_DEPRECATED
 __isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *dim,
 		unsigned first, unsigned n);
 __isl_give isl_space *isl_space_domain(__isl_take isl_space *space);
