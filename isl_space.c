@@ -1656,53 +1656,54 @@ static __isl_give isl_space *set_ids(__isl_take isl_space *dim,
 	return dim;
 }
 
-__isl_give isl_space *isl_space_reverse(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_reverse(__isl_take isl_space *space)
 {
 	unsigned t;
 	isl_space *nested;
 	isl_id **ids = NULL;
 	isl_id *id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (match(dim, isl_dim_in, dim, isl_dim_out))
-		return dim;
+	if (match(space, isl_dim_in, space, isl_dim_out))
+		return space;
 
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_cow(space);
+	if (!space)
 		return NULL;
 
-	id = dim->tuple_id[0];
-	dim->tuple_id[0] = dim->tuple_id[1];
-	dim->tuple_id[1] = id;
+	id = space->tuple_id[0];
+	space->tuple_id[0] = space->tuple_id[1];
+	space->tuple_id[1] = id;
 
-	nested = dim->nested[0];
-	dim->nested[0] = dim->nested[1];
-	dim->nested[1] = nested;
+	nested = space->nested[0];
+	space->nested[0] = space->nested[1];
+	space->nested[1] = nested;
 
-	if (dim->ids) {
-		int n_id = dim->n_in + dim->n_out;
-		ids = isl_alloc_array(dim->ctx, isl_id *, n_id);
+	if (space->ids) {
+		int n_id = space->n_in + space->n_out;
+		ids = isl_alloc_array(space->ctx, isl_id *, n_id);
 		if (n_id && !ids)
 			goto error;
-		get_ids(dim, isl_dim_in, 0, dim->n_in, ids);
-		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + dim->n_in);
+		get_ids(space, isl_dim_in, 0, space->n_in, ids);
+		get_ids(space, isl_dim_out, 0, space->n_out, ids + space->n_in);
 	}
 
-	t = dim->n_in;
-	dim->n_in = dim->n_out;
-	dim->n_out = t;
+	t = space->n_in;
+	space->n_in = space->n_out;
+	space->n_out = t;
 
-	if (dim->ids) {
-		dim = set_ids(dim, isl_dim_out, 0, dim->n_out, ids);
-		dim = set_ids(dim, isl_dim_in, 0, dim->n_in, ids + dim->n_out);
+	if (space->ids) {
+		space = set_ids(space, isl_dim_out, 0, space->n_out, ids);
+		space = set_ids(space, isl_dim_in, 0, space->n_in,
+				ids + space->n_out);
 		free(ids);
 	}
 
-	return dim;
+	return space;
 error:
 	free(ids);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
