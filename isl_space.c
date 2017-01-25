@@ -1725,14 +1725,14 @@ __isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *dim,
 	return isl_space_drop_dims(dim, isl_dim_out, first, n);
 }
 
-__isl_give isl_space *isl_space_domain(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_domain(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	dim = isl_space_drop_outputs(dim, 0, dim->n_out);
-	dim = isl_space_reverse(dim);
-	dim = mark_as_set(dim);
-	return dim;
+	space = isl_space_drop_outputs(space, 0, space->n_out);
+	space = isl_space_reverse(space);
+	space = mark_as_set(space);
+	return space;
 }
 
 __isl_give isl_space *isl_space_from_domain(__isl_take isl_space *dim)
