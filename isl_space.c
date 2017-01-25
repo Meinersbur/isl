@@ -1754,7 +1754,7 @@ __isl_give isl_space *isl_space_range(__isl_take isl_space *space)
 {
 	if (!space)
 		return NULL;
-	space = isl_space_drop_inputs(space, 0, space->n_in);
+	space = isl_space_drop_dims(space, isl_dim_in, 0, space->n_in);
 	space = mark_as_set(space);
 	return space;
 }
