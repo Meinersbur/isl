@@ -180,7 +180,7 @@ __isl_give isl_reordering *isl_reordering_extend_space(
 	if (!res)
 		goto error;
 	isl_space_free(res->dim);
-	res->dim = isl_space_replace(space, isl_dim_param, exp->dim);
+	res->dim = isl_space_replace_params(space, exp->dim);
 
 	isl_reordering_free(exp);
 

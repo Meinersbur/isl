@@ -7453,7 +7453,7 @@ static isl_stat reset_params(__isl_take isl_pw_aff *pa, void *user)
 	isl_space *space;
 
 	space = isl_pw_aff_get_space(pa);
-	space = isl_space_replace(space, isl_dim_param, data->space);
+	space = isl_space_replace_params(space, data->space);
 	pa = isl_pw_aff_reset_space(pa, space);
 	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
 

@@ -1157,8 +1157,8 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *space,
 	for (i = 0; i < 2; ++i) {
 		if (!space->nested[i])
 			continue;
-		space->nested[i] = isl_space_replace(space->nested[i],
-						 isl_dim_param, space);
+		space->nested[i] = isl_space_replace_params(space->nested[i],
+							     space);
 		if (!space->nested[i])
 			goto error;
 	}
@@ -2263,11 +2263,13 @@ __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *space)
 	return isl_space_reset(space, isl_dim_out);
 }
 
-/* Replace the dimensions of the given type of dst by those of src.
+/* Replace the parameters of dst by those of src.
  */
-__isl_give isl_space *isl_space_replace(__isl_take isl_space *dst,
-	enum isl_dim_type type, __isl_keep isl_space *src)
+__isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
+	__isl_keep isl_space *src)
 {
+	enum isl_dim_type type = isl_dim_param;
+
 	dst = isl_space_cow(dst);
 
 	if (!dst || !src)
@@ -2277,13 +2279,13 @@ __isl_give isl_space *isl_space_replace(__isl_take isl_space *dst,
 	dst = isl_space_add_dims(dst, type, isl_space_dim(src, type));
 	dst = copy_ids(dst, type, 0, src, type);
 
-	if (dst && type == isl_dim_param) {
+	if (dst) {
 		int i;
 		for (i = 0; i <= 1; ++i) {
 			if (!dst->nested[i])
 				continue;
-			dst->nested[i] = isl_space_replace(dst->nested[i],
-							 type, src);
+			dst->nested[i] = isl_space_replace_params(
+							dst->nested[i], src);
 			if (!dst->nested[i])
 				goto error;
 		}
