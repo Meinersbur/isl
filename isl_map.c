@@ -5105,11 +5105,7 @@ __isl_give isl_basic_map *isl_basic_map_reset_space(
 	bmap_space = isl_basic_map_peek_space(bmap);
 	equal = isl_space_is_equal(bmap_space, space);
 	if (equal >= 0 && equal)
-		equal = isl_space_match(bmap_space, isl_dim_in,
-					space, isl_dim_in);
-	if (equal >= 0 && equal)
-		equal = isl_space_match(bmap_space, isl_dim_out,
-					space, isl_dim_out);
+		equal = isl_space_has_equal_ids(bmap_space, space);
 	if (equal < 0)
 		goto error;
 	if (equal) {

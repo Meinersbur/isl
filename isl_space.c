@@ -862,6 +862,23 @@ isl_bool isl_space_has_equal_params(__isl_keep isl_space *space1,
 	return match(space1, isl_dim_param, space2, isl_dim_param);
 }
 
+/* Do "space1" and "space2" have the same identifiers for all
+ * the tuple variables?
+ */
+isl_bool isl_space_has_equal_ids(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	isl_bool equal;
+
+	if (!space1 || !space2)
+		return isl_bool_error;
+
+	equal = match(space1, isl_dim_in, space2, isl_dim_in);
+	if (equal < 0 || !equal)
+		return equal;
+	return match(space1, isl_dim_out, space2, isl_dim_out);
+}
+
 isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
