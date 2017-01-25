@@ -1046,12 +1046,12 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *space,
 {
 	int i;
 
+	space = isl_space_reset(space, src_type);
+	space = isl_space_reset(space, dst_type);
 	if (!space)
 		return NULL;
-	if (n == 0) {
-		space = isl_space_reset(space, src_type);
-		return isl_space_reset(space, dst_type);
-	}
+	if (n == 0)
+		return space;
 
 	isl_assert(space->ctx, src_pos + n <= isl_space_dim(space, src_type),
 		goto error);
@@ -1060,9 +1060,6 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *space,
 		return space;
 
 	isl_assert(space->ctx, dst_type != src_type, goto error);
-
-	space = isl_space_reset(space, src_type);
-	space = isl_space_reset(space, dst_type);
 
 	space = isl_space_cow(space);
 	if (!space)
