@@ -1486,7 +1486,7 @@ error:
 static int join_compatible(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
-	int m;
+	isl_bool m;
 	m = isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
 	if (m < 0 || !m)
 		return m;
