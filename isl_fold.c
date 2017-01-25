@@ -946,10 +946,8 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold_pw_
 
 	if (!part || !u)
 		goto error;
-
-	isl_assert(u->space->ctx,
-	    isl_space_match(part->dim, isl_dim_param, u->space, isl_dim_param),
-	    goto error);
+	if (isl_space_check_equal_params(part->dim, u->space) < 0)
+		goto error;
 
 	entry = isl_union_pw_qpolynomial_fold_find_part_entry(u, part->dim, 1);
 	if (!entry)

@@ -1144,16 +1144,31 @@ error:
 	return NULL;
 }
 
+/* Check that "space1" and "space2" have the same parameters,
+ * reporting an error if they do not.
+ */
+isl_stat isl_space_check_equal_params(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	isl_bool equal;
+
+	equal = match(space1, isl_dim_param, space2, isl_dim_param);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_space_get_ctx(space1), isl_error_invalid,
+			"parameters need to match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 __isl_give isl_space *isl_space_join(__isl_take isl_space *left,
 	__isl_take isl_space *right)
 {
 	isl_space *dim;
 
-	if (!left || !right)
+	if (isl_space_check_equal_params(left, right) < 0)
 		goto error;
 
-	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
-			goto error);
 	isl_assert(left->ctx,
 		isl_space_tuple_is_equal(left, isl_dim_out, right, isl_dim_in),
 		goto error);
@@ -1210,8 +1225,8 @@ __isl_give isl_space *isl_space_product(__isl_take isl_space *left,
 	if (is_set)
 		return isl_space_range_product(left, right);
 
-	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
-			goto error);
+	if (isl_space_check_equal_params(left, right) < 0)
+		goto error;
 
 	dom1 = isl_space_domain(isl_space_copy(left));
 	dom2 = isl_space_domain(isl_space_copy(right));
@@ -1236,12 +1251,9 @@ __isl_give isl_space *isl_space_domain_product(__isl_take isl_space *left,
 {
 	isl_space *ran, *dom1, *dom2, *nest;
 
-	if (!left || !right)
+	if (isl_space_check_equal_params(left, right) < 0)
 		goto error;
 
-	if (!match(left, isl_dim_param, right, isl_dim_param))
-		isl_die(left->ctx, isl_error_invalid,
-			"parameters need to match", goto error);
 	if (!isl_space_tuple_is_equal(left, isl_dim_out, right, isl_dim_out))
 		isl_die(left->ctx, isl_error_invalid,
 			"ranges need to match", goto error);
@@ -1264,11 +1276,9 @@ __isl_give isl_space *isl_space_range_product(__isl_take isl_space *left,
 {
 	isl_space *dom, *ran1, *ran2, *nest;
 
-	if (!left || !right)
+	if (isl_space_check_equal_params(left, right) < 0)
 		goto error;
 
-	isl_assert(left->ctx, match(left, isl_dim_param, right, isl_dim_param),
-			goto error);
 	if (!isl_space_tuple_is_equal(left, isl_dim_in, right, isl_dim_in))
 		isl_die(left->ctx, isl_error_invalid,
 			"domains need to match", goto error);
