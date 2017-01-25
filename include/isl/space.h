@@ -114,6 +114,7 @@ __isl_give isl_space *isl_space_map_from_domain_and_range(
 __isl_give isl_space *isl_space_reverse(__isl_take isl_space *dim);
 __isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *dim,
 	enum isl_dim_type type, unsigned first, unsigned num);
+ISL_DEPRECATED
 __isl_give isl_space *isl_space_drop_inputs(__isl_take isl_space *dim,
 		unsigned first, unsigned n);
 __isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *dim,
