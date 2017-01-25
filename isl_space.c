@@ -1022,6 +1022,7 @@ static int valid_dim_type(enum isl_dim_type type)
 __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned pos, unsigned n)
 {
+	isl_ctx *ctx;
 	isl_id **ids = NULL;
 
 	if (!space)
@@ -1029,12 +1030,13 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 	if (n == 0)
 		return isl_space_reset(space, type);
 
+	ctx = isl_space_get_ctx(space);
 	if (!valid_dim_type(type))
-		isl_die(space->ctx, isl_error_invalid,
+		isl_die(ctx, isl_error_invalid,
 			"cannot insert dimensions of specified type",
 			goto error);
 
-	isl_assert(space->ctx, pos <= isl_space_dim(space, type), goto error);
+	isl_assert(ctx, pos <= isl_space_dim(space, type), goto error);
 
 	space = isl_space_cow(space);
 	if (!space)
@@ -1044,7 +1046,7 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 		enum isl_dim_type t, o = isl_dim_param;
 		int off;
 		int s[3];
-		ids = isl_calloc_array(space->ctx, isl_id *,
+		ids = isl_calloc_array(ctx, isl_id *,
 			     space->nparam + space->n_in + space->n_out + n);
 		if (!ids)
 			goto error;
