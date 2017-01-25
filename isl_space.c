@@ -2125,15 +2125,15 @@ uint32_t isl_space_get_domain_hash(__isl_keep isl_space *space)
 	return hash;
 }
 
-isl_bool isl_space_is_wrapping(__isl_keep isl_space *dim)
+isl_bool isl_space_is_wrapping(__isl_keep isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return isl_bool_error;
 
-	if (!isl_space_is_set(dim))
+	if (!isl_space_is_set(space))
 		return isl_bool_false;
 
-	return dim->nested[1] != NULL;
+	return space->nested[1] != NULL;
 }
 
 /* Is "space" the space of a map where the domain is a wrapped map space?
