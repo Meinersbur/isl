@@ -2182,28 +2182,28 @@ isl_bool isl_space_is_product(__isl_keep isl_space *space)
 	return isl_space_range_is_wrapping(space);
 }
 
-__isl_give isl_space *isl_space_wrap(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_wrap(__isl_take isl_space *space)
 {
 	isl_space *wrap;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	wrap = isl_space_set_alloc(dim->ctx,
-				    dim->nparam, dim->n_in + dim->n_out);
+	wrap = isl_space_set_alloc(space->ctx,
+				    space->nparam, space->n_in + space->n_out);
 
-	wrap = copy_ids(wrap, isl_dim_param, 0, dim, isl_dim_param);
-	wrap = copy_ids(wrap, isl_dim_set, 0, dim, isl_dim_in);
-	wrap = copy_ids(wrap, isl_dim_set, dim->n_in, dim, isl_dim_out);
+	wrap = copy_ids(wrap, isl_dim_param, 0, space, isl_dim_param);
+	wrap = copy_ids(wrap, isl_dim_set, 0, space, isl_dim_in);
+	wrap = copy_ids(wrap, isl_dim_set, space->n_in, space, isl_dim_out);
 
 	if (!wrap)
 		goto error;
 
-	wrap->nested[1] = dim;
+	wrap->nested[1] = space;
 
 	return wrap;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
