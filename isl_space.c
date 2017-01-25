@@ -2257,22 +2257,22 @@ isl_bool isl_space_may_be_set(__isl_keep isl_space *space)
 	return isl_bool_true;
 }
 
-__isl_give isl_space *isl_space_reset(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_reset(__isl_take isl_space *space,
 	enum isl_dim_type type)
 {
-	if (!isl_space_is_named_or_nested(dim, type))
-		return dim;
+	if (!isl_space_is_named_or_nested(space, type))
+		return space;
 
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_cow(space);
+	if (!space)
 		return NULL;
 
-	isl_id_free(dim->tuple_id[type - isl_dim_in]);
-	dim->tuple_id[type - isl_dim_in] = NULL;
-	isl_space_free(dim->nested[type - isl_dim_in]);
-	dim->nested[type - isl_dim_in] = NULL;
+	isl_id_free(space->tuple_id[type - isl_dim_in]);
+	space->tuple_id[type - isl_dim_in] = NULL;
+	isl_space_free(space->nested[type - isl_dim_in]);
+	space->nested[type - isl_dim_in] = NULL;
 
-	return dim;
+	return space;
 }
 
 __isl_give isl_space *isl_space_flatten(__isl_take isl_space *dim)
