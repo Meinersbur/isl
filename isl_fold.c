@@ -1483,7 +1483,7 @@ error:
 	return NULL;
 }
 
-static int join_compatible(__isl_keep isl_space *space1,
+static isl_bool join_compatible(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
 	isl_bool m;
@@ -1512,7 +1512,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 	isl_space *map_dim;
 	isl_space *pwf_dim;
 	unsigned n_in;
-	int ok;
+	isl_bool ok;
 
 	ctx = isl_map_get_ctx(map);
 	if (!ctx)
@@ -1523,6 +1523,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 	ok = join_compatible(map_dim, pwf_dim);
 	isl_space_free(map_dim);
 	isl_space_free(pwf_dim);
+	if (ok < 0)
+		goto error;
 	if (!ok)
 		isl_die(ctx, isl_error_invalid, "incompatible dimensions",
 			goto error);
@@ -1564,7 +1566,7 @@ static isl_stat pw_qpolynomial_fold_apply(
 	isl_space *map_dim;
 	isl_space *pwf_dim;
 	struct isl_apply_fold_data *data = user;
-	int ok;
+	isl_bool ok;
 
 	map_dim = isl_map_get_space(data->map);
 	pwf_dim = isl_pw_qpolynomial_fold_get_space(pwf);
@@ -1572,6 +1574,8 @@ static isl_stat pw_qpolynomial_fold_apply(
 	isl_space_free(map_dim);
 	isl_space_free(pwf_dim);
 
+	if (ok < 0)
+		return isl_stat_error;
 	if (ok) {
 		pwf = isl_map_apply_pw_qpolynomial_fold(isl_map_copy(data->map),
 				    pwf, data->tight ? &data->tight : NULL);
