@@ -2275,19 +2275,19 @@ __isl_give isl_space *isl_space_reset(__isl_take isl_space *space,
 	return space;
 }
 
-__isl_give isl_space *isl_space_flatten(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_flatten(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!dim->nested[0] && !dim->nested[1])
-		return dim;
+	if (!space->nested[0] && !space->nested[1])
+		return space;
 
-	if (dim->nested[0])
-		dim = isl_space_reset(dim, isl_dim_in);
-	if (dim && dim->nested[1])
-		dim = isl_space_reset(dim, isl_dim_out);
+	if (space->nested[0])
+		space = isl_space_reset(space, isl_dim_in);
+	if (space && space->nested[1])
+		space = isl_space_reset(space, isl_dim_out);
 
-	return dim;
+	return space;
 }
 
 __isl_give isl_space *isl_space_flatten_domain(__isl_take isl_space *space)

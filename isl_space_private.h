@@ -51,7 +51,7 @@ isl_stat isl_space_check_equal_params(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 __isl_give isl_space *isl_space_reset(__isl_take isl_space *space,
 	enum isl_dim_type type);
-__isl_give isl_space *isl_space_flatten(__isl_take isl_space *dim);
+__isl_give isl_space *isl_space_flatten(__isl_take isl_space *space);
 
 __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 	__isl_keep isl_space *src);
