@@ -2244,12 +2244,12 @@ __isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local
 	return dim;
 }
 
-isl_bool isl_space_can_zip(__isl_keep isl_space *dim)
+isl_bool isl_space_can_zip(__isl_keep isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return isl_bool_error;
 
-	return dim->nested[0] && dim->nested[1];
+	return space->nested[0] && space->nested[1];
 }
 
 __isl_give isl_space *isl_space_zip(__isl_take isl_space *dim)
