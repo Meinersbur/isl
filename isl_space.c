@@ -1750,13 +1750,13 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_range(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_range(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	dim = isl_space_drop_inputs(dim, 0, dim->n_in);
-	dim = mark_as_set(dim);
-	return dim;
+	space = isl_space_drop_inputs(space, 0, space->n_in);
+	space = mark_as_set(space);
+	return space;
 }
 
 __isl_give isl_space *isl_space_from_range(__isl_take isl_space *dim)

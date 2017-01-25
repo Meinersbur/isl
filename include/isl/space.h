@@ -120,7 +120,7 @@ __isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *dim,
 		unsigned first, unsigned n);
 __isl_give isl_space *isl_space_domain(__isl_take isl_space *dim);
 __isl_give isl_space *isl_space_from_domain(__isl_take isl_space *dim);
-__isl_give isl_space *isl_space_range(__isl_take isl_space *dim);
+__isl_give isl_space *isl_space_range(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_from_range(__isl_take isl_space *dim);
 __isl_give isl_space *isl_space_domain_map(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_range_map(__isl_take isl_space *space);
