@@ -2387,19 +2387,19 @@ isl_bool isl_space_can_zip(__isl_keep isl_space *space)
 	return isl_space_is_product(space);
 }
 
-__isl_give isl_space *isl_space_zip(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_zip(__isl_take isl_space *space)
 {
 	isl_space *dom, *ran;
 	isl_space *dom_dom, *dom_ran, *ran_dom, *ran_ran;
 
-	if (!isl_space_can_zip(dim))
-		isl_die(dim->ctx, isl_error_invalid, "dim cannot be zipped",
+	if (!isl_space_can_zip(space))
+		isl_die(space->ctx, isl_error_invalid, "dim cannot be zipped",
 			goto error);
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	dom = isl_space_unwrap(isl_space_domain(isl_space_copy(dim)));
-	ran = isl_space_unwrap(isl_space_range(dim));
+	dom = isl_space_unwrap(isl_space_domain(isl_space_copy(space)));
+	ran = isl_space_unwrap(isl_space_range(space));
 	dom_dom = isl_space_domain(isl_space_copy(dom));
 	dom_ran = isl_space_range(dom);
 	ran_dom = isl_space_domain(isl_space_copy(ran));
@@ -2411,7 +2411,7 @@ __isl_give isl_space *isl_space_zip(__isl_take isl_space *dim)
 	return isl_space_join(isl_space_from_domain(isl_space_wrap(dom)),
 			    isl_space_from_range(isl_space_wrap(ran)));
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
