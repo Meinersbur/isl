@@ -1220,7 +1220,7 @@ isl_stat isl_space_check_equal_params(__isl_keep isl_space *space1,
 __isl_give isl_space *isl_space_join(__isl_take isl_space *left,
 	__isl_take isl_space *right)
 {
-	isl_space *dim;
+	isl_space *space;
 
 	if (isl_space_check_equal_params(left, right) < 0)
 		goto error;
@@ -1229,31 +1229,32 @@ __isl_give isl_space *isl_space_join(__isl_take isl_space *left,
 		isl_space_tuple_is_equal(left, isl_dim_out, right, isl_dim_in),
 		goto error);
 
-	dim = isl_space_alloc(left->ctx, left->nparam, left->n_in, right->n_out);
-	if (!dim)
+	space = isl_space_alloc(left->ctx,
+				left->nparam, left->n_in, right->n_out);
+	if (!space)
 		goto error;
 
-	dim = copy_ids(dim, isl_dim_param, 0, left, isl_dim_param);
-	dim = copy_ids(dim, isl_dim_in, 0, left, isl_dim_in);
-	dim = copy_ids(dim, isl_dim_out, 0, right, isl_dim_out);
+	space = copy_ids(space, isl_dim_param, 0, left, isl_dim_param);
+	space = copy_ids(space, isl_dim_in, 0, left, isl_dim_in);
+	space = copy_ids(space, isl_dim_out, 0, right, isl_dim_out);
 
-	if (dim && left->tuple_id[0] &&
-	    !(dim->tuple_id[0] = isl_id_copy(left->tuple_id[0])))
+	if (space && left->tuple_id[0] &&
+	    !(space->tuple_id[0] = isl_id_copy(left->tuple_id[0])))
 		goto error;
-	if (dim && right->tuple_id[1] &&
-	    !(dim->tuple_id[1] = isl_id_copy(right->tuple_id[1])))
+	if (space && right->tuple_id[1] &&
+	    !(space->tuple_id[1] = isl_id_copy(right->tuple_id[1])))
 		goto error;
-	if (dim && left->nested[0] &&
-	    !(dim->nested[0] = isl_space_copy(left->nested[0])))
+	if (space && left->nested[0] &&
+	    !(space->nested[0] = isl_space_copy(left->nested[0])))
 		goto error;
-	if (dim && right->nested[1] &&
-	    !(dim->nested[1] = isl_space_copy(right->nested[1])))
+	if (space && right->nested[1] &&
+	    !(space->nested[1] = isl_space_copy(right->nested[1])))
 		goto error;
 
 	isl_space_free(left);
 	isl_space_free(right);
 
-	return dim;
+	return space;
 error:
 	isl_space_free(left);
 	isl_space_free(right);
