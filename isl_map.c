@@ -12737,9 +12737,8 @@ error:
 
 /* Check if the range of "ma" is compatible with the domain or range
  * (depending on "type") of "bmap".
- * Return -1 if anything is wrong.
  */
-static int check_basic_map_compatible_range_multi_aff(
+static isl_stat check_basic_map_compatible_range_multi_aff(
 	__isl_keep isl_basic_map *bmap, enum isl_dim_type type,
 	__isl_keep isl_multi_aff *ma)
 {
@@ -12762,10 +12761,10 @@ static int check_basic_map_compatible_range_multi_aff(
 			"spaces don't match", goto error);
 
 	isl_space_free(ma_space);
-	return m;
+	return isl_stat_ok;
 error:
 	isl_space_free(ma_space);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Copy the divs from "ma" to "bmap", adding zeros for the "n_before"
