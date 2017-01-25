@@ -1729,7 +1729,7 @@ __isl_give isl_space *isl_space_domain(__isl_take isl_space *space)
 {
 	if (!space)
 		return NULL;
-	space = isl_space_drop_outputs(space, 0, space->n_out);
+	space = isl_space_drop_dims(space, isl_dim_out, 0, space->n_out);
 	space = isl_space_reverse(space);
 	space = mark_as_set(space);
 	return space;
