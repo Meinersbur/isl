@@ -56,7 +56,8 @@ __isl_give isl_space *isl_space_flatten(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 	__isl_keep isl_space *src);
 
-__isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local);
+__isl_give isl_space *isl_space_lift(__isl_take isl_space *space,
+	unsigned n_local);
 
 __isl_give isl_space *isl_space_extend_domain_with_range(
 	__isl_take isl_space *domain, __isl_take isl_space *model);

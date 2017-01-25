@@ -2356,23 +2356,25 @@ error:
  * is of the form [dim -> local[..]], with n_local variables in the
  * range of the wrapped map.
  */
-__isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local)
+__isl_give isl_space *isl_space_lift(__isl_take isl_space *space,
+	unsigned n_local)
 {
 	isl_space *local_dim;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	local_dim = isl_space_dup(dim);
-	local_dim = isl_space_drop_dims(local_dim, isl_dim_set, 0, dim->n_out);
+	local_dim = isl_space_dup(space);
+	local_dim = isl_space_drop_dims(local_dim, isl_dim_set, 0,
+					space->n_out);
 	local_dim = isl_space_add_dims(local_dim, isl_dim_set, n_local);
 	local_dim = isl_space_set_tuple_name(local_dim, isl_dim_set, "local");
-	dim = isl_space_join(isl_space_from_domain(dim),
+	space = isl_space_join(isl_space_from_domain(space),
 			    isl_space_from_range(local_dim));
-	dim = isl_space_wrap(dim);
-	dim = isl_space_set_tuple_name(dim, isl_dim_set, "lifted");
+	space = isl_space_wrap(space);
+	space = isl_space_set_tuple_name(space, isl_dim_set, "lifted");
 
-	return dim;
+	return space;
 }
 
 isl_bool isl_space_can_zip(__isl_keep isl_space *space)
