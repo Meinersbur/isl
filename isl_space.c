@@ -1480,41 +1480,42 @@ __isl_give isl_space *isl_space_factor_range(__isl_take isl_space *space)
 	return space;
 }
 
-__isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space)
 {
 	isl_ctx *ctx;
 	isl_id **ids = NULL;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	ctx = isl_space_get_ctx(dim);
-	if (!isl_space_is_set(dim))
+	ctx = isl_space_get_ctx(space);
+	if (!isl_space_is_set(space))
 		isl_die(ctx, isl_error_invalid, "not a set space", goto error);
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_cow(space);
+	if (!space)
 		return NULL;
-	if (dim->ids) {
-		ids = isl_calloc_array(dim->ctx, isl_id *,
-					dim->nparam + dim->n_out + dim->n_out);
+	if (space->ids) {
+		ids = isl_calloc_array(space->ctx, isl_id *,
+				space->nparam + space->n_out + space->n_out);
 		if (!ids)
 			goto error;
-		get_ids(dim, isl_dim_param, 0, dim->nparam, ids);
-		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + dim->nparam);
+		get_ids(space, isl_dim_param, 0, space->nparam, ids);
+		get_ids(space, isl_dim_out, 0, space->n_out,
+			ids + space->nparam);
 	}
-	dim->n_in = dim->n_out;
+	space->n_in = space->n_out;
 	if (ids) {
-		free(dim->ids);
-		dim->ids = ids;
-		dim->n_id = dim->nparam + dim->n_out + dim->n_out;
-		dim = copy_ids(dim, isl_dim_out, 0, dim, isl_dim_in);
+		free(space->ids);
+		space->ids = ids;
+		space->n_id = space->nparam + space->n_out + space->n_out;
+		space = copy_ids(space, isl_dim_out, 0, space, isl_dim_in);
 	}
-	isl_id_free(dim->tuple_id[0]);
-	dim->tuple_id[0] = isl_id_copy(dim->tuple_id[1]);
-	isl_space_free(dim->nested[0]);
-	dim->nested[0] = isl_space_copy(dim->nested[1]);
-	return dim;
+	isl_id_free(space->tuple_id[0]);
+	space->tuple_id[0] = isl_id_copy(space->tuple_id[1]);
+	isl_space_free(space->nested[0]);
+	space->nested[0] = isl_space_copy(space->nested[1]);
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
