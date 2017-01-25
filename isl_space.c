@@ -2243,14 +2243,14 @@ __isl_give isl_space *isl_space_flatten(__isl_take isl_space *dim)
 	return dim;
 }
 
-__isl_give isl_space *isl_space_flatten_domain(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_flatten_domain(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!dim->nested[0])
-		return dim;
+	if (!space->nested[0])
+		return space;
 
-	return isl_space_reset(dim, isl_dim_in);
+	return isl_space_reset(space, isl_dim_in);
 }
 
 __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *dim)
