@@ -1797,18 +1797,18 @@ __isl_give isl_space *isl_space_domain(__isl_take isl_space *space)
 	return space;
 }
 
-__isl_give isl_space *isl_space_from_domain(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_from_domain(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!isl_space_is_set(dim))
-		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"not a set space", goto error);
-	dim = isl_space_reverse(dim);
-	dim = isl_space_reset(dim, isl_dim_out);
-	return dim;
+	space = isl_space_reverse(space);
+	space = isl_space_reset(space, isl_dim_out);
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
