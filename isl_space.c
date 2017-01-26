@@ -1823,16 +1823,18 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *dim,
 
 /* Are the two spaces the same, including positions and names of parameters?
  */
-isl_bool isl_space_is_equal(__isl_keep isl_space *dim1,
-	__isl_keep isl_space *dim2)
+isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
 {
-	if (!dim1 || !dim2)
+	if (!space1 || !space2)
 		return isl_bool_error;
-	if (dim1 == dim2)
+	if (space1 == space2)
 		return isl_bool_true;
-	return match(dim1, isl_dim_param, dim2, isl_dim_param) &&
-	       isl_space_tuple_is_equal(dim1, isl_dim_in, dim2, isl_dim_in) &&
-	       isl_space_tuple_is_equal(dim1, isl_dim_out, dim2, isl_dim_out);
+	return match(space1, isl_dim_param, space2, isl_dim_param) &&
+	       isl_space_tuple_is_equal(space1, isl_dim_in,
+					space2, isl_dim_in) &&
+	       isl_space_tuple_is_equal(space1, isl_dim_out,
+					space2, isl_dim_out);
 }
 
 /* Is space1 equal to the domain of space2?
