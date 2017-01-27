@@ -5548,18 +5548,7 @@ __isl_give isl_basic_set *isl_basic_set_from_params(
  */
 __isl_give isl_set *isl_set_params(__isl_take isl_set *set)
 {
-	isl_space *space;
-	unsigned n;
-
-	if (isl_set_is_params(set))
-		return set;
-
-	n = isl_set_dim(set, isl_dim_set);
-	set = isl_set_project_out(set, isl_dim_set, 0, n);
-	space = isl_set_get_space(set);
-	space = isl_space_params(space);
-	set = isl_set_reset_space(set, space);
-	return set;
+	return isl_map_params(set_to_map(set));
 }
 
 /* Construct a zero-dimensional set with the given parameter domain.
