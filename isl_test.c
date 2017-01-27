@@ -5440,8 +5440,8 @@ static int test_list(isl_ctx *ctx)
 	d = isl_id_alloc(ctx, "d", NULL);
 
 	list = isl_id_list_alloc(ctx, 4);
-	list = isl_id_list_add(list, a);
 	list = isl_id_list_add(list, b);
+	list = isl_id_list_insert(list, 0, a);
 	list = isl_id_list_add(list, c);
 	list = isl_id_list_add(list, d);
 	list = isl_id_list_drop(list, 1, 1);
