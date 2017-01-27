@@ -2632,11 +2632,11 @@ static __isl_give isl_union_map *union_floyd_warshall_on_list(isl_ctx *ctx,
 		if (!grid[i])
 			goto error;
 		for (j = 0; j < n_group; ++j) {
-			isl_space *dim1, *dim2, *dim;
-			dim1 = isl_space_reverse(isl_set_get_space(set[i]));
-			dim2 = isl_set_get_space(set[j]);
-			dim = isl_space_join(dim1, dim2);
-			grid[i][j] = isl_map_empty(dim);
+			isl_space *space1, *space2, *space;
+			space1 = isl_space_reverse(isl_set_get_space(set[i]));
+			space2 = isl_set_get_space(set[j]);
+			space = isl_space_join(space1, space2);
+			grid[i][j] = isl_map_empty(space);
 		}
 	}
 
