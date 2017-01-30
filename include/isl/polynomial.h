@@ -186,6 +186,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_subtract_domain(
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_project_domain_on_params(
 	__isl_take isl_pw_qpolynomial *pwqp);
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_range(
+	__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_drop_dims(
 	__isl_take isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type, unsigned first, unsigned n);

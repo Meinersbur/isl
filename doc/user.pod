@@ -4569,6 +4569,11 @@ flat anonymous space.
 	isl_union_pw_multi_aff_from_domain(
 		__isl_take isl_union_set *uset);
 
+	#include <isl/polynomial.h>
+	__isl_give isl_pw_qpolynomial *
+	isl_pw_qpolynomial_from_range(
+		__isl_take isl_pw_qpolynomial *pwqp);
+
 =item * Slicing
 
 	#include <isl/set.h>
