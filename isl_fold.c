@@ -169,6 +169,16 @@ error:
 	return NULL;
 }
 
+/* Given a dimension type for an isl_qpolynomial_fold,
+ * return the corresponding type for the domain.
+ */
+static enum isl_dim_type domain_type(enum isl_dim_type type)
+{
+	if (type == isl_dim_in)
+		return isl_dim_set;
+	return type;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
@@ -181,7 +191,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 	if (n == 0)
 		return fold;
 
-	set_type = type == isl_dim_in ? isl_dim_set : type;
+	set_type = domain_type(type);
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
