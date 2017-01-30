@@ -355,6 +355,59 @@ __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
 	return ls;
 }
 
+/* Return the local space of the domain of "aff".
+ * This may be either a copy or the local space itself
+ * if there is only one reference to "aff".
+ * This allows the local space to be modified inplace
+ * if both the expression and its local space have only a single reference.
+ * The caller is not allowed to modify "aff" between this call and
+ * a subsequent call to isl_aff_restore_domain_local_space.
+ * The only exception is that isl_aff_free can be called instead.
+ */
+__isl_give isl_local_space *isl_aff_take_domain_local_space(
+	__isl_keep isl_aff *aff)
+{
+	isl_local_space *ls;
+
+	if (!aff)
+		return NULL;
+	if (aff->ref != 1)
+		return isl_aff_get_domain_local_space(aff);
+	ls = aff->ls;
+	aff->ls = NULL;
+	return ls;
+}
+
+/* Set the local space of the domain of "aff" to "ls",
+ * where the local space of "aff" may be missing
+ * due to a preceding call to isl_aff_take_domain_local_space.
+ * However, in this case, "aff" only has a single reference and
+ * then the call to isl_aff_cow has no effect.
+ */
+__isl_give isl_aff *isl_aff_restore_domain_local_space(
+	__isl_keep isl_aff *aff, __isl_take isl_local_space *ls)
+{
+	if (!aff || !ls)
+		goto error;
+
+	if (aff->ls == ls) {
+		isl_local_space_free(ls);
+		return aff;
+	}
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		goto error;
+	isl_local_space_free(aff->ls);
+	aff->ls = ls;
+
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_local_space_free(ls);
+	return NULL;
+}
+
 /* Externally, an isl_aff has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */
