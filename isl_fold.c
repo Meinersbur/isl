@@ -1376,6 +1376,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_src_type, set_dst_type;
 
 	if (n == 0)
 		return fold;
@@ -1384,8 +1385,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	if (!fold)
 		return NULL;
 
-	fold->dim = isl_space_move_dims(fold->dim, dst_type, dst_pos,
-						src_type, src_pos, n);
+	set_src_type = domain_type(src_type);
+	set_dst_type = domain_type(dst_type);
+
+	fold->dim = isl_space_move_dims(fold->dim, set_dst_type, dst_pos,
+						set_src_type, src_pos, n);
 	if (!fold->dim)
 		goto error;
 
