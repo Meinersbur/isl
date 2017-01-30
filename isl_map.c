@@ -11648,12 +11648,13 @@ __isl_give isl_set *isl_set_flatten(__isl_take isl_set *set)
 
 __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 {
-	isl_space *dim, *flat_dim;
+	isl_space *space, *flat_space;
 	isl_map *map;
 
-	dim = isl_set_get_space(set);
-	flat_dim = isl_space_flatten(isl_space_copy(dim));
-	map = isl_map_identity(isl_space_join(isl_space_reverse(dim), flat_dim));
+	space = isl_set_get_space(set);
+	flat_space = isl_space_flatten(isl_space_copy(space));
+	map = isl_map_identity(isl_space_join(isl_space_reverse(space),
+						flat_space));
 	map = isl_map_intersect_domain(map, set);
 
 	return map;
