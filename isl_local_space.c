@@ -471,6 +471,20 @@ error:
 	return NULL;
 }
 
+/* Construct a zero-dimensional local space with the given parameter domain.
+ */
+__isl_give isl_local_space *isl_local_space_set_from_params(
+	__isl_take isl_local_space *ls)
+{
+	isl_space *space;
+
+	space = isl_local_space_take_space(ls);
+	space = isl_space_set_from_params(space);
+	ls = isl_local_space_restore_space(ls, space);
+
+	return ls;
+}
+
 __isl_give isl_local_space *isl_local_space_reset_space(
 	__isl_take isl_local_space *ls, __isl_take isl_space *dim)
 {
