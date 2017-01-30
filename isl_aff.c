@@ -2454,6 +2454,20 @@ __isl_give isl_aff *isl_aff_project_domain_on_params(__isl_take isl_aff *aff)
 	return aff;
 }
 
+/* Convert an affine expression defined over a parameter domain
+ * into one that is defined over a zero-dimensional set.
+ */
+__isl_give isl_aff *isl_aff_from_range(__isl_take isl_aff *aff)
+{
+	isl_local_space *ls;
+
+	ls = isl_aff_take_domain_local_space(aff);
+	ls = isl_local_space_set_from_params(ls);
+	aff = isl_aff_restore_domain_local_space(aff, ls);
+
+	return aff;
+}
+
 __isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {

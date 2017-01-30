@@ -80,6 +80,8 @@ isl_bool isl_aff_is_nan(__isl_keep isl_aff *aff);
 
 __isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
 
+__isl_give isl_aff *isl_aff_from_range(__isl_take isl_aff *aff);
+
 __isl_export
 __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
 __isl_export
