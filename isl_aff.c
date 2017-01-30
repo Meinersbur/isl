@@ -7630,6 +7630,7 @@ static isl_stat pw_aff_aff_on_domain(__isl_take isl_set *domain, void *user)
 
 	aff = isl_aff_copy(data->aff);
 	dim = isl_set_dim(domain, isl_dim_set);
+	aff = isl_aff_from_range(aff);
 	aff = isl_aff_add_dims(aff, isl_dim_in, dim);
 	aff = isl_aff_reset_domain_space(aff, isl_set_get_space(domain));
 	pa = isl_pw_aff_alloc(domain, aff);
