@@ -4573,6 +4573,9 @@ flat anonymous space.
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_from_range(
 		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_from_range(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
 
 =item * Slicing
 

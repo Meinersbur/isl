@@ -408,6 +408,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_scale_down_val(
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_project_domain_on_params(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_from_range(
+	__isl_take isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_drop_dims(
 	__isl_take isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type type, unsigned first, unsigned n);
