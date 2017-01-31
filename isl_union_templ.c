@@ -484,19 +484,21 @@ error:
 
 __isl_give UNION *FN(FN(UNION,from),BASE)(__isl_take PART *part)
 {
-	isl_space *dim;
+	isl_space *space;
 	UNION *u;
 
 	if (!part)
 		return NULL;
 
-	dim = FN(PART,get_space)(part);
-	dim = isl_space_drop_dims(dim, isl_dim_in, 0, isl_space_dim(dim, isl_dim_in));
-	dim = isl_space_drop_dims(dim, isl_dim_out, 0, isl_space_dim(dim, isl_dim_out));
+	space = FN(PART,get_space)(part);
+	space = isl_space_drop_dims(space, isl_dim_in, 0,
+					isl_space_dim(space, isl_dim_in));
+	space = isl_space_drop_dims(space, isl_dim_out, 0,
+					isl_space_dim(space, isl_dim_out));
 #ifdef HAS_TYPE
-	u = FN(UNION,ZERO)(dim, part->type);
+	u = FN(UNION,ZERO)(space, part->type);
 #else
-	u = FN(UNION,ZERO)(dim);
+	u = FN(UNION,ZERO)(space);
 #endif
 	u = FN(FN(UNION,add),BASE)(u, part);
 
