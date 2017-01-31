@@ -519,8 +519,9 @@ error:
  * bernstein expansion recursively on each dimension.
  * Otherwise, we apply bernstein expansion on the entire polytope.
  */
-int isl_qpolynomial_bound_on_domain_bernstein(__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, struct isl_bound *bound)
+isl_stat isl_qpolynomial_bound_on_domain_bernstein(
+	__isl_take isl_basic_set *bset, __isl_take isl_qpolynomial *poly,
+	struct isl_bound *bound)
 {
 	struct bernstein_data data;
 	isl_pw_qpolynomial_fold *pwf;
@@ -549,9 +550,9 @@ int isl_qpolynomial_bound_on_domain_bernstein(__isl_take isl_basic_set *bset,
 	else
 		bound->pwf = isl_pw_qpolynomial_fold_fold(bound->pwf, pwf);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_basic_set_free(bset);
 	isl_qpolynomial_free(poly);
-	return -1;
+	return isl_stat_error;
 }
