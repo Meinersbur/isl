@@ -3491,9 +3491,9 @@ error:
  * that results from replacing each of the integer divisions by the
  * corresponding extra set dimension.
  */
-int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
+isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 	__isl_keep isl_basic_set *bset,
-	int (*fn)(__isl_take isl_basic_set *bset,
+	isl_stat (*fn)(__isl_take isl_basic_set *bset,
 		  __isl_take isl_qpolynomial *poly, void *user), void *user)
 {
 	isl_space *dim;
@@ -3501,7 +3501,7 @@ int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 	isl_qpolynomial *poly;
 
 	if (!qp || !bset)
-		goto error;
+		return isl_stat_error;
 	if (qp->div->n_row == 0)
 		return fn(isl_basic_set_copy(bset), isl_qpolynomial_copy(qp),
 			  user);
@@ -3515,8 +3515,6 @@ int isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 	bset = add_div_constraints(bset, div);
 
 	return fn(bset, poly, user);
-error:
-	return -1;
 }
 
 /* Return total degree in variables first (inclusive) up to last (exclusive).
