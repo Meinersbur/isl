@@ -84,6 +84,10 @@ __isl_give isl_union_access_info *isl_union_access_info_set_may_source(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_union_map *may_source);
 __isl_export
+__isl_give isl_union_access_info *isl_union_access_info_set_kill(
+	__isl_take isl_union_access_info *access,
+	__isl_take isl_union_map *kill);
+__isl_export
 __isl_give isl_union_access_info *isl_union_access_info_set_schedule(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_schedule *schedule);

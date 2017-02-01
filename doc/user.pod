@@ -8774,31 +8774,31 @@ C<isl_schedule_node_to_str> prints the schedule node in block format.
 =head2 Dependence Analysis
 
 C<isl> contains specialized functionality for performing
-array dataflow analysis.  That is, given a I<sink> access relation
-and a collection of possible I<source> access relations,
+array dataflow analysis.  That is, given a I<sink> access relation,
+a collection of possible I<source> accesses and
+a collection of I<kill> accesses,
 C<isl> can compute relations that describe
 for each iteration of the sink access, which iterations
-of which of the source access relations may have been the last
-to access the same data element before the given iteration
-of the sink access.
+of which of the source access relations may have
+accessed the same data element before the given iteration
+of the sink access without any intermediate kill of that data element.
 The resulting dependence relations map source iterations
 to either the corresponding sink iterations or
 pairs of corresponding sink iterations and accessed data elements.
 To compute standard flow dependences, the sink should be
 a read, while the sources should be writes.
-If any of the source accesses are marked as being I<may>
-accesses, then there will be a (may) dependence from the last
-I<must> access B<and> from any I<may> access that follows
-or coincides with
-this last I<must> access, but still precedes the sink access.
+If no kills are specified,
+then memory based dependence analysis is performed.
+If, on the other hand, all sources are also kills,
+then value based dependence analysis is performed.
+If any of the source accesses are marked as being I<must>
+accesses, then they are also treated as kills.
+Furthermore, the specification of must-sources results
+in the computation of must-dependences.
 Only dependences originating in a must access not coscheduled
 with any other access to the same element and without
 any may accesses between the must access and the sink access
 are considered to be must dependences.
-In particular, if I<all> sources are I<may> accesses,
-then memory based dependence analysis is performed.
-If, on the other hand, all sources are I<must> accesses,
-then value based dependence analysis is performed.
 
 =head3 High-level Interface
 
@@ -8824,13 +8824,17 @@ the following functions.
 	isl_union_access_info_from_sink(
 		__isl_take isl_union_map *sink);
 	__isl_give isl_union_access_info *
-	isl_union_access_info_set_must_source(
+	isl_union_access_info_set_kill(
 		__isl_take isl_union_access_info *access,
-		__isl_take isl_union_map *must_source);
+		__isl_take isl_union_map *kill);
 	__isl_give isl_union_access_info *
 	isl_union_access_info_set_may_source(
 		__isl_take isl_union_access_info *access,
 		__isl_take isl_union_map *may_source);
+	__isl_give isl_union_access_info *
+	isl_union_access_info_set_must_source(
+		__isl_take isl_union_access_info *access,
+		__isl_take isl_union_map *must_source);
 	__isl_give isl_union_access_info *
 	isl_union_access_info_set_schedule(
 		__isl_take isl_union_access_info *access,
@@ -8849,7 +8853,9 @@ the following functions.
 The may sources set by C<isl_union_access_info_set_may_source>
 do not need to include the must sources set by
 C<isl_union_access_info_set_must_source> as a subset.
-The user is free not to call one (or both) of these functions,
+The kills set by C<isl_union_access_info_set_kill> may overlap
+with the may-sources and/or must-sources.
+The user is free not to call one (or more) of these functions,
 in which case the corresponding set is kept to its empty default.
 Similarly, the default schedule initialized by
 C<isl_union_access_info_from_sink> is empty.

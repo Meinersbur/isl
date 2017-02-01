@@ -1373,6 +1373,7 @@ error:
  * "isl_access_sink" represents the sink accesses.
  * "isl_access_must_source" represents the definite source accesses.
  * "isl_access_may_source" represents the possible source accesses.
+ * "isl_access_kill" represents the kills.
  *
  * isl_access_sink is sometimes treated differently and
  * should therefore appear first.
@@ -1381,6 +1382,7 @@ enum isl_access_type {
 	isl_access_sink,
 	isl_access_must_source,
 	isl_access_may_source,
+	isl_access_kill,
 	isl_access_end
 };
 
@@ -1543,6 +1545,61 @@ __isl_give isl_union_access_info *isl_union_access_info_set_may_source(
 					may_source);
 }
 
+/* Replace the kills of "info" by "kill".
+ */
+__isl_give isl_union_access_info *isl_union_access_info_set_kill(
+	__isl_take isl_union_access_info *info, __isl_take isl_union_map *kill)
+{
+	return isl_union_access_info_set(info, isl_access_kill, kill);
+}
+
+/* Return the access relation of type "type" of "info".
+ */
+static __isl_give isl_union_map *isl_union_access_info_get(
+	__isl_keep isl_union_access_info *info, enum isl_access_type type)
+{
+	if (!info)
+		return NULL;
+	return isl_union_map_copy(info->access[type]);
+}
+
+/* Return the definite source accesses of "info".
+ */
+__isl_give isl_union_map *isl_union_access_info_get_must_source(
+	__isl_keep isl_union_access_info *info)
+{
+	return isl_union_access_info_get(info, isl_access_must_source);
+}
+
+/* Return the possible source accesses of "info".
+ */
+__isl_give isl_union_map *isl_union_access_info_get_may_source(
+	__isl_keep isl_union_access_info *info)
+{
+	return isl_union_access_info_get(info, isl_access_may_source);
+}
+
+/* Return the kills of "info".
+ */
+__isl_give isl_union_map *isl_union_access_info_get_kill(
+	__isl_keep isl_union_access_info *info)
+{
+	return isl_union_access_info_get(info, isl_access_kill);
+}
+
+/* Does "info" specify any kills?
+ */
+static isl_bool isl_union_access_has_kill(
+	__isl_keep isl_union_access_info *info)
+{
+	isl_bool empty;
+
+	if (!info)
+		return isl_bool_error;
+	empty = isl_union_map_is_empty(info->access[isl_access_kill]);
+	return isl_bool_not(empty);
+}
+
 /* Replace the schedule of "access" by "schedule".
  * Also free the schedule_map in case it was set last.
  */
@@ -1634,6 +1691,7 @@ enum isl_ai_key {
 	isl_ai_key_sink = isl_access_sink,
 	isl_ai_key_must_source = isl_access_must_source,
 	isl_ai_key_may_source = isl_access_may_source,
+	isl_ai_key_kill = isl_access_kill,
 	isl_ai_key_schedule_map,
 	isl_ai_key_schedule,
 	isl_ai_key_end
@@ -1646,6 +1704,7 @@ static char *key_str[] = {
 	[isl_ai_key_sink] = "sink",
 	[isl_ai_key_must_source] = "must_source",
 	[isl_ai_key_may_source] = "may_source",
+	[isl_ai_key_kill] = "kill",
 	[isl_ai_key_schedule_map] = "schedule_map",
 	[isl_ai_key_schedule] = "schedule",
 };
@@ -1771,6 +1830,7 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 			sink_set = 1;
 		case isl_ai_key_must_source:
 		case isl_ai_key_may_source:
+		case isl_ai_key_kill:
 			access = read_union_map(s);
 			info = isl_union_access_info_set(info, key, access);
 			if (!info)
@@ -2425,6 +2485,69 @@ error:
 	return isl_stat_error;
 }
 
+/* Add the kills of "info" to the must-sources.
+ */
+static __isl_give isl_union_access_info *
+isl_union_access_info_add_kill_to_must_source(
+	__isl_take isl_union_access_info *info)
+{
+	isl_union_map *must, *kill;
+
+	must = isl_union_access_info_get_must_source(info);
+	kill = isl_union_access_info_get_kill(info);
+	must = isl_union_map_union(must, kill);
+	return isl_union_access_info_set_must_source(info, must);
+}
+
+/* Drop dependences from "flow" that purely originate from kills.
+ * That is, only keep those dependences that originate from
+ * the original must-sources "must" and/or the original may-sources "may".
+ * In particular, "must" contains the must-sources from before
+ * the kills were added and "may" contains the may-source from before
+ * the kills were removed.
+ *
+ * The dependences are of the form
+ *
+ *	Source -> [Sink -> Data]
+ *
+ * Only those dependences are kept where the Source -> Data part
+ * is a subset of the original may-sources or must-sources.
+ * Of those, only the must-dependences that intersect with the must-sources
+ * remain must-dependences.
+ * If there is some overlap between the may-sources and the must-sources,
+ * then the may-dependences and must-dependences may also overlap.
+ * This should be fine since the may-dependences are only kept
+ * disjoint from the must-dependences for the isl_union_map_compute_flow
+ * interface.  This interface does not support kills, so it will
+ * not end up calling this function.
+ */
+static __isl_give isl_union_flow *isl_union_flow_drop_kill_source(
+	__isl_take isl_union_flow *flow, __isl_take isl_union_map *must,
+	__isl_take isl_union_map *may)
+{
+	isl_union_map *move;
+
+	if (!flow)
+		goto error;
+	move = isl_union_map_copy(flow->must_dep);
+	move = isl_union_map_intersect_range_factor_range(move,
+				isl_union_map_copy(may));
+	may = isl_union_map_union(may, isl_union_map_copy(must));
+	flow->may_dep = isl_union_map_intersect_range_factor_range(
+				flow->may_dep, may);
+	flow->must_dep = isl_union_map_intersect_range_factor_range(
+				flow->must_dep, must);
+	flow->may_dep = isl_union_map_union(flow->may_dep, move);
+	if (!flow->must_dep || !flow->may_dep)
+		return isl_union_flow_free(flow);
+
+	return flow;
+error:
+	isl_union_map_free(must);
+	isl_union_map_free(may);
+	return NULL;
+}
+
 /* Remove the must accesses from the may accesses.
  *
  * A must access always trumps a may access, so there is no need
@@ -2967,6 +3090,10 @@ error:
  * map domain elements of access->{may,must)_source to
  * domain elements of access->sink.
  *
+ * If any kills have been specified, then they are treated as
+ * must-sources internally.  Any dependence that purely derives
+ * from an original kill is removed from the output.
+ *
  * We check whether the schedule is available as a schedule tree
  * or a schedule map and call the corresponding function to perform
  * the analysis.
@@ -2974,13 +3101,33 @@ error:
 __isl_give isl_union_flow *isl_union_access_info_compute_flow(
 	__isl_take isl_union_access_info *access)
 {
+	isl_bool has_kill;
+	isl_union_map *must = NULL, *may = NULL;
+	isl_union_flow *flow;
+
+	has_kill = isl_union_access_has_kill(access);
+	if (has_kill < 0)
+		goto error;
+	if (has_kill) {
+		must = isl_union_access_info_get_must_source(access);
+		may = isl_union_access_info_get_may_source(access);
+	}
+	access = isl_union_access_info_add_kill_to_must_source(access);
 	access = isl_union_access_info_normalize(access);
 	if (!access)
-		return NULL;
+		goto error;
 	if (access->schedule)
-		return compute_flow_schedule(access);
+		flow = compute_flow_schedule(access);
 	else
-		return compute_flow_union_map(access);
+		flow = compute_flow_union_map(access);
+	if (has_kill)
+		flow = isl_union_flow_drop_kill_source(flow, must, may);
+	return flow;
+error:
+	isl_union_access_info_free(access);
+	isl_union_map_free(must);
+	isl_union_map_free(may);
+	return NULL;
 }
 
 /* Print the information contained in "flow" to "p".
