@@ -2581,6 +2581,8 @@ static uint32_t isl_hash_tuples_domain(uint32_t hash,
 
 /* Return a hash value that digests the tuples of "space",
  * i.e., that ignores the parameters.
+ * Changes in this function should be reflected
+ * in isl_space_get_tuple_domain_hash.
  */
 uint32_t isl_space_get_tuple_hash(__isl_keep isl_space *space)
 {
@@ -2609,6 +2611,23 @@ uint32_t isl_space_get_full_hash(__isl_keep isl_space *space)
 	hash = isl_hash_init();
 	hash = isl_hash_params(hash, space);
 	hash = isl_hash_tuples(hash, space);
+
+	return hash;
+}
+
+/* Return the hash value of the domain tuple of "space".
+ * That is, isl_space_get_tuple_domain_hash(space) is equal to
+ * isl_space_get_tuple_hash(isl_space_domain(space)).
+ */
+uint32_t isl_space_get_tuple_domain_hash(__isl_keep isl_space *space)
+{
+	uint32_t hash;
+
+	if (!space)
+		return 0;
+
+	hash = isl_hash_init();
+	hash = isl_hash_tuples_domain(hash, space);
 
 	return hash;
 }

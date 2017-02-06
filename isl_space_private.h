@@ -28,6 +28,7 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div);
 
 uint32_t isl_space_get_tuple_hash(__isl_keep isl_space *space);
+uint32_t isl_space_get_tuple_domain_hash(__isl_keep isl_space *space);
 uint32_t isl_space_get_full_hash(__isl_keep isl_space *space);
 uint32_t isl_space_get_full_domain_hash(__isl_keep isl_space *space);
 
