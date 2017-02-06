@@ -8619,6 +8619,17 @@ isl_bool isl_map_tuple_is_equal(__isl_keep isl_map *map1,
 	return isl_space_tuple_is_equal(space1, type1, space2, type2);
 }
 
+/* Is the space of "obj" equal to "space", ignoring parameters?
+ */
+isl_bool isl_map_has_space_tuples(__isl_keep isl_map *map,
+	__isl_keep isl_space *space)
+{
+	isl_space *map_space;
+
+	map_space = isl_map_peek_space(map);
+	return isl_space_has_equal_tuples(map_space, space);
+}
+
 /* Check that "map" is a transformation, i.e.,
  * that it relates elements from the same space.
  */

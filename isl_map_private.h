@@ -564,6 +564,8 @@ isl_bool isl_map_tuple_is_equal(__isl_keep isl_map *map1,
 	enum isl_dim_type type2);
 isl_bool isl_map_has_space(__isl_keep isl_map *map,
 	__isl_keep isl_space *space);
+isl_bool isl_map_has_space_tuples(__isl_keep isl_map *map,
+	__isl_keep isl_space *space);
 
 isl_bool isl_basic_map_is_transformation(__isl_keep isl_basic_map *bmap);
 isl_stat isl_map_check_transformation(__isl_keep isl_map *map);
