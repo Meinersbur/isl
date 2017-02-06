@@ -435,7 +435,7 @@ static struct isl_hash_table_entry *isl_union_map_find_entry(
 	if (reserve && isl_union_map_check_single_reference(umap) < 0)
 		return NULL;
 
-	hash = isl_space_get_full_hash(space);
+	hash = isl_space_get_tuple_hash(space);
 	return isl_hash_table_find(isl_union_map_get_ctx(umap), &umap->table,
 				    hash, &has_space, space, reserve);
 }
