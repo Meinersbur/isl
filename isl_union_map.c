@@ -440,7 +440,7 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 		goto error;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
 				    &has_space, space, 1);
 	if (!entry)
@@ -711,7 +711,7 @@ __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	if (!umap || !space)
 		goto error;
 
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
 				    &has_space, space, 0);
 	if (!entry)
@@ -744,7 +744,7 @@ isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	if (!space)
 		return isl_bool_error;
 
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
 				    &has_space, space, 0);
 	isl_space_free(space);
@@ -922,7 +922,7 @@ static __isl_keep isl_maybe_isl_map bin_try_get_match(
 		space = data->control->match_space(space);
 	if (!space)
 		return res;
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry2 = isl_hash_table_find(isl_union_map_get_ctx(data->umap2),
 				     &data->umap2->table, hash,
 				     &has_space, space, 0);
@@ -1128,7 +1128,7 @@ static isl_stat match_bin_entry(void **entry, void *user)
 	int empty;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_space, space, 0);
 	if (!entry2)
@@ -2510,7 +2510,7 @@ static isl_stat is_subset_entry(void **entry, void *user)
 	isl_map *map = *entry;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_space, space, 0);
 	if (!entry2)
@@ -2629,7 +2629,7 @@ static isl_stat is_disjoint_entry(void **entry, void *user)
 	isl_map *map = *entry;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_space, space, 0);
 	if (!entry2)

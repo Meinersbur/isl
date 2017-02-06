@@ -100,7 +100,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 		return NULL;
 
 	ctx = FN(UNION,get_ctx)(u);
-	hash = isl_space_get_domain_hash(space);
+	hash = isl_space_get_full_domain_hash(space);
 	entry = isl_hash_table_find(ctx, &u->table, hash,
 			&FN(UNION,has_same_domain_space), space, reserve);
 	if (!entry || entry == isl_hash_table_entry_none)

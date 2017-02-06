@@ -768,7 +768,7 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	if (data->control->match_space)
 		space = data->control->match_space(space);
 	space = isl_space_replace_params(space, uset_space);
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
 				     hash, &FN(UNION,set_has_space), space, 0);
 	isl_space_free(space);

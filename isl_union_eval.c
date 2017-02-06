@@ -56,7 +56,7 @@ __isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
 	space = isl_point_peek_space(pnt);
 	if (!space)
 		goto error;
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_full_hash(space);
 	entry = isl_hash_table_find(FN(UNION,get_ctx)(u), &u->table,
 				    hash, &FN(UNION,has_domain_space_tuples),
 				    space, 0);
