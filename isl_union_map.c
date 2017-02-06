@@ -409,15 +409,17 @@ isl_bool isl_union_set_space_has_equal_params(__isl_keep isl_union_set *uset,
 	return isl_union_map_space_has_equal_params(uset_to_umap(uset), space);
 }
 
-static isl_bool has_space(const void *entry, const void *val)
+/* Is the space of the map at "entry" equal to "space", ignoring parameters?
+ */
+static isl_bool has_space_tuples(const void *entry, const void *val)
 {
 	isl_map *map = (isl_map *)entry;
 	isl_space *space = (isl_space *) val;
 
-	return isl_map_has_space(map, space);
+	return isl_map_has_space_tuples(map, space);
 }
 
-/* Find the entry in "umap" with space "space",
+/* Find the entry in "umap" with space "space" (ignoring parameters),
  * returning isl_hash_table_entry_none if no such entry appears in "umap" and
  * NULL on error.
  * If "reserve" is set, then an entry is created if it does
@@ -437,10 +439,10 @@ static struct isl_hash_table_entry *isl_union_map_find_entry(
 
 	hash = isl_space_get_tuple_hash(space);
 	return isl_hash_table_find(isl_union_map_get_ctx(umap), &umap->table,
-				    hash, &has_space, space, reserve);
+				    hash, &has_space_tuples, space, reserve);
 }
 
-/* Find the entry in "uset" with space "space",
+/* Find the entry in "uset" with space "space" (ignoring parameters),
  * returning isl_hash_table_entry_none if no such entry appears in "uset" and
  * NULL on error.
  * If "reserve" is set, then an entry is created if it does
