@@ -10572,7 +10572,7 @@ static int test_tile(isl_ctx *ctx)
 }
 
 /* Check that the domain hash of a space is equal to the hash
- * of the domain of the space.
+ * of the domain of the space, both ignoring parameters.
  */
 static int test_domain_hash(isl_ctx *ctx)
 {
@@ -10583,9 +10583,9 @@ static int test_domain_hash(isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, "[n] -> { A[B[x] -> C[]] -> D[] }");
 	space = isl_map_get_space(map);
 	isl_map_free(map);
-	hash1 = isl_space_get_full_domain_hash(space);
+	hash1 = isl_space_get_tuple_domain_hash(space);
 	space = isl_space_domain(space);
-	hash2 = isl_space_get_full_hash(space);
+	hash2 = isl_space_get_tuple_hash(space);
 	isl_space_free(space);
 
 	if (!space)
