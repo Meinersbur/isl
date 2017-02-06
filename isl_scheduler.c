@@ -399,14 +399,14 @@ static int graph_init_table(isl_ctx *ctx, struct isl_sched_graph *graph)
  * or NULL if there is no such node.
  */
 static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
-	struct isl_sched_graph *graph, __isl_keep isl_space *dim)
+	struct isl_sched_graph *graph, __isl_keep isl_space *space)
 {
 	struct isl_hash_table_entry *entry;
 	uint32_t hash;
 
-	hash = isl_space_get_hash(dim);
+	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(ctx, graph->node_table, hash,
-				    &node_has_space, dim, 0);
+				    &node_has_space, space, 0);
 
 	return entry ? entry->data : NULL;
 }
