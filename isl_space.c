@@ -1999,6 +1999,22 @@ static uint32_t isl_hash_tuples_domain(uint32_t hash,
 	return hash;
 }
 
+/* Return a hash value that digests the tuples of "space",
+ * i.e., that ignores the parameters.
+ */
+uint32_t isl_space_get_tuple_hash(__isl_keep isl_space *space)
+{
+	uint32_t hash;
+
+	if (!space)
+		return 0;
+
+	hash = isl_hash_init();
+	hash = isl_hash_tuples(hash, space);
+
+	return hash;
+}
+
 uint32_t isl_space_get_hash(__isl_keep isl_space *space)
 {
 	uint32_t hash;
