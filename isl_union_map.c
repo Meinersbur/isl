@@ -531,7 +531,7 @@ __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 
 /* Check if umap contains a map in the given space.
  */
-__isl_give int isl_union_map_contains(__isl_keep isl_union_map *umap,
+int isl_union_map_contains(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space)
 {
 	uint32_t hash;
@@ -546,7 +546,7 @@ __isl_give int isl_union_map_contains(__isl_keep isl_union_map *umap,
 	return !!entry;
 }
 
-__isl_give int isl_union_set_contains(__isl_keep isl_union_set *uset,
+int isl_union_set_contains(__isl_keep isl_union_set *uset,
 	__isl_keep isl_space *space)
 {
 	return isl_union_map_contains(uset, space);
