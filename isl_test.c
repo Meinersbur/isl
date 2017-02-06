@@ -7526,11 +7526,62 @@ static isl_stat test_un_union_map(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for basic tests of binary operations on isl_union_map.
+ * "fn" is the function that is being tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+static struct {
+	__isl_give isl_union_map *(*fn)(__isl_take isl_union_map *umap1,
+				__isl_take isl_union_map *umap2);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} umap_bin_tests[] = {
+	{ &isl_union_map_intersect,
+	  "[n] -> { A[i] -> [] : 0 <= i <= n; B[] -> [] }",
+	  "[m] -> { A[i] -> [] : 0 <= i <= m; C[] -> [] }",
+	  "[m, n] -> { A[i] -> [] : 0 <= i <= n and i <= m }" },
+};
+
+/* Perform basic tests of binary operations on isl_union_map.
+ */
+static isl_stat test_bin_union_map(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(umap_bin_tests); ++i) {
+		const char *str;
+		isl_union_map *umap1, *umap2, *res;
+		isl_bool equal;
+
+		str = umap_bin_tests[i].arg1;
+		umap1 = isl_union_map_read_from_str(ctx, str);
+		str = umap_bin_tests[i].arg2;
+		umap2 = isl_union_map_read_from_str(ctx, str);
+		str = umap_bin_tests[i].res;
+		res = isl_union_map_read_from_str(ctx, str);
+		umap1 = umap_bin_tests[i].fn(umap1, umap2);
+		equal = isl_union_map_is_equal(umap1, res);
+		isl_union_map_free(umap1);
+		isl_union_map_free(res);
+		if (equal < 0)
+			return isl_stat_error;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform basic tests of operations on isl_union_map.
  */
 static int test_union_map(isl_ctx *ctx)
 {
 	if (test_un_union_map(ctx) < 0)
+		return -1;
+	if (test_bin_union_map(ctx) < 0)
 		return -1;
 	return 0;
 }
