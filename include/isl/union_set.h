@@ -115,7 +115,7 @@ __isl_export
 isl_stat isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
 	isl_stat (*fn)(__isl_take isl_set *set, void *user), void *user);
 __isl_give int isl_union_set_contains(__isl_keep isl_union_set *uset,
-	__isl_keep isl_space *dim);
+	__isl_keep isl_space *space);
 __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 	__isl_take isl_space *dim);
 __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset);
