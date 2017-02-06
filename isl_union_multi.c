@@ -18,7 +18,7 @@
 
 /* A group of expressions defined over the same domain space "domain_space".
  * The entries of "part_table" are the individual expressions,
- * keyed on the entire space of the expression.
+ * keyed on the entire space of the expression (ignoring parameters).
  *
  * Each UNION has its own groups, so there can only ever be a single
  * reference to each group.
@@ -30,7 +30,8 @@ S(UNION,group) {
 
 /* A union of expressions defined over different disjoint domains.
  * "space" describes the parameters.
- * The entries of "table" are keyed on the domain space of the entry and
+ * The entries of "table" are keyed on the domain space of the entry
+ * (ignoring parameters) and
  * contain groups of expressions that are defined over the same domain space.
  */
 struct UNION {
@@ -256,7 +257,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 		return NULL;
 
 	ctx = FN(UNION,get_ctx)(u);
-	hash = isl_space_get_full_domain_hash(space);
+	hash = isl_space_get_tuple_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
 			&FN(UNION,group_has_same_domain_space), space, reserve);
 	if (!group_entry || group_entry == isl_hash_table_entry_none)
@@ -272,7 +273,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	}
 	if (!group)
 		return NULL;
-	hash = isl_space_get_full_hash(space);
+	hash = isl_space_get_tuple_hash(space);
 	return isl_hash_table_find(ctx, &group->part_table, hash,
 				&FN(UNION,has_space), space, reserve);
 }
@@ -299,7 +300,7 @@ static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
 	part = part_entry->data;
 	ctx = FN(UNION,get_ctx)(u);
 	space = FN(PART,peek_space)(part);
-	hash = isl_space_get_full_domain_hash(space);
+	hash = isl_space_get_tuple_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
 			    &FN(UNION,group_has_same_domain_space), space, 0);
 	if (!group_entry)
@@ -385,7 +386,7 @@ static isl_stat FN(UNION,check_disjoint_domain_other)(__isl_keep UNION *u,
 		return isl_stat_error;
 	ctx = FN(UNION,get_ctx)(u);
 	space = FN(PART,peek_space)(part);
-	hash = isl_space_get_full_domain_hash(space);
+	hash = isl_space_get_tuple_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
 			    &FN(UNION,group_has_same_domain_space), space, 0);
 	if (!group_entry)

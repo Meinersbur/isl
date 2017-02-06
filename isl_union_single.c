@@ -15,7 +15,8 @@
 
 /* A union of expressions defined over different domain spaces.
  * "space" describes the parameters.
- * The entries of "table" are keyed on the domain space of the entry.
+ * The entries of "table" are keyed on the domain space of the entry
+ * (ignoring parameters).
  */
 struct UNION {
 	int ref;
@@ -100,7 +101,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 		return NULL;
 
 	ctx = FN(UNION,get_ctx)(u);
-	hash = isl_space_get_full_domain_hash(space);
+	hash = isl_space_get_tuple_domain_hash(space);
 	entry = isl_hash_table_find(ctx, &u->table, hash,
 			&FN(UNION,has_same_domain_space), space, reserve);
 	if (!entry || entry == isl_hash_table_entry_none)
@@ -208,7 +209,7 @@ isl_stat FN(UNION,foreach_on_domain)(__isl_keep UNION *u,
 
 	if (!u || !space)
 		return isl_stat_error;
-	hash = isl_space_get_full_hash(space);
+	hash = isl_space_get_tuple_hash(space);
 	entry = isl_hash_table_find(FN(UNION,get_ctx)(u), &u->table,
 				    hash, &FN(UNION,has_domain_space_tuples),
 				    space, 0);
