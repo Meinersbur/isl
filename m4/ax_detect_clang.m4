@@ -144,6 +144,16 @@ AC_TRY_COMPILE([
 			T, PO, LangStandard::lang_unspecified);
 ], [AC_DEFINE([SETLANGDEFAULTS_TAKES_5_ARGUMENTS], [],
 	[Define if CompilerInvocation::setLangDefaults takes 5 arguments])])
+AC_TRY_COMPILE([
+	#include <clang/Frontend/CompilerInstance.h>
+	#include <clang/Frontend/CompilerInvocation.h>
+], [
+	using namespace clang;
+	CompilerInvocation *invocation;
+	CompilerInstance *Clang;
+	Clang->setInvocation(std::make_shared<CompilerInvocation>(*invocation));
+], [AC_DEFINE([SETINVOCATION_TAKES_SHARED_PTR], [],
+	[Defined if CompilerInstance::setInvocation takes a shared_ptr])])
 AC_LANG_POP
 CPPFLAGS="$SAVE_CPPFLAGS"
 
