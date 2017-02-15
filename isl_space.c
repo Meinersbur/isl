@@ -322,15 +322,15 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_cow(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_cow(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	if (dim->ref == 1)
-		return dim;
-	dim->ref--;
-	return isl_space_dup(dim);
+	if (space->ref == 1)
+		return space;
+	space->ref--;
+	return isl_space_dup(space);
 }
 
 __isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim)
