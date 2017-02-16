@@ -4456,6 +4456,10 @@ struct {
 	  "{ [i] -> [i] : i <= 0; [i] -> [0] : i > 0 }" },
 	{ "{ [i] -> [i] }", 'M', "{ [i] -> [0] }",
 	  "{ [i] -> [i] : i >= 0; [i] -> [0] : i < 0 }" },
+	{ "{ [i] -> [i] }", 'm', "{ [i] -> [NaN] }",
+	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [NaN] }", 'm', "{ [i] -> [i] }",
+	  "{ [i] -> [NaN] }" },
 };
 
 /* Perform some basic tests of binary operations on isl_pw_aff objects.

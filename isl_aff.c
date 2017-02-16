@@ -3557,6 +3557,27 @@ static isl_bool either_involves_nan(__isl_keep isl_pw_aff *pa1,
 	return isl_pw_aff_involves_nan(pa2);
 }
 
+/* Replace "pa1" and "pa2" (at least one of which involves a NaN)
+ * by a NaN on their shared domain.
+ *
+ * In principle, the result could be refined to only being NaN
+ * on the parts of this domain where at least one of "pa1" or "pa2" is NaN.
+ */
+static __isl_give isl_pw_aff *replace_by_nan(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	isl_local_space *ls;
+	isl_set *dom;
+	isl_pw_aff *pa;
+
+	dom = isl_set_intersect(isl_pw_aff_domain(pa1), isl_pw_aff_domain(pa2));
+	ls = isl_local_space_from_space(isl_set_get_space(dom));
+	pa = isl_pw_aff_nan_on_domain(ls);
+	pa = isl_pw_aff_intersect_domain(pa, dom);
+
+	return pa;
+}
+
 static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
@@ -3569,12 +3590,6 @@ static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 				isl_pw_aff_copy(pwaff2));
 	dom = isl_set_subtract(dom, isl_set_copy(le));
 	return isl_pw_aff_select(le, pwaff1, dom, pwaff2);
-}
-
-__isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_min);
 }
 
 static __isl_give isl_pw_aff *pw_aff_max(__isl_take isl_pw_aff *pwaff1,
@@ -3591,10 +3606,42 @@ static __isl_give isl_pw_aff *pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	return isl_pw_aff_select(ge, pwaff1, dom, pwaff2);
 }
 
+/* Return an expression for the minimum (if "max" is not set) or
+ * the maximum (if "max" is set) of "pa1" and "pa2".
+ * If either expression involves any NaN, then return a NaN
+ * on the shared domain as result.
+ */
+static __isl_give isl_pw_aff *pw_aff_min_max(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2, int max)
+{
+	isl_bool has_nan;
+
+	has_nan = either_involves_nan(pa1, pa2);
+	if (has_nan < 0)
+		pa1 = isl_pw_aff_free(pa1);
+	else if (has_nan)
+		return replace_by_nan(pa1, pa2);
+
+	if (max)
+		return isl_pw_aff_align_params_pw_pw_and(pa1, pa2, &pw_aff_max);
+	else
+		return isl_pw_aff_align_params_pw_pw_and(pa1, pa2, &pw_aff_min);
+}
+
+/* Return an expression for the minimum of "pwaff1" and "pwaff2".
+ */
+__isl_give isl_pw_aff *isl_pw_aff_min(__isl_take isl_pw_aff *pwaff1,
+	__isl_take isl_pw_aff *pwaff2)
+{
+	return pw_aff_min_max(pwaff1, pwaff2, 0);
+}
+
+/* Return an expression for the maximum of "pwaff1" and "pwaff2".
+ */
 __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_max);
+	return pw_aff_min_max(pwaff1, pwaff2, 1);
 }
 
 static __isl_give isl_pw_aff *pw_aff_list_reduce(
