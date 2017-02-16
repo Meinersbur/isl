@@ -3544,6 +3544,19 @@ error:
 	return NULL;
 }
 
+/* Does either of "pa1" or "pa2" involve any NaN2?
+ */
+static isl_bool either_involves_nan(__isl_keep isl_pw_aff *pa1,
+	__isl_keep isl_pw_aff *pa2)
+{
+	isl_bool has_nan;
+
+	has_nan = isl_pw_aff_involves_nan(pa1);
+	if (has_nan < 0 || has_nan)
+		return has_nan;
+	return isl_pw_aff_involves_nan(pa2);
+}
+
 static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
@@ -6428,9 +6441,7 @@ int isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1, __isl_keep isl_pw_aff *pa2)
 	equal = isl_pw_aff_plain_is_equal(pa1, pa2);
 	if (equal < 0 || equal)
 		return equal;
-	has_nan = isl_pw_aff_involves_nan(pa1);
-	if (has_nan >= 0 && !has_nan)
-		has_nan = isl_pw_aff_involves_nan(pa2);
+	has_nan = either_involves_nan(pa1, pa2);
 	if (has_nan < 0)
 		return -1;
 	if (has_nan)
