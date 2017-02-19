@@ -869,7 +869,7 @@ static void get_ids(__isl_keep isl_space *dim, enum isl_dim_type type,
 		ids[i] = get_id(dim, type, first + i);
 }
 
-__isl_give isl_space *isl_space_extend(__isl_take isl_space *space,
+static __isl_give isl_space *space_extend(__isl_take isl_space *space,
 			unsigned nparam, unsigned n_in, unsigned n_out)
 {
 	isl_id **ids = NULL;
@@ -917,6 +917,12 @@ error:
 	return NULL;
 }
 
+__isl_give isl_space *isl_space_extend(__isl_take isl_space *space,
+	unsigned nparam, unsigned n_in, unsigned n_out)
+{
+	return space_extend(space, nparam, n_in, n_out);
+}
+
 __isl_give isl_space *isl_space_add_dims(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned n)
 {
@@ -925,7 +931,7 @@ __isl_give isl_space *isl_space_add_dims(__isl_take isl_space *space,
 		return NULL;
 	switch (type) {
 	case isl_dim_param:
-		space = isl_space_extend(space,
+		space = space_extend(space,
 				space->nparam + n, space->n_in, space->n_out);
 		if (space && space->nested[0] &&
 		    !(space->nested[0] = isl_space_add_dims(space->nested[0],
@@ -937,10 +943,10 @@ __isl_give isl_space *isl_space_add_dims(__isl_take isl_space *space,
 			goto error;
 		return space;
 	case isl_dim_in:
-		return isl_space_extend(space,
+		return space_extend(space,
 				space->nparam, space->n_in + n, space->n_out);
 	case isl_dim_out:
-		return isl_space_extend(space,
+		return space_extend(space,
 				space->nparam, space->n_in, space->n_out + n);
 	default:
 		isl_die(space->ctx, isl_error_invalid,
