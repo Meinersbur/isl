@@ -436,6 +436,9 @@ __isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
 
 isl_stat isl_map_check_named_params(__isl_keep isl_map *map);
 
+isl_bool isl_map_has_equal_params(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2);
+
 __isl_give isl_map *isl_map_align_params_map_map_and(
 	__isl_take isl_map *map1, __isl_take isl_map *map2,
 	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,

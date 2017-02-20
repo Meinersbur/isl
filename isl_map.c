@@ -221,13 +221,25 @@ static isl_bool isl_basic_map_has_equal_params(__isl_keep isl_basic_map *bmap1,
 	return isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
 }
 
+/* Do "map1" and "map2" have the same parameters?
+ */
+isl_bool isl_map_has_equal_params(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
+{
+	isl_space *space1, *space2;
+
+	space1 = isl_map_peek_space(map1);
+	space2 = isl_map_peek_space(map2);
+	return isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
+}
+
 isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
 	__isl_keep isl_set *set)
 {
 	isl_bool m;
 	if (!map || !set)
 		return isl_bool_error;
-	m = isl_space_match(map->dim, isl_dim_param, set->dim, isl_dim_param);
+	m = isl_map_has_equal_params(map, set_to_map(set));
 	if (m < 0 || !m)
 		return m;
 	return isl_space_tuple_is_equal(map->dim, isl_dim_in,
@@ -253,7 +265,7 @@ isl_bool isl_map_compatible_range(__isl_keep isl_map *map,
 	isl_bool m;
 	if (!map || !set)
 		return isl_bool_error;
-	m = isl_space_match(map->dim, isl_dim_param, set->dim, isl_dim_param);
+	m = isl_map_has_equal_params(map, set_to_map(set));
 	if (m < 0 || !m)
 		return m;
 	return isl_space_tuple_is_equal(map->dim, isl_dim_out,
@@ -1271,7 +1283,7 @@ __isl_give isl_map *isl_map_align_params_map_map_and(
 {
 	if (!map1 || !map2)
 		goto error;
-	if (isl_space_match(map1->dim, isl_dim_param, map2->dim, isl_dim_param))
+	if (isl_map_has_equal_params(map1, map2))
 		return fn(map1, map2);
 	if (isl_map_check_named_params(map1) < 0)
 		goto error;
@@ -1294,7 +1306,7 @@ isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 
 	if (!map1 || !map2)
 		return isl_bool_error;
-	if (isl_space_match(map1->dim, isl_dim_param, map2->dim, isl_dim_param))
+	if (isl_map_has_equal_params(map1, map2))
 		return fn(map1, map2);
 	if (isl_map_check_named_params(map1) < 0)
 		return isl_bool_error;
@@ -9572,12 +9584,14 @@ static __isl_give isl_map *map_product(__isl_take isl_map *map1,
 	unsigned flags = 0;
 	struct isl_map *result;
 	int i, j;
+	isl_bool m;
 
-	if (!map1 || !map2)
+	m = isl_map_has_equal_params(map1, map2);
+	if (m < 0)
 		goto error;
-
-	isl_assert(map1->ctx, isl_space_match(map1->dim, isl_dim_param,
-					 map2->dim, isl_dim_param), goto error);
+	if (!m)
+		isl_die(isl_map_get_ctx(map1), isl_error_invalid,
+			"parameters don't match", goto error);
 
 	if (ISL_F_ISSET(map1, ISL_MAP_DISJOINT) &&
 	    ISL_F_ISSET(map2, ISL_MAP_DISJOINT))
