@@ -2215,16 +2215,11 @@ __isl_give isl_basic_map *isl_basic_map_drop_core(
 	unsigned first, unsigned n)
 {
 	int i;
-	unsigned dim;
 	unsigned offset;
 	unsigned left;
 
-	if (!bmap)
-		return NULL;
-
-	dim = isl_basic_map_dim(bmap, type);
-	isl_assert(bmap->ctx, first + n <= dim,
-		return isl_basic_map_free(bmap););
+	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
+		return isl_basic_map_free(bmap);
 
 	offset = isl_basic_map_offset(bmap, type) + first;
 	left = isl_basic_map_total_dim(bmap) - (offset - 1) - n;
