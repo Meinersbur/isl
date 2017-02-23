@@ -2131,6 +2131,30 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int use_coincidence)
 	return 0;
 }
 
+/* How many times should the constraints in "edge" be counted
+ * as a parametric intra-node constraint?
+ *
+ * Only proximity edges that are not forced zero need
+ * coefficient constraints that include coefficients for parameters.
+ * If the edge is also a validity edge, then only
+ * an upper bound is introduced.  Otherwise, both lower and upper bounds
+ * are introduced.
+ */
+static int parametric_intra_edge_multiplicity(struct isl_sched_edge *edge,
+	int use_coincidence)
+{
+	if (edge->src != edge->dst)
+		return 0;
+	if (!is_proximity(edge))
+		return 0;
+	if (force_zero(edge, use_coincidence))
+		return 0;
+	if (is_validity(edge))
+		return 1;
+	else
+		return 2;
+}
+
 /* Add "f" times the number of equality and inequality constraints of "bset"
  * to "n_eq" and "n_ineq" and free "bset".
  */
@@ -2150,25 +2174,48 @@ static isl_stat update_count(__isl_take isl_basic_set *bset,
 /* Count the number of equality and inequality constraints
  * that will be added for the given map.
  *
+ * The edges that require parameter coefficients are counted separately.
+ *
  * "use_coincidence" is set if we should take into account coincidence edges.
  */
 static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
 	int *n_eq, int *n_ineq, int use_coincidence)
 {
+	isl_map *copy;
 	isl_basic_set *coef;
 	int f = edge_multiplicity(edge, use_coincidence);
+	int fp = parametric_intra_edge_multiplicity(edge, use_coincidence);
 
 	if (f == 0) {
 		isl_map_free(map);
 		return isl_stat_ok;
 	}
 
-	if (edge->src == edge->dst)
-		coef = intra_coefficients(graph, edge->src, map);
-	else
+	if (edge->src != edge->dst) {
 		coef = inter_coefficients(graph, edge, map);
-	return update_count(coef, f, n_eq, n_ineq);
+		return update_count(coef, f, n_eq, n_ineq);
+	}
+
+	if (fp > 0) {
+		copy = isl_map_copy(map);
+		coef = intra_coefficients(graph, edge->src, copy);
+		if (update_count(coef, fp, n_eq, n_ineq) < 0)
+			goto error;
+	}
+
+	if (f > fp) {
+		copy = isl_map_copy(map);
+		coef = intra_coefficients(graph, edge->src, copy);
+		if (update_count(coef, f - fp, n_eq, n_ineq) < 0)
+			goto error;
+	}
+
+	isl_map_free(map);
+	return isl_stat_ok;
+error:
+	isl_map_free(map);
+	return isl_stat_error;
 }
 
 /* Count the number of equality and inequality constraints
