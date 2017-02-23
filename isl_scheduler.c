@@ -286,7 +286,11 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
  * the construction of the schedule.
  *
  * intra_hmap is a cache, mapping dependence relations to their dual,
- *	for dependences from a node to itself
+ *	for dependences from a node to itself, possibly without
+ *	coefficients for the parameters
+ * intra_hmap_param is a cache, mapping dependence relations to their dual,
+ *	for dependences from a node to itself, including coefficients
+ *	for the parameters
  * inter_hmap is a cache, mapping dependence relations to their dual,
  *	for dependences between distinct nodes
  * if compression is involved then the key for these maps
@@ -336,6 +340,7 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
  */
 struct isl_sched_graph {
 	isl_map_to_basic_set *intra_hmap;
+	isl_map_to_basic_set *intra_hmap_param;
 	isl_map_to_basic_set *inter_hmap;
 
 	struct isl_sched_node *node;
@@ -621,6 +626,7 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 					struct isl_sched_edge, graph->n_edge);
 
 	graph->intra_hmap = isl_map_to_basic_set_alloc(ctx, 2 * n_edge);
+	graph->intra_hmap_param = isl_map_to_basic_set_alloc(ctx, 2 * n_edge);
 	graph->inter_hmap = isl_map_to_basic_set_alloc(ctx, 2 * n_edge);
 
 	if (!graph->node || !graph->region || (graph->n_edge && !graph->edge) ||
@@ -638,6 +644,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 	int i;
 
 	isl_map_to_basic_set_free(graph->intra_hmap);
+	isl_map_to_basic_set_free(graph->intra_hmap_param);
 	isl_map_to_basic_set_free(graph->inter_hmap);
 
 	if (graph->node)
@@ -1454,19 +1461,28 @@ static int sort_sccs(struct isl_sched_graph *graph)
  * in a set of tuples c_0, c_n, c_x, c_y, and then
  * plugged in (c_0, c_n, c_x, -c_x).
  *
+ * If "need_param" is set, then the resulting coefficients effectively
+ * include coefficients for the parameters c_n.  Otherwise, they may
+ * have been projected out already.
+ * Since the constraints may be different for these two cases,
+ * they are stored in separate caches.
+ *
  * If "node" has been compressed, then the dependence relation
  * is also compressed before the set of coefficients is computed.
  */
 static __isl_give isl_basic_set *intra_coefficients(
 	struct isl_sched_graph *graph, struct isl_sched_node *node,
-	__isl_take isl_map *map)
+	__isl_take isl_map *map, int need_param)
 {
 	isl_set *delta;
 	isl_map *key;
 	isl_basic_set *coef;
 	isl_maybe_isl_basic_set m;
+	isl_map_to_basic_set **hmap = &graph->intra_hmap;
 
-	m = isl_map_to_basic_set_try_get(graph->intra_hmap, map);
+	if (need_param)
+		hmap = &graph->intra_hmap_param;
+	m = isl_map_to_basic_set_try_get(*hmap, map);
 	if (m.valid < 0 || m.valid) {
 		isl_map_free(map);
 		return m.value;
@@ -1479,10 +1495,13 @@ static __isl_give isl_basic_set *intra_coefficients(
 		map = isl_map_preimage_range_multi_aff(map,
 				    isl_multi_aff_copy(node->decompress));
 	}
-	delta = isl_set_remove_divs(isl_map_deltas(map));
+	delta = isl_map_deltas(map);
+	if (!need_param)
+		delta = isl_set_project_out(delta,
+					    isl_dim_param, 0, node->nparam);
+	delta = isl_set_remove_divs(delta);
 	coef = isl_set_coefficients(delta);
-	graph->intra_hmap = isl_map_to_basic_set_set(graph->intra_hmap, key,
-					isl_basic_set_copy(coef));
+	*hmap = isl_map_to_basic_set_set(*hmap, key, isl_basic_set_copy(coef));
 
 	return coef;
 }
@@ -1605,8 +1624,11 @@ static int node_var_coef_pos(struct isl_sched_node *node, int i)
  * in the input constraints.
  * "s" is the sign of the mapping.
  *
- * The input constraints are given in terms of the coefficients (c_0, c_n, c_x).
+ * The input constraints are given in terms of the coefficients
+ * (c_0, c_x) or (c_0, c_n, c_x).
  * The mapping produced by this function essentially plugs in
+ * (0, c_i_x^+ - c_i_x^-) if s = 1 and
+ * (0, -c_i_x^+ + c_i_x^-) if s = -1 or
  * (0, 0, c_i_x^+ - c_i_x^-) if s = 1 and
  * (0, 0, -c_i_x^+ + c_i_x^-) if s = -1.
  * In graph->lp, the c_i_x^- appear before their c_i_x^+ counterpart.
@@ -1715,10 +1737,12 @@ static __isl_give isl_basic_set *add_constraints_dim_map(
  *	= c_i_x (y - x) >= 0
  *
  * for each (x,y) in R.
- * We obtain general constraints on coefficients (c_0, c_n, c_x)
- * of valid constraints for (y - x) and then plug in (0, 0, c_i_x^+ - c_i_x^-),
+ * We obtain general constraints on coefficients (c_0, c_x)
+ * of valid constraints for (y - x) and then plug in (0, c_i_x^+ - c_i_x^-),
  * where c_i_x = c_i_x^+ - c_i_x^-, with c_i_x^+ and c_i_x^- non-negative.
  * In graph->lp, the c_i_x^- appear before their c_i_x^+ counterpart.
+ * Note that the result of intra_coefficients may also contain
+ * parameter coefficients c_n, in which case 0 is plugged in for them as well.
  */
 static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
@@ -1730,7 +1754,7 @@ static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
-	coef = intra_coefficients(graph, node, map);
+	coef = intra_coefficients(graph, node, map, 0);
 
 	offset = coef_var_offset(coef);
 
@@ -1826,6 +1850,8 @@ static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
  *
  * instead, forcing the dependence distance to be (less than or) equal to 0.
  * That is, we plug in (0, 0, -s * c_i_x),
+ * intra_coefficients is not required to have c_n in its result when
+ * "local" is set.  If they are missing, then (0, -s * c_i_x) is plugged in.
  * Note that dependences marked local are treated as validity constraints
  * by add_all_validity_constraints and therefore also have
  * their distances bounded by 0 from below.
@@ -1841,7 +1867,7 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
 	isl_basic_set *coef;
 	struct isl_sched_node *node = edge->src;
 
-	coef = intra_coefficients(graph, node, map);
+	coef = intra_coefficients(graph, node, map, !local);
 
 	offset = coef_var_offset(coef);
 
@@ -2199,14 +2225,14 @@ static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 
 	if (fp > 0) {
 		copy = isl_map_copy(map);
-		coef = intra_coefficients(graph, edge->src, copy);
+		coef = intra_coefficients(graph, edge->src, copy, 1);
 		if (update_count(coef, fp, n_eq, n_ineq) < 0)
 			goto error;
 	}
 
 	if (f > fp) {
 		copy = isl_map_copy(map);
-		coef = intra_coefficients(graph, edge->src, copy);
+		coef = intra_coefficients(graph, edge->src, copy, 0);
 		if (update_count(coef, f - fp, n_eq, n_ineq) < 0)
 			goto error;
 	}
