@@ -3654,16 +3654,16 @@ static __isl_give isl_schedule_node *compute_next_band(
 /* Add the constraints "coef" derived from an edge from "node" to itself
  * to graph->lp in order to respect the dependences and to try and carry them.
  * "pos" is the sequence number of the edge that needs to be carried.
- * "coef" represents general constraints on coefficients (c_0, c_n, c_x)
+ * "coef" represents general constraints on coefficients (c_0, c_x)
  * of valid constraints for (y - x) with x and y instances of the node.
  *
  * The constraints added to graph->lp need to enforce
  *
- *	(c_j_0 + c_j_n n + c_j_x y) - (c_j_0 + c_j_n n + c_j_x x)
+ *	(c_j_0 + c_j_x y) - (c_j_0 + c_j_x x)
  *	= c_j_x (y - x) >= e_i
  *
  * for each (x,y) in the dependence relation of the edge.
- * That is, (-e_i, 0, c_j_x) needs to be plugged in for (c_0, c_n, c_x),
+ * That is, (-e_i, c_j_x) needs to be plugged in for (c_0, c_x),
  * taking into account that each coefficient in c_j_x is represented
  * as a pair of non-negative coefficients.
  */
@@ -3806,7 +3806,7 @@ struct isl_add_all_constraints_data {
  *
  * The space of "coef" is of the form
  *
- *	coefficients[[c_cst, c_n] -> S[c_x]]
+ *	coefficients[[c_cst] -> S[c_x]]
  *
  * with S[c_x] the (compressed) space of the node.
  * Extract the node from the space and call add_intra_constraints.
@@ -4456,6 +4456,17 @@ static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
 	return umap;
 }
 
+/* Project out all parameters from "uset" and return the result.
+ */
+static __isl_give isl_union_set *union_set_drop_parameters(
+	__isl_take isl_union_set *uset)
+{
+	unsigned nparam;
+
+	nparam = isl_union_set_dim(uset, isl_dim_param);
+	return isl_union_set_project_out(uset, isl_dim_param, 0, nparam);
+}
+
 /* For each dependence relation on a (conditional) validity edge
  * from a node to itself,
  * construct the set of coefficients of valid constraints for elements
@@ -4463,13 +4474,13 @@ static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
  * If "coincidence" is set, then coincidence edges are considered as well.
  *
  * In particular, for each dependence relation R, constraints
- * on coefficients (c_0, c_n, c_x) are constructed such that
+ * on coefficients (c_0, c_x) are constructed such that
  *
- *	c_0 + c_n n + c_x d >= 0 for each d in delta R = { y - x | (x,y) in R }
+ *	c_0 + c_x d >= 0 for each d in delta R = { y - x | (x,y) in R }
  *
  * This computation is essentially the same as that performed
  * by intra_coefficients, except that it operates on multiple
- * edges together.
+ * edges together and that the parameters are always projected out.
  *
  * Note that if a dependence relation is a union of basic maps,
  * then each basic map needs to be treated individually as it may only
@@ -4490,6 +4501,7 @@ static __isl_give isl_basic_set_list *collect_intra_validity(
 
 	intra = collect_validity(graph, &add_intra, coincidence);
 	delta = isl_union_map_deltas(intra);
+	delta = union_set_drop_parameters(delta);
 	delta = isl_union_set_remove_divs(delta);
 	list = isl_union_set_get_basic_set_list(delta);
 	isl_union_set_free(delta);
