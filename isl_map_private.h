@@ -491,6 +491,8 @@ isl_bool isl_map_is_set(__isl_keep isl_map *map);
 isl_bool isl_basic_set_plain_dim_is_fixed(__isl_keep isl_basic_set *bset,
 	unsigned dim, isl_int *val);
 
+__isl_give isl_set *isl_set_plain_gist_basic_set(__isl_take isl_set *set,
+	__isl_take isl_basic_set *context);
 __isl_give isl_map *isl_map_plain_gist_basic_map(__isl_take isl_map *map,
 	__isl_take isl_basic_map *context);
 

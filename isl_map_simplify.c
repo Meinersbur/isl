@@ -3371,6 +3371,19 @@ error:
 	return NULL;
 }
 
+/* Remove the constraints in "context" from "set".
+ * If any of the disjuncts in the result turns out to be the universe,
+ * then return this universe.
+ * "context" is assumed to have explicit representations
+ * for all local variables.
+ */
+__isl_give isl_set *isl_set_plain_gist_basic_set(__isl_take isl_set *set,
+	__isl_take isl_basic_set *context)
+{
+	return set_from_map(isl_map_plain_gist_basic_map(set_to_map(set),
+							bset_to_bmap(context)));
+}
+
 /* Replace "map" by a universe map in the same space and free "drop".
  */
 static __isl_give isl_map *replace_by_universe(__isl_take isl_map *map,
