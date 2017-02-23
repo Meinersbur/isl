@@ -27,7 +27,7 @@
 #include <isl_mat_private.h>
 #include <isl_vec_private.h>
 #include <isl/set.h>
-#include <isl/union_set.h>
+#include <isl_union_set_private.h>
 #include <isl_seq.h>
 #include <isl_tab.h>
 #include <isl_dim_map.h>
@@ -94,6 +94,8 @@
  * schedule coefficients of the (compressed) variables.  If no bound
  * needs to be imposed on a particular variable, then the corresponding
  * value is negative.
+ * If not NULL, then "bounds" contains a non-parametric set
+ * in the compressed space that is bounded by the size in each direction.
  */
 struct isl_sched_node {
 	isl_space *space;
@@ -116,6 +118,7 @@ struct isl_sched_node {
 	int	*coincident;
 
 	isl_multi_val *sizes;
+	isl_basic_set *bounds;
 	isl_vec *max;
 };
 
@@ -660,6 +663,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 			if (graph->root)
 				free(graph->node[i].coincident);
 			isl_multi_val_free(graph->node[i].sizes);
+			isl_basic_set_free(graph->node[i].bounds);
 			isl_vec_free(graph->node[i].max);
 		}
 	free(graph->node);
@@ -1444,6 +1448,75 @@ static int sort_sccs(struct isl_sched_graph *graph)
 	return isl_sort(graph->sorted, graph->n, sizeof(int), &cmp_scc, graph);
 }
 
+/* Return a non-parametric set in the compressed space of "node" that is
+ * bounded by the size in each direction
+ *
+ *	{ [x] : -S_i <= x_i <= S_i }
+ *
+ * If S_i is infinity in direction i, then there are no constraints
+ * in that direction.
+ *
+ * Cache the result in node->bounds.
+ */
+static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
+{
+	isl_space *space;
+	isl_basic_set *bounds;
+	int i;
+	unsigned nparam;
+
+	if (node->bounds)
+		return isl_basic_set_copy(node->bounds);
+
+	if (node->compressed)
+		space = isl_multi_aff_get_domain_space(node->decompress);
+	else
+		space = isl_space_copy(node->space);
+	nparam = isl_space_dim(space, isl_dim_param);
+	space = isl_space_drop_dims(space, isl_dim_param, 0, nparam);
+	bounds = isl_basic_set_universe(space);
+
+	for (i = 0; i < node->nvar; ++i) {
+		isl_val *size;
+
+		size = isl_multi_val_get_val(node->sizes, i);
+		if (!size)
+			return isl_basic_set_free(bounds);
+		if (!isl_val_is_int(size)) {
+			isl_val_free(size);
+			continue;
+		}
+		bounds = isl_basic_set_upper_bound_val(bounds, isl_dim_set, i,
+							isl_val_copy(size));
+		bounds = isl_basic_set_lower_bound_val(bounds, isl_dim_set, i,
+							isl_val_neg(size));
+	}
+
+	node->bounds = isl_basic_set_copy(bounds);
+	return bounds;
+}
+
+/* Drop some constraints from "delta" that could be exploited
+ * to construct loop coalescing schedules.
+ * In particular, drop those constraint that bound the difference
+ * to the size of the domain.
+ * First project out the parameters to improve the effectiveness.
+ */
+static __isl_give isl_set *drop_coalescing_constraints(
+	__isl_take isl_set *delta, struct isl_sched_node *node)
+{
+	unsigned nparam;
+	isl_basic_set *bounds;
+
+	bounds = get_size_bounds(node);
+
+	nparam = isl_set_dim(delta, isl_dim_param);
+	delta = isl_set_project_out(delta, isl_dim_param, 0, nparam);
+	delta = isl_set_remove_divs(delta);
+	delta = isl_set_plain_gist_basic_set(delta, bounds);
+	return delta;
+}
+
 /* Given a dependence relation R from "node" to itself,
  * construct the set of coefficients of valid constraints for elements
  * in that dependence relation.
@@ -1466,6 +1539,11 @@ static int sort_sccs(struct isl_sched_graph *graph)
  * have been projected out already.
  * Since the constraints may be different for these two cases,
  * they are stored in separate caches.
+ * In particular, if no parameter coefficients are required and
+ * the schedule_treat_coalescing option is set, then the parameters
+ * are projected out and some constraints that could be exploited
+ * to construct coalescing schedules are removed before the dual
+ * is computed.
  *
  * If "node" has been compressed, then the dependence relation
  * is also compressed before the set of coefficients is computed.
@@ -1474,13 +1552,20 @@ static __isl_give isl_basic_set *intra_coefficients(
 	struct isl_sched_graph *graph, struct isl_sched_node *node,
 	__isl_take isl_map *map, int need_param)
 {
+	isl_ctx *ctx;
 	isl_set *delta;
 	isl_map *key;
 	isl_basic_set *coef;
 	isl_maybe_isl_basic_set m;
 	isl_map_to_basic_set **hmap = &graph->intra_hmap;
+	int treat;
 
-	if (need_param)
+	if (!map)
+		return NULL;
+
+	ctx = isl_map_get_ctx(map);
+	treat = !need_param && isl_options_get_schedule_treat_coalescing(ctx);
+	if (!treat)
 		hmap = &graph->intra_hmap_param;
 	m = isl_map_to_basic_set_try_get(*hmap, map);
 	if (m.valid < 0 || m.valid) {
@@ -1496,9 +1581,8 @@ static __isl_give isl_basic_set *intra_coefficients(
 				    isl_multi_aff_copy(node->decompress));
 	}
 	delta = isl_map_deltas(map);
-	if (!need_param)
-		delta = isl_set_project_out(delta,
-					    isl_dim_param, 0, node->nparam);
+	if (treat)
+		delta = drop_coalescing_constraints(delta, node);
 	delta = isl_set_remove_divs(delta);
 	coef = isl_set_coefficients(delta);
 	*hmap = isl_map_to_basic_set_set(*hmap, key, isl_basic_set_copy(coef));
@@ -3288,6 +3372,7 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 		dst->node[j].sched_map = isl_map_copy(src->node[i].sched_map);
 		dst->node[j].coincident = src->node[i].coincident;
 		dst->node[j].sizes = isl_multi_val_copy(src->node[i].sizes);
+		dst->node[j].bounds = isl_basic_set_copy(src->node[i].bounds);
 		dst->node[j].max = isl_vec_copy(src->node[i].max);
 		dst->n++;
 
@@ -4427,6 +4512,61 @@ static __isl_give isl_union_map *add_inter(__isl_take isl_union_map *umap,
 	return umap;
 }
 
+/* Internal data structure used by union_drop_coalescing_constraints
+ * to collect bounds on all relevant statements.
+ *
+ * "graph" is the schedule constraint graph for which an LP problem
+ * is being constructed.
+ * "bounds" collects the bounds.
+ */
+struct isl_collect_bounds_data {
+	isl_ctx *ctx;
+	struct isl_sched_graph *graph;
+	isl_union_set *bounds;
+};
+
+/* Add the size bounds for the node with instance deltas in "set"
+ * to data->bounds.
+ */
+static isl_stat collect_bounds(__isl_take isl_set *set, void *user)
+{
+	struct isl_collect_bounds_data *data = user;
+	struct isl_sched_node *node;
+	isl_space *space;
+	isl_set *bounds;
+
+	space = isl_set_get_space(set);
+	isl_set_free(set);
+
+	node = graph_find_compressed_node(data->ctx, data->graph, space);
+	isl_space_free(space);
+
+	bounds = isl_set_from_basic_set(get_size_bounds(node));
+	data->bounds = isl_union_set_add_set(data->bounds, bounds);
+
+	return isl_stat_ok;
+}
+
+/* Drop some constraints from "delta" that could be exploited
+ * to construct loop coalescing schedules.
+ * In particular, drop those constraint that bound the difference
+ * to the size of the domain.
+ * Do this for each set/node in "delta" separately.
+ * The parameters are assumed to have been projected out by the caller.
+ */
+static __isl_give isl_union_set *union_drop_coalescing_constraints(isl_ctx *ctx,
+	struct isl_sched_graph *graph, __isl_take isl_union_set *delta)
+{
+	struct isl_collect_bounds_data data = { ctx, graph };
+
+	data.bounds = isl_union_set_empty(isl_space_params_alloc(ctx, 0));
+	if (isl_union_set_foreach_set(delta, &collect_bounds, &data) < 0)
+		data.bounds = isl_union_set_free(data.bounds);
+	delta = isl_union_set_plain_gist(delta, data.bounds);
+
+	return delta;
+}
+
 /* For each (conditional) validity edge in "graph",
  * add the corresponding dependence relation using "add"
  * to a collection of dependence relations and return the result.
@@ -4478,7 +4618,11 @@ static __isl_give isl_union_set *union_set_drop_parameters(
  *
  *	c_0 + c_x d >= 0 for each d in delta R = { y - x | (x,y) in R }
  *
- * This computation is essentially the same as that performed
+ * If the schedule_treat_coalescing option is set, then some constraints
+ * that could be exploited to construct coalescing schedules
+ * are removed before the dual is computed, but after the parameters
+ * have been projected out.
+ * The entire computation is essentially the same as that performed
  * by intra_coefficients, except that it operates on multiple
  * edges together and that the parameters are always projected out.
  *
@@ -4492,7 +4636,7 @@ static __isl_give isl_union_set *union_set_drop_parameters(
  * In particular, if the same basic map appears as a disjunct
  * in multiple edges, then it only needs to be carried once.
  */
-static __isl_give isl_basic_set_list *collect_intra_validity(
+static __isl_give isl_basic_set_list *collect_intra_validity(isl_ctx *ctx,
 	struct isl_sched_graph *graph, int coincidence)
 {
 	isl_union_map *intra;
@@ -4503,6 +4647,8 @@ static __isl_give isl_basic_set_list *collect_intra_validity(
 	delta = isl_union_map_deltas(intra);
 	delta = union_set_drop_parameters(delta);
 	delta = isl_union_set_remove_divs(delta);
+	if (isl_options_get_schedule_treat_coalescing(ctx))
+		delta = union_drop_coalescing_constraints(ctx, graph, delta);
 	list = isl_union_set_get_basic_set_list(delta);
 	isl_union_set_free(delta);
 
@@ -4611,7 +4757,7 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 	struct isl_carry carry = { 0 };
 	isl_vec *sol;
 
-	carry.intra = collect_intra_validity(graph, coincidence);
+	carry.intra = collect_intra_validity(ctx, graph, coincidence);
 	carry.inter = collect_inter_validity(graph, coincidence);
 	if (!carry.intra || !carry.inter)
 		goto error;
