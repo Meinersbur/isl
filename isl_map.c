@@ -6570,6 +6570,56 @@ error:
 	return NULL;
 }
 
+/* Bound the given variable of "bset" from below (or above is "upper"
+ * is set) to "value".
+ */
+static __isl_give isl_basic_set *isl_basic_set_bound(
+	__isl_take isl_basic_set *bset, enum isl_dim_type type, unsigned pos,
+	isl_int value, int upper)
+{
+	return bset_from_bmap(basic_map_bound(bset_to_bmap(bset),
+						type, pos, value, upper));
+}
+
+/* Bound the given variable of "bset" from below (or above is "upper"
+ * is set) to "value".
+ */
+static __isl_give isl_basic_set *isl_basic_set_bound_val(
+	__isl_take isl_basic_set *bset, enum isl_dim_type type, unsigned pos,
+	__isl_take isl_val *value, int upper)
+{
+	if (!value)
+		goto error;
+	if (!isl_val_is_int(value))
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"expecting integer value", goto error);
+	bset = isl_basic_set_bound(bset, type, pos, value->n, upper);
+	isl_val_free(value);
+	return bset;
+error:
+	isl_val_free(value);
+	isl_basic_set_free(bset);
+	return NULL;
+}
+
+/* Bound the given variable of "bset" from below to "value".
+ */
+__isl_give isl_basic_set *isl_basic_set_lower_bound_val(
+	__isl_take isl_basic_set *bset, enum isl_dim_type type, unsigned pos,
+	__isl_take isl_val *value)
+{
+	return isl_basic_set_bound_val(bset, type, pos, value, 0);
+}
+
+/* Bound the given variable of "bset" from above to "value".
+ */
+__isl_give isl_basic_set *isl_basic_set_upper_bound_val(
+	__isl_take isl_basic_set *bset, enum isl_dim_type type, unsigned pos,
+	__isl_take isl_val *value)
+{
+	return isl_basic_set_bound_val(bset, type, pos, value, 1);
+}
+
 __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map)
 {
 	int i;

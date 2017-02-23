@@ -327,7 +327,7 @@ static int test_bounded(isl_ctx *ctx)
 }
 
 /* Construct the basic set { [i] : 5 <= i <= N } */
-static int test_construction(isl_ctx *ctx)
+static int test_construction_1(isl_ctx *ctx)
 {
 	isl_int v;
 	isl_space *dim;
@@ -360,6 +360,49 @@ static int test_construction(isl_ctx *ctx)
 
 	isl_int_clear(v);
 
+	return 0;
+}
+
+/* Construct the basic set { [x] : -100 <= x <= 100 }
+ * using isl_basic_set_{lower,upper}_bound_val and
+ * check that it is equal the same basic set parsed from a string.
+ */
+static int test_construction_2(isl_ctx *ctx)
+{
+	isl_bool equal;
+	isl_val *v;
+	isl_space *space;
+	isl_basic_set *bset1, *bset2;
+
+	v = isl_val_int_from_si(ctx, 100);
+	space = isl_space_set_alloc(ctx, 0, 1);
+	bset1 = isl_basic_set_universe(space);
+	bset1 = isl_basic_set_upper_bound_val(bset1, isl_dim_set, 0,
+						isl_val_copy(v));
+	bset1 = isl_basic_set_lower_bound_val(bset1, isl_dim_set, 0,
+						isl_val_neg(v));
+	bset2 = isl_basic_set_read_from_str(ctx, "{ [x] : -100 <= x <= 100 }");
+	equal = isl_basic_set_is_equal(bset1, bset2);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"failed construction", return -1);
+
+	return 0;
+}
+
+/* Basic tests for constructing basic sets.
+ */
+static int test_construction(isl_ctx *ctx)
+{
+	if (test_construction_1(ctx) < 0)
+		return -1;
+	if (test_construction_2(ctx) < 0)
+		return -1;
 	return 0;
 }
 
