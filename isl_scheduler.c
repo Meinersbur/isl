@@ -958,16 +958,56 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
+/* Construct an identifier for node "node", which will represent "set".
+ * The name of the identifier is either "compressed" or
+ * "compressed_<name>", with <name> the name of the space of "set".
+ * The user pointer of the identifier points to "node".
+ */
+static __isl_give isl_id *construct_compressed_id(__isl_keep isl_set *set,
+	struct isl_sched_node *node)
+{
+	isl_bool has_name;
+	isl_ctx *ctx;
+	isl_id *id;
+	isl_printer *p;
+	const char *name;
+	char *id_name;
+
+	has_name = isl_set_has_tuple_name(set);
+	if (has_name < 0)
+		return NULL;
+
+	ctx = isl_set_get_ctx(set);
+	if (!has_name)
+		return isl_id_alloc(ctx, "compressed", node);
+
+	p = isl_printer_to_str(ctx);
+	name = isl_set_get_tuple_name(set);
+	p = isl_printer_print_str(p, "compressed_");
+	p = isl_printer_print_str(p, name);
+	id_name = isl_printer_get_str(p);
+	isl_printer_free(p);
+
+	id = isl_id_alloc(ctx, id_name, node);
+	free(id_name);
+
+	return id;
+}
+
 /* Add a new node to the graph representing the given set.
  *
  * If any of the set variables is defined by an equality, then
  * we perform variable compression such that we can perform
  * the scheduling on the compressed domain.
+ * In this case, an identifier is used that references the new node
+ * such that each compressed space is unique and
+ * such that the node can be recovered from the compressed space.
  */
 static isl_stat extract_node(__isl_take isl_set *set, void *user)
 {
 	int nvar;
 	isl_bool has_equality;
+	isl_id *id;
 	isl_basic_set *hull;
 	isl_set *hull_set;
 	isl_morph *morph;
@@ -986,7 +1026,10 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 		return add_node(graph, set, nvar, 0, NULL, NULL, NULL);
 	}
 
-	morph = isl_basic_set_variable_compression(hull, isl_dim_set);
+	id = construct_compressed_id(set, &graph->node[graph->n]);
+	morph = isl_basic_set_variable_compression_with_id(hull,
+							    isl_dim_set, id);
+	isl_id_free(id);
 	nvar = isl_morph_ran_dim(morph, isl_dim_set);
 	compress = isl_morph_get_var_multi_aff(morph);
 	morph = isl_morph_inverse(morph);
