@@ -4905,6 +4905,7 @@ error:
  *	pair of SCCs between which to split)
  * - continue with the next band (assuming the current band has at least
  *	one row)
+ * - if there is more than one SCC left, then split along all SCCs
  * - if outer coincidence needs to be enforced, then try to carry as many
  *	validity or coincidence dependences as possible and
  *	continue with the next band
@@ -4937,6 +4938,8 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 			return compute_split_schedule(node, graph);
 		if (!empty)
 			return compute_next_band(node, graph, 1);
+		if (graph->scc > 1)
+			return compute_component_schedule(node, graph, 1);
 		if (!initialized && compute_maxvar(graph) < 0)
 			return isl_schedule_node_free(node);
 		if (isl_options_get_schedule_outer_coincidence(ctx))
