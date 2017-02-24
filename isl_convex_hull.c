@@ -86,7 +86,12 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
  * Since some constraints may be mutually redundant, sort the constraints
  * first such that constraints that involve existentially quantified
  * variables are considered for removal before those that do not.
- * The sorting is also need for the use in map_simple_hull.
+ * The sorting is also needed for the use in map_simple_hull.
+ *
+ * Note that isl_tab_detect_implicit_equalities may also end up
+ * marking some constraints as redundant.  Make sure the constraints
+ * are preserved and undo those marking such that isl_tab_detect_redundant
+ * can consider the constraints in the sorted order.
  *
  * Alternatively, we could have intersected the basic map with the
  * corresponding equality and then checked if the dimension was that
@@ -110,8 +115,14 @@ __isl_give isl_basic_map *isl_basic_map_remove_redundancies(
 
 	bmap = isl_basic_map_sort_constraints(bmap);
 	tab = isl_tab_from_basic_map(bmap, 0);
+	if (!tab)
+		goto error;
+	tab->preserve = 1;
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
 		goto error;
+	if (isl_tab_restore_redundant(tab) < 0)
+		goto error;
+	tab->preserve = 0;
 	if (isl_tab_detect_redundant(tab) < 0)
 		goto error;
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
@@ -911,15 +922,15 @@ error:
 
 /* Is the set bounded for each value of the parameters?
  */
-int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
+isl_bool isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 {
 	struct isl_tab *tab;
-	int bounded;
+	isl_bool bounded;
 
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 	if (isl_basic_set_plain_is_empty(bset))
-		return 1;
+		return isl_bool_true;
 
 	tab = isl_tab_from_recession_cone(bset, 1);
 	bounded = isl_tab_cone_is_bounded(tab);
@@ -930,11 +941,11 @@ int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 /* Is the image bounded for each value of the parameters and
  * the domain variables?
  */
-int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 {
 	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
-	int bounded;
+	isl_bool bounded;
 
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_cow(bmap);
@@ -948,19 +959,19 @@ int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 
 /* Is the set bounded for each value of the parameters?
  */
-int isl_set_is_bounded(__isl_keep isl_set *set)
+isl_bool isl_set_is_bounded(__isl_keep isl_set *set)
 {
 	int i;
 
 	if (!set)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < set->n; ++i) {
-		int bounded = isl_basic_set_is_bounded(set->p[i]);
+		isl_bool bounded = isl_basic_set_is_bounded(set->p[i]);
 		if (!bounded || bounded < 0)
 			return bounded;
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 /* Compute the lineality space of the convex hull of bset1 and bset2.
@@ -1826,6 +1837,7 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
  */
 static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
+	isl_bool bounded;
 	struct isl_basic_set *convex_hull = NULL;
 	struct isl_basic_set *lin;
 
@@ -1836,8 +1848,6 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	set = isl_set_set_rational(set);
 
 	if (!set)
-		goto error;
-	if (!set)
 		return NULL;
 	if (set->n == 1) {
 		convex_hull = isl_basic_set_copy(set->p[0]);
@@ -1847,8 +1857,10 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set);
 
-	if (isl_set_is_bounded(set) &&
-	    set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
+	bounded = isl_set_is_bounded(set);
+	if (bounded < 0)
+		goto error;
+	if (bounded && set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
 		return uset_convex_hull_wrap(set);
 
 	lin = uset_combined_lineality_space(isl_set_copy(set));
@@ -3128,5 +3140,6 @@ struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set)
 	return hull;
 error:
 	isl_set_free(set);
+	isl_basic_set_free(hull);
 	return NULL;
 }
