@@ -10796,6 +10796,12 @@ is given, then the constant should appear in the last column.
 Given a polytope, C<isl_polytope_scan> prints
 all integer points in the polytope.
 
+=head2 C<isl_flow>
+
+Given an C<isl_union_access_info> object as input,
+C<isl_flow> prints out the corresponding dependences,
+as computed by C<isl_union_access_info_compute_flow>.
+
 =head2 C<isl_codegen>
 
 Given either a schedule tree or a sequence consisting of
