@@ -527,6 +527,26 @@ error:
 	return NULL;
 }
 
+/* Append the elements of "list2" to "list1", where "list1" is known
+ * to have only a single reference and enough room to hold
+ * the extra elements.
+ */
+static __isl_give LIST(EL) *FN(LIST(EL),concat_inplace)(
+	__isl_take LIST(EL) *list1, __isl_take LIST(EL) *list2)
+{
+	int i;
+
+	for (i = 0; i < list2->n; ++i)
+		list1 = FN(LIST(EL),add)(list1, FN(EL,copy)(list2->p[i]));
+	FN(LIST(EL),free)(list2);
+	return list1;
+}
+
+/* Concatenate "list1" and "list2".
+ * If "list1" has only one reference and has enough room
+ * for the elements of "list2", the add the elements to "list1" itself.
+ * Otherwise, create a new list to store the result.
+ */
 __isl_give LIST(EL) *FN(LIST(EL),concat)(__isl_take LIST(EL) *list1,
 	__isl_take LIST(EL) *list2)
 {
@@ -536,6 +556,9 @@ __isl_give LIST(EL) *FN(LIST(EL),concat)(__isl_take LIST(EL) *list1,
 
 	if (!list1 || !list2)
 		goto error;
+
+	if (list1->ref == 1 && list1->n + list2->n <= list1->size)
+		return FN(LIST(EL),concat_inplace)(list1, list2);
 
 	ctx = FN(LIST(EL),get_ctx)(list1);
 	res = FN(LIST(EL),alloc)(ctx, list1->n + list2->n);
