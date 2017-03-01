@@ -3646,6 +3646,7 @@ static int count_carry_edges(struct isl_sched_graph *graph)
  * be possible to carry the dependences expressed by some of those
  * basic maps and not all of them.
  * Below, we consider each of those basic maps as a separate "edge".
+ * "n_edge" is the number of these edges.
  *
  * All variables of the LP are non-negative.  The actual coefficients
  * may be negative, so each coefficient is represented as the difference
@@ -3667,16 +3668,14 @@ static int count_carry_edges(struct isl_sched_graph *graph)
  * The constraints are those from the (validity) edges plus three equalities
  * to express the sums and n_edge inequalities to express e_i <= 1.
  */
-static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
+static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
+	int n_edge)
 {
 	int i;
 	int k;
 	isl_space *dim;
 	unsigned total;
 	int n_eq, n_ineq;
-	int n_edge;
-
-	n_edge = count_carry_edges(graph);
 
 	total = 3 + n_edge;
 	for (i = 0; i < graph->n; ++i) {
@@ -4160,7 +4159,7 @@ static __isl_give isl_schedule_node *carry_dependences(
 		return compute_component_schedule(node, graph, 1);
 
 	ctx = isl_schedule_node_get_ctx(node);
-	if (setup_carry_lp(ctx, graph) < 0)
+	if (setup_carry_lp(ctx, graph, n_edge) < 0)
 		return isl_schedule_node_free(node);
 
 	lp = isl_basic_set_copy(graph->lp);
