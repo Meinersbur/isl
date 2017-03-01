@@ -1523,12 +1523,17 @@ __isl_give isl_union_map *isl_union_map_flat_range_product(
 /* Data structure that specifies how cond_un_op should modify
  * the maps in the union map.
  *
+ * If "inplace" is set, then the maps in the input union map
+ * are modified in place.  This means that "fn_map" should not
+ * change the meaning of the map.
+ * Otherwise, a new union map is constructed to store the results.
  * If "filter" is not NULL, then only the input maps that satisfy "filter"
- * are taken into account.
+ * are taken into account.  No filter can be set if "inplace" is set.
  * "fn_map" specifies how the maps (selected by "filter")
  * should be transformed.
  */
 struct isl_un_op_control {
+	int inplace;
 	isl_bool (*filter)(__isl_keep isl_map *map);
 	__isl_give isl_map *(*fn_map)(__isl_take isl_map *map);
 };
@@ -1547,7 +1552,8 @@ struct isl_union_map_un_data {
  *
  * If control->filter is set, then check if this map satisfies the filter.
  * If so (or if control->filter is not set), modify the map
- * by calling control->fn_map and add the result to data->res.
+ * by calling control->fn_map and either add the result to data->res or
+ * replace the original entry by the result (if control->inplace is set).
  */
 static isl_stat un_entry(void **entry, void *user)
 {
@@ -1565,30 +1571,50 @@ static isl_stat un_entry(void **entry, void *user)
 	}
 
 	map = data->control->fn_map(isl_map_copy(map));
-	data->res = isl_union_map_add_map(data->res, map);
-	if (!data->res)
+	if (!map)
 		return isl_stat_error;
+	if (data->control->inplace) {
+		isl_map_free(*entry);
+		*entry = map;
+	} else {
+		data->res = isl_union_map_add_map(data->res, map);
+		if (!data->res)
+			return isl_stat_error;
+	}
 
 	return isl_stat_ok;
 }
 
 /* Modify the maps in "umap" based on "control".
+ * If control->inplace is set, then modify the maps in "umap" in-place.
+ * Otherwise, create a new union map to hold the results.
  */
 static __isl_give isl_union_map *cond_un_op(__isl_take isl_union_map *umap,
 	struct isl_un_op_control *control)
 {
 	struct isl_union_map_un_data data = { control };
-	isl_space *space;
 
 	if (!umap)
 		return NULL;
+	if (control->inplace && control->filter)
+		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
+			"inplace modification cannot be filtered",
+			return isl_union_map_free(umap));
 
-	space = isl_union_map_get_space(umap);
-	data.res = isl_union_map_alloc(space, umap->table.n);
+	if (control->inplace) {
+		data.res = umap;
+	} else {
+		isl_space *space;
+
+		space = isl_union_map_get_space(umap);
+		data.res = isl_union_map_alloc(space, umap->table.n);
+	}
 	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap),
 				    &umap->table, &un_entry, &data) < 0)
 		data.res = isl_union_map_free(data.res);
 
+	if (control->inplace)
+		return data.res;
 	isl_union_map_free(umap);
 	return data.res;
 }
@@ -1695,37 +1721,15 @@ __isl_give isl_union_set *isl_union_set_simple_hull(
 	return isl_union_map_simple_hull(uset);
 }
 
-static isl_stat inplace_entry(void **entry, void *user)
-{
-	__isl_give isl_map *(*fn)(__isl_take isl_map *);
-	isl_map **map = (isl_map **)entry;
-	isl_map *copy;
-
-	fn = *(__isl_give isl_map *(**)(__isl_take isl_map *)) user;
-	copy = fn(isl_map_copy(*map));
-	if (!copy)
-		return isl_stat_error;
-
-	isl_map_free(*map);
-	*map = copy;
-
-	return isl_stat_ok;
-}
-
 static __isl_give isl_union_map *inplace(__isl_take isl_union_map *umap,
 	__isl_give isl_map *(*fn)(__isl_take isl_map *))
 {
-	if (!umap)
-		return NULL;
+	struct isl_un_op_control control = {
+		.inplace = 1,
+		.fn_map = fn,
+	};
 
-	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap), &umap->table,
-				    &inplace_entry, &fn) < 0)
-		goto error;
-
-	return umap;
-error:
-	isl_union_map_free(umap);
-	return NULL;
+	return cond_un_op(umap, &control);
 }
 
 /* Remove redundant constraints in each of the basic maps of "umap".
