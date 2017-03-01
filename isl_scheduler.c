@@ -4115,6 +4115,11 @@ error:
 /* Construct a schedule row for each node such that as many dependences
  * as possible are carried and then continue with the next band.
  *
+ * If there are no dependences, then no dependence can be carried and
+ * the procedure is guaranteed to fail.  If there is more than one component,
+ * then try computing a schedule on each component separately
+ * to prevent or at least postpone this failure.
+ *
  * If the computed schedule row turns out to be trivial on one or
  * more nodes where it should not be trivial, then we throw it away
  * and try again on each component separately.
@@ -4145,6 +4150,8 @@ static __isl_give isl_schedule_node *carry_dependences(
 		return NULL;
 
 	n_edge = count_carry_edges(graph);
+	if (n_edge == 0 && graph->scc > 1)
+		return compute_component_schedule(node, graph, 1);
 
 	ctx = isl_schedule_node_get_ctx(node);
 	if (setup_carry_lp(ctx, graph) < 0)
