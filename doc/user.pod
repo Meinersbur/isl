@@ -5148,8 +5148,12 @@ Fourier-Motzkin elimination, but this may change or be made optional
 in future.  In particular, future implementations may use different
 dualization algorithms or skip the elimination step.
 
+	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_coefficients(
 		__isl_take isl_basic_set *bset);
+	__isl_give isl_basic_set_list *
+	isl_basic_set_list_coefficients(
+		__isl_take isl_basic_set_list *list);
 	__isl_give isl_basic_set *isl_set_coefficients(
 		__isl_take isl_set *set);
 	__isl_give isl_union_set *isl_union_set_coefficients(
