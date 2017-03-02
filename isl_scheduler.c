@@ -3816,15 +3816,32 @@ static isl_stat add_inter_constraints(struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
+/* Data structure for keeping track of the data needed
+ * to exploit non-trivial lineality spaces.
+ *
+ * "any_non_trivial" is true if there are any non-trivial lineality spaces.
+ * If "any_non_trivial" is not true, then "equivalent" and "mask" may be NULL.
+ * "equivalent" connects instances to other instances on the same line(s).
+ * "mask" contains the domain spaces of "equivalent".
+ * Any instance set not in "mask" does not have a non-trivial lineality space.
+ */
+struct isl_exploit_lineality_data {
+	isl_bool any_non_trivial;
+	isl_union_map *equivalent;
+	isl_union_set *mask;
+};
+
 /* Data structure collecting information used during the construction
  * of an LP for carrying dependences.
  *
  * "intra" is a sequence of coefficient constraints for intra-node edges.
  * "inter" is a sequence of coefficient constraints for inter-node edges.
+ * "lineality" contains data used to exploit non-trivial lineality spaces.
  */
 struct isl_carry {
 	isl_basic_set_list *intra;
 	isl_basic_set_list *inter;
+	struct isl_exploit_lineality_data lineality;
 };
 
 /* Free all the data stored in "carry".
@@ -3833,6 +3850,8 @@ static void isl_carry_clear(struct isl_carry *carry)
 {
 	isl_basic_set_list_free(carry->intra);
 	isl_basic_set_list_free(carry->inter);
+	isl_union_map_free(carry->lineality.equivalent);
+	isl_union_set_free(carry->lineality.mask);
 }
 
 /* Return a pointer to the node in "graph" that lives in "space".
@@ -4567,6 +4586,182 @@ static __isl_give isl_union_set *union_drop_coalescing_constraints(isl_ctx *ctx,
 	return delta;
 }
 
+/* Given a non-trivial lineality space "lineality", add the corresponding
+ * universe set to data->mask and add a map from elements to
+ * other elements along the lines in "lineality" to data->equivalent.
+ * If this is the first time this function gets called
+ * (data->any_non_trivial is still false), then set data->any_non_trivial and
+ * initialize data->mask and data->equivalent.
+ *
+ * In particular, if the lineality space is defined by equality constraints
+ *
+ *	E x = 0
+ *
+ * then construct an affine mapping
+ *
+ *	f : x -> E x
+ *
+ * and compute the equivalence relation of having the same image under f:
+ *
+ *	{ x -> x' : E x = E x' }
+ */
+static isl_stat add_non_trivial_lineality(__isl_take isl_basic_set *lineality,
+	struct isl_exploit_lineality_data *data)
+{
+	isl_mat *eq;
+	isl_space *space;
+	isl_set *univ;
+	isl_multi_aff *ma;
+	isl_multi_pw_aff *mpa;
+	isl_map *map;
+	int n;
+
+	if (!lineality)
+		return isl_stat_error;
+	if (isl_basic_set_dim(lineality, isl_dim_div) != 0)
+		isl_die(isl_basic_set_get_ctx(lineality), isl_error_internal,
+			"local variables not allowed", goto error);
+
+	space = isl_basic_set_get_space(lineality);
+	if (!data->any_non_trivial) {
+		data->equivalent = isl_union_map_empty(isl_space_copy(space));
+		data->mask = isl_union_set_empty(isl_space_copy(space));
+	}
+	data->any_non_trivial = isl_bool_true;
+
+	univ = isl_set_universe(isl_space_copy(space));
+	data->mask = isl_union_set_add_set(data->mask, univ);
+
+	eq = isl_basic_set_extract_equalities(lineality);
+	n = isl_mat_rows(eq);
+	eq = isl_mat_insert_zero_rows(eq, 0, 1);
+	eq = isl_mat_set_element_si(eq, 0, 0, 1);
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, n);
+	ma = isl_multi_aff_from_aff_mat(space, eq);
+	mpa = isl_multi_pw_aff_from_multi_aff(ma);
+	map = isl_multi_pw_aff_eq_map(mpa, isl_multi_pw_aff_copy(mpa));
+	data->equivalent = isl_union_map_add_map(data->equivalent, map);
+
+	isl_basic_set_free(lineality);
+	return isl_stat_ok;
+error:
+	isl_basic_set_free(lineality);
+	return isl_stat_error;
+}
+
+/* Check if the lineality space "set" is non-trivial (i.e., is not just
+ * the origin or, in other words, satisfies a number of equality constraints
+ * that is smaller than the dimension of the set).
+ * If so, extend data->mask and data->equivalent accordingly.
+ *
+ * The input should not have any local variables already, but
+ * isl_set_remove_divs is called to make sure it does not.
+ */
+static isl_stat add_lineality(__isl_take isl_set *set, void *user)
+{
+	struct isl_exploit_lineality_data *data = user;
+	isl_basic_set *hull;
+	int dim, n_eq;
+
+	set = isl_set_remove_divs(set);
+	hull = isl_set_unshifted_simple_hull(set);
+	dim = isl_basic_set_dim(hull, isl_dim_set);
+	n_eq = isl_basic_set_n_equality(hull);
+	if (!hull)
+		return isl_stat_error;
+	if (dim != n_eq)
+		return add_non_trivial_lineality(hull, data);
+	isl_basic_set_free(hull);
+	return isl_stat_ok;
+}
+
+/* Check if the difference set on intra-node schedule constraints "intra"
+ * has any non-trivial lineality space.
+ * If so, then extend the difference set to a difference set
+ * on equivalent elements.  That is, if "intra" is
+ *
+ *	{ y - x : (x,y) \in V }
+ *
+ * and elements are equivalent if they have the same image under f,
+ * then return
+ *
+ *	{ y' - x' : (x,y) \in V and f(x) = f(x') and f(y) = f(y') }
+ *
+ * or, since f is linear,
+ *
+ *	{ y' - x' : (x,y) \in V and f(y - x) = f(y' - x') }
+ *
+ * The results of the search for non-trivial lineality spaces is stored
+ * in "data".
+ */
+static __isl_give isl_union_set *exploit_intra_lineality(
+	__isl_take isl_union_set *intra,
+	struct isl_exploit_lineality_data *data)
+{
+	isl_union_set *lineality;
+	isl_union_set *uset;
+
+	data->any_non_trivial = isl_bool_false;
+	lineality = isl_union_set_copy(intra);
+	lineality = isl_union_set_combined_lineality_space(lineality);
+	if (isl_union_set_foreach_set(lineality, &add_lineality, data) < 0)
+		data->any_non_trivial = isl_bool_error;
+	isl_union_set_free(lineality);
+
+	if (data->any_non_trivial < 0)
+		return isl_union_set_free(intra);
+	if (!data->any_non_trivial)
+		return intra;
+
+	uset = isl_union_set_copy(intra);
+	intra = isl_union_set_subtract(intra, isl_union_set_copy(data->mask));
+	uset = isl_union_set_apply(uset, isl_union_map_copy(data->equivalent));
+	intra = isl_union_set_union(intra, uset);
+
+	intra = isl_union_set_remove_divs(intra);
+
+	return intra;
+}
+
+/* If the difference set on intra-node schedule constraints was found to have
+ * any non-trivial lineality space by exploit_intra_lineality,
+ * as recorded in "data", then extend the inter-node
+ * schedule constraints "inter" to schedule constraints on equivalent elements.
+ * That is, if "inter" is V and
+ * elements are equivalent if they have the same image under f, then return
+ *
+ *	{ (x', y') : (x,y) \in V and f(x) = f(x') and f(y) = f(y') }
+ */
+static __isl_give isl_union_map *exploit_inter_lineality(
+	__isl_take isl_union_map *inter,
+	struct isl_exploit_lineality_data *data)
+{
+	isl_union_map *umap;
+
+	if (data->any_non_trivial < 0)
+		return isl_union_map_free(inter);
+	if (!data->any_non_trivial)
+		return inter;
+
+	umap = isl_union_map_copy(inter);
+	inter = isl_union_map_subtract_range(inter,
+				isl_union_set_copy(data->mask));
+	umap = isl_union_map_apply_range(umap,
+				isl_union_map_copy(data->equivalent));
+	inter = isl_union_map_union(inter, umap);
+	umap = isl_union_map_copy(inter);
+	inter = isl_union_map_subtract_domain(inter,
+				isl_union_set_copy(data->mask));
+	umap = isl_union_map_apply_range(isl_union_map_copy(data->equivalent),
+				umap);
+	inter = isl_union_map_union(inter, umap);
+
+	inter = isl_union_map_remove_divs(inter);
+
+	return inter;
+}
+
 /* For each (conditional) validity edge in "graph",
  * add the corresponding dependence relation using "add"
  * to a collection of dependence relations and return the result.
@@ -4626,6 +4821,13 @@ static __isl_give isl_union_set *union_set_drop_parameters(
  * by intra_coefficients, except that it operates on multiple
  * edges together and that the parameters are always projected out.
  *
+ * Additionally, exploit any non-trivial lineality space
+ * in the difference set after removing coalescing constraints and
+ * store the results of the non-trivial lineality space detection in "data".
+ * The procedure is currently run unconditionally, but it is unlikely
+ * to find any non-trivial lineality spaces if no coalescing constraints
+ * have been removed.
+ *
  * Note that if a dependence relation is a union of basic maps,
  * then each basic map needs to be treated individually as it may only
  * be possible to carry the dependences expressed by some of those
@@ -4637,7 +4839,8 @@ static __isl_give isl_union_set *union_set_drop_parameters(
  * in multiple edges, then it only needs to be carried once.
  */
 static __isl_give isl_basic_set_list *collect_intra_validity(isl_ctx *ctx,
-	struct isl_sched_graph *graph, int coincidence)
+	struct isl_sched_graph *graph, int coincidence,
+	struct isl_exploit_lineality_data *data)
 {
 	isl_union_map *intra;
 	isl_union_set *delta;
@@ -4649,6 +4852,7 @@ static __isl_give isl_basic_set_list *collect_intra_validity(isl_ctx *ctx,
 	delta = isl_union_set_remove_divs(delta);
 	if (isl_options_get_schedule_treat_coalescing(ctx))
 		delta = union_drop_coalescing_constraints(ctx, graph, delta);
+	delta = exploit_intra_lineality(delta, data);
 	list = isl_union_set_get_basic_set_list(delta);
 	isl_union_set_free(delta);
 
@@ -4670,6 +4874,10 @@ static __isl_give isl_basic_set_list *collect_intra_validity(isl_ctx *ctx,
  * by inter_coefficients, except that it operates on multiple
  * edges together.
  *
+ * Additionally, exploit any non-trivial lineality space
+ * that may have been discovered by collect_intra_validity
+ * (as stored in "data").
+ *
  * Note that if a dependence relation is a union of basic maps,
  * then each basic map needs to be treated individually as it may only
  * be possible to carry the dependences expressed by some of those
@@ -4681,13 +4889,15 @@ static __isl_give isl_basic_set_list *collect_intra_validity(isl_ctx *ctx,
  * in multiple edges, then it only needs to be carried once.
  */
 static __isl_give isl_basic_set_list *collect_inter_validity(
-	struct isl_sched_graph *graph, int coincidence)
+	struct isl_sched_graph *graph, int coincidence,
+	struct isl_exploit_lineality_data *data)
 {
 	isl_union_map *inter;
 	isl_union_set *wrap;
 	isl_basic_set_list *list;
 
 	inter = collect_validity(graph, &add_inter, coincidence);
+	inter = exploit_inter_lineality(inter, data);
 	inter = isl_union_map_remove_divs(inter);
 	wrap = isl_union_map_wrap(inter);
 	list = isl_union_set_get_basic_set_list(wrap);
@@ -4757,8 +4967,10 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 	struct isl_carry carry = { 0 };
 	isl_vec *sol;
 
-	carry.intra = collect_intra_validity(ctx, graph, coincidence);
-	carry.inter = collect_inter_validity(graph, coincidence);
+	carry.intra = collect_intra_validity(ctx, graph, coincidence,
+						&carry.lineality);
+	carry.inter = collect_inter_validity(graph, coincidence,
+						&carry.lineality);
 	if (!carry.intra || !carry.inter)
 		goto error;
 	n_intra = isl_basic_set_list_n_basic_set(carry.intra);
