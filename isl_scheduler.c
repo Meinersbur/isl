@@ -118,12 +118,12 @@ struct isl_sched_node {
 	isl_vec *max;
 };
 
-static int node_has_space(const void *entry, const void *val)
+static int node_has_tuples(const void *entry, const void *val)
 {
 	struct isl_sched_node *node = (struct isl_sched_node *)entry;
 	isl_space *space = (isl_space *) val;
 
-	return isl_space_is_equal(node->space, space);
+	return isl_space_has_equal_tuples(node->space, space);
 }
 
 static int node_scc_exactly(struct isl_sched_node *node, int scc)
@@ -318,7 +318,7 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
  *	a single edge between a given pair of source and sink space
  *	in the entire graph
  *
- * node_table contains pointers into the node array, hashed on the space
+ * node_table contains pointers into the node array, hashed on the space tuples
  *
  * region contains a list of variable sequences that should be non-trivial
  *
@@ -383,9 +383,9 @@ static int graph_init_table(isl_ctx *ctx, struct isl_sched_graph *graph)
 		struct isl_hash_table_entry *entry;
 		uint32_t hash;
 
-		hash = isl_space_get_hash(graph->node[i].space);
+		hash = isl_space_get_tuple_hash(graph->node[i].space);
 		entry = isl_hash_table_find(ctx, graph->node_table, hash,
-					    &node_has_space,
+					    &node_has_tuples,
 					    graph->node[i].space, 1);
 		if (!entry)
 			return -1;
@@ -404,9 +404,9 @@ static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
 	struct isl_hash_table_entry *entry;
 	uint32_t hash;
 
-	hash = isl_space_get_hash(space);
+	hash = isl_space_get_tuple_hash(space);
 	entry = isl_hash_table_find(ctx, graph->node_table, hash,
-				    &node_has_space, space, 0);
+				    &node_has_tuples, space, 0);
 
 	return entry ? entry->data : NULL;
 }
