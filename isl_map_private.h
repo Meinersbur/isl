@@ -495,6 +495,8 @@ __isl_give isl_set *isl_set_plain_gist_basic_set(__isl_take isl_set *set,
 	__isl_take isl_basic_set *context);
 __isl_give isl_map *isl_map_plain_gist_basic_map(__isl_take isl_map *map,
 	__isl_take isl_basic_map *context);
+__isl_give isl_map *isl_map_plain_gist(__isl_take isl_map *map,
+	__isl_take isl_map *context);
 
 __isl_give isl_basic_set *isl_basic_set_plain_affine_hull(
 	__isl_take isl_basic_set *bset);
