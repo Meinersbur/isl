@@ -181,6 +181,7 @@ libisl_la_SOURCES = \
 	isl_transitive_closure.c \
 	isl_union_map.c \
 	isl_union_map_private.h \
+	isl_union_set_private.h \
 	isl_val.c \
 	isl_val_private.h \
 	isl_vec_private.h \

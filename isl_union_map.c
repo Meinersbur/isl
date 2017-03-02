@@ -921,6 +921,28 @@ __isl_give isl_union_set *isl_union_set_gist(__isl_take isl_union_set *uset,
 	return isl_union_map_gist(uset, context);
 }
 
+/* For each map in "umap", remove the constraints in the corresponding map
+ * of "context".
+ * Each map in "context" is assumed to consist of a single disjunct and
+ * to have explicit representations for all local variables.
+ */
+__isl_give isl_union_map *isl_union_map_plain_gist(
+	__isl_take isl_union_map *umap, __isl_take isl_union_map *context)
+{
+	return match_bin_op(umap, context, &isl_map_plain_gist);
+}
+
+/* For each set in "uset", remove the constraints in the corresponding set
+ * of "context".
+ * Each set in "context" is assumed to consist of a single disjunct and
+ * to have explicit representations for all local variables.
+ */
+__isl_give isl_union_set *isl_union_set_plain_gist(
+	__isl_take isl_union_set *uset, __isl_take isl_union_set *context)
+{
+	return isl_union_map_plain_gist(uset, context);
+}
+
 static __isl_give isl_map *lex_le_set(__isl_take isl_map *set1,
 	__isl_take isl_map *set2)
 {
