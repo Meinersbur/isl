@@ -3463,6 +3463,24 @@ __isl_give isl_union_set *isl_union_set_reset_user(
 	return isl_union_map_reset_user(uset);
 }
 
+/* Remove all existentially quantified variables and integer divisions
+ * from "umap" using Fourier-Motzkin elimination.
+ */
+__isl_give isl_union_map *isl_union_map_remove_divs(
+	__isl_take isl_union_map *umap)
+{
+	return total(umap, &isl_map_remove_divs);
+}
+
+/* Remove all existentially quantified variables and integer divisions
+ * from "uset" using Fourier-Motzkin elimination.
+ */
+__isl_give isl_union_set *isl_union_set_remove_divs(
+	__isl_take isl_union_set *uset)
+{
+	return isl_union_map_remove_divs(uset);
+}
+
 /* Internal data structure for isl_union_map_project_out.
  * "type", "first" and "n" are the arguments for the isl_map_project_out
  * call.
