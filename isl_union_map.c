@@ -1706,6 +1706,28 @@ __isl_give isl_union_set *isl_union_set_affine_hull(
 	return isl_union_map_affine_hull(uset);
 }
 
+/* Wrapper around isl_set_combined_lineality_space
+ * that returns the combined lineality space in the form of an isl_set
+ * instead of an isl_basic_set.
+ */
+static __isl_give isl_set *combined_lineality_space(__isl_take isl_set *set)
+{
+	return isl_set_from_basic_set(isl_set_combined_lineality_space(set));
+}
+
+/* For each set in "uset", compute the (linear) hull
+ * of the lineality spaces of its basic sets and
+ * collect and return the results.
+ */
+__isl_give isl_union_set *isl_union_set_combined_lineality_space(
+	__isl_take isl_union_set *uset)
+{
+	struct isl_un_op_control control = {
+		.fn_map = &combined_lineality_space,
+	};
+	return un_op(uset, &control);
+}
+
 /* Compute the polyhedral hull of "map" and return the result as an isl_map.
  */
 static __isl_give isl_map *isl_map_polyhedral_hull_map(__isl_take isl_map *map)
