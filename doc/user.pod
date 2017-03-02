@@ -2232,10 +2232,16 @@ from
 	int isl_map_n_basic_map(__isl_keep isl_map *map);
 
 It is also possible to obtain a list of basic sets from a set
+or union set
 
 	#include <isl/set.h>
 	__isl_give isl_basic_set_list *isl_set_get_basic_set_list(
 		__isl_keep isl_set *set);
+
+	#include <isl/union_set.h>
+	__isl_give isl_basic_set_list *
+	isl_union_set_get_basic_set_list(
+		__isl_keep isl_union_set *uset);
 
 The returned list can be manipulated using the functions in L<"Lists">.
 
