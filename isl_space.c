@@ -1826,15 +1826,16 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *dim,
 isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
+	isl_bool equal;
+
 	if (!space1 || !space2)
 		return isl_bool_error;
 	if (space1 == space2)
 		return isl_bool_true;
-	return match(space1, isl_dim_param, space2, isl_dim_param) &&
-	       isl_space_tuple_is_equal(space1, isl_dim_in,
-					space2, isl_dim_in) &&
-	       isl_space_tuple_is_equal(space1, isl_dim_out,
-					space2, isl_dim_out);
+	equal = match(space1, isl_dim_param, space2, isl_dim_param);
+	if (equal < 0 || !equal)
+		return equal;
+	return isl_space_has_equal_tuples(space1, space2);
 }
 
 /* Is space1 equal to the domain of space2?
