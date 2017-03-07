@@ -130,11 +130,16 @@ isl_ctx *isl_union_set_get_ctx(__isl_keep isl_union_set *uset)
 	return uset ? uset->dim->ctx : NULL;
 }
 
+/* Return the space of "umap".
+ */
+__isl_keep isl_space *isl_union_map_peek_space(__isl_keep isl_union_map *umap)
+{
+	return umap ? umap->dim : NULL;
+}
+
 __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap)
 {
-	if (!umap)
-		return NULL;
-	return isl_space_copy(umap->dim);
+	return isl_space_copy(isl_union_map_peek_space(umap));
 }
 
 /* Return the position of the parameter with the given name
