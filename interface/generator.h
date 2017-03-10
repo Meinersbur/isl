@@ -25,6 +25,7 @@ struct isl_class {
 	map<string, set<FunctionDecl *> > methods;
 	FunctionDecl *fn_to_str;
 	FunctionDecl *fn_copy;
+	FunctionDecl *fn_dump;
 	FunctionDecl *fn_free;
 
 	/* Return name of "fd" without type suffix, if any. */
