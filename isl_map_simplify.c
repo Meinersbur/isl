@@ -620,7 +620,7 @@ static struct isl_basic_map *eliminate_divs_eq(
 	return bmap;
 }
 
-/* Elimininate divs based on inequalities
+/* Eliminate divs based on inequalities
  */
 static struct isl_basic_map *eliminate_divs_ineq(
 		struct isl_basic_map *bmap, int *progress)
