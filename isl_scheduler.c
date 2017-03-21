@@ -4048,7 +4048,7 @@ static int is_any_trivial(struct isl_sched_graph *graph,
  * Otherwise, return node->nvar or -1 on error.
  *
  * In particular, look for pairs of coefficients c_i and c_j such that
- * |c_j/c_i| >= size_i, i.e., |c_j| >= |c_i * size_i|.
+ * |c_j/c_i| > ceil(size_i/2), i.e., |c_j| > |c_i * ceil(size_i/2)|.
  * If any such pair is found, then return i.
  * If size_i is infinity, then no check on c_i needs to be performed.
  */
@@ -4078,13 +4078,17 @@ static int find_node_coalescing(struct isl_sched_node *node,
 			isl_val_free(v);
 			continue;
 		}
+		v = isl_val_div_ui(v, 2);
+		v = isl_val_ceil(v);
+		if (!v)
+			goto error;
 		isl_int_mul(max, v->n, csol->el[i]);
 		isl_val_free(v);
 
 		for (j = 0; j < node->nvar; ++j) {
 			if (j == i)
 				continue;
-			if (isl_int_abs_ge(csol->el[j], max))
+			if (isl_int_abs_gt(csol->el[j], max))
 				break;
 		}
 		if (j < node->nvar)
