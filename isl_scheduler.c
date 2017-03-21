@@ -4100,8 +4100,8 @@ static int carries_dependences(__isl_keep isl_vec *sol, int n_edge)
  * additional sanity checks.
  * In particular, "lp" should not be empty by construction.
  * Double check that this is the case.
- * Also, check that dependences are carried for at least one of
- * the "n_edge" edges.
+ * If dependences are not carried for any of the "n_edge" edges,
+ * then return an empty vector.
  *
  * If the schedule_treat_coalescing option is set and
  * if the computed schedule performs loop coalescing on a given node,
@@ -4136,9 +4136,7 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 
 		if (!carries_dependences(sol, n_edge)) {
 			if (!prev)
-				isl_die(ctx, isl_error_unknown,
-					"unable to carry dependences",
-					goto error);
+				prev = isl_vec_alloc(ctx, 0);
 			isl_vec_free(sol);
 			sol = prev;
 			break;
@@ -4178,6 +4176,9 @@ error:
  * the procedure is guaranteed to fail.  If there is more than one component,
  * then try computing a schedule on each component separately
  * to prevent or at least postpone this failure.
+ *
+ * If a schedule row is computed, then check that dependences are carried
+ * for at least one of the edges.
  *
  * If the computed schedule row turns out to be trivial on one or
  * more nodes where it should not be trivial, then we throw it away
@@ -4220,6 +4221,11 @@ static __isl_give isl_schedule_node *carry_dependences(
 	sol = non_neg_lexmin(graph, lp, n_edge);
 	if (!sol)
 		return isl_schedule_node_free(node);
+	if (sol->size == 0) {
+		isl_vec_free(sol);
+		isl_die(ctx, isl_error_unknown, "unable to carry dependences",
+			return isl_schedule_node_free(node));
+	}
 
 	trivial = is_any_trivial(graph, sol);
 	if (trivial < 0) {
