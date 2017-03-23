@@ -5218,6 +5218,13 @@ static __isl_give isl_vec *normalize_constraint(__isl_take isl_vec *v,
  * We therefore call isl_basic_map_detect_inequality_pairs,
  * which checks for such pairs of inequalities as well as eliminate_divs_eq
  * and isl_basic_map_gauss if such a pair was found.
+ *
+ * Note that this function may leave the result in an inconsistent state.
+ * In particular, the constraints may not be gaussed.
+ * Unfortunately, isl_map_coalesce actually depends on this inconsistent state
+ * for some of the test cases to pass successfully.
+ * Any potential modification of the representation is therefore only
+ * performed on a single copy of the basic map.
  */
 __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	__isl_take isl_basic_map *bmap)
@@ -5256,6 +5263,10 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 		isl_vec_free(v);
 		return isl_basic_map_set_to_empty(bmap);
 	}
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		goto error;
 
 	tightened = 0;
 	for (i = 0; i < bmap->n_ineq; ++i) {
