@@ -4308,10 +4308,11 @@ static __isl_give isl_union_map *add_inter(__isl_take isl_union_map *umap,
 /* For each (conditional) validity edge in "graph",
  * add the corresponding dependence relation using "add"
  * to a collection of dependence relations and return the result.
+ * If "coincidence" is set, then coincidence edges are considered as well.
  */
 static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
 	__isl_give isl_union_map *(*add)(__isl_take isl_union_map *umap,
-		struct isl_sched_edge *edge))
+		struct isl_sched_edge *edge), int coincidence)
 {
 	int i;
 	isl_space *space;
@@ -4323,7 +4324,8 @@ static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
 
-		if (!is_any_validity(edge))
+		if (!is_any_validity(edge) &&
+		    (!coincidence || !is_coincidence(edge)))
 			continue;
 
 		umap = add(umap, edge);
@@ -4336,6 +4338,8 @@ static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
  * from a node to itself,
  * construct the set of coefficients of valid constraints for elements
  * in that dependence relation and collect the results.
+ * If "coincidence" is set, then coincidence edges are considered as well.
+ *
  * In particular, for each dependence relation R, constraints
  * on coefficients (c_0, c_n, c_x) are constructed such that
  *
@@ -4356,13 +4360,13 @@ static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
  * in multiple edges, then it only needs to be carried once.
  */
 static __isl_give isl_basic_set_list *collect_intra_validity(
-	struct isl_sched_graph *graph)
+	struct isl_sched_graph *graph, int coincidence)
 {
 	isl_union_map *intra;
 	isl_union_set *delta;
 	isl_basic_set_list *list;
 
-	intra = collect_validity(graph, &add_intra);
+	intra = collect_validity(graph, &add_intra, coincidence);
 	delta = isl_union_map_deltas(intra);
 	delta = isl_union_set_remove_divs(delta);
 	list = isl_union_set_get_basic_set_list(delta);
@@ -4375,6 +4379,8 @@ static __isl_give isl_basic_set_list *collect_intra_validity(
  * from a node to some other node,
  * construct the set of coefficients of valid constraints for elements
  * in that dependence relation and collect the results.
+ * If "coincidence" is set, then coincidence edges are considered as well.
+ *
  * In particular, for each dependence relation R, constraints
  * on coefficients (c_0, c_n, c_x, c_y) are constructed such that
  *
@@ -4395,13 +4401,13 @@ static __isl_give isl_basic_set_list *collect_intra_validity(
  * in multiple edges, then it only needs to be carried once.
  */
 static __isl_give isl_basic_set_list *collect_inter_validity(
-	struct isl_sched_graph *graph)
+	struct isl_sched_graph *graph, int coincidence)
 {
 	isl_union_map *inter;
 	isl_union_set *wrap;
 	isl_basic_set_list *list;
 
-	inter = collect_validity(graph, &add_inter);
+	inter = collect_validity(graph, &add_inter, coincidence);
 	inter = isl_union_map_remove_divs(inter);
 	wrap = isl_union_map_wrap(inter);
 	list = isl_union_set_get_basic_set_list(wrap);
@@ -4413,6 +4419,7 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
  * such that the schedule carries as many of the validity dependences
  * as possible and
  * return the lexicographically smallest non-trivial solution.
+ * If "coincidence" is set, then try and carry coincidence edges as well.
  *
  * The variable "n_edge" stores the number of groups that should be carried.
  * If none of the "n_edge" groups can be carried
@@ -4421,15 +4428,15 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
  * need to be constructed.
  */
 static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
-	struct isl_sched_graph *graph)
+	struct isl_sched_graph *graph, int coincidence)
 {
 	int n_intra, n_inter;
 	int n_edge;
 	isl_basic_set *lp;
 	struct isl_carry carry = { 0 };
 
-	carry.intra = collect_intra_validity(graph);
-	carry.inter = collect_inter_validity(graph);
+	carry.intra = collect_intra_validity(graph, coincidence);
+	carry.inter = collect_inter_validity(graph, coincidence);
 	if (!carry.intra || !carry.inter)
 		goto error;
 	n_intra = isl_basic_set_list_n_basic_set(carry.intra);
@@ -4453,6 +4460,7 @@ error:
 
 /* Construct a schedule row for each node such that as many validity dependences
  * as possible are carried and then continue with the next band.
+ * If "coincidence" is set, then try and carry coincidence edges as well.
  *
  * If there are no validity dependences, then no dependence can be carried and
  * the procedure is guaranteed to fail.  If there is more than one component,
@@ -4479,8 +4487,8 @@ error:
  * This insertion and the continued construction is performed by split_scaled
  * after optionally checking for non-trivial common divisors.
  */
-static __isl_give isl_schedule_node *carry_dependences(
-	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+static __isl_give isl_schedule_node *carry(__isl_take isl_schedule_node *node,
+	struct isl_sched_graph *graph, int coincidence)
 {
 	int trivial;
 	isl_ctx *ctx;
@@ -4490,7 +4498,7 @@ static __isl_give isl_schedule_node *carry_dependences(
 		return NULL;
 
 	ctx = isl_schedule_node_get_ctx(node);
-	sol = compute_carrying_sol(ctx, graph);
+	sol = compute_carrying_sol(ctx, graph, coincidence);
 	if (!sol)
 		return isl_schedule_node_free(node);
 	if (sol->size == 0) {
@@ -4515,6 +4523,25 @@ static __isl_give isl_schedule_node *carry_dependences(
 		graph->n_row--;
 
 	return split_scaled(node, graph);
+}
+
+/* Construct a schedule row for each node such that as many validity dependences
+ * as possible are carried and then continue with the next band.
+ */
+static __isl_give isl_schedule_node *carry_dependences(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+{
+	return carry(node, graph, 0);
+}
+
+/* Construct a schedule row for each node such that as many validity or
+ * coincidence dependences as possible are carried and
+ * then continue with the next band.
+ */
+static __isl_give isl_schedule_node *carry_coincidence(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+{
+	return carry(node, graph, 1);
 }
 
 /* Topologically sort statements mapped to the same schedule iteration
@@ -4826,8 +4853,11 @@ error:
  *	pair of SCCs between which to split)
  * - continue with the next band (assuming the current band has at least
  *	one row)
- * - try to carry as many dependences as possible and continue with the next
- *	band
+ * - if outer coincidence needs to be enforced, then try to carry as many
+ *	validity or coincidence dependences as possible and
+ *	continue with the next band
+ * - try to carry as many validity dependences as possible and
+ *	continue with the next band
  * In each case, we first insert a band node in the schedule tree
  * if any rows have been computed.
  *
@@ -4857,6 +4887,8 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 			return compute_next_band(node, graph, 1);
 		if (!initialized && compute_maxvar(graph) < 0)
 			return isl_schedule_node_free(node);
+		if (isl_options_get_schedule_outer_coincidence(ctx))
+			return carry_coincidence(node, graph);
 		return carry_dependences(node, graph);
 	}
 
