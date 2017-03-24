@@ -1562,9 +1562,9 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
  * (c_0, c_n, c_x, c_y).
  * The mapping produced by this function essentially plugs in
  * (c_j_0 - c_i_0, c_j_n - c_i_n,
- *  c_j_x^+ - c_j_x^-, -(c_i_x^+ - c_i_x^-)) if s = 1 and
+ *  -(c_i_x^+ - c_i_x^-), c_j_x^+ - c_j_x^-) if s = 1 and
  * (-c_j_0 + c_i_0, -c_j_n + c_i_n,
- *  - (c_j_x^+ - c_j_x^-), c_i_x^+ - c_i_x^-) if s = -1.
+ *  c_i_x^+ - c_i_x^-, -(c_j_x^+ - c_j_x^-)) if s = -1.
  * In graph->lp, the c_*^- appear before their c_*^+ counterpart.
  *
  * The caller can further extend the mapping.
@@ -1651,7 +1651,7 @@ static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
  * for each (x,y) in R.
  * We obtain general constraints on coefficients (c_0, c_n, c_x, c_y)
  * of valid constraints for R and then plug in
- * (c_j_0 - c_i_0, c_j_n - c_i_n, c_j_x^+ - c_j_x^- - (c_i_x^+ - c_i_x^-)),
+ * (c_j_0 - c_i_0, c_j_n - c_i_n, -(c_i_x^+ - c_i_x^-), c_j_x^+ - c_j_x^-),
  * where c_* = c_*^+ - c_*^-, with c_*^+ and c_*^- non-negative.
  * In graph->lp, the c_*^- appear before their c_*^+ counterpart.
  *
@@ -1807,7 +1807,7 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
  * We obtain general constraints on coefficients (c_0, c_n, c_x, c_y)
  * of valid constraints for R and then plug in
  * (m_0 - s*c_j_0 + s*c_i_0, m_n - s*c_j_n + s*c_i_n,
- *  -s*c_j_x+s*c_i_x)
+ *  s*c_i_x, -s*c_j_x)
  * with each coefficient (except m_0, c_*_0 and c_*_n)
  * represented as a pair of non-negative coefficients.
  *
@@ -1816,17 +1816,17 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
  * of the columns in node->cmap.
  *
  *
- * If "local" is set, then we add constraints
+ * If "local" is set (and s = 1), then we add constraints
  *
  *	(c_j_0 + c_j_n n + c_j_x y) - (c_i_0 + c_i_n n + c_i_x x) <= 0
  *
  * or
  *
- *	-((c_j_0 + c_j_n n + c_j_x y) - (c_i_0 + c_i_n n + c_i_x x)) <= 0
+ *	-((c_j_0 + c_j_n n + c_j_x y) + (c_i_0 + c_i_n n + c_i_x x)) >= 0
  *
  * instead, forcing the dependence distance to be (less than or) equal to 0.
  * That is, we plug in
- * (-s*c_j_0 + s*c_i_0, -s*c_j_n + s*c_i_n, -s*c_j_x+s*c_i_x).
+ * (-s*c_j_0 + s*c_i_0, -s*c_j_n + s*c_i_n, s*c_i_x, -s*c_j_x).
  * Note that dependences marked local are treated as validity constraints
  * by add_all_validity_constraints and therefore also have
  * their distances bounded by 0 from below.
@@ -3521,9 +3521,9 @@ static int add_intra_constraints(struct isl_sched_graph *graph,
  *	(c_k_0 + c_k_n n + c_k_x y) - (c_j_0 + c_j_n n + c_j_x x) >= e_i
  *
  * for each (x,y) in R.
- * We obtain general constraints on coefficients (c_0, c_n, c_x)
+ * We obtain general constraints on coefficients (c_0, c_n, c_x, c_y)
  * of valid constraints for R and then plug in
- * (-e_i + c_k_0 - c_j_0, c_k_n - c_j_n, c_k_x - c_j_x)
+ * (-e_i + c_k_0 - c_j_0, c_k_n - c_j_n, -c_j_x, c_k_x)
  * with each coefficient (except e_i, c_*_0 and c_*_n)
  * represented as a pair of non-negative coefficients.
  */
