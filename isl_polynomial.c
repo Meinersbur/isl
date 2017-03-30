@@ -3071,7 +3071,7 @@ __isl_give isl_val *isl_upoly_eval(__isl_take struct isl_upoly *up,
 	}
 
 	rec = isl_upoly_as_rec(up);
-	if (!rec)
+	if (!rec || !vec)
 		goto error;
 
 	isl_assert(up->ctx, rec->n >= 1, goto error);
