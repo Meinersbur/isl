@@ -3911,43 +3911,29 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
 	int wcc);
 
-/* Comparison function for sorting the statements based on
- * the corresponding value in "r".
- */
-static int smaller_value(const void *a, const void *b, void *data)
-{
-	isl_vec *r = data;
-	const int *i1 = a;
-	const int *i2 = b;
-
-	return isl_int_cmp(r->el[*i1], r->el[*i2]);
-}
-
 /* If the schedule_split_scaled option is set and if the linear
  * parts of the scheduling rows for all nodes in the graphs have
- * a non-trivial common divisor, then split off the remainder of the
- * constant term modulo this common divisor from the linear part.
+ * a non-trivial common divisor, then remove this
+ * common divisor from the linear part.
  * Otherwise, insert a band node directly and continue with
  * the construction of the schedule.
  *
  * If a non-trivial common divisor is found, then
- * the linear part is reduced and the remainder is enforced
- * by a sequence node with the children placed in the order
- * of this remainder.
- * In particular, we assign an scc index based on the remainder and
- * then rely on compute_component_schedule to insert the sequence and
- * to continue the schedule construction on each part.
+ * the linear part is reduced and the remainder is ignored.
+ * The pieces of the graph that are assigned different remainders
+ * form (groups of) strongly connected components within
+ * the scaled down band.  If needed, they can therefore
+ * be ordered along this remainder in a sequence node.
+ * However, this ordering is not enforced here in order to allow
+ * the scheduler to combine some of the strongly connected components.
  */
 static __isl_give isl_schedule_node *split_scaled(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
 	int i;
 	int row;
-	int scc;
 	isl_ctx *ctx;
 	isl_int gcd, gcd_i;
-	isl_vec *r;
-	int *order;
 
 	if (!node)
 		return NULL;
@@ -3980,16 +3966,9 @@ static __isl_give isl_schedule_node *split_scaled(
 		return compute_next_band(node, graph, 0);
 	}
 
-	r = isl_vec_alloc(ctx, graph->n);
-	order = isl_calloc_array(ctx, int, graph->n);
-	if (!r || !order)
-		goto error;
-
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 
-		order[i] = i;
-		isl_int_fdiv_r(r->el[i], node->sched->row[row][0], gcd);
 		isl_int_fdiv_q(node->sched->row[row][0],
 			       node->sched->row[row][0], gcd);
 		isl_int_mul(node->sched->row[row][0],
@@ -3999,35 +3978,10 @@ static __isl_give isl_schedule_node *split_scaled(
 			goto error;
 	}
 
-	if (isl_sort(order, graph->n, sizeof(order[0]), &smaller_value, r) < 0)
-		goto error;
-
-	scc = 0;
-	for (i = 0; i < graph->n; ++i) {
-		if (i > 0 && isl_int_ne(r->el[order[i - 1]], r->el[order[i]]))
-			++scc;
-		graph->node[order[i]].scc = scc;
-	}
-	graph->scc = ++scc;
-	graph->weak = 0;
-
 	isl_int_clear(gcd);
-	isl_vec_free(r);
-	free(order);
 
-	if (update_edges(ctx, graph) < 0)
-		return isl_schedule_node_free(node);
-	node = insert_current_band(node, graph, 0);
-	next_band(graph);
-
-	node = isl_schedule_node_child(node, 0);
-	node = compute_component_schedule(node, graph, 0);
-	node = isl_schedule_node_parent(node);
-
-	return node;
+	return compute_next_band(node, graph, 0);
 error:
-	isl_vec_free(r);
-	free(order);
 	isl_int_clear(gcd);
 	return isl_schedule_node_free(node);
 }

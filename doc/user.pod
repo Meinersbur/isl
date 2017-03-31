@@ -9378,7 +9378,7 @@ If this option is set, then we try to construct schedules in which the
 constant term is split off from the linear part if the linear parts of
 the scheduling rows for all nodes in the graph have a common non-trivial
 divisor.
-The constant term is then placed in a separate band and the linear
+The constant term is then dropped and the linear
 part is reduced.
 This option is only effective when the Feautrier style scheduler is
 being used, either as the main scheduler or as a fallback for the
