@@ -68,7 +68,7 @@ static vector<string> find_superclasses(RecordDecl *decl)
 	string sub = "isl_subclass";
 	size_t len = sub.length();
 	AttrVec attrs = decl->getAttrs();
-	for (AttrVec::const_iterator i = attrs.begin() ; i != attrs.end(); ++i) {
+	for (AttrVec::const_iterator i = attrs.begin(); i != attrs.end(); ++i) {
 		const AnnotateAttr *ann = dyn_cast<AnnotateAttr>(*i);
 		if (!ann)
 			continue;
