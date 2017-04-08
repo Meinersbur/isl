@@ -14,6 +14,8 @@ extract_interface_SOURCES = \
 	generator.cc \
 	python.h \
 	python.cc \
+	cpp.h \
+	cpp.cc \
 	extract_interface.h \
 	extract_interface.cc
 extract_interface_LDADD = \
@@ -33,5 +35,11 @@ isl.py: extract_interface isl.py.top
 			$(srcdir)/all.h) \
 			> isl.py
 
-dist-hook: isl.py
-	cp isl.py $(distdir)/
+isl-noexceptions.h: extract_interface all.h isl.h.top
+	(cat $(srcdir)/isl.h.top; \
+		./extract_interface$(EXEEXT) --language=cpp $(includes) \
+			$(srcdir)/all.h) \
+			> isl-noexceptions.h
+
+dist-hook: isl.py isl-noexceptions.h
+	cp isl.py isl-noexceptions.h $(distdir)/
