@@ -40,9 +40,77 @@
 #include "extract_interface.h"
 #include "generator.h"
 
+/* Should "method" be considered to be a static method?
+ * That is, is the first argument something other than
+ * an instance of the class?
+ */
+bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
+{
+	ParmVarDecl *param = method->getParamDecl(0);
+	QualType type = param->getOriginalType();
+
+	if (!is_isl_type(type))
+		return true;
+	return extract_type(type) != clazz.name;
+}
+
+/* Collect all functions that belong to a certain type, separating
+ * constructors from regular methods and keeping track of the _to_str and
+ * _free functions, if any, separately.  If there are any overloaded
+ * functions, then they are grouped based on their name after removing the
+ * argument type suffix.
+ */
+generator::generator(set<RecordDecl *> &exported_types,
+	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions)
+{
+	map<string, isl_class>::iterator ci;
+
+	set<FunctionDecl *>::iterator in;
+	for (in = functions.begin(); in != functions.end(); ++in) {
+		FunctionDecl *decl = *in;
+		functions_by_name[decl->getName()] = decl;
+	}
+
+	set<RecordDecl *>::iterator it;
+	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
+		RecordDecl *decl = *it;
+		map<string, FunctionDecl *>::iterator i;
+
+		string name = decl->getName();
+		classes[name].name = name;
+		classes[name].type = decl;
+		classes[name].fn_to_str = NULL;
+		classes[name].fn_free = NULL;
+
+		i = functions_by_name.find(name + "_to_str");
+		if (i != functions_by_name.end())
+			classes[name].fn_to_str = i->second;
+
+		i = functions_by_name.find (name + "_free");
+		if (i == functions_by_name.end())
+			die("No _free function found");
+		classes[name].fn_free = i->second;
+	}
+
+	for (in = exported_functions.begin(); in != exported_functions.end();
+	     ++in) {
+		isl_class *c = method2class(classes, *in);
+		if (!c)
+			continue;
+		if (is_constructor(*in)) {
+			c->constructors.insert(*in);
+		} else {
+			FunctionDecl *method = *in;
+			string fullname = method->getName();
+			fullname = drop_type_suffix(fullname, method);
+			c->methods[fullname].insert(method);
+		}
+	}
+}
+
 /* Print error message "msg" and abort.
  */
-void die(const char *msg)
+void generator::die(const char *msg)
 {
 	fprintf(stderr, "%s", msg);
 	abort();
@@ -55,7 +123,7 @@ void die(const char *msg)
  * is the one that is closest to the annotated type and the corresponding
  * type is then also the first that will appear in the sequence of types.
  */
-std::vector<string> find_superclasses(RecordDecl *decl)
+std::vector<string> generator::find_superclasses(RecordDecl *decl)
 {
 	vector<string> super;
 
@@ -81,35 +149,58 @@ std::vector<string> find_superclasses(RecordDecl *decl)
 
 /* Is decl marked as being part of an overloaded method?
  */
-bool is_overload(Decl *decl)
+bool generator::is_overload(Decl *decl)
 {
 	return has_annotation(decl, "isl_overload");
 }
 
 /* Is decl marked as a constructor?
  */
-bool is_constructor(Decl *decl)
+bool generator::is_constructor(Decl *decl)
 {
 	return has_annotation(decl, "isl_constructor");
 }
 
 /* Is decl marked as consuming a reference?
  */
-bool takes(Decl *decl)
+bool generator::takes(Decl *decl)
 {
 	return has_annotation(decl, "isl_take");
 }
 
 /* Is decl marked as returning a reference that is required to be freed.
  */
-bool gives(Decl *decl)
+bool generator::gives(Decl *decl)
 {
 	return has_annotation(decl, "isl_give");
 }
 
+/* Return the class that has a name that matches the initial part
+ * of the name of function "fd" or NULL if no such class could be found.
+ */
+isl_class *generator::method2class(map<string, isl_class> &classes,
+	FunctionDecl *fd)
+{
+	string best;
+	map<string, isl_class>::iterator ci;
+	string name = fd->getNameAsString();
+
+	for (ci = classes.begin(); ci != classes.end(); ++ci) {
+		if (name.substr(0, ci->first.length()) == ci->first)
+			best = ci->first;
+	}
+
+	if (classes.find(best) == classes.end()) {
+		cerr << "Unable to find class of " << name << endl;
+		return NULL;
+	}
+
+	return &classes[best];
+}
+
 /* Is "type" the type "isl_ctx *"?
  */
-bool is_isl_ctx(QualType type)
+bool generator::is_isl_ctx(QualType type)
 {
 	if (!type->isPointerType())
 		return 0;
@@ -122,7 +213,7 @@ bool is_isl_ctx(QualType type)
 
 /* Is the first argument of "fd" of type "isl_ctx *"?
  */
-bool first_arg_is_isl_ctx(FunctionDecl *fd)
+bool generator::first_arg_is_isl_ctx(FunctionDecl *fd)
 {
 	ParmVarDecl *param;
 
@@ -135,7 +226,7 @@ bool first_arg_is_isl_ctx(FunctionDecl *fd)
 
 /* Is "type" that of a pointer to an isl_* structure?
  */
-bool is_isl_type(QualType type)
+bool generator::is_isl_type(QualType type)
 {
 	if (type->isPointerType()) {
 		string s;
@@ -152,7 +243,7 @@ bool is_isl_type(QualType type)
 
 /* Is "type" the type isl_bool?
  */
-bool is_isl_bool(QualType type)
+bool generator::is_isl_bool(QualType type)
 {
 	string s;
 
@@ -165,7 +256,7 @@ bool is_isl_bool(QualType type)
 
 /* Is "type" that of a pointer to a function?
  */
-bool is_callback(QualType type)
+bool generator::is_callback(QualType type)
 {
 	if (!type->isPointerType())
 		return false;
@@ -175,7 +266,7 @@ bool is_callback(QualType type)
 
 /* Is "type" that of "char *" of "const char *"?
  */
-bool is_string(QualType type)
+bool generator::is_string(QualType type)
 {
 	if (type->isPointerType()) {
 		string s = type->getPointeeType().getAsString();
@@ -188,7 +279,7 @@ bool is_string(QualType type)
 /* Return the name of the type that "type" points to.
  * The input "type" is assumed to be a pointer type.
  */
-string extract_type(QualType type)
+string generator::extract_type(QualType type)
 {
 	if (type->isPointerType())
 		return type->getPointeeType().getAsString();
@@ -200,7 +291,7 @@ string extract_type(QualType type)
  * return the modified name (or the original name if
  * no modifications were made).
  */
-string drop_type_suffix(string name, FunctionDecl *method)
+string generator::drop_type_suffix(string name, FunctionDecl *method)
 {
 	int num_params;
 	ParmVarDecl *param;

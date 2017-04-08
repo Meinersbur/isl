@@ -440,8 +440,9 @@ int main(int argc, char *argv[])
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
 
-	generate_python(consumer.exported_types, consumer.exported_functions,
+	python_generator gen(consumer.exported_types, consumer.exported_functions,
 			consumer.functions);
+	gen.generate();
 
 	delete sema;
 	delete Clang;
