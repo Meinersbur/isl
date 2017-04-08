@@ -37,78 +37,9 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <clang/AST/Attr.h>
-#include "extract_interface.h"
+
 #include "python.h"
-
-static void die(const char *msg) __attribute__((noreturn));
-
-/* Print error message "msg" and abort.
- */
-static void die(const char *msg)
-{
-	fprintf(stderr, "%s", msg);
-	abort();
-}
-
-/* Return a sequence of the types of which the given type declaration is
- * marked as being a subtype.
- * The order of the types is the opposite of the order in which they
- * appear in the source.  In particular, the first annotation
- * is the one that is closest to the annotated type and the corresponding
- * type is then also the first that will appear in the sequence of types.
- */
-static vector<string> find_superclasses(RecordDecl *decl)
-{
-	vector<string> super;
-
-	if (!decl->hasAttrs())
-		return super;
-
-	string sub = "isl_subclass";
-	size_t len = sub.length();
-	AttrVec attrs = decl->getAttrs();
-	for (AttrVec::const_iterator i = attrs.begin(); i != attrs.end(); ++i) {
-		const AnnotateAttr *ann = dyn_cast<AnnotateAttr>(*i);
-		if (!ann)
-			continue;
-		string s = ann->getAnnotation().str();
-		if (s.substr(0, len) == sub) {
-			s = s.substr(len + 1, s.length() - len  - 2);
-			super.push_back(s);
-		}
-	}
-
-	return super;
-}
-
-/* Is decl marked as being part of an overloaded method?
- */
-static bool is_overload(Decl *decl)
-{
-	return has_annotation(decl, "isl_overload");
-}
-
-/* Is decl marked as a constructor?
- */
-static bool is_constructor(Decl *decl)
-{
-	return has_annotation(decl, "isl_constructor");
-}
-
-/* Is decl marked as consuming a reference?
- */
-static bool takes(Decl *decl)
-{
-	return has_annotation(decl, "isl_take");
-}
-
-/* Is decl marked as returning a reference that is required to be freed.
- */
-static bool gives(Decl *decl)
-{
-	return has_annotation(decl, "isl_give");
-}
+#include "generator.h"
 
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
@@ -141,7 +72,7 @@ struct isl_class {
 /* Return the class that has a name that matches the initial part
  * of the name of function "fd" or NULL if no such class could be found.
  */
-static isl_class *method2class(map<string, isl_class> &classes,
+isl_class *method2class(map<string, isl_class> &classes,
 	FunctionDecl *fd)
 {
 	string best;
@@ -161,127 +92,11 @@ static isl_class *method2class(map<string, isl_class> &classes,
 	return &classes[best];
 }
 
-/* Is "type" the type "isl_ctx *"?
- */
-static bool is_isl_ctx(QualType type)
-{
-	if (!type->isPointerType())
-		return 0;
-	type = type->getPointeeType();
-	if (type.getAsString() != "isl_ctx")
-		return false;
-
-	return true;
-}
-
-/* Is the first argument of "fd" of type "isl_ctx *"?
- */
-static bool first_arg_is_isl_ctx(FunctionDecl *fd)
-{
-	ParmVarDecl *param;
-
-	if (fd->getNumParams() < 1)
-		return false;
-
-	param = fd->getParamDecl(0);
-	return is_isl_ctx(param->getOriginalType());
-}
-
-/* Is "type" that of a pointer to an isl_* structure?
- */
-static bool is_isl_type(QualType type)
-{
-	if (type->isPointerType()) {
-		string s;
-
-		type = type->getPointeeType();
-		if (type->isFunctionType())
-			return false;
-		s = type.getAsString();
-		return s.substr(0, 4) == "isl_";
-	}
-
-	return false;
-}
-
-/* Is "type" the type isl_bool?
- */
-static bool is_isl_bool(QualType type)
-{
-	string s;
-
-	if (type->isPointerType())
-		return false;
-
-	s = type.getAsString();
-	return s == "isl_bool";
-}
-
-/* Is "type" that of a pointer to a function?
- */
-static bool is_callback(QualType type)
-{
-	if (!type->isPointerType())
-		return false;
-	type = type->getPointeeType();
-	return type->isFunctionType();
-}
-
-/* Is "type" that of "char *" of "const char *"?
- */
-static bool is_string(QualType type)
-{
-	if (type->isPointerType()) {
-		string s = type->getPointeeType().getAsString();
-		return s == "const char" || s == "char";
-	}
-
-	return false;
-}
-
-/* Return the name of the type that "type" points to.
- * The input "type" is assumed to be a pointer type.
- */
-static string extract_type(QualType type)
-{
-	if (type->isPointerType())
-		return type->getPointeeType().getAsString();
-	die("Cannot extract type from non-pointer type");
-}
-
 /* Drop the "isl_" initial part of the type name "name".
  */
 static string type2python(string name)
 {
 	return name.substr(4);
-}
-
-/* If "method" is overloaded, then drop the suffix of "name"
- * corresponding to the type of the final argument and
- * return the modified name (or the original name if
- * no modifications were made).
- */
-static string drop_type_suffix(string name, FunctionDecl *method)
-{
-	int num_params;
-	ParmVarDecl *param;
-	string type;
-	size_t name_len, type_len;
-
-	if (!is_overload(method))
-		return name;
-
-	num_params = method->getNumParams();
-	param = method->getParamDecl(num_params - 1);
-	type = extract_type(param->getOriginalType());
-	type = type.substr(4);
-	name_len = name.length();
-	type_len = type.length();
-
-	if (name_len > type_len && name.substr(name_len - type_len) == type)
-		name = name.substr(0, name_len - type_len - 1);
-
-	return name;
 }
 
 /* Should "method" be considered to be a static method?

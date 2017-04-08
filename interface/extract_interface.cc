@@ -74,6 +74,7 @@
 #include <clang/Sema/Sema.h>
 
 #include "extract_interface.h"
+#include "generator.h"
 #include "python.h"
 
 using namespace std;

@@ -10,6 +10,8 @@ includes = -I$(top_builddir) -I$(top_srcdir) \
 
 extract_interface_CPPFLAGS = $(includes)
 extract_interface_SOURCES = \
+	generator.h \
+	generator.cc \
 	python.h \
 	python.cc \
 	extract_interface.h \
