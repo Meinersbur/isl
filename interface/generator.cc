@@ -112,7 +112,7 @@ generator::generator(set<RecordDecl *> &exported_types,
  */
 void generator::die(const char *msg)
 {
-	fprintf(stderr, "%s", msg);
+	fprintf(stderr, "%s\n", msg);
 	abort();
 }
 
