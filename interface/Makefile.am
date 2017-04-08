@@ -29,7 +29,8 @@ test: extract_interface
 
 isl.py: extract_interface isl.py.top
 	(cat $(srcdir)/isl.py.top; \
-		./extract_interface$(EXEEXT) $(includes) $(srcdir)/all.h) \
+		./extract_interface$(EXEEXT) --language=python $(includes) \
+			$(srcdir)/all.h) \
 			> isl.py
 
 dist-hook: isl.py

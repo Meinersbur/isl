@@ -91,6 +91,11 @@ static llvm::cl::list<string> Includes("I",
 			llvm::cl::desc("Header search path"),
 			llvm::cl::value_desc("path"), llvm::cl::Prefix);
 
+static llvm::cl::opt<string> Language(llvm::cl::Required,
+	llvm::cl::ValueRequired, "language",
+	llvm::cl::desc("Bindings to generate"),
+	llvm::cl::value_desc("name"));
+
 static const char *ResourceDir =
 	CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING;
 
@@ -440,9 +445,16 @@ int main(int argc, char *argv[])
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
 
-	python_generator gen(consumer.exported_types, consumer.exported_functions,
-			consumer.functions);
-	gen.generate();
+	generator *gen = NULL;
+	if (Language.compare("python") == 0)
+		gen = new python_generator(consumer.exported_types,
+			consumer.exported_functions, consumer.functions);
+	else
+		cerr << "Language '" << Language << "' not recognized." << endl
+		     << "Not generating bindings." << endl;
+
+	if (gen)
+		gen->generate();
 
 	delete sema;
 	delete Clang;
