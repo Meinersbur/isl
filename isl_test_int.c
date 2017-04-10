@@ -261,6 +261,9 @@ static void int_test_divexact(isl_int expected, isl_int lhs, isl_int rhs)
 
 		isl_int_fdiv_q_ui(result, lhs, rhsulong);
 		assert(isl_int_eq(expected, result));
+
+		isl_int_cdiv_q_ui(result, lhs, rhsulong);
+		assert(isl_int_eq(expected, result));
 	}
 
 	isl_int_clear(result);
@@ -358,11 +361,19 @@ static void int_test_fdiv(isl_int expected, isl_int lhs, isl_int rhs)
 
 static void int_test_cdiv(isl_int expected, isl_int lhs, isl_int rhs)
 {
+	unsigned long rhsulong;
 	isl_int result;
 	isl_int_init(result);
 
 	isl_int_cdiv_q(result, lhs, rhs);
 	assert(isl_int_eq(expected, result));
+
+	if (isl_int_fits_ulong(rhs)) {
+		rhsulong = isl_int_get_ui(rhs);
+
+		isl_int_cdiv_q_ui(result, lhs, rhsulong);
+		assert(isl_int_eq(expected, result));
+	}
 
 	isl_int_clear(result);
 }
