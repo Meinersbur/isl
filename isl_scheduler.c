@@ -759,8 +759,9 @@ static isl_stat set_max_coefficient(isl_ctx *ctx, struct isl_sched_node *node)
 
 /* Set the entries of node->max to the minimum of the schedule_max_coefficient
  * option (if set) and half of the minimum of the sizes in the other
- * dimensions.  If the minimum of the sizes is one, half of the size
- * is zero and this value is reset to one.
+ * dimensions.  Round up when computing the half such that
+ * if the minimum of the sizes is one, half of the size is taken to be one
+ * rather than zero.
  * If the global minimum is unbounded (i.e., if both
  * the schedule_max_coefficient is not set and the sizes in the other
  * dimensions are unbounded), then store a negative value.
@@ -808,11 +809,8 @@ static isl_stat compute_max_coefficient(isl_ctx *ctx,
 		isl_val_free(size);
 	}
 
-	for (i = 0; i < node->nvar; ++i) {
-		isl_int_fdiv_q_ui(v->el[i], v->el[i], 2);
-		if (isl_int_is_zero(v->el[i]))
-			isl_int_set_si(v->el[i], 1);
-	}
+	for (i = 0; i < node->nvar; ++i)
+		isl_int_cdiv_q_ui(v->el[i], v->el[i], 2);
 
 	node->max = v;
 	return isl_stat_ok;
