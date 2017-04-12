@@ -4185,6 +4185,8 @@ static int carries_dependences(__isl_keep isl_vec *sol, int n_edge)
 /* Return the lexicographically smallest rational point in "lp",
  * assuming that all variables are non-negative and performing some
  * additional sanity checks.
+ * If "want_integral" is set, then compute the lexicographically smallest
+ * integer point instead.
  * In particular, "lp" should not be empty by construction.
  * Double check that this is the case.
  * If dependences are not carried for any of the "n_edge" edges,
@@ -4200,11 +4202,22 @@ static int carries_dependences(__isl_keep isl_vec *sol, int n_edge)
  * to cut out this solution.  Repeat this process until no more loop
  * coalescing occurs or until no more dependences can be carried.
  * In the latter case, revert to the previously computed solution.
+ *
+ * If the caller requests an integral solution and if coalescing should
+ * be treated, then perform the coalescing treatment first as
+ * an integral solution computed before coalescing treatment
+ * would carry the same number of edges and would therefore probably
+ * also be coalescing.
+ *
+ * To allow the coalescing treatment to be performed first,
+ * the initial solution is allowed to be rational and it is only
+ * cut out (if needed) in the next iteration, if no coalescing measures
+ * were taken.
  */
 static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
-	__isl_take isl_basic_set *lp, int n_edge)
+	__isl_take isl_basic_set *lp, int n_edge, int want_integral)
 {
-	int i, pos;
+	int i, pos, cut;
 	isl_ctx *ctx;
 	isl_tab_lexmin *tl;
 	isl_vec *sol, *prev = NULL;
@@ -4216,11 +4229,17 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 	treat_coalescing = isl_options_get_schedule_treat_coalescing(ctx);
 	tl = isl_tab_lexmin_from_basic_set(lp);
 
+	cut = 0;
 	do {
+		int integral;
+
+		if (cut)
+			tl = isl_tab_lexmin_cut_to_integer(tl);
 		sol = non_empty_solution(tl);
 		if (!sol)
 			goto error;
 
+		integral = isl_int_is_one(sol->el[0]);
 		if (!carries_dependences(sol, n_edge)) {
 			if (!prev)
 				prev = isl_vec_alloc(ctx, 0);
@@ -4229,8 +4248,11 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 			break;
 		}
 		prev = isl_vec_free(prev);
+		cut = want_integral && !integral;
+		if (cut)
+			prev = sol;
 		if (!treat_coalescing)
-			break;
+			continue;
 		for (i = 0; i < graph->n; ++i) {
 			struct isl_sched_node *node = &graph->node[i];
 
@@ -4243,8 +4265,9 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 		if (i < graph->n) {
 			prev = sol;
 			tl = zero_out_node_coef(tl, &graph->node[i], pos);
+			cut = 0;
 		}
-	} while (i < graph->n);
+	} while (prev);
 
 	isl_tab_lexmin_free(tl);
 
@@ -4419,6 +4442,8 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
  * such that the schedule carries as many of the validity dependences
  * as possible and
  * return the lexicographically smallest non-trivial solution.
+ * If "fallback" is set, then the carrying is performed as a fallback
+ * for the Pluto-like scheduler.
  * If "coincidence" is set, then try and carry coincidence edges as well.
  *
  * The variable "n_edge" stores the number of groups that should be carried.
@@ -4426,9 +4451,13 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
  * then return an empty vector.
  * If, moreover, "n_edge" is zero, then the LP problem does not even
  * need to be constructed.
+ *
+ * If a fallback solution is being computed, then compute an integral solution
+ * for the coefficients rather than using the numerators
+ * of a rational solution.
  */
 static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
-	struct isl_sched_graph *graph, int coincidence)
+	struct isl_sched_graph *graph, int fallback, int coincidence)
 {
 	int n_intra, n_inter;
 	int n_edge;
@@ -4452,7 +4481,7 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 
 	isl_carry_clear(&carry);
 	lp = isl_basic_set_copy(graph->lp);
-	return non_neg_lexmin(graph, lp, n_edge);
+	return non_neg_lexmin(graph, lp, n_edge, fallback);
 error:
 	isl_carry_clear(&carry);
 	return NULL;
@@ -4460,6 +4489,8 @@ error:
 
 /* Construct a schedule row for each node such that as many validity dependences
  * as possible are carried and then continue with the next band.
+ * If "fallback" is set, then the carrying is performed as a fallback
+ * for the Pluto-like scheduler.
  * If "coincidence" is set, then try and carry coincidence edges as well.
  *
  * If there are no validity dependences, then no dependence can be carried and
@@ -4488,7 +4519,7 @@ error:
  * after optionally checking for non-trivial common divisors.
  */
 static __isl_give isl_schedule_node *carry(__isl_take isl_schedule_node *node,
-	struct isl_sched_graph *graph, int coincidence)
+	struct isl_sched_graph *graph, int fallback, int coincidence)
 {
 	int trivial;
 	isl_ctx *ctx;
@@ -4498,7 +4529,7 @@ static __isl_give isl_schedule_node *carry(__isl_take isl_schedule_node *node,
 		return NULL;
 
 	ctx = isl_schedule_node_get_ctx(node);
-	sol = compute_carrying_sol(ctx, graph, coincidence);
+	sol = compute_carrying_sol(ctx, graph, fallback, coincidence);
 	if (!sol)
 		return isl_schedule_node_free(node);
 	if (sol->size == 0) {
@@ -4527,21 +4558,46 @@ static __isl_give isl_schedule_node *carry(__isl_take isl_schedule_node *node,
 
 /* Construct a schedule row for each node such that as many validity dependences
  * as possible are carried and then continue with the next band.
+ * Do so as a fallback for the Pluto-like scheduler.
+ * If "coincidence" is set, then try and carry coincidence edges as well.
+ */
+static __isl_give isl_schedule_node *carry_fallback(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
+	int coincidence)
+{
+	return carry(node, graph, 1, coincidence);
+}
+
+/* Construct a schedule row for each node such that as many validity dependences
+ * as possible are carried and then continue with the next band.
+ * Do so for the case where the Feautrier scheduler was selected
+ * by the user.
+ */
+static __isl_give isl_schedule_node *carry_feautrier(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
+{
+	return carry(node, graph, 0, 0);
+}
+
+/* Construct a schedule row for each node such that as many validity dependences
+ * as possible are carried and then continue with the next band.
+ * Do so as a fallback for the Pluto-like scheduler.
  */
 static __isl_give isl_schedule_node *carry_dependences(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	return carry(node, graph, 0);
+	return carry_fallback(node, graph, 0);
 }
 
 /* Construct a schedule row for each node such that as many validity or
  * coincidence dependences as possible are carried and
  * then continue with the next band.
+ * Do so as a fallback for the Pluto-like scheduler.
  */
 static __isl_give isl_schedule_node *carry_coincidence(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	return carry(node, graph, 1);
+	return carry_fallback(node, graph, 1);
 }
 
 /* Topologically sort statements mapped to the same schedule iteration
@@ -4644,7 +4700,7 @@ static int need_feautrier_step(isl_ctx *ctx, struct isl_sched_graph *graph)
 static __isl_give isl_schedule_node *compute_schedule_wcc_feautrier(
 	isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	return carry_dependences(node, graph);
+	return carry_feautrier(node, graph);
 }
 
 /* Turn off the "local" bit on all (condition) edges.
