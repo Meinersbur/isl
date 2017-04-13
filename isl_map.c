@@ -11972,6 +11972,7 @@ static __isl_give isl_basic_map *isl_basic_map_from_aff2(
 	isl_aff_free(aff);
 	if (rational)
 		bmap = isl_basic_map_set_rational(bmap);
+	bmap = isl_basic_map_gauss(bmap, NULL);
 	bmap = isl_basic_map_finalize(bmap);
 	return bmap;
 error:
