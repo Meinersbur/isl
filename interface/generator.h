@@ -46,10 +46,12 @@ protected:
 		const vector<string> &super);
 	string drop_type_suffix(string name, FunctionDecl *method);
 	void die(const char *msg) __attribute__((noreturn));
+	void die(string msg) __attribute__((noreturn));
 	vector<string> find_superclasses(RecordDecl *decl);
 	bool is_overload(Decl *decl);
 	bool is_constructor(Decl *decl);
 	bool takes(Decl *decl);
+	bool keeps(Decl *decl);
 	bool gives(Decl *decl);
 	isl_class *method2class(map<string, isl_class> &classes,
 		FunctionDecl *fd);
@@ -57,6 +59,7 @@ protected:
 	bool first_arg_is_isl_ctx(FunctionDecl *fd);
 	bool is_isl_type(QualType type);
 	bool is_isl_bool(QualType type);
+	bool is_isl_stat(QualType type);
 	bool is_callback(QualType type);
 	bool is_string(QualType type);
 	bool is_static(const isl_class &clazz, FunctionDecl *method);

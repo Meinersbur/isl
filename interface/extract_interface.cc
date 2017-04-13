@@ -452,7 +452,7 @@ int main(int argc, char *argv[])
 			consumer.exported_functions, consumer.functions);
 	else if (Language.compare("cpp") == 0)
 		gen = new cpp_generator(consumer.exported_types,
-			consumer.functions);
+			consumer.exported_functions, consumer.functions);
 	else
 		cerr << "Language '" << Language << "' not recognized." << endl
 		     << "Not generating bindings." << endl;

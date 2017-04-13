@@ -35,6 +35,8 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "cpp.h"
@@ -65,6 +67,15 @@ static void osprintf(ostream &os, const char *format, ...)
 	fclose(string_stream);
 	os << string_pointer;
 	free(string_pointer);
+}
+
+/* Convert "l" to a string.
+ */
+static std::string to_string(long l)
+{
+	std::ostringstream strm;
+	strm << l;
+	return strm.str();
 }
 
 /* Generate a cpp interface based on the extracted types and functions.
@@ -160,9 +171,12 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
 	print_public_constructors_decl(os, clazz);
+	print_constructors_decl(os, clazz);
 	print_copy_assignment_decl(os, clazz);
 	print_destructor_decl(os, clazz);
 	print_ptr_decl(os, clazz);
+	osprintf(os, "\n");
+	print_methods_decl(os, clazz);
 
 	osprintf(os, "};\n");
 }
@@ -249,6 +263,33 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
 		 cppname, cppname);
 }
 
+/* Print declarations for constructors for class "class" to "os".
+ *
+ * For each isl function that is marked as __isl_constructor,
+ * add a corresponding C++ constructor.
+ *
+ * Example:
+ *
+ * 	inline /\* implicit *\/ union_set(isl::basic_set bset);
+ * 	inline /\* implicit *\/ union_set(isl::set set);
+ * 	inline explicit val(isl::ctx ctx, long i);
+ * 	inline explicit val(isl::ctx ctx, const std::string &str);
+ */
+void cpp_generator::print_constructors_decl(ostream &os,
+       const isl_class &clazz)
+{
+	set<FunctionDecl *>::const_iterator in;
+	const set<FunctionDecl *> &constructors = clazz.constructors;
+
+	for (in = constructors.begin(); in != constructors.end(); ++in) {
+		FunctionDecl *cons = *in;
+		string fullname = cons->getName();
+		function_kind kind = function_kind_constructor;
+
+		print_method_decl(os, clazz, fullname, cons, kind);
+	}
+}
+
 /* Print declarations of copy assignment operator for class "clazz"
  * to "os".
  *
@@ -320,6 +361,48 @@ void cpp_generator::print_ptr_decl(ostream &os, const isl_class &clazz)
 	osprintf(os, "  inline bool is_null() const;\n");
 }
 
+/* Print declarations for methods in class "clazz" to "os".
+ */
+void cpp_generator::print_methods_decl(ostream &os, const isl_class &clazz)
+{
+	map<string, set<FunctionDecl *> >::const_iterator it;
+
+	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
+		print_method_group_decl(os, clazz, it->first, it->second);
+}
+
+/* Print declarations for methods "methods" of name "fullname" in class "clazz"
+ * to "os".
+ *
+ * "fullname" is the name of the generated C++ method.  It commonly corresponds
+ * to the isl name, with the object type prefix dropped.
+ * In case of overloaded methods, the result type suffix has also been removed.
+ */
+void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
+	const string &fullname, const set<FunctionDecl *> &methods)
+{
+	set<FunctionDecl *>::const_iterator it;
+
+	for (it = methods.begin(); it != methods.end(); ++it) {
+		function_kind kind = get_method_kind(clazz, *it);
+		print_method_decl(os, clazz, fullname, *it, kind);
+	}
+}
+
+/* Print declarations for "method" in class "clazz" to "os".
+ *
+ * "fullname" is the name of the generated C++ method.  It commonly corresponds
+ * to the isl name, with the object type prefix dropped.
+ * In case of overloaded methods, the result type suffix has also been removed.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
+	const string &fullname, FunctionDecl *method, function_kind kind)
+{
+	print_method_header(os, clazz, method, fullname, true, kind);
+}
+
 /* Print implementations for class "clazz" to "os".
  */
 void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
@@ -335,11 +418,15 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	print_private_constructors_impl(os, clazz);
 	osprintf(os, "\n");
+	print_constructors_impl(os, clazz);
+	osprintf(os, "\n");
 	print_copy_assignment_impl(os, clazz);
 	osprintf(os, "\n");
 	print_destructor_impl(os, clazz);
 	osprintf(os, "\n");
 	print_ptr_impl(os, clazz);
+	osprintf(os, "\n");
+	print_methods_impl(os, clazz);
 }
 
 /* Print implementation of global factory function to "os".
@@ -381,6 +468,23 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 	osprintf(os, "%s::%s()\n    : ptr(nullptr) {}\n\n", cppname, cppname);
 	osprintf(os, "%s::%s(const isl::%s &obj)\n    : ptr(obj.copy()) {}\n",
 		 cppname, cppname, cppname, name);
+}
+
+/* Print implementations of constructors for class "clazz" to "os".
+ */
+void cpp_generator::print_constructors_impl(ostream &os,
+       const isl_class &clazz)
+{
+	set<FunctionDecl *>::const_iterator in;
+	const set<FunctionDecl *> constructors = clazz.constructors;
+
+	for (in = constructors.begin(); in != constructors.end(); ++in) {
+		FunctionDecl *cons = *in;
+		string fullname = cons->getName();
+		function_kind kind = function_kind_constructor;
+
+		print_method_impl(os, clazz, fullname, cons, kind);
+	}
 }
 
 /* Print implementation of copy assignment operator for class "clazz" to "os".
@@ -438,6 +542,455 @@ void cpp_generator::print_ptr_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "}\n");
 }
 
+/* Print definitions for methods of class "clazz" to "os".
+ */
+void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
+{
+	map<string, set<FunctionDecl *> >::const_iterator it;
+	bool first = true;
+
+	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it) {
+		if (first)
+			first = false;
+		else
+			osprintf(os, "\n");
+		print_method_group_impl(os, clazz, it->first, it->second);
+	}
+}
+
+/* Print definitions for methods "methods" of name "fullname" in class "clazz"
+ * to "os".
+ *
+ * "fullname" is the name of the generated C++ method.  It commonly corresponds
+ * to the isl name, with the object type prefix dropped.
+ * In case of overloaded methods, the result type suffix has also been removed.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
+	const string &fullname, const set<FunctionDecl *> &methods)
+{
+	set<FunctionDecl *>::const_iterator it;
+	bool first = true;
+
+	for (it = methods.begin(); it != methods.end(); ++it) {
+		function_kind kind;
+		if (first)
+			first = false;
+		else
+			osprintf(os, "\n");
+		kind = get_method_kind(clazz, *it);
+		print_method_impl(os, clazz, fullname, *it, kind);
+	}
+}
+
+/* Print the use of "param" to "os".
+ *
+ * "load_from_this_ptr" specifies whether the parameter should be loaded from
+ * the this-ptr.  In case a value is loaded from a this pointer, the original
+ * value must be preserved and must consequently be copied.  Values that are
+ * loaded from parameters do not need to be preserved, as such values will
+ * already be copies of the actual parameters.  It is consequently possible
+ * to directly take the pointer from these values, which saves
+ * an unnecessary copy.
+ *
+ * In case the parameter is a callback function, two parameters get printed,
+ * a wrapper for the callback function and a pointer to the actual
+ * callback function.  The wrapper is expected to be available
+ * in a previously declared variable <name>_lambda, while
+ * the actual callback function is expected in <name>_p.
+ * The caller of this function must ensure that these variables exist.
+ */
+void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
+	bool load_from_this_ptr)
+{
+	string name = param->getName().str();
+	const char *name_str = name.c_str();
+	QualType type = param->getOriginalType();
+
+	if (type->isIntegerType()) {
+		osprintf(os, "%s", name_str);
+		return;
+	}
+
+	if (is_string(type)) {
+		osprintf(os, "%s.c_str()", name_str);
+		return;
+	}
+
+	if (is_callback(type)) {
+		osprintf(os, "%s_lambda, ", name_str);
+		osprintf(os, "&%s_p", name_str);
+		return;
+	}
+
+	if (!load_from_this_ptr && !is_callback(type))
+		osprintf(os, "%s.", name_str);
+
+	if (keeps(param)) {
+		osprintf(os, "get()");
+	} else {
+		if (load_from_this_ptr)
+			osprintf(os, "copy()");
+		else
+			osprintf(os, "release()");
+	}
+}
+
+/* Print definition for "method" in class "clazz" to "os".
+ *
+ * "fullname" is the name of the generated C++ method.  It commonly corresponds
+ * to the isl name, with the object type prefix dropped.
+ * In case of overloaded methods, the result type suffix has also been removed.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ *
+ * This method distinguishes three kinds of methods: member methods, static
+ * methods, and constructors.
+ *
+ * Member methods call "method" by passing to the underlying isl function the
+ * isl object belonging to "this" as first argument and the remaining arguments
+ * as subsequent arguments. The result of the isl function is returned as a new
+ * object if the underlying isl function returns an isl_* ptr, as std::string
+ * if the isl function returns 'const char *', and as unmodified return value
+ * otherwise.
+ *
+ * Static methods call "method" by passing all arguments to the underlying isl
+ * function, as no this-pointer is available. The result is a newly managed
+ * isl C++ object.
+ *
+ * Constructors create a new object from a given set of input parameters. They
+ * do not return a value, but instead update the pointer stored inside the
+ * newly created object.
+ *
+ * If the method has a callback argument, we reduce the number of parameters
+ * that are exposed by one to hide the user pointer from the interface. On
+ * the C++ side no user pointer is needed, as arguments can be forwarded
+ * as part of the std::function argument which specifies the callback function.
+ */
+void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
+	const string &fullname, FunctionDecl *method, function_kind kind)
+{
+	string cname = fullname.substr(clazz.name.length() + 1);
+	string methodname = method->getName();
+	int num_params = method->getNumParams();
+	QualType return_type = method->getReturnType();
+	string rettype_str = type2cpp(return_type);
+	bool has_callback = false;
+
+	print_method_header(os, clazz, method, fullname, false, kind);
+
+	for (int i = 0; i < num_params; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		if (is_callback(param->getType())) {
+			has_callback = true;
+			num_params -= 1;
+			print_callback_local(os, param);
+		}
+	}
+
+	osprintf(os, "  auto res = %s(", methodname.c_str());
+
+	for (int i = 0; i < num_params; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		bool load_from_this_ptr = false;
+
+		if (i == 0 && kind == function_kind_member_method)
+			load_from_this_ptr = true;
+
+		print_method_param_use(os, param, load_from_this_ptr);
+
+		if (i != num_params - 1)
+			osprintf(os, ", ");
+	}
+	osprintf(os, ");\n");
+
+	if (kind == function_kind_constructor) {
+		osprintf(os, "  ptr = res;\n");
+	} else if (is_isl_type(return_type)) {
+		osprintf(os, "  return manage(res);\n");
+	} else if (has_callback) {
+		osprintf(os, "  return %s(res);\n", rettype_str.c_str());
+	} else if (is_string(return_type)) {
+		osprintf(os, "  std::string tmp(res);\n");
+		if (gives(method))
+			osprintf(os, "  free(res);\n");
+		osprintf(os, "  return tmp;\n");
+	} else {
+		osprintf(os, "  return res;\n");
+	}
+
+	osprintf(os, "}\n");
+}
+
+/* Print the header for "method" in class "clazz" to "os".
+ *
+ * Print the header of a declaration if "is_declaration" is set, otherwise print
+ * the header of a method definition.
+ *
+ * "fullname" is the name of the generated C++ method.  It commonly corresponds
+ * to the isl name, with the object type prefix dropped.
+ * In case of overloaded methods, the result type suffix has also been removed.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ *
+ * This function prints headers for member methods, static methods, and
+ * constructors, either for their declaration or definition.
+ *
+ * Member functions are declared as "const", as they do not change the current
+ * object, but instead create a new object. They always retrieve the first
+ * parameter of the original isl function from the this-pointer of the object,
+ * such that only starting at the second parameter the parameters of the
+ * original function become part of the method's interface.
+ *
+ * A function
+ *
+ * 	__isl_give isl_set *isl_set_intersect(__isl_take isl_set *s1,
+ * 		__isl_take isl_set *s2);
+ *
+ * is translated into:
+ *
+ * 	inline isl::set intersect(isl::set set2) const;
+ *
+ * For static functions and constructors all parameters of the original isl
+ * function are exposed.
+ *
+ * Parameters that are defined as __isl_keep or are of type string, are passed
+ * as const reference, which allows the compiler to optimize the parameter
+ * transfer.
+ *
+ * Constructors are marked as explicit using the C++ keyword 'explicit' or as
+ * implicit using a comment in place of the explicit keyword. By annotating
+ * implicit constructors with a comment, users of the interface are made
+ * aware of the potential danger that implicit construction is possible
+ * for these constructors, whereas without a comment not every user would
+ * know that implicit construction is allowed in absence of an explicit keyword.
+ */
+void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
+	FunctionDecl *method, const string &fullname, bool is_declaration,
+	function_kind kind)
+{
+	string cname = fullname.substr(clazz.name.length() + 1);
+	string rettype_str = type2cpp(method->getReturnType());
+	string classname = type2cpp(clazz);
+	int num_params = method->getNumParams();
+	int first_param = 0;
+
+	cname = rename_method(cname);
+	if (kind == function_kind_member_method)
+		first_param = 1;
+
+	if (is_declaration) {
+		osprintf(os, "  ");
+
+		if (kind == function_kind_static_method)
+			osprintf(os, "static ");
+
+		osprintf(os, "inline ");
+
+		if (kind == function_kind_constructor) {
+			if (is_implicit_conversion(clazz, method))
+				osprintf(os, "/* implicit */ ");
+			else
+				osprintf(os, "explicit ");
+		}
+	}
+
+	if (kind != function_kind_constructor)
+		osprintf(os, "%s ", rettype_str.c_str());
+
+	if (!is_declaration)
+		osprintf(os, "%s::", classname.c_str());
+
+	if (kind != function_kind_constructor)
+		osprintf(os, "%s", cname.c_str());
+	else
+		osprintf(os, "%s", classname.c_str());
+
+	osprintf(os, "(");
+
+	for (int i = first_param; i < num_params; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		QualType type = param->getOriginalType();
+		string cpptype = type2cpp(type);
+
+		if (is_callback(type))
+			num_params--;
+
+		if (keeps(param) || is_string(type) || is_callback(type))
+			osprintf(os, "const %s &%s", cpptype.c_str(),
+				 param->getName().str().c_str());
+		else
+			osprintf(os, "%s %s", cpptype.c_str(),
+				 param->getName().str().c_str());
+
+		if (i != num_params - 1)
+			osprintf(os, ", ");
+	}
+
+	osprintf(os, ")");
+
+	if (kind == function_kind_member_method)
+		osprintf(os, " const");
+
+	if (is_declaration)
+		osprintf(os, ";\n");
+	else
+		osprintf(os, " {\n");
+}
+
+/* Generate the list of argument types for a callback function of
+ * type "type".  If "cpp" is set, then generate the C++ type list, otherwise
+ * the C type list.
+ *
+ * For a callback of type
+ *
+ *      isl_stat (*)(__isl_take isl_map *map, void *user)
+ *
+ * the following C++ argument list is generated:
+ *
+ *      isl::map
+ */
+string cpp_generator::generate_callback_args(QualType type, bool cpp)
+{
+	std::string type_str;
+	const FunctionProtoType *callback;
+	int num_params;
+
+	callback = type->getPointeeType()->getAs<FunctionProtoType>();
+	num_params = callback->getNumArgs();
+	if (cpp)
+		num_params--;
+
+	for (long i = 0; i < num_params; i++) {
+		QualType type = callback->getArgType(i);
+
+		if (cpp)
+			type_str += type2cpp(type);
+		else
+			type_str += type.getAsString();
+
+		if (!cpp)
+			type_str += "arg_" + ::to_string(i);
+
+		if (i != num_params - 1)
+			type_str += ", ";
+	}
+
+	return type_str;
+}
+
+/* Generate the full cpp type of a callback function of type "type".
+ *
+ * For a callback of type
+ *
+ *      isl_stat (*)(__isl_take isl_map *map, void *user)
+ *
+ * the following type is generated:
+ *
+ *      std::function<isl::stat(isl::map)>
+ */
+string cpp_generator::generate_callback_type(QualType type)
+{
+	std::string type_str;
+	const FunctionProtoType *callback = type->getPointeeType()->getAs<FunctionProtoType>();
+	QualType return_type = callback->getReturnType();
+	string rettype_str = type2cpp(return_type);
+
+	type_str = "std::function<";
+	type_str += rettype_str;
+	type_str += "(";
+	type_str += generate_callback_args(type, true);
+	type_str += ")>";
+
+	return type_str;
+}
+
+/* Print the local variables that are needed for a callback argument,
+ * in particular, print a lambda function that wraps the callback and
+ * a pointer to the actual C++ callback function.
+ *
+ * For a callback of the form
+ *
+ *      isl_stat (*fn)(__isl_take isl_map *map, void *user)
+ *
+ * the following lambda function is generated:
+ *
+ *      auto fn_lambda = [](isl_map *arg_0, void *arg_1) -> isl_stat {
+ *        auto *func = *static_cast<const std::function<stat(map)> **>(arg_1);
+ *        stat ret = (*func)(isl::manage(arg_0));
+ *        return isl_stat(ret);
+ *      };
+ *
+ * The pointer to the std::function C++ callback function is stored in fn_p.
+ * This std::function object represents the actual user
+ * callback function together with the locally captured state at the caller.
+ *
+ * The lambda function is expected to be used as a C callback function
+ * where the lambda itself is provided as the function pointer and
+ * where the user void pointer is a pointer to fn_p.
+ * The std::function object is extracted from the pointer to fn_p
+ * inside the lambda function.
+ * The double indirection is used to avoid having to worry about
+ * const casting.
+ */
+void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param) {
+	string pname;
+	QualType ptype;
+	string call_args, c_args, cpp_args, rettype, last_idx;
+	const FunctionProtoType *callback;
+	int num_params;
+
+	pname = param->getName().str();
+	ptype = param->getType();
+
+	c_args = generate_callback_args(ptype, false);
+	cpp_args = generate_callback_type(ptype);
+
+	callback = ptype->getPointeeType()->getAs<FunctionProtoType>();
+	rettype = callback->getReturnType().getAsString();
+	num_params = callback->getNumArgs();
+
+	last_idx = ::to_string(num_params - 1);
+
+	for (long i = 0; i < num_params - 1; i++) {
+		call_args += "isl::manage(arg_" + ::to_string(i) + ")";
+		if (i != num_params - 2)
+			call_args += ", ";
+	}
+
+	osprintf(os, "  auto %s_p = &fn;\n", pname.c_str());
+	osprintf(os,
+		 "  auto %s_lambda = [](%s) -> %s {\n"
+		 "    auto *func = *static_cast<const %s **>(arg_%s);\n"
+		 "    stat ret = (*func)(%s);\n"
+		 "    return isl_stat(ret);\n"
+		 "  };\n",
+		 pname.c_str(), c_args.c_str(), rettype.c_str(),
+		 cpp_args.c_str(), last_idx.c_str(), call_args.c_str());
+}
+
+/* An array listing functions that must be renamed and the function name they
+ * should be renamed to. We currently rename functions in case their name would
+ * match a reserved C++ keyword, which is not allowed in C++.
+ */
+static const char *rename_map[][2] = {
+	{ "union", "unite" },
+};
+
+/* Rename method "name" in case the method name in the C++ bindings should not
+ * match the name in the C bindings. We do this for example to avoid
+ * C++ keywords.
+ */
+std::string cpp_generator::rename_method(std::string name)
+{
+	for (size_t i = 0; i < sizeof(rename_map) / sizeof(rename_map[0]); i++)
+		if (name.compare(rename_map[i][0]) == 0)
+			return rename_map[i][1];
+
+	return name;
+}
+
 /* Translate isl class "clazz" to its corresponding C++ type.
  */
 string cpp_generator::type2cpp(const isl_class &clazz)
@@ -450,4 +1003,96 @@ string cpp_generator::type2cpp(const isl_class &clazz)
 string cpp_generator::type2cpp(string type_str)
 {
 	return type_str.substr(4);
+}
+
+/* Translate QualType "type" to its C++ name counterpart.
+ */
+string cpp_generator::type2cpp(QualType type)
+{
+	if (is_isl_type(type))
+		return "isl::" + type2cpp(type->getPointeeType().getAsString());
+
+	if (is_isl_bool(type))
+		return "isl::boolean";
+
+	if (is_isl_stat(type))
+		return "isl::stat";
+
+	if (type->isIntegerType())
+		return type.getAsString();
+
+	if (is_string(type))
+		return "std::string";
+
+	if (is_callback(type))
+		return generate_callback_type(type);
+
+	die("Cannot convert type to C++ type");
+}
+
+/* Check if "subclass_type" is a subclass of "class_type".
+ */
+bool cpp_generator::is_subclass(QualType subclass_type,
+	const isl_class &class_type)
+{
+	std::string type_str = subclass_type->getPointeeType().getAsString();
+	std::vector<std::string> superclasses;
+	std::vector<const isl_class *> parents;
+	std::vector<std::string>::iterator ci;
+
+	superclasses = generator::find_superclasses(classes[type_str].type);
+
+	for (ci = superclasses.begin(); ci < superclasses.end(); ci++)
+		parents.push_back(&classes[*ci]);
+
+	while (!parents.empty()) {
+		const isl_class *candidate = parents.back();
+
+		parents.pop_back();
+
+		if (&class_type == candidate)
+			return true;
+
+		superclasses = generator::find_superclasses(candidate->type);
+
+		for (ci = superclasses.begin(); ci < superclasses.end(); ci++)
+			parents.push_back(&classes[*ci]);
+	}
+
+	return false;
+}
+
+/* Check if "cons" is an implicit conversion constructor of class "clazz".
+ *
+ * An implicit conversion constructor is generated in case "cons" has a single
+ * parameter, where the parameter type is a subclass of the class that is
+ * currently being generated.
+ */
+bool cpp_generator::is_implicit_conversion(const isl_class &clazz,
+	FunctionDecl *cons)
+{
+	ParmVarDecl *param = cons->getParamDecl(0);
+	QualType type = param->getOriginalType();
+
+	int num_params = cons->getNumParams();
+	if (num_params != 1)
+		return false;
+
+	if (is_isl_type(type) && !is_isl_ctx(type) && is_subclass(type, clazz))
+		return true;
+
+	return false;
+}
+
+/* Get kind of "method" in "clazz".
+ *
+ * Given the declaration of a static or member method, returns its kind.
+ */
+cpp_generator::function_kind cpp_generator::get_method_kind(
+	const isl_class &clazz, FunctionDecl *method)
+{
+	if (is_static(clazz, method))
+		return function_kind_static_method;
+	else
+		return function_kind_member_method;
 }

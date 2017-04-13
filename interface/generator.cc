@@ -116,6 +116,13 @@ void generator::die(const char *msg)
 	abort();
 }
 
+/* Print error message "msg" and abort.
+ */
+void generator::die(string msg)
+{
+	die(msg.c_str());
+}
+
 /* Return a sequence of the types of which the given type declaration is
  * marked as being a subtype.
  * The order of the types is the opposite of the order in which they
@@ -166,6 +173,13 @@ bool generator::is_constructor(Decl *decl)
 bool generator::takes(Decl *decl)
 {
 	return has_annotation(decl, "isl_take");
+}
+
+/* Is decl marked as preserving a reference?
+ */
+bool generator::keeps(Decl *decl)
+{
+	return has_annotation(decl, "isl_keep");
 }
 
 /* Is decl marked as returning a reference that is required to be freed.
@@ -253,6 +267,20 @@ bool generator::is_isl_bool(QualType type)
 	s = type.getAsString();
 	return s == "isl_bool";
 }
+
+/* Is "type" the type isl_stat?
+ */
+bool generator::is_isl_stat(QualType type)
+{
+	string s;
+
+	if (type->isPointerType())
+		return false;
+
+	s = type.getAsString();
+	return s == "isl_stat";
+}
+
 
 /* Is "type" that of a pointer to a function?
  */
