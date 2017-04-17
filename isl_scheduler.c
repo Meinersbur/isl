@@ -4056,7 +4056,8 @@ static int carries_dependences(__isl_keep isl_vec *sol, int n_edge)
  * Also, check that dependences are carried for at least one of
  * the "n_edge" edges.
  *
- * If the computed schedule performs loop coalescing on a given node,
+ * If the schedule_treat_coalescing option is set and
+ * if the computed schedule performs loop coalescing on a given node,
  * i.e., if it is of the form
  *
  *	c_i i + c_j j + ...
