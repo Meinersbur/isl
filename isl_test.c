@@ -1255,6 +1255,49 @@ void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
+/* Pairs of sets and the corresponding expected results of
+ * isl_basic_set_recession_cone.
+ */
+struct {
+	const char *set;
+	const char *cone;
+} recession_cone_tests[] = {
+	{ "{ [i] : 0 <= i <= 10 }", "{ [0] }" },
+	{ "{ [i] : 0 <= i }", "{ [i] : 0 <= i }" },
+	{ "{ [i] : i <= 10 }", "{ [i] : i <= 0 }" },
+	{ "{ [i] : false }", "{ [i] : false }" },
+};
+
+/* Perform some basic isl_basic_set_recession_cone tests.
+ */
+static int test_recession_cone(struct isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(recession_cone_tests); ++i) {
+		const char *str;
+		isl_basic_set *bset;
+		isl_basic_set *cone, *expected;
+		isl_bool equal;
+
+		str = recession_cone_tests[i].set;
+		bset = isl_basic_set_read_from_str(ctx, str);
+		str = recession_cone_tests[i].cone;
+		expected = isl_basic_set_read_from_str(ctx, str);
+		cone = isl_basic_set_recession_cone(bset);
+		equal = isl_basic_set_is_equal(cone, expected);
+		isl_basic_set_free(cone);
+		isl_basic_set_free(expected);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "unexpected cone",
+				return -1);
+	}
+
+	return 0;
+}
+
 int test_affine_hull(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -10113,6 +10156,7 @@ struct {
 	{ "eval", &test_eval },
 	{ "parse", &test_parse },
 	{ "single-valued", &test_sv },
+	{ "recession cone", &test_recession_cone },
 	{ "affine hull", &test_affine_hull },
 	{ "simple_hull", &test_simple_hull },
 	{ "coalesce", &test_coalesce },
