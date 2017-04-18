@@ -9343,7 +9343,7 @@ and C<ISL_SCHEDULE_ALGORITHM_FEAUTRIER>.
 
 If this option is set, then we try to construct schedules in which the
 constant term is split off from the linear part if the linear parts of
-the scheduling rows for all nodes in the graphs have a common non-trivial
+the scheduling rows for all nodes in the graph have a common non-trivial
 divisor.
 The constant term is then placed in a separate band and the linear
 part is reduced.
