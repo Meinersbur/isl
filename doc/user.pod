@@ -9299,6 +9299,10 @@ L</"Schedule Trees">.
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_algorithm(
 		isl_ctx *ctx);
+	isl_stat isl_options_set_schedule_carry_self_first(
+		isl_ctx *ctx, int val);
+	int isl_options_get_schedule_carry_self_first(
+		isl_ctx *ctx);
 	isl_stat isl_options_set_schedule_separate_components(
 		isl_ctx *ctx, int val);
 	int isl_options_get_schedule_separate_components(
@@ -9395,6 +9399,12 @@ bounds on the schedule coefficients based on the sizes of the instance sets.
 For the Feautrier style scheduler, this option detects potentially
 coalescing schedules and then tries to adjust the schedule to avoid
 the coalescing.
+
+=item * schedule_carry_self_first
+
+If this option is set, then the Feautrier style scheduler
+(when used as a fallback for the Pluto-like scheduler) will
+first try to only carry self-dependences.
 
 =item * schedule_separate_components
 

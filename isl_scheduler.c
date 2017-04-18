@@ -3600,7 +3600,8 @@ static isl_stat add_intra_constraints(struct isl_sched_graph *graph,
 
 /* Add the constraints "coef" derived from an edge from "src" to "dst"
  * to graph->lp in order to respect the dependences and to try and carry them.
- * "pos" is the sequence number of the edge that needs to be carried.
+ * "pos" is the sequence number of the edge that needs to be carried or
+ * -1 if no attempt should be made to carry the dependences.
  * "coef" represents general constraints on coefficients (c_0, c_n, c_x, c_y)
  * of valid constraints for (x, y) with x and y instances of "src" and "dst".
  *
@@ -3608,9 +3609,15 @@ static isl_stat add_intra_constraints(struct isl_sched_graph *graph,
  *
  *	(c_k_0 + c_k_n n + c_k_x y) - (c_j_0 + c_j_n n + c_j_x x) >= e_i
  *
- * for each (x,y) in the dependence relation of the edge.
+ * for each (x,y) in the dependence relation of the edge or
+ *
+ *	(c_k_0 + c_k_n n + c_k_x y) - (c_j_0 + c_j_n n + c_j_x x) >= 0
+ *
+ * if pos is -1.
  * That is,
  * (-e_i + c_k_0 - c_j_0, c_k_n - c_j_n, -c_j_x, c_k_x)
+ * or
+ * (c_k_0 - c_j_0, c_k_n - c_j_n, -c_j_x, c_k_x)
  * needs to be plugged in for (c_0, c_n, c_x, c_y),
  * taking into account that each coefficient in c_j_x and c_k_x is represented
  * as a pair of non-negative coefficients.
@@ -3629,7 +3636,8 @@ static isl_stat add_inter_constraints(struct isl_sched_graph *graph,
 	ctx = isl_basic_set_get_ctx(coef);
 	offset = coef_var_offset(coef);
 	dim_map = inter_dim_map(ctx, graph, src, dst, offset, 1);
-	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
+	if (pos >= 0)
+		isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
 	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
 	return isl_stat_ok;
@@ -3694,11 +3702,13 @@ static struct isl_sched_node *graph_find_compressed_node(isl_ctx *ctx,
  *
  * "graph" is the schedule constraint graph for which an LP problem
  * is being constructed.
+ * "carry_inter" indicates whether inter-node edges should be carried.
  * "pos" is the position of the next edge that needs to be carried.
  */
 struct isl_add_all_constraints_data {
 	isl_ctx *ctx;
 	struct isl_sched_graph *graph;
+	int carry_inter;
 	int pos;
 };
 
@@ -3728,7 +3738,7 @@ static isl_stat lp_add_intra(__isl_take isl_basic_set *coef, void *user)
 
 /* Add the constraints "coef" derived from an edge from a node j
  * to a node k to data->graph->lp in order to respect the dependences and
- * to try and carry them.
+ * to try and carry them (provided data->carry_inter is set).
  *
  * The space of "coef" is of the form
  *
@@ -3742,6 +3752,7 @@ static isl_stat lp_add_inter(__isl_take isl_basic_set *coef, void *user)
 	struct isl_add_all_constraints_data *data = user;
 	isl_space *space, *dom;
 	struct isl_sched_node *src, *dst;
+	int pos;
 
 	space = isl_basic_set_get_space(coef);
 	space = isl_space_unwrap(isl_space_range(isl_space_unwrap(space)));
@@ -3752,19 +3763,22 @@ static isl_stat lp_add_inter(__isl_take isl_basic_set *coef, void *user)
 	dst = graph_find_compressed_node(data->ctx, data->graph, space);
 	isl_space_free(space);
 
-	return add_inter_constraints(data->graph, src, dst, coef, data->pos++);
+	pos = data->carry_inter ? data->pos++ : -1;
+	return add_inter_constraints(data->graph, src, dst, coef, pos);
 }
 
 /* Add constraints to graph->lp that force all (conditional) validity
  * dependences to be respected and attempt to carry them.
  * "intra" is the sequence of coefficient constraints for intra-node edges.
  * "inter" is the sequence of coefficient constraints for inter-node edges.
+ * "carry_inter" indicates whether inter-node edges should be carried or
+ * only respected.
  */
 static isl_stat add_all_constraints(isl_ctx *ctx, struct isl_sched_graph *graph,
 	__isl_keep isl_basic_set_list *intra,
-	__isl_keep isl_basic_set_list *inter)
+	__isl_keep isl_basic_set_list *inter, int carry_inter)
 {
-	struct isl_add_all_constraints_data data = { ctx, graph };
+	struct isl_add_all_constraints_data data = { ctx, graph, carry_inter };
 
 	data.pos = 0;
 	if (isl_basic_set_list_foreach(intra, &lp_add_intra, &data) < 0)
@@ -3828,6 +3842,9 @@ static isl_stat count_all_constraints(__isl_keep isl_basic_set_list *intra,
  * "intra" is the sequence of coefficient constraints for intra-node edges.
  * "inter" is the sequence of coefficient constraints for inter-node edges.
  * "n_edge" is the total number of edges.
+ * "carry_inter" indicates whether inter-node edges should be carried or
+ * only respected.  That is, if "carry_inter" is not set, then
+ * no e_i variables are introduced for the inter-node edges.
  *
  * All variables of the LP are non-negative.  The actual coefficients
  * may be negative, so each coefficient is represented as the difference
@@ -3851,7 +3868,7 @@ static isl_stat count_all_constraints(__isl_keep isl_basic_set_list *intra,
  */
 static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int n_edge, __isl_keep isl_basic_set_list *intra,
-	__isl_keep isl_basic_set_list *inter)
+	__isl_keep isl_basic_set_list *inter, int carry_inter)
 {
 	int i;
 	int k;
@@ -3899,7 +3916,7 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 		isl_int_set_si(graph->lp->ineq[k][0], 1);
 	}
 
-	if (add_all_constraints(ctx, graph, intra, inter) < 0)
+	if (add_all_constraints(ctx, graph, intra, inter, carry_inter) < 0)
 		return isl_stat_error;
 
 	return isl_stat_ok;
@@ -4445,6 +4462,8 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
  * If "want_integral" is set, then compute an integral solution
  * for the coefficients rather than using the numerators
  * of a rational solution.
+ * "carry_inter" indicates whether inter-node edges should be carried or
+ * only respected.
  *
  * If none of the "n_edge" groups can be carried
  * then return an empty vector.
@@ -4452,11 +4471,12 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
 static __isl_give isl_vec *compute_carrying_sol_coef(isl_ctx *ctx,
 	struct isl_sched_graph *graph, int n_edge,
 	__isl_keep isl_basic_set_list *intra,
-	__isl_keep isl_basic_set_list *inter, int want_integral)
+	__isl_keep isl_basic_set_list *inter, int want_integral,
+	int carry_inter)
 {
 	isl_basic_set *lp;
 
-	if (setup_carry_lp(ctx, graph, n_edge, intra, inter) < 0)
+	if (setup_carry_lp(ctx, graph, n_edge, intra, inter, carry_inter) < 0)
 		return NULL;
 
 	lp = isl_basic_set_copy(graph->lp);
@@ -4480,6 +4500,12 @@ static __isl_give isl_vec *compute_carrying_sol_coef(isl_ctx *ctx,
  * If a fallback solution is being computed, then compute an integral solution
  * for the coefficients rather than using the numerators
  * of a rational solution.
+ *
+ * If a fallback solution is being computed, if there are any intra-node
+ * dependences, and if requested by the user, then first try
+ * to only carry those intra-node dependences.
+ * If this fails to carry any dependences, then try again
+ * with the inter-node dependences included.
  */
 static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 	struct isl_sched_graph *graph, int fallback, int coincidence)
@@ -4495,6 +4521,18 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 		goto error;
 	n_intra = isl_basic_set_list_n_basic_set(carry.intra);
 	n_inter = isl_basic_set_list_n_basic_set(carry.inter);
+
+	if (fallback && n_intra > 0 &&
+	    isl_options_get_schedule_carry_self_first(ctx)) {
+		sol = compute_carrying_sol_coef(ctx, graph, n_intra,
+				carry.intra, carry.inter, fallback, 0);
+		if (!sol || sol->size != 0 || n_inter == 0) {
+			isl_carry_clear(&carry);
+			return sol;
+		}
+		isl_vec_free(sol);
+	}
+
 	n_edge = n_intra + n_inter;
 	if (n_edge == 0) {
 		isl_carry_clear(&carry);
@@ -4502,7 +4540,7 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 	}
 
 	sol = compute_carrying_sol_coef(ctx, graph, n_edge,
-				carry.intra, carry.inter, fallback);
+				carry.intra, carry.inter, fallback, 1);
 	isl_carry_clear(&carry);
 	return sol;
 error:
