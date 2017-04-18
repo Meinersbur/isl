@@ -4437,6 +4437,33 @@ static __isl_give isl_basic_set_list *collect_inter_validity(
 }
 
 /* Construct an LP problem for finding schedule coefficients
+ * such that the schedule carries as many of the "n_edge" groups of
+ * dependences as possible based on the corresponding coefficient
+ * constraints and return the lexicographically smallest non-trivial solution.
+ * "intra" is the sequence of coefficient constraints for intra-node edges.
+ * "inter" is the sequence of coefficient constraints for inter-node edges.
+ * If "want_integral" is set, then compute an integral solution
+ * for the coefficients rather than using the numerators
+ * of a rational solution.
+ *
+ * If none of the "n_edge" groups can be carried
+ * then return an empty vector.
+ */
+static __isl_give isl_vec *compute_carrying_sol_coef(isl_ctx *ctx,
+	struct isl_sched_graph *graph, int n_edge,
+	__isl_keep isl_basic_set_list *intra,
+	__isl_keep isl_basic_set_list *inter, int want_integral)
+{
+	isl_basic_set *lp;
+
+	if (setup_carry_lp(ctx, graph, n_edge, intra, inter) < 0)
+		return NULL;
+
+	lp = isl_basic_set_copy(graph->lp);
+	return non_neg_lexmin(graph, lp, n_edge, want_integral);
+}
+
+/* Construct an LP problem for finding schedule coefficients
  * such that the schedule carries as many of the validity dependences
  * as possible and
  * return the lexicographically smallest non-trivial solution.
@@ -4459,8 +4486,8 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 {
 	int n_intra, n_inter;
 	int n_edge;
-	isl_basic_set *lp;
 	struct isl_carry carry = { 0 };
+	isl_vec *sol;
 
 	carry.intra = collect_intra_validity(graph, coincidence);
 	carry.inter = collect_inter_validity(graph, coincidence);
@@ -4474,12 +4501,10 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 		return isl_vec_alloc(ctx, 0);
 	}
 
-	if (setup_carry_lp(ctx, graph, n_edge, carry.intra, carry.inter) < 0)
-		goto error;
-
+	sol = compute_carrying_sol_coef(ctx, graph, n_edge,
+				carry.intra, carry.inter, fallback);
 	isl_carry_clear(&carry);
-	lp = isl_basic_set_copy(graph->lp);
-	return non_neg_lexmin(graph, lp, n_edge, fallback);
+	return sol;
 error:
 	isl_carry_clear(&carry);
 	return NULL;
