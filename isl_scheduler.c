@@ -4169,6 +4169,34 @@ error:
 	return NULL;
 }
 
+/* Construct an LP problem for finding schedule coefficients
+ * such that the schedule carries as many of the validity dependences
+ * as possible and
+ * return the lexicographically smallest non-trivial solution.
+ *
+ * The variable "n_edge" stores the number of groups that should be carried.
+ * If none of the "n_edge" groups can be carried
+ * then return an empty vector.
+ * If, moreover, "n_edge" is zero, then the LP problem does not even
+ * need to be constructed.
+ */
+static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
+	struct isl_sched_graph *graph)
+{
+	int n_edge;
+	isl_basic_set *lp;
+
+	n_edge = count_carry_edges(graph);
+	if (n_edge == 0)
+		return isl_vec_alloc(ctx, 0);
+
+	if (setup_carry_lp(ctx, graph, n_edge) < 0)
+		return NULL;
+
+	lp = isl_basic_set_copy(graph->lp);
+	return non_neg_lexmin(graph, lp, n_edge);
+}
+
 /* Construct a schedule row for each node such that as many validity dependences
  * as possible are carried and then continue with the next band.
  *
@@ -4200,29 +4228,21 @@ error:
 static __isl_give isl_schedule_node *carry_dependences(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	int n_edge;
 	int trivial;
 	isl_ctx *ctx;
 	isl_vec *sol;
-	isl_basic_set *lp;
 
 	if (!node)
 		return NULL;
 
-	n_edge = count_carry_edges(graph);
-	if (n_edge == 0 && graph->scc > 1)
-		return compute_component_schedule(node, graph, 1);
-
 	ctx = isl_schedule_node_get_ctx(node);
-	if (setup_carry_lp(ctx, graph, n_edge) < 0)
-		return isl_schedule_node_free(node);
-
-	lp = isl_basic_set_copy(graph->lp);
-	sol = non_neg_lexmin(graph, lp, n_edge);
+	sol = compute_carrying_sol(ctx, graph);
 	if (!sol)
 		return isl_schedule_node_free(node);
 	if (sol->size == 0) {
 		isl_vec_free(sol);
+		if (graph->scc > 1)
+			return compute_component_schedule(node, graph, 1);
 		isl_die(ctx, isl_error_unknown, "unable to carry dependences",
 			return isl_schedule_node_free(node));
 	}
