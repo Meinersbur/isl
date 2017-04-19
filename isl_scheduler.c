@@ -4756,6 +4756,15 @@ static int bad_cluster(struct isl_sched_graph *graph)
 		graph->n_total_row == graph->band_start;
 }
 
+/* Is "edge" a proximity edge with a non-empty dependence relation?
+ */
+static isl_bool is_non_empty_proximity(struct isl_sched_edge *edge)
+{
+	if (!is_proximity(edge))
+		return isl_bool_false;
+	return isl_bool_not(isl_map_plain_is_empty(edge->map));
+}
+
 /* Return the index of an edge in "graph" that can be used to merge
  * two clusters in "c".
  * Return graph->n_edge if no such edge can be found.
@@ -4779,8 +4788,12 @@ static int find_proximity(struct isl_sched_graph *graph,
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
 		int dist, weight;
+		isl_bool prox;
 
-		if (!is_proximity(edge))
+		prox = is_non_empty_proximity(edge);
+		if (prox < 0)
+			return -1;
+		if (!prox)
 			continue;
 		if (edge->no_merge)
 			continue;
@@ -6022,9 +6035,13 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 		struct isl_sched_node *src = edge->src;
 		struct isl_sched_node *dst = edge->dst;
 		isl_basic_map *hull;
+		isl_bool prox;
 		int n_in, n_out;
 
-		if (!is_proximity(edge))
+		prox = is_non_empty_proximity(edge);
+		if (prox < 0)
+			return isl_stat_error;
+		if (!prox)
 			continue;
 		if (bad_cluster(&c->scc[edge->src->scc]) ||
 		    bad_cluster(&c->scc[edge->dst->scc]))
