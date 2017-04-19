@@ -1888,7 +1888,7 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph,
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i) {
-		struct isl_sched_edge *edge= &graph->edge[i];
+		struct isl_sched_edge *edge = &graph->edge[i];
 		int local;
 
 		local = is_local(edge) ||
@@ -1936,7 +1936,7 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
 	int i;
 
 	for (i = 0; i < graph->n_edge; ++i) {
-		struct isl_sched_edge *edge= &graph->edge[i];
+		struct isl_sched_edge *edge = &graph->edge[i];
 		int local;
 
 		local = is_local(edge) ||
@@ -2092,7 +2092,7 @@ static int count_constraints(struct isl_sched_graph *graph,
 
 	*n_eq = *n_ineq = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
-		struct isl_sched_edge *edge= &graph->edge[i];
+		struct isl_sched_edge *edge = &graph->edge[i];
 		isl_map *map = isl_map_copy(edge->map);
 
 		if (count_map_constraints(graph, edge, map, n_eq, n_ineq,
@@ -2149,7 +2149,7 @@ static isl_stat add_bound_constant_constraints(isl_ctx *ctx,
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			return isl_stat_error;
-		isl_seq_clr(graph->lp->ineq[k], 1 +  total);
+		isl_seq_clr(graph->lp->ineq[k], 1 + total);
 		isl_int_set_si(graph->lp->ineq[k][1 + node->start], -1);
 		isl_int_set_si(graph->lp->ineq[k][0], max);
 	}
@@ -2313,7 +2313,7 @@ static isl_stat add_sum_constraint(struct isl_sched_graph *graph,
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
+	isl_seq_clr(graph->lp->eq[k], 1 + total);
 	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
 	for (i = 0; i < n; ++i)
 		isl_int_set_si(graph->lp->eq[k][1 + first + i], 1);
@@ -2340,7 +2340,7 @@ static isl_stat add_param_sum_constraint(struct isl_sched_graph *graph,
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
+	isl_seq_clr(graph->lp->eq[k], 1 + total);
 	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
 	for (i = 0; i < graph->n; ++i) {
 		int pos = 1 + graph->node[i].start + 1;
@@ -2371,7 +2371,7 @@ static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
+	isl_seq_clr(graph->lp->eq[k], 1 + total);
 	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
@@ -3563,7 +3563,7 @@ static isl_stat add_all_constraints(struct isl_sched_graph *graph)
 
 	pos = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
-		struct isl_sched_edge *edge= &graph->edge[i];
+		struct isl_sched_edge *edge = &graph->edge[i];
 
 		if (!is_any_validity(edge))
 			continue;
@@ -3599,7 +3599,7 @@ static isl_stat count_all_constraints(struct isl_sched_graph *graph,
 
 	*n_eq = *n_ineq = 0;
 	for (i = 0; i < graph->n_edge; ++i) {
-		struct isl_sched_edge *edge= &graph->edge[i];
+		struct isl_sched_edge *edge = &graph->edge[i];
 
 		if (!is_any_validity(edge))
 			continue;
@@ -3703,7 +3703,7 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	k = isl_basic_set_alloc_equality(graph->lp);
 	if (k < 0)
 		return isl_stat_error;
-	isl_seq_clr(graph->lp->eq[k], 1 +  total);
+	isl_seq_clr(graph->lp->eq[k], 1 + total);
 	isl_int_set_si(graph->lp->eq[k][0], -n_edge);
 	isl_int_set_si(graph->lp->eq[k][1], 1);
 	for (i = 0; i < n_edge; ++i)
@@ -3718,7 +3718,7 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			return isl_stat_error;
-		isl_seq_clr(graph->lp->ineq[k], 1 +  total);
+		isl_seq_clr(graph->lp->ineq[k], 1 + total);
 		isl_int_set_si(graph->lp->ineq[k][4 + i], -1);
 		isl_int_set_si(graph->lp->ineq[k][0], 1);
 	}
