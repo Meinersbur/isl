@@ -1951,17 +1951,16 @@ static uint32_t isl_hash_params(uint32_t hash, __isl_keep isl_space *space)
 	return hash;
 }
 
-/* Update "hash" by hashing in "space".
- * Changes in this function should be reflected in isl_hash_space_domain.
+/* Update "hash" by hashing in the tuples of "space".
+ * Changes in this function should be reflected in isl_hash_tuples_domain.
  */
-static uint32_t isl_hash_space(uint32_t hash, __isl_keep isl_space *space)
+static uint32_t isl_hash_tuples(uint32_t hash, __isl_keep isl_space *space)
 {
 	isl_id *id;
 
 	if (!space)
 		return hash;
 
-	hash = isl_hash_params(hash, space);
 	isl_hash_byte(hash, space->n_in % 256);
 	isl_hash_byte(hash, space->n_out % 256);
 
@@ -1970,17 +1969,17 @@ static uint32_t isl_hash_space(uint32_t hash, __isl_keep isl_space *space)
 	id = tuple_id(space, isl_dim_out);
 	hash = isl_hash_id(hash, id);
 
-	hash = isl_hash_space(hash, space->nested[0]);
-	hash = isl_hash_space(hash, space->nested[1]);
+	hash = isl_hash_tuples(hash, space->nested[0]);
+	hash = isl_hash_tuples(hash, space->nested[1]);
 
 	return hash;
 }
 
-/* Update "hash" by hashing in the domain of "space".
+/* Update "hash" by hashing in the domain tuple of "space".
  * The result of this function is equal to the result of applying
- * isl_hash_space to the domain of "space".
+ * isl_hash_tuples to the domain of "space".
  */
-static uint32_t isl_hash_space_domain(uint32_t hash,
+static uint32_t isl_hash_tuples_domain(uint32_t hash,
 	__isl_keep isl_space *space)
 {
 	isl_id *id;
@@ -1988,7 +1987,6 @@ static uint32_t isl_hash_space_domain(uint32_t hash,
 	if (!space)
 		return hash;
 
-	hash = isl_hash_params(hash, space);
 	isl_hash_byte(hash, 0);
 	isl_hash_byte(hash, space->n_in % 256);
 
@@ -1996,7 +1994,7 @@ static uint32_t isl_hash_space_domain(uint32_t hash,
 	id = tuple_id(space, isl_dim_in);
 	hash = isl_hash_id(hash, id);
 
-	hash = isl_hash_space(hash, space->nested[0]);
+	hash = isl_hash_tuples(hash, space->nested[0]);
 
 	return hash;
 }
@@ -2009,7 +2007,8 @@ uint32_t isl_space_get_hash(__isl_keep isl_space *space)
 		return 0;
 
 	hash = isl_hash_init();
-	hash = isl_hash_space(hash, space);
+	hash = isl_hash_params(hash, space);
+	hash = isl_hash_tuples(hash, space);
 
 	return hash;
 }
@@ -2026,7 +2025,8 @@ uint32_t isl_space_get_domain_hash(__isl_keep isl_space *space)
 		return 0;
 
 	hash = isl_hash_init();
-	hash = isl_hash_space_domain(hash, space);
+	hash = isl_hash_params(hash, space);
+	hash = isl_hash_tuples_domain(hash, space);
 
 	return hash;
 }
