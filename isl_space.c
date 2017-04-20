@@ -1931,10 +1931,9 @@ isl_bool isl_space_is_range(__isl_keep isl_space *space1,
 	return isl_space_is_range_internal(space1, space2);
 }
 
-/* Update "hash" by hashing in "space".
- * Changes in this function should be reflected in isl_hash_space_domain.
+/* Update "hash" by hashing in the parameters of "space".
  */
-static uint32_t isl_hash_space(uint32_t hash, __isl_keep isl_space *space)
+static uint32_t isl_hash_params(uint32_t hash, __isl_keep isl_space *space)
 {
 	int i;
 	isl_id *id;
@@ -1943,13 +1942,28 @@ static uint32_t isl_hash_space(uint32_t hash, __isl_keep isl_space *space)
 		return hash;
 
 	isl_hash_byte(hash, space->nparam % 256);
-	isl_hash_byte(hash, space->n_in % 256);
-	isl_hash_byte(hash, space->n_out % 256);
 
 	for (i = 0; i < space->nparam; ++i) {
 		id = get_id(space, isl_dim_param, i);
 		hash = isl_hash_id(hash, id);
 	}
+
+	return hash;
+}
+
+/* Update "hash" by hashing in "space".
+ * Changes in this function should be reflected in isl_hash_space_domain.
+ */
+static uint32_t isl_hash_space(uint32_t hash, __isl_keep isl_space *space)
+{
+	isl_id *id;
+
+	if (!space)
+		return hash;
+
+	hash = isl_hash_params(hash, space);
+	isl_hash_byte(hash, space->n_in % 256);
+	isl_hash_byte(hash, space->n_out % 256);
 
 	id = tuple_id(space, isl_dim_in);
 	hash = isl_hash_id(hash, id);
@@ -1969,20 +1983,14 @@ static uint32_t isl_hash_space(uint32_t hash, __isl_keep isl_space *space)
 static uint32_t isl_hash_space_domain(uint32_t hash,
 	__isl_keep isl_space *space)
 {
-	int i;
 	isl_id *id;
 
 	if (!space)
 		return hash;
 
-	isl_hash_byte(hash, space->nparam % 256);
+	hash = isl_hash_params(hash, space);
 	isl_hash_byte(hash, 0);
 	isl_hash_byte(hash, space->n_in % 256);
-
-	for (i = 0; i < space->nparam; ++i) {
-		id = get_id(space, isl_dim_param, i);
-		hash = isl_hash_id(hash, id);
-	}
 
 	hash = isl_hash_id(hash, &isl_id_none);
 	id = tuple_id(space, isl_dim_in);
