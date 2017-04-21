@@ -1346,23 +1346,29 @@ error:
 }
 
 /* Compute the lineality space of a basic set.
- * We currently do not allow the basic set to have any divs.
  * We basically just drop the constants and turn every inequality
  * into an equality.
+ * Any explicit representations of local variables are removed
+ * because they may no longer be valid representations
+ * in the lineality space.
  */
 __isl_give isl_basic_set *isl_basic_set_lineality_space(
 	__isl_take isl_basic_set *bset)
 {
 	int i, k;
 	struct isl_basic_set *lin = NULL;
-	unsigned dim;
+	unsigned n_div, dim;
 
 	if (!bset)
 		goto error;
-	isl_assert(bset->ctx, bset->n_div == 0, goto error);
+	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	dim = isl_basic_set_total_dim(bset);
 
-	lin = isl_basic_set_alloc_space(isl_basic_set_get_space(bset), 0, dim, 0);
+	lin = isl_basic_set_alloc_space(isl_basic_set_get_space(bset),
+					n_div, dim, 0);
+	for (i = 0; i < n_div; ++i)
+		if (isl_basic_set_alloc_div(lin) < 0)
+			goto error;
 	if (!lin)
 		goto error;
 	for (i = 0; i < bset->n_eq; ++i) {
