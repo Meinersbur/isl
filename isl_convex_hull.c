@@ -1400,9 +1400,9 @@ error:
 }
 
 /* Compute the (linear) hull of the lineality spaces of the basic sets in the
- * "underlying" set "set".
+ * set "set".
  */
-static __isl_give isl_basic_set *uset_combined_lineality_space(
+__isl_give isl_basic_set *isl_set_combined_lineality_space(
 	__isl_take isl_set *set)
 {
 	int i;
@@ -1778,7 +1778,7 @@ static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set)
 	if (bounded && set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
 		return uset_convex_hull_wrap(set);
 
-	lin = uset_combined_lineality_space(isl_set_copy(set));
+	lin = isl_set_combined_lineality_space(isl_set_copy(set));
 	if (!lin)
 		goto error;
 	if (isl_basic_set_plain_is_universe(lin)) {
