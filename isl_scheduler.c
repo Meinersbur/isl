@@ -1586,6 +1586,9 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
 	unsigned total;
 	isl_dim_map *dim_map;
 
+	if (!node)
+		return NULL;
+
 	total = isl_basic_set_total_dim(graph->lp);
 	pos = node_var_coef_offset(node);
 	dim_map = isl_dim_map_alloc(ctx, total);
