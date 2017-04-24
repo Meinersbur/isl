@@ -1523,12 +1523,14 @@ __isl_give isl_union_map *isl_union_map_flat_range_product(
 static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
 	isl_stat (*fn)(void **, void *))
 {
+	isl_space *space;
 	isl_union_set *res;
 
 	if (!umap)
 		return NULL;
 
-	res = isl_union_map_alloc(isl_space_copy(umap->dim), umap->table.n);
+	space = isl_union_map_get_space(umap);
+	res = isl_union_map_alloc(space, umap->table.n);
 	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap),
 				    &umap->table, fn, &res) < 0)
 		goto error;
