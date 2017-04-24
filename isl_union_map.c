@@ -1533,14 +1533,10 @@ static __isl_give isl_union_set *cond_un_op(__isl_take isl_union_map *umap,
 	res = isl_union_map_alloc(space, umap->table.n);
 	if (isl_hash_table_foreach(isl_union_map_get_ctx(umap),
 				    &umap->table, fn, &res) < 0)
-		goto error;
+		res = isl_union_set_free(res);
 
 	isl_union_map_free(umap);
 	return res;
-error:
-	isl_union_map_free(umap);
-	isl_union_set_free(res);
-	return NULL;
 }
 
 static isl_stat from_range_entry(void **entry, void *user)
