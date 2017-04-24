@@ -1624,6 +1624,9 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	unsigned total;
 	isl_dim_map *dim_map;
 
+	if (!src || !dst)
+		return NULL;
+
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 
