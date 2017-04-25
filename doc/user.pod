@@ -3988,6 +3988,7 @@ The following functions check whether the space of the given
 		__isl_keep isl_map *map);
 	isl_bool isl_map_range_is_wrapping(
 		__isl_keep isl_map *map);
+	isl_bool isl_map_is_product(__isl_keep isl_map *map);
 
 	#include <isl/val.h>
 	isl_bool isl_multi_val_range_is_wrapping(

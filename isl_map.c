@@ -11224,6 +11224,13 @@ isl_bool isl_map_domain_is_wrapping(__isl_keep isl_map *map)
 	return isl_space_domain_is_wrapping(map->dim);
 }
 
+/* Does "map" have a wrapped relation in both domain and range?
+ */
+isl_bool isl_map_is_product(__isl_keep isl_map *map)
+{
+	return isl_space_is_product(isl_map_peek_space(map));
+}
+
 /* Is the range of "map" a wrapped relation?
  */
 isl_bool isl_map_range_is_wrapping(__isl_keep isl_map *map)
