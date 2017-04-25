@@ -2173,7 +2173,7 @@ static isl_stat factor_domain_entry(void **entry, void *user)
 	isl_map *map = *entry;
 	isl_union_map **res = user;
 
-	if (!isl_map_domain_is_wrapping(map) || !isl_map_range_is_wrapping(map))
+	if (!isl_map_is_product(map))
 		return isl_stat_ok;
 
 	*res = isl_union_map_add_map(*res,
