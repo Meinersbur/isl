@@ -2060,6 +2060,26 @@ isl_bool isl_space_range_is_wrapping(__isl_keep isl_space *space)
 	return space->nested[1] != NULL;
 }
 
+/* Is "space" a product of two spaces?
+ * That is, is it a wrapping set space or a map space
+ * with wrapping domain and range?
+ */
+isl_bool isl_space_is_product(__isl_keep isl_space *space)
+{
+	isl_bool is_set;
+	isl_bool is_product;
+
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_bool_error;
+	if (is_set)
+		return isl_space_is_wrapping(space);
+	is_product = isl_space_domain_is_wrapping(space);
+	if (is_product < 0 || !is_product)
+		return is_product;
+	return isl_space_range_is_wrapping(space);
+}
+
 __isl_give isl_space *isl_space_wrap(__isl_take isl_space *dim)
 {
 	isl_space *wrap;
@@ -2246,10 +2266,14 @@ __isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local
 
 isl_bool isl_space_can_zip(__isl_keep isl_space *space)
 {
-	if (!space)
-		return isl_bool_error;
+	isl_bool is_set;
 
-	return space->nested[0] && space->nested[1];
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_bool_error;
+	if (is_set)
+		return isl_bool_false;
+	return isl_space_is_product(space);
 }
 
 __isl_give isl_space *isl_space_zip(__isl_take isl_space *dim)
