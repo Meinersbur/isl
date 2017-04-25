@@ -383,8 +383,8 @@ error:
 	return NULL;
 }
 
-/* Given a basic set, exploit the equalties in the basic set to construct
- * a morphishm that maps the basic set to a lower-dimensional space.
+/* Given a basic set, exploit the equalities in the basic set to construct
+ * a morphism that maps the basic set to a lower-dimensional space.
  * Specifically, the morphism reduces the number of dimensions of type "type".
  *
  * We first select the equalities of interest, that is those that involve
@@ -773,7 +773,7 @@ __isl_give isl_morph *isl_morph_inverse(__isl_take isl_morph *morph)
 	return morph;
 }
 
-/* We detect all the equalities first to avoid implicit equalties
+/* We detect all the equalities first to avoid implicit equalities
  * being discovered during the computations.  In particular,
  * the compression on the variables could expose additional stride
  * constraints on the parameters.  This would result in existentially
