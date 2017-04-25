@@ -121,9 +121,9 @@ struct isl_sched_node {
 static int node_has_space(const void *entry, const void *val)
 {
 	struct isl_sched_node *node = (struct isl_sched_node *)entry;
-	isl_space *dim = (isl_space *)val;
+	isl_space *space = (isl_space *) val;
 
-	return isl_space_is_equal(node->space, dim);
+	return isl_space_is_equal(node->space, space);
 }
 
 static int node_scc_exactly(struct isl_sched_node *node, int scc)
