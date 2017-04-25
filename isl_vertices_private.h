@@ -1,3 +1,6 @@
+#ifndef ISL_VERTICES_PRIVATE_H
+#define ISL_VERTICES_PRIVATE_H
+
 #include <isl/set.h>
 #include <isl/vertices.h>
 
@@ -11,6 +14,8 @@ struct isl_morph;
  * of the vertex as a singleton parametric set.  "dom" is the projection
  * of "vertex" onto the parameter space, i.e., the activity domain
  * of the vertex.
+ * During the construction of vertices and chambers, the activity domain
+ * of every parametric vertex is full-dimensional.
  */
 struct isl_vertex {
 	isl_basic_set *dom;
@@ -51,14 +56,16 @@ struct isl_external_vertex {
 	int id;
 };
 
-int isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
-	int (*fn)(__isl_take isl_cell *cell, void *user), void *user);
-int isl_cell_foreach_simplex(__isl_take isl_cell *cell,
-	int (*fn)(__isl_take isl_cell *simplex, void *user), void *user);
+isl_stat isl_vertices_foreach_disjoint_cell(__isl_keep isl_vertices *vertices,
+	isl_stat (*fn)(__isl_take isl_cell *cell, void *user), void *user);
+isl_stat isl_cell_foreach_simplex(__isl_take isl_cell *cell,
+	isl_stat (*fn)(__isl_take isl_cell *simplex, void *user), void *user);
 
 __isl_give isl_vertices *isl_morph_vertices(__isl_take struct isl_morph *morph,
 	__isl_take isl_vertices *vertices);
 
 #if defined(__cplusplus)
 }
+#endif
+
 #endif

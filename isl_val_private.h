@@ -34,6 +34,8 @@ __isl_give isl_val *isl_val_rat_from_isl_int(isl_ctx *ctx,
 	isl_int n, isl_int d);
 __isl_give isl_val *isl_val_cow(__isl_take isl_val *val);
 
+int isl_val_get_num_isl_int(__isl_keep isl_val *v, isl_int *n);
+
 int isl_val_involves_dims(__isl_keep isl_val *v, enum isl_dim_type type,
 	unsigned first, unsigned n);
 __isl_give isl_val *isl_val_insert_dims(__isl_take isl_val *v,
@@ -60,8 +62,9 @@ __isl_give isl_val *isl_val_mod_val(__isl_take isl_val *v1,
 
 int isl_val_plain_is_equal(__isl_keep isl_val *val1, __isl_keep isl_val *val2);
 
-int isl_val_matching_params(__isl_keep isl_val *v, __isl_keep isl_space *space);
-int isl_val_check_match_domain_space(__isl_keep isl_val *v,
+isl_bool isl_val_matching_params(__isl_keep isl_val *v,
+	__isl_keep isl_space *space);
+isl_stat isl_val_check_match_domain_space(__isl_keep isl_val *v,
 	__isl_keep isl_space *space);
 
 #undef BASE

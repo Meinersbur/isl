@@ -33,13 +33,15 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 
 __isl_give isl_local_space *isl_local_space_replace_divs(
 	__isl_take isl_local_space *ls, __isl_take isl_mat *div);
+isl_bool isl_local_space_div_is_marked_unknown(__isl_keep isl_local_space *ls,
+	int div);
 isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div);
 isl_bool isl_local_space_divs_known(__isl_keep isl_local_space *ls);
 
 __isl_give isl_local_space *isl_local_space_substitute_equalities(
 	__isl_take isl_local_space *ls, __isl_take isl_basic_set *eq);
 
-int isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
+isl_bool isl_local_space_is_named_or_nested(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type);
 
 isl_bool isl_local_space_has_equal_space(__isl_keep isl_local_space *ls1,
@@ -50,7 +52,7 @@ __isl_give isl_local_space *isl_local_space_reset_space(
 __isl_give isl_local_space *isl_local_space_realign(
 	__isl_take isl_local_space *ls, __isl_take isl_reordering *r);
 
-int isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
+isl_bool isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
 	isl_int *constraint, unsigned div);
 
 int *isl_local_space_get_active(__isl_keep isl_local_space *ls, isl_int *l);

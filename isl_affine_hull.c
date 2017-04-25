@@ -24,6 +24,11 @@
 #include <isl_mat_private.h>
 #include <isl_vec_private.h>
 
+#include <bset_to_bmap.c>
+#include <bset_from_bmap.c>
+#include <set_to_map.c>
+#include <set_from_map.c>
+
 struct isl_basic_map *isl_basic_map_implicit_equalities(
 						struct isl_basic_map *bmap)
 {
@@ -57,27 +62,8 @@ error:
 struct isl_basic_set *isl_basic_set_implicit_equalities(
 						struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_implicit_equalities((struct isl_basic_map*)bset);
-}
-
-struct isl_map *isl_map_implicit_equalities(struct isl_map *map)
-{
-	int i;
-
-	if (!map)
-		return map;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_implicit_equalities(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return bset_from_bmap(
+		isl_basic_map_implicit_equalities(bset_to_bmap(bset)));
 }
 
 /* Make eq[row][col] of both bmaps equal so we can add the row
@@ -333,32 +319,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_set *isl_set_recession_cone(__isl_take isl_set *set)
-{
-	int i;
-
-	if (!set)
-		return NULL;
-	if (set->n == 0)
-		return set;
-
-	set = isl_set_remove_divs(set);
-	set = isl_set_cow(set);
-	if (!set)
-		return NULL;
-
-	for (i = 0; i < set->n; ++i) {
-		set->p[i] = isl_basic_set_recession_cone(set->p[i]);
-		if (!set->p[i])
-			goto error;
-	}
-
-	return set;
-error:
-	isl_set_free(set);
-	return NULL;
-}
-
 /* Move "sample" to a point that is one up (or down) from the original
  * point in dimension "pos".
  */
@@ -490,218 +450,6 @@ static __isl_give isl_basic_set *extend_affine_hull(struct isl_tab *tab,
 error:
 	isl_basic_set_free(hull);
 	return NULL;
-}
-
-/* Drop all constraints in bmap that involve any of the dimensions
- * first to first+n-1.
- */
-static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
-	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
-{
-	int i;
-
-	if (n == 0)
-		return bmap;
-
-	bmap = isl_basic_map_cow(bmap);
-
-	if (!bmap)
-		return NULL;
-
-	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) == -1)
-			continue;
-		isl_basic_map_drop_equality(bmap, i);
-	}
-
-	for (i = bmap->n_ineq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) == -1)
-			continue;
-		isl_basic_map_drop_inequality(bmap, i);
-	}
-
-	bmap = isl_basic_map_add_known_div_constraints(bmap);
-	return bmap;
-}
-
-/* Drop all constraints in bset that involve any of the dimensions
- * first to first+n-1.
- */
-__isl_give isl_basic_set *isl_basic_set_drop_constraints_involving(
-	__isl_take isl_basic_set *bset, unsigned first, unsigned n)
-{
-	return isl_basic_map_drop_constraints_involving(bset, first, n);
-}
-
-/* Drop all constraints in bmap that do not involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
-	__isl_take isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	int i;
-	unsigned dim;
-
-	if (n == 0) {
-		isl_space *space = isl_basic_map_get_space(bmap);
-		isl_basic_map_free(bmap);
-		return isl_basic_map_universe(space);
-	}
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		return NULL;
-
-	dim = isl_basic_map_dim(bmap, type);
-	if (first + n > dim || first + n < first)
-		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"index out of bounds", return isl_basic_map_free(bmap));
-
-	first += isl_basic_map_offset(bmap, type) - 1;
-
-	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) != -1)
-			continue;
-		isl_basic_map_drop_equality(bmap, i);
-	}
-
-	for (i = bmap->n_ineq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) != -1)
-			continue;
-		isl_basic_map_drop_inequality(bmap, i);
-	}
-
-	bmap = isl_basic_map_add_known_div_constraints(bmap);
-	return bmap;
-}
-
-/* Drop all constraints in bset that do not involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_basic_set *isl_basic_set_drop_constraints_not_involving_dims(
-	__isl_take isl_basic_set *bset,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	return isl_basic_map_drop_constraints_not_involving_dims(bset,
-							    type, first, n);
-}
-
-/* Drop all constraints in bmap that involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_dims(
-	__isl_take isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	unsigned dim;
-
-	if (!bmap)
-		return NULL;
-	if (n == 0)
-		return bmap;
-
-	dim = isl_basic_map_dim(bmap, type);
-	if (first + n > dim || first + n < first)
-		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"index out of bounds", return isl_basic_map_free(bmap));
-
-	bmap = isl_basic_map_remove_divs_involving_dims(bmap, type, first, n);
-	first += isl_basic_map_offset(bmap, type) - 1;
-	return isl_basic_map_drop_constraints_involving(bmap, first, n);
-}
-
-/* Drop all constraints in bset that involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_basic_set *isl_basic_set_drop_constraints_involving_dims(
-	__isl_take isl_basic_set *bset,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	return isl_basic_map_drop_constraints_involving_dims(bset,
-							    type, first, n);
-}
-
-/* Drop constraints from "map" by applying "drop" to each basic map.
- */
-__isl_give isl_map *drop_constraints(__isl_take isl_map *map,
-	enum isl_dim_type type, unsigned first, unsigned n,
-	__isl_give isl_basic_map *(*drop)(__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned first, unsigned n))
-{
-	int i;
-	unsigned dim;
-
-	if (!map)
-		return NULL;
-
-	dim = isl_map_dim(map, type);
-	if (first + n > dim || first + n < first)
-		isl_die(isl_map_get_ctx(map), isl_error_invalid,
-			"index out of bounds", return isl_map_free(map));
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = drop(map->p[i], type, first, n);
-		if (!map->p[i])
-			return isl_map_free(map);
-	}
-
-	if (map->n > 1)
-		ISL_F_CLR(map, ISL_MAP_DISJOINT);
-
-	return map;
-}
-
-/* Drop all constraints in map that involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_map *isl_map_drop_constraints_involving_dims(
-	__isl_take isl_map *map,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	if (n == 0)
-		return map;
-	return drop_constraints(map, type, first, n,
-				&isl_basic_map_drop_constraints_involving_dims);
-}
-
-/* Drop all constraints in "map" that do not involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_map *isl_map_drop_constraints_not_involving_dims(
-	__isl_take isl_map *map,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	if (n == 0) {
-		isl_space *space = isl_map_get_space(map);
-		isl_map_free(map);
-		return isl_map_universe(space);
-	}
-	return drop_constraints(map, type, first, n,
-			    &isl_basic_map_drop_constraints_not_involving_dims);
-}
-
-/* Drop all constraints in set that involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_set *isl_set_drop_constraints_involving_dims(
-	__isl_take isl_set *set,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	return isl_map_drop_constraints_involving_dims(set, type, first, n);
-}
-
-/* Drop all constraints in "set" that do not involve any of the dimensions
- * first to first + n - 1 of the given type.
- */
-__isl_give isl_set *isl_set_drop_constraints_not_involving_dims(
-	__isl_take isl_set *set,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	return isl_map_drop_constraints_not_involving_dims(set, type, first, n);
 }
 
 /* Construct an initial underapproximation of the hull of "bset"
@@ -1171,8 +919,8 @@ error:
 __isl_give isl_basic_set *isl_basic_set_detect_equalities(
 						__isl_take isl_basic_set *bset)
 {
-	return (isl_basic_set *)
-		isl_basic_map_detect_equalities((isl_basic_map *)bset);
+	return bset_from_bmap(
+		isl_basic_map_detect_equalities(bset_to_bmap(bset)));
 }
 
 __isl_give isl_map *isl_map_detect_equalities(__isl_take isl_map *map)
@@ -1183,7 +931,7 @@ __isl_give isl_map *isl_map_detect_equalities(__isl_take isl_map *map)
 
 __isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set)
 {
-	return (isl_set *)isl_map_detect_equalities((isl_map *)set);
+	return set_from_map(isl_map_detect_equalities(set_to_map(set)));
 }
 
 /* Return the superset of "bmap" described by the equalities
@@ -1221,8 +969,7 @@ struct isl_basic_map *isl_basic_map_affine_hull(struct isl_basic_map *bmap)
 
 struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_affine_hull((struct isl_basic_map *)bset);
+	return bset_from_bmap(isl_basic_map_affine_hull(bset_to_bmap(bset)));
 }
 
 /* Given a rational affine matrix "M", add stride constraints to "bmap"
@@ -1436,7 +1183,7 @@ __isl_give isl_basic_map *isl_map_affine_hull(__isl_take isl_map *map)
 	map = isl_map_local_affine_hull(map);
 	map = isl_map_remove_empty_parts(map);
 	map = isl_map_remove_unknown_divs(map);
-	map = isl_map_align_divs(map);
+	map = isl_map_align_divs_internal(map);
 
 	if (!map)
 		return NULL;
@@ -1467,6 +1214,5 @@ error:
 
 struct isl_basic_set *isl_set_affine_hull(struct isl_set *set)
 {
-	return (struct isl_basic_set *)
-		isl_map_affine_hull((struct isl_map *)set);
+	return bset_from_bmap(isl_map_affine_hull(set_to_map(set)));
 }

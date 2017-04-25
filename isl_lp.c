@@ -19,6 +19,9 @@
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
 
+#include <bset_to_bmap.c>
+#include <set_to_map.c>
+
 enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
 				      isl_int *f, isl_int denom, isl_int *opt,
 				      isl_int *opt_denom,
@@ -57,7 +60,7 @@ enum isl_lp_result isl_tab_solve_lp(struct isl_basic_map *bmap, int maximize,
  * If opt_denom is NULL, then *opt is rounded up (or down)
  * to the nearest integer.
  * The return value reflects the nature of the result (empty, unbounded,
- * minmimal or maximal value returned in *opt).
+ * minimal or maximal value returned in *opt).
  */
 enum isl_lp_result isl_basic_map_solve_lp(struct isl_basic_map *bmap, int max,
 				      isl_int *f, isl_int d, isl_int *opt,
@@ -78,7 +81,7 @@ enum isl_lp_result isl_basic_set_solve_lp(struct isl_basic_set *bset, int max,
 				      isl_int *opt_denom,
 				      struct isl_vec **sol)
 {
-	return isl_basic_map_solve_lp((struct isl_basic_map *)bset, max,
+	return isl_basic_map_solve_lp(bset_to_bmap(bset), max,
 					f, d, opt, opt_denom, sol);
 }
 
@@ -196,7 +199,7 @@ enum isl_lp_result isl_set_solve_lp(__isl_keep isl_set *set, int max,
 				      isl_int *opt_denom,
 				      struct isl_vec **sol)
 {
-	return isl_map_solve_lp((struct isl_map *)set, max,
+	return isl_map_solve_lp(set_to_map(set), max,
 					f, d, opt, opt_denom, sol);
 }
 
@@ -317,13 +320,16 @@ error:
 static __isl_give isl_val *isl_basic_set_opt_lp_val(
 	__isl_keep isl_basic_set *bset, int max, __isl_keep isl_aff *obj)
 {
+	isl_bool equal;
 	isl_val *res;
 
 	if (!bset || !obj)
 		return NULL;
 
-	if (isl_space_match(bset->dim, isl_dim_param,
-			    obj->ls->dim, isl_dim_param))
+	equal = isl_basic_set_space_has_equal_params(bset, obj->ls->dim);
+	if (equal < 0)
+		return NULL;
+	if (equal)
 		return isl_basic_set_opt_lp_val_aligned(bset, max, obj);
 
 	bset = isl_basic_set_copy(bset);

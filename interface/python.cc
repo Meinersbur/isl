@@ -53,6 +53,10 @@ static void die(const char *msg)
 
 /* Return a sequence of the types of which the given type declaration is
  * marked as being a subtype.
+ * The order of the types is the opposite of the order in which they
+ * appear in the source.  In particular, the first annotation
+ * is the one that is closest to the annotated type and the corresponding
+ * type is then also the first that will appear in the sequence of types.
  */
 static vector<string> find_superclasses(RecordDecl *decl)
 {
@@ -129,7 +133,7 @@ struct isl_class {
 	void print_method_type(FunctionDecl *fd);
 	void print_method_types();
 	void print_method(FunctionDecl *method, vector<string> super);
-	void print_method_overload(FunctionDecl *method, vector<string> super);
+	void print_method_overload(FunctionDecl *method);
 	void print_method(const string &fullname,
 		const set<FunctionDecl *> &methods, vector<string> super);
 };
@@ -211,23 +215,6 @@ static bool is_isl_bool(QualType type)
 
 	s = type.getAsString();
 	return s == "isl_bool";
-}
-
-/* Is "type" that of a pointer to char.
- */
-static bool is_string_type(QualType type)
-{
-	if (type->isPointerType()) {
-		string s;
-
-		type = type->getPointeeType();
-		if (type->isFunctionType())
-			return false;
-		s = type.getAsString();
-		return s == "const char" || "char";
-	}
-
-	return false;
 }
 
 /* Is "type" that of a pointer to a function?
@@ -465,7 +452,7 @@ static void print_method_return(FunctionDecl *method)
 
 		type = type2python(extract_type(return_type));
 		printf("        return %s(ctx=ctx, ptr=res)\n", type.c_str());
-	} else if (is_string_type(return_type)) {
+	} else if (is_string(return_type)) {
 		printf("        if res == 0:\n");
 		printf("            raise\n");
 		printf("        string = str(cast(res, c_char_p).value)\n");
@@ -484,7 +471,11 @@ static void print_method_return(FunctionDecl *method)
 }
 
 /* Print a python method corresponding to the C function "method".
- * "super" contains the superclasses of the class to which the method belongs.
+ * "super" contains the superclasses of the class to which the method belongs,
+ * with the first element corresponding to the annotation that appears
+ * closest to the annotated type.  This superclass is the least
+ * general extension of the annotated type in the linearization
+ * of the class hierarchy.
  *
  * If the first argument of "method" is something other than an instance
  * of the class, then mark the python method as static.
@@ -564,8 +555,8 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 
 	if (drop_user) {
 		printf("        if exc_info[0] != None:\n");
-		printf("            raise exc_info[0][0], "
-			"exc_info[0][1], exc_info[0][2]\n");
+		printf("            raise (exc_info[0][0], "
+			"exc_info[0][1], exc_info[0][2])\n");
 	}
 
 	print_method_return(method);
@@ -573,14 +564,12 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 
 /* Print part of an overloaded python method corresponding to the C function
  * "method".
- * "super" contains the superclasses of the class to which the method belongs.
  *
  * In particular, print code to test whether the arguments passed to
  * the python method correspond to the arguments expected by "method"
  * and to call "method" if they do.
  */
-void isl_class::print_method_overload(FunctionDecl *method,
-	vector<string> super)
+void isl_class::print_method_overload(FunctionDecl *method)
 {
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
@@ -643,7 +632,7 @@ void isl_class::print_method(const string &fullname,
 	print_method_header(is_static(any_method), cname, num_params);
 
 	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method_overload(*it, super);
+		print_method_overload(*it);
 }
 
 /* Print part of the constructor for this isl_class.
@@ -702,6 +691,8 @@ void isl_class::print_constructor(FunctionDecl *cons)
 }
 
 /* Print the header of the class "name" with superclasses "super".
+ * The order of the superclasses is the opposite of the order
+ * in which the corresponding annotations appear in the source code.
  */
 static void print_class_header(const string &name, const vector<string> &super)
 {
@@ -714,6 +705,8 @@ static void print_class_header(const string &name, const vector<string> &super)
 			printf("%s", type2python(super[i]).c_str());
 		}
 		printf(")");
+	} else {
+		printf("(object)");
 	}
 	printf(":\n");
 }
@@ -733,7 +726,7 @@ static void print_restype(FunctionDecl *fd)
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
 	else if (is_isl_bool(type))
 		printf("isl.%s.restype = c_bool\n", fullname.c_str());
-	else if (is_string_type(type))
+	else if (is_string(type))
 		printf("isl.%s.restype = POINTER(c_char)\n", fullname.c_str());
 }
 

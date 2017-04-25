@@ -2,6 +2,7 @@
  * Copyright 2011      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2015-2016 Sven Verdoolaege
+ * Copyright 2016      INRIA Paris
  *
  * Use of this software is governed by the MIT license
  *
@@ -9,6 +10,8 @@
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Centre de Recherche Inria de Paris, 2 rue Simone Iff - Voie DQ12,
+ * CS 42112, 75589 Paris Cedex 12, France
  */
 
 #include <isl_ctx_private.h>
@@ -713,16 +716,16 @@ static isl_stat compute_max_row(struct isl_sched_graph *graph,
 
 /* Does "bset" have any defining equalities for its set variables?
  */
-static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
+static isl_bool has_any_defining_equality(__isl_keep isl_basic_set *bset)
 {
 	int i, n;
 
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 
 	n = isl_basic_set_dim(bset, isl_dim_set);
 	for (i = 0; i < n; ++i) {
-		int has;
+		isl_bool has;
 
 		has = isl_basic_set_has_defining_equality(bset, isl_dim_set, i,
 							NULL);
@@ -730,7 +733,7 @@ static int has_any_defining_equality(__isl_keep isl_basic_set *bset)
 			return has;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Set the entries of node->max to the value of the schedule_max_coefficient
@@ -963,7 +966,7 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 static isl_stat extract_node(__isl_take isl_set *set, void *user)
 {
 	int nvar;
-	int has_equality;
+	isl_bool has_equality;
 	isl_basic_set *hull;
 	isl_set *hull_set;
 	isl_morph *morph;
@@ -2040,7 +2043,7 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
  *
  * "use_coincidence" is set if we should take into account coincidence edges.
  */
-static int count_map_constraints(struct isl_sched_graph *graph,
+static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
 	int *n_eq, int *n_ineq, int carry, int use_coincidence)
 {
@@ -2049,7 +2052,7 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 
 	if (f == 0) {
 		isl_map_free(map);
-		return 0;
+		return isl_stat_ok;
 	}
 
 	if (edge->src == edge->dst)
@@ -2057,12 +2060,12 @@ static int count_map_constraints(struct isl_sched_graph *graph,
 	else
 		coef = inter_coefficients(graph, edge, map);
 	if (!coef)
-		return -1;
+		return isl_stat_error;
 	*n_eq += f * coef->n_eq;
 	*n_ineq += f * coef->n_ineq;
 	isl_basic_set_free(coef);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Count the number of equality and inequality constraints
@@ -3547,7 +3550,7 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 /* Add constraints to graph->lp that force all (conditional) validity
  * dependences to be respected and attempt to carry them.
  */
-static int add_all_constraints(struct isl_sched_graph *graph)
+static isl_stat add_all_constraints(struct isl_sched_graph *graph)
 {
 	int i, j;
 	int pos;
@@ -3568,22 +3571,22 @@ static int add_all_constraints(struct isl_sched_graph *graph)
 
 			if (edge->src == edge->dst &&
 			    add_intra_constraints(graph, edge, map, pos) < 0)
-				return -1;
+				return isl_stat_error;
 			if (edge->src != edge->dst &&
 			    add_inter_constraints(graph, edge, map, pos) < 0)
-				return -1;
+				return isl_stat_error;
 			++pos;
 		}
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Count the number of equality and inequality constraints
  * that will be added to the carry_lp problem.
  * We count each edge exactly once.
  */
-static int count_all_constraints(struct isl_sched_graph *graph,
+static isl_stat count_all_constraints(struct isl_sched_graph *graph,
 	int *n_eq, int *n_ineq)
 {
 	int i, j;
@@ -3604,15 +3607,36 @@ static int count_all_constraints(struct isl_sched_graph *graph,
 
 			if (count_map_constraints(graph, edge, map,
 						  n_eq, n_ineq, 1, 0) < 0)
-				    return -1;
+				    return isl_stat_error;
 		}
 	}
 
-	return 0;
+	return isl_stat_ok;
+}
+
+/* Return the total number of (validity) edges that carry_dependences will
+ * attempt to carry.
+ */
+static int count_carry_edges(struct isl_sched_graph *graph)
+{
+	int i;
+	int n_edge;
+
+	n_edge = 0;
+	for (i = 0; i < graph->n_edge; ++i) {
+		struct isl_sched_edge *edge = &graph->edge[i];
+
+		if (!is_any_validity(edge))
+			continue;
+
+		n_edge += isl_map_n_basic_map(edge->map);
+	}
+
+	return n_edge;
 }
 
 /* Construct an LP problem for finding schedule coefficients
- * such that the schedule carries as many dependences as possible.
+ * such that the schedule carries as many validity dependences as possible.
  * In particular, for each dependence i, we bound the dependence distance
  * from below by e_i, with 0 <= e_i <= 1 and then maximize the sum
  * of all e_i's.  Dependences with e_i = 0 in the solution are simply
@@ -3622,6 +3646,7 @@ static int count_all_constraints(struct isl_sched_graph *graph,
  * be possible to carry the dependences expressed by some of those
  * basic maps and not all of them.
  * Below, we consider each of those basic maps as a separate "edge".
+ * "n_edge" is the number of these edges.
  *
  * All variables of the LP are non-negative.  The actual coefficients
  * may be negative, so each coefficient is represented as the difference
@@ -3643,18 +3668,14 @@ static int count_all_constraints(struct isl_sched_graph *graph,
  * The constraints are those from the (validity) edges plus three equalities
  * to express the sums and n_edge inequalities to express e_i <= 1.
  */
-static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
+static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
+	int n_edge)
 {
 	int i;
 	int k;
 	isl_space *dim;
 	unsigned total;
 	int n_eq, n_ineq;
-	int n_edge;
-
-	n_edge = 0;
-	for (i = 0; i < graph->n_edge; ++i)
-		n_edge += graph->edge[i].map->n;
 
 	total = 3 + n_edge;
 	for (i = 0; i < graph->n; ++i) {
@@ -4096,8 +4117,13 @@ error:
 	return NULL;
 }
 
-/* Construct a schedule row for each node such that as many dependences
+/* Construct a schedule row for each node such that as many validity dependences
  * as possible are carried and then continue with the next band.
+ *
+ * If there are no validity dependences, then no dependence can be carried and
+ * the procedure is guaranteed to fail.  If there is more than one component,
+ * then try computing a schedule on each component separately
+ * to prevent or at least postpone this failure.
  *
  * If the computed schedule row turns out to be trivial on one or
  * more nodes where it should not be trivial, then we throw it away
@@ -4119,7 +4145,6 @@ error:
 static __isl_give isl_schedule_node *carry_dependences(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	int i;
 	int n_edge;
 	int trivial;
 	isl_ctx *ctx;
@@ -4129,12 +4154,12 @@ static __isl_give isl_schedule_node *carry_dependences(
 	if (!node)
 		return NULL;
 
-	n_edge = 0;
-	for (i = 0; i < graph->n_edge; ++i)
-		n_edge += graph->edge[i].map->n;
+	n_edge = count_carry_edges(graph);
+	if (n_edge == 0 && graph->scc > 1)
+		return compute_component_schedule(node, graph, 1);
 
 	ctx = isl_schedule_node_get_ctx(node);
-	if (setup_carry_lp(ctx, graph) < 0)
+	if (setup_carry_lp(ctx, graph, n_edge) < 0)
 		return isl_schedule_node_free(node);
 
 	lp = isl_basic_set_copy(graph->lp);

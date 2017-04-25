@@ -23,57 +23,11 @@
 #include "isl_tab.h"
 #include <isl_sort.h>
 
+#include <bset_to_bmap.c>
+#include <bset_from_bmap.c>
+#include <set_to_map.c>
+
 static struct isl_basic_set *uset_convex_hull_wrap_bounded(struct isl_set *set);
-
-/* Return 1 if constraint c is redundant with respect to the constraints
- * in bmap.  If c is a lower [upper] bound in some variable and bmap
- * does not have a lower [upper] bound in that variable, then c cannot
- * be redundant and we do not need solve any lp.
- */
-int isl_basic_map_constraint_is_redundant(struct isl_basic_map **bmap,
-	isl_int *c, isl_int *opt_n, isl_int *opt_d)
-{
-	enum isl_lp_result res;
-	unsigned total;
-	int i, j;
-
-	if (!bmap)
-		return -1;
-
-	total = isl_basic_map_total_dim(*bmap);
-	for (i = 0; i < total; ++i) {
-		int sign;
-		if (isl_int_is_zero(c[1+i]))
-			continue;
-		sign = isl_int_sgn(c[1+i]);
-		for (j = 0; j < (*bmap)->n_ineq; ++j)
-			if (sign == isl_int_sgn((*bmap)->ineq[j][1+i]))
-				break;
-		if (j == (*bmap)->n_ineq)
-			break;
-	}
-	if (i < total)
-		return 0;
-
-	res = isl_basic_map_solve_lp(*bmap, 0, c, (*bmap)->ctx->one,
-					opt_n, opt_d, NULL);
-	if (res == isl_lp_unbounded)
-		return 0;
-	if (res == isl_lp_error)
-		return -1;
-	if (res == isl_lp_empty) {
-		*bmap = isl_basic_map_set_to_empty(*bmap);
-		return 0;
-	}
-	return !isl_int_is_neg(*opt_n);
-}
-
-int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
-	isl_int *c, isl_int *opt_n, isl_int *opt_d)
-{
-	return isl_basic_map_constraint_is_redundant(
-			(struct isl_basic_map **)bset, c, opt_n, opt_d);
-}
 
 /* Remove redundant
  * constraints.  If the minimal value along the normal of a constraint
@@ -82,7 +36,12 @@ int isl_basic_set_constraint_is_redundant(struct isl_basic_set **bset,
  * Since some constraints may be mutually redundant, sort the constraints
  * first such that constraints that involve existentially quantified
  * variables are considered for removal before those that do not.
- * The sorting is also need for the use in map_simple_hull.
+ * The sorting is also needed for the use in map_simple_hull.
+ *
+ * Note that isl_tab_detect_implicit_equalities may also end up
+ * marking some constraints as redundant.  Make sure the constraints
+ * are preserved and undo those marking such that isl_tab_detect_redundant
+ * can consider the constraints in the sorted order.
  *
  * Alternatively, we could have intersected the basic map with the
  * corresponding equality and then checked if the dimension was that
@@ -106,8 +65,14 @@ __isl_give isl_basic_map *isl_basic_map_remove_redundancies(
 
 	bmap = isl_basic_map_sort_constraints(bmap);
 	tab = isl_tab_from_basic_map(bmap, 0);
+	if (!tab)
+		goto error;
+	tab->preserve = 1;
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
 		goto error;
+	if (isl_tab_restore_redundant(tab) < 0)
+		goto error;
+	tab->preserve = 0;
 	if (isl_tab_detect_redundant(tab) < 0)
 		goto error;
 	bmap = isl_basic_map_update_from_tab(bmap, tab);
@@ -126,8 +91,8 @@ error:
 __isl_give isl_basic_set *isl_basic_set_remove_redundancies(
 	__isl_take isl_basic_set *bset)
 {
-	return (struct isl_basic_set *)
-		isl_basic_map_remove_redundancies((struct isl_basic_map *)bset);
+	return bset_from_bmap(
+		isl_basic_map_remove_redundancies(bset_to_bmap(bset)));
 }
 
 /* Remove redundant constraints in each of the basic maps.
@@ -189,53 +154,6 @@ error:
 	isl_int_clear(opt);
 	isl_int_clear(opt_denom);
 	return -1;
-}
-
-__isl_give isl_basic_map *isl_basic_map_set_rational(
-	__isl_take isl_basic_set *bmap)
-{
-	if (!bmap)
-		return NULL;
-
-	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
-		return bmap;
-
-	bmap = isl_basic_map_cow(bmap);
-	if (!bmap)
-		return NULL;
-
-	ISL_F_SET(bmap, ISL_BASIC_MAP_RATIONAL);
-
-	return isl_basic_map_finalize(bmap);
-}
-
-__isl_give isl_basic_set *isl_basic_set_set_rational(
-	__isl_take isl_basic_set *bset)
-{
-	return isl_basic_map_set_rational(bset);
-}
-
-__isl_give isl_map *isl_map_set_rational(__isl_take isl_map *map)
-{
-	int i;
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_set_rational(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
-}
-
-__isl_give isl_set *isl_set_set_rational(__isl_take isl_set *set)
-{
-	return isl_map_set_rational(set);
 }
 
 static struct isl_basic_set *isl_basic_set_add_equality(
@@ -907,15 +825,15 @@ error:
 
 /* Is the set bounded for each value of the parameters?
  */
-int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
+isl_bool isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 {
 	struct isl_tab *tab;
-	int bounded;
+	isl_bool bounded;
 
 	if (!bset)
-		return -1;
+		return isl_bool_error;
 	if (isl_basic_set_plain_is_empty(bset))
-		return 1;
+		return isl_bool_true;
 
 	tab = isl_tab_from_recession_cone(bset, 1);
 	bounded = isl_tab_cone_is_bounded(tab);
@@ -926,17 +844,17 @@ int isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
 /* Is the image bounded for each value of the parameters and
  * the domain variables?
  */
-int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
+isl_bool isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 {
 	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
-	int bounded;
+	isl_bool bounded;
 
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_move_dims(bmap, isl_dim_param, nparam,
 					isl_dim_in, 0, n_in);
-	bounded = isl_basic_set_is_bounded((isl_basic_set *)bmap);
+	bounded = isl_basic_set_is_bounded(bset_from_bmap(bmap));
 	isl_basic_map_free(bmap);
 
 	return bounded;
@@ -944,19 +862,19 @@ int isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 
 /* Is the set bounded for each value of the parameters?
  */
-int isl_set_is_bounded(__isl_keep isl_set *set)
+isl_bool isl_set_is_bounded(__isl_keep isl_set *set)
 {
 	int i;
 
 	if (!set)
-		return -1;
+		return isl_bool_error;
 
 	for (i = 0; i < set->n; ++i) {
-		int bounded = isl_basic_set_is_bounded(set->p[i]);
+		isl_bool bounded = isl_basic_set_is_bounded(set->p[i]);
 		if (!bounded || bounded < 0)
 			return bounded;
 	}
-	return 1;
+	return isl_bool_true;
 }
 
 /* Compute the lineality space of the convex hull of bset1 and bset2.
@@ -1503,44 +1421,53 @@ static struct isl_basic_set *uset_combined_lineality_space(struct isl_set *set)
  * lineality space.  If any of the intermediate results has
  * a non-trivial lineality space, it is projected out.
  */
-static struct isl_basic_set *uset_convex_hull_unbounded(struct isl_set *set)
+static __isl_give isl_basic_set *uset_convex_hull_unbounded(
+	__isl_take isl_set *set)
 {
-	struct isl_basic_set *convex_hull = NULL;
+	isl_basic_set_list *list;
 
-	convex_hull = isl_set_copy_basic_set(set);
-	set = isl_set_drop_basic_set(set, convex_hull);
-	if (!set)
-		goto error;
-	while (set->n > 0) {
+	list = isl_set_get_basic_set_list(set);
+	isl_set_free(set);
+
+	while (list) {
+		int n;
 		struct isl_basic_set *t;
-		t = isl_set_copy_basic_set(set);
-		if (!t)
-			goto error;
-		set = isl_set_drop_basic_set(set, t);
-		if (!set)
-			goto error;
-		convex_hull = convex_hull_pair(convex_hull, t);
-		if (set->n == 0)
-			break;
-		t = isl_basic_set_lineality_space(isl_basic_set_copy(convex_hull));
+		isl_basic_set *bset1, *bset2;
+
+		n = isl_basic_set_list_n_basic_set(list);
+		if (n < 2)
+			isl_die(isl_basic_set_list_get_ctx(list),
+				isl_error_internal,
+				"expecting at least two elements", goto error);
+		bset1 = isl_basic_set_list_get_basic_set(list, n - 1);
+		bset2 = isl_basic_set_list_get_basic_set(list, n - 2);
+		bset1 = convex_hull_pair(bset1, bset2);
+		if (n == 2) {
+			isl_basic_set_list_free(list);
+			return bset1;
+		}
+		bset1 = isl_basic_set_underlying_set(bset1);
+		list = isl_basic_set_list_drop(list, n - 2, 2);
+		list = isl_basic_set_list_add(list, bset1);
+
+		t = isl_basic_set_list_get_basic_set(list, n - 2);
+		t = isl_basic_set_lineality_space(t);
 		if (!t)
 			goto error;
 		if (isl_basic_set_plain_is_universe(t)) {
-			isl_basic_set_free(convex_hull);
-			convex_hull = t;
-			break;
+			isl_basic_set_list_free(list);
+			return t;
 		}
 		if (t->n_eq < isl_basic_set_total_dim(t)) {
-			set = isl_set_add_basic_set(set, convex_hull);
+			set = isl_basic_set_list_union(list);
 			return modulo_lineality(set, t);
 		}
 		isl_basic_set_free(t);
 	}
-	isl_set_free(set);
-	return convex_hull;
+
+	return NULL;
 error:
-	isl_set_free(set);
-	isl_basic_set_free(convex_hull);
+	isl_basic_set_list_free(list);
 	return NULL;
 }
 
@@ -1813,6 +1740,7 @@ static struct isl_basic_set *uset_convex_hull_wrap(struct isl_set *set)
  */
 static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 {
+	isl_bool bounded;
 	struct isl_basic_set *convex_hull = NULL;
 	struct isl_basic_set *lin;
 
@@ -1823,8 +1751,6 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	set = isl_set_set_rational(set);
 
 	if (!set)
-		goto error;
-	if (!set)
 		return NULL;
 	if (set->n == 1) {
 		convex_hull = isl_basic_set_copy(set->p[0]);
@@ -1834,8 +1760,10 @@ static struct isl_basic_set *uset_convex_hull(struct isl_set *set)
 	if (isl_set_n_dim(set) == 1)
 		return convex_hull_1d(set);
 
-	if (isl_set_is_bounded(set) &&
-	    set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
+	bounded = isl_set_is_bounded(set);
+	if (bounded < 0)
+		goto error;
+	if (bounded && set->ctx->opt->convex == ISL_CONVEX_HULL_WRAP)
 		return uset_convex_hull_wrap(set);
 
 	lin = uset_combined_lineality_space(isl_set_copy(set));
@@ -1948,7 +1876,7 @@ struct isl_basic_map *isl_map_convex_hull(struct isl_map *map)
 	struct isl_set *set = NULL;
 
 	map = isl_map_detect_equalities(map);
-	map = isl_map_align_divs(map);
+	map = isl_map_align_divs_internal(map);
 	if (!map)
 		goto error;
 
@@ -1986,8 +1914,7 @@ error:
 
 struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
 {
-	return (struct isl_basic_set *)
-		isl_map_convex_hull((struct isl_map *)set);
+	return bset_from_bmap(isl_map_convex_hull(set_to_map(set)));
 }
 
 __isl_give isl_basic_map *isl_map_polyhedral_hull(__isl_take isl_map *map)
@@ -2000,7 +1927,7 @@ __isl_give isl_basic_map *isl_map_polyhedral_hull(__isl_take isl_map *map)
 
 __isl_give isl_basic_set *isl_set_polyhedral_hull(__isl_take isl_set *set)
 {
-	return (isl_basic_set *)isl_map_polyhedral_hull((isl_map *)set);
+	return bset_from_bmap(isl_map_polyhedral_hull(set_to_map(set)));
 }
 
 struct sh_data_entry {
@@ -2441,7 +2368,7 @@ static __isl_give isl_basic_map *map_simple_hull(__isl_take isl_map *map,
 		return map_simple_hull_trivial(map);
 	affine_hull = isl_map_affine_hull(isl_map_copy(map));
 	input = isl_map_copy(map);
-	map = isl_map_align_divs(map);
+	map = isl_map_align_divs_internal(map);
 	model = map ? isl_basic_map_copy(map->p[0]) : NULL;
 
 	set = isl_map_underlying_set(map);
@@ -2476,8 +2403,7 @@ __isl_give isl_basic_map *isl_map_simple_hull(__isl_take isl_map *map)
 
 struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
 {
-	return (struct isl_basic_set *)
-		isl_map_simple_hull((struct isl_map *)set);
+	return bset_from_bmap(isl_map_simple_hull(set_to_map(set)));
 }
 
 /* Compute a superset of the convex hull of map that is described
@@ -2976,7 +2902,7 @@ error:
 
 /* Return a sequence of the basic maps that make up the maps in "list".
  */
-static __isl_give isl_basic_set_list *collect_basic_maps(
+static __isl_give isl_basic_map_list *collect_basic_maps(
 	__isl_take isl_map_list *list)
 {
 	int i, n;
@@ -3117,5 +3043,6 @@ struct isl_basic_set *isl_set_bounded_simple_hull(struct isl_set *set)
 	return hull;
 error:
 	isl_set_free(set);
+	isl_basic_set_free(hull);
 	return NULL;
 }

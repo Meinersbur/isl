@@ -51,6 +51,7 @@ missing
 stamp-h1
 test-driver
 
+isl_srcdir.c
 bound_test.sh
 pip_test.sh
 

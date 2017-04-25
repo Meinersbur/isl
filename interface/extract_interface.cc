@@ -369,6 +369,24 @@ static void set_lang_defaults(CompilerInstance *Clang)
 
 #endif
 
+#ifdef SETINVOCATION_TAKES_SHARED_PTR
+
+static void set_invocation(CompilerInstance *Clang,
+	CompilerInvocation *invocation)
+{
+	Clang->setInvocation(std::make_shared<CompilerInvocation>(*invocation));
+}
+
+#else
+
+static void set_invocation(CompilerInstance *Clang,
+	CompilerInvocation *invocation)
+{
+	Clang->setInvocation(invocation);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -380,7 +398,7 @@ int main(int argc, char *argv[])
 	CompilerInvocation *invocation =
 		construct_invocation(InputFilename.c_str(), Diags);
 	if (invocation)
-		Clang->setInvocation(invocation);
+		set_invocation(Clang, invocation);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
 	TargetInfo *target = create_target_info(Clang, Diags);
@@ -401,7 +419,6 @@ int main(int argc, char *argv[])
 	PO.addMacroDef("__isl_overload="
 	    "__attribute__((annotate(\"isl_overload\"))) "
 	    "__attribute__((annotate(\"isl_export\")))");
-	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_constructor=__attribute__((annotate(\"isl_constructor\"))) __attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
 

@@ -102,7 +102,7 @@ __isl_give struct isl_upoly *isl_upoly_zero(struct isl_ctx *ctx);
 __isl_give struct isl_upoly *isl_upoly_copy(__isl_keep struct isl_upoly *up);
 __isl_give struct isl_upoly *isl_upoly_cow(__isl_take struct isl_upoly *up);
 __isl_give struct isl_upoly *isl_upoly_dup(__isl_keep struct isl_upoly *up);
-void isl_upoly_free(__isl_take struct isl_upoly *up);
+__isl_null struct isl_upoly *isl_upoly_free(__isl_take struct isl_upoly *up);
 __isl_give struct isl_upoly *isl_upoly_mul(__isl_take struct isl_upoly *up1,
 	__isl_take struct isl_upoly *up2);
 
@@ -133,6 +133,9 @@ isl_bool isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
 int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	isl_int *n, isl_int *d);
+
+unsigned isl_qpolynomial_domain_offset(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_add_on_domain(
 	__isl_keep isl_set *dom,

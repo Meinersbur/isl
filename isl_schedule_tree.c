@@ -1,6 +1,7 @@
 /*
  * Copyright 2013-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      INRIA Paris
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,6 +9,8 @@
  * Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
  * B.P. 105 - 78153 Le Chesnay, France
+ * and Centre de Recherche Inria de Paris, 2 rue Simone Iff - Voie DQ12,
+ * CS 42112, 75589 Paris Cedex 12, France
  */
 
 #include <isl/map.h>
@@ -79,7 +82,7 @@ __isl_take isl_schedule_tree *isl_schedule_tree_dup(
 	case isl_schedule_node_error:
 		isl_die(ctx, isl_error_internal,
 			"allocation should have failed",
-			isl_schedule_tree_free(dup));
+			return isl_schedule_tree_free(dup));
 	case isl_schedule_node_band:
 		dup->band = isl_schedule_band_copy(tree->band);
 		if (!dup->band)

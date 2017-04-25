@@ -25,6 +25,10 @@
 #include <isl/union_set.h>
 #include <isl/deprecated/union_map_int.h>
 
+#include <bset_from_bmap.c>
+#include <set_to_map.c>
+#include <set_from_map.c>
+
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
  */
@@ -126,11 +130,16 @@ isl_ctx *isl_union_set_get_ctx(__isl_keep isl_union_set *uset)
 	return uset ? uset->dim->ctx : NULL;
 }
 
+/* Return the space of "umap".
+ */
+__isl_keep isl_space *isl_union_map_peek_space(__isl_keep isl_union_map *umap)
+{
+	return umap ? umap->dim : NULL;
+}
+
 __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap)
 {
-	if (!umap)
-		return NULL;
-	return isl_space_copy(umap->dim);
+	return isl_space_copy(isl_union_map_peek_space(umap));
 }
 
 /* Return the position of the parameter with the given name
@@ -222,11 +231,15 @@ __isl_give isl_union_map *isl_union_map_align_params(
 	__isl_take isl_union_map *umap, __isl_take isl_space *model)
 {
 	struct isl_union_align data = { NULL, NULL };
+	isl_bool equal_params;
 
 	if (!umap || !model)
 		goto error;
 
-	if (isl_space_match(umap->dim, isl_dim_param, model, isl_dim_param)) {
+	equal_params = isl_space_has_equal_params(umap->dim, model);
+	if (equal_params < 0)
+		goto error;
+	if (equal_params) {
 		isl_space_free(model);
 		return umap;
 	}
@@ -324,6 +337,17 @@ __isl_null isl_union_set *isl_union_set_free(__isl_take isl_union_set *uset)
 	return isl_union_map_free(uset);
 }
 
+/* Do "umap" and "space" have the same parameters?
+ */
+isl_bool isl_union_map_space_has_equal_params(__isl_keep isl_union_map *umap,
+	__isl_keep isl_space *space)
+{
+	isl_space *umap_space;
+
+	umap_space = isl_union_map_peek_space(umap);
+	return isl_space_has_equal_params(umap_space, space);
+}
+
 static int has_dim(const void *entry, const void *val)
 {
 	isl_map *map = (isl_map *)entry;
@@ -337,6 +361,7 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
+	isl_bool aligned;
 
 	if (!map || !umap)
 		goto error;
@@ -346,7 +371,10 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 		return umap;
 	}
 
-	if (!isl_space_match(map->dim, isl_dim_param, umap->dim, isl_dim_param)) {
+	aligned = isl_map_space_has_equal_params(map, umap->dim);
+	if (aligned < 0)
+		goto error;
+	if (!aligned) {
 		umap = isl_union_map_align_params(umap, isl_map_get_space(map));
 		map = isl_map_align_params(map, isl_union_map_get_space(umap));
 	}
@@ -381,7 +409,7 @@ error:
 __isl_give isl_union_set *isl_union_set_add_set(__isl_take isl_union_set *uset,
 	__isl_take isl_set *set)
 {
-	return isl_union_map_add_map(uset, (isl_map *)set);
+	return isl_union_map_add_map(uset, set_to_map(set));
 }
 
 __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map)
@@ -402,7 +430,7 @@ __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map)
 
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set)
 {
-	return isl_union_map_from_map((isl_map *)set);
+	return isl_union_map_from_map(set_to_map(set));
 }
 
 __isl_give isl_union_map *isl_union_map_from_basic_map(
@@ -522,30 +550,30 @@ error:
 __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 	__isl_take isl_space *dim)
 {
-	return (isl_set *)isl_union_map_extract_map(uset, dim);
+	return set_from_map(isl_union_map_extract_map(uset, dim));
 }
 
 /* Check if umap contains a map in the given space.
  */
-__isl_give int isl_union_map_contains(__isl_keep isl_union_map *umap,
-	__isl_keep isl_space *dim)
+isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
+	__isl_keep isl_space *space)
 {
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
-	if (!umap || !dim)
-		return -1;
+	if (!umap || !space)
+		return isl_bool_error;
 
-	hash = isl_space_get_hash(dim);
+	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_dim, dim, 0);
+				    &has_dim, space, 0);
 	return !!entry;
 }
 
-__isl_give int isl_union_set_contains(__isl_keep isl_union_set *uset,
-	__isl_keep isl_space *dim)
+isl_bool isl_union_set_contains(__isl_keep isl_union_set *uset,
+	__isl_keep isl_space *space)
 {
-	return isl_union_map_contains(uset, dim);
+	return isl_union_map_contains(uset, space);
 }
 
 isl_stat isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
@@ -896,13 +924,13 @@ __isl_give isl_union_set *isl_union_set_gist(__isl_take isl_union_set *uset,
 static __isl_give isl_map *lex_le_set(__isl_take isl_map *set1,
 	__isl_take isl_map *set2)
 {
-	return isl_set_lex_le_set((isl_set *)set1, (isl_set *)set2);
+	return isl_set_lex_le_set(set_from_map(set1), set_from_map(set2));
 }
 
 static __isl_give isl_map *lex_lt_set(__isl_take isl_map *set1,
 	__isl_take isl_map *set2)
 {
-	return isl_set_lex_lt_set((isl_set *)set1, (isl_set *)set2);
+	return isl_set_lex_lt_set(set_from_map(set1), set_from_map(set2));
 }
 
 __isl_give isl_union_map *isl_union_set_lex_lt_union_set(
@@ -2442,7 +2470,7 @@ error:
 
 __isl_give isl_basic_set *isl_union_set_sample(__isl_take isl_union_set *uset)
 {
-	return (isl_basic_set *)isl_union_map_sample(uset);
+	return bset_from_bmap(isl_union_map_sample(uset));
 }
 
 /* Return an element in "uset" in the form of an isl_point.

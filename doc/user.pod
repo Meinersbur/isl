@@ -263,6 +263,11 @@ of the printer needs to have been explicitly set to C<ISL_FORMAT_C>.
 As a result, the function C<isl_ast_expr_to_str> no longer prints
 the expression in C format.  Use C<isl_ast_expr_to_C_str> instead.
 
+=item * The functions C<isl_set_align_divs> and C<isl_map_align_divs>
+have been deprecated.  The function C<isl_set_lift> has an effect
+that is similar to C<isl_set_align_divs> and could in some cases
+be used as an alternative.
+
 =back
 
 =head1 License
@@ -952,6 +957,9 @@ Spaces can be compared using the following functions:
 	#include <isl/space.h>
 	isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 		__isl_keep isl_space *space2);
+	isl_bool isl_space_has_equal_params(
+		__isl_keep isl_space *space1,
+		__isl_keep isl_space *space2);
 	isl_bool isl_space_has_equal_tuples(
 		__isl_keep isl_space *space1,
 		__isl_keep isl_space *space2);
@@ -973,17 +981,19 @@ tuples (C<isl_dim_in>, C<isl_dim_out> or C<isl_dim_set>) of the given
 spaces are the same.  That is, it checks if they have the same
 identifier (if any), the same dimension and the same internal structure
 (if any).
-C<isl_space_is_equal> checks whether two spaces are identical.
-In particular, it checks whether they have the same type
-(parameter, set or map space), the same tuples
-(if they are not parameter spaces) in the sense
-of C<isl_space_tuple_is_equal> and the same parameters
-in the same order.
+The function
+C<isl_space_has_equal_params> checks whether two spaces
+have the same parameters in the same order.
 C<isl_space_has_equal_tuples> check whether two spaces have
-the same tuples.  In contrast to C<isl_space_is_equal>, it does not check the
+the same tuples.  In contrast to C<isl_space_is_equal> below,
+it does not check the
 parameters.  This is useful because many C<isl> functions align the
 parameters before they perform their operations, such that equivalence
 is not necessary.
+C<isl_space_is_equal> checks whether two spaces are identical,
+meaning that they have the same parameters and the same tuples.
+That is, it checks whether both C<isl_space_has_equal_params> and
+C<isl_space_has_equal_tuples> hold.
 
 It is often useful to create objects that live in the
 same space as some other object.  This can be accomplished
@@ -2101,15 +2111,6 @@ variables as integer divisions of the other variables, possibly
 including earlier existentially quantified variables.
 An explicitly represented existentially quantified variable therefore
 has a unique value when the values of the other variables are known.
-If, furthermore, the same existentials, i.e., existentials
-with the same explicit representations, should appear in the
-same order in each of the disjuncts of a set or map, then the user should call
-either of the following functions.
-
-	__isl_give isl_set *isl_set_align_divs(
-		__isl_take isl_set *set);
-	__isl_give isl_map *isl_map_align_divs(
-		__isl_take isl_map *map);
 
 Alternatively, the existentially quantified variables can be removed
 using the following functions, which compute an overapproximation.
@@ -2361,7 +2362,8 @@ Points can be copied or freed using
 
 	__isl_give isl_point *isl_point_copy(
 		__isl_keep isl_point *pnt);
-	void isl_point_free(__isl_take isl_point *pnt);
+	__isl_null isl_point *isl_point_free(
+		__isl_take isl_point *pnt);
 
 A singleton set can be created from a point using
 
@@ -3086,6 +3088,8 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_aff *aff,
 			  void *user), void *user);
+	int isl_pw_multi_aff_n_piece(
+		__isl_keep isl_pw_multi_aff *pma);
 	isl_stat isl_pw_multi_aff_foreach_piece(
 		__isl_keep isl_pw_multi_aff *pma,
 		isl_stat (*fn)(__isl_take isl_set *set,
@@ -3093,6 +3097,8 @@ use the following functions.
 			    void *user), void *user);
 
 	#include <isl/polynomial.h>
+	int isl_pw_qpolynomial_n_piece(
+		__isl_keep isl_pw_qpolynomial *pwqp);
 	isl_stat isl_pw_qpolynomial_foreach_piece(
 		__isl_keep isl_pw_qpolynomial *pwqp,
 		isl_stat (*fn)(__isl_take isl_set *set,
@@ -3103,6 +3109,8 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_qpolynomial *qp,
 			  void *user), void *user);
+	int isl_pw_qpolynomial_fold_n_piece(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
 	isl_stat isl_pw_qpolynomial_fold_foreach_piece(
 		__isl_keep isl_pw_qpolynomial_fold *pwf,
 		isl_stat (*fn)(__isl_take isl_set *set,
@@ -3688,6 +3696,10 @@ Alternatively, a string representation can be obtained
 directly using the following functions, which always print
 in isl format.
 
+	#include <isl/id.h>
+	__isl_give char *isl_id_to_str(
+		__isl_keep isl_id *id);
+
 	#include <isl/space.h>
 	__isl_give char *isl_space_to_str(
 		__isl_keep isl_space *space);
@@ -4046,14 +4058,40 @@ the input is itself a wrapped relation.
 
 Check whether the given expression is a constant.
 
+	#include <isl/val.h>
+	isl_bool isl_multi_val_involves_nan(
+		__isl_keep isl_multi_val *mv);
+
 	#include <isl/aff.h>
 	isl_bool isl_aff_is_nan(__isl_keep isl_aff *aff);
+	isl_bool isl_multi_aff_involves_nan(
+		__isl_keep isl_multi_aff *ma);
 	isl_bool isl_pw_aff_involves_nan(
 		__isl_keep isl_pw_aff *pa);
+	isl_bool isl_pw_multi_aff_involves_nan(
+		__isl_keep isl_pw_multi_aff *pma);
+	isl_bool isl_multi_pw_aff_involves_nan(
+		__isl_keep isl_multi_pw_aff *mpa);
+	isl_bool isl_union_pw_aff_involves_nan(
+		__isl_keep isl_union_pw_aff *upa);
+	isl_bool isl_union_pw_multi_aff_involves_nan(
+		__isl_keep isl_union_pw_multi_aff *upma);
+	isl_bool isl_multi_union_pw_aff_involves_nan(
+		__isl_keep isl_multi_union_pw_aff *mupa);
 
 	#include <isl/polynomial.h>
+	isl_bool isl_qpolynomial_is_nan(
+		__isl_keep isl_qpolynomial *qp);
 	isl_bool isl_qpolynomial_fold_is_nan(
 		__isl_keep isl_qpolynomial_fold *fold);
+	isl_bool isl_pw_qpolynomial_involves_nan(
+		__isl_keep isl_pw_qpolynomial *pwqp);
+	isl_bool isl_pw_qpolynomial_fold_involves_nan(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
+	isl_bool isl_union_pw_qpolynomial_involves_nan(
+		__isl_keep isl_union_pw_qpolynomial *upwqp);
+	isl_bool isl_union_pw_qpolynomial_fold_involves_nan(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
 Check whether the given expression is equal to or involves NaN.
 
@@ -4121,7 +4159,13 @@ return true if the objects are not the same.
 	isl_bool isl_pw_aff_plain_is_equal(
 		__isl_keep isl_pw_aff *pwaff1,
 		__isl_keep isl_pw_aff *pwaff2);
+	isl_bool isl_pw_aff_is_equal(
+		__isl_keep isl_pw_aff *pa1,
+		__isl_keep isl_pw_aff *pa2);
 	isl_bool isl_pw_multi_aff_plain_is_equal(
+		__isl_keep isl_pw_multi_aff *pma1,
+		__isl_keep isl_pw_multi_aff *pma2);
+	isl_bool isl_pw_multi_aff_is_equal(
 		__isl_keep isl_pw_multi_aff *pma1,
 		__isl_keep isl_pw_multi_aff *pma2);
 	isl_bool isl_multi_pw_aff_plain_is_equal(
@@ -4255,10 +4299,14 @@ the internal representation of the inputs has not changed), but may
 change over different versions of C<isl>.
 
 	#include <isl/aff.h>
+	int isl_multi_aff_plain_cmp(
+		__isl_keep isl_multi_aff *ma1,
+		__isl_keep isl_multi_aff *ma2);
 	int isl_pw_aff_plain_cmp(__isl_keep isl_pw_aff *pa1,
 		__isl_keep isl_pw_aff *pa2);
 
-The function C<isl_pw_aff_plain_cmp> can be used to sort
+The functions C<isl_multi_aff_plain_cmp> and
+C<isl_pw_aff_plain_cmp> can be used to sort C<isl_multi_aff>s and
 C<isl_pw_aff>s.  The order is not strictly defined.
 The current order sorts expressions that only involve
 earlier dimensions before those that involve later dimensions.
@@ -4369,6 +4417,9 @@ parameters.
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_project_domain_on_params(
 		__isl_take isl_aff *aff);
+	__isl_give isl_pw_aff *
+	isl_pw_aff_project_domain_on_params(
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_project_domain_on_params(
 		__isl_take isl_pw_multi_aff *pma);
@@ -4529,6 +4580,14 @@ flat anonymous space.
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_from_domain(
 		__isl_take isl_union_set *uset);
+
+	#include <isl/polynomial.h>
+	__isl_give isl_pw_qpolynomial *
+	isl_pw_qpolynomial_from_range(
+		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_from_range(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
 
 =item * Slicing
 
@@ -6216,10 +6275,19 @@ into the first expression.
 	__isl_give isl_set *isl_aff_le_set(
 		__isl_take isl_aff *aff1,
 		__isl_take isl_aff *aff2);
+	__isl_give isl_basic_set *isl_aff_lt_basic_set(
+		__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2);
+	__isl_give isl_set *isl_aff_lt_set(
+		__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2);
 	__isl_give isl_basic_set *isl_aff_ge_basic_set(
 		__isl_take isl_aff *aff1,
 		__isl_take isl_aff *aff2);
 	__isl_give isl_set *isl_aff_ge_set(
+		__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2);
+	__isl_give isl_basic_set *isl_aff_gt_basic_set(
 		__isl_take isl_aff *aff1,
 		__isl_take isl_aff *aff2);
 	__isl_give isl_set *isl_pw_aff_eq_set(
@@ -7614,7 +7682,7 @@ library.
 
 The function C<isl_basic_set_compute_vertices> performs the
 actual computation of the parametric vertices and the chamber
-decomposition and store the result in an C<isl_vertices> object.
+decomposition and stores the result in an C<isl_vertices> object.
 This information can be queried by either iterating over all
 the vertices or iterating over all the chambers or cells
 and then iterating over all vertices that are active on the chamber.
@@ -7637,7 +7705,8 @@ the following.
 
 	int isl_vertices_get_n_vertices(
 		__isl_keep isl_vertices *vertices);
-	void isl_vertices_free(__isl_take isl_vertices *vertices);
+	__isl_null isl_vertices *isl_vertices_free(
+		__isl_take isl_vertices *vertices);
 
 Vertices can be inspected and destroyed using the following functions.
 
@@ -8657,9 +8726,12 @@ pairs of corresponding sink iterations and accessed data elements.
 To compute standard flow dependences, the sink should be
 a read, while the sources should be writes.
 If any of the source accesses are marked as being I<may>
-accesses, then there will be a dependence from the last
+accesses, then there will be a (may) dependence from the last
 I<must> access B<and> from any I<may> access that follows
-this last I<must> access.
+this last I<must> access, but still precedes the sink access.
+Only dependences originating in a must access and without
+any may accesses between the must access and the sink access
+are considered to be must dependences.
 In particular, if I<all> sources are I<may> accesses,
 then memory based dependence analysis is performed.
 If, on the other hand, all sources are I<must> accesses,
@@ -8739,8 +8811,8 @@ of type C<isl_union_access_info> can be obtained using
 
 C<isl_union_access_info_to_str> prints the information in flow format.
 
-The output of C<isl_union_access_info_compute_flow> can be examined
-and freed using the following functions.
+The output of C<isl_union_access_info_compute_flow> can be examined,
+copied, and freed using the following functions.
 
 	#include <isl/flow.h>
 	__isl_give isl_union_map *isl_union_flow_get_must_dependence(
@@ -8756,6 +8828,8 @@ and freed using the following functions.
 	__isl_give isl_union_map *isl_union_flow_get_must_no_source(
 		__isl_keep isl_union_flow *flow);
 	__isl_give isl_union_map *isl_union_flow_get_may_no_source(
+		__isl_keep isl_union_flow *flow);
+	__isl_give isl_union_flow *isl_union_flow_copy(
 		__isl_keep isl_union_flow *flow);
 	__isl_null isl_union_flow *isl_union_flow_free(
 		__isl_take isl_union_flow *flow);
