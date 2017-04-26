@@ -47,7 +47,8 @@
 
 /* Internal information about a node that is used during the construction
  * of a schedule.
- * space represents the space in which the domain lives
+ * space represents the original space in which the domain lives;
+ *	that is, the space is not affected by compression
  * sched is a matrix representation of the schedule being constructed
  *	for this node; if compressed is set, then this schedule is
  *	defined over the compressed domain space
