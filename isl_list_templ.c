@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2011      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2017      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -281,6 +282,40 @@ error:
 	return NULL;
 }
 
+/* Return the element at position "index" of "list".
+ * This may be either a copy or the element itself
+ * if there is only one reference to "list".
+ * This allows the element to be modified inplace
+ * if both the list and the element have only a single reference.
+ * The caller is not allowed to modify "list" between
+ * this call to isl_list_*_take_* and a subsequent call
+ * to isl_list_*_restore_*.
+ * The only exception is that isl_list_*_free can be called instead.
+ */
+static __isl_give EL *FN(FN(LIST(EL),take),BASE)(__isl_keep LIST(EL) *list,
+	int index)
+{
+	EL *el;
+
+	if (FN(LIST(EL),check_index)(list, index) < 0)
+		return NULL;
+	if (list->ref != 1)
+		return FN(FN(LIST(EL),get),BASE)(list, index);
+	el = list->p[index];
+	list->p[index] = NULL;
+	return el;
+}
+
+/* Set the element at position "index" of "list" to "el",
+ * where the position may be empty due to a previous call
+ * to isl_list_*_take_*.
+ */
+static __isl_give LIST(EL) *FN(FN(LIST(EL),restore),BASE)(
+	__isl_take LIST(EL) *list, int index, __isl_take EL *el)
+{
+	return FN(FN(LIST(EL),set),BASE)(list, index, el);
+}
+
 isl_stat FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	isl_stat (*fn)(__isl_take EL *el, void *user), void *user)
 {
@@ -298,6 +333,29 @@ isl_stat FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	}
 
 	return isl_stat_ok;
+}
+
+/* Replace each element in "list" by the result of calling "fn"
+ * on the element.
+ */
+__isl_give LIST(EL) *FN(LIST(EL),map)(__isl_keep LIST(EL) *list,
+	__isl_give EL *(*fn)(__isl_take EL *el, void *user), void *user)
+{
+	int i, n;
+
+	if (!list)
+		return NULL;
+
+	n = list->n;
+	for (i = 0; i < n; ++i) {
+		EL *el = FN(FN(LIST(EL),take),BASE)(list, i);
+		if (!el)
+			return FN(LIST(EL),free)(list);
+		el = fn(el, user);
+		list = FN(FN(LIST(EL),restore),BASE)(list, i, el);
+	}
+
+	return list;
 }
 
 /* Internal data structure for isl_*_list_sort.

@@ -7460,6 +7460,11 @@ Lists can be created, copied, modified and freed using the following functions.
 	__isl_give isl_set_list *isl_set_list_concat(
 		__isl_take isl_set_list *list1,
 		__isl_take isl_set_list *list2);
+	__isl_give isl_set_list *isl_set_list_map(
+		__isl_take isl_set_list *list,
+		__isl_give isl_set *(*fn)(__isl_take isl_set *el,
+			void *user),
+		void *user);
 	__isl_give isl_set_list *isl_set_list_sort(
 		__isl_take isl_set_list *list,
 		int (*cmp)(__isl_keep isl_set *a,
