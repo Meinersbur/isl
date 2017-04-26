@@ -1484,6 +1484,7 @@ __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space)
 {
 	isl_ctx *ctx;
 	isl_id **ids = NULL;
+	int n_id;
 
 	if (!space)
 		return NULL;
@@ -1493,9 +1494,9 @@ __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space)
 	space = isl_space_cow(space);
 	if (!space)
 		return NULL;
-	if (space->ids) {
-		ids = isl_calloc_array(space->ctx, isl_id *,
-				space->nparam + space->n_out + space->n_out);
+	n_id = space->nparam + space->n_out + space->n_out;
+	if (n_id > 0 && space->ids) {
+		ids = isl_calloc_array(space->ctx, isl_id *, n_id);
 		if (!ids)
 			goto error;
 		get_ids(space, isl_dim_param, 0, space->nparam, ids);
@@ -1506,7 +1507,7 @@ __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space)
 	if (ids) {
 		free(space->ids);
 		space->ids = ids;
-		space->n_id = space->nparam + space->n_out + space->n_out;
+		space->n_id = n_id;
 		space = copy_ids(space, isl_dim_out, 0, space, isl_dim_in);
 	}
 	isl_id_free(space->tuple_id[0]);
