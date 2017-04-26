@@ -130,6 +130,18 @@ static __isl_give LIST(EL) *FN(LIST(EL),grow)(__isl_take LIST(EL) *list, int n)
 	return res;
 }
 
+/* Check that "index" is a valid position in "list".
+ */
+static isl_stat FN(LIST(EL),check_index)(__isl_keep LIST(EL) *list, int index)
+{
+	if (!list)
+		return isl_stat_error;
+	if (index < 0 || index >= list->n)
+		isl_die(FN(LIST(EL),get_ctx)(list), isl_error_invalid,
+			"index out of bounds", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 __isl_give LIST(EL) *FN(LIST(EL),add)(__isl_take LIST(EL) *list,
 	__isl_take struct EL *el)
 {
@@ -239,11 +251,8 @@ int FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)
 
 __isl_give EL *FN(FN(LIST(EL),get),BASE)(__isl_keep LIST(EL) *list, int index)
 {
-	if (!list)
+	if (FN(LIST(EL),check_index)(list, index) < 0)
 		return NULL;
-	if (index < 0 || index >= list->n)
-		isl_die(list->ctx, isl_error_invalid,
-			"index out of bounds", return NULL);
 	return FN(EL,copy)(list->p[index]);
 }
 
@@ -254,9 +263,8 @@ __isl_give LIST(EL) *FN(FN(LIST(EL),set),BASE)(__isl_take LIST(EL) *list,
 {
 	if (!list || !el)
 		goto error;
-	if (index < 0 || index >= list->n)
-		isl_die(list->ctx, isl_error_invalid,
-			"index out of bounds", goto error);
+	if (FN(LIST(EL),check_index)(list, index) < 0)
+		goto error;
 	if (list->p[index] == el) {
 		FN(EL,free)(el);
 		return list;
