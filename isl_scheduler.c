@@ -3542,7 +3542,7 @@ static __isl_give isl_schedule_node *compute_next_band(
  * with each coefficient in c_j_x represented as a pair of non-negative
  * coefficients.
  */
-static int add_intra_constraints(struct isl_sched_graph *graph,
+static isl_stat add_intra_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map, int pos)
 {
 	int offset;
@@ -3553,14 +3553,14 @@ static int add_intra_constraints(struct isl_sched_graph *graph,
 
 	coef = intra_coefficients(graph, node, map);
 	if (!coef)
-		return -1;
+		return isl_stat_error;
 
 	offset = coef_var_offset(coef);
 	dim_map = intra_dim_map(ctx, graph, node, offset, 1);
 	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
 	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Add constraints to graph->lp that force the dependence "map" (which
