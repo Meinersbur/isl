@@ -3578,7 +3578,7 @@ static isl_stat add_intra_constraints(struct isl_sched_graph *graph,
  * with each coefficient (except e_i, c_*_0 and c_*_n)
  * represented as a pair of non-negative coefficients.
  */
-static int add_inter_constraints(struct isl_sched_graph *graph,
+static isl_stat add_inter_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map, int pos)
 {
 	int offset;
@@ -3590,14 +3590,14 @@ static int add_inter_constraints(struct isl_sched_graph *graph,
 
 	coef = inter_coefficients(graph, edge, map);
 	if (!coef)
-		return -1;
+		return isl_stat_error;
 
 	offset = coef_var_offset(coef);
 	dim_map = inter_dim_map(ctx, graph, src, dst, offset, 1);
 	isl_dim_map_range(dim_map, 3 + pos, 0, 0, 0, 1, -1);
 	graph->lp = add_constraints_dim_map(graph->lp, coef, dim_map);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Add constraints to graph->lp that force all (conditional) validity
