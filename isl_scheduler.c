@@ -2068,11 +2068,7 @@ static int is_any_validity(struct isl_sched_edge *edge)
 
 /* How many times should we count the constraints in "edge"?
  *
- * If carry is set, then we are counting the number of
- * (validity or conditional validity) constraints that will be added
- * in setup_carry_lp and we count each edge exactly once.
- *
- * Otherwise, we count as follows
+ * We count as follows
  * validity		-> 1 (>= 0)
  * validity+proximity	-> 2 (>= 0 and upper bound)
  * proximity		-> 2 (lower and upper bound)
@@ -2084,11 +2080,8 @@ static int is_any_validity(struct isl_sched_edge *edge)
  * If "use_coincidence" is set, then we treat coincidence edges as local edges.
  * Otherwise, we ignore them.
  */
-static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
-	int use_coincidence)
+static int edge_multiplicity(struct isl_sched_edge *edge, int use_coincidence)
 {
-	if (carry)
-		return 1;
 	if (is_proximity(edge) || is_local(edge))
 		return 2;
 	if (use_coincidence && is_coincidence(edge))
@@ -2105,10 +2098,10 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int carry,
  */
 static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge, __isl_take isl_map *map,
-	int *n_eq, int *n_ineq, int carry, int use_coincidence)
+	int *n_eq, int *n_ineq, int use_coincidence)
 {
 	isl_basic_set *coef;
-	int f = edge_multiplicity(edge, carry, use_coincidence);
+	int f = edge_multiplicity(edge, use_coincidence);
 
 	if (f == 0) {
 		isl_map_free(map);
@@ -2150,7 +2143,7 @@ static int count_constraints(struct isl_sched_graph *graph,
 		isl_map *map = isl_map_copy(edge->map);
 
 		if (count_map_constraints(graph, edge, map, n_eq, n_ineq,
-					    0, use_coincidence) < 0)
+					    use_coincidence) < 0)
 			return -1;
 	}
 
