@@ -1941,6 +1941,16 @@ static isl_stat add_inter_proximity_constraints(struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
+/* Should the distance over "edge" be forced to zero?
+ * That is, is it marked as a local edge?
+ * If "use_coincidence" is set, then coincidence edges are treated
+ * as local edges.
+ */
+static int force_zero(struct isl_sched_edge *edge, int use_coincidence)
+{
+	return is_local(edge) || (use_coincidence && is_coincidence(edge));
+}
+
 /* Add all validity constraints to graph->lp.
  *
  * An edge that is forced to be local needs to have its dependence
@@ -1958,11 +1968,10 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph,
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
-		int local;
+		int zero;
 
-		local = is_local(edge) ||
-			(is_coincidence(edge) && use_coincidence);
-		if (!is_validity(edge) && !local)
+		zero = force_zero(edge, use_coincidence);
+		if (!is_validity(edge) && !zero)
 			continue;
 		if (edge->src != edge->dst)
 			continue;
@@ -1972,11 +1981,10 @@ static int add_all_validity_constraints(struct isl_sched_graph *graph,
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
-		int local;
+		int zero;
 
-		local = is_local(edge) ||
-			(is_coincidence(edge) && use_coincidence);
-		if (!is_validity(edge) && !local)
+		zero = force_zero(edge, use_coincidence);
+		if (!is_validity(edge) && !zero)
 			continue;
 		if (edge->src == edge->dst)
 			continue;
@@ -2006,19 +2014,18 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
 
 	for (i = 0; i < graph->n_edge; ++i) {
 		struct isl_sched_edge *edge = &graph->edge[i];
-		int local;
+		int zero;
 
-		local = is_local(edge) ||
-			(is_coincidence(edge) && use_coincidence);
-		if (!is_proximity(edge) && !local)
+		zero = force_zero(edge, use_coincidence);
+		if (!is_proximity(edge) && !zero)
 			continue;
 		if (edge->src == edge->dst &&
-		    add_intra_proximity_constraints(graph, edge, 1, local) < 0)
+		    add_intra_proximity_constraints(graph, edge, 1, zero) < 0)
 			return -1;
 		if (edge->src != edge->dst &&
-		    add_inter_proximity_constraints(graph, edge, 1, local) < 0)
+		    add_inter_proximity_constraints(graph, edge, 1, zero) < 0)
 			return -1;
-		if (is_validity(edge) || local)
+		if (is_validity(edge) || zero)
 			continue;
 		if (edge->src == edge->dst &&
 		    add_intra_proximity_constraints(graph, edge, -1, 0) < 0)
@@ -2117,9 +2124,7 @@ static int is_any_validity(struct isl_sched_edge *edge)
  */
 static int edge_multiplicity(struct isl_sched_edge *edge, int use_coincidence)
 {
-	if (is_proximity(edge) || is_local(edge))
-		return 2;
-	if (use_coincidence && is_coincidence(edge))
+	if (is_proximity(edge) || force_zero(edge, use_coincidence))
 		return 2;
 	if (is_validity(edge))
 		return 1;
