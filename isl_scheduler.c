@@ -2126,6 +2126,22 @@ static int edge_multiplicity(struct isl_sched_edge *edge, int use_coincidence)
 	return 0;
 }
 
+/* Add "f" times the number of equality and inequality constraints of "bset"
+ * to "n_eq" and "n_ineq" and free "bset".
+ */
+static isl_stat update_count(__isl_take isl_basic_set *bset,
+	int f, int *n_eq, int *n_ineq)
+{
+	if (!bset)
+		return isl_stat_error;
+
+	*n_eq += isl_basic_set_n_equality(bset);
+	*n_ineq += isl_basic_set_n_inequality(bset);
+	isl_basic_set_free(bset);
+
+	return isl_stat_ok;
+}
+
 /* Count the number of equality and inequality constraints
  * that will be added for the given map.
  *
@@ -2147,13 +2163,7 @@ static isl_stat count_map_constraints(struct isl_sched_graph *graph,
 		coef = intra_coefficients(graph, edge->src, map);
 	else
 		coef = inter_coefficients(graph, edge, map);
-	if (!coef)
-		return isl_stat_error;
-	*n_eq += f * isl_basic_set_n_equality(coef);
-	*n_ineq += f * isl_basic_set_n_inequality(coef);
-	isl_basic_set_free(coef);
-
-	return isl_stat_ok;
+	return update_count(coef, f, n_eq, n_ineq);
 }
 
 /* Count the number of equality and inequality constraints
@@ -3803,11 +3813,7 @@ static isl_stat bset_update_count(__isl_take isl_basic_set *bset, void *user)
 {
 	struct isl_sched_count *data = user;
 
-	data->n_eq += isl_basic_set_n_equality(bset);
-	data->n_ineq += isl_basic_set_n_inequality(bset);
-	isl_basic_set_free(bset);
-
-	return isl_stat_ok;
+	return update_count(bset, 1, &data->n_eq, &data->n_ineq);
 }
 
 /* Count the number of equality and inequality constraints
