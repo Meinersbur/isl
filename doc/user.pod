@@ -4663,12 +4663,7 @@ Intersect the set, relation or function domain
 with the hyperplane where the given
 dimension has the fixed given value.
 
-	__isl_give isl_basic_map *isl_basic_map_lower_bound_si(
-		__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos, int value);
-	__isl_give isl_basic_map *isl_basic_map_upper_bound_si(
-		__isl_take isl_basic_map *bmap,
-		enum isl_dim_type type, unsigned pos, int value);
+	#include <isl/set.h>
 	__isl_give isl_set *isl_set_lower_bound_si(
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -4676,9 +4671,6 @@ dimension has the fixed given value.
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_val *value);
-	__isl_give isl_map *isl_map_lower_bound_si(
-		__isl_take isl_map *map,
-		enum isl_dim_type type, unsigned pos, int value);
 	__isl_give isl_set *isl_set_upper_bound_si(
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, int value);
@@ -4686,6 +4678,17 @@ dimension has the fixed given value.
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_val *value);
+
+	#include <isl/map.h>
+	__isl_give isl_basic_map *isl_basic_map_lower_bound_si(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, int value);
+	__isl_give isl_basic_map *isl_basic_map_upper_bound_si(
+		__isl_take isl_basic_map *bmap,
+		enum isl_dim_type type, unsigned pos, int value);
+	__isl_give isl_map *isl_map_lower_bound_si(
+		__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned pos, int value);
 	__isl_give isl_map *isl_map_upper_bound_si(
 		__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
