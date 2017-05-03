@@ -357,7 +357,7 @@ struct isl_sched_graph {
 	struct isl_hash_table *edge_table[isl_edge_last + 1];
 
 	struct isl_hash_table *node_table;
-	struct isl_region *region;
+	struct isl_trivial_region *region;
 
 	isl_basic_set *lp;
 
@@ -615,7 +615,8 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	graph->n_edge = n_edge;
 	graph->node = isl_calloc_array(ctx, struct isl_sched_node, graph->n);
 	graph->sorted = isl_calloc_array(ctx, int, graph->n);
-	graph->region = isl_alloc_array(ctx, struct isl_region, graph->n);
+	graph->region = isl_alloc_array(ctx,
+					struct isl_trivial_region, graph->n);
 	graph->edge = isl_calloc_array(ctx,
 					struct isl_sched_edge, graph->n_edge);
 
@@ -2567,6 +2568,27 @@ static int needs_row(struct isl_sched_graph *graph, struct isl_sched_node *node)
 	return node->nvar - node->rank >= graph->maxvar - graph->n_row;
 }
 
+/* Construct a non-triviality region with "n" directions.
+ * Each direction corresponds to a schedule coefficient,
+ * where each schedule coefficient is encoded as the difference
+ * of two non-negative variables, c^+_i - c^-_i
+ * with c^-_i at position 2 * i and c^+_i at position 2 * i + 1.
+ * The order of the directions is the same as that of the variables.
+ */
+static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n)
+{
+	isl_mat *mat;
+	int i;
+
+	mat = isl_mat_zero(ctx, n, 2 * n);
+	for (i = 0; i < n; ++i) {
+		mat = isl_mat_set_element_si(mat, i, 2 * i, -1);
+		mat = isl_mat_set_element_si(mat, i, 2 * i + 1, 1);
+	}
+
+	return mat;
+}
+
 /* Solve the ILP problem constructed in setup_lp.
  * For each node such that all the remaining rows of its schedule
  * need to be non-trivial, we construct a non-triviality region.
@@ -2579,7 +2601,7 @@ static int needs_row(struct isl_sched_graph *graph, struct isl_sched_node *node)
  * that the new schedule row depends on at least one of the remaining
  * columns of Q.
  */
-static __isl_give isl_vec *solve_lp(struct isl_sched_graph *graph)
+static __isl_give isl_vec *solve_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
 	isl_vec *sol;
@@ -2588,15 +2610,20 @@ static __isl_give isl_vec *solve_lp(struct isl_sched_graph *graph)
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 		int skip = node->rank;
+		isl_mat *trivial;
+
 		graph->region[i].pos = node_var_coef_offset(node) + 2 * skip;
 		if (needs_row(graph, node))
-			graph->region[i].len = 2 * (node->nvar - skip);
+			trivial = construct_trivial(ctx, node->nvar - skip);
 		else
-			graph->region[i].len = 0;
+			trivial = isl_mat_zero(ctx, 0, 0);
+		graph->region[i].trivial = trivial;
 	}
 	lp = isl_basic_set_copy(graph->lp);
 	sol = isl_tab_basic_set_non_trivial_lexmin(lp, 2, graph->n,
 				       graph->region, &check_conflict, graph);
+	for (i = 0; i < graph->n; ++i)
+		isl_mat_free(graph->region[i].trivial);
 	return sol;
 }
 
@@ -5021,7 +5048,7 @@ static isl_stat compute_schedule_wcc_band(isl_ctx *ctx,
 
 		if (setup_lp(ctx, graph, use_coincidence) < 0)
 			return isl_stat_error;
-		sol = solve_lp(graph);
+		sol = solve_lp(ctx, graph);
 		if (!sol)
 			return isl_stat_error;
 		if (sol->size == 0) {
