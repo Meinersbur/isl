@@ -5045,12 +5045,12 @@ error:
  * of two identical values, meaning that the variable being represented
  * has value zero.
  */
-static int region_is_trivial(struct isl_tab *tab, int pos, int len)
+static isl_bool region_is_trivial(struct isl_tab *tab, int pos, int len)
 {
 	int i;
 
 	if (len == 0)
-		return 0;
+		return isl_bool_false;
 
 	for (i = 0; i < len; i +=  2) {
 		int neg_row;
@@ -5068,17 +5068,17 @@ static int region_is_trivial(struct isl_tab *tab, int pos, int len)
 			continue;
 
 		if (neg_row < 0 || pos_row < 0)
-			return 0;
+			return isl_bool_false;
 		if (isl_int_ne(tab->mat->row[neg_row][1],
 			       tab->mat->row[pos_row][1]))
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
-/* Return the index of the first trivial region or -1 if all regions
- * are non-trivial.
+/* Return the index of the first trivial region, "n_region" if all regions
+ * are non-trivial or -1 in case of error.
  */
 static int first_trivial_region(struct isl_tab *tab,
 	int n_region, struct isl_region *region)
@@ -5086,11 +5086,15 @@ static int first_trivial_region(struct isl_tab *tab,
 	int i;
 
 	for (i = 0; i < n_region; ++i) {
-		if (region_is_trivial(tab, region[i].pos, region[i].len))
+		isl_bool trivial;
+		trivial = region_is_trivial(tab, region[i].pos, region[i].len);
+		if (trivial < 0)
+			return -1;
+		if (trivial)
 			return i;
 	}
 
-	return -1;
+	return n_region;
 }
 
 /* Check if the solution is optimal, i.e., whether the first
@@ -5321,7 +5325,9 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			if (tab->empty)
 				goto backtrack;
 			r = first_trivial_region(tab, n_region, region);
-			if (r < 0) {
+			if (r < 0)
+				goto error;
+			if (r == n_region) {
 				for (i = 0; i < level; ++i)
 					triv[i].update = 1;
 				isl_vec_free(sol);
