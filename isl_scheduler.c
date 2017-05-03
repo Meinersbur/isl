@@ -1694,10 +1694,6 @@ static __isl_give isl_basic_set *add_constraints_dim_map(
  * of valid constraints for (y - x) and then plug in (0, 0, c_i_x^+ - c_i_x^-),
  * where c_i_x = c_i_x^+ - c_i_x^-, with c_i_x^+ and c_i_x^- non-negative.
  * In graph->lp, the c_i_x^- appear before their c_i_x^+ counterpart.
- *
- * Actually, we do not construct constraints for the c_i_x themselves,
- * but for the coefficients of c_i_x written as a linear combination
- * of the columns in node->cmap.
  */
 static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
@@ -1713,8 +1709,6 @@ static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
 
 	offset = coef_var_offset(coef);
 
-	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-					    offset, isl_mat_copy(node->cmap));
 	if (!coef)
 		return isl_stat_error;
 
@@ -1736,10 +1730,6 @@ static isl_stat add_intra_validity_constraints(struct isl_sched_graph *graph,
  * (c_j_0 - c_i_0, c_j_n - c_i_n, -(c_i_x^+ - c_i_x^-), c_j_x^+ - c_j_x^-),
  * where c_* = c_*^+ - c_*^-, with c_*^+ and c_*^- non-negative.
  * In graph->lp, the c_*^- appear before their c_*^+ counterpart.
- *
- * Actually, we do not construct constraints for the c_*_x themselves,
- * but for the coefficients of c_*_x written as a linear combination
- * of the columns in node->cmap.
  */
 static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
@@ -1761,10 +1751,6 @@ static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
 
 	offset = coef_var_offset(coef);
 
-	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-				offset, isl_mat_copy(src->cmap));
-	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-				offset + src->nvar, isl_mat_copy(dst->cmap));
 	if (!coef)
 		return isl_stat_error;
 
@@ -1804,10 +1790,6 @@ static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
  * with each coefficient (except m_0) represented as a pair of non-negative
  * coefficients.
  *
- * Actually, we do not construct constraints for the c_i_x themselves,
- * but for the coefficients of c_i_x written as a linear combination
- * of the columns in node->cmap.
- *
  *
  * If "local" is set, then we add constraints
  *
@@ -1838,8 +1820,6 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
 
 	offset = coef_var_offset(coef);
 
-	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-					    offset, isl_mat_copy(node->cmap));
 	if (!coef)
 		return isl_stat_error;
 
@@ -1887,10 +1867,6 @@ static isl_stat add_intra_proximity_constraints(struct isl_sched_graph *graph,
  * with each coefficient (except m_0, c_*_0 and c_*_n)
  * represented as a pair of non-negative coefficients.
  *
- * Actually, we do not construct constraints for the c_*_x themselves,
- * but for the coefficients of c_*_x written as a linear combination
- * of the columns in node->cmap.
- *
  *
  * If "local" is set (and s = 1), then we add constraints
  *
@@ -1923,10 +1899,6 @@ static isl_stat add_inter_proximity_constraints(struct isl_sched_graph *graph,
 
 	offset = coef_var_offset(coef);
 
-	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-				offset, isl_mat_copy(src->cmap));
-	coef = isl_basic_set_transform_dims(coef, isl_dim_set,
-				offset + src->nvar, isl_mat_copy(dst->cmap));
 	if (!coef)
 		return isl_stat_error;
 
@@ -2282,21 +2254,20 @@ static int count_bound_coefficient_constraints(isl_ctx *ctx,
  *	-c_n + max >= 0
  *
  * The variables coefficients are, however, not represented directly.
- * Instead, the variables coefficients c_x are written as a linear
- * combination c_x = cmap c_z of some other coefficients c_z,
- * which are in turn encoded as c_z = c_z^+ - c_z^-.
- * Let a_j be the elements of row i of node->cmap, then
+ * Instead, the variable coefficients c_x are written as differences
+ * c_x = c_x^+ - c_x^-.
+ * That is,
  *
  *	-max_i <= c_x_i <= max_i
  *
  * is encoded as
  *
- *	-max_i <= \sum_j a_j (c_z_j^+ - c_z_j^-) <= max_i
+ *	-max_i <= c_x_i^+ - c_x_i^- <= max_i
  *
  * or
  *
- *	-\sum_j a_j (c_z_j^+ - c_z_j^-) + max_i >= 0
- *	\sum_j a_j (c_z_j^+ - c_z_j^-) + max_i >= 0
+ *	-(c_x_i^+ - c_x_i^-) + max_i >= 0
+ *	c_x_i^+ - c_x_i^- + max_i >= 0
  */
 static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
 	struct isl_sched_graph *graph, struct isl_sched_node *node, int max)
@@ -2327,17 +2298,13 @@ static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
 	if (!ineq)
 		return isl_stat_error;
 	for (i = 0; i < node->nvar; ++i) {
-		int pos = 1 + node_var_coef_offset(node);
+		int pos = 1 + node_var_coef_pos(node, i);
 
 		if (isl_int_is_neg(node->max->el[i]))
 			continue;
 
-		for (j = 0; j < node->nvar; ++j) {
-			int pos_j = 1 + node_var_coef_pos(node, j);
-
-			isl_int_set(ineq->el[pos_j], node->cmap->row[i][j]);
-			isl_int_neg(ineq->el[pos_j], node->cmap->row[i][j]);
-		}
+		isl_int_set_si(ineq->el[pos], 1);
+		isl_int_set_si(ineq->el[pos + 1], -1);
 		isl_int_set(ineq->el[0], node->max->el[i]);
 
 		k = isl_basic_set_alloc_inequality(graph->lp);
@@ -2345,7 +2312,7 @@ static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
 			goto error;
 		isl_seq_cpy(graph->lp->ineq[k], ineq->el, 1 + total);
 
-		isl_seq_neg(ineq->el + pos, ineq->el + pos, 2 * node->nvar);
+		isl_seq_neg(ineq->el + pos, ineq->el + pos + 2 * i, 2);
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			goto error;
@@ -2497,10 +2464,6 @@ static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
  *		- c_i_n (if parametric)
  *		- positive and negative parts of c_i_x, in opposite order
  *
- * The c_i_x are not represented directly, but through the columns of
- * node->cmap.  That is, the computed values are for variable t_i_x
- * such that c_i_x = Q t_i_x with Q equal to node->cmap.
- *
  * The constraints are those from the edges plus two or three equalities
  * to express the sums.
  *
@@ -2609,30 +2572,36 @@ static int needs_row(struct isl_sched_graph *graph, struct isl_sched_node *node)
 	return node->nvar - node->rank >= graph->maxvar - graph->n_row;
 }
 
-/* Construct a non-triviality region with "n" directions
- * over "n_var" coefficients.
- * Each direction corresponds to a schedule coefficient,
- * where each schedule coefficient is encoded as the difference
- * of two non-negative variables, c^+_i - c^-_i
- * with c^-_i at position 2 * i and c^+_i at position 2 * i + 1.
- * The order of the directions is the same as that of the node variables,
- * but the pairs of non-negative variables representing the coefficients
+/* Construct a non-triviality region with triviality directions
+ * corresponding to the rows of "indep".
+ * The rows of "indep" are expressed in terms of the schedule coefficients c_i,
+ * while the triviality directions are expressed in terms of
+ * pairs of non-negative variables c^+_i - c^-_i, with c^-_i appearing
+ * before c^+_i.  Furthermore,
+ * the pairs of non-negative variables representing the coefficients
  * are stored in the opposite order.
- * The first direction therefore corresponds to the last such pair.
- * Furthermore, if the number of variables is greater than the number
- * of directions, then the directions correspond to the last node variables,
- * i.e., the first pairs of non-negative variables.
  */
-static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n, int n_var)
+static __isl_give isl_mat *construct_trivial(__isl_keep isl_mat *indep)
 {
+	isl_ctx *ctx;
 	isl_mat *mat;
-	int i, off;
+	int i, j, n, n_var;
 
-	off = n_var - n;
-	mat = isl_mat_zero(ctx, n, 2 * n_var);
+	if (!indep)
+		return NULL;
+
+	ctx = isl_mat_get_ctx(indep);
+	n = isl_mat_rows(indep);
+	n_var = isl_mat_cols(indep);
+	mat = isl_mat_alloc(ctx, n, 2 * n_var);
+	if (!mat)
+		return NULL;
 	for (i = 0; i < n; ++i) {
-		mat = isl_mat_set_element_si(mat, i, 2 * (n - 1 - i), -1);
-		mat = isl_mat_set_element_si(mat, i, 2 * (n - 1 - i) + 1, 1);
+		for (j = 0; j < n_var; ++j) {
+			int nj = n_var - 1 - j;
+			isl_int_neg(mat->row[i][2 * nj], indep->row[i][j]);
+			isl_int_set(mat->row[i][2 * nj + 1], indep->row[i][j]);
+		}
 	}
 
 	return mat;
@@ -2642,13 +2611,8 @@ static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n, int n_var)
  * For each node such that all the remaining rows of its schedule
  * need to be non-trivial, we construct a non-triviality region.
  * This region imposes that the next row is independent of previous rows.
- * In particular the coefficients c_i_x are represented by t_i_x
- * variables with c_i_x = Q t_i_x and Q a unimodular matrix such that
- * its first columns span the rows of the previously computed part
- * of the schedule.  The non-triviality region enforces that at least
- * one of the remaining components of t_i_x is non-zero, i.e.,
- * that the new schedule row depends on at least one of the remaining
- * columns of Q.
+ * In particular, the non-triviality region enforces that at least
+ * one of the linear combinations in the rows of node->indep is non-zero.
  */
 static __isl_give isl_vec *solve_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
@@ -2658,13 +2622,11 @@ static __isl_give isl_vec *solve_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
-		int skip = node->rank;
 		isl_mat *trivial;
 
 		graph->region[i].pos = node_var_coef_offset(node);
 		if (needs_row(graph, node))
-			trivial = construct_trivial(ctx, node->nvar - skip,
-						node->nvar);
+			trivial = construct_trivial(node->indep);
 		else
 			trivial = isl_mat_zero(ctx, 0, 0);
 		graph->region[i].trivial = trivial;
@@ -4073,8 +4035,7 @@ error:
  * Return 1 if the solution is trivial, 0 if it is not and -1 on error.
  *
  * Each coefficient is represented as the difference between
- * two non-negative values in "sol".  "sol" has been computed
- * in terms of the original iterators (i.e., without use of cmap).
+ * two non-negative values in "sol".
  * We construct the schedule row s and check if it is linearly
  * independent of previously computed schedule rows
  * by computing T s, with T the linear combinations that are zero
@@ -4106,8 +4067,6 @@ static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 
 /* Is the schedule row "sol" trivial on any node where it should
  * not be trivial?
- * "sol" has been computed in terms of the original iterators
- * (i.e., without use of cmap).
  * Return 1 if any solution is trivial, 0 if they are not and -1 on error.
  */
 static int is_any_trivial(struct isl_sched_graph *graph,
@@ -5115,7 +5074,7 @@ static isl_stat compute_schedule_wcc_band(isl_ctx *ctx,
 			return isl_stat_ok;
 		}
 		coincident = !has_coincidence || use_coincidence;
-		if (update_schedule(graph, sol, 1, coincident) < 0)
+		if (update_schedule(graph, sol, 0, coincident) < 0)
 			return isl_stat_error;
 
 		if (!check_conditional)

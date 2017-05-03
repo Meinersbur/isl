@@ -4045,6 +4045,28 @@ static int test_coalescing_schedule(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the scheduler does not perform any needless
+ * compound skewing.  Earlier versions of isl would compute
+ * schedules in terms of transformed schedule coefficients and
+ * would not accurately keep track of the sum of the original
+ * schedule coefficients.  It could then produce the schedule
+ * S[t,i,j,k] -> [t, 2t + i, 2t + i + j, 2t + i + j + k]
+ * for the input below instead of the schedule below.
+ */
+static int test_skewing_schedule(isl_ctx *ctx)
+{
+	const char *D, *V, *P, *S;
+
+	D = "[n] -> { S[t,i,j,k] : 0 <= t,i,j,k < n }";
+	V = "[n] -> { S[t,i,j,k] -> S[t+1,a,b,c] : 0 <= t,i,j,k,a,b,c < n and "
+		"-2 <= a-i <= 2 and -1 <= a-i + b-j <= 1 and "
+		"-1 <= a-i + b-j + c-k <= 1 }";
+	P = "{ }";
+	S = "{ S[t,i,j,k] -> [t, 2t + i, t + i + j, 2t + k] }";
+
+	return test_special_schedule(ctx, D, V, P, S);
+}
+
 int test_schedule(isl_ctx *ctx)
 {
 	const char *D, *W, *R, *V, *P, *S;
@@ -4272,7 +4294,7 @@ int test_schedule(isl_ctx *ctx)
 		"S_0[i, j] -> S_0[1 + i, j] : i >= 1 and i <= 9 and "
 					     "j >= 1 and j <= 8 }";
 	P = "{ }";
-	S = "{ S_0[i, j] -> [i + j, j] }";
+	S = "{ S_0[i, j] -> [i + j, i] }";
 	ctx->opt->schedule_algorithm = ISL_SCHEDULE_ALGORITHM_FEAUTRIER;
 	if (test_special_schedule(ctx, D, V, P, S) < 0)
 		return -1;
@@ -4351,6 +4373,8 @@ int test_schedule(isl_ctx *ctx)
 	if (test_bounded_coefficients_schedule(ctx) < 0)
 		return -1;
 	if (test_coalescing_schedule(ctx) < 0)
+		return -1;
+	if (test_skewing_schedule(ctx) < 0)
 		return -1;
 
 	return 0;
