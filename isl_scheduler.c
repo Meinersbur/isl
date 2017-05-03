@@ -1568,12 +1568,12 @@ static int node_var_coef_offset(struct isl_sched_node *node)
 /* Return the position of the pair of variables encoding
  * coefficient "i" of "node".
  *
- * The order of these variable pairs is the same as that of the coefficients,
- * with 2 variables per coefficient.
+ * The order of these variable pairs is the opposite of
+ * that of the coefficients, with 2 variables per coefficient.
  */
 static int node_var_coef_pos(struct isl_sched_node *node, int i)
 {
-	return node_var_coef_offset(node) + 2 * i;
+	return node_var_coef_offset(node) + 2 * (node->nvar - 1 - i);
 }
 
 /* Construct an isl_dim_map for mapping constraints on coefficients
@@ -1587,6 +1587,8 @@ static int node_var_coef_pos(struct isl_sched_node *node, int i)
  * (0, 0, c_i_x^+ - c_i_x^-) if s = 1 and
  * (0, 0, -c_i_x^+ + c_i_x^-) if s = -1.
  * In graph->lp, the c_i_x^- appear before their c_i_x^+ counterpart.
+ * Furthermore, the order of these pairs is the opposite of that
+ * of the corresponding coefficients.
  *
  * The caller can extend the mapping to also map the other coefficients
  * (and therefore not plug in 0).
@@ -1605,8 +1607,8 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
 	total = isl_basic_set_total_dim(graph->lp);
 	pos = node_var_coef_pos(node, 0);
 	dim_map = isl_dim_map_alloc(ctx, total);
-	isl_dim_map_range(dim_map, pos, 2, offset, 1, node->nvar, -s);
-	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, node->nvar, s);
+	isl_dim_map_range(dim_map, pos, -2, offset, 1, node->nvar, -s);
+	isl_dim_map_range(dim_map, pos + 1, -2, offset, 1, node->nvar, s);
 
 	return dim_map;
 }
@@ -1626,6 +1628,8 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
  * (-c_j_0 + c_i_0, -c_j_n + c_i_n,
  *  c_i_x^+ - c_i_x^-, -(c_j_x^+ - c_j_x^-)) if s = -1.
  * In graph->lp, the c_*^- appear before their c_*^+ counterpart.
+ * Furthermore, the order of these pairs is the opposite of that
+ * of the corresponding coefficients.
  *
  * The caller can further extend the mapping.
  */
@@ -1646,16 +1650,16 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	isl_dim_map_range(dim_map, dst->start, 0, 0, 0, 1, s);
 	isl_dim_map_range(dim_map, dst->start + 1, 1, 1, 1, dst->nparam, s);
 	pos = node_var_coef_pos(dst, 0);
-	isl_dim_map_range(dim_map, pos, 2, offset + src->nvar, 1,
+	isl_dim_map_range(dim_map, pos, -2, offset + src->nvar, 1,
 			  dst->nvar, -s);
-	isl_dim_map_range(dim_map, pos + 1, 2, offset + src->nvar, 1,
+	isl_dim_map_range(dim_map, pos + 1, -2, offset + src->nvar, 1,
 			  dst->nvar, s);
 
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -s);
 	isl_dim_map_range(dim_map, src->start + 1, 1, 1, 1, src->nparam, -s);
 	pos = node_var_coef_pos(src, 0);
-	isl_dim_map_range(dim_map, pos, 2, offset, 1, src->nvar, s);
-	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, src->nvar, -s);
+	isl_dim_map_range(dim_map, pos, -2, offset, 1, src->nvar, s);
+	isl_dim_map_range(dim_map, pos + 1, -2, offset, 1, src->nvar, -s);
 
 	return dim_map;
 }
@@ -2465,7 +2469,7 @@ static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
  *	- for each node
  *		- c_i_0
  *		- c_i_n (if parametric)
- *		- positive and negative parts of c_i_x
+ *		- positive and negative parts of c_i_x, in opposite order
  *
  * The c_i_x are not represented directly, but through the columns of
  * node->cmap.  That is, the computed values are for variable t_i_x
@@ -2585,9 +2589,13 @@ static int needs_row(struct isl_sched_graph *graph, struct isl_sched_node *node)
  * where each schedule coefficient is encoded as the difference
  * of two non-negative variables, c^+_i - c^-_i
  * with c^-_i at position 2 * i and c^+_i at position 2 * i + 1.
- * The order of the directions is the same as that of the variables,
- * but if the number of variables is greater than the number of directions,
- * then the directions correspond to the last variables.
+ * The order of the directions is the same as that of the node variables,
+ * but the pairs of non-negative variables representing the coefficients
+ * are stored in the opposite order.
+ * The first direction therefore corresponds to the last such pair.
+ * Furthermore, if the number of variables is greater than the number
+ * of directions, then the directions correspond to the last node variables,
+ * i.e., the first pairs of non-negative variables.
  */
 static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n, int n_var)
 {
@@ -2597,8 +2605,8 @@ static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n, int n_var)
 	off = n_var - n;
 	mat = isl_mat_zero(ctx, n, 2 * n_var);
 	for (i = 0; i < n; ++i) {
-		mat = isl_mat_set_element_si(mat, i, 2 * (off + i), -1);
-		mat = isl_mat_set_element_si(mat, i, 2 * (off + i) + 1, 1);
+		mat = isl_mat_set_element_si(mat, i, 2 * (n - 1 - i), -1);
+		mat = isl_mat_set_element_si(mat, i, 2 * (n - 1 - i) + 1, 1);
 	}
 
 	return mat;
@@ -2651,6 +2659,8 @@ static __isl_give isl_vec *solve_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
  *	- positive and negative parts of c_i_x
  *
  * The c_i_x^- appear before their c_i_x^+ counterpart.
+ * Furthermore, the order of these pairs is the opposite of that
+ * of the corresponding coefficients.
  *
  * Return c_i_x = c_i_x^+ - c_i_x^-
  */
@@ -2669,7 +2679,7 @@ static __isl_give isl_vec *extract_var_coef(struct isl_sched_node *node,
 
 	pos = 1 + node_var_coef_offset(node);
 	for (i = 0; i < node->nvar; ++i)
-		isl_int_sub(csol->el[i],
+		isl_int_sub(csol->el[node->nvar - 1 - i],
 			    sol->el[pos + 2 * i + 1], sol->el[pos + 2 * i]);
 
 	return csol;
@@ -3845,7 +3855,7 @@ static isl_stat count_all_constraints(__isl_keep isl_basic_set_list *intra,
  *	- for each node
  *		- c_i_0
  *		- c_i_n (if parametric)
- *		- positive and negative parts of c_i_x
+ *		- positive and negative parts of c_i_x, in opposite order
  *
  * The constraints are those from the (validity) edges plus three equalities
  * to express the sums and n_edge inequalities to express e_i <= 1.
