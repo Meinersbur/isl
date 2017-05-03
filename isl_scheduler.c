@@ -2568,22 +2568,26 @@ static int needs_row(struct isl_sched_graph *graph, struct isl_sched_node *node)
 	return node->nvar - node->rank >= graph->maxvar - graph->n_row;
 }
 
-/* Construct a non-triviality region with "n" directions.
+/* Construct a non-triviality region with "n" directions
+ * over "n_var" coefficients.
  * Each direction corresponds to a schedule coefficient,
  * where each schedule coefficient is encoded as the difference
  * of two non-negative variables, c^+_i - c^-_i
  * with c^-_i at position 2 * i and c^+_i at position 2 * i + 1.
- * The order of the directions is the same as that of the variables.
+ * The order of the directions is the same as that of the variables,
+ * but if the number of variables is greater than the number of directions,
+ * then the directions correspond to the last variables.
  */
-static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n)
+static __isl_give isl_mat *construct_trivial(isl_ctx *ctx, int n, int n_var)
 {
 	isl_mat *mat;
-	int i;
+	int i, off;
 
-	mat = isl_mat_zero(ctx, n, 2 * n);
+	off = n_var - n;
+	mat = isl_mat_zero(ctx, n, 2 * n_var);
 	for (i = 0; i < n; ++i) {
-		mat = isl_mat_set_element_si(mat, i, 2 * i, -1);
-		mat = isl_mat_set_element_si(mat, i, 2 * i + 1, 1);
+		mat = isl_mat_set_element_si(mat, i, 2 * (off + i), -1);
+		mat = isl_mat_set_element_si(mat, i, 2 * (off + i) + 1, 1);
 	}
 
 	return mat;
@@ -2612,9 +2616,10 @@ static __isl_give isl_vec *solve_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 		int skip = node->rank;
 		isl_mat *trivial;
 
-		graph->region[i].pos = node_var_coef_offset(node) + 2 * skip;
+		graph->region[i].pos = node_var_coef_offset(node);
 		if (needs_row(graph, node))
-			trivial = construct_trivial(ctx, node->nvar - skip);
+			trivial = construct_trivial(ctx, node->nvar - skip,
+						node->nvar);
 		else
 			trivial = isl_mat_zero(ctx, 0, 0);
 		graph->region[i].trivial = trivial;
