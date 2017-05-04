@@ -15,6 +15,7 @@ using namespace clang;
  * "type" is the declaration that introduces the type.
  * "methods" contains the set of methods, grouped by method name.
  * "fn_to_str" is a reference to the *_to_str method of this class, if any.
+ * "fn_copy" is a reference to the *_copy method of this class, if any.
  * "fn_free" is a reference to the *_free method of this class, if any.
  */
 struct isl_class {
@@ -23,6 +24,7 @@ struct isl_class {
 	set<FunctionDecl *> constructors;
 	map<string, set<FunctionDecl *> > methods;
 	FunctionDecl *fn_to_str;
+	FunctionDecl *fn_copy;
 	FunctionDecl *fn_free;
 };
 

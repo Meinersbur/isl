@@ -564,7 +564,7 @@ void python_generator::print_representation(const isl_class &clazz,
  * To be able to call C functions it is necessary to explicitly set their
  * argument and result types.  Do this for all exported constructors and
  * methods, as well as for the *_to_str method, if it exists.
- * Assuming each exported class has a *_free method,
+ * Assuming each exported class has a *_copy and a *_free method,
  * also unconditionally set the type of such methods.
  */
 void python_generator::print_method_types(const isl_class &clazz)
@@ -580,6 +580,7 @@ void python_generator::print_method_types(const isl_class &clazz)
 		for (in = it->second.begin(); in != it->second.end(); ++in)
 			print_method_type(*in);
 
+	print_method_type(clazz.fn_copy);
 	print_method_type(clazz.fn_free);
 	if (clazz.fn_to_str)
 		print_method_type(clazz.fn_to_str);
