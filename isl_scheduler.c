@@ -2034,6 +2034,18 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
 	return 0;
 }
 
+/* Normalize the rows of "indep" such that all rows are lexicographically
+ * positive and such that each row contains as many final zeros as possible,
+ * given the choice for the previous rows.
+ * Do this by performing elementary row operations.
+ */
+static __isl_give isl_mat *normalize_independent(__isl_take isl_mat *indep)
+{
+	indep = isl_mat_reverse_gauss(indep);
+	indep = isl_mat_lexnonneg_rows(indep);
+	return indep;
+}
+
 /* Compute a basis for the rows in the linear part of the schedule
  * and extend this basis to a full basis.  The remaining rows
  * can then be used to force linear independence from the rows
@@ -2061,6 +2073,8 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
  * coefficients that are linearly dependent on the rows of S.
  * At least one of these combinations is non-zero on
  * linearly independent schedule coefficients.
+ * The rows are normalized to involve as few of the last
+ * coefficients as possible and to have a positive initial value.
  */
 static int node_update_cmap(struct isl_sched_node *node)
 {
@@ -2079,6 +2093,7 @@ static int node_update_cmap(struct isl_sched_node *node)
 	node->indep = isl_mat_transpose(U);
 	node->rank = isl_mat_initial_non_zero_cols(H);
 	node->indep = isl_mat_drop_rows(node->indep, 0, node->rank);
+	node->indep = normalize_independent(node->indep);
 	isl_mat_free(H);
 
 	if (!node->cmap || !node->indep || !node->ctrans || node->rank < 0)
