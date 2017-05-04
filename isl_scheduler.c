@@ -61,7 +61,9 @@
  * the columns of cmap represent a change of basis for the schedule
  *	coefficients; the first rank columns span the linear part of
  *	the schedule rows
- * cinv is the inverse of cmap.
+ * the rows of "indep" represent linear combinations of the schedule
+ * coefficients that are non-zero when the schedule coefficients are
+ * linearly independent of previously computed schedule rows.
  * ctrans is the transpose of cmap.
  * start is the first variable in the LP problem in the sequences that
  *	represents the schedule coefficients of this node
@@ -104,7 +106,7 @@ struct isl_sched_node {
 	isl_map *sched_map;
 	int	 rank;
 	isl_mat *cmap;
-	isl_mat *cinv;
+	isl_mat *indep;
 	isl_mat *ctrans;
 	int	 start;
 	int	 nvar;
@@ -649,7 +651,7 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 			isl_mat_free(graph->node[i].sched);
 			isl_map_free(graph->node[i].sched_map);
 			isl_mat_free(graph->node[i].cmap);
-			isl_mat_free(graph->node[i].cinv);
+			isl_mat_free(graph->node[i].indep);
 			isl_mat_free(graph->node[i].ctrans);
 			if (graph->root)
 				free(graph->node[i].coincident);
@@ -2049,8 +2051,16 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
  * coefficients of the next schedule row as a column vector s
  * and express this s as a linear combination s = Q c of the
  * computed basis.
- * Similarly, the matrix U is transposed such that we can
- * compute the coefficients c = U s from a schedule row s.
+ * Transposing S U = H yields
+ *
+ *	U^T S^T = H^T
+ *
+ * with all but the first rank rows of H^T zero.
+ * The last rows of U^T are therefore linear combinations
+ * of schedule coefficients that are all zero on schedule
+ * coefficients that are linearly dependent on the rows of S.
+ * At least one of these combinations is non-zero on
+ * linearly independent schedule coefficients.
  */
 static int node_update_cmap(struct isl_sched_node *node)
 {
@@ -2062,15 +2072,16 @@ static int node_update_cmap(struct isl_sched_node *node)
 
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
 	isl_mat_free(node->cmap);
-	isl_mat_free(node->cinv);
+	isl_mat_free(node->indep);
 	isl_mat_free(node->ctrans);
 	node->ctrans = isl_mat_copy(Q);
 	node->cmap = isl_mat_transpose(Q);
-	node->cinv = isl_mat_transpose(U);
+	node->indep = isl_mat_transpose(U);
 	node->rank = isl_mat_initial_non_zero_cols(H);
+	node->indep = isl_mat_drop_rows(node->indep, 0, node->rank);
 	isl_mat_free(H);
 
-	if (!node->cmap || !node->cinv || !node->ctrans || node->rank < 0)
+	if (!node->cmap || !node->indep || !node->ctrans || node->rank < 0)
 		return -1;
 	return 0;
 }
@@ -4049,10 +4060,11 @@ error:
  * Each coefficient is represented as the difference between
  * two non-negative values in "sol".  "sol" has been computed
  * in terms of the original iterators (i.e., without use of cmap).
- * We construct the schedule row s and write it as a linear
- * combination of (linear combinations of) previously computed schedule rows.
- * s = Q c or c = U s.
- * If the final entries of c are all zero, then the solution is trivial.
+ * We construct the schedule row s and check if it is linearly
+ * independent of previously computed schedule rows
+ * by computing T s, with T the linear combinations that are zero
+ * on linearly dependent schedule rows.
+ * If the result consists of all zeros, then the solution is trivial.
  */
 static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 {
@@ -4065,11 +4077,11 @@ static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 		return 0;
 
 	node_sol = extract_var_coef(node, sol);
-	node_sol = isl_mat_vec_product(isl_mat_copy(node->cinv), node_sol);
+	node_sol = isl_mat_vec_product(isl_mat_copy(node->indep), node_sol);
 	if (!node_sol)
 		return -1;
 
-	trivial = isl_seq_first_non_zero(node_sol->el + node->rank,
+	trivial = isl_seq_first_non_zero(node_sol->el,
 					node->nvar - node->rank) == -1;
 
 	isl_vec_free(node_sol);
