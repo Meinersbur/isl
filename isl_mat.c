@@ -757,6 +757,35 @@ __isl_give isl_mat *isl_mat_reverse_gauss(__isl_take isl_mat *mat)
 	return mat;
 }
 
+/* Negate the lexicographically negative rows of "mat" such that
+ * all rows in the result are lexicographically non-negative.
+ */
+__isl_give isl_mat *isl_mat_lexnonneg_rows(__isl_take isl_mat *mat)
+{
+	int i, nr, nc;
+
+	if (!mat)
+		return NULL;
+
+	nr = isl_mat_rows(mat);
+	nc = isl_mat_cols(mat);
+
+	for (i = 0; i < nr; ++i) {
+		int pos;
+
+		pos = isl_seq_first_non_zero(mat->row[i], nc);
+		if (pos < 0)
+			continue;
+		if (isl_int_is_nonneg(mat->row[i][pos]))
+			continue;
+		mat = isl_mat_row_neg(mat, i);
+		if (!mat)
+			return NULL;
+	}
+
+	return mat;
+}
+
 struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat)
 {
 	int i, rank;

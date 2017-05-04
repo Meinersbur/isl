@@ -43,6 +43,8 @@ __isl_give isl_mat *isl_mat_scale_down_row(__isl_take isl_mat *mat, int row,
 
 __isl_give isl_vec *isl_mat_get_row(__isl_keep isl_mat *mat, unsigned row);
 
+__isl_give isl_mat *isl_mat_lexnonneg_rows(__isl_take isl_mat *mat);
+
 int isl_mat_is_scaled_identity(__isl_keep isl_mat *mat);
 
 isl_stat isl_mat_row_gcd(__isl_keep isl_mat *mat, int row, isl_int *gcd);
