@@ -1551,6 +1551,19 @@ static int coef_var_offset(__isl_keep isl_basic_set *coef)
 	return offset;
 }
 
+/* Return the offset of the coefficient of the constant term of "node"
+ * within the (I)LP.
+ *
+ * Within each node, the coefficients have the following order:
+ *	- c_i_0
+ *	- c_i_n (if parametric)
+ *	- positive and negative parts of c_i_x
+ */
+static int node_cst_coef_offset(struct isl_sched_node *node)
+{
+	return node->start;
+}
+
 /* Return the offset of the coefficients of the variables of "node"
  * within the (I)LP.
  *
@@ -1646,7 +1659,8 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	total = isl_basic_set_total_dim(graph->lp);
 	dim_map = isl_dim_map_alloc(ctx, total);
 
-	isl_dim_map_range(dim_map, dst->start, 0, 0, 0, 1, s);
+	pos = node_cst_coef_offset(dst);
+	isl_dim_map_range(dim_map, pos, 0, 0, 0, 1, s);
 	isl_dim_map_range(dim_map, dst->start + 1, 1, 1, 1, dst->nparam, s);
 	pos = node_var_coef_pos(dst, 0);
 	isl_dim_map_range(dim_map, pos, -2, offset + src->nvar, 1,
@@ -1654,7 +1668,8 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	isl_dim_map_range(dim_map, pos + 1, -2, offset + src->nvar, 1,
 			  dst->nvar, s);
 
-	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -s);
+	pos = node_cst_coef_offset(src);
+	isl_dim_map_range(dim_map, pos, 0, 0, 0, 1, -s);
 	isl_dim_map_range(dim_map, src->start + 1, 1, 1, 1, src->nparam, -s);
 	pos = node_var_coef_pos(src, 0);
 	isl_dim_map_range(dim_map, pos, -2, offset, 1, src->nvar, s);
@@ -2179,11 +2194,6 @@ static isl_stat count_bound_constant_constraints(isl_ctx *ctx,
  *
  * The maximal value of the constant terms is defined by the option
  * "schedule_max_constant_term".
- *
- * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
- *	- positive and negative parts of c_i_x
  */
 static isl_stat add_bound_constant_constraints(isl_ctx *ctx,
 	struct isl_sched_graph *graph)
@@ -2200,11 +2210,14 @@ static isl_stat add_bound_constant_constraints(isl_ctx *ctx,
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
+		int pos;
+
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			return isl_stat_error;
 		isl_seq_clr(graph->lp->ineq[k], 1 + total);
-		isl_int_set_si(graph->lp->ineq[k][1 + node->start], -1);
+		pos = node_cst_coef_offset(node);
+		isl_int_set_si(graph->lp->ineq[k][1 + pos], -1);
 		isl_int_set_si(graph->lp->ineq[k][0], max);
 	}
 
@@ -2685,7 +2698,7 @@ static int update_schedule(struct isl_sched_graph *graph,
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
-		int pos = node->start;
+		int pos;
 		int row = isl_mat_rows(node->sched);
 
 		isl_vec_free(csol);
@@ -2698,9 +2711,13 @@ static int update_schedule(struct isl_sched_graph *graph,
 		node->sched = isl_mat_add_rows(node->sched, 1);
 		if (!node->sched)
 			goto error;
-		for (j = 0; j < 1 + node->nparam; ++j)
+		pos = node_cst_coef_offset(node);
+		node->sched = isl_mat_set_element(node->sched,
+					row, 0, sol->el[1 + pos]);
+		pos = node->start + 1;
+		for (j = 0; j < node->nparam; ++j)
 			node->sched = isl_mat_set_element(node->sched,
-						row, j, sol->el[1 + pos + j]);
+					row, 1 + j, sol->el[1 + pos + j]);
 		for (j = 0; j < node->nvar; ++j)
 			node->sched = isl_mat_set_element(node->sched,
 					row, 1 + node->nparam + j, csol->el[j]);
