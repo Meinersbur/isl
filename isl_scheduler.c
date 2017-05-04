@@ -1564,6 +1564,19 @@ static int node_cst_coef_offset(struct isl_sched_node *node)
 	return node->start;
 }
 
+/* Return the offset of the coefficients of the parameters of "node"
+ * within the (I)LP.
+ *
+ * Within each node, the coefficients have the following order:
+ *	- c_i_0
+ *	- c_i_n (if parametric)
+ *	- positive and negative parts of c_i_x
+ */
+static int node_par_coef_offset(struct isl_sched_node *node)
+{
+	return node->start + 1;
+}
+
 /* Return the offset of the coefficients of the variables of "node"
  * within the (I)LP.
  *
@@ -1661,7 +1674,8 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 
 	pos = node_cst_coef_offset(dst);
 	isl_dim_map_range(dim_map, pos, 0, 0, 0, 1, s);
-	isl_dim_map_range(dim_map, dst->start + 1, 1, 1, 1, dst->nparam, s);
+	pos = node_par_coef_offset(dst);
+	isl_dim_map_range(dim_map, pos, 1, 1, 1, dst->nparam, s);
 	pos = node_var_coef_pos(dst, 0);
 	isl_dim_map_range(dim_map, pos, -2, offset + src->nvar, 1,
 			  dst->nvar, -s);
@@ -1670,7 +1684,8 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 
 	pos = node_cst_coef_offset(src);
 	isl_dim_map_range(dim_map, pos, 0, 0, 0, 1, -s);
-	isl_dim_map_range(dim_map, src->start + 1, 1, 1, 1, src->nparam, -s);
+	pos = node_par_coef_offset(src);
+	isl_dim_map_range(dim_map, pos, 1, 1, 1, src->nparam, -s);
 	pos = node_var_coef_pos(src, 0);
 	isl_dim_map_range(dim_map, pos, -2, offset, 1, src->nvar, s);
 	isl_dim_map_range(dim_map, pos + 1, -2, offset, 1, src->nvar, -s);
@@ -2293,7 +2308,7 @@ static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			return isl_stat_error;
-		dim = 1 + node->start + 1 + j;
+		dim = 1 + node_par_coef_offset(node) + j;
 		isl_seq_clr(graph->lp->ineq[k], 1 + total);
 		isl_int_set_si(graph->lp->ineq[k][dim], -1);
 		isl_int_set_si(graph->lp->ineq[k][0], max);
@@ -2385,11 +2400,6 @@ static isl_stat add_sum_constraint(struct isl_sched_graph *graph,
 
 /* Add a constraint to graph->lp that equates the value at position
  * "sum_pos" to the sum of the parameter coefficients of all nodes.
- *
- * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
- *	- positive and negative parts of c_i_x
  */
 static isl_stat add_param_sum_constraint(struct isl_sched_graph *graph,
 	int sum_pos)
@@ -2405,7 +2415,7 @@ static isl_stat add_param_sum_constraint(struct isl_sched_graph *graph,
 	isl_seq_clr(graph->lp->eq[k], 1 + total);
 	isl_int_set_si(graph->lp->eq[k][1 + sum_pos], -1);
 	for (i = 0; i < graph->n; ++i) {
-		int pos = 1 + graph->node[i].start + 1;
+		int pos = 1 + node_par_coef_offset(&graph->node[i]);
 
 		for (j = 0; j < graph->node[i].nparam; ++j)
 			isl_int_set_si(graph->lp->eq[k][pos + j], 1);
@@ -2714,7 +2724,7 @@ static int update_schedule(struct isl_sched_graph *graph,
 		pos = node_cst_coef_offset(node);
 		node->sched = isl_mat_set_element(node->sched,
 					row, 0, sol->el[1 + pos]);
-		pos = node->start + 1;
+		pos = node_par_coef_offset(node);
 		for (j = 0; j < node->nparam; ++j)
 			node->sched = isl_mat_set_element(node->sched,
 					row, 1 + j, sol->el[1 + pos + j]);
