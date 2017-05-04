@@ -64,6 +64,7 @@ protected:
 	bool is_string(QualType type);
 	bool is_static(const isl_class &clazz, FunctionDecl *method);
 	string extract_type(QualType type);
+	FunctionDecl *find_by_name(const string &name, bool required);
 };
 
 #endif /* ISL_INTERFACE_GENERATOR_H */

@@ -54,6 +54,22 @@ bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
 	return extract_type(type) != clazz.name;
 }
 
+/* Find the FunctionDecl with name "name",
+ * returning NULL if there is no such FunctionDecl.
+ * If "required" is set, then error out if no FunctionDecl can be found.
+ */
+FunctionDecl *generator::find_by_name(const string &name, bool required)
+{
+	map<string, FunctionDecl *>::iterator i;
+
+	i = functions_by_name.find(name);
+	if (i != functions_by_name.end())
+		return i->second;
+	if (required)
+		die("No " + name + " function found");
+	return NULL;
+}
+
 /* Collect all functions that belong to a certain type, separating
  * constructors from regular methods and keeping track of the _to_str and
  * _free functions, if any, separately.  If there are any overloaded
@@ -74,22 +90,11 @@ generator::generator(set<RecordDecl *> &exported_types,
 	set<RecordDecl *>::iterator it;
 	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
 		RecordDecl *decl = *it;
-		map<string, FunctionDecl *>::iterator i;
-
 		string name = decl->getName();
 		classes[name].name = name;
 		classes[name].type = decl;
-		classes[name].fn_to_str = NULL;
-		classes[name].fn_free = NULL;
-
-		i = functions_by_name.find(name + "_to_str");
-		if (i != functions_by_name.end())
-			classes[name].fn_to_str = i->second;
-
-		i = functions_by_name.find (name + "_free");
-		if (i == functions_by_name.end())
-			die("No _free function found");
-		classes[name].fn_free = i->second;
+		classes[name].fn_to_str = find_by_name(name + "_to_str", false);
+		classes[name].fn_free = find_by_name(name + "_free", true);
 	}
 
 	for (in = exported_functions.begin(); in != exported_functions.end();
