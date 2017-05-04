@@ -1555,39 +1555,39 @@ static int coef_var_offset(__isl_keep isl_basic_set *coef)
  * within the (I)LP.
  *
  * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
  *	- positive and negative parts of c_i_x
+ *	- c_i_n (if parametric)
+ *	- c_i_0
  */
 static int node_cst_coef_offset(struct isl_sched_node *node)
 {
-	return node->start;
+	return node->start + 2 * node->nvar + node->nparam;
 }
 
 /* Return the offset of the coefficients of the parameters of "node"
  * within the (I)LP.
  *
  * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
  *	- positive and negative parts of c_i_x
+ *	- c_i_n (if parametric)
+ *	- c_i_0
  */
 static int node_par_coef_offset(struct isl_sched_node *node)
 {
-	return node->start + 1;
+	return node->start + 2 * node->nvar;
 }
 
 /* Return the offset of the coefficients of the variables of "node"
  * within the (I)LP.
  *
  * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
  *	- positive and negative parts of c_i_x
+ *	- c_i_n (if parametric)
+ *	- c_i_0
  */
 static int node_var_coef_offset(struct isl_sched_node *node)
 {
-	return node->start + 1 + node->nparam;
+	return node->start;
 }
 
 /* Return the position of the pair of variables encoding
@@ -2471,9 +2471,9 @@ static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
  *	- sum of positive and negative parts of all c_x coefficients
  *	- positive and negative parts of m_n coefficients
  *	- for each node
- *		- c_i_0
- *		- c_i_n (if parametric)
  *		- positive and negative parts of c_i_x, in opposite order
+ *		- c_i_n (if parametric)
+ *		- c_i_0
  *
  * The constraints are those from the edges plus two or three equalities
  * to express the sums.
@@ -3844,9 +3844,9 @@ static isl_stat count_all_constraints(__isl_keep isl_basic_set_list *intra,
  *	- for each edge
  *		- e_i
  *	- for each node
- *		- c_i_0
- *		- c_i_n (if parametric)
  *		- positive and negative parts of c_i_x, in opposite order
+ *		- c_i_n (if parametric)
+ *		- c_i_0
  *
  * The constraints are those from the (validity) edges plus three equalities
  * to express the sums and n_edge inequalities to express e_i <= 1.
