@@ -683,6 +683,80 @@ error:
 	return NULL;
 }
 
+/* Use row "row" of "mat" to eliminate column "col" from all other rows.
+ */
+static __isl_give isl_mat *eliminate(__isl_take isl_mat *mat, int row, int col)
+{
+	int k, nr, nc;
+	isl_ctx *ctx;
+
+	if (!mat)
+		return NULL;
+
+	ctx = isl_mat_get_ctx(mat);
+	nr = isl_mat_rows(mat);
+	nc = isl_mat_cols(mat);
+
+	for (k = 0; k < nr; ++k) {
+		if (k == row)
+			continue;
+		if (isl_int_is_zero(mat->row[k][col]))
+			continue;
+		mat = isl_mat_cow(mat);
+		if (!mat)
+			return NULL;
+		isl_seq_elim(mat->row[k], mat->row[row], col, nc, NULL);
+		isl_seq_normalize(ctx, mat->row[k], nc);
+	}
+
+	return mat;
+}
+
+/* Perform Gaussian elimination on the rows of "mat", but start
+ * from the final row and the final column.
+ * Any zero rows that result from the elimination are removed.
+ *
+ * In particular, for each column from last to first,
+ * look for the last row with a non-zero coefficient in that column,
+ * move it last (but before other rows moved last in previous steps) and
+ * use it to eliminate the column from the other rows.
+ */
+__isl_give isl_mat *isl_mat_reverse_gauss(__isl_take isl_mat *mat)
+{
+	int k, row, last, nr, nc;
+
+	if (!mat)
+		return NULL;
+
+	nr = isl_mat_rows(mat);
+	nc = isl_mat_cols(mat);
+
+	last = nc - 1;
+	for (row = nr - 1; row >= 0; --row) {
+		for (; last >= 0; --last) {
+			for (k = row; k >= 0; --k)
+				if (!isl_int_is_zero(mat->row[k][last]))
+					break;
+			if (k >= 0)
+				break;
+		}
+		if (last < 0)
+			break;
+		if (k != row)
+			mat = isl_mat_swap_rows(mat, k, row);
+		if (!mat)
+			return NULL;
+		if (isl_int_is_neg(mat->row[row][last]))
+			mat = isl_mat_row_neg(mat, row);
+		mat = eliminate(mat, row, last);
+		if (!mat)
+			return NULL;
+	}
+	mat = isl_mat_drop_rows(mat, 0, row + 1);
+
+	return mat;
+}
+
 struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat)
 {
 	int i, rank;

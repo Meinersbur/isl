@@ -35,6 +35,8 @@ isl_stat isl_mat_sub_transform(isl_int **row, unsigned n_row,
 	unsigned first_col, __isl_take isl_mat *mat);
 __isl_give isl_mat *isl_mat_diag(isl_ctx *ctx, unsigned n_row, isl_int d);
 
+__isl_give isl_mat *isl_mat_reverse_gauss(__isl_take isl_mat *mat);
+
 __isl_give isl_mat *isl_mat_scale(__isl_take isl_mat *mat, isl_int m);
 __isl_give isl_mat *isl_mat_scale_down_row(__isl_take isl_mat *mat, int row,
 	isl_int m);
