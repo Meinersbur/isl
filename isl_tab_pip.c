@@ -5160,6 +5160,66 @@ error:
 	return -1;
 }
 
+/* Global internal data for isl_tab_basic_set_non_trivial_lexmin.
+ *
+ * "v" is a pre-allocated vector that can be used for adding
+ * constraints to the tableau.
+ */
+struct isl_trivial_global {
+	isl_vec *v;
+};
+
+/* Fix the variable in direction "dir" of the given region to zero.
+ * The variable is assumed to be encoded as a difference
+ * of two non-negative variables.
+ * Both these non-negative variables are set to zero.
+ *
+ * This function assumes that at least four more rows and at least
+ * four more elements in the constraint array are available in the tableau.
+ */
+static isl_stat fix_zero(struct isl_tab *tab, struct isl_region *region,
+	int dir, struct isl_trivial_global *data)
+{
+	int j;
+
+	for (j = 0; j < 2; ++j) {
+		data->v = isl_vec_clr(data->v);
+		if (!data->v)
+			return isl_stat_error;
+		isl_int_set_si(data->v->el[1 + region->pos + 2 * dir + j], 1);
+		if (add_lexmin_eq(tab, data->v->el) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* This function selects case "side" for non-triviality region "region",
+ * assuming all the equality constraints have been imposed already.
+ * In particular, the variable side/2 is made positive if side is even and
+ * made negative if side is odd.
+ * The variable is assumed to be encoded as a difference
+ * of two non-negative variables, x_i_b - x_i_a with
+ * x_i_a at position 2 * (side / 2) and x_i_b at position 2 * (side / 2) + 1.
+ *
+ * This function assumes that at least one more row and at least
+ * one more element in the constraint array are available in the tableau.
+ */
+static struct isl_tab *pos_neg(struct isl_tab *tab, struct isl_region *region,
+	int side, struct isl_trivial_global *data)
+{
+	data->v = isl_vec_clr(data->v);
+	if (!data->v)
+		goto error;
+	isl_int_set_si(data->v->el[0], -1);
+	isl_int_set_si(data->v->el[1 + region->pos + side], -1);
+	isl_int_set_si(data->v->el[1 + region->pos + (side ^ 1)], 1);
+	return add_lexmin_ineq(tab, data->v->el);
+error:
+	isl_tab_free(tab);
+	return NULL;
+}
+
 /* Local data at each level of the backtracking procedure of
  * isl_tab_basic_set_non_trivial_lexmin.
  *
@@ -5222,10 +5282,10 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	struct isl_region *region,
 	int (*conflict)(int con, void *user), void *user)
 {
-	int i, j;
+	struct isl_trivial_global data = { 0 };
+	int i;
 	int r;
 	isl_ctx *ctx;
-	isl_vec *v = NULL;
 	isl_vec *sol = NULL;
 	struct isl_tab *tab;
 	struct isl_trivial *triv = NULL;
@@ -5243,9 +5303,9 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	tab->conflict = conflict;
 	tab->conflict_user = user;
 
-	v = isl_vec_alloc(ctx, 1 + tab->n_var);
+	data.v = isl_vec_alloc(ctx, 1 + tab->n_var);
 	triv = isl_calloc_array(ctx, struct isl_trivial, n_region);
-	if (!v || (n_region && !triv))
+	if (!data.v || (n_region && !triv))
 		goto error;
 
 	level = 0;
@@ -5306,24 +5366,17 @@ backtrack:
 			triv[level].update = 0;
 		}
 
-		if (side == base && base >= 2) {
-			for (j = base - 2; j < base; ++j) {
-				v = isl_vec_clr(v);
-				isl_int_set_si(v->el[1 + region[r].pos + j], 1);
-				if (add_lexmin_eq(tab, v->el) < 0)
-					goto error;
-			}
-		}
+		if (side == base && base >= 2 &&
+		    fix_zero(tab, &region[r], base / 2 - 1, &data) < 0)
+			goto error;
 
 		triv[level].snap = isl_tab_snap(tab);
 		if (isl_tab_push_basis(tab) < 0)
 			goto error;
 
-		v = isl_vec_clr(v);
-		isl_int_set_si(v->el[0], -1);
-		isl_int_set_si(v->el[1 + region[r].pos + side], -1);
-		isl_int_set_si(v->el[1 + region[r].pos + (side ^ 1)], 1);
-		tab = add_lexmin_ineq(tab, v->el);
+		tab = pos_neg(tab, &region[r], side, &data);
+		if (!tab)
+			goto error;
 
 		triv[level].side++;
 		level++;
@@ -5331,14 +5384,14 @@ backtrack:
 	}
 
 	free(triv);
-	isl_vec_free(v);
+	isl_vec_free(data.v);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 
 	return sol;
 error:
 	free(triv);
-	isl_vec_free(v);
+	isl_vec_free(data.v);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 	isl_vec_free(sol);
