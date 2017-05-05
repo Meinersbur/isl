@@ -5181,7 +5181,7 @@ struct isl_trivial {
  *
  * n_op is the number of initial coordinates to optimize.
  * That is, once a solution has been found, we will only continue looking
- * for solution that result in significantly better values for those
+ * for solutions that result in significantly better values for those
  * initial coordinates.  That is, we only continue looking for solutions
  * that increase the number of initial zeros in this sequence.
  *
@@ -5195,8 +5195,8 @@ struct isl_trivial {
  * reported to the caller through a call to "conflict".
  *
  * We perform a simple branch-and-bound backtracking search.
- * Each level in the search represents initially trivial region that is forced
- * to be non-trivial.
+ * Each level in the search represents an initially trivial region
+ * that is forced to be non-trivial.
  * At each level we consider n cases, where n is the length of the region.
  * In terms of the n/2 variables of unrestricted signs being encoded by
  * the region, we consider the cases
