@@ -5145,6 +5145,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 				goto error;
 			triv[level].region = r;
 			triv[level].side = 0;
+			triv[level].update = 0;
 		}
 
 		r = triv[level].region;
