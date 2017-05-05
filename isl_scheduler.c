@@ -3854,7 +3854,7 @@ error:
 }
 
 /* Is the schedule row "sol" trivial on node "node"?
- * That is, is the solution zero on the dimensions orthogonal to
+ * That is, is the solution zero on the dimensions linearly independent of
  * the previously found solutions?
  * Return 1 if the solution is trivial, 0 if it is not and -1 on error.
  *
