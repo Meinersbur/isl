@@ -1565,6 +1565,17 @@ static int node_var_coef_offset(struct isl_sched_node *node)
 	return node->start + 1 + node->nparam;
 }
 
+/* Return the position of the pair of variables encoding
+ * coefficient "i" of "node".
+ *
+ * The order of these variable pairs is the same as that of the coefficients,
+ * with 2 variables per coefficient.
+ */
+static int node_var_coef_pos(struct isl_sched_node *node, int i)
+{
+	return node_var_coef_offset(node) + 2 * i;
+}
+
 /* Construct an isl_dim_map for mapping constraints on coefficients
  * for "node" to the corresponding positions in graph->lp.
  * "offset" is the offset of the coefficients for the variables
@@ -1592,7 +1603,7 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
 		return NULL;
 
 	total = isl_basic_set_total_dim(graph->lp);
-	pos = node_var_coef_offset(node);
+	pos = node_var_coef_pos(node, 0);
 	dim_map = isl_dim_map_alloc(ctx, total);
 	isl_dim_map_range(dim_map, pos, 2, offset, 1, node->nvar, -s);
 	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, node->nvar, s);
@@ -1634,7 +1645,7 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 
 	isl_dim_map_range(dim_map, dst->start, 0, 0, 0, 1, s);
 	isl_dim_map_range(dim_map, dst->start + 1, 1, 1, 1, dst->nparam, s);
-	pos = node_var_coef_offset(dst);
+	pos = node_var_coef_pos(dst, 0);
 	isl_dim_map_range(dim_map, pos, 2, offset + src->nvar, 1,
 			  dst->nvar, -s);
 	isl_dim_map_range(dim_map, pos + 1, 2, offset + src->nvar, 1,
@@ -1642,7 +1653,7 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 
 	isl_dim_map_range(dim_map, src->start, 0, 0, 0, 1, -s);
 	isl_dim_map_range(dim_map, src->start + 1, 1, 1, 1, src->nparam, -s);
-	pos = node_var_coef_offset(src);
+	pos = node_var_coef_pos(src, 0);
 	isl_dim_map_range(dim_map, pos, 2, offset, 1, src->nvar, s);
 	isl_dim_map_range(dim_map, pos + 1, 2, offset, 1, src->nvar, -s);
 
@@ -2292,10 +2303,10 @@ static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
 			continue;
 
 		for (j = 0; j < node->nvar; ++j) {
-			isl_int_set(ineq->el[pos + 2 * j],
-					node->cmap->row[i][j]);
-			isl_int_neg(ineq->el[pos + 2 * j + 1],
-					node->cmap->row[i][j]);
+			int pos_j = 1 + node_var_coef_pos(node, j);
+
+			isl_int_set(ineq->el[pos_j], node->cmap->row[i][j]);
+			isl_int_neg(ineq->el[pos_j], node->cmap->row[i][j]);
 		}
 		isl_int_set(ineq->el[0], node->max->el[i]);
 
@@ -4159,7 +4170,7 @@ static __isl_give isl_tab_lexmin *zero_out_node_coef(
 	if (!eq)
 		return isl_tab_lexmin_free(tl);
 
-	pos = 1 + node_var_coef_offset(node) + 2 * pos;
+	pos = 1 + node_var_coef_pos(node, pos);
 	isl_int_set_si(eq->el[pos], 1);
 	isl_int_set_si(eq->el[pos + 1], -1);
 	tl = isl_tab_lexmin_add_eq(tl, eq->el);
