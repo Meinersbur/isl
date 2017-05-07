@@ -5163,8 +5163,13 @@ error:
 /* Local data at each level of the backtracking procedure of
  * isl_tab_basic_set_non_trivial_lexmin.
  *
+ * "update" is set if a solution has been found in the current case
+ * of this level, such that a better solution needs to be enforced
+ * in the next case.
  * "n_zero" is the number of initial coordinates that have already
  * been forced to be zero at this level.
+ * "region" is the non-triviality region considered at this level.
+ * "side" is the index of the current case at this level.
  */
 struct isl_trivial {
 	int update;
