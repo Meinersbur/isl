@@ -4259,13 +4259,10 @@ int test_schedule(isl_ctx *ctx)
 		"i0 >= 0 and i0 <= 1 and i1 >= 0 and o2 >= -i1 + i2 and "
 		"o2 >= 1 and o2 <= 6 - i1 and i2 >= 1 + i1 }";
 	P = V;
-	S = "{ Stmt_for_body24[i0, i1, i2, i3] -> "
-		"[i0, 5i0 + i1, 6i0 + i1 + i2, 1 + 6i0 + i1 + i2 + i3, 1];"
-	    "Stmt_for_body7[i0, i1, i2] -> [0, 5i0, 6i0 + i1, 6i0 + i2, 0] }";
 
 	treat_coalescing = isl_options_get_schedule_treat_coalescing(ctx);
 	isl_options_set_schedule_treat_coalescing(ctx, 0);
-	if (test_special_schedule(ctx, D, V, P, S) < 0)
+	if (test_has_schedule(ctx, D, V, P) < 0)
 		return -1;
 	isl_options_set_schedule_treat_coalescing(ctx, treat_coalescing);
 
