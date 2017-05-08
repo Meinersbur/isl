@@ -2629,11 +2629,8 @@ static __isl_give isl_vec *solve_lp(isl_ctx *ctx, struct isl_sched_graph *graph)
 
 /* Extract the coefficients for the variables of "node" from "sol".
  *
- * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
- *	- positive and negative parts of c_i_x
- *
+ * Each schedule coefficient c_i_x is represented as the difference
+ * between two non-negative variables c_i_x^+ - c_i_x^-.
  * The c_i_x^- appear before their c_i_x^+ counterpart.
  * Furthermore, the order of these pairs is the opposite of that
  * of the corresponding coefficients.
