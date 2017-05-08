@@ -2403,11 +2403,6 @@ static isl_stat add_param_sum_constraint(struct isl_sched_graph *graph,
 
 /* Add a constraint to graph->lp that equates the value at position
  * "sum_pos" to the sum of the variable coefficients of all nodes.
- *
- * Within each node, the coefficients have the following order:
- *	- c_i_0
- *	- c_i_n (if parametric)
- *	- positive and negative parts of c_i_x
  */
 static isl_stat add_var_sum_constraint(struct isl_sched_graph *graph,
 	int sum_pos)
