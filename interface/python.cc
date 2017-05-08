@@ -190,7 +190,7 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  * If the return type is a (const) char *, then convert the result
  * to a Python string, raising an error on NULL and freeing
  * the C string if needed.  For python 3 compatibility, the string returned
- * by is is explicitly decoded as an 'ascii' string.  This is correct
+ * by isl is explicitly decoded as an 'ascii' string.  This is correct
  * as all strings returned by isl are expected to be 'ascii'.
  *
  * If the return type is isl_bool, then convert the result to
