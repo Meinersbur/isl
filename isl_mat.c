@@ -271,13 +271,22 @@ static isl_stat check_col(__isl_keep isl_mat *mat, int col)
 	return isl_stat_ok;
 }
 
-int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
+/* Check that "row" is a valid row position for "mat".
+ */
+static isl_stat check_row(__isl_keep isl_mat *mat, int row)
 {
 	if (!mat)
-		return -1;
+		return isl_stat_error;
 	if (row < 0 || row >= mat->n_row)
-		isl_die(mat->ctx, isl_error_invalid, "row out of range",
-			return -1);
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+			"row out of range", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
+{
+	if (check_row(mat, row) < 0)
+		return -1;
 	if (check_col(mat, col) < 0)
 		return -1;
 	isl_int_set(*v, mat->row[row][col]);
@@ -291,14 +300,11 @@ __isl_give isl_val *isl_mat_get_element_val(__isl_keep isl_mat *mat,
 {
 	isl_ctx *ctx;
 
-	if (!mat)
+	if (check_row(mat, row) < 0)
 		return NULL;
-	ctx = isl_mat_get_ctx(mat);
-	if (row < 0 || row >= mat->n_row)
-		isl_die(ctx, isl_error_invalid, "row out of range",
-			return NULL);
 	if (check_col(mat, col) < 0)
 		return NULL;
+	ctx = isl_mat_get_ctx(mat);
 	return isl_val_int_from_isl_int(ctx, mat->row[row][col]);
 }
 
@@ -306,36 +312,24 @@ __isl_give isl_mat *isl_mat_set_element(__isl_take isl_mat *mat,
 	int row, int col, isl_int v)
 {
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
-	if (row < 0 || row >= mat->n_row)
-		isl_die(mat->ctx, isl_error_invalid, "row out of range",
-			goto error);
+	if (check_row(mat, row) < 0)
+		return isl_mat_free(mat);
 	if (check_col(mat, col) < 0)
 		return isl_mat_free(mat);
 	isl_int_set(mat->row[row][col], v);
 	return mat;
-error:
-	isl_mat_free(mat);
-	return NULL;
 }
 
 __isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
 	int row, int col, int v)
 {
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
-	if (row < 0 || row >= mat->n_row)
-		isl_die(mat->ctx, isl_error_invalid, "row out of range",
-			goto error);
+	if (check_row(mat, row) < 0)
+		return isl_mat_free(mat);
 	if (check_col(mat, col) < 0)
 		return isl_mat_free(mat);
 	isl_int_set_si(mat->row[row][col], v);
 	return mat;
-error:
-	isl_mat_free(mat);
-	return NULL;
 }
 
 /* Replace the element at row "row", column "col" of "mat" by "v".
@@ -1720,12 +1714,9 @@ error:
  */
 isl_stat isl_mat_row_gcd(__isl_keep isl_mat *mat, int row, isl_int *gcd)
 {
-	if (!mat)
+	if (check_row(mat, row) < 0)
 		return isl_stat_error;
 
-	if (row < 0 || row >= mat->n_row)
-		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
-			"row out of range", return isl_stat_error);
 	isl_seq_gcd(mat->row[row], mat->n_col, gcd);
 
 	return isl_stat_ok;
