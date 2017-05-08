@@ -58,13 +58,12 @@
  *	is defined over the uncompressed domain space
  * rank is the number of linearly independent rows in the linear part
  *	of sched
- * the columns of cmap represent a change of basis for the schedule
- *	coefficients; the first rank columns span the linear part of
- *	the schedule rows
+ * the rows of "vmap" represent a change of basis for the node
+ *	variables; the first rank rows span the linear part of
+ *	the schedule rows; the remaining rows are linearly independent
  * the rows of "indep" represent linear combinations of the schedule
  * coefficients that are non-zero when the schedule coefficients are
  * linearly independent of previously computed schedule rows.
- * ctrans is the transpose of cmap.
  * start is the first variable in the LP problem in the sequences that
  *	represents the schedule coefficients of this node
  * nvar is the dimension of the domain
@@ -105,9 +104,8 @@ struct isl_sched_node {
 	isl_mat *sched;
 	isl_map *sched_map;
 	int	 rank;
-	isl_mat *cmap;
 	isl_mat *indep;
-	isl_mat *ctrans;
+	isl_mat *vmap;
 	int	 start;
 	int	 nvar;
 	int	 nparam;
@@ -650,9 +648,8 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 			isl_multi_aff_free(graph->node[i].decompress);
 			isl_mat_free(graph->node[i].sched);
 			isl_map_free(graph->node[i].sched_map);
-			isl_mat_free(graph->node[i].cmap);
 			isl_mat_free(graph->node[i].indep);
-			isl_mat_free(graph->node[i].ctrans);
+			isl_mat_free(graph->node[i].vmap);
 			if (graph->root)
 				free(graph->node[i].coincident);
 			isl_multi_val_free(graph->node[i].sizes);
@@ -2031,10 +2028,8 @@ static __isl_give isl_mat *normalize_independent(__isl_take isl_mat *indep)
  * with H the Hermite normal form of S.  That is, all but the
  * first rank columns of H are zero and so each row in S is
  * a linear combination of the first rank rows of Q.
- * The matrix Q is then transposed because we will write the
- * coefficients of the next schedule row as a column vector s
- * and express this s as a linear combination s = Q c of the
- * computed basis.
+ * The matrix Q can be used as a variable transformation
+ * that isolates the directions of S in the first rank rows.
  * Transposing S U = H yields
  *
  *	U^T S^T = H^T
@@ -2048,7 +2043,7 @@ static __isl_give isl_mat *normalize_independent(__isl_take isl_mat *indep)
  * The rows are normalized to involve as few of the last
  * coefficients as possible and to have a positive initial value.
  */
-static int node_update_cmap(struct isl_sched_node *node)
+static int node_update_vmap(struct isl_sched_node *node)
 {
 	isl_mat *H, *U, *Q;
 	int n_row = isl_mat_rows(node->sched);
@@ -2057,18 +2052,16 @@ static int node_update_cmap(struct isl_sched_node *node)
 			      1 + node->nparam, node->nvar);
 
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
-	isl_mat_free(node->cmap);
 	isl_mat_free(node->indep);
-	isl_mat_free(node->ctrans);
-	node->ctrans = isl_mat_copy(Q);
-	node->cmap = isl_mat_transpose(Q);
+	isl_mat_free(node->vmap);
+	node->vmap = Q;
 	node->indep = isl_mat_transpose(U);
 	node->rank = isl_mat_initial_non_zero_cols(H);
 	node->indep = isl_mat_drop_rows(node->indep, 0, node->rank);
 	node->indep = normalize_independent(node->indep);
 	isl_mat_free(H);
 
-	if (!node->cmap || !node->indep || !node->ctrans || node->rank < 0)
+	if (!node->indep || !node->vmap || node->rank < 0)
 		return -1;
 	return 0;
 }
@@ -2487,7 +2480,7 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	total = param_pos + 2 * nparam;
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[graph->sorted[i]];
-		if (node_update_cmap(node) < 0)
+		if (node_update_vmap(node) < 0)
 			return isl_stat_error;
 		node->start = total;
 		total += 1 + node->nparam + 2 * node->nvar;
@@ -3287,7 +3280,7 @@ static int compute_maxvar(struct isl_sched_graph *graph)
 		struct isl_sched_node *node = &graph->node[i];
 		int nvar;
 
-		if (node_update_cmap(node) < 0)
+		if (node_update_vmap(node) < 0)
 			return -1;
 		nvar = node->nvar + graph->n_row - node->rank;
 		if (nvar > graph->maxvar)
@@ -5667,7 +5660,7 @@ static int compute_maxvar_max_slack(int maxvar, struct isl_clustering *c)
 			struct isl_sched_node *node = &scc->node[j];
 			int slack;
 
-			if (node_update_cmap(node) < 0)
+			if (node_update_vmap(node) < 0)
 				return -1;
 			slack = node->nvar - node->rank;
 			if (slack > max_slack)
@@ -5707,7 +5700,7 @@ static int limit_maxvar_to_slack(int maxvar, int max_slack,
 			struct isl_sched_node *node = &scc->node[j];
 			int slack;
 
-			if (node_update_cmap(node) < 0)
+			if (node_update_vmap(node) < 0)
 				return -1;
 			slack = node->nvar - node->rank;
 			if (slack > max_slack) {
@@ -6499,9 +6492,9 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 
 		hull = isl_map_affine_hull(isl_map_copy(edge->map));
 		hull = isl_basic_map_transform_dims(hull, isl_dim_in, 0,
-						    isl_mat_copy(src->ctrans));
+						    isl_mat_copy(src->vmap));
 		hull = isl_basic_map_transform_dims(hull, isl_dim_out, 0,
-						    isl_mat_copy(dst->ctrans));
+						    isl_mat_copy(dst->vmap));
 		hull = isl_basic_map_project_out(hull,
 						isl_dim_in, 0, src->rank);
 		hull = isl_basic_map_project_out(hull,
