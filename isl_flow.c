@@ -1473,22 +1473,29 @@ static char *key_str[] = {
 	[isl_ai_key_schedule] = "schedule",
 };
 
+/* Print a key-value pair corresponding to the access relation of type "type"
+ * of a YAML mapping of "info" to "p".
+ */
+static __isl_give isl_printer *print_access_field(__isl_take isl_printer *p,
+	__isl_keep isl_union_access_info *info, enum isl_access_type type)
+{
+	return print_union_map_field(p, key_str[type], info->access[type]);
+}
+
 /* Print the information contained in "access" to "p".
  * The information is printed as a YAML document.
  */
 __isl_give isl_printer *isl_printer_print_union_access_info(
 	__isl_take isl_printer *p, __isl_keep isl_union_access_info *access)
 {
+	enum isl_access_type i;
+
 	if (!access)
 		return isl_printer_free(p);
 
 	p = isl_printer_yaml_start_mapping(p);
-	p = print_union_map_field(p, key_str[isl_ai_key_sink],
-					access->access[isl_access_sink]);
-	p = print_union_map_field(p, key_str[isl_ai_key_must_source],
-					access->access[isl_access_must_source]);
-	p = print_union_map_field(p, key_str[isl_ai_key_may_source],
-					access->access[isl_access_may_source]);
+	for (i = isl_access_sink; i < isl_access_end; ++i)
+		p = print_access_field(p, access, i);
 	if (access->schedule) {
 		p = isl_printer_print_str(p, key_str[isl_ai_key_schedule]);
 		p = isl_printer_yaml_next(p);
