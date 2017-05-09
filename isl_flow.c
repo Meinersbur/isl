@@ -2584,8 +2584,10 @@ __isl_give isl_printer *isl_printer_print_union_flow(
 		return isl_printer_free(p);
 
 	p = isl_printer_yaml_start_mapping(p);
-	p = print_union_map_field(p, "must_dependence", flow->must_dep);
-	umap = isl_union_flow_get_may_dependence(flow);
+	umap = isl_union_flow_get_full_must_dependence(flow);
+	p = print_union_map_field(p, "must_dependence", umap);
+	isl_union_map_free(umap);
+	umap = isl_union_flow_get_full_may_dependence(flow);
 	p = print_union_map_field(p, "may_dependence", umap);
 	isl_union_map_free(umap);
 	p = print_union_map_field(p, "must_no_source", flow->must_no_source);
