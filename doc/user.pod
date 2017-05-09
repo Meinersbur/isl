@@ -8847,6 +8847,14 @@ the access relations.  In particular, the domains of the access
 relations are effectively intersected with the domain of the schedule
 and only the resulting accesses are considered by the dependence analysis.
 
+An C<isl_union_access_info> object can be read from input
+using the following function.
+
+	#include <isl/flow.h>
+	__isl_give isl_union_access_info *
+	isl_union_access_info_read_from_file(isl_ctx *ctx,
+		FILE *input);
+
 A representation of the information contained in an object
 of type C<isl_union_access_info> can be obtained using
 

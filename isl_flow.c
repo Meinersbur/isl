@@ -23,6 +23,7 @@
 #include <isl/flow.h>
 #include <isl/schedule_node.h>
 #include <isl_sort.h>
+#include <isl/stream.h>
 
 enum isl_restriction_type {
 	isl_restriction_type_empty,
@@ -1482,11 +1483,13 @@ static __isl_give isl_printer *print_union_map_field(__isl_take isl_printer *p,
  * as the access relation types in isl_access_type.
  */
 enum isl_ai_key {
+	isl_ai_key_error = -1,
 	isl_ai_key_sink = isl_access_sink,
 	isl_ai_key_must_source = isl_access_must_source,
 	isl_ai_key_may_source = isl_access_may_source,
 	isl_ai_key_schedule_map,
 	isl_ai_key_schedule,
+	isl_ai_key_end
 };
 
 /* Textual representations of the YAML keys for an isl_union_access_info
@@ -1568,6 +1571,118 @@ __isl_give char *isl_union_access_info_to_str(
 	isl_printer_free(p);
 
 	return s;
+}
+
+#undef KEY
+#define KEY enum isl_ai_key
+#undef KEY_ERROR
+#define KEY_ERROR isl_ai_key_error
+#undef KEY_END
+#define KEY_END isl_ai_key_end
+#include "extract_key.c"
+
+#undef BASE
+#define BASE union_map
+#include "read_in_string_templ.c"
+
+/* Read an isl_union_access_info object from "s".
+ *
+ * Start off with an empty (invalid) isl_union_access_info object and
+ * then fill up the fields based on the input.
+ * The input needs to contain at least a description of the sink
+ * access relation as well as some form of schedule.
+ * The other access relations are set to empty relations
+ * by isl_union_access_info_init if they are not specified in the input.
+ */
+__isl_give isl_union_access_info *isl_stream_read_union_access_info(
+	isl_stream *s)
+{
+	isl_ctx *ctx;
+	isl_union_access_info *info;
+	int more;
+	int sink_set = 0;
+	int schedule_set = 0;
+
+	if (isl_stream_yaml_read_start_mapping(s))
+		return NULL;
+
+	ctx = isl_stream_get_ctx(s);
+	info = isl_union_access_info_alloc(ctx);
+	while ((more = isl_stream_yaml_next(s)) > 0) {
+		enum isl_ai_key key;
+		isl_union_map *access, *schedule_map;
+		isl_schedule *schedule;
+
+		key = get_key(s);
+		if (isl_stream_yaml_next(s) < 0)
+			return isl_union_access_info_free(info);
+		switch (key) {
+		case isl_ai_key_end:
+		case isl_ai_key_error:
+			return isl_union_access_info_free(info);
+		case isl_ai_key_sink:
+			sink_set = 1;
+		case isl_ai_key_must_source:
+		case isl_ai_key_may_source:
+			access = read_union_map(s);
+			info = isl_union_access_info_set(info, key, access);
+			if (!info)
+				return NULL;
+			break;
+		case isl_ai_key_schedule_map:
+			schedule_set = 1;
+			schedule_map = read_union_map(s);
+			info = isl_union_access_info_set_schedule_map(info,
+								schedule_map);
+			if (!info)
+				return NULL;
+			break;
+		case isl_ai_key_schedule:
+			schedule_set = 1;
+			schedule = isl_stream_read_schedule(s);
+			info = isl_union_access_info_set_schedule(info,
+								schedule);
+			if (!info)
+				return NULL;
+			break;
+		}
+	}
+	if (more < 0)
+		return isl_union_access_info_free(info);
+
+	if (isl_stream_yaml_read_end_mapping(s) < 0) {
+		isl_stream_error(s, NULL, "unexpected extra elements");
+		return isl_union_access_info_free(info);
+	}
+
+	if (!sink_set) {
+		isl_stream_error(s, NULL, "no sink specified");
+		return isl_union_access_info_free(info);
+	}
+
+	if (!schedule_set) {
+		isl_stream_error(s, NULL, "no schedule specified");
+		return isl_union_access_info_free(info);
+	}
+
+	return isl_union_access_info_init(info);
+}
+
+/* Read an isl_union_access_info object from the file "input".
+ */
+__isl_give isl_union_access_info *isl_union_access_info_read_from_file(
+	isl_ctx *ctx, FILE *input)
+{
+	isl_stream *s;
+	isl_union_access_info *access;
+
+	s = isl_stream_new_file(ctx, input);
+	if (!s)
+		return NULL;
+	access = isl_stream_read_union_access_info(s);
+	isl_stream_free(s);
+
+	return access;
 }
 
 /* Update the fields of "access" such that they all have the same parameters,
