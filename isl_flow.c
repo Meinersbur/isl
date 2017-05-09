@@ -1285,45 +1285,61 @@ isl_ctx *isl_union_access_info_get_ctx(__isl_keep isl_union_access_info *access)
 	return isl_union_map_get_ctx(access->access[isl_access_sink]);
 }
 
-/* Create a new isl_union_access_info with the given sink accesses and
- * and no other accesses or schedule information.
+/* Initialize all the fields of "info", except the sink access relation,
+ * which is assumed to have been set by the caller.
  *
  * By default, we use the schedule field of the isl_union_access_info,
  * but this may be overridden by a call
  * to isl_union_access_info_set_schedule_map.
  */
+static __isl_give isl_union_access_info *isl_union_access_info_init(
+	__isl_take isl_union_access_info *info)
+{
+	isl_space *space;
+	isl_union_map *empty;
+	enum isl_access_type i;
+
+	if (!info)
+		return NULL;
+	if (!info->access[isl_access_sink])
+		return isl_union_access_info_free(info);
+
+	space = isl_union_map_get_space(info->access[isl_access_sink]);
+	empty = isl_union_map_empty(isl_space_copy(space));
+	for (i = isl_access_sink + 1; i < isl_access_end; ++i)
+		if (!info->access[i])
+			info->access[i] = isl_union_map_copy(empty);
+	isl_union_map_free(empty);
+	if (!info->schedule && !info->schedule_map)
+		info->schedule = isl_schedule_empty(isl_space_copy(space));
+	isl_space_free(space);
+
+	for (i = isl_access_sink + 1; i < isl_access_end; ++i)
+		if (!info->access[i])
+			return isl_union_access_info_free(info);
+	if (!info->schedule && !info->schedule_map)
+		return isl_union_access_info_free(info);
+
+	return info;
+}
+
+/* Create a new isl_union_access_info with the given sink accesses and
+ * and no other accesses or schedule information.
+ */
 __isl_give isl_union_access_info *isl_union_access_info_from_sink(
 	__isl_take isl_union_map *sink)
 {
 	isl_ctx *ctx;
-	isl_space *space;
-	isl_union_map *empty;
 	isl_union_access_info *access;
-	enum isl_access_type i;
 
 	if (!sink)
 		return NULL;
 	ctx = isl_union_map_get_ctx(sink);
-	access = isl_alloc_type(ctx, isl_union_access_info);
+	access = isl_calloc_type(ctx, isl_union_access_info);
 	if (!access)
 		goto error;
-
-	space = isl_union_map_get_space(sink);
-	empty = isl_union_map_empty(isl_space_copy(space));
 	access->access[isl_access_sink] = sink;
-	for (i = isl_access_sink + 1; i < isl_access_end; ++i)
-		access->access[i] = isl_union_map_copy(empty);
-	isl_union_map_free(empty);
-	access->schedule = isl_schedule_empty(space);
-	access->schedule_map = NULL;
-
-	for (i = isl_access_sink; i < isl_access_end; ++i)
-		if (!access->access[i])
-			return isl_union_access_info_free(access);
-	if (!access->schedule)
-		return isl_union_access_info_free(access);
-
-	return access;
+	return isl_union_access_info_init(access);
 error:
 	isl_union_map_free(sink);
 	return NULL;
