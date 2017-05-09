@@ -5876,6 +5876,10 @@ the same (number of) parameters.
 	__isl_give isl_union_map *isl_union_map_intersect(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
+	__isl_give isl_union_map *
+	isl_union_map_intersect_range_factor_range(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_map *factor);
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_intersect_domain(

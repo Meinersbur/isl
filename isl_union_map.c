@@ -614,6 +614,10 @@ isl_stat isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
  * if there is no corresponding map in the second input.
  * Otherwise, a map in the first input with no corresponding map
  * in the second input is ignored.
+ * If "filter" is not NULL, then it specifies which maps in the first
+ * input may have a matching map in the second input.
+ * In particular, it makes sure that "match_space" can be called
+ * on the space of the map.
  * "match_space" specifies how to transform the space of a map
  * in the first input to the space of the corresponding map
  * in the second input.
@@ -622,6 +626,7 @@ isl_stat isl_union_set_foreach_point(__isl_keep isl_union_set *uset,
  */
 struct isl_bin_op_control {
 	int subtract;
+	isl_bool (*filter)(__isl_keep isl_map *map);
 	__isl_give isl_space *(*match_space)(__isl_take isl_space *space);
 	__isl_give isl_map *(*fn_map)(__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
@@ -679,6 +684,8 @@ static __isl_give isl_space *identity(__isl_take isl_space *space)
  * (isl_bool_false, NULL) if there is no matching map and
  * (isl_bool_error, NULL) on error.
  *
+ * If not NULL, then data->control->filter specifies whether "map"
+ * can have any matching map.  If so,
  * data->control->match_space specifies which map in data->umap2
  * corresponds to "map".
  */
@@ -689,6 +696,13 @@ static __isl_keep isl_maybe_isl_map bin_try_get_match(
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	isl_maybe_isl_map res = { isl_bool_error, NULL };
+
+	if (data->control->filter) {
+		res.valid = data->control->filter(map);
+		if (res.valid < 0 || !res.valid)
+			return res;
+		res.valid = isl_bool_error;
+	}
 
 	space = isl_map_get_space(map);
 	if (data->control->match_space != &identity)
@@ -1200,6 +1214,22 @@ __isl_give isl_union_map *isl_union_map_intersect_range(
 	};
 
 	return gen_bin_op(umap, uset, &control);
+}
+
+/* Intersect each map in "umap" in a space A -> [B -> C]
+ * with the corresponding map in "factor" in the space A -> C and
+ * collect the results.
+ */
+__isl_give isl_union_map *isl_union_map_intersect_range_factor_range(
+	__isl_take isl_union_map *umap, __isl_take isl_union_map *factor)
+{
+	struct isl_bin_op_control control = {
+		.filter = &isl_map_range_is_wrapping,
+		.match_space = &isl_space_range_factor_range,
+		.fn_map = &isl_map_intersect_range_factor_range,
+	};
+
+	return gen_bin_op(umap, factor, &control);
 }
 
 struct isl_union_map_bin_data {
