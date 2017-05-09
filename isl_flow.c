@@ -1475,10 +1475,22 @@ static char *key_str[] = {
 
 /* Print a key-value pair corresponding to the access relation of type "type"
  * of a YAML mapping of "info" to "p".
+ *
+ * The sink access relation is always printed, but any other access relation
+ * is only printed if it is non-empty.
  */
 static __isl_give isl_printer *print_access_field(__isl_take isl_printer *p,
 	__isl_keep isl_union_access_info *info, enum isl_access_type type)
 {
+	if (type != isl_access_sink) {
+		isl_bool empty;
+
+		empty = isl_union_map_is_empty(info->access[type]);
+		if (empty < 0)
+			return isl_printer_free(p);
+		if (empty)
+			return p;
+	}
 	return print_union_map_field(p, key_str[type], info->access[type]);
 }
 
