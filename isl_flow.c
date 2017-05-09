@@ -1285,6 +1285,17 @@ isl_ctx *isl_union_access_info_get_ctx(__isl_keep isl_union_access_info *access)
 	return isl_union_map_get_ctx(access->access[isl_access_sink]);
 }
 
+/* Construct an empty (invalid) isl_union_access_info object.
+ * The caller is responsible for setting the sink access relation and
+ * initializing all the other fields, e.g., by calling
+ * isl_union_access_info_init.
+ */
+static __isl_give isl_union_access_info *isl_union_access_info_alloc(
+	isl_ctx *ctx)
+{
+	return isl_calloc_type(ctx, isl_union_access_info);
+}
+
 /* Initialize all the fields of "info", except the sink access relation,
  * which is assumed to have been set by the caller.
  *
@@ -1335,7 +1346,7 @@ __isl_give isl_union_access_info *isl_union_access_info_from_sink(
 	if (!sink)
 		return NULL;
 	ctx = isl_union_map_get_ctx(sink);
-	access = isl_calloc_type(ctx, isl_union_access_info);
+	access = isl_union_access_info_alloc(ctx);
 	if (!access)
 		goto error;
 	access->access[isl_access_sink] = sink;
