@@ -1449,6 +1449,30 @@ static __isl_give isl_printer *print_union_map_field(__isl_take isl_printer *p,
 	return p;
 }
 
+/* An enumeration of the various keys that may appear in a YAML mapping
+ * of an isl_union_access_info object.
+ * The keys for the access relation types are assumed to have the same values
+ * as the access relation types in isl_access_type.
+ */
+enum isl_ai_key {
+	isl_ai_key_sink = isl_access_sink,
+	isl_ai_key_must_source = isl_access_must_source,
+	isl_ai_key_may_source = isl_access_may_source,
+	isl_ai_key_schedule_map,
+	isl_ai_key_schedule,
+};
+
+/* Textual representations of the YAML keys for an isl_union_access_info
+ * object.
+ */
+static char *key_str[] = {
+	[isl_ai_key_sink] = "sink",
+	[isl_ai_key_must_source] = "must_source",
+	[isl_ai_key_may_source] = "may_source",
+	[isl_ai_key_schedule_map] = "schedule_map",
+	[isl_ai_key_schedule] = "schedule",
+};
+
 /* Print the information contained in "access" to "p".
  * The information is printed as a YAML document.
  */
@@ -1459,18 +1483,19 @@ __isl_give isl_printer *isl_printer_print_union_access_info(
 		return isl_printer_free(p);
 
 	p = isl_printer_yaml_start_mapping(p);
-	p = print_union_map_field(p, "sink", access->access[isl_access_sink]);
-	p = print_union_map_field(p, "must_source",
+	p = print_union_map_field(p, key_str[isl_ai_key_sink],
+					access->access[isl_access_sink]);
+	p = print_union_map_field(p, key_str[isl_ai_key_must_source],
 					access->access[isl_access_must_source]);
-	p = print_union_map_field(p, "may_source",
+	p = print_union_map_field(p, key_str[isl_ai_key_may_source],
 					access->access[isl_access_may_source]);
 	if (access->schedule) {
-		p = isl_printer_print_str(p, "schedule");
+		p = isl_printer_print_str(p, key_str[isl_ai_key_schedule]);
 		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_schedule(p, access->schedule);
 		p = isl_printer_yaml_next(p);
 	} else {
-		p = print_union_map_field(p, "schedule_map",
+		p = print_union_map_field(p, key_str[isl_ai_key_schedule_map],
 						access->schedule_map);
 	}
 	p = isl_printer_yaml_end_mapping(p);
