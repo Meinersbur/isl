@@ -1329,23 +1329,33 @@ error:
 	return NULL;
 }
 
+/* Replace the access relation of type "type" of "info" by "access".
+ */
+static __isl_give isl_union_access_info *isl_union_access_info_set(
+	__isl_take isl_union_access_info *info,
+	enum isl_access_type type, __isl_take isl_union_map *access)
+{
+	if (!info || !access)
+		goto error;
+
+	isl_union_map_free(info->access[type]);
+	info->access[type] = access;
+
+	return info;
+error:
+	isl_union_access_info_free(info);
+	isl_union_map_free(access);
+	return NULL;
+}
+
 /* Replace the definite source accesses of "access" by "must_source".
  */
 __isl_give isl_union_access_info *isl_union_access_info_set_must_source(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_union_map *must_source)
 {
-	if (!access || !must_source)
-		goto error;
-
-	isl_union_map_free(access->access[isl_access_must_source]);
-	access->access[isl_access_must_source] = must_source;
-
-	return access;
-error:
-	isl_union_access_info_free(access);
-	isl_union_map_free(must_source);
-	return NULL;
+	return isl_union_access_info_set(access, isl_access_must_source,
+					must_source);
 }
 
 /* Replace the possible source accesses of "access" by "may_source".
@@ -1354,17 +1364,8 @@ __isl_give isl_union_access_info *isl_union_access_info_set_may_source(
 	__isl_take isl_union_access_info *access,
 	__isl_take isl_union_map *may_source)
 {
-	if (!access || !may_source)
-		goto error;
-
-	isl_union_map_free(access->access[isl_access_may_source]);
-	access->access[isl_access_may_source] = may_source;
-
-	return access;
-error:
-	isl_union_access_info_free(access);
-	isl_union_map_free(may_source);
-	return NULL;
+	return isl_union_access_info_set(access, isl_access_may_source,
+					may_source);
 }
 
 /* Replace the schedule of "access" by "schedule".
@@ -1413,15 +1414,15 @@ __isl_give isl_union_access_info *isl_union_access_info_copy(
 	__isl_keep isl_union_access_info *access)
 {
 	isl_union_access_info *copy;
+	enum isl_access_type i;
 
 	if (!access)
 		return NULL;
 	copy = isl_union_access_info_from_sink(
 		    isl_union_map_copy(access->access[isl_access_sink]));
-	copy = isl_union_access_info_set_must_source(copy,
-		    isl_union_map_copy(access->access[isl_access_must_source]));
-	copy = isl_union_access_info_set_may_source(copy,
-		    isl_union_map_copy(access->access[isl_access_may_source]));
+	for (i = isl_access_sink + 1; i < isl_access_end; ++i)
+		copy = isl_union_access_info_set(copy, i,
+					isl_union_map_copy(access->access[i]));
 	if (access->schedule)
 		copy = isl_union_access_info_set_schedule(copy,
 				isl_schedule_copy(access->schedule));
