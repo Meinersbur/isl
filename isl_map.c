@@ -7909,6 +7909,34 @@ __isl_give isl_map *isl_map_intersect_domain_factor_range(
 					    &map_intersect_domain_factor_range);
 }
 
+/* Given a map "map" in a space A -> [B -> C] and a map "factor"
+ * in the space A -> C, return the intersection.
+ *
+ * The map "factor" is first extended to a map living in the space
+ * A -> [B -> C] and then a regular intersection is computed.
+ */
+static __isl_give isl_map *map_intersect_range_factor_range(
+	__isl_take isl_map *map, __isl_take isl_map *factor)
+{
+	isl_space *space;
+	isl_map *ext_factor;
+
+	space = isl_space_range_factor_domain(isl_map_get_space(map));
+	ext_factor = isl_map_universe(space);
+	ext_factor = isl_map_range_product(ext_factor, factor);
+	return isl_map_intersect(map, ext_factor);
+}
+
+/* Given a map "map" in a space A -> [B -> C] and a map "factor"
+ * in the space A -> C, return the intersection.
+ */
+__isl_give isl_map *isl_map_intersect_range_factor_range(
+	__isl_take isl_map *map, __isl_take isl_map *factor)
+{
+	return isl_map_align_params_map_map_and(map, factor,
+					    &map_intersect_range_factor_range);
+}
+
 static __isl_give isl_map *map_apply_domain(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
