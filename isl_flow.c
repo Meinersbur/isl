@@ -160,10 +160,15 @@ struct isl_labeled_map {
 	int		must;
 };
 
+typedef int (*isl_access_coscheduled)(void *first, void *second);
+
 /* A structure containing the input for dependence analysis:
  * - a sink
  * - n_must + n_may (<= max_source) sources
  * - a function for determining the relative order of sources and sink
+ * - an optional function "coscheduled" for determining whether sources
+ *   may be coscheduled.  If "coscheduled" is NULL, then the sources
+ *   are assumed not to be coscheduled.
  * The must sources are placed before the may sources.
  *
  * domain_map is an auxiliary map that maps the sink access relation
@@ -178,6 +183,7 @@ struct isl_access_info {
 	isl_map				*domain_map;
 	struct isl_labeled_map		sink;
 	isl_access_level_before		level_before;
+	isl_access_coscheduled		coscheduled;
 
 	isl_access_restrict		restrict_fn;
 	void				*restrict_user;
@@ -841,6 +847,140 @@ static __isl_give isl_map *all_intermediate_sources(
 	return map;
 }
 
+/* Given a dependence relation "old_map" between a must-source and the sink,
+ * return a subset of the dependences, augmented with instances
+ * of the source at position "pos" in "acc" that are coscheduled
+ * with the must-source and that access the same element.
+ * That is, if the input lives in a space T -> K, then the output
+ * lives in the space [T -> S] -> K, with S the space of source "pos", and
+ * the domain factor of the domain product is a subset of the input.
+ * The sources are considered to be coscheduled if they have the same values
+ * for the initial "depth" coordinates.
+ *
+ * First construct a dependence relation S -> K and a mapping
+ * between coscheduled sources T -> S.
+ * The second is combined with the original dependence relation T -> K
+ * to form a relation in T -> [S -> K], which is subsequently
+ * uncurried to [T -> S] -> K.
+ * This result is then intersected with the dependence relation S -> K
+ * to form the output.
+ */
+static __isl_give isl_map *coscheduled_source(__isl_keep isl_access_info *acc,
+	__isl_keep isl_map *old_map, int pos, int depth)
+{
+	isl_space *space;
+	isl_set *set_C;
+	isl_map *read_map;
+	isl_map *write_map;
+	isl_map *dep_map;
+	isl_map *equal;
+	isl_map *map;
+
+	set_C = isl_map_range(isl_map_copy(old_map));
+	read_map = isl_map_copy(acc->sink.map);
+	read_map = isl_map_intersect_domain(read_map, set_C);
+	write_map = isl_map_copy(acc->source[pos].map);
+	dep_map = isl_map_domain_product(write_map, read_map);
+	dep_map = isl_set_unwrap(isl_map_domain(dep_map));
+	space = isl_space_join(isl_map_get_space(old_map),
+				isl_space_reverse(isl_map_get_space(dep_map)));
+	equal = isl_map_from_basic_map(isl_basic_map_equal(space, depth));
+	map = isl_map_range_product(equal, isl_map_copy(old_map));
+	map = isl_map_uncurry(map);
+	map = isl_map_intersect_domain_factor_range(map, dep_map);
+
+	return map;
+}
+
+/* After the dependences derived from a must-source have been computed
+ * at a certain level, check if any of the sources of the must-dependences
+ * may be coscheduled with other sources.
+ * If they are any such sources, then there is no way of determining
+ * which of the sources actually comes last and the must-dependences
+ * need to be turned into may-dependences, while dependences from
+ * the other sources need to be added to the may-dependences as well.
+ * "acc" describes the sources and a callback for checking whether
+ * two sources may be coscheduled.  If acc->coscheduled is NULL then
+ * the sources are assumed not to be coscheduled.
+ * "must_rel" and "may_rel" describe the must and may-dependence relations
+ * computed at the current level for the must-sources.  Some of the dependences
+ * may be moved from "must_rel" to "may_rel".
+ * "flow" contains all dependences computed so far (apart from those
+ * in "must_rel" and "may_rel") and may be updated with additional
+ * dependences derived from may-sources.
+ *
+ * In particular, consider all the must-sources with a non-empty
+ * dependence relation in "must_rel".  They are considered in reverse
+ * order because that is the order in which they are considered in the caller.
+ * If any of the must-sources are coscheduled, then the last one
+ * is the one that will have a corresponding dependence relation.
+ * For each must-source i, consider both all the previous must-sources
+ * and all the may-sources.  If any of those may be coscheduled with
+ * must-source i, then compute the coscheduled instances that access
+ * the same memory elements.  The result is a relation [T -> S] -> K.
+ * The projection onto T -> K is a subset of the must-dependence relation
+ * that needs to be turned into may-dependences.
+ * The projection onto S -> K needs to be added to the may-dependences
+ * of source S.
+ * Since a given must-source instance may be coscheduled with several
+ * other source instances, the dependences that need to be turned
+ * into may-dependences are first collected and only actually removed
+ * from the must-dependences after all other sources have been considered.
+ */
+static __isl_give isl_flow *handle_coscheduled(__isl_keep isl_access_info *acc,
+	__isl_keep isl_map **must_rel, __isl_keep isl_map **may_rel,
+	__isl_take isl_flow *flow)
+{
+	int i, j;
+
+	if (!acc->coscheduled)
+		return flow;
+	for (i = acc->n_must - 1; i >= 0; --i) {
+		isl_map *move;
+
+		if (isl_map_plain_is_empty(must_rel[i]))
+			continue;
+		move = isl_map_empty(isl_map_get_space(must_rel[i]));
+		for (j = i - 1; j >= 0; --j) {
+			int depth;
+			isl_map *map, *factor;
+
+			if (!acc->coscheduled(acc->source[i].data,
+						acc->source[j].data))
+				continue;
+			depth = acc->level_before(acc->source[i].data,
+						acc->source[j].data) / 2;
+			map = coscheduled_source(acc, must_rel[i], j, depth);
+			factor = isl_map_domain_factor_range(isl_map_copy(map));
+			may_rel[j] = isl_map_union(may_rel[j], factor);
+			map = isl_map_domain_factor_domain(map);
+			move = isl_map_union(move, map);
+		}
+		for (j = 0; j < acc->n_may; ++j) {
+			int depth, pos;
+			isl_map *map, *factor;
+
+			pos = acc->n_must + j;
+			if (!acc->coscheduled(acc->source[i].data,
+						acc->source[pos].data))
+				continue;
+			depth = acc->level_before(acc->source[i].data,
+						acc->source[pos].data) / 2;
+			map = coscheduled_source(acc, must_rel[i], pos, depth);
+			factor = isl_map_domain_factor_range(isl_map_copy(map));
+			pos = 2 * acc->n_must + j;
+			flow->dep[pos].map = isl_map_union(flow->dep[pos].map,
+							    factor);
+			map = isl_map_domain_factor_domain(map);
+			move = isl_map_union(move, map);
+		}
+		must_rel[i] = isl_map_subtract(must_rel[i], isl_map_copy(move));
+		may_rel[i] = isl_map_union(may_rel[i], move);
+	}
+
+	return flow;
+}
+
 /* Compute dependences for the case where all accesses are "may"
  * accesses, which boils down to computing memory based dependences.
  * The generic algorithm would also work in this case, but it would
@@ -918,7 +1058,12 @@ static __isl_give isl_flow *compute_mem_based_dependences(
  * need to be considered.  These iterations are split into those that
  * haven't been matched to any source access (mustdo) and those that have only
  * been matched to may accesses (maydo).
- * At the end of each level, we also consider the may accesses.
+ * At the end of each level, must-sources and may-sources that are coscheduled
+ * with the sources of the must-dependences at that level are considered.
+ * If any coscheduled instances are found, then corresponding may-dependences
+ * are added and the original must-dependences are turned into may-dependences.
+ * Afterwards, the may accesses that occur after must-dependence sources
+ * are considered.
  * In particular, we consider may accesses that precede the remaining
  * sink iterations, moving elements from mustdo to maydo when appropriate,
  * and may accesses that occur between a must source and a sink of any 
@@ -1004,6 +1149,8 @@ static __isl_give isl_flow *compute_val_based_dependences(
 			intermediate_sources(acc, must_rel, j, level);
 			intermediate_sources(acc, may_rel, j, level);
 		}
+
+		handle_coscheduled(acc, must_rel, may_rel, res);
 
 		for (j = 0; j < acc->n_may; ++j) {
 			int plevel;
@@ -2148,6 +2295,40 @@ static int before(void *first, void *second)
 	return 2 * n1;
 }
 
+/* Check if the given two accesses may be coscheduled.
+ * If so, return 1.  Otherwise return 0.
+ *
+ * Two accesses may only be coscheduled if the fixed schedule
+ * coordinates have the same values.
+ */
+static int coscheduled(void *first, void *second)
+{
+	struct isl_sched_info *info1 = first;
+	struct isl_sched_info *info2 = second;
+	int n1, n2;
+	int i;
+
+	n1 = isl_vec_size(info1->cst);
+	n2 = isl_vec_size(info2->cst);
+
+	if (n2 < n1)
+		n1 = n2;
+
+	for (i = 0; i < n1; ++i) {
+		int cmp;
+
+		if (!info1->is_cst[i])
+			continue;
+		if (!info2->is_cst[i])
+			continue;
+		cmp = isl_vec_cmp_element(info1->cst, info2->cst, i);
+		if (cmp != 0)
+			return 0;
+	}
+
+	return 1;
+}
+
 /* Given a sink access, look for all the source accesses that access
  * the same array and perform dataflow analysis on them using
  * isl_access_info_compute_flow_core.
@@ -2187,6 +2368,7 @@ static isl_stat compute_flow(__isl_take isl_map *map, void *user)
 	if (!data->sink_info || (data->count && !data->source_info) ||
 	    !data->accesses)
 		goto error;
+	data->accesses->coscheduled = &coscheduled;
 	data->count = 0;
 	data->must = 1;
 	if (isl_union_map_foreach_map(data->must_source,
@@ -2590,6 +2772,19 @@ static int before_node(void *first, void *second)
 	return 2 * depth + before;
 }
 
+/* Check if the given two accesses may be coscheduled.
+ * If so, return 1.  Otherwise return 0.
+ *
+ * Two accesses may only be coscheduled if they appear in the same leaf.
+ */
+static int coscheduled_node(void *first, void *second)
+{
+	isl_schedule_node *node1 = first;
+	isl_schedule_node *node2 = second;
+
+	return node1 == node2;
+}
+
 /* Add the scheduled sources from "data" that access
  * the same data space as "sink" to "access".
  */
@@ -2660,6 +2855,8 @@ static __isl_give isl_union_flow *compute_single_flow(
 
 	access = isl_access_info_alloc(isl_map_copy(sink->access), sink->node,
 					&before_node, data->n_source);
+	if (access)
+		access->coscheduled = &coscheduled_node;
 	access = add_matching_sources(access, sink, data);
 
 	flow = access_info_compute_flow_core(access);

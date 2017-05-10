@@ -8769,8 +8769,8 @@ C<isl> contains specialized functionality for performing
 array dataflow analysis.  That is, given a I<sink> access relation
 and a collection of possible I<source> access relations,
 C<isl> can compute relations that describe
-for each iteration of the sink access, which iteration
-of which of the source access relations was the last
+for each iteration of the sink access, which iterations
+of which of the source access relations may have been the last
 to access the same data element before the given iteration
 of the sink access.
 The resulting dependence relations map source iterations
@@ -8781,8 +8781,10 @@ a read, while the sources should be writes.
 If any of the source accesses are marked as being I<may>
 accesses, then there will be a (may) dependence from the last
 I<must> access B<and> from any I<may> access that follows
+or coincides with
 this last I<must> access, but still precedes the sink access.
-Only dependences originating in a must access and without
+Only dependences originating in a must access not coscheduled
+with any other access to the same element and without
 any may accesses between the must access and the sink access
 are considered to be must dependences.
 In particular, if I<all> sources are I<may> accesses,
@@ -8977,6 +8979,10 @@ In particular, let I<n> be the number of loops shared by
 the two accesses.  If C<first> precedes C<second> textually,
 then the function should return I<2 * n + 1>; otherwise,
 it should return I<2 * n>.
+The low-level interface assumes that no sources are coscheduled.
+If the information returned by the callback does not allow
+the relative order to be determined, then one of the sources
+is arbitrarily taken to be executed after the other(s).
 
 The sources can be added to the C<isl_access_info> object by performing
 (at most) C<max_source> calls to C<isl_access_info_add_source>.
