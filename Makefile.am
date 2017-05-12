@@ -342,6 +342,7 @@ EXTRA_DIST = \
 	basis_reduction_templ.c \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
+	extract_key.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \
