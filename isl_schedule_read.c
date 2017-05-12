@@ -25,7 +25,29 @@ enum isl_schedule_key {
 	isl_schedule_key_permutable,
 	isl_schedule_key_schedule,
 	isl_schedule_key_sequence,
-	isl_schedule_key_set
+	isl_schedule_key_set,
+	isl_schedule_key_end
+};
+
+/* Textual representations of the YAML keys for an isl_schedule object.
+ */
+static char *key_str[] = {
+	[isl_schedule_key_child] = "child",
+	[isl_schedule_key_coincident] = "coincident",
+	[isl_schedule_key_context] = "context",
+	[isl_schedule_key_contraction] = "contraction",
+	[isl_schedule_key_domain] = "domain",
+	[isl_schedule_key_expansion] = "expansion",
+	[isl_schedule_key_extension] = "extension",
+	[isl_schedule_key_filter] = "filter",
+	[isl_schedule_key_guard] = "guard",
+	[isl_schedule_key_leaf] = "leaf",
+	[isl_schedule_key_mark] = "mark",
+	[isl_schedule_key_options] = "options",
+	[isl_schedule_key_permutable] = "permutable",
+	[isl_schedule_key_schedule] = "schedule",
+	[isl_schedule_key_sequence] = "sequence",
+	[isl_schedule_key_set] = "set",
 };
 
 /* Extract a mapping key from the token "tok".
@@ -47,42 +69,15 @@ static enum isl_schedule_key extract_key(__isl_keep isl_stream *s,
 		return isl_schedule_key_error;
 	}
 	name = isl_token_get_str(ctx, tok);
-	if (!strcmp(name, "child"))
-		key = isl_schedule_key_child;
-	else if (!strcmp(name, "coincident"))
-		key = isl_schedule_key_coincident;
-	else if (!strcmp(name, "context"))
-		key = isl_schedule_key_context;
-	else if (!strcmp(name, "contraction"))
-		key = isl_schedule_key_contraction;
-	else if (!strcmp(name, "domain"))
-		key = isl_schedule_key_domain;
-	else if (!strcmp(name, "expansion"))
-		key = isl_schedule_key_expansion;
-	else if (!strcmp(name, "extension"))
-		key = isl_schedule_key_extension;
-	else if (!strcmp(name, "filter"))
-		key = isl_schedule_key_filter;
-	else if (!strcmp(name, "guard"))
-		key = isl_schedule_key_guard;
-	else if (!strcmp(name, "leaf"))
-		key = isl_schedule_key_leaf;
-	else if (!strcmp(name, "mark"))
-		key = isl_schedule_key_mark;
-	else if (!strcmp(name, "options"))
-		key = isl_schedule_key_options;
-	else if (!strcmp(name, "schedule"))
-		key = isl_schedule_key_schedule;
-	else if (!strcmp(name, "sequence"))
-		key = isl_schedule_key_sequence;
-	else if (!strcmp(name, "set"))
-		key = isl_schedule_key_set;
-	else if (!strcmp(name, "permutable"))
-		key = isl_schedule_key_permutable;
-	else
-		isl_die(ctx, isl_error_invalid, "unknown key",
-			key = isl_schedule_key_error);
+	for (key = 0; key < isl_schedule_key_end; ++key) {
+		if (!strcmp(name, key_str[key]))
+			break;
+	}
 	free(name);
+
+	if (key >= isl_schedule_key_end)
+		isl_die(ctx, isl_error_invalid, "unknown key",
+			return isl_schedule_key_error);
 	return key;
 }
 
@@ -759,6 +754,7 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 	case isl_schedule_key_child:
 		isl_die(isl_stream_get_ctx(s), isl_error_unsupported,
 			"cannot identity node type", return NULL);
+	case isl_schedule_key_end:
 	case isl_schedule_key_error:
 		return NULL;
 	}
