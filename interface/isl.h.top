@@ -43,7 +43,7 @@ private:
   isl_bool val;
 
   friend isl::boolean manage(isl_bool val);
-  explicit boolean(isl_bool val): val(val) {}
+  boolean(isl_bool val): val(val) {}
 public:
   boolean()
       : val(isl_bool_error) {}
