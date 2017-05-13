@@ -1663,13 +1663,18 @@ static isl_stat add_inter_validity_constraints(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	int offset;
-	isl_map *map = isl_map_copy(edge->map);
-	isl_ctx *ctx = isl_map_get_ctx(map);
+	isl_map *map;
+	isl_ctx *ctx;
 	isl_dim_map *dim_map;
 	isl_basic_set *coef;
 	struct isl_sched_node *src = edge->src;
 	struct isl_sched_node *dst = edge->dst;
 
+	if (!graph->lp)
+		return isl_stat_error;
+
+	map = isl_map_copy(edge->map);
+	ctx = isl_map_get_ctx(map);
 	coef = inter_coefficients(graph, edge, map);
 
 	offset = coef_var_offset(coef);
