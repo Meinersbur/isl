@@ -651,9 +651,9 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
  * Member methods call "method" by passing to the underlying isl function the
  * isl object belonging to "this" as first argument and the remaining arguments
  * as subsequent arguments. The result of the isl function is returned as a new
- * object if the underlying isl function returns an isl_* ptr, as std::string
- * if the isl function returns 'const char *', and as unmodified return value
- * otherwise.
+ * object if the underlying isl function returns an isl_* ptr or an isl_bool
+ * value, as std::string if the isl function returns 'const char *', and as
+ * unmodified return value otherwise.
  *
  * Static methods call "method" by passing all arguments to the underlying isl
  * function, as no this-pointer is available. The result is a newly managed
@@ -707,7 +707,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 
 	if (kind == function_kind_constructor) {
 		osprintf(os, "  ptr = res;\n");
-	} else if (is_isl_type(return_type)) {
+	} else if (is_isl_type(return_type) || is_isl_bool(return_type)) {
 		osprintf(os, "  return manage(res);\n");
 	} else if (has_callback) {
 		osprintf(os, "  return %s(res);\n", rettype_str.c_str());
