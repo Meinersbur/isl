@@ -8964,6 +8964,7 @@ C<sink>, a token C<sink_user> used to identify the sink
 access to the user, a callback function for specifying the
 relative order of source and sink accesses, and the number
 of source access relations that will be added.
+
 The callback function has type C<int (*)(void *first, void *second)>.
 The function is called with two user supplied tokens identifying
 either a source or the sink and it should return the shared nesting
@@ -8972,7 +8973,8 @@ In particular, let I<n> be the number of loops shared by
 the two accesses.  If C<first> precedes C<second> textually,
 then the function should return I<2 * n + 1>; otherwise,
 it should return I<2 * n>.
-The sources can be added to the C<isl_access_info> by performing
+
+The sources can be added to the C<isl_access_info> object by performing
 (at most) C<max_source> calls to C<isl_access_info_add_source>.
 C<must> indicates whether the source is a I<must> access
 or a I<may> access.  Note that a multi-valued access relation
@@ -8983,7 +8985,7 @@ the source access.  The range of the source access relation
 C<source> should have the same dimension as the range
 of the sink access relation.
 The C<isl_access_info_free> function should usually not be
-called explicitly, because it is called implicitly by
+called explicitly, because it is already called implicitly by
 C<isl_access_info_compute_flow>.
 
 The result of the dependence analysis is collected in an
