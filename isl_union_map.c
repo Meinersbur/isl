@@ -695,6 +695,8 @@ static isl_stat gen_bin_entry(void **entry, void *user)
 	space = isl_map_get_space(map);
 	if (data->control->match_space != &identity)
 		space = data->control->match_space(space);
+	if (!space)
+		return isl_stat_error;
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(isl_union_map_get_ctx(data->umap2),
 				     &data->umap2->table, hash,
