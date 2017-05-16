@@ -23,6 +23,7 @@
 #include <isl/set.h>
 #include <isl_space_private.h>
 #include <isl/union_set.h>
+#include <isl_maybe_map.h>
 #include <isl/deprecated/union_map_int.h>
 
 #include <bset_from_bmap.c>
@@ -673,13 +674,44 @@ static __isl_give isl_space *identity(__isl_take isl_space *space)
 	return space;
 }
 
+/* Look for the map in data->umap2 that corresponds to "map", if any.
+ * Return (isl_bool_true, matching map) if there is one,
+ * (isl_bool_false, NULL) if there is no matching map and
+ * (isl_bool_error, NULL) on error.
+ *
+ * data->control->match_space specifies which map in data->umap2
+ * corresponds to "map".
+ */
+static __isl_keep isl_maybe_isl_map bin_try_get_match(
+	struct isl_union_map_gen_bin_data *data, __isl_keep isl_map *map)
+{
+	uint32_t hash;
+	struct isl_hash_table_entry *entry2;
+	isl_space *space;
+	isl_maybe_isl_map res = { isl_bool_error, NULL };
+
+	space = isl_map_get_space(map);
+	if (data->control->match_space != &identity)
+		space = data->control->match_space(space);
+	if (!space)
+		return res;
+	hash = isl_space_get_hash(space);
+	entry2 = isl_hash_table_find(isl_union_map_get_ctx(data->umap2),
+				     &data->umap2->table, hash,
+				     &has_space, space, 0);
+	isl_space_free(space);
+	res.valid = entry2 != NULL;
+	if (entry2)
+		res.value = entry2->data;
+
+	return res;
+}
+
 /* isl_hash_table_foreach callback for gen_bin_op.
  * Look for the map in data->umap2 that corresponds
  * to the map that "entry" points to, apply the binary operation and
  * add the result to data->res.
  *
- * data->control->match_space specifies which map in data->umap2
- * corresponds to the current map.
  * If no corresponding map can be found, then the effect depends
  * on data->control->subtract.  If it is set, then the current map
  * is added directly to the result.  Otherwise, it is ignored.
@@ -687,28 +719,19 @@ static __isl_give isl_space *identity(__isl_take isl_space *space)
 static isl_stat gen_bin_entry(void **entry, void *user)
 {
 	struct isl_union_map_gen_bin_data *data = user;
-	uint32_t hash;
-	struct isl_hash_table_entry *entry2;
-	isl_space *space;
 	isl_map *map = *entry;
+	isl_maybe_isl_map m;
 
-	space = isl_map_get_space(map);
-	if (data->control->match_space != &identity)
-		space = data->control->match_space(space);
-	if (!space)
+	m = bin_try_get_match(data, map);
+	if (m.valid < 0)
 		return isl_stat_error;
-	hash = isl_space_get_hash(space);
-	entry2 = isl_hash_table_find(isl_union_map_get_ctx(data->umap2),
-				     &data->umap2->table, hash,
-				     &has_space, space, 0);
-	isl_space_free(space);
-	if (!entry2 && !data->control->subtract)
+	if (!m.valid && !data->control->subtract)
 		return isl_stat_ok;
 
-	if (!entry2)
+	if (!m.valid)
 		data->res = bin_add_map(data->res, map);
 	else
-		data->res = bin_add_pair(data->res, map, entry2->data, data);
+		data->res = bin_add_pair(data->res, map, m.value, data);
 	if (!data->res)
 		return isl_stat_error;
 
