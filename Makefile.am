@@ -358,6 +358,7 @@ EXTRA_DIST = \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \
+	isl_maybe_map.h \
 	isl_multi_macro.h \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
