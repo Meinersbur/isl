@@ -928,7 +928,7 @@ static __isl_give isl_printer *print_disjuncts_core(__isl_keep isl_map *map,
 	int i;
 
 	if (map->n == 0)
-		p = isl_printer_print_str(p, "1 = 0");
+		p = isl_printer_print_str(p, "false");
 	for (i = 0; i < map->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, s_or[latex]);
@@ -2985,7 +2985,7 @@ static __isl_give isl_printer *print_dim_mpa(__isl_take isl_printer *p,
 
 	pa = mpa->p[pos];
 	if (pa->n == 0)
-		return isl_printer_print_str(p, "(0 : 1 = 0)");
+		return isl_printer_print_str(p, "(0 : false)");
 
 	need_parens = pa->n != 1 || !isl_set_plain_is_universe(pa->p[0].set);
 	if (need_parens)

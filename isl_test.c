@@ -5445,6 +5445,8 @@ static int test_eval(isl_ctx *ctx)
  */
 const char *output_tests[] = {
 	"{ [1, y] : 0 <= y <= 1; [x, -x] : 0 <= x <= 1 }",
+	"{ [x] : 1 = 0 }",
+	"{ [x] : false }",
 };
 
 /* Check that printing a set and reparsing a set from the printed output
