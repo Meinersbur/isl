@@ -26,13 +26,19 @@ extract_interface_LDADD = \
 
 CLEANFILES = isl.py isl-noexceptions.h
 
-isl.py: extract_interface isl.py.top
+# dummy library that captures the dependencies on all headers
+# that are relevant for the bindings
+noinst_LIBRARIES = libdep.a
+libdep_a_CPPFLAGS = $(includes)
+libdep_a_SOURCES = all.c
+
+isl.py: extract_interface libdep.a isl.py.top
 	(cat $(srcdir)/isl.py.top; \
 		./extract_interface$(EXEEXT) --language=python $(includes) \
 			$(srcdir)/all.h) \
 			> isl.py
 
-isl-noexceptions.h: extract_interface all.h isl.h.top
+isl-noexceptions.h: extract_interface libdep.a isl.h.top
 	(cat $(srcdir)/isl.h.top; \
 		./extract_interface$(EXEEXT) --language=cpp $(includes) \
 			$(srcdir)/all.h) \
