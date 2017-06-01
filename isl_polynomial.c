@@ -3092,8 +3092,6 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 1
 
-#define NO_PULLBACK
-
 #include <isl_pw_templ.c>
 #include <isl_pw_eval.c>
 #include <isl_pw_lift_templ.c>
