@@ -2496,6 +2496,40 @@ __isl_give isl_aff *isl_aff_project_domain_on_params(__isl_take isl_aff *aff)
 	return aff;
 }
 
+/* Check that the domain of "aff" is a product.
+ */
+static isl_stat check_domain_product(__isl_keep isl_aff *aff)
+{
+	isl_bool is_product;
+
+	is_product = isl_space_is_product(isl_aff_peek_domain_space(aff));
+	if (is_product < 0)
+		return isl_stat_error;
+	if (!is_product)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"domain is not a product", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Given an affine function with a domain of the form [A -> B] that
+ * does not depend on B, return the same function on domain A.
+ */
+__isl_give isl_aff *isl_aff_domain_factor_domain(__isl_take isl_aff *aff)
+{
+	isl_space *space;
+	int n, n_in;
+
+	if (check_domain_product(aff) < 0)
+		return isl_aff_free(aff);
+	space = isl_aff_get_domain_space(aff);
+	n = isl_space_dim(space, isl_dim_set);
+	space = isl_space_factor_domain(space);
+	n_in = isl_space_dim(space, isl_dim_set);
+	aff = drop_domain(aff, n_in, n - n_in);
+	aff = isl_aff_reset_domain_space(aff, space);
+	return aff;
+}
+
 /* Convert an affine expression defined over a parameter domain
  * into one that is defined over a zero-dimensional set.
  */
