@@ -2462,6 +2462,24 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Drop the "n" domain dimensions starting at "first" from "aff",
+ * after checking that they do not appear in the affine expression.
+ */
+static __isl_give isl_aff *drop_domain(__isl_take isl_aff *aff, unsigned first,
+	unsigned n)
+{
+	isl_bool involves;
+
+	involves = isl_aff_involves_dims(aff, isl_dim_in, first, n);
+	if (involves < 0)
+		return isl_aff_free(aff);
+	if (involves)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+		    "affine expression involves some of the domain dimensions",
+		    return isl_aff_free(aff));
+	return isl_aff_drop_dims(aff, isl_dim_in, first, n);
+}
+
 /* Project the domain of the affine expression onto its parameter space.
  * The affine expression may not involve any of the domain dimensions.
  */
@@ -2469,17 +2487,9 @@ __isl_give isl_aff *isl_aff_project_domain_on_params(__isl_take isl_aff *aff)
 {
 	isl_space *space;
 	unsigned n;
-	int involves;
 
 	n = isl_aff_dim(aff, isl_dim_in);
-	involves = isl_aff_involves_dims(aff, isl_dim_in, 0, n);
-	if (involves < 0)
-		return isl_aff_free(aff);
-	if (involves)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-		    "affine expression involves some of the domain dimensions",
-		    return isl_aff_free(aff));
-	aff = isl_aff_drop_dims(aff, isl_dim_in, 0, n);
+	aff = drop_domain(aff, 0, n);
 	space = isl_aff_get_domain_space(aff);
 	space = isl_space_params(space);
 	aff = isl_aff_reset_domain_space(aff, space);
