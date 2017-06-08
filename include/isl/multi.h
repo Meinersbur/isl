@@ -134,7 +134,10 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_insert_dims(		\
 	unsigned first, unsigned n);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_add_dims(		\
 	__isl_take isl_multi_##BASE *multi, enum isl_dim_type type,	\
-	unsigned n);
+	unsigned n);							\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_project_domain_on_params(				\
+	__isl_take isl_multi_##BASE *multi);
 
 #define ISL_DECLARE_MULTI_WITH_DOMAIN(BASE)				\
 __isl_export								\

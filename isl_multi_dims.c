@@ -78,3 +78,28 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),add_dims)(__isl_take MULTI(BASE) *multi,
 
 	return FN(MULTI(BASE),insert_dims)(multi, type, pos, n);
 }
+
+/* Project the domain of "multi" onto its parameter space.
+ * "multi" may not involve any of the domain dimensions.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),project_domain_on_params)(
+	__isl_take MULTI(BASE) *multi)
+{
+	unsigned n;
+	isl_bool involves;
+	isl_space *space;
+
+	n = FN(MULTI(BASE),dim)(multi, isl_dim_in);
+	involves = FN(MULTI(BASE),involves_dims)(multi, isl_dim_in, 0, n);
+	if (involves < 0)
+		return FN(MULTI(BASE),free)(multi);
+	if (involves)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+		    "expression involves some of the domain dimensions",
+		    return FN(MULTI(BASE),free)(multi));
+	multi = FN(MULTI(BASE),drop_dims)(multi, isl_dim_in, 0, n);
+	space = FN(MULTI(BASE),get_domain_space)(multi);
+	space = isl_space_params(space);
+	multi = FN(MULTI(BASE),reset_domain_space)(multi, space);
+	return multi;
+}
