@@ -3925,6 +3925,30 @@ C<*residue>.
 If the dimension does not attain only a single value and if no modulo
 can be found then assign C<1> to C<*modulo> and C<1> to C<*residue>.
 
+	#include <isl/set.h>
+	__isl_give isl_stride_info *isl_set_get_stride_info(
+		__isl_keep isl_set *set, int pos);
+
+Check if the values of the given set dimension are equal to
+some affine expression of the other dimensions (the offset)
+modulo some integer stride.
+If no more specific information can be found, then the stride
+is taken to be one and the offset is taken to be the zero expression.
+The stride and offset can be extracted from the returned object
+using the following functions.
+
+	#include <isl/set.h>
+	__isl_give isl_val *isl_stride_info_get_stride(
+		__isl_keep isl_stride_info *si);
+	__isl_give isl_aff *isl_stride_info_get_offset(
+		__isl_keep isl_stride_info *si);
+
+The stride info object can be released using the following function.
+
+	#include <isl/set.h>
+	__isl_null isl_stride_info *isl_stride_info_free(
+		__isl_take isl_stride_info *si);
+
 =item * Dependence
 
 To check whether the description of a set, relation or function depends

@@ -169,6 +169,7 @@ libisl_la_SOURCES = \
 	isl_stream_private.h \
 	isl_seq.c \
 	isl_seq.h \
+	isl_stride.c \
 	isl_tab.c \
 	isl_tab.h \
 	isl_tab_pip.c \
