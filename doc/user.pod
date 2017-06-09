@@ -10446,7 +10446,7 @@ They can be set using the following function.
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_build *
 	isl_ast_build_set_options(
-		__isl_take isl_ast_build *control,
+		__isl_take isl_ast_build *build,
 		__isl_take isl_union_map *options);
 
 The options are encoded in an C<isl_union_map>.
@@ -10636,7 +10636,7 @@ Additional control is available through the following functions.
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_build *
 	isl_ast_build_set_iterators(
-		__isl_take isl_ast_build *control,
+		__isl_take isl_ast_build *build,
 		__isl_take isl_id_list *iterators);
 
 The function C<isl_ast_build_set_iterators> allows the user to
@@ -10654,7 +10654,7 @@ names are automatically generated.
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_build *
 	isl_ast_build_set_create_leaf(
-		__isl_take isl_ast_build *control,
+		__isl_take isl_ast_build *build,
 		__isl_give isl_ast_node *(*fn)(
 			__isl_take isl_ast_build *build,
 			void *user), void *user);
