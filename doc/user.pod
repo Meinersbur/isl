@@ -3928,13 +3928,18 @@ can be found then assign C<1> to C<*modulo> and C<1> to C<*residue>.
 	#include <isl/set.h>
 	__isl_give isl_stride_info *isl_set_get_stride_info(
 		__isl_keep isl_set *set, int pos);
+	__isl_give isl_val *isl_set_get_stride(
+		__isl_keep isl_set *set, int pos);
 
 Check if the values of the given set dimension are equal to
 some affine expression of the other dimensions (the offset)
 modulo some integer stride.
 If no more specific information can be found, then the stride
 is taken to be one and the offset is taken to be the zero expression.
-The stride and offset can be extracted from the returned object
+The function C<isl_set_get_stride_info> performs the same
+computation but only returns the stride.
+Otherwise,
+the stride and offset can be extracted from the returned object
 using the following functions.
 
 	#include <isl/set.h>

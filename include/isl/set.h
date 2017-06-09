@@ -438,6 +438,8 @@ __isl_null isl_stride_info *isl_stride_info_free(
 	__isl_take isl_stride_info *si);
 __isl_give isl_stride_info *isl_set_get_stride_info(__isl_keep isl_set *set,
 	int pos);
+__isl_export
+__isl_give isl_val *isl_set_get_stride(__isl_keep isl_set *set, int pos);
 
 __isl_export
 __isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set);

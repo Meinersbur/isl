@@ -76,12 +76,15 @@ __isl_give isl_aff *isl_stride_info_get_offset(__isl_keep isl_stride_info *si)
 /* Information used inside detect_stride.
  *
  * "pos" is the set dimension at which the stride is being determined.
+ * "want_offset" is set if the offset should be computed.
  * "found" is set if some stride was found already.
  * "stride" and "offset" contain the (combined) stride and offset
  * found so far and are NULL when "found" is not set.
+ * If "want_offset" is not set, then "offset" remains NULL.
  */
 struct isl_detect_stride_data {
 	int pos;
+	int want_offset;
 	int found;
 	isl_val *stride;
 	isl_aff *offset;
@@ -137,16 +140,24 @@ static isl_stat set_stride(struct isl_detect_stride_data *data,
 		b = isl_val_mul(b, isl_val_copy(stride2));
 		stride = isl_val_mul(stride, stride2);
 
-		offset2 = data->offset;
-		offset2 = isl_aff_scale_val(offset2, a);
-		offset = isl_aff_scale_val(offset, b);
-		offset = isl_aff_add(offset, offset2);
+		if (!data->want_offset) {
+			isl_val_free(a);
+			isl_val_free(b);
+		} else {
+			offset2 = data->offset;
+			offset2 = isl_aff_scale_val(offset2, a);
+			offset = isl_aff_scale_val(offset, b);
+			offset = isl_aff_add(offset, offset2);
+		}
 	}
 
 	data->found = 1;
 	data->stride = stride;
-	data->offset = offset;
-	if (!data->stride || !data->offset)
+	if (data->want_offset)
+		data->offset = offset;
+	else
+		isl_aff_free(offset);
+	if (!data->stride || (data->want_offset && !data->offset))
 		return isl_stat_error;
 
 	return isl_stat_ok;
@@ -267,13 +278,15 @@ static void set_detect_stride(__isl_keep isl_set *set, int pos,
 		goto error;
 
 	if (!data->found) {
-		isl_space *space;
-		isl_local_space *ls;
-
 		data->stride = isl_val_one(isl_set_get_ctx(set));
-		space = isl_set_get_space(set);
-		ls = isl_local_space_from_space(space);
-		data->offset = isl_aff_zero_on_domain(ls);
+		if (data->want_offset) {
+			isl_space *space;
+			isl_local_space *ls;
+
+			space = isl_set_get_space(set);
+			ls = isl_local_space_from_space(space);
+			data->offset = isl_aff_zero_on_domain(ls);
+		}
 	}
 	isl_basic_set_free(hull);
 	return;
@@ -291,7 +304,21 @@ __isl_give isl_stride_info *isl_set_get_stride_info(__isl_keep isl_set *set,
 {
 	struct isl_detect_stride_data data;
 
+	data.want_offset = 1;
 	set_detect_stride(set, pos, &data);
 
 	return isl_stride_info_alloc(data.stride, data.offset);
+}
+
+/* Check if the constraints in "set" imply any stride on set dimension "pos" and
+ * return this stride.
+ */
+__isl_give isl_val *isl_set_get_stride(__isl_keep isl_set *set, int pos)
+{
+	struct isl_detect_stride_data data;
+
+	data.want_offset = 0;
+	set_detect_stride(set, pos, &data);
+
+	return data.stride;
 }
