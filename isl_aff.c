@@ -2900,9 +2900,9 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 	pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_neg(pwaff2));
 
 	if (strict) {
-		isl_space *dim = isl_set_get_space(set1);
+		isl_space *space = isl_set_get_space(set1);
 		isl_aff *aff;
-		aff = isl_aff_zero_on_domain(isl_local_space_from_space(dim));
+		aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
 		aff = isl_aff_add_constant_si(aff, -1);
 		pwaff1 = isl_pw_aff_add(pwaff1, isl_pw_aff_alloc(set1, aff));
 	} else
