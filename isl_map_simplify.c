@@ -3745,13 +3745,24 @@ isl_bool isl_map_plain_is_disjoint(__isl_keep isl_map *map1,
 }
 
 /* Are "map1" and "map2" disjoint?
+ * The parameters are assumed to have been aligned.
+ *
+ * In particular, check whether all pairs of basic maps are disjoint.
+ */
+static isl_bool isl_map_is_disjoint_aligned(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2)
+{
+	return all_pairs(map1, map2, &isl_basic_map_is_disjoint);
+}
+
+/* Are "map1" and "map2" disjoint?
  *
  * They are disjoint if they are "obviously disjoint" or if one of them
  * is empty.  Otherwise, they are not disjoint if one of them is universal.
  * If the two inputs are (obviously) equal and not empty, then they are
  * not disjoint.
  * If none of these cases apply, then check if all pairs of basic maps
- * are disjoint.
+ * are disjoint after aligning the parameters.
  */
 isl_bool isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
@@ -3782,7 +3793,8 @@ isl_bool isl_map_is_disjoint(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 	if (intersect < 0 || intersect)
 		return isl_bool_not(intersect);
 
-	return all_pairs(map1, map2, &isl_basic_map_is_disjoint);
+	return isl_map_align_params_map_map_and_test(map1, map2,
+						&isl_map_is_disjoint_aligned);
 }
 
 /* Are "bmap1" and "bmap2" disjoint?

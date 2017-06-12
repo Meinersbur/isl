@@ -1858,6 +1858,8 @@ static __isl_give isl_basic_set *modulo_affine_hull(
 	convex_hull = isl_basic_set_intersect(convex_hull, affine_hull);
 	return convex_hull;
 error:
+	isl_mat_free(T);
+	isl_mat_free(T2);
 	isl_basic_set_free(affine_hull);
 	isl_set_free(set);
 	return NULL;
