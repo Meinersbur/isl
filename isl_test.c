@@ -5936,11 +5936,55 @@ static int test_map_conversion(isl_ctx *ctx)
 	return 0;
 }
 
+/* Descriptions of isl_pw_multi_aff objects for testing conversion
+ * to isl_multi_pw_aff and back.
+ */
+const char *mpa_conversion_tests[] = {
+	"{ [x] -> A[x] }",
+	"{ [x] -> A[x] : x >= 0 }",
+	"{ [x] -> A[x] : x >= 0; [x] -> A[-x] : x < 0 }",
+	"{ [x] -> A[x, x + 1] }",
+	"{ [x] -> A[] }",
+};
+
+/* Check that conversion from isl_pw_multi_aff to isl_multi_pw_aff and
+ * back to isl_pw_multi_aff preserves the original meaning.
+ */
+static int test_mpa_conversion(isl_ctx *ctx)
+{
+	int i;
+	isl_pw_multi_aff *pma1, *pma2;
+	isl_multi_pw_aff *mpa;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(mpa_conversion_tests); ++i) {
+		const char *str;
+		str = mpa_conversion_tests[i];
+		pma1 = isl_pw_multi_aff_read_from_str(ctx, str);
+		pma2 = isl_pw_multi_aff_copy(pma1);
+		mpa = isl_multi_pw_aff_from_pw_multi_aff(pma1);
+		pma1 = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+		equal = isl_pw_multi_aff_plain_is_equal(pma1, pma2);
+		isl_pw_multi_aff_free(pma1);
+		isl_pw_multi_aff_free(pma2);
+
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad conversion",
+				return -1);
+	}
+
+	return 0;
+}
+
 static int test_conversion(isl_ctx *ctx)
 {
 	if (test_set_conversion(ctx) < 0)
 		return -1;
 	if (test_map_conversion(ctx) < 0)
+		return -1;
+	if (test_mpa_conversion(ctx) < 0)
 		return -1;
 	return 0;
 }
