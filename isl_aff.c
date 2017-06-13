@@ -8343,9 +8343,9 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_multi_aff_on_domain(
 {
 	isl_bool equal_params;
 
-	if (!domain || !ma)
+	if (!ma)
 		goto error;
-	equal_params = isl_space_has_equal_params(domain->dim, ma->space);
+	equal_params = isl_union_set_space_has_equal_params(domain, ma->space);
 	if (equal_params < 0)
 		goto error;
 	if (equal_params)
