@@ -29,6 +29,7 @@
 #include <set_to_map.c>
 #include <set_from_map.c>
 #include <uset_to_umap.c>
+#include <uset_from_umap.c>
 
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
@@ -86,6 +87,15 @@ isl_bool isl_union_set_is_params(__isl_keep isl_union_set *uset)
 	params = isl_set_is_params(set);
 	isl_set_free(set);
 	return params;
+}
+
+/* Is this union map actually a parameter domain?
+ * Users should never call this function.  Outside of isl,
+ * a union map can never be a parameter domain.
+ */
+isl_bool isl_union_map_is_params(__isl_keep isl_union_map *umap)
+{
+	return isl_union_set_is_params(uset_from_umap(umap));
 }
 
 static __isl_give isl_union_map *isl_union_map_alloc(
