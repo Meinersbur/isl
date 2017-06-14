@@ -1567,22 +1567,37 @@ static isl_stat print_map_body(__isl_take isl_map *map, void *user)
 	return isl_stat_ok;
 }
 
-static __isl_give isl_printer *isl_union_map_print_isl(
-	__isl_keep isl_union_map *umap, __isl_take isl_printer *p)
+/* Print the body of "umap" (everything except the parameter declarations)
+ * to "p" in isl format.
+ */
+static __isl_give isl_printer *isl_printer_print_union_map_isl_body(
+	__isl_take isl_printer *p, __isl_keep isl_union_map *umap)
 {
 	struct isl_union_print_data data;
-	struct isl_print_space_data space_data = { 0 };
-	isl_space *space;
 
-	space = isl_union_map_get_space(umap);
-	p = print_param_tuple(p, space, &space_data);
-	isl_space_free(space);
 	p = isl_printer_print_str(p, s_open_set[0]);
 	data.p = p;
 	data.first = 1;
 	isl_union_map_foreach_map(umap, &print_map_body, &data);
 	p = data.p;
 	p = isl_printer_print_str(p, s_close_set[0]);
+	return p;
+}
+
+/* Print the isl_union_map "umap" to "p" in isl format.
+ */
+static __isl_give isl_printer *isl_union_map_print_isl(
+	__isl_keep isl_union_map *umap, __isl_take isl_printer *p)
+{
+	struct isl_print_space_data space_data = { 0 };
+	isl_space *space;
+
+	space = isl_union_map_get_space(umap);
+	p = print_param_tuple(p, space, &space_data);
+	isl_space_free(space);
+
+	p = isl_printer_print_union_map_isl_body(p, umap);
+
 	return p;
 }
 
