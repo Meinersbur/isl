@@ -9,6 +9,8 @@
  * to the output or set dimension of "space".
  * "p" is an array of size "n" of base expressions.
  * The array is only accessible when n > 0.
+ * "dom" is the explicit domain, if present
+ * The explicit domain is only accessible when n == 0.
  */
 struct MULTI(BASE) {
 	int ref;
@@ -16,8 +18,16 @@ struct MULTI(BASE) {
 
 	int n;
 	struct {
+#ifdef EXPLICIT_DOMAIN
+		DOM *dom;
+#endif
 		EL *p[1];
 	} u;
 };
 
 __isl_give MULTI(BASE) *CAT(MULTI(BASE),_alloc)(__isl_take isl_space *space);
+
+#ifdef EXPLICIT_DOMAIN
+isl_bool CAT(MULTI(BASE),_has_non_trivial_domain)(
+	__isl_keep MULTI(BASE) *multi);
+#endif

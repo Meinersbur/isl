@@ -270,6 +270,17 @@ be used as an alternative.
 
 =back
 
+=head3 Changes since isl-0.19
+
+=over
+
+=item * Zero-dimensional objects of type C<isl_multi_pw_aff> or
+C<isl_multi_union_pw_aff> can now keep track of an explicit domain.
+This explicit domain, if present, is taken into account
+by various operations that take such objects as input.
+
+=back
+
 =head1 License
 
 C<isl> is released under the MIT license.
@@ -2749,6 +2760,10 @@ Objects of the value type do not have an associated space.
 The space of a multiple value is therefore always a set space.
 Similarly, the space of a multiple union piecewise
 affine expression is always a set space.
+If the base expressions are not total, then
+a corresponding zero-dimensional multiple expression may
+have an explicit domain that keeps track of the domain
+outside of any base expressions.
 
 The multiple expression types defined by C<isl>
 are C<isl_multi_val>, C<isl_multi_aff>, C<isl_multi_pw_aff>,
@@ -2969,10 +2984,7 @@ while there is only a single multiple expression in
 an C<isl_multi_union_pw_aff>, which can therefore only live
 in a single space.  This means that not every
 C<isl_union_pw_multi_aff> can be converted to
-an C<isl_multi_union_pw_aff>.  Conversely, a zero-dimensional
-C<isl_multi_union_pw_aff> carries no information
-about any possible domain and therefore cannot be converted
-to an C<isl_union_pw_multi_aff>.  Moreover, the elements
+an C<isl_multi_union_pw_aff>.  Conversely, the elements
 of an C<isl_multi_union_pw_aff> may be defined over different domains,
 while each multiple expression inside an C<isl_union_pw_multi_aff>
 has a single domain.  The conversion of an C<isl_union_pw_multi_aff>
@@ -4569,8 +4581,9 @@ parameters.
 	__isl_give isl_set *isl_pw_aff_params(
 		__isl_take isl_pw_aff *pwa);
 
-The function C<isl_multi_union_pw_aff_domain> requires its
-input to have at least one set dimension.
+If no explicit domain was set on a zero-dimensional input to
+C<isl_multi_union_pw_aff_domain>, then this function will
+return a parameter set.
 
 	#include <isl/polynomial.h>
 	__isl_give isl_qpolynomial *

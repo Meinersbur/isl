@@ -18,7 +18,7 @@
 #include <isl_union_map_private.h>
 #include <isl/ctx.h>
 #include <isl/hash.h>
-#include <isl/aff.h>
+#include <isl_aff_private.h>
 #include <isl/map.h>
 #include <isl/set.h>
 #include <isl_space_private.h>
@@ -3907,6 +3907,41 @@ static isl_stat order_at(__isl_take isl_map *map, void *user)
 	return data->res ? isl_stat_ok : isl_stat_error;
 }
 
+/* If "mupa" has a non-trivial explicit domain, then intersect
+ * domain and range of "umap" with this explicit domain.
+ * If the explicit domain only describes constraints on the parameters,
+ * then the intersection only needs to be performed once.
+ */
+static __isl_give isl_union_map *intersect_explicit_domain(
+	__isl_take isl_union_map *umap, __isl_keep isl_multi_union_pw_aff *mupa)
+{
+	isl_bool non_trivial, is_params;
+	isl_union_set *dom;
+
+	non_trivial = isl_multi_union_pw_aff_has_non_trivial_domain(mupa);
+	if (non_trivial < 0)
+		return isl_union_map_free(umap);
+	if (!non_trivial)
+		return umap;
+	mupa = isl_multi_union_pw_aff_copy(mupa);
+	dom = isl_multi_union_pw_aff_domain(mupa);
+	is_params = isl_union_set_is_params(dom);
+	if (is_params < 0) {
+		isl_union_set_free(dom);
+		return isl_union_map_free(umap);
+	}
+	if (is_params) {
+		isl_set *set;
+
+		set = isl_union_set_params(dom);
+		umap = isl_union_map_intersect_params(umap, set);
+		return umap;
+	}
+	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(dom));
+	umap = isl_union_map_intersect_range(umap, dom);
+	return umap;
+}
+
 /* Intersect each map in "umap" with the result of calling "order"
  * on the functions is "mupa" that apply to the domain and the range
  * of the map.
@@ -3922,6 +3957,7 @@ static __isl_give isl_union_map *isl_union_map_order_at_multi_union_pw_aff(
 				isl_multi_union_pw_aff_get_space(mupa));
 	mupa = isl_multi_union_pw_aff_align_params(mupa,
 				isl_union_map_get_space(umap));
+	umap = intersect_explicit_domain(umap, mupa);
 	data.mupa = mupa;
 	data.order = order;
 	data.res = isl_union_map_empty(isl_union_map_get_space(umap));

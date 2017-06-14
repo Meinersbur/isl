@@ -23,6 +23,7 @@
 #include <isl_space_private.h>
 #include <isl_mat_private.h>
 #include <isl_vec_private.h>
+#include <isl/union_set.h>
 #include <isl/union_map.h>
 #include <isl/constraint.h>
 #include <isl_local_space_private.h>
@@ -1175,6 +1176,16 @@ static __isl_give isl_printer *print_disjuncts_map(__isl_keep isl_map *map,
 		return print_disjuncts(map, space, p, latex);
 }
 
+/* Print the disjuncts of a set.
+ * The names of the variables are taken from "space".
+ * "latex" is set if the constraints should be printed in LaTeX format.
+ */
+static __isl_give isl_printer *print_disjuncts_set(__isl_keep isl_set *set,
+	__isl_keep isl_space *space, __isl_take isl_printer *p, int latex)
+{
+	return print_disjuncts_map(set_to_map(set), space, p, latex);
+}
+
 struct isl_aff_split {
 	isl_basic_map *aff;
 	isl_map *map;
@@ -1582,6 +1593,15 @@ static __isl_give isl_printer *isl_printer_print_union_map_isl_body(
 	p = data.p;
 	p = isl_printer_print_str(p, s_close_set[0]);
 	return p;
+}
+
+/* Print the body of "uset" (everything except the parameter declarations)
+ * to "p" in isl format.
+ */
+static __isl_give isl_printer *isl_printer_print_union_set_isl_body(
+	__isl_take isl_printer *p, __isl_keep isl_union_set *uset)
+{
+	return isl_printer_print_union_map_isl_body(p, uset_to_umap(uset));
 }
 
 /* Print the isl_union_map "umap" to "p" in isl format.
@@ -3169,11 +3189,15 @@ static __isl_give isl_printer *print_dim_mpa(__isl_take isl_printer *p,
 }
 
 /* Print "mpa" to "p" in isl format.
+ *
+ * If "mpa" is zero-dimensional and has a non-trivial explicit domain,
+ * then it is printed after the tuple of affine expressions.
  */
 static __isl_give isl_printer *print_multi_pw_aff_isl(__isl_take isl_printer *p,
 	__isl_keep isl_multi_pw_aff *mpa)
 {
 	struct isl_print_space_data data = { 0 };
+	isl_bool has_domain;
 
 	if (!mpa)
 		return isl_printer_free(p);
@@ -3183,6 +3207,16 @@ static __isl_give isl_printer *print_multi_pw_aff_isl(__isl_take isl_printer *p,
 	data.print_dim = &print_dim_mpa;
 	data.user = mpa;
 	p = isl_print_space(mpa->space, p, 0, &data);
+	has_domain = isl_multi_pw_aff_has_non_trivial_domain(mpa);
+	if (has_domain < 0)
+		return isl_printer_free(p);
+	if (has_domain) {
+		isl_space *space;
+
+		space = isl_space_domain(isl_space_copy(mpa->space));
+		p = print_disjuncts_set(mpa->u.dom, space, p, 0);
+		isl_space_free(space);
+	}
 	p = isl_printer_print_str(p, " }");
 	return p;
 }
@@ -3274,21 +3308,44 @@ static __isl_give isl_printer *print_union_pw_aff_dim(__isl_take isl_printer *p,
 }
 
 /* Print the isl_multi_union_pw_aff "mupa" to "p" in isl format.
+ *
+ * If "mupa" is zero-dimensional and has a non-trivial explicit domain,
+ * then it is printed after the tuple of affine expressions.
+ * In order to clarify that this domain belongs to the expression,
+ * the tuple along with the domain are placed inside parentheses.
+ * If "mupa" has any parameters, then the opening parenthesis
+ * appears after the parameter declarations.
  */
 static __isl_give isl_printer *print_multi_union_pw_aff_isl(
 	__isl_take isl_printer *p, __isl_keep isl_multi_union_pw_aff *mupa)
 {
 	struct isl_print_space_data data = { 0 };
+	isl_bool has_domain;
 	isl_space *space;
+
+	if (!mupa)
+		return isl_printer_free(p);
+	has_domain = isl_multi_union_pw_aff_has_non_trivial_domain(mupa);
+	if (has_domain < 0)
+		return isl_printer_free(p);
 
 	space = isl_multi_union_pw_aff_get_space(mupa);
 	p = print_param_tuple(p, space, &data);
+
+	if (has_domain)
+		p = isl_printer_print_str(p, "(");
 
 	data.print_dim = &print_union_pw_aff_dim;
 	data.user = mupa;
 
 	p = isl_print_space(space, p, 0, &data);
 	isl_space_free(space);
+
+	if (has_domain) {
+		p = isl_printer_print_str(p, " : ");
+		p = isl_printer_print_union_set_isl_body(p, mupa->u.dom);
+		p = isl_printer_print_str(p, ")");
+	}
 
 	return p;
 }

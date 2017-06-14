@@ -3830,6 +3830,7 @@ error:
 #define DOMBASE set
 #define NO_DOMAIN
 
+#include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_cmp.c>
@@ -6275,13 +6276,31 @@ error:
 #undef DOMBASE
 #define DOMBASE set
 
+#include <isl_multi_explicit_domain.c>
+#include <isl_multi_pw_aff_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_gist.c>
 #include <isl_multi_hash.c>
+#include <isl_multi_align_set.c>
 #include <isl_multi_intersect.c>
+
+/* Does "mpa" have a non-trivial explicit domain?
+ *
+ * The explicit domain, if present, is trivial if it represents
+ * an (obviously) universe set.
+ */
+isl_bool isl_multi_pw_aff_has_non_trivial_domain(
+	__isl_keep isl_multi_pw_aff *mpa)
+{
+	if (!mpa)
+		return isl_bool_error;
+	if (!isl_multi_pw_aff_has_explicit_domain(mpa))
+		return isl_bool_false;
+	return isl_bool_not(isl_set_plain_is_universe(mpa->u.dom));
+}
 
 /* Scale the elements of "pma" by the corresponding elements of "mv".
  */
@@ -6493,18 +6512,22 @@ error:
  * on the shared domain of the piecewise affine expressions,
  * in the special case of a 0D multi piecewise affine expression.
  *
- * A 0D multi piecewise affine expression does not carry any domain
- * information, so create a piecewise multi affine expression
- * with a universe domain.
+ * Create a piecewise multi affine expression with the explicit domain of
+ * the 0D multi piecewise affine expression as domain.
  */
 static __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff_0D(
 	__isl_take isl_multi_pw_aff *mpa)
 {
 	isl_space *space;
+	isl_set *dom;
+	isl_multi_aff *ma;
 
 	space = isl_multi_pw_aff_get_space(mpa);
+	dom = isl_multi_pw_aff_get_explicit_domain(mpa);
 	isl_multi_pw_aff_free(mpa);
-	return isl_pw_multi_aff_zero(space);
+
+	ma = isl_multi_aff_zero(space);
+	return isl_pw_multi_aff_alloc(dom, ma);
 }
 
 /* Construct and return a piecewise multi affine expression
@@ -6571,6 +6594,10 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_multi_aff(
 
 /* Construct and return a multi piecewise affine expression
  * that is equal to the given piecewise multi affine expression.
+ *
+ * If the resulting multi piecewise affine expression has
+ * an explicit domain, then assign it the domain of the input.
+ * In other cases, the domain is stored in the individual elements.
  */
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
 	__isl_take isl_pw_multi_aff *pma)
@@ -6591,6 +6618,12 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
 
 		pa = isl_pw_multi_aff_get_pw_aff(pma, i);
 		mpa = isl_multi_pw_aff_set_pw_aff(mpa, i, pa);
+	}
+	if (isl_multi_pw_aff_has_explicit_domain(mpa)) {
+		isl_set *dom;
+
+		dom = isl_pw_multi_aff_domain(isl_pw_multi_aff_copy(pma));
+		mpa = isl_multi_pw_aff_intersect_domain(mpa, dom);
 	}
 
 	isl_pw_multi_aff_free(pma);
@@ -6723,6 +6756,9 @@ isl_bool isl_pw_multi_aff_is_equal(__isl_keep isl_pw_multi_aff *pma1,
  * In other words, plug in "ma" in "mpa".
  *
  * The parameters of "mpa" and "ma" are assumed to have been aligned.
+ *
+ * If "mpa" has an explicit domain, then it is this domain
+ * that needs to undergo a pullback, i.e., a preimage.
  */
 static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff_aligned(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_multi_aff *ma)
@@ -6743,6 +6779,12 @@ static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff_aligned(
 		mpa->u.p[i] = isl_pw_aff_pullback_multi_aff(mpa->u.p[i],
 						    isl_multi_aff_copy(ma));
 		if (!mpa->u.p[i])
+			goto error;
+	}
+	if (isl_multi_pw_aff_has_explicit_domain(mpa)) {
+		mpa->u.dom = isl_set_preimage_multi_aff(mpa->u.dom,
+							isl_multi_aff_copy(ma));
+		if (!mpa->u.dom)
 			goto error;
 	}
 
@@ -6785,6 +6827,9 @@ error:
  * In other words, plug in "pma" in "mpa".
  *
  * The parameters of "mpa" and "mpa" are assumed to have been aligned.
+ *
+ * If "mpa" has an explicit domain, then it is this domain
+ * that needs to undergo a pullback, i.e., a preimage.
  */
 static __isl_give isl_multi_pw_aff *
 isl_multi_pw_aff_pullback_pw_multi_aff_aligned(
@@ -6804,6 +6849,12 @@ isl_multi_pw_aff_pullback_pw_multi_aff_aligned(
 		mpa->u.p[i] = isl_pw_aff_pullback_pw_multi_aff_aligned(
 				    mpa->u.p[i], isl_pw_multi_aff_copy(pma));
 		if (!mpa->u.p[i])
+			goto error;
+	}
+	if (isl_multi_pw_aff_has_explicit_domain(mpa)) {
+		mpa->u.dom = isl_set_preimage_pw_multi_aff(mpa->u.dom,
+						    isl_pw_multi_aff_copy(pma));
+		if (!mpa->u.dom)
 			goto error;
 	}
 
@@ -7036,6 +7087,9 @@ __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
  * We pullback each member of "mpa1" in turn.
+ *
+ * If "mpa1" has an explicit domain, then it is this domain
+ * that needs to undergo a pullback instead, i.e., a preimage.
  */
 static __isl_give isl_multi_pw_aff *
 isl_multi_pw_aff_pullback_multi_pw_aff_aligned(
@@ -7058,6 +7112,12 @@ isl_multi_pw_aff_pullback_multi_pw_aff_aligned(
 			goto error;
 	}
 
+	if (isl_multi_pw_aff_has_explicit_domain(mpa1)) {
+		mpa1->u.dom = isl_set_preimage_multi_pw_aff(mpa1->u.dom,
+						isl_multi_pw_aff_copy(mpa2));
+		if (!mpa1->u.dom)
+			goto error;
+	}
 	mpa1 = isl_multi_pw_aff_reset_space(mpa1, space);
 
 	isl_multi_pw_aff_free(mpa2);
@@ -8089,13 +8149,41 @@ error:
 #define NO_IDENTITY
 #define NO_GIST
 
+#include <isl_multi_explicit_domain.c>
+#include <isl_multi_union_pw_aff_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_gist.c>
+#include <isl_multi_align_set.c>
+#include <isl_multi_align_union_set.c>
 #include <isl_multi_intersect.c>
+
+/* Does "mupa" have a non-trivial explicit domain?
+ *
+ * The explicit domain, if present, is trivial if it represents
+ * an (obviously) universe parameter set.
+ */
+isl_bool isl_multi_union_pw_aff_has_non_trivial_domain(
+	__isl_keep isl_multi_union_pw_aff *mupa)
+{
+	isl_bool is_params, trivial;
+	isl_set *set;
+
+	if (!mupa)
+		return isl_bool_error;
+	if (!isl_multi_union_pw_aff_has_explicit_domain(mupa))
+		return isl_bool_false;
+	is_params = isl_union_set_is_params(mupa->u.dom);
+	if (is_params < 0 || !is_params)
+		return isl_bool_not(is_params);
+	set = isl_set_from_union_set(isl_union_set_copy(mupa->u.dom));
+	trivial = isl_set_plain_is_universe(set);
+	isl_set_free(set);
+	return isl_bool_not(trivial);
+}
 
 /* Construct a multiple union piecewise affine expression
  * in the given space with value zero in each of the output dimensions.
@@ -8136,15 +8224,70 @@ error:
  * the defined expression on the symmetric difference of the domains.
  *
  * We simply iterate over the elements in both arguments and
- * call isl_union_pw_aff_union_add on each of them.
+ * call isl_union_pw_aff_union_add on each of them, if there is
+ * at least one element.
+ *
+ * Otherwise, the two expressions have an explicit domain and
+ * the union of these explicit domains is computed.
+ * This assumes that the explicit domains are either both in terms
+ * of specific domains elements or both in terms of parameters.
+ * However, if one of the expressions does not have any constraints
+ * on its explicit domain, then this is allowed as well and the result
+ * is the expression with no constraints on its explicit domain.
  */
 static __isl_give isl_multi_union_pw_aff *
 isl_multi_union_pw_aff_union_add_aligned(
 	__isl_take isl_multi_union_pw_aff *mupa1,
 	__isl_take isl_multi_union_pw_aff *mupa2)
 {
-	return isl_multi_union_pw_aff_bin_op(mupa1, mupa2,
+	isl_bool has_domain, is_params1, is_params2;
+
+	if (isl_multi_union_pw_aff_check_equal_space(mupa1, mupa2) < 0)
+		goto error;
+	if (mupa1->n > 0)
+		return isl_multi_union_pw_aff_bin_op(mupa1, mupa2,
 					    &isl_union_pw_aff_union_add);
+	if (isl_multi_union_pw_aff_check_has_explicit_domain(mupa1) < 0 ||
+	    isl_multi_union_pw_aff_check_has_explicit_domain(mupa2) < 0)
+		goto error;
+
+	has_domain = isl_multi_union_pw_aff_has_non_trivial_domain(mupa1);
+	if (has_domain < 0)
+		goto error;
+	if (!has_domain) {
+		isl_multi_union_pw_aff_free(mupa2);
+		return mupa1;
+	}
+	has_domain = isl_multi_union_pw_aff_has_non_trivial_domain(mupa2);
+	if (has_domain < 0)
+		goto error;
+	if (!has_domain) {
+		isl_multi_union_pw_aff_free(mupa1);
+		return mupa2;
+	}
+
+	is_params1 = isl_union_set_is_params(mupa1->u.dom);
+	is_params2 = isl_union_set_is_params(mupa2->u.dom);
+	if (is_params1 < 0 || is_params2 < 0)
+		goto error;
+	if (is_params1 != is_params2)
+		isl_die(isl_multi_union_pw_aff_get_ctx(mupa1),
+			isl_error_invalid,
+			"cannot compute union of concrete domain and "
+			"parameter constraints", goto error);
+	mupa1 = isl_multi_union_pw_aff_cow(mupa1);
+	if (!mupa1)
+		goto error;
+	mupa1->u.dom = isl_union_set_union(mupa1->u.dom,
+					    isl_union_set_copy(mupa2->u.dom));
+	if (!mupa1->u.dom)
+		goto error;
+	isl_multi_union_pw_aff_free(mupa2);
+	return mupa1;
+error:
+	isl_multi_union_pw_aff_free(mupa1);
+	isl_multi_union_pw_aff_free(mupa2);
+	return NULL;
 }
 
 /* Compute the sum of "mupa1" and "mupa2" on the union of their domains,
@@ -8239,6 +8382,10 @@ static isl_stat extract_space(__isl_take isl_pw_multi_aff *pma, void *user)
  *
  * In order to be able to perform the conversion, the input
  * needs to be non-empty and may only involve a single range space.
+ *
+ * If the resulting multi union piecewise affine expression has
+ * an explicit domain, then assign it the domain of the input.
+ * In other cases, the domain is stored in the individual elements.
  */
 __isl_give isl_multi_union_pw_aff *
 isl_multi_union_pw_aff_from_union_pw_multi_aff(
@@ -8269,6 +8416,14 @@ isl_multi_union_pw_aff_from_union_pw_multi_aff(
 
 		upa = isl_union_pw_multi_aff_get_union_pw_aff(upma, i);
 		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
+	}
+	if (isl_multi_union_pw_aff_has_explicit_domain(mupa)) {
+		isl_union_set *dom;
+		isl_union_pw_multi_aff *copy;
+
+		copy = isl_union_pw_multi_aff_copy(upma);
+		dom = isl_union_pw_multi_aff_domain(copy);
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa, dom);
 	}
 
 	isl_union_pw_multi_aff_free(upma);
@@ -8372,6 +8527,10 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_multi_aff_on_domain(
 /* Return a multiple union piecewise affine expression
  * that is equal to "pma" on "domain", assuming "domain" and "pma"
  * have been aligned.
+ *
+ * If the resulting multi union piecewise affine expression has
+ * an explicit domain, then assign it the input domain.
+ * In other cases, the domain is stored in the individual elements.
  */
 static __isl_give isl_multi_union_pw_aff *
 isl_multi_union_pw_aff_pw_multi_aff_on_domain_aligned(
@@ -8396,6 +8555,9 @@ isl_multi_union_pw_aff_pw_multi_aff_on_domain_aligned(
 					    isl_union_set_copy(domain), pa);
 		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
 	}
+	if (isl_multi_union_pw_aff_has_explicit_domain(mupa))
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa,
+						    isl_union_set_copy(domain));
 
 	isl_union_set_free(domain);
 	isl_pw_multi_aff_free(pma);
@@ -8437,6 +8599,8 @@ error:
 
 /* Return a union set containing those elements in the domains
  * of the elements of "mupa" where they are all zero.
+ *
+ * If there are no elements, then simply return the entire domain.
  */
 __isl_give isl_union_set *isl_multi_union_pw_aff_zero_union_set(
 	__isl_take isl_multi_union_pw_aff *mupa)
@@ -8450,9 +8614,7 @@ __isl_give isl_union_set *isl_multi_union_pw_aff_zero_union_set(
 
 	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	if (n == 0)
-		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-			"cannot determine zero set "
-			"of zero-dimensional function", goto error);
+		return isl_multi_union_pw_aff_domain(mupa);
 
 	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
 	zero = isl_union_pw_aff_zero_union_set(upa);
@@ -8468,27 +8630,37 @@ __isl_give isl_union_set *isl_multi_union_pw_aff_zero_union_set(
 
 	isl_multi_union_pw_aff_free(mupa);
 	return zero;
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	return NULL;
 }
 
 /* Construct a union map mapping the shared domain
  * of the union piecewise affine expressions to the range of "mupa"
  * in the special case of a 0D multi union piecewise affine expression.
  *
- * There is no way to extract a domain from a zero-dimensional
- * isl_multi_union_pw_aff.
+ * Construct a map between the explicit domain of "mupa" and
+ * the range space.
+ * Note that this assumes that the domain consists of explicit elements.
  */
 static __isl_give isl_union_map *isl_union_map_from_multi_union_pw_aff_0D(
 	__isl_take isl_multi_union_pw_aff *mupa)
 {
-	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-		"cannot determine domain of zero-dimensional "
-		"isl_multi_union_pw_aff", goto error);
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	return NULL;
+	isl_bool is_params;
+	isl_space *space;
+	isl_union_set *dom, *ran;
+
+	space = isl_multi_union_pw_aff_get_space(mupa);
+	dom = isl_multi_union_pw_aff_domain(mupa);
+	ran = isl_union_set_from_set(isl_set_universe(space));
+
+	is_params = isl_union_set_is_params(dom);
+	if (is_params < 0)
+		dom = isl_union_set_free(dom);
+	else if (is_params)
+		isl_die(isl_union_set_get_ctx(dom), isl_error_invalid,
+			"cannot create union map from expression without "
+			"explicit domain elements",
+			dom = isl_union_set_free(dom));
+
+	return isl_union_map_from_domain_and_range(dom, ran);
 }
 
 /* Construct a union map mapping the shared domain
@@ -8496,8 +8668,8 @@ error:
  * with each dimension in the range equated to the
  * corresponding union piecewise affine expression.
  *
- * The input cannot be zero-dimensional as there is
- * no way to extract a domain from a zero-dimensional isl_multi_union_pw_aff.
+ * If the input is zero-dimensional, then construct a mapping
+ * from its explicit domain.
  */
 __isl_give isl_union_map *isl_union_map_from_multi_union_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa)
@@ -8592,26 +8764,29 @@ isl_union_pw_multi_aff_reset_range_space(
  * that is equal to the given multi union piecewise affine expression,
  * in the special case of a 0D multi union piecewise affine expression.
  *
- * There is no way to extract a domain from a zero-dimensional
- * isl_multi_union_pw_aff.
+ * Construct a union piecewise multi affine expression
+ * on top of the explicit domain of the input.
  */
 __isl_give isl_union_pw_multi_aff *
 isl_union_pw_multi_aff_from_multi_union_pw_aff_0D(
 	__isl_take isl_multi_union_pw_aff *mupa)
 {
-	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-		"cannot determine domain of zero-dimensional "
-		"isl_multi_union_pw_aff", goto error);
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	return NULL;
+	isl_space *space;
+	isl_multi_val *mv;
+	isl_union_set *domain;
+
+	space = isl_multi_union_pw_aff_get_space(mupa);
+	mv = isl_multi_val_zero(space);
+	domain = isl_multi_union_pw_aff_domain(mupa);
+	return isl_union_pw_multi_aff_multi_val_on_domain(domain, mv);
 }
 
 /* Construct and return a union piecewise multi affine expression
  * that is equal to the given multi union piecewise affine expression.
  *
- * In order to be able to perform the conversion, the input
- * needs to have a least one output dimension.
+ * If the input is zero-dimensional, then
+ * construct a union piecewise multi affine expression
+ * on top of the explicit domain of the input.
  */
 __isl_give isl_union_pw_multi_aff *
 isl_union_pw_multi_aff_from_multi_union_pw_aff(
@@ -8650,19 +8825,15 @@ isl_union_pw_multi_aff_from_multi_union_pw_aff(
 /* Intersect the range of "mupa" with "range",
  * in the special case where "mupa" is 0D.
  *
- * A 0D isl_multi_union_pw_aff does not carry any domain information,
- * so the information in "range" cannot be included.
+ * Intersect the domain of "mupa" with the constraints on the parameters
+ * of "range".
  */
 static __isl_give isl_multi_union_pw_aff *mupa_intersect_range_0D(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_set *range)
 {
-	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-		"cannot intersect range of zero-dimensional "
-		"isl_multi_union_pw_aff", goto error);
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	isl_set_free(range);
-	return NULL;
+	range = isl_set_params(range);
+	mupa = isl_multi_union_pw_aff_intersect_params(mupa, range);
+	return mupa;
 }
 
 /* Intersect the range of "mupa" with "range".
@@ -8710,20 +8881,25 @@ error:
 /* Return the shared domain of the elements of "mupa",
  * in the special case where "mupa" is zero-dimensional.
  *
- * There is no way to extract a domain from a zero-dimensional
- * isl_multi_union_pw_aff.
+ * Return the explicit domain of "mupa".
+ * Note that this domain may be a parameter set, either
+ * because "mupa" is meant to live in a set space or
+ * because no explicit domain has been set.
  */
 __isl_give isl_union_set *isl_multi_union_pw_aff_domain_0D(
 	__isl_take isl_multi_union_pw_aff *mupa)
 {
-	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-		"cannot determine domain", goto error);
-error:
+	isl_union_set *dom;
+
+	dom = isl_multi_union_pw_aff_get_explicit_domain(mupa);
 	isl_multi_union_pw_aff_free(mupa);
-	return NULL;
+
+	return dom;
 }
 
 /* Return the shared domain of the elements of "mupa".
+ *
+ * If "mupa" is zero-dimensional, then return its explicit domain.
  */
 __isl_give isl_union_set *isl_multi_union_pw_aff_domain(
 	__isl_take isl_multi_union_pw_aff *mupa)
@@ -8860,26 +9036,22 @@ error:
 /* Apply "ma" to "mupa", in the special case where "mupa" is 0D.
  * The space of "mupa" is known to be compatible with the domain of "ma".
  *
- * This function is currently only called when the number of output
- * dimensions of "ma" is greater than zero, in which case no result
- * can be computed because a 0D isl_multi_union_pw_aff
- * does not carry any domain information.
+ * Construct an isl_multi_union_pw_aff that is equal to "ma"
+ * on the domain of "mupa".
  */
 static __isl_give isl_multi_union_pw_aff *mupa_apply_multi_aff_0D(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_multi_aff *ma)
 {
-	isl_die(isl_multi_aff_get_ctx(ma), isl_error_invalid,
-		"cannot determine domains", goto error);
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	isl_multi_aff_free(ma);
-	return NULL;
+	isl_union_set *dom;
+
+	dom = isl_multi_union_pw_aff_domain(mupa);
+	ma = isl_multi_aff_project_domain_on_params(ma);
+
+	return isl_multi_union_pw_aff_multi_aff_on_domain(dom, ma);
 }
 
 /* Apply "ma" to "mupa".  The space of "mupa" needs to be compatible
  * with the domain of "ma".
- * Furthermore, the dimension of this space needs to be greater than zero,
- * unless the dimension of the target space of "ma" is also zero.
  * The result is defined over the shared domain of the elements of "mupa"
  */
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_multi_aff(
@@ -8908,7 +9080,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_multi_aff(
 		isl_die(isl_multi_aff_get_ctx(ma), isl_error_invalid,
 			"spaces don't match", goto error);
 	n_out = isl_multi_aff_dim(ma, isl_dim_out);
-	if (isl_multi_aff_dim(ma, isl_dim_in) == 0 && n_out != 0)
+	if (isl_multi_aff_dim(ma, isl_dim_in) == 0)
 		return mupa_apply_multi_aff_0D(mupa, ma);
 
 	space1 = isl_space_range(isl_multi_aff_get_space(ma));
@@ -8936,18 +9108,18 @@ error:
 /* Apply "pa" to "mupa", in the special case where "mupa" is 0D.
  * The space of "mupa" is known to be compatible with the domain of "pa".
  *
- * The result cannot be computed because a 0D isl_multi_union_pw_aff
- * does not carry any domain information.
+ * Construct an isl_multi_union_pw_aff that is equal to "pa"
+ * on the domain of "mupa".
  */
 static __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_pw_aff_0D(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_pw_aff *pa)
 {
-	isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
-		"cannot determine domains", goto error);
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	isl_pw_aff_free(pa);
-	return NULL;
+	isl_union_set *dom;
+
+	dom = isl_multi_union_pw_aff_domain(mupa);
+	pa = isl_pw_aff_project_domain_on_params(pa);
+
+	return isl_union_pw_aff_pw_aff_on_domain(dom, pa);
 }
 
 /* Apply "pa" to "mupa".  The space of "mupa" needs to be compatible
@@ -9012,27 +9184,23 @@ error:
 /* Apply "pma" to "mupa", in the special case where "mupa" is 0D.
  * The space of "mupa" is known to be compatible with the domain of "pma".
  *
- * This function is currently only called when the number of output
- * dimensions of "pma" is greater than zero, in which case no result
- * can be computed because a 0D isl_multi_union_pw_aff
- * does not carry any domain information.
+ * Construct an isl_multi_union_pw_aff that is equal to "pma"
+ * on the domain of "mupa".
  */
 static __isl_give isl_multi_union_pw_aff *mupa_apply_pw_multi_aff_0D(
 	__isl_take isl_multi_union_pw_aff *mupa,
 	__isl_take isl_pw_multi_aff *pma)
 {
-	isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-		"cannot determine domains", goto error);
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	isl_pw_multi_aff_free(pma);
-	return NULL;
+	isl_union_set *dom;
+
+	dom = isl_multi_union_pw_aff_domain(mupa);
+	pma = isl_pw_multi_aff_project_domain_on_params(pma);
+
+	return isl_multi_union_pw_aff_pw_multi_aff_on_domain(dom, pma);
 }
 
 /* Apply "pma" to "mupa".  The space of "mupa" needs to be compatible
  * with the domain of "pma".
- * Furthermore, the dimension of this space needs to be greater than zero,
- * unless the dimension of the target space of "pma" is also zero.
  * The result is defined over the shared domain of the elements of "mupa"
  */
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_pw_multi_aff(
@@ -9062,7 +9230,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_pw_multi_aff(
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
 			"spaces don't match", goto error);
 	n_out = isl_pw_multi_aff_dim(pma, isl_dim_out);
-	if (isl_pw_multi_aff_dim(pma, isl_dim_in) == 0 && n_out != 0)
+	if (isl_pw_multi_aff_dim(pma, isl_dim_in) == 0)
 		return mupa_apply_pw_multi_aff_0D(mupa, pma);
 
 	space1 = isl_space_range(isl_pw_multi_aff_get_space(pma));
@@ -9087,11 +9255,47 @@ error:
 	return NULL;
 }
 
+/* Replace the explicit domain of "mupa" by its preimage under "upma".
+ * If the explicit domain only keeps track of constraints on the parameters,
+ * then only update those constraints.
+ */
+static __isl_give isl_multi_union_pw_aff *preimage_explicit_domain(
+	__isl_take isl_multi_union_pw_aff *mupa,
+	__isl_keep isl_union_pw_multi_aff *upma)
+{
+	isl_bool is_params;
+
+	if (isl_multi_union_pw_aff_check_has_explicit_domain(mupa) < 0)
+		return isl_multi_union_pw_aff_free(mupa);
+
+	mupa = isl_multi_union_pw_aff_cow(mupa);
+	if (!mupa)
+		return NULL;
+
+	is_params = isl_union_set_is_params(mupa->u.dom);
+	if (is_params < 0)
+		return isl_multi_union_pw_aff_free(mupa);
+
+	upma = isl_union_pw_multi_aff_copy(upma);
+	if (is_params)
+		mupa->u.dom = isl_union_set_intersect_params(mupa->u.dom,
+		    isl_union_set_params(isl_union_pw_multi_aff_domain(upma)));
+	else
+		mupa->u.dom = isl_union_set_preimage_union_pw_multi_aff(
+							    mupa->u.dom, upma);
+	if (!mupa->u.dom)
+		return isl_multi_union_pw_aff_free(mupa);
+	return mupa;
+}
+
 /* Compute the pullback of "mupa" by the function represented by "upma".
  * In other words, plug in "upma" in "mupa".  The result contains
  * expressions defined over the domain space of "upma".
  *
  * Run over all elements of "mupa" and plug in "upma" in each of them.
+ *
+ * If "mupa" has an explicit domain, then it is this domain
+ * that needs to undergo a pullback instead, i.e., a preimage.
  */
 __isl_give isl_multi_union_pw_aff *
 isl_multi_union_pw_aff_pullback_union_pw_multi_aff(
@@ -9104,6 +9308,7 @@ isl_multi_union_pw_aff_pullback_union_pw_multi_aff(
 				    isl_union_pw_multi_aff_get_space(upma));
 	upma = isl_union_pw_multi_aff_align_params(upma,
 				    isl_multi_union_pw_aff_get_space(mupa));
+	mupa = isl_multi_union_pw_aff_cow(mupa);
 	if (!mupa || !upma)
 		goto error;
 
@@ -9116,6 +9321,9 @@ isl_multi_union_pw_aff_pullback_union_pw_multi_aff(
 					    isl_union_pw_multi_aff_copy(upma));
 		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
 	}
+
+	if (isl_multi_union_pw_aff_has_explicit_domain(mupa))
+		mupa = preimage_explicit_domain(mupa, upma);
 
 	isl_union_pw_multi_aff_free(upma);
 	return mupa;

@@ -159,8 +159,13 @@ __isl_give isl_basic_set *isl_aff_pos_basic_set(__isl_take isl_aff *aff);
 
 #undef BASE
 #define BASE pw_aff
+#undef DOMBASE
+#define DOMBASE set
+#define EXPLICIT_DOMAIN
 
 #include <isl_multi_templ.h>
+
+#undef EXPLICIT_DOMAIN
 
 #undef EL
 #define EL isl_union_pw_aff
@@ -169,8 +174,13 @@ __isl_give isl_basic_set *isl_aff_pos_basic_set(__isl_take isl_aff *aff);
 
 #undef BASE
 #define BASE union_pw_aff
+#undef DOMBASE
+#define DOMBASE union_set
+#define EXPLICIT_DOMAIN
 
 #include <isl_multi_templ.h>
+
+#undef EXPLICIT_DOMAIN
 
 #undef EL
 #define EL isl_union_pw_multi_aff

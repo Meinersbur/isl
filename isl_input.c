@@ -3723,6 +3723,9 @@ __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
  * The input format is similar to that of map, except that any conditions
  * on the domains should be specified inside the tuple since each
  * piecewise affine expression may have a different domain.
+ * However, additional, shared conditions can also be specified.
+ * This is especially useful for setting the explicit domain
+ * of a zero-dimensional isl_multi_pw_aff.
  *
  * Since we do not know in advance if the isl_multi_pw_aff lives
  * in a set or a map space, we first read the first tuple and check
@@ -3764,6 +3767,9 @@ __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 		if (!tuple)
 			goto error;
 	}
+
+	if (isl_stream_eat_if_available(s, ':'))
+		dom = read_formula(s, v, dom, 0);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
@@ -3970,8 +3976,9 @@ static int next_is_param_tuple(__isl_keep isl_stream *s)
 	return is_tuple;
 }
 
-/* Read the body of an isl_multi_union_pw_aff from "s",
- * i.e., everything except the parameter specification.
+/* Read the core of a body of an isl_multi_union_pw_aff from "s",
+ * i.e., everything except the parameter specification and
+ * without shared domain constraints.
  * "v" contains a description of the identifiers parsed so far.
  * The parameters, if any, are specified by "space".
  *
@@ -3983,7 +3990,7 @@ static int next_is_param_tuple(__isl_keep isl_stream *s)
  * elements in a list and construct the result from the tuple space and
  * the list.
  */
-static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_body(
+static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_body_core(
 	__isl_keep isl_stream *s, struct vars *v, __isl_take isl_space *space)
 {
 	isl_union_pw_aff_list *list;
@@ -3997,6 +4004,78 @@ static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_body(
 	return mupa;
 }
 
+/* Read the body of an isl_union_set from "s",
+ * i.e., everything except the parameter specification.
+ * "v" contains a description of the identifiers parsed so far.
+ * The parameters, if any, are specified by "space".
+ *
+ * First read a generic disjunction of object bodies and then try and extract
+ * an isl_union_set from that.
+ */
+static __isl_give isl_union_set *read_union_set_body(__isl_keep isl_stream *s,
+	struct vars *v, __isl_take isl_space *space)
+{
+	struct isl_obj obj = { isl_obj_set, NULL };
+	isl_map *map;
+
+	map = isl_set_universe(space);
+	if (isl_stream_eat(s, '{') < 0)
+		goto error;
+	obj = obj_read_disjuncts(s, v, map);
+	if (isl_stream_eat(s, '}') < 0)
+		goto error;
+	isl_map_free(map);
+
+	return extract_union_set(s->ctx, obj);
+error:
+	obj.type->free(obj.v);
+	isl_map_free(map);
+	return NULL;
+}
+
+/* Read the body of an isl_multi_union_pw_aff from "s",
+ * i.e., everything except the parameter specification.
+ * "v" contains a description of the identifiers parsed so far.
+ * The parameters, if any, are specified by "space".
+ *
+ * In particular, handle the special case with shared domain constraints.
+ * These are specified as
+ *
+ *	([...] : ...)
+ *
+ * and are especially useful for setting the explicit domain
+ * of a zero-dimensional isl_multi_union_pw_aff.
+ * The core isl_multi_union_pw_aff body ([...]) is read by
+ * read_multi_union_pw_aff_body_core.
+ */
+static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_body(
+	__isl_keep isl_stream *s, struct vars *v, __isl_take isl_space *space)
+{
+	isl_multi_union_pw_aff *mupa;
+
+	if (!isl_stream_next_token_is(s, '('))
+		return read_multi_union_pw_aff_body_core(s, v, space);
+
+	if (isl_stream_eat(s, '(') < 0)
+		goto error;
+	mupa = read_multi_union_pw_aff_body_core(s, v, isl_space_copy(space));
+	if (isl_stream_eat_if_available(s, ':')) {
+		isl_union_set *dom;
+
+		dom = read_union_set_body(s, v, space);
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa, dom);
+	} else {
+		isl_space_free(space);
+	}
+	if (isl_stream_eat(s, ')') < 0)
+		return isl_multi_union_pw_aff_free(mupa);
+
+	return mupa;
+error:
+	isl_space_free(space);
+	return NULL;
+}
+
 /* Read an isl_multi_union_pw_aff from "s".
  *
  * The input has the form
@@ -4007,11 +4086,22 @@ static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_body(
  *
  *	[..] -> [{ [..] : ... ; [..] : ... }, { [..] : ... ; [..] : ... }]
  *
+ * Additionally, a shared domain may be specified as
+ *
+ *	([..] : ...)
+ *
+ * or
+ *
+ *	[..] -> ([..] : ...)
+ *
+ * The first case is handled by the caller, the second case
+ * is handled by read_multi_union_pw_aff_body.
+ *
  * We first check for the special case of an empty tuple "[]".
  * Then we check if there are any parameters.
  * Finally, read the tuple and construct the result.
  */
-__isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
+static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_core(
 	__isl_keep isl_stream *s)
 {
 	struct vars *v;
@@ -4050,6 +4140,40 @@ error:
 	isl_set_free(dom);
 	isl_multi_union_pw_aff_free(mupa);
 	return NULL;
+}
+
+/* Read an isl_multi_union_pw_aff from "s".
+ *
+ * In particular, handle the special case with shared domain constraints.
+ * These are specified as
+ *
+ *	([...] : ...)
+ *
+ * and are especially useful for setting the explicit domain
+ * of a zero-dimensional isl_multi_union_pw_aff.
+ * The core isl_multi_union_pw_aff ([...]) is read by
+ * read_multi_union_pw_aff_core.
+ */
+__isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
+	__isl_keep isl_stream *s)
+{
+	isl_multi_union_pw_aff *mupa;
+
+	if (!isl_stream_next_token_is(s, '('))
+		return read_multi_union_pw_aff_core(s);
+
+	if (isl_stream_eat(s, '(') < 0)
+		return NULL;
+	mupa = read_multi_union_pw_aff_core(s);
+	if (isl_stream_eat_if_available(s, ':')) {
+		isl_union_set *dom;
+
+		dom = isl_stream_read_union_set(s);
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa, dom);
+	}
+	if (isl_stream_eat(s, ')') < 0)
+		return isl_multi_union_pw_aff_free(mupa);
+	return mupa;
 }
 
 /* Read an isl_multi_union_pw_aff from "str".

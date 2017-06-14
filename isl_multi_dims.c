@@ -23,7 +23,7 @@ isl_bool FN(MULTI(BASE),involves_dims)(__isl_keep MULTI(BASE) *multi,
 
 	if (!multi)
 		return isl_bool_error;
-	if (multi->n == 0 || n == 0)
+	if (n == 0)
 		return isl_bool_false;
 
 	for (i = 0; i < multi->n; ++i) {
@@ -33,6 +33,10 @@ isl_bool FN(MULTI(BASE),involves_dims)(__isl_keep MULTI(BASE) *multi,
 		if (involves < 0 || involves)
 			return involves;
 	}
+
+	if (FN(MULTI(BASE),has_explicit_domain)(multi))
+		return FN(MULTI(BASE),involves_explicit_domain_dims)(multi,
+								type, first, n);
 
 	return isl_bool_false;
 }
@@ -59,6 +63,11 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	multi->space = isl_space_insert_dims(multi->space, type, first, n);
 	if (!multi->space)
 		return FN(MULTI(BASE),free)(multi);
+	if (FN(MULTI(BASE),has_explicit_domain)(multi))
+		multi = FN(MULTI(BASE),insert_explicit_domain_dims)(multi,
+								type, first, n);
+	if (!multi)
+		return NULL;
 
 	for (i = 0; i < multi->n; ++i) {
 		multi->u.p[i] = FN(EL,insert_dims)(multi->u.p[i],

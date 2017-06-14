@@ -13399,18 +13399,26 @@ __isl_give isl_map *isl_map_preimage_range_pw_multi_aff(
  * We create a separate isl_multi_aff to effectuate this change
  * in order to avoid spurious splitting of the map along the pieces
  * of "mpa".
+ * If "mpa" has a non-trivial explicit domain, however,
+ * then the full substitution should be performed.
  */
 __isl_give isl_map *isl_map_preimage_multi_pw_aff(__isl_take isl_map *map,
 	enum isl_dim_type type, __isl_take isl_multi_pw_aff *mpa)
 {
 	int n;
+	isl_bool full;
 	isl_pw_multi_aff *pma;
 
 	if (!map || !mpa)
 		goto error;
 
 	n = isl_map_dim(map, type);
-	if (!isl_map_involves_dims(map, type, 0, n)) {
+	full = isl_map_involves_dims(map, type, 0, n);
+	if (full >= 0 && !full)
+		full = isl_multi_pw_aff_has_non_trivial_domain(mpa);
+	if (full < 0)
+		goto error;
+	if (!full) {
 		isl_space *space;
 		isl_multi_aff *ma;
 

@@ -344,8 +344,15 @@ EXTRA_DIST = \
 	isl_map_lexopt_templ.c \
 	isl_maybe_map.h \
 	isl_multi_macro.h \
+	isl_multi_explicit_domain.c \
+	isl_multi_pw_aff_explicit_domain.c \
+	isl_multi_union_pw_aff_explicit_domain.c \
+	isl_multi_no_explicit_domain.c \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
+	isl_multi_align_templ.c \
+	isl_multi_align_set.c \
+	isl_multi_align_union_set.c \
 	isl_multi_apply_templ.c \
 	isl_multi_apply_set.c \
 	isl_multi_apply_union_set.c \
