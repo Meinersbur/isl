@@ -5503,6 +5503,23 @@ __isl_give isl_basic_set *isl_basic_set_reset_space(
 							dim));
 }
 
+/* Check that the total dimensions of "map" and "space" are the same.
+ */
+static isl_stat check_map_space_equal_total_dim(__isl_keep isl_map *map,
+	__isl_keep isl_space *space)
+{
+	unsigned dim1, dim2;
+
+	if (!map || !space)
+		return isl_stat_error;
+	dim1 = isl_map_dim(map, isl_dim_all);
+	dim2 = isl_space_dim(space, isl_dim_all);
+	if (dim1 == dim2)
+		return isl_stat_ok;
+	isl_die(isl_map_get_ctx(map), isl_error_invalid,
+		"total dimensions do not match", return isl_stat_error);
+}
+
 __isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
 	__isl_take isl_space *dim)
 {
@@ -5525,6 +5542,37 @@ __isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
 error:
 	isl_map_free(map);
 	isl_space_free(dim);
+	return NULL;
+}
+
+/* Replace the space of "map" by "space", without modifying
+ * the dimension of "map".
+ *
+ * If the space of "map" is identical to "space" (including the identifiers
+ * of the input and output dimensions), then simply return the original input.
+ */
+__isl_give isl_map *isl_map_reset_equal_dim_space(__isl_take isl_map *map,
+	__isl_take isl_space *space)
+{
+	isl_bool equal;
+	isl_space *map_space;
+
+	map_space = isl_map_peek_space(map);
+	equal = isl_space_is_equal(map_space, space);
+	if (equal >= 0 && equal)
+		equal = isl_space_has_equal_ids(map_space, space);
+	if (equal < 0)
+		goto error;
+	if (equal) {
+		isl_space_free(space);
+		return map;
+	}
+	if (check_map_space_equal_total_dim(map, space) < 0)
+		goto error;
+	return isl_map_reset_space(map, space);
+error:
+	isl_map_free(map);
+	isl_space_free(space);
 	return NULL;
 }
 

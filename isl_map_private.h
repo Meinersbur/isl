@@ -176,6 +176,8 @@ __isl_give isl_basic_map *isl_basic_map_reset_space(
 	__isl_take isl_basic_map *bmap, __isl_take isl_space *dim);
 __isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
 	__isl_take isl_space *dim);
+__isl_give isl_map *isl_map_reset_equal_dim_space(__isl_take isl_map *map,
+	__isl_take isl_space *space);
 
 unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
 					enum isl_dim_type type);
