@@ -3783,6 +3783,85 @@ __isl_give isl_union_map *isl_union_map_reset_range_space(
 	return data.res;
 }
 
+/* Check that "umap" and "space" have the same number of parameters.
+ */
+static isl_stat check_union_map_space_equal_dim(__isl_keep isl_union_map *umap,
+	__isl_keep isl_space *space)
+{
+	unsigned dim1, dim2;
+
+	if (!umap || !space)
+		return isl_stat_error;
+	dim1 = isl_union_map_dim(umap, isl_dim_param);
+	dim2 = isl_space_dim(space, isl_dim_param);
+	if (dim1 == dim2)
+		return isl_stat_ok;
+	isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
+		"number of parameters does not match", return isl_stat_error);
+}
+
+/* Internal data structure for isl_union_map_reset_equal_dim_space.
+ * "space" is the target space.
+ * "res" collects the results.
+ */
+struct isl_union_map_reset_params_data {
+	isl_space *space;
+	isl_union_map *res;
+};
+
+/* Replace the parameters of "map" by those of data->space and
+ * add the result to data->res.
+ */
+static isl_stat reset_params(__isl_take isl_map *map, void *user)
+{
+	struct isl_union_map_reset_params_data *data = user;
+	isl_space *space;
+
+	space = isl_map_get_space(map);
+	space = isl_space_replace_params(space, data->space);
+	map = isl_map_reset_equal_dim_space(map, space);
+	data->res = isl_union_map_add_map(data->res, map);
+
+	return data->res ? isl_stat_ok : isl_stat_error;
+}
+
+/* Replace the space of "umap" by "space", without modifying
+ * the dimension of "umap", i.e., the number of parameters of "umap".
+ *
+ * Since the hash values of the maps in the union map depend
+ * on the parameters, a new union map needs to be constructed.
+ */
+__isl_give isl_union_map *isl_union_map_reset_equal_dim_space(
+	__isl_take isl_union_map *umap, __isl_take isl_space *space)
+{
+	struct isl_union_map_reset_params_data data = { space };
+	isl_bool equal;
+	isl_space *umap_space;
+
+	umap_space = isl_union_map_peek_space(umap);
+	equal = isl_space_is_equal(umap_space, space);
+	if (equal < 0)
+		goto error;
+	if (equal) {
+		isl_space_free(space);
+		return umap;
+	}
+	if (check_union_map_space_equal_dim(umap, space) < 0)
+		goto error;
+
+	data.res = isl_union_map_empty(isl_space_copy(space));
+	if (isl_union_map_foreach_map(umap, &reset_params, &data) < 0)
+		data.res = isl_union_map_free(data.res);
+
+	isl_space_free(space);
+	isl_union_map_free(umap);
+	return data.res;
+error:
+	isl_union_map_free(umap);
+	isl_space_free(space);
+	return NULL;
+}
+
 /* Internal data structure for isl_union_map_order_at_multi_union_pw_aff.
  * "mupa" is the function from which the isl_multi_pw_affs are extracted.
  * "order" is applied to the extracted isl_multi_pw_affs that correspond
