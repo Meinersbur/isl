@@ -1014,6 +1014,27 @@ error:
 }
 #endif
 
+/* Check that "multi1" and "multi2" live in the same space,
+ * reporting an error if they do not.
+ */
+static isl_stat FN(MULTI(BASE),check_equal_space)(
+	__isl_keep MULTI(BASE) *multi1, __isl_keep MULTI(BASE) *multi2)
+{
+	isl_bool equal;
+
+	if (!multi1 || !multi2)
+		return isl_stat_error;
+
+	equal = isl_space_is_equal(multi1->space, multi2->space);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi1), isl_error_invalid,
+			"spaces don't match", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* This function is currently only used from isl_aff.c
  */
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
@@ -1029,16 +1050,10 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
 	__isl_give EL *(*fn)(__isl_take EL *, __isl_take EL *))
 {
 	int i;
-	isl_ctx *ctx;
 
 	multi1 = FN(MULTI(BASE),cow)(multi1);
-	if (!multi1 || !multi2)
+	if (FN(MULTI(BASE),check_equal_space)(multi1, multi2) < 0)
 		goto error;
-
-	ctx = FN(MULTI(BASE),get_ctx)(multi1);
-	if (!isl_space_is_equal(multi1->space, multi2->space))
-		isl_die(ctx, isl_error_invalid,
-			"spaces don't match", goto error);
 
 	for (i = 0; i < multi1->n; ++i) {
 		multi1->u.p[i] = fn(multi1->u.p[i],
