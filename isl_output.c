@@ -35,6 +35,7 @@
 
 #include <bset_to_bmap.c>
 #include <set_to_map.c>
+#include <uset_to_umap.c>
 
 static const char *s_to[2] = { " -> ", " \\to " };
 static const char *s_and[2] = { " and ", " \\wedge " };
@@ -1634,9 +1635,9 @@ __isl_give isl_printer *isl_printer_print_union_set(__isl_take isl_printer *p,
 		goto error;
 
 	if (p->output_format == ISL_FORMAT_ISL)
-		return isl_union_map_print_isl((isl_union_map *)uset, p);
+		return isl_union_map_print_isl(uset_to_umap(uset), p);
 	if (p->output_format == ISL_FORMAT_LATEX)
-		return isl_union_map_print_latex((isl_union_map *)uset, p);
+		return isl_union_map_print_latex(uset_to_umap(uset), p);
 
 	isl_die(p->ctx, isl_error_invalid,
 		"invalid output format for isl_union_set", goto error);
