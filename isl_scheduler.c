@@ -2503,11 +2503,13 @@ static isl_stat node_add_coefficient_constraints(isl_ctx *ctx,
 			goto error;
 		isl_seq_cpy(graph->lp->ineq[k], ineq->el, 1 + total);
 
-		isl_seq_neg(ineq->el + pos, ineq->el + pos + 2 * i, 2);
+		isl_seq_neg(ineq->el + pos, ineq->el + pos, 2);
 		k = isl_basic_set_alloc_inequality(graph->lp);
 		if (k < 0)
 			goto error;
 		isl_seq_cpy(graph->lp->ineq[k], ineq->el, 1 + total);
+
+		isl_seq_clr(ineq->el + pos, 2);
 	}
 	isl_vec_free(ineq);
 
