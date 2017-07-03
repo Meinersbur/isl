@@ -7778,8 +7778,8 @@ __isl_give isl_map *isl_map_union(__isl_take isl_map *map1,
 	return isl_map_align_params_map_map_and(map1, map2, &map_union_aligned);
 }
 
-struct isl_set *isl_set_union_disjoint(
-			struct isl_set *set1, struct isl_set *set2)
+__isl_give isl_set *isl_set_union_disjoint(
+	__isl_take isl_set *set1, __isl_take isl_set *set2)
 {
 	return set_from_map(isl_map_union_disjoint(set_to_map(set1),
 						    set_to_map(set2)));
