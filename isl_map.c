@@ -5355,8 +5355,8 @@ __isl_give isl_basic_set_list *isl_basic_map_list_underlying_set(
 	return list;
 }
 
-struct isl_basic_map *isl_basic_map_overlying_set(
-	struct isl_basic_set *bset, struct isl_basic_map *like)
+__isl_give isl_basic_map *isl_basic_map_overlying_set(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_map *like)
 {
 	struct isl_basic_map *bmap;
 	struct isl_ctx *ctx;
