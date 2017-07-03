@@ -7599,7 +7599,7 @@ __isl_give isl_map *isl_map_compute_divs(__isl_take isl_map *map)
 	return res;
 }
 
-struct isl_set *isl_basic_set_compute_divs(struct isl_basic_set *bset)
+__isl_give isl_set *isl_basic_set_compute_divs(__isl_take isl_basic_set *bset)
 {
 	return set_from_map(isl_basic_map_compute_divs(bset_to_bmap(bset)));
 }
