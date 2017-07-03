@@ -308,7 +308,7 @@ __isl_give isl_basic_set *isl_basic_set_underlying_set(
 		__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set_list *isl_basic_map_list_underlying_set(
 	__isl_take isl_basic_map_list *list);
-struct isl_set *isl_map_underlying_set(struct isl_map *map);
+__isl_give isl_set *isl_map_underlying_set(__isl_take isl_map *map);
 struct isl_basic_map *isl_basic_map_overlying_set(struct isl_basic_set *bset,
 	struct isl_basic_map *like);
 __isl_give isl_basic_map *isl_basic_map_drop_constraint_involving_unknown_divs(

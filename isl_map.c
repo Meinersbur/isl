@@ -5425,7 +5425,7 @@ struct isl_basic_set *isl_basic_set_from_underlying_set(
 							bset_to_bmap(like)));
 }
 
-struct isl_set *isl_map_underlying_set(struct isl_map *map)
+__isl_give isl_set *isl_map_underlying_set(__isl_take isl_map *map)
 {
 	int i;
 
