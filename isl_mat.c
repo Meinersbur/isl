@@ -203,7 +203,7 @@ __isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat)
 	return mat;
 }
 
-struct isl_mat *isl_mat_dup(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_dup(__isl_keep isl_mat *mat)
 {
 	int i;
 	struct isl_mat *mat2;
