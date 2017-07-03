@@ -2173,8 +2173,8 @@ static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
  * the div array too as the number of rows in this array is assumed
  * to be equal to extra.
  */
-struct isl_basic_set *isl_basic_set_drop_dims(
-		struct isl_basic_set *bset, unsigned first, unsigned n)
+__isl_give isl_basic_set *isl_basic_set_drop_dims(
+	__isl_take isl_basic_set *bset, unsigned first, unsigned n)
 {
 	return isl_basic_map_drop(bset_to_bmap(bset), isl_dim_set, first, n);
 }
