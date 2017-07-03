@@ -5300,8 +5300,8 @@ int isl_basic_map_add_div_constraint(__isl_keep isl_basic_map *bmap,
 		return add_lower_div_constraint(bmap, div_pos, bmap->div[div]);
 }
 
-struct isl_basic_set *isl_basic_map_underlying_set(
-		struct isl_basic_map *bmap)
+__isl_give isl_basic_set *isl_basic_map_underlying_set(
+	__isl_take isl_basic_map *bmap)
 {
 	if (!bmap)
 		goto error;

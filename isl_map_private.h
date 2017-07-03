@@ -302,7 +302,8 @@ __isl_give isl_basic_set *isl_basic_set_normalize_constraints(
 	__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_implicit_equalities(
 	__isl_take isl_basic_map *bmap);
-struct isl_basic_set *isl_basic_map_underlying_set(struct isl_basic_map *bmap);
+__isl_give isl_basic_set *isl_basic_map_underlying_set(
+	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_set_underlying_set(
 		__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set_list *isl_basic_map_list_underlying_set(
