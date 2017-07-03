@@ -337,7 +337,7 @@ __isl_give isl_basic_set *isl_basic_set_eliminate(
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_set *isl_set_eliminate(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
-struct isl_set *isl_set_eliminate_dims(struct isl_set *set,
+__isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 		unsigned first, unsigned n);
 __isl_give isl_set *isl_set_remove_dims(__isl_take isl_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);
