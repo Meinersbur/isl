@@ -264,7 +264,8 @@ __isl_give isl_set *isl_basic_set_list_union(
 
 __isl_give isl_basic_map *isl_basic_map_set_to_empty(
 	__isl_take isl_basic_map *bmap);
-struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset);
+__isl_give isl_basic_set *isl_basic_set_set_to_empty(
+	__isl_take isl_basic_set *bset);
 struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset);
 void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b);
 void isl_basic_set_swap_div(struct isl_basic_set *bset, int a, int b);

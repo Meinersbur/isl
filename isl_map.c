@@ -2050,7 +2050,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_set_to_empty(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_set_to_empty(
+	__isl_take isl_basic_set *bset)
 {
 	return bset_from_bmap(isl_basic_map_set_to_empty(bset_to_bmap(bset)));
 }
