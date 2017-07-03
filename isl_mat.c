@@ -1284,8 +1284,8 @@ static int preimage(struct isl_ctx *ctx, isl_int **q, unsigned n,
  * the div array too as the number of rows in this array is assumed
  * to be equal to extra.
  */
-struct isl_basic_set *isl_basic_set_preimage(struct isl_basic_set *bset,
-	struct isl_mat *mat)
+__isl_give isl_basic_set *isl_basic_set_preimage(
+	__isl_take isl_basic_set *bset, __isl_take isl_mat *mat)
 {
 	struct isl_ctx *ctx;
 
