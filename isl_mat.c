@@ -1340,7 +1340,8 @@ error2:
 	return NULL;
 }
 
-struct isl_set *isl_set_preimage(struct isl_set *set, struct isl_mat *mat)
+__isl_give isl_set *isl_set_preimage(
+	__isl_take isl_set *set, __isl_take isl_mat *mat)
 {
 	int i;
 
