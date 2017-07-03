@@ -75,7 +75,7 @@ __isl_give isl_mat *isl_mat_normalize_row(__isl_take isl_mat *mat, int row);
 
 __isl_give isl_mat *isl_mat_drop_cols(__isl_take isl_mat *mat,
 	unsigned col, unsigned n);
-struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat,
+__isl_give isl_mat *isl_mat_drop_rows(__isl_take isl_mat *mat,
 				unsigned row, unsigned n);
 __isl_give isl_mat *isl_mat_insert_cols(__isl_take isl_mat *mat,
 				unsigned col, unsigned n);
