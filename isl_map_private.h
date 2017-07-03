@@ -284,8 +284,8 @@ __isl_give isl_basic_map *isl_basic_map_sort_divs(
 __isl_give isl_map *isl_map_sort_divs(__isl_take isl_map *map);
 __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 	int *progress);
-struct isl_basic_set *isl_basic_set_gauss(
-	struct isl_basic_set *bset, int *progress);
+__isl_give isl_basic_set *isl_basic_set_gauss(
+	__isl_take isl_basic_set *bset, int *progress);
 int isl_basic_map_constraint_cmp(__isl_keep isl_basic_map *bmap,
 	isl_int *c1, isl_int *c2);
 __isl_give isl_basic_map *isl_basic_map_sort_constraints(

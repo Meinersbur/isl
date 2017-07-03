@@ -594,8 +594,8 @@ __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_gauss(
-	struct isl_basic_set *bset, int *progress)
+__isl_give isl_basic_set *isl_basic_set_gauss(
+	__isl_take isl_basic_set *bset, int *progress)
 {
 	return bset_from_bmap(isl_basic_map_gauss(bset_to_bmap(bset),
 							progress));
