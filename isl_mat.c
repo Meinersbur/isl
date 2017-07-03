@@ -218,7 +218,7 @@ struct isl_mat *isl_mat_dup(struct isl_mat *mat)
 	return mat2;
 }
 
-struct isl_mat *isl_mat_cow(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_cow(__isl_take isl_mat *mat)
 {
 	struct isl_mat *mat2;
 	if (!mat)
