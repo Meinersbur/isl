@@ -1853,7 +1853,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_extend_space(struct isl_basic_set *base,
+__isl_give isl_basic_set *isl_basic_set_extend_space(
+	__isl_take isl_basic_set *base,
 		__isl_take isl_space *dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
 {
