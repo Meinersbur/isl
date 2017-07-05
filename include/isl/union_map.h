@@ -309,9 +309,11 @@ __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset);
 
 __isl_export
 __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_union_map *isl_union_map_curry(__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_range_curry(
 	__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_union_map *isl_union_map_uncurry(__isl_take isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_align_params(
