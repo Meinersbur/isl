@@ -246,9 +246,18 @@ __isl_null LIST(EL) *FN(LIST(EL),free)(__isl_take LIST(EL) *list)
 	return NULL;
 }
 
-int FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)
+/* Return the number of elements in "list".
+ */
+int FN(LIST(EL),size)(__isl_keep LIST(EL) *list)
 {
 	return list ? list->n : 0;
+}
+
+/* This is an alternative name for the function above.
+ */
+int FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)
+{
+	return FN(LIST(EL),size)(list);
 }
 
 /* Return the element at position "index" in "list".
