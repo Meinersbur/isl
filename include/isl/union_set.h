@@ -16,7 +16,7 @@ __isl_give isl_union_set *isl_union_set_from_basic_set(
 	__isl_take isl_basic_set *bset);
 __isl_constructor
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set);
-__isl_give isl_union_set *isl_union_set_empty(__isl_take isl_space *dim);
+__isl_give isl_union_set *isl_union_set_empty(__isl_take isl_space *space);
 __isl_give isl_union_set *isl_union_set_copy(__isl_keep isl_union_set *uset);
 __isl_null isl_union_set *isl_union_set_free(__isl_take isl_union_set *uset);
 
