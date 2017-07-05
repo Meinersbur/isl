@@ -169,6 +169,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	print_copy_assignment_decl(os, clazz);
 	print_destructor_decl(os, clazz);
 	print_ptr_decl(os, clazz);
+	print_get_ctx_decl(os);
 	osprintf(os, "\n");
 	print_methods_decl(os, clazz);
 
@@ -361,6 +362,13 @@ void cpp_generator::print_ptr_decl(ostream &os, const isl_class &clazz)
 	osprintf(os, "  inline bool is_null() const;\n");
 }
 
+/* Print the declaration of the get_ctx method.
+ */
+void cpp_generator::print_get_ctx_decl(ostream &os)
+{
+	osprintf(os, "  inline isl::ctx get_ctx() const;\n");
+}
+
 /* Print declarations for methods in class "clazz" to "os".
  */
 void cpp_generator::print_methods_decl(ostream &os, const isl_class &clazz)
@@ -425,6 +433,8 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_destructor_impl(os, clazz);
 	osprintf(os, "\n");
 	print_ptr_impl(os, clazz);
+	osprintf(os, "\n");
+	print_get_ctx_impl(os, clazz);
 	osprintf(os, "\n");
 	print_methods_impl(os, clazz);
 }
@@ -544,6 +554,19 @@ void cpp_generator::print_ptr_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "}\n\n");
 	osprintf(os, "bool %s::is_null() const {\n", cppname);
 	osprintf(os, "  return ptr == nullptr;\n");
+	osprintf(os, "}\n");
+}
+
+/* Print the implementation of the get_ctx method.
+ */
+void cpp_generator::print_get_ctx_impl(ostream &os, const isl_class &clazz)
+{
+	const char *name = clazz.name.c_str();
+	std::string cppstring = type2cpp(clazz);
+	const char *cppname = cppstring.c_str();
+
+	osprintf(os, "isl::ctx %s::get_ctx() const {\n", cppname);
+	osprintf(os, "  return isl::ctx(%s_get_ctx(ptr));\n", name);
 	osprintf(os, "}\n");
 }
 
