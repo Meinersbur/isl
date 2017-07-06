@@ -50,23 +50,18 @@
 static void osprintf(ostream &os, const char *format, ...)
 {
 	va_list arguments;
-	FILE *string_stream;
 	char *string_pointer;
 	size_t size;
 
 	va_start(arguments, format);
-
-	string_stream = open_memstream(&string_pointer, &size);
-
-	if (!string_stream) {
-		fprintf(stderr, "open_memstream failed -- aborting!\n");
-		exit(1);
-	}
-
-	vfprintf(string_stream, format, arguments);
-	fclose(string_stream);
+	size = vsnprintf(NULL, 0, format, arguments);
+	string_pointer = new char[size + 1];
+	va_end(arguments);
+	va_start(arguments, format);
+	vsnprintf(string_pointer, size + 1, format, arguments);
+	va_end(arguments);
 	os << string_pointer;
-	free(string_pointer);
+	delete[] string_pointer;
 }
 
 /* Convert "l" to a string.
