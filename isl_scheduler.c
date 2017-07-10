@@ -691,6 +691,29 @@ static isl_stat graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
+/* Free the memory associated to node "node" in "graph".
+ * The "coincident" field is shared by nodes in a graph and its subgraph.
+ * It therefore only needs to be freed for the original dependence graph,
+ * i.e., one that is not the result of splitting.
+ */
+static void clear_node(struct isl_sched_graph *graph,
+	struct isl_sched_node *node)
+{
+	isl_space_free(node->space);
+	isl_set_free(node->hull);
+	isl_multi_aff_free(node->compress);
+	isl_multi_aff_free(node->decompress);
+	isl_mat_free(node->sched);
+	isl_map_free(node->sched_map);
+	isl_mat_free(node->indep);
+	isl_mat_free(node->vmap);
+	if (graph->root == graph)
+		free(node->coincident);
+	isl_multi_val_free(node->sizes);
+	isl_basic_set_free(node->bounds);
+	isl_vec_free(node->max);
+}
+
 static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
@@ -700,21 +723,8 @@ static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 	isl_map_to_basic_set_free(graph->inter_hmap);
 
 	if (graph->node)
-		for (i = 0; i < graph->n; ++i) {
-			isl_space_free(graph->node[i].space);
-			isl_set_free(graph->node[i].hull);
-			isl_multi_aff_free(graph->node[i].compress);
-			isl_multi_aff_free(graph->node[i].decompress);
-			isl_mat_free(graph->node[i].sched);
-			isl_map_free(graph->node[i].sched_map);
-			isl_mat_free(graph->node[i].indep);
-			isl_mat_free(graph->node[i].vmap);
-			if (graph->root == graph)
-				free(graph->node[i].coincident);
-			isl_multi_val_free(graph->node[i].sizes);
-			isl_basic_set_free(graph->node[i].bounds);
-			isl_vec_free(graph->node[i].max);
-		}
+		for (i = 0; i < graph->n; ++i)
+			clear_node(graph, &graph->node[i]);
 	free(graph->node);
 	free(graph->sorted);
 	if (graph->edge)
