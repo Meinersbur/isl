@@ -1,11 +1,14 @@
 /*
  * Copyright 2008-2009 Katholieke Universiteit Leuven
+ * Copyright 2010      INRIA Saclay
  * Copyright 2014      Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege, K.U.Leuven, Departement
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
+ * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
+ * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
@@ -812,6 +815,30 @@ __isl_give isl_mat *isl_mat_lexnonneg_rows(__isl_take isl_mat *mat)
 	}
 
 	return mat;
+}
+
+/* Return the rank of "mat", or -1 in case of error.
+ */
+int isl_mat_rank(__isl_keep isl_mat *mat)
+{
+	int row, col;
+	isl_mat *H;
+
+	H = isl_mat_left_hermite(isl_mat_copy(mat), 0, NULL, NULL);
+	if (!H)
+		return -1;
+
+	for (col = 0; col < H->n_col; ++col) {
+		for (row = 0; row < H->n_row; ++row)
+			if (!isl_int_is_zero(H->row[row][col]))
+				break;
+		if (row == H->n_row)
+			break;
+	}
+
+	isl_mat_free(H);
+
+	return col;
 }
 
 struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat)
