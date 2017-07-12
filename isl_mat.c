@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2014      Ecole Normale Superieure
+ * Copyright 2017      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -2026,4 +2027,43 @@ int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat)
 __isl_give isl_mat *isl_mat_row_basis(__isl_take isl_mat *mat)
 {
 	return isl_mat_reverse_gauss(mat);
+}
+
+/* Return rows that extend a basis of "mat1" to one
+ * that covers both "mat1" and "mat2".
+ * The Hermite normal form of the concatenation of the two matrices is
+ *
+ *	                     [ Q1 ]
+ *	[ M1 ] = [ H1 0  0 ] [ Q2 ]
+ *	[ M2 ] = [ H2 H3 0 ] [ Q3 ]
+ *
+ * The number of columns in H1 and H3 determine the number of rows
+ * in Q1 and Q2.  Q1 is a basis for M1, while Q2 extends this basis
+ * to also cover M2.
+ */
+__isl_give isl_mat *isl_mat_row_basis_extension(
+	__isl_take isl_mat *mat1, __isl_take isl_mat *mat2)
+{
+	int n_row;
+	int r1, r, n1;
+	isl_mat *H, *Q;
+
+	n1 = isl_mat_rows(mat1);
+	H = isl_mat_concat(mat1, mat2);
+	H = isl_mat_left_hermite(H, 0, NULL, &Q);
+	if (!H || !Q)
+		goto error;
+
+	r1 = hermite_first_zero_col(H, 0, n1);
+	r = hermite_first_zero_col(H, r1, H->n_row);
+	n_row = isl_mat_rows(Q);
+	Q = isl_mat_drop_rows(Q, r, n_row - r);
+	Q = isl_mat_drop_rows(Q, 0, r1);
+
+	isl_mat_free(H);
+	return Q;
+error:
+	isl_mat_free(H);
+	isl_mat_free(Q);
+	return NULL;
 }

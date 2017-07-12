@@ -7759,6 +7759,13 @@ by the rows of a matrix.
 	__isl_give isl_mat *isl_mat_row_basis(
 		__isl_take isl_mat *mat);
 
+The following function computes rows that extend a basis of C<mat1>
+to a basis that also covers C<mat2>.
+
+	__isl_give isl_mat *isl_mat_row_basis_extension(
+		__isl_take isl_mat *mat1,
+		__isl_take isl_mat *mat2);
+
 =head2 Bounds on Piecewise Quasipolynomials and Piecewise Quasipolynomial Reductions
 
 The following functions determine
