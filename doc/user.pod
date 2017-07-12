@@ -7766,6 +7766,16 @@ to a basis that also covers C<mat2>.
 		__isl_take isl_mat *mat1,
 		__isl_take isl_mat *mat2);
 
+The following function checks whether there is no linear dependence
+among the combined rows of "mat1" and "mat2" that is not already present
+in "mat1" or "mat2" individually.
+If "mat1" and "mat2" have linearly independent rows by themselves,
+then this means that there is no linear dependence among all rows together.
+
+	isl_bool isl_mat_has_linearly_independent_rows(
+		__isl_keep isl_mat *mat1,
+		__isl_keep isl_mat *mat2);
+
 =head2 Bounds on Piecewise Quasipolynomials and Piecewise Quasipolynomial Reductions
 
 The following functions determine

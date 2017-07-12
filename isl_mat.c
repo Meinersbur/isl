@@ -2067,3 +2067,34 @@ error:
 	isl_mat_free(Q);
 	return NULL;
 }
+
+/* Are the rows of "mat1" linearly independent of those of "mat2"?
+ * That is, is there no linear dependence among the combined rows
+ * that is not already present in either "mat1" or "mat2"?
+ * In other words, is the rank of "mat1" and "mat2" combined equal
+ * to the sum of the ranks of "mat1" and "mat2"?
+ */
+isl_bool isl_mat_has_linearly_independent_rows(__isl_keep isl_mat *mat1,
+	__isl_keep isl_mat *mat2)
+{
+	int r1, r2, r;
+	isl_mat *mat;
+
+	r1 = isl_mat_rank(mat1);
+	if (r1 < 0)
+		return isl_bool_error;
+	if (r1 == 0)
+		return isl_bool_true;
+	r2 = isl_mat_rank(mat2);
+	if (r2 < 0)
+		return isl_bool_error;
+	if (r2 == 0)
+		return isl_bool_true;
+
+	mat = isl_mat_concat(isl_mat_copy(mat1), isl_mat_copy(mat2));
+	r = isl_mat_rank(mat);
+	isl_mat_free(mat);
+	if (r < 0)
+		return isl_bool_error;
+	return r == r1 + r2;
+}

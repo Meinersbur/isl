@@ -105,6 +105,8 @@ __isl_give isl_mat *isl_mat_vec_concat(__isl_take isl_mat *top,
 	__isl_take isl_vec *bot);
 
 isl_bool isl_mat_is_equal(__isl_keep isl_mat *mat1, __isl_keep isl_mat *mat2);
+isl_bool isl_mat_has_linearly_independent_rows(__isl_keep isl_mat *mat1,
+	__isl_keep isl_mat *mat2);
 
 int isl_mat_rank(__isl_keep isl_mat *mat);
 int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat);
