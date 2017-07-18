@@ -80,25 +80,34 @@ isl_bool isl_aff_is_nan(__isl_keep isl_aff *aff);
 
 __isl_give isl_aff *isl_aff_get_div(__isl_keep isl_aff *aff, int pos);
 
+__isl_export
 __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff);
+__isl_export
 __isl_give isl_aff *isl_aff_ceil(__isl_take isl_aff *aff);
+__isl_export
 __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff);
+__isl_overload
 __isl_give isl_aff *isl_aff_mod_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *mod);
 
+__isl_export
 __isl_give isl_aff *isl_aff_mul(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
+__isl_export
 __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 __isl_export
 __isl_give isl_aff *isl_aff_add(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
+__isl_export
 __isl_give isl_aff *isl_aff_sub(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
 
+__isl_overload
 __isl_give isl_aff *isl_aff_scale_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v);
 __isl_give isl_aff *isl_aff_scale_down_ui(__isl_take isl_aff *aff, unsigned f);
+__isl_overload
 __isl_give isl_aff *isl_aff_scale_down_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v);
 
