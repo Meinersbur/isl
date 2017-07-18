@@ -840,7 +840,7 @@ the last error in the corresponding C<isl_ctx> and the function in which the
 error was triggered returns a value indicating that some error has
 occurred.  In case of functions returning a pointer, this value is
 C<NULL>.  In case of functions returning an C<isl_bool> or an
-C<isl_stat>, this valus is C<isl_bool_error> or C<isl_stat_error>.
+C<isl_stat>, this value is C<isl_bool_error> or C<isl_stat_error>.
 An error does not corrupt internal state,
 such that isl can continue to be used. C<isl> also provides functions to
 read the last error and to reset the memory that stores the last error. The
@@ -2473,7 +2473,7 @@ parameters and set variables, addition, subtraction and
 integer division by an integer constant.
 For example, the quasi-affine expression
 
-	[n] -> { [x] -> [2*floor((4 n + x)/9] }
+	[n] -> { [x] -> [2*floor((4 n + x)/9)] }
 
 maps C<x> to C<2*floor((4 n + x)/9>.
 A quasipolynomial is a polynomial expression in quasi-affine
@@ -2483,7 +2483,7 @@ division of an expression involving multiplications.
 Here is an example of a quasipolynomial that is not
 quasi-affine expression
 
-	[n] -> { [x] -> (n*floor((4 n + x)/9) }
+	[n] -> { [x] -> (n*floor((4 n + x)/9)) }
 
 Note that the external representations of quasi-affine expressions
 and quasipolynomials are different.  Quasi-affine expressions
