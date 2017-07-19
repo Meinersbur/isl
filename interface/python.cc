@@ -126,6 +126,9 @@ void python_generator::print_copy(QualType type)
  * returns a value indicating success.
  * In case the C callback is expected to return an isl_stat,
  * the error value is -1 and the success value is 0.
+ * In case the C callback is expected to return an isl_bool,
+ * the error value is -1 and the success value is 1 or 0 depending
+ * on the result of the Python callback.
  * Otherwise, None is returned to indicate an error and
  * a copy of the object in case of success.
  */
@@ -138,7 +141,7 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 
 	printf("        exc_info = [None]\n");
 	printf("        fn = CFUNCTYPE(");
-	if (is_isl_stat(return_type))
+	if (is_isl_stat(return_type) || is_isl_bool(return_type))
 		printf("c_int");
 	else
 		printf("c_void_p");
@@ -178,12 +181,14 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 	printf("            except:\n");
 	printf("                import sys\n");
 	printf("                exc_info[0] = sys.exc_info()\n");
-	if (is_isl_stat(return_type))
+	if (is_isl_stat(return_type) || is_isl_bool(return_type))
 		printf("                return -1\n");
 	else
 		printf("                return None\n");
 	if (is_isl_stat(return_type)) {
 		printf("            return 0\n");
+	} else if (is_isl_bool(return_type)) {
+		printf("            return 1 if res else 0\n");
 	} else {
 		printf("            return ");
 		print_copy(return_type);
