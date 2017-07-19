@@ -39,6 +39,13 @@ public:
   /* implicit */ boolean(bool val)
       : val(val ? isl_bool_true : isl_bool_false) {}
 
+  isl_bool release() {
+    auto tmp = val;
+    val = isl_bool_error;
+    checked = true;
+    return tmp;
+  }
+
   bool is_error() const { checked = true; return val == isl_bool_error; }
   bool is_false() const { checked = true; return val == isl_bool_false; }
   bool is_true() const { checked = true; return val == isl_bool_true; }
