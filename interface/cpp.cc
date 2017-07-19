@@ -1239,17 +1239,18 @@ string cpp_generator::generate_callback_type(QualType type)
  *
  * In particular, print
  *
- *        stat ret = @call@;
+ *        auto ret = @call@;
  *        return ret.release();
  */
 void cpp_generator::print_wrapped_call_checked(ostream &os,
 	const string &call)
 {
-	osprintf(os, "    stat ret = %s;\n", call.c_str());
+	osprintf(os, "    auto ret = %s;\n", call.c_str());
 	osprintf(os, "    return ret.release();\n");
 }
 
-/* Print the call to the C++ callback function "call", wrapped
+/* Print the call to the C++ callback function "call",
+ * with return type "rtype", wrapped
  * for use inside the lambda function that is used as the C callback function.
  *
  * In particular, print
@@ -1261,6 +1262,16 @@ void cpp_generator::print_wrapped_call_checked(ostream &os,
  *          data->eptr = std::current_exception();
  *          return isl_stat_error;
  *        }
+ * or
+ *        ISL_CPP_TRY {
+ *          auto ret = @call@;
+ *          return ret.release();
+ *        } ISL_CPP_CATCH_ALL {
+ *          data->eptr = std::current_exception();
+ *          return NULL;
+ *        }
+ *
+ * depending on the return type.
  *
  * where ISL_CPP_TRY is defined to "try" and ISL_CPP_CATCH_ALL to "catch (...)"
  * (if exceptions are available).
@@ -1268,17 +1279,26 @@ void cpp_generator::print_wrapped_call_checked(ostream &os,
  * If checked C++ bindings are being generated, then
  * the call is wrapped differently.
  */
-void cpp_generator::print_wrapped_call(ostream &os, const string &call)
+void cpp_generator::print_wrapped_call(ostream &os, const string &call,
+	QualType rtype)
 {
 	if (checked)
 		return print_wrapped_call_checked(os, call);
 
 	osprintf(os, "    ISL_CPP_TRY {\n");
-	osprintf(os, "      %s;\n", call.c_str());
-	osprintf(os, "      return isl_stat_ok;\n");
+	if (is_isl_stat(rtype)) {
+		osprintf(os, "      %s;\n", call.c_str());
+		osprintf(os, "      return isl_stat_ok;\n");
+	} else {
+		osprintf(os, "      auto ret = %s;\n", call.c_str());
+		osprintf(os, "      return ret.release();\n");
+	}
 	osprintf(os, "    } ISL_CPP_CATCH_ALL {\n"
 		     "      data->eptr = std::current_exception();\n");
-	osprintf(os, "      return isl_stat_error;\n");
+	if (is_isl_stat(rtype))
+		osprintf(os, "      return isl_stat_error;\n");
+	else
+		osprintf(os, "      return NULL;\n");
 	osprintf(os, "    }\n");
 }
 
@@ -1335,7 +1355,7 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call)
 void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 {
 	string pname;
-	QualType ptype;
+	QualType ptype, rtype;
 	string call, c_args, cpp_args, rettype, last_idx;
 	const FunctionProtoType *callback;
 	int num_params;
@@ -1347,7 +1367,8 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	cpp_args = generate_callback_type(ptype);
 
 	callback = extract_prototype(ptype);
-	rettype = callback->getReturnType().getAsString();
+	rtype = callback->getReturnType();
+	rettype = rtype.getAsString();
 	num_params = callback->getNumArgs();
 
 	last_idx = ::to_string(num_params - 1);
@@ -1374,7 +1395,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	osprintf(os,
 		 "    auto *data = static_cast<struct %s_data *>(arg_%s);\n",
 		 pname.c_str(), last_idx.c_str());
-	print_wrapped_call(os, call);
+	print_wrapped_call(os, call, rtype);
 	osprintf(os, "  };\n");
 }
 

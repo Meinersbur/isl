@@ -87,7 +87,8 @@ private:
 	string generate_callback_type(QualType type);
 	void print_wrapped_call_checked(std::ostream &os,
 		const std::string &call);
-	void print_wrapped_call(std::ostream &os, const std::string &call);
+	void print_wrapped_call(std::ostream &os, const std::string &call,
+		QualType rtype);
 	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
 	string type2cpp(const isl_class &clazz);
