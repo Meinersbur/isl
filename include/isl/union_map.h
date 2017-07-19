@@ -231,6 +231,9 @@ isl_stat isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 	isl_stat (*fn)(__isl_take isl_map *map, void *user), void *user);
 isl_bool isl_union_map_every_map(__isl_keep isl_union_map *umap,
 	isl_bool (*test)(__isl_keep isl_map *map, void *user), void *user);
+__isl_give isl_union_map *isl_union_map_remove_map_if(
+	__isl_take isl_union_map *umap,
+	isl_bool (*fn)(__isl_keep isl_map *map, void *user), void *user);
 isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space);
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,

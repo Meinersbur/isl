@@ -3985,3 +3985,48 @@ __isl_give isl_basic_set_list *isl_union_set_get_basic_set_list(
 
 	return list;
 }
+
+/* Internal data structure for isl_union_map_remove_map_if.
+ * "fn" and "user" are the arguments to isl_union_map_remove_map_if.
+ */
+struct isl_union_map_remove_map_if_data {
+	isl_bool (*fn)(__isl_keep isl_map *map, void *user);
+	void *user;
+};
+
+/* isl_un_op_control filter that negates the result of data->fn
+ * called on "map".
+ */
+static isl_bool not(__isl_keep isl_map *map, void *user)
+{
+	struct isl_union_map_remove_map_if_data *data = user;
+
+	return isl_bool_not(data->fn(map, data->user));
+}
+
+/* Dummy isl_un_op_control transformation callback that
+ * simply returns the input.
+ */
+static __isl_give isl_map *map_id(__isl_take isl_map *map)
+{
+	return map;
+}
+
+/* Call "fn" on every map in "umap" and remove those maps
+ * for which the callback returns true.
+ *
+ * Use un_op to keep only those maps that are not filtered out,
+ * applying an identity transformation on them.
+ */
+__isl_give isl_union_map *isl_union_map_remove_map_if(
+	__isl_take isl_union_map *umap,
+	isl_bool (*fn)(__isl_keep isl_map *map, void *user), void *user)
+{
+	struct isl_union_map_remove_map_if_data data = { fn, user };
+	struct isl_un_op_control control = {
+		.filter = &not,
+		.filter_user = &data,
+		.fn_map = &map_id,
+	};
+	return un_op(umap, &control);
+}

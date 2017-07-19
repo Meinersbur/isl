@@ -4776,6 +4776,18 @@ dimensions have opposite values.
 Intersect the relation with the half-space where the given
 dimensions satisfy the given ordering.
 
+	#include <isl/union_set.h>
+	__isl_give isl_union_map *isl_union_map_remove_map_if(
+		__isl_take isl_union_map *umap,
+		isl_bool (*fn)(__isl_keep isl_map *map,
+			void *user), void *user);
+
+This function calls the callback function once for each
+pair of spaces for which there are elements in the input.
+If the callback returns C<isl_bool_true>, then all those elements
+are removed from the result.  The only remaining elements in the output
+are then those for which the callback returns C<isl_bool_false>.
+
 =item * Locus
 
 	#include <isl/aff.h>
