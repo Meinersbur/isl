@@ -41,6 +41,11 @@
 #include <isl_list_templ.c>
 
 #undef BASE
+#define BASE pw_multi_aff
+
+#include <isl_list_templ.c>
+
+#undef BASE
 #define BASE union_pw_aff
 
 #include <isl_list_templ.c>
