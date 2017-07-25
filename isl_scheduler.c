@@ -3483,7 +3483,7 @@ static isl_stat copy_nodes(struct isl_sched_graph *dst,
  * graph, then it must be a backward proximity edge and it should simply
  * be ignored.
  */
-static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
+static isl_stat copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 	struct isl_sched_graph *src,
 	int (*edge_pred)(struct isl_sched_edge *edge, int data), int data)
 {
@@ -3509,7 +3509,7 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 			if (is_validity(edge) || is_conditional_validity(edge))
 				isl_die(ctx, isl_error_internal,
 					"backward (conditional) validity edge",
-					return -1);
+					return isl_stat_error);
 			continue;
 		}
 
@@ -3526,16 +3526,16 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		dst->n_edge++;
 
 		if (edge->tagged_condition && !tagged_condition)
-			return -1;
+			return isl_stat_error;
 		if (edge->tagged_validity && !tagged_validity)
-			return -1;
+			return isl_stat_error;
 
 		if (graph_edge_tables_add(ctx, dst,
 					    &dst->edge[dst->n_edge - 1]) < 0)
-			return -1;
+			return isl_stat_error;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Compute the maximal number of variables over all nodes.
