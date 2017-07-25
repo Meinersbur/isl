@@ -1299,7 +1299,7 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 				    &graph->edge[graph->n_edge++]);
 
 	if (merge_edge(edge, &graph->edge[graph->n_edge]) < 0)
-		return -1;
+		return isl_stat_error;
 
 	return graph_edge_table_add(ctx, graph, data->type, edge);
 }
