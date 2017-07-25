@@ -903,6 +903,8 @@ static __isl_give isl_map *all_intermediate_sources(
  * uncurried to [T -> S] -> K.
  * This result is then intersected with the dependence relation S -> K
  * to form the output.
+ *
+ * In case a negative depth is given, NULL is returned to indicate an error.
  */
 static __isl_give isl_map *coscheduled_source(__isl_keep isl_access_info *acc,
 	__isl_keep isl_map *old_map, int pos, int depth)
@@ -914,6 +916,9 @@ static __isl_give isl_map *coscheduled_source(__isl_keep isl_access_info *acc,
 	isl_map *dep_map;
 	isl_map *equal;
 	isl_map *map;
+
+	if (depth < 0)
+		return NULL;
 
 	set_C = isl_map_range(isl_map_copy(old_map));
 	read_map = isl_map_copy(acc->sink.map);
