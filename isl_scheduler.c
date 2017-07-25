@@ -421,7 +421,7 @@ static int graph_init_table(isl_ctx *ctx, struct isl_sched_graph *graph)
 }
 
 /* Return a pointer to the node that lives within the given space,
- * or NULL if there is no such node.
+ * an invalid node if there is no such node, or NULL in case of error.
  */
 static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
 	struct isl_sched_graph *graph, __isl_keep isl_space *space)
@@ -429,11 +429,14 @@ static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
 	struct isl_hash_table_entry *entry;
 	uint32_t hash;
 
+	if (!space)
+		return NULL;
+
 	hash = isl_space_get_tuple_hash(space);
 	entry = isl_hash_table_find(ctx, graph->node_table, hash,
 				    &node_has_tuples, space, 0);
 
-	return entry ? entry->data : NULL;
+	return entry ? entry->data : graph->node + graph->n;
 }
 
 /* Is "node" a node in "graph"?
@@ -1221,8 +1224,8 @@ static __isl_give isl_map *map_intersect_domains(__isl_take isl_map *tagged,
 	return tagged;
 }
 
-/* Return a pointer to the node that lives in the domain space of "map"
- * or NULL if there is no such node.
+/* Return a pointer to the node that lives in the domain space of "map",
+ * an invalid node if there is no such node, or NULL in case of error.
  */
 static struct isl_sched_node *find_domain_node(isl_ctx *ctx,
 	struct isl_sched_graph *graph, __isl_keep isl_map *map)
@@ -1237,8 +1240,8 @@ static struct isl_sched_node *find_domain_node(isl_ctx *ctx,
 	return node;
 }
 
-/* Return a pointer to the node that lives in the range space of "map"
- * or NULL if there is no such node.
+/* Return a pointer to the node that lives in the range space of "map",
+ * an invalid node if there is no such node, or NULL in case of error.
  */
 static struct isl_sched_node *find_range_node(isl_ctx *ctx,
 	struct isl_sched_graph *graph, __isl_keep isl_map *map)
@@ -1312,6 +1315,8 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	dst = find_range_node(ctx, graph, map);
 
 	if (!src || !dst)
+		goto error;
+	if (!is_node(graph, src) || !is_node(graph, dst))
 		return skip_edge(map, tagged);
 
 	if (src->compressed || dst->compressed) {
@@ -3509,7 +3514,9 @@ static isl_stat copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 
 		dst_src = graph_find_node(ctx, dst, edge->src->space);
 		dst_dst = graph_find_node(ctx, dst, edge->dst->space);
-		if (!dst_src || !dst_dst) {
+		if (!dst_src || !dst_dst)
+			return isl_stat_error;
+		if (!is_node(dst, dst_src) || !is_node(dst, dst_dst)) {
 			if (is_validity(edge) || is_conditional_validity(edge))
 				isl_die(ctx, isl_error_internal,
 					"backward (conditional) validity edge",
@@ -3946,6 +3953,8 @@ static void isl_carry_clear(struct isl_carry *carry)
 /* Return a pointer to the node in "graph" that lives in "space".
  * If the requested node has been compressed, then "space"
  * corresponds to the compressed space.
+ * The graph is assumed to have such a node.
+ * Return NULL in case of error.
  *
  * First try and see if "space" is the space of an uncompressed node.
  * If so, return that node.
@@ -3966,7 +3975,9 @@ static struct isl_sched_node *graph_find_compressed_node(isl_ctx *ctx,
 		return NULL;
 
 	node = graph_find_node(ctx, graph, space);
-	if (node)
+	if (!node)
+		return NULL;
+	if (is_node(graph, node))
 		return node;
 
 	id = isl_space_get_tuple_id(space, isl_dim_set);
@@ -3981,6 +3992,9 @@ static struct isl_sched_node *graph_find_compressed_node(isl_ctx *ctx,
 			"space points to invalid node", return NULL);
 	if (graph != graph->root)
 		node = graph_find_node(ctx, graph, node->space);
+	if (!is_node(graph, node))
+		isl_die(ctx, isl_error_internal,
+			"unable to find node", return NULL);
 
 	return node;
 }
@@ -6409,12 +6423,15 @@ static __isl_give isl_map *extract_node_transformation(isl_ctx *ctx,
 	isl_multi_aff *ma, *ma2;
 
 	scc_node = graph_find_node(ctx, &c->scc[node->scc], node->space);
+	if (scc_node && !is_node(&c->scc[node->scc], scc_node))
+		isl_die(ctx, isl_error_internal, "unable to find node",
+			return NULL);
 	start = c->scc[node->scc].band_start;
 	n = c->scc[node->scc].n_total_row - start;
 	ma = node_extract_partial_schedule_multi_aff(scc_node, start, n);
 	space = cluster_space(&c->scc[node->scc], c->scc_cluster[node->scc]);
 	cluster_node = graph_find_node(ctx, merge_graph, space);
-	if (space && !cluster_node)
+	if (cluster_node && !is_node(merge_graph, cluster_node))
 		isl_die(ctx, isl_error_internal, "unable to find cluster",
 			space = isl_space_free(space));
 	id = isl_space_get_tuple_id(space, isl_dim_set);
@@ -6761,11 +6778,11 @@ static isl_stat merge(isl_ctx *ctx, struct isl_clustering *c,
 		if (cluster < 0)
 			cluster = i;
 		space = cluster_space(&c->scc[i], c->scc_cluster[i]);
-		if (!space)
-			return isl_stat_error;
 		node = graph_find_node(ctx, merge_graph, space);
 		isl_space_free(space);
 		if (!node)
+			return isl_stat_error;
+		if (!is_node(merge_graph, node))
 			isl_die(ctx, isl_error_internal,
 				"unable to find cluster",
 				return isl_stat_error);
