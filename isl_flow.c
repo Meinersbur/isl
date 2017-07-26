@@ -366,7 +366,6 @@ static int access_sort_cmp(const void *p1, const void *p2, void *user)
 error:
 	sort_info->error = 1;
 	return 0;
-
 }
 
 /* Sort the must source accesses in their textual order.
