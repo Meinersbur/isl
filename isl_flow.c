@@ -1179,14 +1179,14 @@ static __isl_give isl_flow *compute_val_based_dependences(
 			must_rel[j] = isl_map_union_disjoint(must_rel[j], T);
 			mustdo = rest;
 
-			if (intermediate_sources(acc, must_rel, j, level))
+			if (intermediate_sources(acc, must_rel, j, level) < 0)
 				goto error;
 
 			T = last_source(acc, maydo, j, level, &rest);
 			may_rel[j] = isl_map_union_disjoint(may_rel[j], T);
 			maydo = rest;
 
-			if (intermediate_sources(acc, may_rel, j, level))
+			if (intermediate_sources(acc, may_rel, j, level) < 0)
 				goto error;
 
 			if (isl_set_plain_is_empty(mustdo) &&
@@ -1203,9 +1203,9 @@ static __isl_give isl_flow *compute_val_based_dependences(
 			if (!can_precede_at_level(plevel, level))
 				continue;
 
-			if (intermediate_sources(acc, must_rel, j, level))
+			if (intermediate_sources(acc, must_rel, j, level) < 0)
 				goto error;
-			if (intermediate_sources(acc, may_rel, j, level))
+			if (intermediate_sources(acc, may_rel, j, level) < 0)
 				goto error;
 		}
 
