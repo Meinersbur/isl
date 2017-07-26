@@ -991,8 +991,8 @@ static __isl_give isl_flow *compute_val_based_dependences(
 	if (isl_set_plain_is_empty(mustdo))
 		goto done;
 
-	must_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
-	may_rel = isl_alloc_array(ctx, struct isl_map *, acc->n_must);
+	must_rel = isl_calloc_array(ctx, struct isl_map *, acc->n_must);
+	may_rel = isl_calloc_array(ctx, struct isl_map *, acc->n_must);
 	if (!must_rel || !may_rel)
 		goto error;
 
@@ -1099,6 +1099,12 @@ done:
 	res->may_no_source = maydo;
 	return res;
 error:
+	if (must_rel)
+		for (j = 0; j < acc->n_must; ++j)
+			isl_map_free(must_rel[j]);
+	if (may_rel)
+		for (j = 0; j < acc->n_must; ++j)
+			isl_map_free(may_rel[j]);
 	isl_flow_free(res);
 	isl_set_free(mustdo);
 	isl_set_free(maydo);
