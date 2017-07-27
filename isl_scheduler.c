@@ -842,6 +842,7 @@ error:
 /* Compute and return the size of "set" in dimension "dim".
  * The size is taken to be the difference in values for that variable
  * for fixed values of the other variables.
+ * This assumes that "set" is convex.
  * In particular, the variable is first isolated from the other variables
  * in the range of a map
  *
@@ -886,6 +887,10 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
  * the bounds need to be set and this is done in set_max_coefficient.
  * Otherwise, compress the domain if needed, compute the size
  * in each direction and store the results in node->size.
+ * If the domain is not convex, then the sizes are computed
+ * on a convex superset in order to avoid picking up sizes
+ * that are valid for the individual disjuncts, but not for
+ * the domain as a whole.
  * Finally, set the bounds on the coefficients based on the sizes
  * and the schedule_max_coefficient option in compute_max_coefficient.
  */
@@ -903,6 +908,7 @@ static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
 	if (node->compressed)
 		set = isl_set_preimage_multi_aff(set,
 					isl_multi_aff_copy(node->decompress));
+	set = isl_set_from_basic_set(isl_set_simple_hull(set));
 	mv = isl_multi_val_zero(isl_set_get_space(set));
 	n = isl_set_dim(set, isl_dim_set);
 	for (j = 0; j < n; ++j) {
