@@ -5058,7 +5058,8 @@ static __isl_give isl_vec *extract_sample_sequence(struct isl_tab *tab,
 			int row;
 
 			row = tab->var[pos + i].index;
-			isl_int_set(v->el[i], tab->mat->row[row][1]);
+			isl_int_divexact(v->el[i], tab->mat->row[row][1],
+					tab->mat->row[row][0]);
 		}
 	}
 
