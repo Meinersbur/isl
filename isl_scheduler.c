@@ -3874,6 +3874,10 @@ static void isl_carry_clear(struct isl_carry *carry)
  * If so, return that node.
  * Otherwise, "space" was constructed by construct_compressed_id and
  * contains a user pointer pointing to the node in the tuple id.
+ * However, this node belongs to the original dependence graph.
+ * If "graph" is a subgraph of this original dependence graph,
+ * then the node with the same space still needs to be looked up
+ * in the current graph.
  */
 static struct isl_sched_node *graph_find_compressed_node(isl_ctx *ctx,
 	struct isl_sched_graph *graph, __isl_keep isl_space *space)
@@ -3895,9 +3899,11 @@ static struct isl_sched_node *graph_find_compressed_node(isl_ctx *ctx,
 	if (!node)
 		return NULL;
 
-	if (!is_node(graph, node))
+	if (!is_node(graph->root, node))
 		isl_die(ctx, isl_error_internal,
 			"space points to invalid node", return NULL);
+	if (graph != graph->root)
+		node = graph_find_node(ctx, graph, node->space);
 
 	return node;
 }

@@ -14,7 +14,7 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_closure isl_bound isl_schedule isl_codegen isl_test_int \
 	isl_flow isl_flow_cmp isl_schedule_cmp
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
-	flow_test.sh
+	flow_test.sh schedule_test.sh
 
 if IMATH_FOR_MP
 
