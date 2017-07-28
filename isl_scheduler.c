@@ -421,6 +421,14 @@ static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
 	return entry ? entry->data : NULL;
 }
 
+/* Is "node" a node in "graph"?
+ */
+static int is_node(struct isl_sched_graph *graph,
+	struct isl_sched_node *node)
+{
+	return node && node >= &graph->node[0] && node < &graph->node[graph->n];
+}
+
 static int edge_has_src_and_dst(const void *entry, const void *val)
 {
 	const struct isl_sched_edge *edge = entry;
@@ -3887,7 +3895,7 @@ static struct isl_sched_node *graph_find_compressed_node(isl_ctx *ctx,
 	if (!node)
 		return NULL;
 
-	if (!(node >= &graph->node[0] && node < &graph->node[graph->n]))
+	if (!is_node(graph, node))
 		isl_die(ctx, isl_error_internal,
 			"space points to invalid node", return NULL);
 
