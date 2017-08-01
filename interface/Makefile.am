@@ -2,8 +2,8 @@ AUTOMAKE_OPTIONS = nostdinc
 
 noinst_PROGRAMS = extract_interface
 if HAVE_CXX11
-  noinst_PROGRAMS += isl_test_cpp
-  TESTS = isl_test_cpp
+  noinst_PROGRAMS += isl_test_cpp-noexceptions
+  TESTS = isl_test_cpp-noexceptions
 endif
 
 includes = -I$(top_builddir) -I$(top_srcdir) \
@@ -27,11 +27,13 @@ extract_interface_LDADD = \
 	-lclangAnalysis -lclangAST -lclangLex -lclangBasic -lclangDriver \
 	$(CLANG_LIBS) $(CLANG_LDFLAGS)
 
-isl_test_cpp_CPPFLAGS = $(includes) -I.
-isl_test_cpp_CXXFLAGS = @CXX11FLAGS@
-isl_test_cpp_SOURCES = isl_test_cpp.cpp isl-noexceptions.h
-isl_test_cpp_LDFLAGS = @MP_LDFLAGS@
-isl_test_cpp_LDADD = ../libisl.la @MP_LIBS@
+isl_test_cpp_noexceptions_CPPFLAGS = $(includes) -I.
+isl_test_cpp_noexceptions_CXXFLAGS = @CXX11FLAGS@
+isl_test_cpp_noexceptions_SOURCES = \
+	isl_test_cpp-noexceptions.cc \
+	isl-noexceptions.h
+isl_test_cpp_noexceptions_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp_noexceptions_LDADD = ../libisl.la @MP_LIBS@
 
 BUILT_SOURCES = isl-noexceptions.h
 CLEANFILES = isl.py isl-noexceptions.h
