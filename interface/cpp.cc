@@ -628,7 +628,8 @@ void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
  * a wrapper for the callback function and a pointer to the actual
  * callback function.  The wrapper is expected to be available
  * in a previously declared variable <name>_lambda, while
- * the actual callback function is expected in <name>_p.
+ * the actual callback function is expected to be stored
+ * in a structure called <name>_data.
  * The caller of this function must ensure that these variables exist.
  */
 void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
@@ -650,7 +651,7 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 
 	if (is_callback(type)) {
 		osprintf(os, "%s_lambda, ", name_str);
-		osprintf(os, "&%s_p", name_str);
+		osprintf(os, "&%s_data", name_str);
 		return;
 	}
 
@@ -960,22 +961,26 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call)
  * the following lambda function is generated:
  *
  *      auto fn_lambda = [](isl_map *arg_0, void *arg_1) -> isl_stat {
- *        auto *func = *static_cast<const std::function<stat(map)> **>(arg_1);
- *        stat ret = (*func)(isl::manage(arg_0));
+ *        auto *data = static_cast<struct fn_data *>(arg_1);
+ *        stat ret = (*data->func)(isl::manage(arg_0));
  *        return isl_stat(ret);
  *      };
  *
- * The pointer to the std::function C++ callback function is stored in fn_p.
+ * The pointer to the std::function C++ callback function is stored in
+ * a fn_data data structure for passing to the C callback function.
+ *
+ *      struct fn_data {
+ *        const std::function<stat(map)> *func;
+ *      } fn_data = { &fn };
+ *
  * This std::function object represents the actual user
  * callback function together with the locally captured state at the caller.
  *
  * The lambda function is expected to be used as a C callback function
  * where the lambda itself is provided as the function pointer and
- * where the user void pointer is a pointer to fn_p.
- * The std::function object is extracted from the pointer to fn_p
+ * where the user void pointer is a pointer to fn_data.
+ * The std::function object is extracted from the pointer to fn_data
  * inside the lambda function.
- * The double indirection is used to avoid having to worry about
- * const casting.
  */
 void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 {
@@ -997,7 +1002,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 
 	last_idx = ::to_string(num_params - 1);
 
-	call = "(*func)(";
+	call = "(*data->func)(";
 	for (long i = 0; i < num_params - 1; i++) {
 		call += "isl::manage(arg_" + ::to_string(i) + ")";
 		if (i != num_params - 2)
@@ -1005,11 +1010,14 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	}
 	call += ")";
 
-	osprintf(os, "  auto %s_p = &%s;\n", pname.c_str(), pname.c_str());
+	osprintf(os, "  struct %s_data {\n", pname.c_str());
+	osprintf(os, "    const %s *func;\n", cpp_args.c_str());
+	osprintf(os, "  } %s_data = { &%s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
-	osprintf(os, "    auto *func = *static_cast<const %s **>(arg_%s);\n",
-		 cpp_args.c_str(), last_idx.c_str());
+	osprintf(os,
+		 "    auto *data = static_cast<struct %s_data *>(arg_%s);\n",
+		 pname.c_str(), last_idx.c_str());
 	print_wrapped_call(os, call);
 	osprintf(os, "  };\n");
 }
