@@ -48,8 +48,8 @@ isl.py: extract_interface libdep.a isl.py.top
 			$(srcdir)/all.h) \
 			> isl.py
 
-isl-noexceptions.h: extract_interface libdep.a isl.h.top
-	(cat $(srcdir)/isl.h.top; \
+isl-noexceptions.h: extract_interface libdep.a isl-noexceptions.h.top
+	(cat $(srcdir)/isl-noexceptions.h.top; \
 		./extract_interface$(EXEEXT) --language=cpp $(includes) \
 			$(srcdir)/all.h) \
 			> isl-noexceptions.h
