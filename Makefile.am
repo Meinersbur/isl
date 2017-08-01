@@ -305,7 +305,8 @@ include/isl/cpp-checked.h: interface/extract_interface libdep.a \
 		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
 	    $(srcdir)/cpp/cpp-checked.h.pre && \
-		interface/extract_interface$(EXEEXT) --language=cpp \
+		interface/extract_interface$(EXEEXT) \
+			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
 			> $@ || (rm $@ && false)
