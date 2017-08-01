@@ -405,9 +405,12 @@ static void generate(MyASTConsumer &consumer)
 	if (Language.compare("python") == 0) {
 		gen = new python_generator(consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	} else if (Language.compare("cpp-checked") == 0) {
+	} else if (Language.compare("cpp") == 0) {
 		gen = new cpp_generator(consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
+	} else if (Language.compare("cpp-checked") == 0) {
+		gen = new cpp_generator(consumer.exported_types,
+			consumer.exported_functions, consumer.functions, true);
 	} else {
 		cerr << "Language '" << Language << "' not recognized." << endl
 		     << "Not generating bindings." << endl;

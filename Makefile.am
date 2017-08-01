@@ -18,6 +18,13 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_flow isl_flow_cmp isl_schedule_cmp
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
+if HAVE_CPP_ISL_H
+  CPP_H = include/isl/cpp.h
+if HAVE_CXX11
+  noinst_PROGRAMS += isl_test_cpp
+  TESTS += isl_test_cpp
+endif
+endif
 if HAVE_CLANG
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test_cpp-checked
@@ -281,6 +288,13 @@ isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
 
+isl_test_cpp_CXXFLAGS = @CXX11FLAGS@
+isl_test_cpp_SOURCES = \
+	isl_test_cpp.cc \
+	include/isl/cpp.h
+isl_test_cpp_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp_LDADD = libisl.la @MP_LIBS@
+
 isl_test_cpp_checked_CXXFLAGS = @CXX11FLAGS@
 isl_test_cpp_checked_SOURCES = \
 	isl_test_cpp-checked.cc \
@@ -300,6 +314,16 @@ interface/isl.py: interface/extract_interface libdep.a python/isl.py.top
 			$(includes) $(srcdir)/all.h) \
 			> $@ || (rm $@ && false)
 
+include/isl/cpp.h: interface/extract_interface libdep.a \
+		cpp/cpp.h.top cpp/cpp.h.pre cpp/cpp.h.bot
+	$(MKDIR_P) "include/isl/cpp" && \
+	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h \
+	    $(srcdir)/cpp/cpp.h.pre && \
+		interface/extract_interface$(EXEEXT) --language=cpp \
+			$(includes) $(srcdir)/all.h && \
+		cat $(srcdir)/cpp/cpp.h.bot) \
+			> $@ || (rm $@ && false)
+
 include/isl/cpp-checked.h: interface/extract_interface libdep.a \
 		cpp/cpp-checked.h.top \
 		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
@@ -315,6 +339,7 @@ endif
 nodist_pkginclude_HEADERS = \
 	include/isl/stdint.h
 pkginclude_HEADERS = \
+	$(CPP_H) \
 	$(MP_INCLUDE_H) \
 	include/isl/aff.h \
 	include/isl/aff_type.h \
@@ -371,10 +396,10 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 if HAVE_CLANG
-    CPP_INTERFACE = include/isl/cpp-checked.h
+    CPP_INTERFACES = include/isl/cpp.h include/isl/cpp-checked.h
 endif
-BUILT_SOURCES = gitversion.h $(CPP_INTERFACE)
-CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACE)
+BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
+CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACES)
 
 DISTCLEANFILES = \
 	isl-uninstalled.sh \

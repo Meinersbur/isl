@@ -118,6 +118,8 @@ system)
 	;;
 esac
 AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
+AM_CONDITIONAL(HAVE_CPP_ISL_H,
+    [test $with_clang = system -o -f $srcdir/include/isl/cpp.h])
 
 AX_SET_WARNING_FLAGS
 
