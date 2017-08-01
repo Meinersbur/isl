@@ -986,14 +986,13 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	}
 
 	osprintf(os, "  auto %s_p = &%s;\n", pname.c_str(), pname.c_str());
-	osprintf(os,
-		 "  auto %s_lambda = [](%s) -> %s {\n"
-		 "    auto *func = *static_cast<const %s **>(arg_%s);\n"
-		 "    stat ret = (*func)(%s);\n"
-		 "    return isl_stat(ret);\n"
-		 "  };\n",
-		 pname.c_str(), c_args.c_str(), rettype.c_str(),
-		 cpp_args.c_str(), last_idx.c_str(), call_args.c_str());
+	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
+		 pname.c_str(), c_args.c_str(), rettype.c_str());
+	osprintf(os, "    auto *func = *static_cast<const %s **>(arg_%s);\n",
+		 cpp_args.c_str(), last_idx.c_str());
+	osprintf(os, "    stat ret = (*func)(%s);\n", call_args.c_str());
+	osprintf(os, "    return isl_stat(ret);\n");
+	osprintf(os, "  };\n");
 }
 
 /* An array listing functions that must be renamed and the function name they
