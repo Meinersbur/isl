@@ -964,7 +964,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param) {
 			call_args += ", ";
 	}
 
-	osprintf(os, "  auto %s_p = &fn;\n", pname.c_str());
+	osprintf(os, "  auto %s_p = &%s;\n", pname.c_str(), pname.c_str());
 	osprintf(os,
 		 "  auto %s_lambda = [](%s) -> %s {\n"
 		 "    auto *func = *static_cast<const %s **>(arg_%s);\n"
