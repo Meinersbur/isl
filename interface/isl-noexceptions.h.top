@@ -1,4 +1,4 @@
-/// These are automatically generated C++ bindings for isl.
+/// These are automatically generated C++ bindings without exceptions for isl.
 ///
 /// isl is a library for computing with integer sets and maps described by
 /// Presburger formulas. On top of this, isl provides various tools for
