@@ -1948,6 +1948,11 @@ struct {
 			"2e0 < -a + 2b) }" },
 	{ 1, "{ [i, j, i - 8j] : 8 <= i <= 63 and -7 + i <= 8j <= i; "
 		"[i, 0, i] : 0 <= i <= 7 }" },
+	{ 1, "{ [a, b] : a >= 0 and 0 <= b <= 1 - a; [1, 1] }" },
+	{ 0, "{ [a, b] : a >= 0 and 0 <= b <= 1 - a; [0, 2] }" },
+	{ 0, "{ [a, b] : a >= 0 and 0 <= b <= 1 - a; [-1, 3] }" },
+	{ 1, "{ [a, b] : a, b >= 0 and a + 2b <= 2; [1, 1] }" },
+	{ 0, "{ [a, b] : a, b >= 0 and a + 2b <= 2; [2, 1] }" },
 };
 
 /* A specialized coalescing test case that would result

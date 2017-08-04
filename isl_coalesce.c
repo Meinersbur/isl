@@ -1966,6 +1966,37 @@ static enum isl_change check_adj_eq(int i, int j,
 	return check_single_adj_eq(i, j, info);
 }
 
+/* Disjunct "j" lies on a hyperplane that is adjacent to disjunct "i".
+ * In particular, disjunct "i" has an inequality constraint that is adjacent
+ * to a (combination of) equality constraint(s) of disjunct "j",
+ * but disjunct "j" has no explicit equality constraint adjacent
+ * to an inequality constraint of disjunct "i".
+ *
+ * Disjunct "i" is already known not to have any equality constraints
+ * that are adjacent to an equality or inequality constraint.
+ * Check that, other than the inequality constraint mentioned above,
+ * all other constraints of disjunct "i" are valid for disjunct "j".
+ * If so, try and wrap in disjunct "j".
+ */
+static enum isl_change check_ineq_adj_eq(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	int k;
+
+	if (any_eq(&info[i], STATUS_CUT))
+		return isl_change_none;
+	if (any_ineq(&info[i], STATUS_CUT))
+		return isl_change_none;
+	if (any_ineq(&info[i], STATUS_ADJ_INEQ))
+		return isl_change_none;
+	if (count_ineq(&info[i], STATUS_ADJ_EQ) != 1)
+		return isl_change_none;
+
+	k = find_ineq(&info[i], STATUS_ADJ_EQ);
+
+	return can_wrap_in_facet(i, j, k, info, 0);
+}
+
 /* The two basic maps lie on adjacent hyperplanes.  In particular,
  * basic map "i" has an equality that lies parallel to basic map "j".
  * Check if we can wrap the facets around the parallel hyperplanes
@@ -2207,7 +2238,7 @@ static enum isl_change separating_equality(int i, int j,
  *		=> the pair can be replaced by the basic map containing
  *		   the inequality, with the inequality relaxed.
  *
- *	6. there is a single adjacent pair of an inequality and an equality,
+ *	6. there is a single inequality adjacent to an equality,
  *	   the other constraints of the basic map containing the inequality are
  *	   "valid".  Moreover, the facets corresponding to both
  *	   the inequality and the equality can be wrapped around their
@@ -2286,10 +2317,10 @@ static enum isl_change coalesce_local_pair_reuse(int i, int j,
 	} else if (any_eq(&info[i], STATUS_ADJ_INEQ) ||
 		   any_eq(&info[j], STATUS_ADJ_INEQ)) {
 		change = check_adj_eq(i, j, info);
-	} else if (any_ineq(&info[i], STATUS_ADJ_EQ) ||
-		   any_ineq(&info[j], STATUS_ADJ_EQ)) {
-		/* Can't happen */
-		/* BAD ADJ INEQ */
+	} else if (any_ineq(&info[i], STATUS_ADJ_EQ)) {
+		change = check_ineq_adj_eq(i, j, info);
+	} else if (any_ineq(&info[j], STATUS_ADJ_EQ)) {
+		change = check_ineq_adj_eq(j, i, info);
 	} else if (any_ineq(&info[i], STATUS_ADJ_INEQ) ||
 		   any_ineq(&info[j], STATUS_ADJ_INEQ)) {
 		change = check_adj_ineq(i, j, info);
