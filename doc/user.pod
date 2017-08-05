@@ -7916,6 +7916,8 @@ The guard describes constraints on the parameters and
 the schedule dimensions of outer
 bands that need to be enforced by the outer nodes
 in the generated AST.
+That is, the part of the AST that is generated from descendants
+of the guard node can assume that these constraints are satisfied.
 The space of the guard is that of the flat product of the outer
 band nodes.  In particular, if there are no outer band nodes, then
 this space is the unnamed zero-dimensional space.
