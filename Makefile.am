@@ -389,6 +389,7 @@ EXTRA_DIST = \
 	interface/all.h \
 	interface/isl-noexceptions.h.top \
 	interface/isl.py.top \
+	interface/isl_test_python.py \
 	test_inputs
 
 dist-hook:

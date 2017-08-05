@@ -1,10 +1,20 @@
 AUTOMAKE_OPTIONS = nostdinc
 
 noinst_PROGRAMS = extract_interface
+TESTS =
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test_cpp-noexceptions
-  TESTS = isl_test_cpp-noexceptions
+  TESTS += isl_test_cpp-noexceptions
 endif
+if HAVE_PYTHON
+  TESTS += isl_test_python.py
+  isl_test_python.py: isl.py
+endif
+TEST_EXTENSIONS = .py
+AM_TESTS_ENVIRONMENT = \
+	export PYTHONPATH=.; \
+	export LD_LIBRARY_PATH=../.libs;
+PY_LOG_COMPILER = $(PYTHON)
 
 includes = -I$(top_builddir) -I$(top_srcdir) \
 	-I$(top_builddir)/include -I$(top_srcdir)/include
