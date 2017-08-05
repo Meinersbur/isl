@@ -7901,6 +7901,8 @@ active domain elements for which an AST needs to be generated.
 The conditions under which some domain elements are still active
 may however not be completely described by the outer AST nodes
 generated at that point.
+Since an extension node references the outer band nodes, any tree
+containing an extension node is considered to be anchored.
 
 An extension node may also appear as the root of a schedule tree,
 when it is intended to be inserted into another tree
