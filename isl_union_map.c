@@ -483,6 +483,58 @@ isl_stat isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 				      &call_on_copy, &data);
 }
 
+/* Internal data structure for isl_union_map_every_map.
+ *
+ * "test" is the user-specified callback function.
+ * "user" is the user-specified callback function argument.
+ *
+ * "failed" is initialized to 0 and set to 1 if "test" fails
+ * on any map.
+ */
+struct isl_union_map_every_data {
+	isl_bool (*test)(__isl_keep isl_map *map, void *user);
+	void *user;
+	int failed;
+};
+
+/* Call data->test on "map".
+ * If this fails, then set data->failed and abort.
+ */
+static isl_stat call_every(void **entry, void *user)
+{
+	isl_map *map = *entry;
+	struct isl_union_map_every_data *data = user;
+	isl_bool r;
+
+	r = data->test(map, data->user);
+	if (r < 0)
+		return isl_stat_error;
+	if (r)
+		return isl_stat_ok;
+	data->failed = 1;
+	return isl_stat_error;
+}
+
+/* Does "test" succeed on every map in "umap"?
+ */
+isl_bool isl_union_map_every_map(__isl_keep isl_union_map *umap,
+	isl_bool (*test)(__isl_keep isl_map *map, void *user), void *user)
+{
+	struct isl_union_map_every_data data = { test, user, 0 };
+	isl_stat r;
+
+	if (!umap)
+		return isl_bool_error;
+
+	r = isl_hash_table_foreach(isl_union_map_get_ctx(umap), &umap->table,
+				      &call_every, &data);
+	if (r >= 0)
+		return isl_bool_true;
+	if (data.failed)
+		return isl_bool_false;
+	return isl_bool_error;
+}
+
 static isl_stat copy_map(void **entry, void *user)
 {
 	isl_map *map = *entry;

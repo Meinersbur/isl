@@ -2182,11 +2182,19 @@ To iterate over all the sets or maps in a union set or map, use
 		__isl_keep isl_union_map *umap,
 		isl_stat (*fn)(__isl_take isl_map *map, void *user),
 		void *user);
+	isl_bool isl_union_map_every_map(
+		__isl_keep isl_union_map *umap,
+		isl_bool (*test)(__isl_keep isl_map *map,
+			void *user),
+		void *user);
 
 These functions call the callback function once for each
 (pair of) space(s) for which there are elements in the input.
 The argument to the callback contains all elements in the input
 with that (pair of) space(s).
+The C<isl_union_map_every_map> variant check whether each
+call to the callback returns true and stops checking as soon as one
+of these calls returns false.
 
 The number of sets or maps in a union set or map can be obtained
 from
