@@ -151,6 +151,23 @@ void test_foreach(isl::ctx ctx)
 	assert(ret2.is_error());
 }
 
+/* Test the functionality of "every" functions.
+ *
+ * In particular, test the generic functionality and
+ * test that error conditions are properly propagated.
+ */
+static void test_every(isl::ctx ctx)
+{
+	isl::union_set us(ctx, "{ A[i]; B[j] }");
+
+	test_every_generic(ctx);
+
+	auto fail = [] (isl::set s){
+		return isl::boolean::error();
+	};
+	assert(us.every_set(fail).is_error());
+}
+
 /* Test the isl checked C++ interface
  *
  * This includes:
@@ -159,6 +176,7 @@ void test_foreach(isl::ctx ctx)
  *  - Different parameter types
  *  - Different return types
  *  - Foreach functions
+ *  - Every functions
  */
 int main()
 {
@@ -171,6 +189,7 @@ int main()
 	test_parameters(ctx);
 	test_return(ctx);
 	test_foreach(ctx);
+	test_every(ctx);
 
 	isl_ctx_free(ctx);
 

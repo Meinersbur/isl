@@ -183,3 +183,31 @@ void test_return_string(isl::ctx ctx)
 	expected_string = "n >= 0";
 	assert(expected_string == expr.to_C_str());
 }
+
+/* Test the functionality of "every" functions
+ * that does not depend on the type of C++ bindings.
+ */
+static void test_every_generic(isl::ctx ctx)
+{
+	isl::union_set us(ctx, "{ A[i]; B[j] }");
+
+	auto is_empty = [] (isl::set s) {
+		return s.is_empty();
+	};
+	assert(!IS_TRUE(us.every_set(is_empty)));
+
+	auto is_non_empty = [] (isl::set s) {
+		return !s.is_empty();
+	};
+	assert(IS_TRUE(us.every_set(is_non_empty)));
+
+	auto in_A = [] (isl::set s) {
+		return s.is_subset(isl::set(s.get_ctx(), "{ A[x] }"));
+	};
+	assert(!IS_TRUE(us.every_set(in_A)));
+
+	auto not_in_A = [] (isl::set s) {
+		return !s.is_subset(isl::set(s.get_ctx(), "{ A[x] }"));
+	};
+	assert(!IS_TRUE(us.every_set(not_in_A)));
+}

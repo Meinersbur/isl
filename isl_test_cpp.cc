@@ -113,6 +113,30 @@ static void test_foreach(isl::ctx ctx)
 	assert(caught);
 }
 
+/* Test the functionality of "every" functions.
+ *
+ * In particular, test the generic functionality and
+ * test that exceptions are properly propagated.
+ */
+static void test_every(isl::ctx ctx)
+{
+	isl::union_set us(ctx, "{ A[i]; B[j] }");
+
+	test_every_generic(ctx);
+
+	auto fail = [] (isl::set s) -> bool {
+		throw "fail";
+	};
+	bool caught = false;
+	try {
+		us.every_set(fail);
+		die("no exception raised");
+	} catch (char const *s) {
+		caught = true;
+	}
+	assert(caught);
+}
+
 /* Test that an exception is generated for an isl error and
  * that the error message is captured by the exception.
  * Also check that the exception can be copied and that copying
@@ -161,6 +185,7 @@ int main()
 	test_parameters(ctx);
 	test_return(ctx);
 	test_foreach(ctx);
+	test_every(ctx);
 	test_exception(ctx);
 
 	isl_ctx_free(ctx);
