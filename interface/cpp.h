@@ -23,7 +23,8 @@ private:
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
 	void print_class_forward_decl(ostream &os, const isl_class &clazz);
-	void print_class_factory_decl(ostream &os, const isl_class &clazz);
+	void print_class_factory_decl(ostream &os, const isl_class &clazz,
+		const std::string &prefix = std::string());
 	void print_private_constructors_decl(ostream &os,
 		const isl_class &clazz);
 	void print_copy_assignment_decl(ostream &os, const isl_class &clazz);
