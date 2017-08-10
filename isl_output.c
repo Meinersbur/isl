@@ -49,6 +49,7 @@ static const char *s_such_that[2] = { " : ", " \\mid " };
 static const char *s_open_exists[2] = { "exists (", "\\exists \\, " };
 static const char *s_close_exists[2] = { ")", "" };
 static const char *s_div_prefix[2] = { "e", "\\alpha_" };
+static const char *s_mod[2] = { "mod", "\\bmod" };
 static const char *s_param_prefix[2] = { "p", "p_" };
 static const char *s_input_prefix[2] = { "i", "i_" };
 static const char *s_output_prefix[2] = { "o", "o_" };
@@ -550,6 +551,142 @@ static __isl_give isl_printer *print_constraint(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Given an integer division
+ *
+ *	floor(f/m)
+ *
+ * at position "pos" in "div", print the corresponding modulo expression
+ *
+ *	(f) mod m
+ *
+ * to "p".  The variable names are taken from "space", while any
+ * nested integer division definitions are taken from "div".
+ */
+static __isl_give isl_printer *print_mod(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, int pos,
+	int latex)
+{
+	if (!p || !div)
+		return isl_printer_free(p);
+
+	p = isl_printer_print_str(p, "(");
+	p = print_affine_of_len(space, div, p,
+				div->row[pos] + 1, div->n_col - 1);
+	p = isl_printer_print_str(p, ") ");
+	p = isl_printer_print_str(p, s_mod[latex]);
+	p = isl_printer_print_str(p, " ");
+	p = isl_printer_print_isl_int(p, div->row[pos][0]);
+	return p;
+}
+
+/* Can the equality constraints "c" be printed as a modulo constraint?
+ * In particular, is of the form
+ *
+ *	f - a m floor(g/m) = 0,
+ *
+ * with c = -a m the coefficient at position "pos"?
+ * Return the position of the corresponding integer division if so.
+ * Return the number of integer divisions if not.
+ * Return -1 on error.
+ *
+ * Modulo constraints are currently not printed in C format.
+ * Other than that, "pos" needs to correspond to an integer division
+ * with explicit representation and "c" needs to be a multiple
+ * of the denominator of the integer division.
+ */
+static int print_as_modulo_pos(__isl_keep isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, unsigned pos,
+	isl_int c)
+{
+	isl_bool can_print;
+	unsigned n_div;
+	enum isl_dim_type type;
+
+	if (!p)
+		return -1;
+	n_div = isl_mat_rows(div);
+	if (p->output_format == ISL_FORMAT_C)
+		return n_div;
+	type = pos2type(space, &pos);
+	if (type != isl_dim_div)
+		return n_div;
+	can_print = can_print_div_expr(p, div, pos);
+	if (can_print < 0)
+		return -1;
+	if (!can_print)
+		return n_div;
+	if (!isl_int_is_divisible_by(c, div->row[pos][0]))
+		return n_div;
+	return pos;
+}
+
+/* Print equality constraint "c" to "p" as a modulo constraint,
+ * with the variable names taken from "space" and
+ * the integer division definitions taken from "div".
+ * "last" is the position of the last non-zero coefficient, which is
+ * moreover assumed to be negative and a multiple of the denominator
+ * of the corresponding integer division.  "div_pos" is the corresponding
+ * position in the sequence of integer divisions.
+ *
+ * The equality is of the form
+ *
+ *	f - a m floor(g/m) = 0.
+ *
+ * Print it as
+ *
+ *	a (g mod m) = -f + a g
+ */
+static __isl_give isl_printer *print_eq_mod_constraint(
+	__isl_take isl_printer *p, __isl_keep isl_space *space,
+	__isl_keep isl_mat *div, unsigned div_pos,
+	isl_int *c, int last, int latex)
+{
+	isl_ctx *ctx;
+	int multiple;
+
+	ctx = isl_printer_get_ctx(p);
+	isl_int_divexact(c[last], c[last], div->row[div_pos][0]);
+	isl_int_abs(c[last], c[last]);
+	multiple = !isl_int_is_one(c[last]);
+	if (multiple) {
+		p = isl_printer_print_isl_int(p, c[last]);
+		p = isl_printer_print_str(p, "*(");
+	}
+	p = print_mod(p, space, div, div_pos, latex);
+	if (multiple)
+		p = isl_printer_print_str(p, ")");
+	p = isl_printer_print_str(p, " = ");
+	isl_seq_combine(c, ctx->negone, c,
+			    c[last], div->row[div_pos] + 1, last);
+	isl_int_set_si(c[last], 0);
+	p = print_affine(p, space, div, c);
+	return p;
+}
+
+/* Print equality constraint "c" to "p", with the variable names
+ * taken from "space" and the integer division definitions taken from "div".
+ * "last" is the position of the last non-zero coefficient, which is
+ * moreover assumed to be negative.
+ *
+ * If possible, print the equality constraint as a modulo constraint.
+ */
+static __isl_give isl_printer *print_eq_constraint(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, isl_int *c,
+	int last, int latex)
+{
+	unsigned n_div;
+	int div_pos;
+
+	n_div = isl_mat_rows(div);
+	div_pos = print_as_modulo_pos(p, space, div, last, c[last]);
+	if (div_pos < 0)
+		return isl_printer_free(p);
+	if (div_pos < n_div)
+		return print_eq_mod_constraint(p, space, div, div_pos,
+						c, last, latex);
+	return print_constraint(p, space, div, c, last, "=", latex);
+}
+
 /* Print the constraints of "bmap" to "p".
  * The names of the variables are taken from "space" and
  * the integer division definitions are taken from "div".
@@ -629,7 +766,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		p = print_constraint(p, space, div, c->el, l, "=", latex);
+		p = print_eq_constraint(p, space, div, c->el, l, latex);
 		first = 0;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {

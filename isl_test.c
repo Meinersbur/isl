@@ -5447,6 +5447,14 @@ const char *output_tests[] = {
 	"{ [1, y] : 0 <= y <= 1; [x, -x] : 0 <= x <= 1 }",
 	"{ [x] : 1 = 0 }",
 	"{ [x] : false }",
+	"{ [x] : x mod 2 = 0 }",
+	"{ [x] : x mod 2 = 1 }",
+	"{ [x, y] : x mod 2 = 0 and 3*floor(y/2) < x }",
+	"{ [y, x] : x mod 2 = 0 and 3*floor(y/2) < x }",
+	"{ [x, y] : x mod 2 = 0 and 3*floor(y/2) = x + y }",
+	"{ [y, x] : x mod 2 = 0 and 3*floor(y/2) = x + y }",
+	"[n] -> { [y, x] : 2*((x + 2y) mod 3) = n }",
+	"{ [x, y] : (2*floor(x/3) + 3*floor(y/4)) mod 5 = x }",
 };
 
 /* Check that printing a set and reparsing a set from the printed output
