@@ -104,6 +104,14 @@ void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);
 	ISL_DECLARE_LIST_FN3(EL,,)
 #define ISL_DECLARE_EXPORTED_LIST_FN(EL)				\
 	ISL_DECLARE_LIST_FN3(EL,__isl_constructor,__isl_export)
+#define ISL_DECLARE_LIST_FN_READ2(EL,CONSTRUCTOR)			\
+CONSTRUCTOR								\
+__isl_give isl_##EL##_list *isl_##EL##_list_read_from_str(		\
+	isl_ctx *ctx, const char *str);
+#define ISL_DECLARE_LIST_FN_READ(EL)					\
+	ISL_DECLARE_LIST_FN_READ2(EL,)
+#define ISL_DECLARE_EXPORTED_LIST_FN_READ(EL)				\
+	ISL_DECLARE_LIST_FN_READ2(EL,__isl_constructor)
 
 #define ISL_DECLARE_LIST(EL)						\
 	ISL_DECLARE_LIST_TYPE(EL)					\

@@ -9408,6 +9408,39 @@ in isl format.
 	__isl_give char *isl_set_list_to_str(
 		__isl_keep isl_set_list *list);
 
+An C<isl_val_list>, C<isl_id_list>,
+C<isl_aff_list>, C<isl_pw_aff_list>, C<isl_pw_multi_aff_list>,
+C<isl_union_pw_aff_list> or
+C<isl_union_set_list> object
+can also be read from input using the following functions.
+
+	#include <isl/val.h>
+	__isl_give isl_val_list *isl_val_list_read_from_str(
+		isl_ctx *ctx, const char *str);
+
+	#include <isl/id.h>
+	__isl_give isl_id_list *isl_id_list_read_from_str(
+		isl_ctx *ctx, const char *str);
+
+	#include <isl/aff.h>
+	__isl_give isl_aff_list *
+	isl_aff_list_read_from_str(isl_ctx *ctx,
+		const char *str);
+	__isl_give isl_pw_aff_list *
+	isl_pw_aff_list_read_from_str(isl_ctx *ctx,
+		const char *str);
+	__isl_give isl_pw_multi_aff_list *
+	isl_pw_multi_aff_list_read_from_str(isl_ctx *ctx,
+		const char *str);
+	__isl_give isl_union_pw_aff_list *
+	isl_union_pw_aff_list_read_from_str(isl_ctx *ctx,
+		const char *str);
+
+	#include <isl/union_set.h>
+	__isl_give isl_union_set_list *
+	isl_union_set_list_read_from_str(isl_ctx *ctx,
+		const char *str);
+
 =head2 Associative arrays
 
 Associative arrays map isl objects of a specific type to isl objects
