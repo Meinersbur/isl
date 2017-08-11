@@ -10,7 +10,7 @@ extern "C" {
 struct __isl_export isl_id;
 typedef struct isl_id isl_id;
 
-ISL_DECLARE_LIST_TYPE(id)
+ISL_DECLARE_EXPORTED_LIST_TYPE(id)
 
 #if defined(__cplusplus)
 }
