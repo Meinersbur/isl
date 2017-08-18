@@ -1855,7 +1855,7 @@ static enum isl_change check_single_adj_eq(int i, int j,
 }
 
 /* At least one of the basic maps has an equality that is adjacent
- * to inequality.  Make sure that only one of the basic maps has
+ * to an inequality.  Make sure that only one of the basic maps has
  * such an equality and that the other basic map has exactly one
  * inequality adjacent to an equality.
  * If the other basic map does not have such an inequality, then
