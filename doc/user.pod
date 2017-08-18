@@ -3792,6 +3792,7 @@ contains any integer points.  The ``plain'' variants do not perform
 any computations, but simply check if the given set or relation
 is already known to be empty.
 
+	#include <isl/set.h>
 	isl_bool isl_basic_set_plain_is_empty(
 		__isl_keep isl_basic_set *bset);
 	isl_bool isl_basic_set_is_empty(
@@ -3799,8 +3800,12 @@ is already known to be empty.
 	isl_bool isl_set_plain_is_empty(
 		__isl_keep isl_set *set);
 	isl_bool isl_set_is_empty(__isl_keep isl_set *set);
+
+	#include <isl/union_set.h>
 	isl_bool isl_union_set_is_empty(
 		__isl_keep isl_union_set *uset);
+
+	#include <isl/map.h>
 	isl_bool isl_basic_map_plain_is_empty(
 		__isl_keep isl_basic_map *bmap);
 	isl_bool isl_basic_map_is_empty(
@@ -3808,6 +3813,8 @@ is already known to be empty.
 	isl_bool isl_map_plain_is_empty(
 		__isl_keep isl_map *map);
 	isl_bool isl_map_is_empty(__isl_keep isl_map *map);
+
+	#include <isl/union_map.h>
 	isl_bool isl_union_map_is_empty(
 		__isl_keep isl_union_map *umap);
 
