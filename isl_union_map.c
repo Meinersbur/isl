@@ -2432,6 +2432,15 @@ static isl_bool union_map_forall_user(__isl_keep isl_union_map *umap,
 	return data.res;
 }
 
+/* Is "umap" obviously empty?
+ */
+isl_bool isl_union_map_plain_is_empty(__isl_keep isl_union_map *umap)
+{
+	if (!umap)
+		return isl_bool_error;
+	return isl_union_map_n_map(umap) == 0;
+}
+
 isl_bool isl_union_map_is_empty(__isl_keep isl_union_map *umap)
 {
 	return union_map_forall(umap, &isl_map_is_empty);
