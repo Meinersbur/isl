@@ -612,7 +612,11 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 			if (!sc)
 				return NULL;
 			break;
-		default:
+		case isl_sc_key_validity:
+		case isl_sc_key_coincidence:
+		case isl_sc_key_condition:
+		case isl_sc_key_conditional_validity:
+		case isl_sc_key_proximity:
 			constraints = read_union_map(s);
 			sc = isl_schedule_constraints_set(sc, key, constraints);
 			if (!sc)
