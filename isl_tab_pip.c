@@ -5431,6 +5431,47 @@ static enum isl_next enter_level(int level, int init,
 	return isl_next_handle;
 }
 
+/* Add constraints to data->tab that select the current case (local->side)
+ * at the current level.
+ *
+ * If the linear combinations v should not be zero, then the cases are
+ *	v_0 >= 1
+ *	v_0 <= -1
+ *	v_0 = 0 and v_1 >= 1
+ *	v_0 = 0 and v_1 <= -1
+ *	v_0 = 0 and v_1 = 0 and v_2 >= 1
+ *	v_0 = 0 and v_1 = 0 and v_2 <= -1
+ *	...
+ * in this order.
+ *
+ * A snapshot is taken after the equality constraint (if any) has been added
+ * such that the next case can start off from this position.
+ * The rollback to this position is performed in enter_level.
+ */
+static isl_stat pick_side(struct isl_local_region *local,
+	struct isl_lexmin_data *data)
+{
+	struct isl_trivial_region *region;
+	int side, base;
+
+	region = &data->region[local->region];
+	side = local->side;
+	base = 2 * (side/2);
+
+	if (side == base && base >= 2 &&
+	    fix_zero(data->tab, region, base / 2 - 1, data) < 0)
+		return isl_stat_error;
+
+	local->snap = isl_tab_snap(data->tab);
+	if (isl_tab_push_basis(data->tab) < 0)
+		return isl_stat_error;
+
+	data->tab = pos_neg(data->tab, region, side, data);
+	if (!data->tab)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
 /* Free the memory associated to "data".
  */
 static void clear_lexmin_data(struct isl_lexmin_data *data)
@@ -5482,7 +5523,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	int (*conflict)(int con, void *user), void *user)
 {
 	struct isl_lexmin_data data = { n_op, n_region, region };
-	int r;
 	int level, init;
 
 	if (!bset)
@@ -5497,7 +5537,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	init = 1;
 
 	while (level >= 0) {
-		int side, base;
 		enum isl_next next;
 		struct isl_local_region *local = &data.local[level];
 
@@ -5506,11 +5545,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			goto error;
 		if (next == isl_next_done)
 			break;
-
-		r = local->region;
-		side = local->side;
-		base = 2 * (side/2);
-
 		if (next == isl_next_backtrack) {
 			level--;
 			init = 0;
@@ -5525,16 +5559,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			local->update = 0;
 		}
 
-		if (side == base && base >= 2 &&
-		    fix_zero(data.tab, &region[r], base / 2 - 1, &data) < 0)
-			goto error;
-
-		local->snap = isl_tab_snap(data.tab);
-		if (isl_tab_push_basis(data.tab) < 0)
-			goto error;
-
-		data.tab = pos_neg(data.tab, &region[r], side, &data);
-		if (!data.tab)
+		if (pick_side(local, &data) < 0)
 			goto error;
 
 		local->side++;
