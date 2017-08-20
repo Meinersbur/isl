@@ -5096,6 +5096,8 @@ static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
 
 /* Global internal data for isl_tab_basic_set_non_trivial_lexmin.
  *
+ * "n_op" is the number of initial coordinates to optimize,
+ * as passed to isl_tab_basic_set_non_trivial_lexmin.
  * "region" is the "n_region"-sized array of regions passed
  * to isl_tab_basic_set_non_trivial_lexmin.
  *
@@ -5110,6 +5112,7 @@ static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
  * It is initialized to a vector of size zero.
  */
 struct isl_lexmin_data {
+	int n_op;
 	int n_region;
 	struct isl_trivial_region *region;
 
@@ -5334,6 +5337,84 @@ static void init_local_region(struct isl_local_region *local, int region,
 	local->n_zero = 0;
 }
 
+/* What to do next after entering a level of the backtracking procedure.
+ *
+ * error: some error has occurred; abort
+ * done: an optimal solution has been found; stop search
+ * backtrack: backtrack to the previous level
+ * handle: add the constraints for the current level and
+ * 	move to the next level
+ */
+enum isl_next {
+	isl_next_error = -1,
+	isl_next_done,
+	isl_next_backtrack,
+	isl_next_handle,
+};
+
+/* Enter level "level" of the backtracking search and figure out
+ * what to do next.  "init" is set if the level was entered
+ * from a higher level and needs to be initialized.
+ * Otherwise, the level is entered as a result of backtracking and
+ * the tableau needs to be restored to a position that can
+ * be used for the next case at this level.
+ * The snapshot is assumed to have been saved in the previous case,
+ * before the constraints specific to that case were added.
+ *
+ * In the initialization case, the local region is initialized
+ * to point to the first violated region.
+ * If the constraints of all regions are satisfied by the current
+ * sample of the tableau, then tell the caller to continue looking
+ * for a better solution or to stop searching if an optimal solution
+ * has been found.
+ *
+ * If the tableau is empty or if all cases at the current level
+ * have been considered, then the caller needs to backtrack as well.
+ */
+static enum isl_next enter_level(int level, int init,
+	struct isl_lexmin_data *data)
+{
+	struct isl_local_region *local = &data->local[level];
+
+	if (init) {
+		int r;
+
+		data->tab = cut_to_integer_lexmin(data->tab, CUT_ONE);
+		if (!data->tab)
+			return isl_next_error;
+		if (data->tab->empty)
+			return isl_next_backtrack;
+		r = first_trivial_region(data);
+		if (r < 0)
+			return isl_next_error;
+		if (r == data->n_region) {
+			update_outer_levels(data, level);
+			isl_vec_free(data->sol);
+			data->sol = isl_tab_get_sample_value(data->tab);
+			if (!data->sol)
+				return isl_next_error;
+			if (is_optimal(data->sol, data->n_op))
+				return isl_next_done;
+			return isl_next_backtrack;
+		}
+		if (level >= data->n_region)
+			isl_die(isl_vec_get_ctx(data->v), isl_error_internal,
+				"nesting level too deep",
+				return isl_next_error);
+		init_local_region(local, r, data);
+		if (isl_tab_extend_cons(data->tab,
+				    2 * local->n + 2 * data->n_op) < 0)
+			return isl_next_error;
+	} else {
+		if (isl_tab_rollback(data->tab, local->snap) < 0)
+			return isl_next_error;
+	}
+
+	if (local->side >= 2 * local->n)
+		return isl_next_backtrack;
+	return isl_next_handle;
+}
+
 /* Free the memory associated to "data".
  */
 static void clear_lexmin_data(struct isl_lexmin_data *data)
@@ -5384,7 +5465,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	struct isl_trivial_region *region,
 	int (*conflict)(int con, void *user), void *user)
 {
-	struct isl_lexmin_data data = { n_region, region };
+	struct isl_lexmin_data data = { n_op, n_region, region };
 	int r;
 	int level, init;
 
@@ -5401,46 +5482,20 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 
 	while (level >= 0) {
 		int side, base;
+		enum isl_next next;
 		struct isl_local_region *local = &data.local[level];
 
-		if (init) {
-			data.tab = cut_to_integer_lexmin(data.tab, CUT_ONE);
-			if (!data.tab)
-				goto error;
-			if (data.tab->empty)
-				goto backtrack;
-			r = first_trivial_region(&data);
-			if (r < 0)
-				goto error;
-			if (r == n_region) {
-				update_outer_levels(&data, level);
-				isl_vec_free(data.sol);
-				data.sol = isl_tab_get_sample_value(data.tab);
-				if (!data.sol)
-					goto error;
-				if (is_optimal(data.sol, n_op))
-					break;
-				goto backtrack;
-			}
-			if (level >= n_region)
-				isl_die(isl_vec_get_ctx(data.v),
-					isl_error_internal,
-					"nesting level too deep", goto error);
-			init_local_region(local, r, &data);
-			if (isl_tab_extend_cons(data.tab,
-					    2 * local->n + 2 * n_op) < 0)
-				goto error;
-		} else {
-			if (isl_tab_rollback(data.tab, local->snap) < 0)
-				goto error;
-		}
+		next = enter_level(level, init, &data);
+		if (next < 0)
+			goto error;
+		if (next == isl_next_done)
+			break;
 
 		r = local->region;
 		side = local->side;
 		base = 2 * (side/2);
 
-		if (side >= 2 * local->n) {
-backtrack:
+		if (next == isl_next_backtrack) {
 			level--;
 			init = 0;
 			continue;
