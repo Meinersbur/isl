@@ -5256,7 +5256,7 @@ error:
  * "side" is the index of the current case at this level.
  * "n" is the number of triviality directions.
  */
-struct isl_trivial {
+struct isl_local_region {
 	int update;
 	int n_zero;
 	int region;
@@ -5312,7 +5312,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	isl_ctx *ctx;
 	isl_vec *sol = NULL;
 	struct isl_tab *tab;
-	struct isl_trivial *triv = NULL;
+	struct isl_local_region *local = NULL;
 	int level, init;
 
 	if (!bset)
@@ -5328,8 +5328,8 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	tab->conflict_user = user;
 
 	data.v = isl_vec_alloc(ctx, 1 + tab->n_var);
-	triv = isl_calloc_array(ctx, struct isl_trivial, n_region);
-	if (!data.v || (n_region && !triv))
+	local = isl_calloc_array(ctx, struct isl_local_region, n_region);
+	if (!data.v || (n_region && !local))
 		goto error;
 
 	level = 0;
@@ -5349,7 +5349,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 				goto error;
 			if (r == n_region) {
 				for (i = 0; i < level; ++i)
-					triv[i].update = 1;
+					local[i].update = 1;
 				isl_vec_free(sol);
 				sol = isl_tab_get_sample_value(tab);
 				if (!sol)
@@ -5361,43 +5361,43 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			if (level >= n_region)
 				isl_die(ctx, isl_error_internal,
 					"nesting level too deep", goto error);
-			triv[level].n = isl_mat_rows(region[r].trivial);
+			local[level].n = isl_mat_rows(region[r].trivial);
 			if (isl_tab_extend_cons(tab,
-					    2 * triv[level].n + 2 * n_op) < 0)
+					    2 * local[level].n + 2 * n_op) < 0)
 				goto error;
-			triv[level].region = r;
-			triv[level].side = 0;
-			triv[level].update = 0;
-			triv[level].n_zero = 0;
+			local[level].region = r;
+			local[level].side = 0;
+			local[level].update = 0;
+			local[level].n_zero = 0;
 		} else {
-			if (isl_tab_rollback(tab, triv[level].snap) < 0)
+			if (isl_tab_rollback(tab, local[level].snap) < 0)
 				goto error;
 		}
 
-		r = triv[level].region;
-		side = triv[level].side;
+		r = local[level].region;
+		side = local[level].side;
 		base = 2 * (side/2);
 
-		if (side >= 2 * triv[level].n) {
+		if (side >= 2 * local[level].n) {
 backtrack:
 			level--;
 			init = 0;
 			continue;
 		}
 
-		if (triv[level].update) {
-			triv[level].n_zero = force_better_solution(tab, sol,
-						    n_op, triv[level].n_zero);
-			if (triv[level].n_zero < 0)
+		if (local[level].update) {
+			local[level].n_zero = force_better_solution(tab, sol,
+						    n_op, local[level].n_zero);
+			if (local[level].n_zero < 0)
 				goto error;
-			triv[level].update = 0;
+			local[level].update = 0;
 		}
 
 		if (side == base && base >= 2 &&
 		    fix_zero(tab, &region[r], base / 2 - 1, &data) < 0)
 			goto error;
 
-		triv[level].snap = isl_tab_snap(tab);
+		local[level].snap = isl_tab_snap(tab);
 		if (isl_tab_push_basis(tab) < 0)
 			goto error;
 
@@ -5405,19 +5405,19 @@ backtrack:
 		if (!tab)
 			goto error;
 
-		triv[level].side++;
+		local[level].side++;
 		level++;
 		init = 1;
 	}
 
-	free(triv);
+	free(local);
 	isl_vec_free(data.v);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 
 	return sol;
 error:
-	free(triv);
+	free(local);
 	isl_vec_free(data.v);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
