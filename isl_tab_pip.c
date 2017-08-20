@@ -5118,22 +5118,21 @@ struct isl_lexmin_data {
 /* Return the index of the first trivial region, "n_region" if all regions
  * are non-trivial or -1 in case of error.
  */
-static int first_trivial_region(struct isl_tab *tab,
-	int n_region, struct isl_trivial_region *region)
+static int first_trivial_region(struct isl_lexmin_data *data)
 {
 	int i;
 
-	for (i = 0; i < n_region; ++i) {
+	for (i = 0; i < data->n_region; ++i) {
 		isl_bool trivial;
-		trivial = region_is_trivial(tab, region[i].pos,
-					region[i].trivial);
+		trivial = region_is_trivial(data->tab, data->region[i].pos,
+					data->region[i].trivial);
 		if (trivial < 0)
 			return -1;
 		if (trivial)
 			return i;
 	}
 
-	return n_region;
+	return data->n_region;
 }
 
 /* Check if the solution is optimal, i.e., whether the first
@@ -5389,7 +5388,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 				goto error;
 			if (data.tab->empty)
 				goto backtrack;
-			r = first_trivial_region(data.tab, n_region, region);
+			r = first_trivial_region(&data);
 			if (r < 0)
 				goto error;
 			if (r == n_region) {
