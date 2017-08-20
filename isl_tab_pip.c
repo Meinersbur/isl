@@ -5369,6 +5369,9 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			triv[level].side = 0;
 			triv[level].update = 0;
 			triv[level].n_zero = 0;
+		} else {
+			if (isl_tab_rollback(tab, triv[level].snap) < 0)
+				goto error;
 		}
 
 		r = triv[level].region;
@@ -5379,9 +5382,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 backtrack:
 			level--;
 			init = 0;
-			if (level >= 0)
-				if (isl_tab_rollback(tab, triv[level].snap) < 0)
-					goto error;
 			continue;
 		}
 
