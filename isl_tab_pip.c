@@ -5352,6 +5352,14 @@ enum isl_next {
 	isl_next_handle,
 };
 
+/* Have all cases of the current region been considered?
+ * If there are n directions, then there are 2n cases.
+ */
+static int finished_all_cases(struct isl_local_region *local)
+{
+	return local->side >= 2 * local->n;
+}
+
 /* Enter level "level" of the backtracking search and figure out
  * what to do next.  "init" is set if the level was entered
  * from a higher level and needs to be initialized.
@@ -5410,7 +5418,7 @@ static enum isl_next enter_level(int level, int init,
 			return isl_next_error;
 	}
 
-	if (local->side >= 2 * local->n)
+	if (finished_all_cases(local))
 		return isl_next_backtrack;
 	return isl_next_handle;
 }
