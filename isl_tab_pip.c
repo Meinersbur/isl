@@ -5187,7 +5187,7 @@ error:
  * "v" is a pre-allocated vector that can be used for adding
  * constraints to the tableau.
  */
-struct isl_trivial_global {
+struct isl_lexmin_data {
 	isl_vec *v;
 };
 
@@ -5197,7 +5197,7 @@ struct isl_trivial_global {
  * two more elements in the constraint array are available in the tableau.
  */
 static isl_stat fix_zero(struct isl_tab *tab, struct isl_trivial_region *region,
-	int dir, struct isl_trivial_global *data)
+	int dir, struct isl_lexmin_data *data)
 {
 	int len;
 
@@ -5223,7 +5223,7 @@ static isl_stat fix_zero(struct isl_tab *tab, struct isl_trivial_region *region,
  */
 static struct isl_tab *pos_neg(struct isl_tab *tab,
 	struct isl_trivial_region *region,
-	int side, struct isl_trivial_global *data)
+	int side, struct isl_lexmin_data *data)
 {
 	int len;
 
@@ -5308,7 +5308,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	struct isl_trivial_region *region,
 	int (*conflict)(int con, void *user), void *user)
 {
-	struct isl_trivial_global data = { 0 };
+	struct isl_lexmin_data data = { 0 };
 	int i;
 	int r;
 	isl_ctx *ctx;
