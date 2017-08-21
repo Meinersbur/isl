@@ -5354,9 +5354,17 @@ enum isl_next {
 
 /* Have all cases of the current region been considered?
  * If there are n directions, then there are 2n cases.
+ *
+ * The constraints in the current tableau are imposed
+ * in all subsequent cases.  This means that if the current
+ * tableau is empty, then none of those cases should be considered
+ * anymore and all cases have effectively been considered.
  */
-static int finished_all_cases(struct isl_local_region *local)
+static int finished_all_cases(struct isl_local_region *local,
+	struct isl_lexmin_data *data)
 {
+	if (data->tab->empty)
+		return 1;
 	return local->side >= 2 * local->n;
 }
 
@@ -5418,7 +5426,7 @@ static enum isl_next enter_level(int level, int init,
 			return isl_next_error;
 	}
 
-	if (finished_all_cases(local))
+	if (finished_all_cases(local, data))
 		return isl_next_backtrack;
 	return isl_next_handle;
 }
