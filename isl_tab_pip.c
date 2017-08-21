@@ -5099,6 +5099,9 @@ static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
  * "region" is the "n_region"-sized array of regions passed
  * to isl_tab_basic_set_non_trivial_lexmin.
  *
+ * "local" is an array of local data structure, one for each
+ * (potential) level of the backtracking procedure of
+ * isl_tab_basic_set_non_trivial_lexmin.
  * "v" is a pre-allocated vector that can be used for adding
  * constraints to the tableau.
  */
@@ -5106,6 +5109,7 @@ struct isl_lexmin_data {
 	int n_region;
 	struct isl_trivial_region *region;
 
+	struct isl_local_region *local;
 	isl_vec *v;
 };
 
@@ -5290,6 +5294,7 @@ static void init_local_region(struct isl_local_region *local, int region,
  */
 static void clear_lexmin_data(struct isl_lexmin_data *data)
 {
+	free(data->local);
 	isl_vec_free(data->v);
 }
 
@@ -5340,7 +5345,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	isl_ctx *ctx;
 	isl_vec *sol = NULL;
 	struct isl_tab *tab;
-	struct isl_local_region *local = NULL;
 	int level, init;
 
 	if (!bset)
@@ -5356,8 +5360,8 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	tab->conflict_user = user;
 
 	data.v = isl_vec_alloc(ctx, 1 + tab->n_var);
-	local = isl_calloc_array(ctx, struct isl_local_region, n_region);
-	if (!data.v || (n_region && !local))
+	data.local = isl_calloc_array(ctx, struct isl_local_region, n_region);
+	if (!data.v || (n_region && !data.local))
 		goto error;
 
 	level = 0;
@@ -5365,6 +5369,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 
 	while (level >= 0) {
 		int side, base;
+		struct isl_local_region *local = &data.local[level];
 
 		if (init) {
 			tab = cut_to_integer_lexmin(tab, CUT_ONE);
@@ -5377,7 +5382,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 				goto error;
 			if (r == n_region) {
 				for (i = 0; i < level; ++i)
-					local[i].update = 1;
+					data.local[i].update = 1;
 				isl_vec_free(sol);
 				sol = isl_tab_get_sample_value(tab);
 				if (!sol)
@@ -5389,39 +5394,39 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			if (level >= n_region)
 				isl_die(ctx, isl_error_internal,
 					"nesting level too deep", goto error);
-			init_local_region(&local[level], r, &data);
+			init_local_region(local, r, &data);
 			if (isl_tab_extend_cons(tab,
-					    2 * local[level].n + 2 * n_op) < 0)
+					    2 * local->n + 2 * n_op) < 0)
 				goto error;
 		} else {
-			if (isl_tab_rollback(tab, local[level].snap) < 0)
+			if (isl_tab_rollback(tab, local->snap) < 0)
 				goto error;
 		}
 
-		r = local[level].region;
-		side = local[level].side;
+		r = local->region;
+		side = local->side;
 		base = 2 * (side/2);
 
-		if (side >= 2 * local[level].n) {
+		if (side >= 2 * local->n) {
 backtrack:
 			level--;
 			init = 0;
 			continue;
 		}
 
-		if (local[level].update) {
-			local[level].n_zero = force_better_solution(tab, sol,
-						    n_op, local[level].n_zero);
-			if (local[level].n_zero < 0)
+		if (local->update) {
+			local->n_zero = force_better_solution(tab, sol,
+						    n_op, local->n_zero);
+			if (local->n_zero < 0)
 				goto error;
-			local[level].update = 0;
+			local->update = 0;
 		}
 
 		if (side == base && base >= 2 &&
 		    fix_zero(tab, &region[r], base / 2 - 1, &data) < 0)
 			goto error;
 
-		local[level].snap = isl_tab_snap(tab);
+		local->snap = isl_tab_snap(tab);
 		if (isl_tab_push_basis(tab) < 0)
 			goto error;
 
@@ -5429,19 +5434,17 @@ backtrack:
 		if (!tab)
 			goto error;
 
-		local[level].side++;
+		local->side++;
 		level++;
 		init = 1;
 	}
 
-	free(local);
 	clear_lexmin_data(&data);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 
 	return sol;
 error:
-	free(local);
 	clear_lexmin_data(&data);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
