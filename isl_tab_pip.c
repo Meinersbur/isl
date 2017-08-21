@@ -5431,6 +5431,29 @@ static enum isl_next enter_level(int level, int init,
 	return isl_next_handle;
 }
 
+/* If a solution has been found in the previous case at this level
+ * (marked by local->update being set), then add constraints
+ * that enforce a better solution in the present and all following cases.
+ * The constraints only need to be imposed once because they are
+ * included in the snapshot (taken in pick_side) that will be used in
+ * subsequent cases.
+ */
+static isl_stat better_next_side(struct isl_local_region *local,
+	struct isl_lexmin_data *data)
+{
+	if (!local->update)
+		return isl_stat_ok;
+
+	local->n_zero = force_better_solution(data->tab,
+				data->sol, data->n_op, local->n_zero);
+	if (local->n_zero < 0)
+		return isl_stat_error;
+
+	local->update = 0;
+
+	return isl_stat_ok;
+}
+
 /* Add constraints to data->tab that select the current case (local->side)
  * at the current level.
  *
@@ -5551,14 +5574,8 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			continue;
 		}
 
-		if (local->update) {
-			local->n_zero = force_better_solution(data.tab,
-						data.sol, n_op, local->n_zero);
-			if (local->n_zero < 0)
-				goto error;
-			local->update = 0;
-		}
-
+		if (better_next_side(local, &data) < 0)
+			goto error;
 		if (pick_side(local, &data) < 0)
 			goto error;
 
