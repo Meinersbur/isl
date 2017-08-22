@@ -5096,10 +5096,16 @@ static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
 
 /* Global internal data for isl_tab_basic_set_non_trivial_lexmin.
  *
+ * "region" is the "n_region"-sized array of regions passed
+ * to isl_tab_basic_set_non_trivial_lexmin.
+ *
  * "v" is a pre-allocated vector that can be used for adding
  * constraints to the tableau.
  */
 struct isl_lexmin_data {
+	int n_region;
+	struct isl_trivial_region *region;
+
 	isl_vec *v;
 };
 
@@ -5308,7 +5314,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	struct isl_trivial_region *region,
 	int (*conflict)(int con, void *user), void *user)
 {
-	struct isl_lexmin_data data = { 0 };
+	struct isl_lexmin_data data = { n_region, region };
 	int i;
 	int r;
 	isl_ctx *ctx;
