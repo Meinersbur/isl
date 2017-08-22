@@ -5273,6 +5273,19 @@ struct isl_local_region {
 	struct isl_tab_undo *snap;
 };
 
+/* Initialize "local" to refer to region "region" and
+ * to initiate processing at this level.
+ */
+static void init_local_region(struct isl_local_region *local, int region,
+	struct isl_lexmin_data *data)
+{
+	local->n = isl_mat_rows(data->region[region].trivial);
+	local->region = region;
+	local->side = 0;
+	local->update = 0;
+	local->n_zero = 0;
+}
+
 /* Return the lexicographically smallest non-trivial solution of the
  * given ILP problem.
  *
@@ -5369,14 +5382,10 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			if (level >= n_region)
 				isl_die(ctx, isl_error_internal,
 					"nesting level too deep", goto error);
-			local[level].n = isl_mat_rows(region[r].trivial);
+			init_local_region(&local[level], r, &data);
 			if (isl_tab_extend_cons(tab,
 					    2 * local[level].n + 2 * n_op) < 0)
 				goto error;
-			local[level].region = r;
-			local[level].side = 0;
-			local[level].update = 0;
-			local[level].n_zero = 0;
 		} else {
 			if (isl_tab_rollback(tab, local[level].snap) < 0)
 				goto error;
