@@ -5278,6 +5278,31 @@ struct isl_local_region {
 	struct isl_tab_undo *snap;
 };
 
+/* Initialize the global data structure "data" used while solving
+ * the ILP problem "bset".
+ */
+static isl_stat init_lexmin_data(struct isl_lexmin_data *data,
+	__isl_keep isl_basic_set *bset)
+{
+	isl_ctx *ctx;
+
+	ctx = isl_basic_set_get_ctx(bset);
+
+	data->tab = tab_for_lexmin(bset, NULL, 0, 0);
+	if (!data->tab)
+		return isl_stat_error;
+
+	data->v = isl_vec_alloc(ctx, 1 + data->tab->n_var);
+	if (!data->v)
+		return isl_stat_error;
+	data->local = isl_calloc_array(ctx, struct isl_local_region,
+					data->n_region);
+	if (data->n_region && !data->local)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Mark all outer levels as requiring a better solution
  * in the next cases.
  */
@@ -5364,16 +5389,10 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	ctx = isl_basic_set_get_ctx(bset);
 	sol = isl_vec_alloc(ctx, 0);
 
-	data.tab = tab_for_lexmin(bset, NULL, 0, 0);
-	if (!data.tab)
+	if (init_lexmin_data(&data, bset) < 0)
 		goto error;
 	data.tab->conflict = conflict;
 	data.tab->conflict_user = user;
-
-	data.v = isl_vec_alloc(ctx, 1 + data.tab->n_var);
-	data.local = isl_calloc_array(ctx, struct isl_local_region, n_region);
-	if (!data.v || (n_region && !data.local))
-		goto error;
 
 	level = 0;
 	init = 1;
