@@ -5105,6 +5105,9 @@ static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
  * isl_tab_basic_set_non_trivial_lexmin.
  * "v" is a pre-allocated vector that can be used for adding
  * constraints to the tableau.
+ *
+ * "sol" contains the best solution found so far.
+ * It is initialized to a vector of size zero.
  */
 struct isl_lexmin_data {
 	int n_region;
@@ -5113,6 +5116,8 @@ struct isl_lexmin_data {
 	struct isl_tab *tab;
 	struct isl_local_region *local;
 	isl_vec *v;
+
+	isl_vec *sol;
 };
 
 /* Return the index of the first trivial region, "n_region" if all regions
@@ -5300,6 +5305,8 @@ static isl_stat init_lexmin_data(struct isl_lexmin_data *data,
 	if (data->n_region && !data->local)
 		return isl_stat_error;
 
+	data->sol = isl_vec_alloc(ctx, 0);
+
 	return isl_stat_ok;
 }
 
@@ -5379,15 +5386,10 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 {
 	struct isl_lexmin_data data = { n_region, region };
 	int r;
-	isl_ctx *ctx;
-	isl_vec *sol = NULL;
 	int level, init;
 
 	if (!bset)
 		return NULL;
-
-	ctx = isl_basic_set_get_ctx(bset);
-	sol = isl_vec_alloc(ctx, 0);
 
 	if (init_lexmin_data(&data, bset) < 0)
 		goto error;
@@ -5412,16 +5414,17 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 				goto error;
 			if (r == n_region) {
 				update_outer_levels(&data, level);
-				isl_vec_free(sol);
-				sol = isl_tab_get_sample_value(data.tab);
-				if (!sol)
+				isl_vec_free(data.sol);
+				data.sol = isl_tab_get_sample_value(data.tab);
+				if (!data.sol)
 					goto error;
-				if (is_optimal(sol, n_op))
+				if (is_optimal(data.sol, n_op))
 					break;
 				goto backtrack;
 			}
 			if (level >= n_region)
-				isl_die(ctx, isl_error_internal,
+				isl_die(isl_vec_get_ctx(data.v),
+					isl_error_internal,
 					"nesting level too deep", goto error);
 			init_local_region(local, r, &data);
 			if (isl_tab_extend_cons(data.tab,
@@ -5444,8 +5447,8 @@ backtrack:
 		}
 
 		if (local->update) {
-			local->n_zero = force_better_solution(data.tab, sol,
-						    n_op, local->n_zero);
+			local->n_zero = force_better_solution(data.tab,
+						data.sol, n_op, local->n_zero);
 			if (local->n_zero < 0)
 				goto error;
 			local->update = 0;
@@ -5471,11 +5474,11 @@ backtrack:
 	clear_lexmin_data(&data);
 	isl_basic_set_free(bset);
 
-	return sol;
+	return data.sol;
 error:
 	clear_lexmin_data(&data);
 	isl_basic_set_free(bset);
-	isl_vec_free(sol);
+	isl_vec_free(data.sol);
 	return NULL;
 }
 
