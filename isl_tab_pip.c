@@ -5277,6 +5277,17 @@ struct isl_local_region {
 	struct isl_tab_undo *snap;
 };
 
+/* Mark all outer levels as requiring a better solution
+ * in the next cases.
+ */
+static void update_outer_levels(struct isl_lexmin_data *data, int level)
+{
+	int i;
+
+	for (i = 0; i < level; ++i)
+		data->local[i].update = 1;
+}
+
 /* Initialize "local" to refer to region "region" and
  * to initiate processing at this level.
  */
@@ -5340,7 +5351,6 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	int (*conflict)(int con, void *user), void *user)
 {
 	struct isl_lexmin_data data = { n_region, region };
-	int i;
 	int r;
 	isl_ctx *ctx;
 	isl_vec *sol = NULL;
@@ -5381,8 +5391,7 @@ __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 			if (r < 0)
 				goto error;
 			if (r == n_region) {
-				for (i = 0; i < level; ++i)
-					data.local[i].update = 1;
+				update_outer_levels(&data, level);
 				isl_vec_free(sol);
 				sol = isl_tab_get_sample_value(tab);
 				if (!sol)
