@@ -5286,6 +5286,13 @@ static void init_local_region(struct isl_local_region *local, int region,
 	local->n_zero = 0;
 }
 
+/* Free the memory associated to "data".
+ */
+static void clear_lexmin_data(struct isl_lexmin_data *data)
+{
+	isl_vec_free(data->v);
+}
+
 /* Return the lexicographically smallest non-trivial solution of the
  * given ILP problem.
  *
@@ -5428,14 +5435,14 @@ backtrack:
 	}
 
 	free(local);
-	isl_vec_free(data.v);
+	clear_lexmin_data(&data);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 
 	return sol;
 error:
 	free(local);
-	isl_vec_free(data.v);
+	clear_lexmin_data(&data);
 	isl_tab_free(tab);
 	isl_basic_set_free(bset);
 	isl_vec_free(sol);
