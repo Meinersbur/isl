@@ -5094,6 +5094,15 @@ static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
 	return is_trivial;
 }
 
+/* Global internal data for isl_tab_basic_set_non_trivial_lexmin.
+ *
+ * "v" is a pre-allocated vector that can be used for adding
+ * constraints to the tableau.
+ */
+struct isl_lexmin_data {
+	isl_vec *v;
+};
+
 /* Return the index of the first trivial region, "n_region" if all regions
  * are non-trivial or -1 in case of error.
  */
@@ -5181,15 +5190,6 @@ error:
 	isl_vec_free(v);
 	return -1;
 }
-
-/* Global internal data for isl_tab_basic_set_non_trivial_lexmin.
- *
- * "v" is a pre-allocated vector that can be used for adding
- * constraints to the tableau.
- */
-struct isl_lexmin_data {
-	isl_vec *v;
-};
 
 /* Fix triviality direction "dir" of the given region to zero.
  *
