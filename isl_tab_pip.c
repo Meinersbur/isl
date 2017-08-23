@@ -5255,6 +5255,8 @@ error:
  * "region" is the non-triviality region considered at this level.
  * "side" is the index of the current case at this level.
  * "n" is the number of triviality directions.
+ * "snap" is a snapshot of the tableau holding a state that needs
+ * to be satisfied by all subsequent cases.
  */
 struct isl_local_region {
 	int update;
