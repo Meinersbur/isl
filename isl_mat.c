@@ -859,7 +859,7 @@ int isl_mat_rank(__isl_keep isl_mat *mat)
 	return rank;
 }
 
-struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat)
+__isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat)
 {
 	int i, rank;
 	struct isl_mat *U = NULL;
