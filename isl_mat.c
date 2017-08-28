@@ -822,14 +822,17 @@ __isl_give isl_mat *isl_mat_lexnonneg_rows(__isl_take isl_mat *mat)
  * Start looking at column "first_col" and only consider
  * the columns to be of size "n_row".
  * "H" is assumed to be non-NULL.
+ *
+ * Since "H" is in column echelon form, the first non-zero entry
+ * in a column is always in a later position compared to the previous column.
  */
 static int hermite_first_zero_col(__isl_keep isl_mat *H, int first_col,
 	int n_row)
 {
 	int row, col;
 
-	for (col = first_col; col < H->n_col; ++col) {
-		for (row = 0; row < n_row; ++row)
+	for (col = first_col, row = 0; col < H->n_col; ++col) {
+		for (; row < n_row; ++row)
 			if (!isl_int_is_zero(H->row[row][col]))
 				break;
 		if (row == n_row)
