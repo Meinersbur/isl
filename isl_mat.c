@@ -817,28 +817,43 @@ __isl_give isl_mat *isl_mat_lexnonneg_rows(__isl_take isl_mat *mat)
 	return mat;
 }
 
+/* Given a matrix "H" is column echelon form, what is the first
+ * zero column?  That is how many initial columns are non-zero?
+ * Start looking at column "first_col" and only consider
+ * the columns to be of size "n_row".
+ * "H" is assumed to be non-NULL.
+ */
+static int hermite_first_zero_col(__isl_keep isl_mat *H, int first_col,
+	int n_row)
+{
+	int row, col;
+
+	for (col = first_col; col < H->n_col; ++col) {
+		for (row = 0; row < n_row; ++row)
+			if (!isl_int_is_zero(H->row[row][col]))
+				break;
+		if (row == n_row)
+			return col;
+	}
+
+	return H->n_col;
+}
+
 /* Return the rank of "mat", or -1 in case of error.
  */
 int isl_mat_rank(__isl_keep isl_mat *mat)
 {
-	int row, col;
+	int rank;
 	isl_mat *H;
 
 	H = isl_mat_left_hermite(isl_mat_copy(mat), 0, NULL, NULL);
 	if (!H)
 		return -1;
 
-	for (col = 0; col < H->n_col; ++col) {
-		for (row = 0; row < H->n_row; ++row)
-			if (!isl_int_is_zero(H->row[row][col]))
-				break;
-		if (row == H->n_row)
-			break;
-	}
-
+	rank = hermite_first_zero_col(H, 0, H->n_row);
 	isl_mat_free(H);
 
-	return col;
+	return rank;
 }
 
 struct isl_mat *isl_mat_right_kernel(struct isl_mat *mat)
