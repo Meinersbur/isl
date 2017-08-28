@@ -861,7 +861,7 @@ int isl_mat_rank(__isl_keep isl_mat *mat)
 
 __isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat)
 {
-	int i, rank;
+	int rank;
 	struct isl_mat *U = NULL;
 	struct isl_mat *K;
 
@@ -869,12 +869,7 @@ __isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat)
 	if (!mat || !U)
 		goto error;
 
-	for (i = 0, rank = 0; rank < mat->n_col; ++rank) {
-		while (i < mat->n_row && isl_int_is_zero(mat->row[i][rank]))
-			++i;
-		if (i >= mat->n_row)
-			break;
-	}
+	rank = hermite_first_zero_col(mat, 0, mat->n_row);
 	K = isl_mat_alloc(U->ctx, U->n_row, U->n_col - rank);
 	if (!K)
 		goto error;
