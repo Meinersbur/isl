@@ -7753,6 +7753,12 @@ the original and the kernel (in that order) is the zero matrix.
 
 	__isl_give isl_mat *isl_mat_right_kernel(__isl_take isl_mat *mat);
 
+The following function computes a basis for the space spanned
+by the rows of a matrix.
+
+	__isl_give isl_mat *isl_mat_row_basis(
+		__isl_take isl_mat *mat);
+
 =head2 Bounds on Piecewise Quasipolynomials and Piecewise Quasipolynomial Reductions
 
 The following functions determine

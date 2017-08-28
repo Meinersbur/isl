@@ -2018,3 +2018,12 @@ int isl_mat_initial_non_zero_cols(__isl_keep isl_mat *mat)
 
 	return i;
 }
+
+/* Return a basis for the space spanned by the rows of "mat".
+ * Any basis will do, so simply perform Gaussian elimination and
+ * remove the empty rows.
+ */
+__isl_give isl_mat *isl_mat_row_basis(__isl_take isl_mat *mat)
+{
+	return isl_mat_reverse_gauss(mat);
+}
