@@ -11,6 +11,8 @@
  * B.P. 105 - 78153 Le Chesnay, France
  */
 
+#include <isl/val.h>
+#include <isl/space.h>
 #include <isl/set.h>
 #include <isl_schedule_band.h>
 #include <isl_schedule_private.h>
