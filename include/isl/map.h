@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 #include <isl/ctx.h>
-#include <isl/space.h>
+#include <isl/space_type.h>
 #include <isl/vec.h>
 #include <isl/mat.h>
 #include <isl/printer.h>

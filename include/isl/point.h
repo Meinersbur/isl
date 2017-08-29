@@ -2,7 +2,7 @@
 #define ISL_POINT_H
 
 #include <stdio.h>
-#include <isl/space.h>
+#include <isl/space_type.h>
 #include <isl/val.h>
 
 #if defined(__cplusplus)
