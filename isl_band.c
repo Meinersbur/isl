@@ -10,6 +10,7 @@
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#include <isl/space.h>
 #include <isl_band_private.h>
 #include <isl_schedule_private.h>
 
