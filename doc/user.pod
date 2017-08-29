@@ -2171,10 +2171,13 @@ no explicit representation is known.
 
 To iterate over all the sets or maps in a union set or map, use
 
+	#include <isl/union_set.h>
 	isl_stat isl_union_set_foreach_set(
 		__isl_keep isl_union_set *uset,
 		isl_stat (*fn)(__isl_take isl_set *set, void *user),
 		void *user);
+
+	#include <isl/union_map.h>
 	isl_stat isl_union_map_foreach_map(
 		__isl_keep isl_union_map *umap,
 		isl_stat (*fn)(__isl_take isl_map *map, void *user),
