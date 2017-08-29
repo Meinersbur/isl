@@ -656,7 +656,7 @@ static isl_bool graph_has_validity_edge(struct isl_sched_graph *graph,
 	return graph_has_edge(graph, isl_edge_conditional_validity, src, dst);
 }
 
-static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
+static isl_stat graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int n_node, int n_edge)
 {
 	int i;
@@ -676,12 +676,12 @@ static int graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 
 	if (!graph->node || !graph->region || (graph->n_edge && !graph->edge) ||
 	    !graph->sorted)
-		return -1;
+		return isl_stat_error;
 
 	for(i = 0; i < graph->n; ++i)
 		graph->sorted[i] = i;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
