@@ -656,6 +656,10 @@ static isl_bool graph_has_validity_edge(struct isl_sched_graph *graph,
 	return graph_has_edge(graph, isl_edge_conditional_validity, src, dst);
 }
 
+/* Perform all the required memory allocations for a schedule graph "graph"
+ * with "n_node" nodes and "n_edge" edge and initialize the corresponding
+ * fields.
+ */
 static isl_stat graph_alloc(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int n_node, int n_edge)
 {
