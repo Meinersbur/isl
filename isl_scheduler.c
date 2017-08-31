@@ -69,7 +69,7 @@
  * linearly independent of previously computed schedule rows.
  * start is the first variable in the LP problem in the sequences that
  *	represents the schedule coefficients of this node
- * nvar is the dimension of the domain
+ * nvar is the dimension of the (compressed) domain
  * nparam is the number of parameters or 0 if we are not constructing
  *	a parametric schedule
  *
