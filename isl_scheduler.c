@@ -43,6 +43,9 @@
  * The scheduling algorithm implemented in this file was inspired by
  * Bondhugula et al., "Automatic Transformations for Communication-Minimized
  * Parallelization and Locality Optimization in the Polyhedral Model".
+ *
+ * For a detailed description of the variant implemented in isl,
+ * see Verdoolaege and Janssens, "Scheduling for PPCG" (2017).
  */
 
 
