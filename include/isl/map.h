@@ -775,8 +775,8 @@ __isl_give isl_pw_aff *isl_map_dim_min(__isl_take isl_map *map, int pos);
 __isl_give isl_pw_aff *isl_map_dim_max(__isl_take isl_map *map, int pos);
 
 ISL_DECLARE_LIST_FN(basic_map)
-ISL_DECLARE_LIST_FN(map)
-ISL_DECLARE_LIST_FN_READ(map)
+ISL_DECLARE_EXPORTED_LIST_FN(map)
+ISL_DECLARE_EXPORTED_LIST_FN_READ(map)
 
 #if defined(__cplusplus)
 }
