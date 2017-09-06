@@ -229,7 +229,7 @@ error:
 	return NULL;
 }
 
-static int isl_mat_rank(__isl_keep isl_mat *mat)
+int isl_mat_rank(__isl_keep isl_mat *mat)
 {
 	int row, col;
 	isl_mat *H;
