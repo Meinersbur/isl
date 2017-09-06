@@ -3568,7 +3568,7 @@ static int compute_maxvar(struct isl_sched_graph *graph)
  * "node_pred" and the edges satisfying "edge_pred" and store
  * the result in "sub".
  */
-static int extract_sub_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
+static isl_stat extract_sub_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
 	int (*node_pred)(struct isl_sched_node *node, int data),
 	int (*edge_pred)(struct isl_sched_edge *edge, int data),
 	int data, struct isl_sched_graph *sub)
@@ -3583,24 +3583,24 @@ static int extract_sub_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
 		if (edge_pred(&graph->edge[i], data))
 			++n_edge;
 	if (graph_alloc(ctx, sub, n, n_edge) < 0)
-		return -1;
+		return isl_stat_error;
 	sub->root = graph->root;
 	if (copy_nodes(sub, graph, node_pred, data) < 0)
-		return -1;
+		return isl_stat_error;
 	if (graph_init_table(ctx, sub) < 0)
-		return -1;
+		return isl_stat_error;
 	for (t = 0; t <= isl_edge_last; ++t)
 		sub->max_edge[t] = graph->max_edge[t];
 	if (graph_init_edge_tables(ctx, sub) < 0)
-		return -1;
+		return isl_stat_error;
 	if (copy_edges(ctx, sub, graph, edge_pred, data) < 0)
-		return -1;
+		return isl_stat_error;
 	sub->n_row = graph->n_row;
 	sub->max_row = graph->max_row;
 	sub->n_total_row = graph->n_total_row;
 	sub->band_start = graph->band_start;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 static __isl_give isl_schedule_node *compute_schedule(isl_schedule_node *node,
