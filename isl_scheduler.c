@@ -3141,7 +3141,7 @@ static __isl_give isl_union_map *intersect_domains(
  * because the one that was referenced turned out to be empty and
  * was therefore removed from the table.
  */
-static int update_edge(isl_ctx *ctx, struct isl_sched_graph *graph,
+static isl_stat update_edge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	int empty;
@@ -3176,10 +3176,10 @@ static int update_edge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	}
 
 	isl_map_free(id);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_map_free(id);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Does the domain of "umap" intersect "uset"?
