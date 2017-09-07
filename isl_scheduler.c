@@ -439,6 +439,24 @@ static isl_stat graph_edge_table_add(isl_ctx *ctx,
 	return isl_stat_ok;
 }
 
+/* Add "edge" to all relevant edge tables.
+ * That is, for every type of the edge, add it to the corresponding table.
+ */
+static isl_stat graph_edge_tables_add(isl_ctx *ctx,
+	struct isl_sched_graph *graph, struct isl_sched_edge *edge)
+{
+	enum isl_edge_type t;
+
+	for (t = isl_edge_first; t <= isl_edge_last; ++t) {
+		if (!is_type(edge, t))
+			continue;
+		if (graph_edge_table_add(ctx, graph, t, edge) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Allocate the edge_tables based on the maximal number of edges of
  * each type.
  */
@@ -3141,7 +3159,6 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 	int (*edge_pred)(struct isl_sched_edge *edge, int data), int data)
 {
 	int i;
-	enum isl_edge_type t;
 
 	dst->n_edge = 0;
 	for (i = 0; i < src->n_edge; ++i) {
@@ -3184,14 +3201,9 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		if (edge->tagged_validity && !tagged_validity)
 			return -1;
 
-		for (t = isl_edge_first; t <= isl_edge_last; ++t) {
-			if (edge !=
-			    graph_find_edge(src, t, edge->src, edge->dst))
-				continue;
-			if (graph_edge_table_add(ctx, dst, t,
+		if (graph_edge_tables_add(ctx, dst,
 					    &dst->edge[dst->n_edge - 1]) < 0)
-				return -1;
-		}
+			return -1;
 	}
 
 	return 0;
