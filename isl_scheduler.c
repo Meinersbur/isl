@@ -3660,7 +3660,7 @@ static int edge_src_scc_at_least(struct isl_sched_edge *edge, int scc)
 
 /* Reset the current band by dropping all its schedule rows.
  */
-static int reset_band(struct isl_sched_graph *graph)
+static isl_stat reset_band(struct isl_sched_graph *graph)
 {
 	int i;
 	int drop;
@@ -3679,10 +3679,10 @@ static int reset_band(struct isl_sched_graph *graph)
 						graph->band_start, drop);
 
 		if (!node->sched)
-			return -1;
+			return isl_stat_error;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Split the current graph into two parts and compute a schedule for each
