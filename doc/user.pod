@@ -7697,9 +7697,6 @@ The elements can be changed and inspected using the following functions.
 		__isl_take isl_mat *mat, int row, int col,
 		__isl_take isl_val *v);
 
-C<isl_mat_get_element> will return a negative value if anything went wrong.
-In that case, the value of C<*v> is undefined.
-
 The following function can be used to compute the (right) inverse
 of a matrix, i.e., a matrix such that the product of the original
 and the inverse (in that order) is a multiple of the identity matrix.
