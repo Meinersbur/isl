@@ -3560,7 +3560,7 @@ static int compute_maxvar(struct isl_sched_graph *graph)
 	return 0;
 }
 
-/* Extract the subgraph of "graph" that consists of the node satisfying
+/* Extract the subgraph of "graph" that consists of the nodes satisfying
  * "node_pred" and the edges satisfying "edge_pred" and store
  * the result in "sub".
  */
