@@ -280,6 +280,18 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
 	return is_type(edge, isl_edge_conditional_validity);
 }
 
+/* Is "edge" of a type that can appear multiple times between
+ * the same pair of nodes?
+ *
+ * Condition edges and conditional validity edges may have tagged
+ * dependence relations, in which case an edge is added for each
+ * pair of tags.
+ */
+static int is_multi_edge_type(struct isl_sched_edge *edge)
+{
+	return is_condition(edge) || is_conditional_validity(edge);
+}
+
 /* Internal information about the dependence graph used during
  * the construction of the schedule.
  *
@@ -2817,8 +2829,15 @@ static __isl_give isl_union_map *intersect_domains(
  * If the dependence is carried completely by the current schedule, then
  * it is removed from the edge_tables.  It is kept in the list of edges
  * as otherwise all edge_tables would have to be recomputed.
+ *
+ * If the edge is of a type that can appear multiple times
+ * between the same pair of nodes, then it is added to
+ * the edge table (again).  This prevents the situation
+ * where none of these edges is referenced from the edge table
+ * because the one that was referenced turned out to be empty and
+ * was therefore removed from the table.
  */
-static int update_edge(struct isl_sched_graph *graph,
+static int update_edge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	int empty;
@@ -2845,8 +2864,12 @@ static int update_edge(struct isl_sched_graph *graph,
 	empty = isl_map_plain_is_empty(edge->map);
 	if (empty < 0)
 		goto error;
-	if (empty)
+	if (empty) {
 		graph_remove_edge(graph, edge);
+	} else if (is_multi_edge_type(edge)) {
+		if (graph_edge_tables_add(ctx, graph, edge) < 0)
+			goto error;
+	}
 
 	isl_map_free(id);
 	return 0;
@@ -3011,8 +3034,8 @@ static int update_edges(isl_ctx *ctx, struct isl_sched_graph *graph)
 		sink = isl_union_set_union(sink, uset);
 	}
 
-	for (i = graph->n_edge - 1; i >= 0; --i) {
-		if (update_edge(graph, &graph->edge[i]) < 0)
+	for (i = 0; i < graph->n_edge; ++i) {
+		if (update_edge(ctx, graph, &graph->edge[i]) < 0)
 			goto error;
 	}
 
