@@ -1401,8 +1401,8 @@ struct isl_mat *isl_mat_drop_cols(struct isl_mat *mat, unsigned col, unsigned n)
 		return mat;
 
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
+	if (check_col_range(mat, col, n) < 0)
+		return isl_mat_free(mat);
 
 	if (col != mat->n_col-n) {
 		for (r = 0; r < mat->n_row; ++r)
