@@ -1434,8 +1434,8 @@ struct isl_mat *isl_mat_drop_rows(struct isl_mat *mat, unsigned row, unsigned n)
 	int r;
 
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
+	if (check_row_range(mat, row, n) < 0)
+		return isl_mat_free(mat);
 
 	for (r = row; r+n < mat->n_row; ++r)
 		mat->row[r] = mat->row[r+n];
