@@ -1499,8 +1499,8 @@ __isl_give isl_mat *isl_mat_insert_rows(__isl_take isl_mat *mat,
 {
 	isl_mat *ext;
 
-	if (!mat)
-		return NULL;
+	if (check_row_range(mat, row, 0) < 0)
+		return isl_mat_free(mat);
 	if (n == 0)
 		return mat;
 
