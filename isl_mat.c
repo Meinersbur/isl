@@ -271,6 +271,20 @@ static isl_stat check_col(__isl_keep isl_mat *mat, int col)
 	return isl_stat_ok;
 }
 
+/* Check that there are "n" columns starting at position "first" in "mat".
+ */
+static isl_stat check_col_range(__isl_keep isl_mat *mat, unsigned first,
+	unsigned n)
+{
+	if (!mat)
+		return isl_stat_error;
+	if (first + n > mat->n_col || first + n < first)
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+			"column position or range out of bounds",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
 int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
 {
 	if (!mat)
@@ -1061,17 +1075,13 @@ struct isl_mat *isl_mat_swap_cols(struct isl_mat *mat, unsigned i, unsigned j)
 	int r;
 
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
-	isl_assert(mat->ctx, i < mat->n_col, goto error);
-	isl_assert(mat->ctx, j < mat->n_col, goto error);
+	if (check_col_range(mat, i, 1) < 0 ||
+	    check_col_range(mat, j, 1) < 0)
+		return isl_mat_free(mat);
 
 	for (r = 0; r < mat->n_row; ++r)
 		isl_int_swap(mat->row[r][i], mat->row[r][j]);
 	return mat;
-error:
-	isl_mat_free(mat);
-	return NULL;
 }
 
 struct isl_mat *isl_mat_swap_rows(struct isl_mat *mat, unsigned i, unsigned j)
