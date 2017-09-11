@@ -2211,9 +2211,9 @@ To iterate over all the basic sets or maps in a set or map, use
 			void *user),
 		void *user);
 
-The callback function C<fn> should return 0 if successful and
--1 if an error occurs.  In the latter case, or if any other error
-occurs, the above functions will return -1.
+The callback function C<fn> should return C<isl_stat_ok> if successful and
+C<isl_stat_error> if an error occurs.  In the latter case, or if any other error
+occurs, the above functions will return C<isl_stat_error>.
 
 It should be noted that C<isl> does not guarantee that
 the basic sets or maps passed to C<fn> are disjoint.
@@ -2270,9 +2270,10 @@ To iterate over the constraints of a basic set or map, use
 	__isl_null isl_constraint *isl_constraint_free(
 		__isl_take isl_constraint *c);
 
-Again, the callback function C<fn> should return 0 if successful and
--1 if an error occurs.  In the latter case, or if any other error
-occurs, the above functions will return -1.
+Again, the callback function C<fn> should return C<isl_stat_ok>
+if successful and
+C<isl_stat_error> if an error occurs.  In the latter case, or if any other error
+occurs, the above functions will return C<isl_stat_error>.
 The constraint C<c> represents either an equality or an inequality.
 Use the following function to find out whether a constraint
 represents an equality.  If not, it represents an inequality.
@@ -2421,11 +2422,11 @@ the following functions.
 The function C<fn> is called for each integer point in
 C<set> with as second argument the last argument of
 the C<isl_set_foreach_point> call.  The function C<fn>
-should return C<0> on success and C<-1> on failure.
+should return C<isl_stat_ok> on success and C<isl_stat_error> on failure.
 In the latter case, C<isl_set_foreach_point> will stop
-enumerating and return C<-1> as well.
+enumerating and return C<isl_stat_error> as well.
 If the enumeration is performed successfully and to completion,
-then C<isl_set_foreach_point> returns C<0>.
+then C<isl_set_foreach_point> returns C<isl_stat_ok>.
 
 To obtain a single point of a (basic or union) set, use
 
@@ -3144,8 +3145,8 @@ use the following functions.
 			  __isl_take isl_qpolynomial_fold *fold,
 			  void *user), void *user);
 
-As usual, the function C<fn> should return C<0> on success
-and C<-1> on failure.  The difference between
+As usual, the function C<fn> should return C<isl_stat_ok> on success
+and C<isl_stat_error> on failure.  The difference between
 C<isl_pw_qpolynomial_foreach_piece> and
 C<isl_pw_qpolynomial_foreach_lifted_piece> is that
 C<isl_pw_qpolynomial_foreach_lifted_piece> will first
@@ -10734,7 +10735,7 @@ pre-order, while the second will be called in depth-first post-order.
 Since the callback set by C<isl_ast_build_set_before_each_mark>
 is called before the mark AST node is actually constructed, it is passed
 the identifier of the mark node.
-All callbacks should C<NULL> (or -1) on failure.
+All callbacks should C<NULL> (or C<isl_stat_error>) on failure.
 The given C<isl_ast_build> can be used to create new
 C<isl_ast_expr> objects using C<isl_ast_build_expr_from_pw_aff>
 or C<isl_ast_build_call_from_pw_multi_aff>.
