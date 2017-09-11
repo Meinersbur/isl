@@ -1570,7 +1570,8 @@ __isl_give isl_union_map *isl_union_map_flat_range_product(
  * the results need to live in the same space.
  * Otherwise, a new union map is constructed to store the results.
  * If "filter" is not NULL, then only the input maps that satisfy "filter"
- * are taken into account.  No filter can be set if "inplace" or
+ * are taken into account.  "filter_user" is passed as the second argument
+ * to "filter".  No filter can be set if "inplace" or
  * "total" is set.
  * "fn_map" specifies how the maps (selected by "filter")
  * should be transformed.
@@ -1578,9 +1579,27 @@ __isl_give isl_union_map *isl_union_map_flat_range_product(
 struct isl_un_op_control {
 	int inplace;
 	int total;
-	isl_bool (*filter)(__isl_keep isl_map *map);
+	isl_bool (*filter)(__isl_keep isl_map *map, void *user);
+	void *filter_user;
 	__isl_give isl_map *(*fn_map)(__isl_take isl_map *map);
 };
+
+/* Data structure for wrapping the data for un_op_filter_drop_user.
+ * "filter" is the function that is being wrapped.
+ */
+struct isl_un_op_drop_user_data {
+	isl_bool (*filter)(__isl_keep isl_map *map);
+};
+
+/* Wrapper for isl_un_op_control filters that do not require
+ * a second argument.
+ * Simply call data->filter without the second argument.
+ */
+static isl_bool un_op_filter_drop_user(__isl_keep isl_map *map, void *user)
+{
+	struct isl_un_op_drop_user_data *data = user;
+	return data->filter(map);
+}
 
 /* Internal data structure for "un_op".
  * "control" specifies how the maps in the union map should be modified.
@@ -1607,7 +1626,7 @@ static isl_stat un_entry(void **entry, void *user)
 	if (data->control->filter) {
 		isl_bool ok;
 
-		ok = data->control->filter(map);
+		ok = data->control->filter(map, data->control->filter_user);
 		if (ok < 0)
 			return isl_stat_error;
 		if (!ok)
@@ -2010,8 +2029,10 @@ __isl_give isl_union_map *isl_union_map_range_map(
 __isl_give isl_union_map *isl_union_set_wrapped_domain_map(
 	__isl_take isl_union_set *uset)
 {
+	struct isl_un_op_drop_user_data data = { &isl_set_is_wrapping };
 	struct isl_un_op_control control = {
-		.filter = &isl_set_is_wrapping,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_set_wrapped_domain_map,
 	};
 	return un_op(uset, &control);
@@ -2019,7 +2040,7 @@ __isl_give isl_union_map *isl_union_set_wrapped_domain_map(
 
 /* Does "map" relate elements from the same space?
  */
-static isl_bool equal_tuples(__isl_keep isl_map *map)
+static isl_bool equal_tuples(__isl_keep isl_map *map, void *user)
 {
 	return isl_space_tuple_is_equal(map->dim, isl_dim_in,
 					map->dim, isl_dim_out);
@@ -2090,8 +2111,10 @@ __isl_give isl_union_pw_multi_aff *isl_union_set_identity_union_pw_multi_aff(
 __isl_give isl_union_map *isl_union_map_domain_factor_domain(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_domain_is_wrapping };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_domain_is_wrapping,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_domain_factor_domain,
 	};
 	return un_op(umap, &control);
@@ -2103,8 +2126,10 @@ __isl_give isl_union_map *isl_union_map_domain_factor_domain(
 __isl_give isl_union_map *isl_union_map_domain_factor_range(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_domain_is_wrapping };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_domain_is_wrapping,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_domain_factor_range,
 	};
 	return un_op(umap, &control);
@@ -2116,8 +2141,10 @@ __isl_give isl_union_map *isl_union_map_domain_factor_range(
 __isl_give isl_union_map *isl_union_map_range_factor_domain(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_range_is_wrapping };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_range_is_wrapping,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_range_factor_domain,
 	};
 	return un_op(umap, &control);
@@ -2129,8 +2156,10 @@ __isl_give isl_union_map *isl_union_map_range_factor_domain(
 __isl_give isl_union_map *isl_union_map_range_factor_range(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_range_is_wrapping };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_range_is_wrapping,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_range_factor_range,
 	};
 	return un_op(umap, &control);
@@ -2142,8 +2171,10 @@ __isl_give isl_union_map *isl_union_map_range_factor_range(
 __isl_give isl_union_map *isl_union_map_factor_domain(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_is_product };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_is_product,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_factor_domain,
 	};
 	return un_op(umap, &control);
@@ -2155,8 +2186,10 @@ __isl_give isl_union_map *isl_union_map_factor_domain(
 __isl_give isl_union_map *isl_union_map_factor_range(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_is_product };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_is_product,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_factor_range,
 	};
 	return un_op(umap, &control);
@@ -2164,8 +2197,10 @@ __isl_give isl_union_map *isl_union_map_factor_range(
 
 __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset)
 {
+	struct isl_un_op_drop_user_data data = { &isl_set_is_wrapping };
 	struct isl_un_op_control control = {
-		.filter = &isl_set_is_wrapping,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_set_unwrap,
 	};
 	return un_op(uset, &control);
@@ -2968,8 +3003,10 @@ isl_bool isl_union_map_is_bijective(__isl_keep isl_union_map *umap)
 
 __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_can_zip };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_can_zip,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_zip,
 	};
 	return un_op(umap, &control);
@@ -2980,8 +3017,10 @@ __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap)
  */
 __isl_give isl_union_map *isl_union_map_uncurry(__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_can_uncurry };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_can_uncurry,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_uncurry,
 	};
 	return un_op(umap, &control);
@@ -2992,8 +3031,10 @@ __isl_give isl_union_map *isl_union_map_uncurry(__isl_take isl_union_map *umap)
  */
 __isl_give isl_union_map *isl_union_map_curry(__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_can_curry };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_can_curry,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_curry,
 	};
 	return un_op(umap, &control);
@@ -3005,8 +3046,10 @@ __isl_give isl_union_map *isl_union_map_curry(__isl_take isl_union_map *umap)
 __isl_give isl_union_map *isl_union_map_range_curry(
 	__isl_take isl_union_map *umap)
 {
+	struct isl_un_op_drop_user_data data = { &isl_map_can_range_curry };
 	struct isl_un_op_control control = {
-		.filter = &isl_map_can_range_curry,
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
 		.fn_map = &isl_map_range_curry,
 	};
 	return un_op(umap, &control);
