@@ -2250,6 +2250,16 @@ static __isl_give isl_mat *normalize_independent(__isl_take isl_mat *indep)
 	return indep;
 }
 
+/* Extract the linear part of the current schedule for node "node".
+ */
+static __isl_give isl_mat *extract_linear_schedule(struct isl_sched_node *node)
+{
+	int n_row = isl_mat_rows(node->sched);
+
+	return isl_mat_sub_alloc(node->sched, 0, n_row,
+			      1 + node->nparam, node->nvar);
+}
+
 /* Compute a basis for the rows in the linear part of the schedule
  * and extend this basis to a full basis.  The remaining rows
  * can then be used to force linear independence from the rows
@@ -2281,10 +2291,8 @@ static __isl_give isl_mat *normalize_independent(__isl_take isl_mat *indep)
 static int node_update_vmap(struct isl_sched_node *node)
 {
 	isl_mat *H, *U, *Q;
-	int n_row = isl_mat_rows(node->sched);
 
-	H = isl_mat_sub_alloc(node->sched, 0, n_row,
-			      1 + node->nparam, node->nvar);
+	H = extract_linear_schedule(node);
 
 	H = isl_mat_left_hermite(H, 0, &U, &Q);
 	isl_mat_free(node->indep);
