@@ -9243,7 +9243,7 @@ considered adjacent to each other if the entire wrapped relation matches.
 In particular, a relation with a tag will never be considered adjacent
 to a relation without a tag.
 
-The function C<isl_schedule_constraints_compute_schedule> takes
+The function C<isl_schedule_constraints_apply> takes
 schedule constraints that are defined on some set of domain elements
 and transforms them to schedule constraints on the elements
 to which these domain elements are mapped by the given transformation.
