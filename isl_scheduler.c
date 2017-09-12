@@ -3435,7 +3435,8 @@ static __isl_give isl_union_set_list *extract_split(isl_ctx *ctx,
 /* Copy nodes that satisfy node_pred from the src dependence graph
  * to the dst dependence graph.
  */
-static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
+static isl_stat copy_nodes(struct isl_sched_graph *dst,
+	struct isl_sched_graph *src,
 	int (*node_pred)(struct isl_sched_node *node, int data), int data)
 {
 	int i;
@@ -3466,14 +3467,14 @@ static int copy_nodes(struct isl_sched_graph *dst, struct isl_sched_graph *src,
 		dst->n++;
 
 		if (!dst->node[j].space || !dst->node[j].sched)
-			return -1;
+			return isl_stat_error;
 		if (dst->node[j].compressed &&
 		    (!dst->node[j].hull || !dst->node[j].compress ||
 		     !dst->node[j].decompress))
-			return -1;
+			return isl_stat_error;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Copy non-empty edges that satisfy edge_pred from the src dependence graph
