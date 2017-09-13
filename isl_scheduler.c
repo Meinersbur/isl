@@ -1177,6 +1177,18 @@ static struct isl_sched_node *find_range_node(isl_ctx *ctx,
 	return node;
 }
 
+/* Refrain from adding a new edge based on "map".
+ * Instead, just free the map.
+ * "tagged" is either a copy of "map" with additional tags or NULL.
+ */
+static isl_stat skip_edge(__isl_take isl_map *map, __isl_take isl_map *tagged)
+{
+	isl_map_free(map);
+	isl_map_free(tagged);
+
+	return isl_stat_ok;
+}
+
 /* Add a new edge to the graph based on the given map
  * and add it to data->graph->edge_table[data->type].
  * If a dependence relation of a given type happens to be identical
@@ -1222,11 +1234,8 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	src = find_domain_node(ctx, graph, map);
 	dst = find_range_node(ctx, graph, map);
 
-	if (!src || !dst) {
-		isl_map_free(map);
-		isl_map_free(tagged);
-		return isl_stat_ok;
-	}
+	if (!src || !dst)
+		return skip_edge(map, tagged);
 
 	if (src->compressed || dst->compressed) {
 		isl_map *hull;
