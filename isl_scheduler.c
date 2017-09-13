@@ -2723,20 +2723,28 @@ static __isl_give isl_aff *extract_schedule_row(__isl_take isl_local_space *ls,
 	isl_int_init(v);
 
 	aff = isl_aff_zero_on_domain(ls);
-	isl_mat_get_element(node->sched, row, 0, &v);
+	if (isl_mat_get_element(node->sched, row, 0, &v) < 0)
+		goto error;
 	aff = isl_aff_set_constant(aff, v);
 	for (j = 0; j < node->nparam; ++j) {
-		isl_mat_get_element(node->sched, row, 1 + j, &v);
+		if (isl_mat_get_element(node->sched, row, 1 + j, &v) < 0)
+			goto error;
 		aff = isl_aff_set_coefficient(aff, isl_dim_param, j, v);
 	}
 	for (j = 0; j < node->nvar; ++j) {
-		isl_mat_get_element(node->sched, row, 1 + node->nparam + j, &v);
+		if (isl_mat_get_element(node->sched, row,
+					1 + node->nparam + j, &v) < 0)
+			goto error;
 		aff = isl_aff_set_coefficient(aff, isl_dim_in, j, v);
 	}
 
 	isl_int_clear(v);
 
 	return aff;
+error:
+	isl_int_clear(v);
+	isl_aff_free(aff);
+	return NULL;
 }
 
 /* Convert the "n" rows starting at "first" of node->sched into a multi_aff
