@@ -1214,6 +1214,7 @@ static isl_stat skip_edge(__isl_take isl_map *map, __isl_take isl_map *tagged)
  */
 static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 {
+	isl_bool empty;
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	struct isl_extract_edge_data *data = user;
 	struct isl_sched_graph *graph = data->graph;
@@ -1245,6 +1246,12 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 		map = isl_map_intersect(map, hull);
 	}
 
+	empty = isl_map_plain_is_empty(map);
+	if (empty < 0)
+		goto error;
+	if (empty)
+		return skip_edge(map, tagged);
+
 	graph->edge[graph->n_edge].src = src;
 	graph->edge[graph->n_edge].dst = dst;
 	graph->edge[graph->n_edge].map = map;
@@ -1272,6 +1279,10 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 		return -1;
 
 	return graph_edge_table_add(ctx, graph, data->type, edge);
+error:
+	isl_map_free(map);
+	isl_map_free(tagged);
+	return isl_stat_error;
 }
 
 /* Initialize the schedule graph "graph" from the schedule constraints "sc".
