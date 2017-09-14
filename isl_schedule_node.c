@@ -1336,11 +1336,12 @@ static __isl_give isl_schedule_node *preorder_leave(
 /* Traverse the descendants of "node" (including the node itself)
  * in depth first preorder.
  *
- * If "fn" returns -1 on any of the nodes, then the traversal is aborted.
- * If "fn" returns 0 on any of the nodes, then the subtree rooted
+ * If "fn" returns isl_bool_error on any of the nodes,
+ * then the traversal is aborted.
+ * If "fn" returns isl_bool_false on any of the nodes, then the subtree rooted
  * at that node is skipped.
  *
- * Return 0 on success and -1 on failure.
+ * Return isl_stat_ok on success and isl_stat_error on failure.
  */
 isl_stat isl_schedule_node_foreach_descendant_top_down(
 	__isl_keep isl_schedule_node *node,
