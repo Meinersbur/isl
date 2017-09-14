@@ -1357,6 +1357,56 @@ isl_stat isl_schedule_node_foreach_descendant_top_down(
 	return node ? isl_stat_ok : isl_stat_error;
 }
 
+/* Internal data structure for isl_schedule_node_every_descendant.
+ *
+ * "test" is the user-specified callback function.
+ * "user" is the user-specified callback function argument.
+ *
+ * "failed" is initialized to 0 and set to 1 if "test" fails
+ * on any node.
+ */
+struct isl_union_map_every_data {
+	isl_bool (*test)(__isl_keep isl_schedule_node *node, void *user);
+	void *user;
+	int failed;
+};
+
+/* isl_schedule_node_foreach_descendant_top_down callback
+ * that sets data->failed if data->test returns false and
+ * subsequently aborts the traversal.
+ */
+static isl_bool call_every(__isl_keep isl_schedule_node *node, void *user)
+{
+	struct isl_union_map_every_data *data = user;
+	isl_bool r;
+
+	r = data->test(node, data->user);
+	if (r < 0)
+		return isl_bool_error;
+	if (r)
+		return isl_bool_true;
+	data->failed = 1;
+	return isl_bool_error;
+}
+
+/* Does "test" succeed on every descendant of "node" (including "node" itself)?
+ */
+isl_bool isl_schedule_node_every_descendant(__isl_keep isl_schedule_node *node,
+	isl_bool (*test)(__isl_keep isl_schedule_node *node, void *user),
+	void *user)
+{
+	struct isl_union_map_every_data data = { test, user, 0 };
+	isl_stat r;
+
+	r = isl_schedule_node_foreach_descendant_top_down(node, &call_every,
+							&data);
+	if (r >= 0)
+		return isl_bool_true;
+	if (data.failed)
+		return isl_bool_false;
+	return isl_bool_error;
+}
+
 /* Internal data structure for isl_schedule_node_map_descendant_bottom_up.
  *
  * "fn" is the user-specified callback function.
