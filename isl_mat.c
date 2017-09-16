@@ -283,6 +283,34 @@ static isl_stat check_row(__isl_keep isl_mat *mat, int row)
 	return isl_stat_ok;
 }
 
+/* Check that there are "n" columns starting at position "first" in "mat".
+ */
+static isl_stat check_col_range(__isl_keep isl_mat *mat, unsigned first,
+	unsigned n)
+{
+	if (!mat)
+		return isl_stat_error;
+	if (first + n > mat->n_col || first + n < first)
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+			"column position or range out of bounds",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Check that there are "n" rows starting at position "first" in "mat".
+ */
+static isl_stat check_row_range(__isl_keep isl_mat *mat, unsigned first,
+	unsigned n)
+{
+	if (!mat)
+		return isl_stat_error;
+	if (first + n > mat->n_row || first + n < first)
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
+			"row position or range out of bounds",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
 int isl_mat_get_element(__isl_keep isl_mat *mat, int row, int col, isl_int *v)
 {
 	if (check_row(mat, row) < 0)
@@ -1161,17 +1189,13 @@ __isl_give isl_mat *isl_mat_swap_cols(__isl_take isl_mat *mat,
 	int r;
 
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
-	isl_assert(mat->ctx, i < mat->n_col, goto error);
-	isl_assert(mat->ctx, j < mat->n_col, goto error);
+	if (check_col_range(mat, i, 1) < 0 ||
+	    check_col_range(mat, j, 1) < 0)
+		return isl_mat_free(mat);
 
 	for (r = 0; r < mat->n_row; ++r)
 		isl_int_swap(mat->row[r][i], mat->row[r][j]);
 	return mat;
-error:
-	isl_mat_free(mat);
-	return NULL;
 }
 
 __isl_give isl_mat *isl_mat_swap_rows(__isl_take isl_mat *mat,
@@ -1182,8 +1206,10 @@ __isl_give isl_mat *isl_mat_swap_rows(__isl_take isl_mat *mat,
 	if (!mat)
 		return NULL;
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
+	if (check_row_range(mat, i, 1) < 0 ||
+	    check_row_range(mat, j, 1) < 0)
+		return isl_mat_free(mat);
+
 	t = mat->row[i];
 	mat->row[i] = mat->row[j];
 	mat->row[j] = t;
@@ -1438,8 +1464,8 @@ __isl_give isl_mat *isl_mat_drop_cols(__isl_take isl_mat *mat,
 		return mat;
 
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
+	if (check_col_range(mat, col, n) < 0)
+		return isl_mat_free(mat);
 
 	if (col != mat->n_col-n) {
 		for (r = 0; r < mat->n_row; ++r)
@@ -1456,8 +1482,8 @@ __isl_give isl_mat *isl_mat_drop_rows(__isl_take isl_mat *mat,
 	int r;
 
 	mat = isl_mat_cow(mat);
-	if (!mat)
-		return NULL;
+	if (check_row_range(mat, row, n) < 0)
+		return isl_mat_free(mat);
 
 	for (r = row; r+n < mat->n_row; ++r)
 		mat->row[r] = mat->row[r+n];
@@ -1471,8 +1497,8 @@ __isl_give isl_mat *isl_mat_insert_cols(__isl_take isl_mat *mat,
 {
 	isl_mat *ext;
 
-	if (!mat)
-		return NULL;
+	if (check_col_range(mat, col, 0) < 0)
+		return isl_mat_free(mat);
 	if (n == 0)
 		return mat;
 
@@ -1521,8 +1547,8 @@ __isl_give isl_mat *isl_mat_insert_rows(__isl_take isl_mat *mat,
 {
 	isl_mat *ext;
 
-	if (!mat)
-		return NULL;
+	if (check_row_range(mat, row, 0) < 0)
+		return isl_mat_free(mat);
 	if (n == 0)
 		return mat;
 

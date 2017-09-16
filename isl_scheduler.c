@@ -285,6 +285,18 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
 	return is_type(edge, isl_edge_conditional_validity);
 }
 
+/* Is "edge" of a type that can appear multiple times between
+ * the same pair of nodes?
+ *
+ * Condition edges and conditional validity edges may have tagged
+ * dependence relations, in which case an edge is added for each
+ * pair of tags.
+ */
+static int is_multi_edge_type(struct isl_sched_edge *edge)
+{
+	return is_condition(edge) || is_conditional_validity(edge);
+}
+
 /* Internal information about the dependence graph used during
  * the construction of the schedule.
  *
@@ -454,6 +466,24 @@ static isl_stat graph_edge_table_add(isl_ctx *ctx,
 	if (!entry)
 		return isl_stat_error;
 	entry->data = edge;
+
+	return isl_stat_ok;
+}
+
+/* Add "edge" to all relevant edge tables.
+ * That is, for every type of the edge, add it to the corresponding table.
+ */
+static isl_stat graph_edge_tables_add(isl_ctx *ctx,
+	struct isl_sched_graph *graph, struct isl_sched_edge *edge)
+{
+	enum isl_edge_type t;
+
+	for (t = isl_edge_first; t <= isl_edge_last; ++t) {
+		if (!is_type(edge, t))
+			continue;
+		if (graph_edge_table_add(ctx, graph, t, edge) < 0)
+			return isl_stat_error;
+	}
 
 	return isl_stat_ok;
 }
@@ -1216,6 +1246,18 @@ static struct isl_sched_node *find_range_node(isl_ctx *ctx,
 	return node;
 }
 
+/* Refrain from adding a new edge based on "map".
+ * Instead, just free the map.
+ * "tagged" is either a copy of "map" with additional tags or NULL.
+ */
+static isl_stat skip_edge(__isl_take isl_map *map, __isl_take isl_map *tagged)
+{
+	isl_map_free(map);
+	isl_map_free(tagged);
+
+	return isl_stat_ok;
+}
+
 /* Add a new edge to the graph based on the given map
  * and add it to data->graph->edge_table[data->type].
  * If a dependence relation of a given type happens to be identical
@@ -1241,6 +1283,7 @@ static struct isl_sched_node *find_range_node(isl_ctx *ctx,
  */
 static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 {
+	isl_bool empty;
 	isl_ctx *ctx = isl_map_get_ctx(map);
 	struct isl_extract_edge_data *data = user;
 	struct isl_sched_graph *graph = data->graph;
@@ -1261,11 +1304,8 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 	src = find_domain_node(ctx, graph, map);
 	dst = find_range_node(ctx, graph, map);
 
-	if (!src || !dst) {
-		isl_map_free(map);
-		isl_map_free(tagged);
-		return isl_stat_ok;
-	}
+	if (!src || !dst)
+		return skip_edge(map, tagged);
 
 	if (src->compressed || dst->compressed) {
 		isl_map *hull;
@@ -1274,6 +1314,12 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 			tagged = map_intersect_domains(tagged, hull);
 		map = isl_map_intersect(map, hull);
 	}
+
+	empty = isl_map_plain_is_empty(map);
+	if (empty < 0)
+		goto error;
+	if (empty)
+		return skip_edge(map, tagged);
 
 	graph->edge[graph->n_edge].src = src;
 	graph->edge[graph->n_edge].dst = dst;
@@ -1302,6 +1348,10 @@ static isl_stat extract_edge(__isl_take isl_map *map, void *user)
 		return isl_stat_error;
 
 	return graph_edge_table_add(ctx, graph, data->type, edge);
+error:
+	isl_map_free(map);
+	isl_map_free(tagged);
+	return isl_stat_error;
 }
 
 /* Initialize the schedule graph "graph" from the schedule constraints "sc".
@@ -1745,7 +1795,7 @@ static __isl_give isl_dim_map *intra_dim_map(isl_ctx *ctx,
 	unsigned total;
 	isl_dim_map *dim_map;
 
-	if (!node)
+	if (!node || !graph->lp)
 		return NULL;
 
 	total = isl_basic_set_total_dim(graph->lp);
@@ -1785,7 +1835,7 @@ static __isl_give isl_dim_map *inter_dim_map(isl_ctx *ctx,
 	unsigned total;
 	isl_dim_map *dim_map;
 
-	if (!src || !dst)
+	if (!src || !dst || !graph->lp)
 		return NULL;
 
 	total = isl_basic_set_total_dim(graph->lp);
@@ -2946,20 +2996,28 @@ static __isl_give isl_aff *extract_schedule_row(__isl_take isl_local_space *ls,
 	isl_int_init(v);
 
 	aff = isl_aff_zero_on_domain(ls);
-	isl_mat_get_element(node->sched, row, 0, &v);
+	if (isl_mat_get_element(node->sched, row, 0, &v) < 0)
+		goto error;
 	aff = isl_aff_set_constant(aff, v);
 	for (j = 0; j < node->nparam; ++j) {
-		isl_mat_get_element(node->sched, row, 1 + j, &v);
+		if (isl_mat_get_element(node->sched, row, 1 + j, &v) < 0)
+			goto error;
 		aff = isl_aff_set_coefficient(aff, isl_dim_param, j, v);
 	}
 	for (j = 0; j < node->nvar; ++j) {
-		isl_mat_get_element(node->sched, row, 1 + node->nparam + j, &v);
+		if (isl_mat_get_element(node->sched, row,
+					1 + node->nparam + j, &v) < 0)
+			goto error;
 		aff = isl_aff_set_coefficient(aff, isl_dim_in, j, v);
 	}
 
 	isl_int_clear(v);
 
 	return aff;
+error:
+	isl_int_clear(v);
+	isl_aff_free(aff);
+	return NULL;
 }
 
 /* Convert the "n" rows starting at "first" of node->sched into a multi_aff
@@ -3072,8 +3130,15 @@ static __isl_give isl_union_map *intersect_domains(
  * If the dependence is carried completely by the current schedule, then
  * it is removed from the edge_tables.  It is kept in the list of edges
  * as otherwise all edge_tables would have to be recomputed.
+ *
+ * If the edge is of a type that can appear multiple times
+ * between the same pair of nodes, then it is added to
+ * the edge table (again).  This prevents the situation
+ * where none of these edges is referenced from the edge table
+ * because the one that was referenced turned out to be empty and
+ * was therefore removed from the table.
  */
-static int update_edge(struct isl_sched_graph *graph,
+static int update_edge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	int empty;
@@ -3100,8 +3165,12 @@ static int update_edge(struct isl_sched_graph *graph,
 	empty = isl_map_plain_is_empty(edge->map);
 	if (empty < 0)
 		goto error;
-	if (empty)
+	if (empty) {
 		graph_remove_edge(graph, edge);
+	} else if (is_multi_edge_type(edge)) {
+		if (graph_edge_tables_add(ctx, graph, edge) < 0)
+			goto error;
+	}
 
 	isl_map_free(id);
 	return 0;
@@ -3266,8 +3335,8 @@ static int update_edges(isl_ctx *ctx, struct isl_sched_graph *graph)
 		sink = isl_union_set_union(sink, uset);
 	}
 
-	for (i = graph->n_edge - 1; i >= 0; --i) {
-		if (update_edge(graph, &graph->edge[i]) < 0)
+	for (i = 0; i < graph->n_edge; ++i) {
+		if (update_edge(ctx, graph, &graph->edge[i]) < 0)
 			goto error;
 	}
 
@@ -3415,7 +3484,6 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 	int (*edge_pred)(struct isl_sched_edge *edge, int data), int data)
 {
 	int i;
-	enum isl_edge_type t;
 
 	dst->n_edge = 0;
 	for (i = 0; i < src->n_edge; ++i) {
@@ -3458,14 +3526,9 @@ static int copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		if (edge->tagged_validity && !tagged_validity)
 			return -1;
 
-		for (t = isl_edge_first; t <= isl_edge_last; ++t) {
-			if (edge !=
-			    graph_find_edge(src, t, edge->src, edge->dst))
-				continue;
-			if (graph_edge_table_add(ctx, dst, t,
+		if (graph_edge_tables_add(ctx, dst,
 					    &dst->edge[dst->n_edge - 1]) < 0)
-				return -1;
-		}
+			return -1;
 	}
 
 	return 0;
