@@ -5520,9 +5520,13 @@ error:
  * In each case, we first insert a band node in the schedule tree
  * if any rows have been computed.
  *
- * If the caller managed to complete the schedule, we insert a band node
- * (if any schedule rows were computed) and we finish off by topologically
+ * If the caller managed to complete the schedule and the current band
+ * is empty, then finish off by topologically
  * sorting the statements based on the remaining dependences.
+ * If, on the other hand, the current band has at least one row,
+ * then continue with the next band.  Note that this next band
+ * will necessarily be empty, but the graph may still be split up
+ * into weakly connected components before arriving back here.
  */
 static __isl_give isl_schedule_node *compute_schedule_finish_band(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
@@ -5553,15 +5557,9 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 		return carry_dependences(node, graph);
 	}
 
-	if (!empty) {
-		node = insert_current_band(node, graph, 1);
-		node = isl_schedule_node_child(node, 0);
-	}
-	node = sort_statements(node, graph, initialized);
 	if (!empty)
-		node = isl_schedule_node_parent(node);
-
-	return node;
+		return compute_next_band(node, graph, 1);
+	return sort_statements(node, graph, initialized);
 }
 
 /* Construct a band of schedule rows for a connected dependence graph.

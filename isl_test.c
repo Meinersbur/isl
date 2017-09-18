@@ -4094,8 +4094,8 @@ static int test_bounded_coefficients_schedule_whole(isl_ctx *ctx)
 	sched1 = isl_schedule_get_map(schedule);
 	isl_schedule_free(schedule);
 
-	str = "{ S_4[i, j, k] -> [i, j, 10 - k, 1]; "
-	    "S_2[i, j] -> [0, i, j, 0]; S_6[i, j] -> [0, 10 + i, j, 2] }";
+	str = "{ S_4[i, j, k] -> [i, j, 10 - k]; "
+	    "S_2[i, j] -> [0, i, j]; S_6[i, j] -> [0, 10 + i, j] }";
 	sched2 = isl_union_map_read_from_str(ctx, str);
 	equal = isl_union_map_is_equal(sched1, sched2);
 	isl_union_map_free(sched1);
