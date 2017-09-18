@@ -7240,6 +7240,14 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
  * weakly connected component in the dependence graph so that
  * there is no need for compute_sub_schedule to look for weakly
  * connected components.
+ *
+ * If a set node would be introduced and if the number of components
+ * is equal to the number of nodes, then check if the schedule
+ * is already complete.  If so, a redundant set node would be introduced
+ * (without any further descendants) stating that the statements
+ * can be executed in arbitrary order, which is also expressed
+ * by the absence of any node.  Refrain from inserting any nodes
+ * in this case and simply return.
  */
 static __isl_give isl_schedule_node *compute_component_schedule(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
@@ -7251,8 +7259,15 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 
 	if (!node)
 		return NULL;
-	ctx = isl_schedule_node_get_ctx(node);
 
+	if (graph->weak && graph->scc == graph->n) {
+		if (compute_maxvar(graph) < 0)
+			return isl_schedule_node_free(node);
+		if (graph->n_row >= graph->maxvar)
+			return node;
+	}
+
+	ctx = isl_schedule_node_get_ctx(node);
 	filters = extract_sccs(ctx, graph);
 	if (graph->weak)
 		node = isl_schedule_node_insert_set(node, filters);
