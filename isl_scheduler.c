@@ -5528,14 +5528,14 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
 	int initialized)
 {
-	int insert;
+	int empty;
 
 	if (!node)
 		return NULL;
 
+	empty = graph->n_total_row == graph->band_start;
 	if (graph->n_row < graph->maxvar) {
 		isl_ctx *ctx;
-		int empty = graph->n_total_row == graph->band_start;
 
 		ctx = isl_schedule_node_get_ctx(node);
 		if (!ctx->opt->schedule_maximize_band_depth && !empty)
@@ -5553,13 +5553,12 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 		return carry_dependences(node, graph);
 	}
 
-	insert = graph->n_total_row > graph->band_start;
-	if (insert) {
+	if (!empty) {
 		node = insert_current_band(node, graph, 1);
 		node = isl_schedule_node_child(node, 0);
 	}
 	node = sort_statements(node, graph, initialized);
-	if (insert)
+	if (!empty)
 		node = isl_schedule_node_parent(node);
 
 	return node;
