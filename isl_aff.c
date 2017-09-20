@@ -27,7 +27,6 @@
 #include <isl_seq.h>
 #include <isl/set.h>
 #include <isl_val_private.h>
-#include <isl/deprecated/aff_int.h>
 #include <isl_config.h>
 
 #undef BASE
@@ -565,21 +564,6 @@ __isl_give isl_val *isl_aff_get_denominator_val(__isl_keep isl_aff *aff)
 	return isl_val_int_from_isl_int(ctx, aff->v->el[0]);
 }
 
-/* Return the constant term of "aff" in "v".
- *
- * We cannot return anything meaningful in case of a NaN.
- */
-int isl_aff_get_constant(__isl_keep isl_aff *aff, isl_int *v)
-{
-	if (!aff)
-		return -1;
-	if (isl_aff_is_nan(aff))
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"cannot get constant term of NaN", return -1);
-	isl_int_set(*v, aff->v->el[1]);
-	return 0;
-}
-
 /* Return the constant term of "aff".
  */
 __isl_give isl_val *isl_aff_get_constant_val(__isl_keep isl_aff *aff)
@@ -595,37 +579,6 @@ __isl_give isl_val *isl_aff_get_constant_val(__isl_keep isl_aff *aff)
 		return isl_val_nan(ctx);
 	v = isl_val_rat_from_isl_int(ctx, aff->v->el[1], aff->v->el[0]);
 	return isl_val_normalize(v);
-}
-
-/* Return the coefficient of the variable of type "type" at position "pos"
- * of "aff" in "v".
- *
- * We cannot return anything meaningful in case of a NaN.
- */
-int isl_aff_get_coefficient(__isl_keep isl_aff *aff,
-	enum isl_dim_type type, int pos, isl_int *v)
-{
-	if (!aff)
-		return -1;
-
-	if (type == isl_dim_out)
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"output/set dimension does not have a coefficient",
-			return -1);
-	if (type == isl_dim_in)
-		type = isl_dim_set;
-
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"position out of bounds", return -1);
-
-	if (isl_aff_is_nan(aff))
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"cannot get coefficient of NaN", return -1);
-	pos += isl_local_space_offset(aff->ls, type);
-	isl_int_set(*v, aff->v->el[1 + pos]);
-
-	return 0;
 }
 
 /* Return the coefficient of the variable of type "type" at position "pos"
@@ -684,29 +637,6 @@ int isl_aff_coefficient_sgn(__isl_keep isl_aff *aff, enum isl_dim_type type,
 
 	pos += isl_local_space_offset(aff->ls, type);
 	return isl_int_sgn(aff->v->el[1 + pos]);
-}
-
-/* Replace the denominator of "aff" by "v".
- *
- * A NaN is unaffected by this operation.
- */
-__isl_give isl_aff *isl_aff_set_denominator(__isl_take isl_aff *aff, isl_int v)
-{
-	if (!aff)
-		return NULL;
-	if (isl_aff_is_nan(aff))
-		return aff;
-	aff = isl_aff_cow(aff);
-	if (!aff)
-		return NULL;
-
-	aff->v = isl_vec_cow(aff->v);
-	if (!aff->v)
-		return isl_aff_free(aff);
-
-	isl_int_set(aff->v->el[0], v);
-
-	return aff;
 }
 
 /* Replace the numerator of the constant term of "aff" by "v".
@@ -1546,23 +1476,6 @@ __isl_give isl_aff *isl_aff_floor(__isl_take isl_aff *aff)
 	aff = isl_aff_normalize(aff);
 
 	return aff;
-}
-
-/* Compute
- *
- *	aff mod m = aff - m * floor(aff/m)
- */
-__isl_give isl_aff *isl_aff_mod(__isl_take isl_aff *aff, isl_int m)
-{
-	isl_aff *res;
-
-	res = isl_aff_copy(aff);
-	aff = isl_aff_scale_down(aff, m);
-	aff = isl_aff_floor(aff);
-	aff = isl_aff_scale(aff, m);
-	res = isl_aff_sub(res, aff);
-
-	return res;
 }
 
 /* Compute

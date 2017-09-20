@@ -19,7 +19,6 @@ TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 if IMATH_FOR_MP
 
 MP_SRC = \
-	isl_hide_deprecated.h \
 	isl_imath.c \
 	isl_imath.h \
 	isl_int_imath.h \
@@ -42,7 +41,6 @@ else
 MP_SRC += isl_val_imath.c
 endif
 
-DEPRECATED_SRC =
 MP_INCLUDE_H =
 endif
 
@@ -57,7 +55,6 @@ MP_SRC = \
 	isl_gmp.c \
 	isl_val_gmp.c
 
-DEPRECATED_SRC = isl_ast_int.c
 MP_INCLUDE_H = include/isl/val_gmp.h
 endif
 
@@ -66,7 +63,6 @@ AM_CFLAGS = @WARNING_FLAGS@
 
 libisl_la_SOURCES = \
 	$(MP_SRC) \
-	$(DEPRECATED_SRC) \
 	isl_aff.c \
 	isl_aff_private.h \
 	isl_affine_hull.c \
@@ -322,21 +318,6 @@ pkginclude_HEADERS = \
 	include/isl/vec.h \
 	include/isl/version.h \
 	include/isl/vertices.h
-deprecateddir = $(pkgincludedir)/deprecated
-deprecated_HEADERS = \
-	include/isl/deprecated/int.h \
-	include/isl/deprecated/aff_int.h \
-	include/isl/deprecated/ast_int.h \
-	include/isl/deprecated/constraint_int.h \
-	include/isl/deprecated/ilp_int.h \
-	include/isl/deprecated/map_int.h \
-	include/isl/deprecated/mat_int.h \
-	include/isl/deprecated/point_int.h \
-	include/isl/deprecated/polynomial_int.h \
-	include/isl/deprecated/set_int.h \
-	include/isl/deprecated/union_map_int.h \
-	include/isl/deprecated/val_int.h \
-	include/isl/deprecated/vec_int.h
 
 BUILT_SOURCES = gitversion.h
 

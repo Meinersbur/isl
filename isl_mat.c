@@ -21,7 +21,6 @@
 #include <isl_vec_private.h>
 #include <isl_space_private.h>
 #include <isl_val_private.h>
-#include <isl/deprecated/mat_int.h>
 
 isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat)
 {

@@ -24,7 +24,6 @@
 #include <isl_space_private.h>
 #include <isl/union_set.h>
 #include <isl_maybe_map.h>
-#include <isl/deprecated/union_map_int.h>
 
 #include <bset_from_bmap.c>
 #include <set_to_map.c>

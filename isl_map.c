@@ -43,8 +43,6 @@
 #include <isl_options_private.h>
 #include <isl_morph.h>
 #include <isl_val_private.h>
-#include <isl/deprecated/map_int.h>
-#include <isl/deprecated/set_int.h>
 
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
@@ -9368,12 +9366,6 @@ __isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos)
 {
 	return isl_map_plain_get_val_if_fixed(set, type, pos);
-}
-
-isl_bool isl_set_plain_is_fixed(__isl_keep isl_set *set,
-	enum isl_dim_type type, unsigned pos, isl_int *val)
-{
-	return isl_map_plain_is_fixed(set, type, pos, val);
 }
 
 /* Check if dimension dim has fixed value and if so and if val is not NULL,

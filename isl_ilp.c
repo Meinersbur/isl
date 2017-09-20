@@ -21,7 +21,6 @@
 #include <isl_vec_private.h>
 #include <isl_lp_private.h>
 #include <isl_ilp_private.h>
-#include <isl/deprecated/ilp_int.h>
 
 /* Given a basic set "bset", construct a basic set U such that for
  * each element x in U, the whole unit box positioned at x is inside
@@ -504,24 +503,6 @@ enum isl_lp_result isl_set_opt(__isl_keep isl_set *set, int max,
 	isl_aff_free(obj);
 
 	return res;
-}
-
-enum isl_lp_result isl_basic_set_max(__isl_keep isl_basic_set *bset,
-	__isl_keep isl_aff *obj, isl_int *opt)
-{
-	return isl_basic_set_opt(bset, 1, obj, opt);
-}
-
-enum isl_lp_result isl_set_max(__isl_keep isl_set *set,
-	__isl_keep isl_aff *obj, isl_int *opt)
-{
-	return isl_set_opt(set, 1, obj, opt);
-}
-
-enum isl_lp_result isl_set_min(__isl_keep isl_set *set,
-	__isl_keep isl_aff *obj, isl_int *opt)
-{
-	return isl_set_opt(set, 0, obj, opt);
 }
 
 /* Convert the result of a function that returns an isl_lp_result

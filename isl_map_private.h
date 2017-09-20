@@ -531,8 +531,6 @@ __isl_give isl_basic_map *isl_basic_map_shift_div(
 __isl_give isl_basic_map_list *isl_map_get_basic_map_list(
 	__isl_keep isl_map *map);
 
-__isl_give isl_map *isl_map_fixed_power(__isl_take isl_map *map, isl_int exp);
-
 int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
 	isl_int max, isl_int *count);
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
