@@ -5598,16 +5598,14 @@ int test_fixed_power(isl_ctx *ctx)
 {
 	const char *str;
 	isl_map *map;
-	isl_int exp;
+	isl_val *exp;
 	int equal;
 
-	isl_int_init(exp);
 	str = "{ [i] -> [i + 1] }";
 	map = isl_map_read_from_str(ctx, str);
-	isl_int_set_si(exp, 23);
-	map = isl_map_fixed_power(map, exp);
+	exp = isl_val_int_from_si(ctx, 23);
+	map = isl_map_fixed_power_val(map, exp);
 	equal = map_check_equal(map, "{ [i] -> [i + 23] }");
-	isl_int_clear(exp);
 	isl_map_free(map);
 	if (equal < 0)
 		return -1;
