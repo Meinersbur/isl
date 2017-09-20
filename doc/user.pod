@@ -4681,6 +4681,11 @@ flat anonymous space.
 		__isl_take isl_pw_qpolynomial *pwqp,
 		enum isl_dim_type type, unsigned n,
 		__isl_take isl_val *v);
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_fix_val(
+		__isl_take isl_pw_qpolynomial_fold *pwf,
+		enum isl_dim_type type, unsigned n,
+		__isl_take isl_val *v);
 
 Intersect the set, relation or function domain
 with the hyperplane where the given
