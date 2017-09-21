@@ -779,6 +779,21 @@ static __isl_give isl_printer *open_exists(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Remove the explicit representations of all local variables in "div".
+ */
+static __isl_give isl_mat *mark_all_unknown(__isl_take isl_mat *div)
+{
+	int i, n_div;
+
+	if (!div)
+		return NULL;
+
+	n_div = isl_mat_rows(div);
+	for (i = 0; i < n_div; ++i)
+		div = isl_mat_set_element_si(div, i, 0, 0);
+	return div;
+}
+
 /* Print the constraints of "bmap" to "p".
  * The names of the variables are taken from "space".
  * "latex" is set if the constraints should be printed in LaTeX format.
@@ -800,7 +815,7 @@ static __isl_give isl_printer *print_disjunct(__isl_keep isl_basic_map *bmap,
 		p = open_exists(p, space, div, latex);
 
 	if (dump)
-		div = isl_mat_free(div);
+		div = mark_all_unknown(div);
 	p = print_constraints(bmap, space, div, p, latex);
 	isl_mat_free(div);
 
