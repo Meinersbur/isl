@@ -316,15 +316,20 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
 	return p;
 }
 
-/* Print an affine expression "c" corresponding to a constraint in "bmap"
+/* Print an affine expression "c"
  * to "p", with the variable names taken from "space" and
  * the integer division definitions taken from "div".
  */
-static __isl_give isl_printer *print_affine(__isl_keep isl_basic_map *bmap,
-	__isl_keep isl_space *space, __isl_keep isl_mat *div,
-	__isl_take isl_printer *p, isl_int *c)
+static __isl_give isl_printer *print_affine(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, isl_int *c)
 {
-	unsigned len = 1 + isl_basic_map_total_dim(bmap);
+	unsigned n_div;
+	unsigned len;
+
+	if (!space || !div)
+		return isl_printer_free(p);
+	n_div = isl_mat_rows(div);
+	len = 1 + isl_space_dim(space, isl_dim_all) + n_div;
 	return print_affine_of_len(space, div, p, c, len);
 }
 
@@ -511,7 +516,7 @@ static __isl_give isl_printer *print_half_constraint(
 	int latex)
 {
 	isl_int_set_si(c[last], 0);
-	p = print_affine(bmap, space, div, p, c);
+	p = print_affine(p, space, div, c);
 
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
@@ -543,7 +548,7 @@ static __isl_give isl_printer *print_constraint(__isl_keep isl_basic_map *bmap,
 	p = isl_printer_print_str(p, " ");
 
 	isl_int_set_si(c[last], 0);
-	p = print_affine(bmap, space, div, p, c);
+	p = print_affine(p, space, div, c);
 
 	return p;
 }
