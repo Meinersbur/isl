@@ -523,7 +523,7 @@ static __isl_give isl_printer *print_half_constraint(__isl_take isl_printer *p,
 	return p;
 }
 
-/* Print a constraint "c" from "bmap" to "p", with the variable names
+/* Print a constraint "c" to "p", with the variable names
  * taken from "space" and the integer division definitions taken from "div".
  * "last" is the position of the last non-zero coefficient, which is
  * moreover assumed to be negative.
@@ -532,9 +532,8 @@ static __isl_give isl_printer *print_half_constraint(__isl_take isl_printer *p,
  *
  *	-c[last] op c'
  */
-static __isl_give isl_printer *print_constraint(__isl_keep isl_basic_map *bmap,
+static __isl_give isl_printer *print_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
-	__isl_take isl_printer *p,
 	isl_int *c, int last, const char *op, int latex)
 {
 	isl_int_abs(c[last], c[last]);
@@ -630,7 +629,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		p = print_constraint(bmap, space, div, p, c->el, l, "=", latex);
+		p = print_constraint(p, space, div, c->el, l, "=", latex);
 		first = 0;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
@@ -667,7 +666,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			first = 1;
 		} else {
 			op = constraint_op(s, strict, latex);
-			p = print_constraint(bmap, space, div, p, c->el, l,
+			p = print_constraint(p, space, div, c->el, l,
 						op, latex);
 			first = 0;
 		}
