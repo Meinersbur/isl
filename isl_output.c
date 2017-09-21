@@ -498,7 +498,7 @@ static const char *constraint_op(int sign, int strict, int latex)
 		return s_ge[latex];
 }
 
-/* Print one side of a constraint "c" from "bmap" to "p", with
+/* Print one side of a constraint "c" to "p", with
  * the variable names taken from "space" and the integer division definitions
  * taken from "div".
  * "last" is the position of the last non-zero coefficient.
@@ -509,11 +509,9 @@ static const char *constraint_op(int sign, int strict, int latex)
  *
  * is printed.
  */
-static __isl_give isl_printer *print_half_constraint(
-	__isl_keep isl_basic_map *bmap,
+static __isl_give isl_printer *print_half_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
-	__isl_take isl_printer *p, isl_int *c, int last, const char *op,
-	int latex)
+	isl_int *c, int last, const char *op, int latex)
 {
 	isl_int_set_si(c[last], 0);
 	p = print_affine(p, space, div, c);
@@ -664,7 +662,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_int_set_si(c->el[0], 0);
 		if (!dump && next_is_opposite(bmap, i, l)) {
 			op = constraint_op(-s, strict, latex);
-			p = print_half_constraint(bmap, space, div, p, c->el, l,
+			p = print_half_constraint(p, space, div, c->el, l,
 						op, latex);
 			first = 1;
 		} else {
