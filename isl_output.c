@@ -503,18 +503,13 @@ static const char *constraint_op(int sign, int strict, int latex)
  *	c' op
  *
  * is printed.
- * "first_constraint" is set if this is the first constraint
- * in the conjunction.
  */
 static __isl_give isl_printer *print_half_constraint(
 	__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
 	__isl_take isl_printer *p, isl_int *c, int last, const char *op,
-	int first_constraint, int latex)
+	int latex)
 {
-	if (!first_constraint)
-		p = isl_printer_print_str(p, s_and[latex]);
-
 	isl_int_set_si(c[last], 0);
 	p = print_affine(bmap, space, div, p, c);
 
@@ -533,18 +528,12 @@ static __isl_give isl_printer *print_half_constraint(
  * the constraint is printed in the form
  *
  *	-c[last] op c'
- *
- * "first_constraint" is set if this is the first constraint
- * in the conjunction.
  */
 static __isl_give isl_printer *print_constraint(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
 	__isl_take isl_printer *p,
-	isl_int *c, int last, const char *op, int first_constraint, int latex)
+	isl_int *c, int last, const char *op, int latex)
 {
-	if (!first_constraint)
-		p = isl_printer_print_str(p, s_and[latex]);
-
 	isl_int_abs(c[last], c[last]);
 
 	p = print_term(space, div, c[last], last, p, latex);
@@ -632,12 +621,13 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			p = isl_printer_print_str(p, "0 = 0");
 			continue;
 		}
+		if (!first)
+			p = isl_printer_print_str(p, s_and[latex]);
 		if (isl_int_is_neg(bmap->eq[i][l]))
 			isl_seq_cpy(c->el, bmap->eq[i], 1 + total);
 		else
 			isl_seq_neg(c->el, bmap->eq[i], 1 + total);
-		p = print_constraint(bmap, space, div, p, c->el, l,
-				    "=", first, latex);
+		p = print_constraint(bmap, space, div, p, c->el, l, "=", latex);
 		first = 0;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
@@ -657,6 +647,8 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			if (is_div)
 				continue;
 		}
+		if (!first)
+			p = isl_printer_print_str(p, s_and[latex]);
 		s = isl_int_sgn(bmap->ineq[i][l]);
 		strict = !rational && isl_int_is_negone(bmap->ineq[i][0]);
 		if (s < 0)
@@ -668,12 +660,12 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		if (!dump && next_is_opposite(bmap, i, l)) {
 			op = constraint_op(-s, strict, latex);
 			p = print_half_constraint(bmap, space, div, p, c->el, l,
-						op, first, latex);
+						op, latex);
 			first = 1;
 		} else {
 			op = constraint_op(s, strict, latex);
 			p = print_constraint(bmap, space, div, p, c->el, l,
-						op, first, latex);
+						op, latex);
 			first = 0;
 		}
 	}
