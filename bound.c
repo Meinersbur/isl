@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <isl/stream.h>
 #include <isl_map_private.h>
-#include <isl_polynomial_private.h>
+#include <isl/polynomial.h>
 #include <isl_scan.h>
 #include <isl/val.h>
 #include <isl/options.h>
