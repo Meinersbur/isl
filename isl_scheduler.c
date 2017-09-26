@@ -4510,8 +4510,9 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 	int i, pos, cut;
 	isl_ctx *ctx;
 	isl_tab_lexmin *tl;
-	isl_vec *sol, *prev = NULL;
+	isl_vec *sol = NULL, *prev;
 	int treat_coalescing;
+	int try_again;
 
 	if (!lp)
 		return NULL;
@@ -4523,8 +4524,10 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 	do {
 		int integral;
 
+		try_again = 0;
 		if (cut)
 			tl = isl_tab_lexmin_cut_to_integer(tl);
+		prev = sol;
 		sol = non_empty_solution(tl);
 		if (!sol)
 			goto error;
@@ -4540,7 +4543,7 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 		prev = isl_vec_free(prev);
 		cut = want_integral && !integral;
 		if (cut)
-			prev = sol;
+			try_again = 1;
 		if (!treat_coalescing)
 			continue;
 		for (i = 0; i < graph->n; ++i) {
@@ -4553,11 +4556,11 @@ static __isl_give isl_vec *non_neg_lexmin(struct isl_sched_graph *graph,
 				break;
 		}
 		if (i < graph->n) {
-			prev = sol;
+			try_again = 1;
 			tl = zero_out_node_coef(tl, &graph->node[i], pos);
 			cut = 0;
 		}
-	} while (prev);
+	} while (try_again);
 
 	isl_tab_lexmin_free(tl);
 
