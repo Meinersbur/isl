@@ -4892,6 +4892,24 @@ int test_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that "pa" consists of a single expression.
+ */
+static int check_single_piece(isl_ctx *ctx, __isl_take isl_pw_aff *pa)
+{
+	int n;
+
+	n = isl_pw_aff_n_piece(pa);
+	isl_pw_aff_free(pa);
+
+	if (!pa)
+		return -1;
+	if (n != 1)
+		isl_die(ctx, isl_error_unknown, "expecting single expression",
+			return -1);
+
+	return 0;
+}
+
 /* Check that the computation below results in a single expression.
  * One or two expressions may result depending on which constraint
  * ends up being considered as redundant with respect to the other
@@ -4903,22 +4921,12 @@ static int test_dim_max_1(isl_ctx *ctx)
 	const char *str;
 	isl_set *set;
 	isl_pw_aff *pa;
-	int n;
 
 	str = "[n] -> { [a, b] : n >= 0 and 4a >= -4 + n and b >= 0 and "
 				"-4a <= b <= 3 and b < n - 4a }";
 	set = isl_set_read_from_str(ctx, str);
 	pa = isl_set_dim_min(set, 0);
-	n = isl_pw_aff_n_piece(pa);
-	isl_pw_aff_free(pa);
-
-	if (!pa)
-		return -1;
-	if (n != 1)
-		isl_die(ctx, isl_error_unknown, "expecting single expression",
-			return -1);
-
-	return 0;
+	return check_single_piece(ctx, pa);
 }
 
 int test_dim_max(isl_ctx *ctx)
