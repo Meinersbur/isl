@@ -5741,6 +5741,8 @@ static int test_list(isl_ctx *ctx)
 	list = isl_id_list_add(list, d);
 	list = isl_id_list_drop(list, 1, 1);
 
+	if (!list)
+		return -1;
 	if (isl_id_list_n_id(list) != 3) {
 		isl_id_list_free(list);
 		isl_die(ctx, isl_error_unknown,
