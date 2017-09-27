@@ -515,14 +515,17 @@ static int test_un_val(isl_ctx *ctx)
 	int i;
 	isl_val *v, *res;
 	__isl_give isl_val *(*fn)(__isl_take isl_val *v);
-	int ok;
+	isl_bool ok, is_nan;
 
 	for (i = 0; i < ARRAY_SIZE(val_un_tests); ++i) {
 		v = isl_val_read_from_str(ctx, val_un_tests[i].arg);
 		res = isl_val_read_from_str(ctx, val_un_tests[i].res);
 		fn = val_un_tests[i].op;
 		v = fn(v);
-		if (isl_val_is_nan(res))
+		is_nan = isl_val_is_nan(res);
+		if (is_nan < 0)
+			ok = isl_bool_error;
+		else if (is_nan)
 			ok = isl_val_is_nan(v);
 		else
 			ok = isl_val_eq(v, res);
