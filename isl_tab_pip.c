@@ -1219,6 +1219,37 @@ static int lexmin_col_pair(struct isl_tab *tab,
 	return -1;
 }
 
+/* Does the index into the tab->var or tab->con array "index"
+ * correspond to a variable in the context tableau?
+ * In particular, it needs to be an index into the tab->var array and
+ * it needs to refer to either one of the first tab->n_param variables or
+ * one of the last tab->n_div variables.
+ */
+static int is_parameter_var(struct isl_tab *tab, int index)
+{
+	if (index < 0)
+		return 0;
+	if (index < tab->n_param)
+		return 1;
+	if (index >= tab->n_var - tab->n_div)
+		return 1;
+	return 0;
+}
+
+/* Does column "col" of "tab" refer to a variable in the context tableau?
+ */
+static int col_is_parameter_var(struct isl_tab *tab, int col)
+{
+	return is_parameter_var(tab, tab->col_var[col]);
+}
+
+/* Does row "row" of "tab" refer to a variable in the context tableau?
+ */
+static int row_is_parameter_var(struct isl_tab *tab, int row)
+{
+	return is_parameter_var(tab, tab->row_var[row]);
+}
+
 /* Given a row in the tableau, find and return the column that would
  * result in the lexicographically smallest, but positive, increment
  * in the sample point.
@@ -1237,9 +1268,7 @@ static int lexmin_pivot_col(struct isl_tab *tab, int row)
 	isl_int_init(tmp);
 
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
-		if (tab->col_var[j] >= 0 &&
-		    (tab->col_var[j] < tab->n_param  ||
-		    tab->col_var[j] >= tab->n_var - tab->n_div))
+		if (col_is_parameter_var(tab, j))
 			continue;
 
 		if (!isl_int_is_pos(tr[j]))
@@ -1309,9 +1338,7 @@ static void check_lexpos(struct isl_tab *tab)
 	int row;
 
 	for (col = tab->n_dead; col < tab->n_col; ++col) {
-		if (tab->col_var[col] >= 0 &&
-		    (tab->col_var[col] < tab->n_param ||
-		     tab->col_var[col] >= tab->n_var - tab->n_div))
+		if (col_is_parameter_var(tab, col))
 			continue;
 		for (var = tab->n_param; var < tab->n_var - tab->n_div; ++var) {
 			if (!tab->var[var].is_row) {
@@ -1361,9 +1388,7 @@ static int report_conflict(struct isl_tab *tab, int row)
 	tr = tab->mat->row[row] + 2 + tab->M;
 
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
-		if (tab->col_var[j] >= 0 &&
-		    (tab->col_var[j] < tab->n_param  ||
-		    tab->col_var[j] >= tab->n_var - tab->n_div))
+		if (col_is_parameter_var(tab, j))
 			continue;
 
 		if (!isl_int_is_neg(tr[j]))
@@ -1675,9 +1700,7 @@ static int integer_variable(struct isl_tab *tab, int row)
 	unsigned off = 2 + tab->M;
 
 	for (i = tab->n_dead; i < tab->n_col; ++i) {
-		if (tab->col_var[i] >= 0 &&
-		    (tab->col_var[i] < tab->n_param ||
-		     tab->col_var[i] >= tab->n_var - tab->n_div))
+		if (col_is_parameter_var(tab, i))
 			continue;
 		if (!isl_int_is_divisible_by(tab->mat->row[row][off + i],
 						tab->mat->row[row][0]))
@@ -3660,9 +3683,7 @@ static int is_critical(struct isl_tab *tab, int row)
 	unsigned off = 2 + tab->M;
 
 	for (j = tab->n_dead; j < tab->n_col; ++j) {
-		if (tab->col_var[j] >= 0 &&
-		    (tab->col_var[j] < tab->n_param  ||
-		    tab->col_var[j] >= tab->n_var - tab->n_div))
+		if (col_is_parameter_var(tab, j))
 			continue;
 
 		if (isl_int_is_pos(tab->mat->row[row][off + j]))
@@ -4170,10 +4191,7 @@ static void find_solutions_main(struct isl_sol *sol, struct isl_tab *tab)
 		int p;
 		struct isl_vec *eq;
 
-		if (tab->row_var[row] < 0)
-			continue;
-		if (tab->row_var[row] >= tab->n_param &&
-		    tab->row_var[row] < tab->n_var - tab->n_div)
+		if (!row_is_parameter_var(tab, row))
 			continue;
 		if (tab->row_var[row] < tab->n_param)
 			p = tab->row_var[row];
