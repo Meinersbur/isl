@@ -2147,7 +2147,7 @@ static int get_div(struct isl_tab *tab, struct isl_context *context,
 }
 
 /* Add a parametric cut to cut away the non-integral sample value
- * of the give row.
+ * of the given row.
  * Let a_i be the coefficients of the constant term and the parameters
  * and let b_i be the coefficients of the variables or constraints
  * in basis of the tableau.
