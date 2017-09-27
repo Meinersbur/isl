@@ -1536,6 +1536,25 @@ static int is_constant(struct isl_tab *tab, int row)
 					tab->n_col - tab->n_dead) == -1;
 }
 
+/* Is the given row a parametric constant?
+ * That is, does it only involve variables that also appear in the context?
+ */
+static int is_parametric_constant(struct isl_tab *tab, int row)
+{
+	unsigned off = 2 + tab->M;
+	int col;
+
+	for (col = tab->n_dead; col < tab->n_col; ++col) {
+		if (col_is_parameter_var(tab, col))
+			continue;
+		if (isl_int_is_zero(tab->mat->row[row][off + col]))
+			continue;
+		return 0;
+	}
+
+	return 1;
+}
+
 /* Add an equality that may or may not be valid to the tableau.
  * If the resulting row is a pure constant, then it must be zero.
  * Otherwise, the resulting tableau is empty.
@@ -2326,7 +2345,13 @@ error:
 /* Given a main tableau where more than one row requires a split,
  * determine and return the "best" row to split on.
  *
- * Given two rows in the main tableau, if the inequality corresponding
+ * If any of the rows requiring a split only involves
+ * variables that also appear in the context tableau,
+ * then the negative part is guaranteed not to have a solution.
+ * It is therefore best to split on any of these rows first.
+ *
+ * Otherwise,
+ * given two rows in the main tableau, if the inequality corresponding
  * to the first row is redundant with respect to that of the second row
  * in the current tableau, then it is better to split on the second row,
  * since in the positive part, both rows will be positive.
@@ -2369,6 +2394,9 @@ static int best_split(struct isl_tab *tab, struct isl_tab *context_tab)
 			continue;
 		if (tab->row_sign[split] != isl_tab_row_any)
 			continue;
+
+		if (is_parametric_constant(tab, split))
+			return split;
 
 		ineq = get_row_parameter_ineq(tab, split);
 		if (!ineq)

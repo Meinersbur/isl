@@ -4929,6 +4929,28 @@ static int test_dim_max_1(isl_ctx *ctx)
 	return check_single_piece(ctx, pa);
 }
 
+/* Check that the computation below results in a single expression.
+ * The PIP problem corresponding to these constraints has a row
+ * that causes a split of the solution domain.  The solver should
+ * first pick rows that split off empty parts such that the actual
+ * solution domain does not get split.
+ * Note that the description contains some redundant constraints.
+ * If these constraints get removed first, then the row mentioned
+ * above does not appear in the PIP problem.
+ */
+static int test_dim_max_2(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_pw_aff *pa;
+
+	str = "[P, N] -> { [a] : a < N and a >= 0 and N > P and a <= P and "
+				"N > 0 and P >= 0 }";
+	set = isl_set_read_from_str(ctx, str);
+	pa = isl_set_dim_max(set, 0);
+	return check_single_piece(ctx, pa);
+}
+
 int test_dim_max(isl_ctx *ctx)
 {
 	int equal;
@@ -4939,6 +4961,8 @@ int test_dim_max(isl_ctx *ctx)
 	isl_pw_aff *pwaff;
 
 	if (test_dim_max_1(ctx) < 0)
+		return -1;
+	if (test_dim_max_2(ctx) < 0)
 		return -1;
 
 	str = "[N] -> { [i] : 0 <= i <= min(N,10) }";
