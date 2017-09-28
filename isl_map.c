@@ -6867,59 +6867,22 @@ static __isl_give isl_set *isl_basic_set_lexmin_compute_divs(
 	return isl_basic_set_lexopt(bset, ISL_OPT_QE);
 }
 
-/* Extract the first and only affine expression from list
- * and then add it to *pwaff with the given dom.
- * This domain is known to be disjoint from other domains
- * because of the way isl_basic_map_foreach_lexmax works.
- */
-static isl_stat update_dim_opt(__isl_take isl_basic_set *dom,
-	__isl_take isl_aff_list *list, void *user)
-{
-	isl_ctx *ctx = isl_basic_set_get_ctx(dom);
-	isl_aff *aff;
-	isl_pw_aff **pwaff = user;
-	isl_pw_aff *pwaff_i;
-
-	if (!list)
-		goto error;
-	if (isl_aff_list_n_aff(list) != 1)
-		isl_die(ctx, isl_error_internal,
-			"expecting single element list", goto error);
-
-	aff = isl_aff_list_get_aff(list, 0);
-	pwaff_i = isl_pw_aff_alloc(isl_set_from_basic_set(dom), aff);
-
-	*pwaff = isl_pw_aff_add_disjoint(*pwaff, pwaff_i);
-
-	isl_aff_list_free(list);
-
-	return isl_stat_ok;
-error:
-	isl_basic_set_free(dom);
-	isl_aff_list_free(list);
-	return isl_stat_error;
-}
-
 /* Given a basic map with one output dimension, compute the minimum or
  * maximum of that dimension as an isl_pw_aff.
  *
- * The isl_pw_aff is constructed by having isl_basic_map_foreach_lexopt
- * call update_dim_opt on each leaf of the result.
+ * Compute the optimum as a lexicographic optimum over the single
+ * output dimension and extract the single isl_pw_aff from the result.
  */
 static __isl_give isl_pw_aff *basic_map_dim_opt(__isl_keep isl_basic_map *bmap,
 	int max)
 {
-	isl_space *dim = isl_basic_map_get_space(bmap);
+	isl_pw_multi_aff *pma;
 	isl_pw_aff *pwaff;
-	isl_stat r;
 
-	dim = isl_space_from_domain(isl_space_domain(dim));
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
-	pwaff = isl_pw_aff_empty(dim);
-
-	r = isl_basic_map_foreach_lexopt(bmap, max, &update_dim_opt, &pwaff);
-	if (r < 0)
-		return isl_pw_aff_free(pwaff);
+	bmap = isl_basic_map_copy(bmap);
+	pma = isl_basic_map_lexopt_pw_multi_aff(bmap, max ? ISL_OPT_MAX : 0);
+	pwaff = isl_pw_multi_aff_get_pw_aff(pma, 0);
+	isl_pw_multi_aff_free(pma);
 
 	return pwaff;
 }
