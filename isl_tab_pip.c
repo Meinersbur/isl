@@ -173,13 +173,11 @@ struct isl_sol_callback {
  *
  * The context tableau is owned by isl_sol and is updated incrementally.
  *
- * There are currently three implementations of this interface,
+ * There are currently two implementations of this interface,
  * isl_sol_map, which simply collects the solutions in an isl_map
  * and (optionally) the parts of the context where there is no solution
- * in an isl_set,
- * isl_sol_pma, which collects an isl_pw_multi_aff instead, and
- * isl_sol_for, which calls a user-defined function for each part of
- * the solution.
+ * in an isl_set, and
+ * isl_sol_pma, which collects an isl_pw_multi_aff instead.
  */
 struct isl_sol {
 	int error;
@@ -4943,145 +4941,6 @@ static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap,
 #undef SUFFIX
 #define SUFFIX
 #include "isl_tab_lexopt_templ.c"
-
-struct isl_sol_for {
-	struct isl_sol	sol;
-	isl_stat	(*fn)(__isl_take isl_basic_set *dom,
-				__isl_take isl_aff_list *list, void *user);
-	void		*user;
-};
-
-static void sol_for_free(struct isl_sol *sol)
-{
-}
-
-/* Add the solution identified by the tableau and the context tableau.
- * In particular, "dom" represents the context and "ma" expresses
- * the solution on that context.
- *
- * See documentation of sol_add for more details.
- *
- * Instead of constructing a basic map, this function calls a user
- * defined function with the current context as a basic set and
- * a list of affine expressions representing the relation between
- * the input and output.  The space over which the affine expressions
- * are defined is the same as that of the domain.  The number of
- * affine expressions in the list is equal to the number of output variables.
- */
-static void sol_for_add(struct isl_sol_for *sol,
-	__isl_take isl_basic_set *dom, __isl_take isl_multi_aff *ma)
-{
-	int i, n;
-	isl_ctx *ctx;
-	isl_aff *aff;
-	isl_aff_list *list;
-
-	if (sol->sol.error || !dom || !ma)
-		goto error;
-
-	ctx = isl_basic_set_get_ctx(dom);
-	n = isl_multi_aff_dim(ma, isl_dim_out);
-	list = isl_aff_list_alloc(ctx, n);
-	for (i = 0; i < n; ++i) {
-		aff = isl_multi_aff_get_aff(ma, i);
-		list = isl_aff_list_add(list, aff);
-	}
-
-	dom = isl_basic_set_finalize(dom);
-
-	if (sol->fn(isl_basic_set_copy(dom), list, sol->user) < 0)
-		goto error;
-
-	isl_basic_set_free(dom);
-	isl_multi_aff_free(ma);
-	return;
-error:
-	isl_basic_set_free(dom);
-	isl_multi_aff_free(ma);
-	sol->sol.error = 1;
-}
-
-static void sol_for_add_wrap(struct isl_sol *sol,
-	__isl_take isl_basic_set *dom, __isl_take isl_multi_aff *ma)
-{
-	sol_for_add((struct isl_sol_for *)sol, dom, ma);
-}
-
-static struct isl_sol_for *sol_for_init(__isl_keep isl_basic_map *bmap, int max,
-	isl_stat (*fn)(__isl_take isl_basic_set *dom,
-		__isl_take isl_aff_list *list, void *user),
-	void *user)
-{
-	struct isl_sol_for *sol_for = NULL;
-	isl_space *dom_dim;
-	struct isl_basic_set *dom = NULL;
-
-	sol_for = isl_calloc_type(bmap->ctx, struct isl_sol_for);
-	if (!sol_for)
-		goto error;
-
-	dom_dim = isl_space_domain(isl_space_copy(bmap->dim));
-	dom = isl_basic_set_universe(dom_dim);
-
-	sol_for->sol.free = &sol_for_free;
-	if (sol_init(&sol_for->sol, bmap, dom, max) < 0)
-		goto error;
-	sol_for->fn = fn;
-	sol_for->user = user;
-	sol_for->sol.add = &sol_for_add_wrap;
-	sol_for->sol.add_empty = NULL;
-
-	isl_basic_set_free(dom);
-	return sol_for;
-error:
-	isl_basic_set_free(dom);
-	sol_free(&sol_for->sol);
-	return NULL;
-}
-
-static void sol_for_find_solutions(struct isl_sol_for *sol_for,
-	struct isl_tab *tab)
-{
-	find_solutions_main(&sol_for->sol, tab);
-}
-
-isl_stat isl_basic_map_foreach_lexopt(__isl_keep isl_basic_map *bmap, int max,
-	isl_stat (*fn)(__isl_take isl_basic_set *dom,
-		__isl_take isl_aff_list *list, void *user),
-	void *user)
-{
-	struct isl_sol_for *sol_for = NULL;
-
-	bmap = isl_basic_map_copy(bmap);
-	bmap = isl_basic_map_detect_equalities(bmap);
-	if (!bmap)
-		return isl_stat_error;
-
-	sol_for = sol_for_init(bmap, max, fn, user);
-	if (!sol_for)
-		goto error;
-
-	if (isl_basic_map_plain_is_empty(bmap))
-		/* nothing */;
-	else {
-		struct isl_tab *tab;
-		struct isl_context *context = sol_for->sol.context;
-		tab = tab_for_lexmin(bmap,
-				context->op->peek_basic_set(context), 1, max);
-		tab = context->op->detect_nonnegative_parameters(context, tab);
-		sol_for_find_solutions(sol_for, tab);
-		if (sol_for->sol.error)
-			goto error;
-	}
-
-	sol_free(&sol_for->sol);
-	isl_basic_map_free(bmap);
-	return isl_stat_ok;
-error:
-	sol_free(&sol_for->sol);
-	isl_basic_map_free(bmap);
-	return isl_stat_error;
-}
 
 /* Extract the subsequence of the sample value of "tab"
  * starting at "pos" and of length "len".
