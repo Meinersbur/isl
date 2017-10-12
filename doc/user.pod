@@ -8173,7 +8173,7 @@ C<isl_schedule_to_str> prints the schedule in flow format.
 The schedule tree can be traversed through the use of
 C<isl_schedule_node> objects that point to a particular
 position in the schedule tree.  Whenever a C<isl_schedule_node>
-is use to modify a node in the schedule tree, the original schedule
+is used to modify a node in the schedule tree, the original schedule
 tree is left untouched and the modifications are performed to a copy
 of the tree.  The returned C<isl_schedule_node> then points to
 this modified copy of the tree.
@@ -8774,7 +8774,7 @@ The resulting outer band node contains the first C<pos> dimensions of
 the schedule of C<node> while the inner band contains the remaining dimensions.
 The schedules of the two band nodes live in anonymous spaces.
 The loop AST generation type options and the isolate option
-are split over the the two band nodes.
+are split over the two band nodes.
 
 A band node can be moved down to the leaves of the subtree rooted
 at the band node using the following function.
