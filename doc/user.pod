@@ -7436,6 +7436,10 @@ the same (number of) parameters.
 	isl_map_intersect_domain_wrapped_domain(
 		__isl_take isl_map *map,
 		__isl_take isl_set *domain);
+	__isl_give isl_map *
+	isl_map_intersect_range_wrapped_domain(
+		__isl_take isl_map *map,
+		__isl_take isl_set *domain);
 
 	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_intersect_params(

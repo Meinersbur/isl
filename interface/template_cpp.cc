@@ -432,6 +432,9 @@ static Signature bin_map_range =
 static Signature bin_map_domain_wrapped_domain =
 	{ { { Domain, Domain2 }, Range },
 	  { { { Domain, Domain2 }, Range }, { Domain } } };
+static Signature bin_map_range_wrapped_domain =
+	{ { Domain, { Range, Range2 } },
+	  { { Domain, { Range, Range2 } }, { Range } } };
 
 /* Signatures for binary operations, where the second argument
  * is an identifier (with an anonymous tuple).
@@ -835,6 +838,8 @@ member_methods {
 	{ "intersect_domain_wrapped_domain",
 				{ bin_map_domain_wrapped_domain } },
 	{ "intersect_range",	{ bin_map_range } },
+	{ "intersect_range_wrapped_domain",
+				{ bin_map_range_wrapped_domain } },
 	{ "lattice_tile",	{ un_set } },
 	{ "le_set",		{ set_join } },
 	{ "lt_set",		{ set_join } },
