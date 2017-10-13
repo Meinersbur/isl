@@ -169,6 +169,15 @@ static void test_intersect(isl::ctx ctx)
 	  "{ A[0] }",
 	  "{ }" },
 	});
+
+	C(&isl::union_map::intersect_range_wrapped_domain, {
+	{ "{ [A[x] -> B[y]] -> C[z]; [D[x] -> A[y]] -> E[z] }",
+	  "{ A[0] }",
+	  "{ }" },
+	{ "{ C[z] -> [A[x] -> B[y]]; E[z] -> [D[x] -> A[y]] }",
+	  "{ A[0] }",
+	  "{ C[z] -> [A[0] -> B[y]] }" },
+	});
 }
 
 /* Perform some basic scaling tests.

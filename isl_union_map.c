@@ -1658,6 +1658,23 @@ isl_union_map_intersect_domain_wrapped_domain_union_set(
 	return gen_bin_op(umap, domain, &control);
 }
 
+/* Intersect each map in "umap" in a space A -> [B -> C]
+ * with the corresponding set in "domain" in the space B and
+ * collect the results.
+ */
+__isl_give isl_union_map *
+isl_union_map_intersect_range_wrapped_domain_union_set(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *domain)
+{
+	struct isl_bin_op_control control = {
+		.filter = &isl_map_range_is_wrapping,
+		.match_space = &isl_space_range_wrapped_domain,
+		.fn_map = &isl_map_intersect_range_wrapped_domain,
+	};
+
+	return gen_bin_op(umap, domain, &control);
+}
+
 __isl_give isl_union_map *isl_union_map_apply_range(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2)
 {

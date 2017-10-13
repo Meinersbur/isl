@@ -182,6 +182,10 @@ __isl_overload
 __isl_give isl_union_map *
 isl_union_map_intersect_domain_wrapped_domain_union_set(
 	__isl_take isl_union_map *umap, __isl_take isl_union_set *domain);
+__isl_overload
+__isl_give isl_union_map *
+isl_union_map_intersect_range_wrapped_domain_union_set(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *domain);
 
 __isl_export
 __isl_give isl_union_map *isl_union_map_subtract_domain(
