@@ -157,6 +157,20 @@ static void test_preimage(isl::ctx ctx)
 	});
 }
 
+/* Perform some basic intersection tests.
+ */
+static void test_intersect(isl::ctx ctx)
+{
+	C(&isl::union_map::intersect_domain_wrapped_domain, {
+	{ "{ [A[x] -> B[y]] -> C[z]; [D[x] -> A[y]] -> E[z] }",
+	  "{ A[0] }",
+	  "{ [A[0] -> B[y]] -> C[z] }" },
+	{ "{ C[z] -> [A[x] -> B[y]]; E[z] -> [D[x] -> A[y]] }",
+	  "{ A[0] }",
+	  "{ }" },
+	});
+}
+
 /* Perform some basic scaling tests.
  */
 static void test_scale(isl::ctx ctx)
@@ -185,6 +199,7 @@ static void test_scale(isl::ctx ctx)
 static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 {
 	{ "preimage", &test_preimage },
+	{ "intersect", &test_intersect },
 	{ "scale", &test_scale },
 };
 
