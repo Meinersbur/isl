@@ -121,6 +121,8 @@ __isl_give isl_space *isl_space_range_factor_range(
 	__isl_take isl_space *space);
 __isl_give isl_space *isl_space_domain_wrapped_domain(
 	__isl_take isl_space *space);
+__isl_give isl_space *isl_space_domain_wrapped_range(
+	__isl_take isl_space *space);
 __isl_export
 __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_map_from_domain_and_range(

@@ -5540,6 +5540,9 @@ in the domain of the input function.
 	__isl_give isl_space *
 	isl_space_domain_wrapped_domain(
 		__isl_take isl_space *space);
+	__isl_give isl_space *
+	isl_space_domain_wrapped_range(
+		__isl_take isl_space *space);
 
 	#include <isl/local_space.h>
 	__isl_give isl_local_space *isl_local_space_domain(
