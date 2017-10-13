@@ -1883,6 +1883,14 @@ __isl_give isl_space *isl_space_range_wrapped_domain(
 	return isl_space_factor_domain(isl_space_range(space));
 }
 
+/* Given a space of the form A -> [B -> C], return the space C.
+ */
+__isl_give isl_space *isl_space_range_wrapped_range(
+	__isl_take isl_space *space)
+{
+	return isl_space_factor_range(isl_space_range(space));
+}
+
 __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space)
 {
 	isl_ctx *ctx;
