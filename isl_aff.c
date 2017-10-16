@@ -7856,9 +7856,17 @@ error:
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_zero(
 	__isl_take isl_space *space)
 {
+	isl_bool params;
+
 	if (!space)
 		return NULL;
 
+	params = isl_space_is_params(space);
+	if (params < 0)
+		goto error;
+	if (params)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting proper set space", goto error);
 	if (!isl_space_is_set(space))
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"expecting set space", goto error);
