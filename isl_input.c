@@ -2581,6 +2581,43 @@ static struct isl_obj schedule_read(__isl_keep isl_stream *s)
 	return obj;
 }
 
+/* Read a disjunction of object bodies from "s".
+ * That is, read the inside of the braces, but not the braces themselves.
+ * "v" contains a description of the identifiers parsed so far.
+ * "map" contains information about the parameters.
+ */
+static struct isl_obj obj_read_disjuncts(__isl_keep isl_stream *s,
+	struct vars *v, __isl_keep isl_map *map)
+{
+	struct isl_obj obj = { isl_obj_set, NULL };
+
+	if (isl_stream_next_token_is(s, '}')) {
+		obj.type = isl_obj_union_set;
+		obj.v = isl_union_set_empty(isl_map_get_space(map));
+		return obj;
+	}
+
+	for (;;) {
+		struct isl_obj o;
+		o = obj_read_body(s, isl_map_copy(map), v);
+		if (o.type == isl_obj_none || !o.v)
+			return o;
+		if (!obj.v)
+			obj = o;
+		else {
+			obj = obj_add(s, obj, o);
+			if (obj.type == isl_obj_none || !obj.v)
+				return obj;
+		}
+		if (!isl_stream_eat_if_available(s, ';'))
+			break;
+		if (isl_stream_next_token_is(s, '}'))
+			break;
+	}
+
+	return obj;
+}
+
 static struct isl_obj obj_read(__isl_keep isl_stream *s)
 {
 	isl_map *map = NULL;
@@ -2662,31 +2699,12 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 		map = read_map_tuple(s, map, isl_dim_param, v, 0, 1);
 		if (!map)
 			goto error;
-	} else if (tok->type == '}') {
-		obj.type = isl_obj_union_set;
-		obj.v = isl_union_set_empty(isl_map_get_space(map));
-		isl_token_free(tok);
-		goto done;
 	} else
 		isl_stream_push_token(s, tok);
 
-	for (;;) {
-		struct isl_obj o;
-		o = obj_read_body(s, isl_map_copy(map), v);
-		if (o.type == isl_obj_none || !o.v)
-			goto error;
-		if (!obj.v)
-			obj = o;
-		else {
-			obj = obj_add(s, obj, o);
-			if (obj.type == isl_obj_none || !obj.v)
-				goto error;
-		}
-		if (!isl_stream_eat_if_available(s, ';'))
-			break;
-		if (isl_stream_next_token_is(s, '}'))
-			break;
-	}
+	obj = obj_read_disjuncts(s, v, map);
+	if (obj.type == isl_obj_none || !obj.v)
+		goto error;
 
 	tok = isl_stream_next_token(s);
 	if (tok && tok->type == '}') {
@@ -2697,7 +2715,7 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 			isl_token_free(tok);
 		goto error;
 	}
-done:
+
 	vars_free(v);
 	isl_map_free(map);
 
