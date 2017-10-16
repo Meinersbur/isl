@@ -4842,6 +4842,80 @@ static int test_bin_upma_fail(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of binary operations on isl_multi_pw_aff objects.
+ * "fn" is the function that is tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_multi_pw_aff *(*fn)(
+		__isl_take isl_multi_pw_aff *mpa1,
+		__isl_take isl_multi_pw_aff *mpa2);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} mpa_bin_tests[] = {
+	{ &isl_multi_pw_aff_add, "{ A[] -> [1] }", "{ A[] -> [2] }",
+	  "{ A[] -> [3] }" },
+	{ &isl_multi_pw_aff_add, "{ A[x] -> [(1 : x >= 5)] }",
+	  "{ A[x] -> [(x : x <= 10)] }",
+	  "{ A[x] -> [(1 + x : 5 <= x <= 10)] }" },
+	{ &isl_multi_pw_aff_range_product, "{ A[x] -> B[(1 : x >= 5)] }",
+	  "{ A[y] -> C[(2 : y <= 10)] }",
+	  "{ A[x] -> [B[(1 : x >= 5)] -> C[(2 : x <= 10)]] }" },
+	{ &isl_multi_pw_aff_range_product, "{ A[] -> B[1] }", "{ A[] -> C[2] }",
+	  "{ A[] -> [B[1] -> C[2]] }" },
+	{ &isl_multi_pw_aff_range_product, "{ A[] -> B[] }", "{ A[] -> C[] }",
+	  "{ A[] -> [B[] -> C[]] }" },
+	{ &isl_multi_pw_aff_product, "{ A[x] -> B[(1 : x >= 5)] }",
+	  "{ A[y] -> C[(2 : y <= 10)] }",
+	  "{ [A[x] -> A[y]] -> [B[(1 : x >= 5)] -> C[(2 : y <= 10)]] }" },
+	{ &isl_multi_pw_aff_product, "{ A[] -> B[1] }", "{ A[] -> C[2] }",
+	  "{ [A[] -> A[]] -> [B[1] -> C[2]] }" },
+	{ &isl_multi_pw_aff_product, "{ A[] -> B[] }", "{ A[] -> C[] }",
+	  "{ [A[] -> A[]] -> [B[] -> C[]] }" },
+	{ &isl_multi_pw_aff_pullback_multi_pw_aff,
+	  "{ B[i,j] -> C[i + 2j] }", "{ A[a,b] -> B[b,a] }",
+	  "{ A[a,b] -> C[b + 2a] }" },
+	{ &isl_multi_pw_aff_pullback_multi_pw_aff,
+	  "{ B[i,j] -> C[i + 2j] }",
+	  "{ A[a,b] -> B[(b : b > a),(a : b > a)] }",
+	  "{ A[a,b] -> C[(b + 2a : b > a)] }" },
+	{ &isl_multi_pw_aff_pullback_multi_pw_aff,
+	  "{ B[i,j] -> C[(i + 2j : j > 4)] }",
+	  "{ A[a,b] -> B[(b : b > a),(a : b > a)] }",
+	  "{ A[a,b] -> C[(b + 2a : b > a > 4)] }" },
+};
+
+/* Perform some basic tests of binary operations on isl_multi_pw_aff objects.
+ */
+static int test_bin_mpa(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_multi_pw_aff *mpa1, *mpa2, *res;
+
+	for (i = 0; i < ARRAY_SIZE(mpa_bin_tests); ++i) {
+		mpa1 = isl_multi_pw_aff_read_from_str(ctx,
+							mpa_bin_tests[i].arg1);
+		mpa2 = isl_multi_pw_aff_read_from_str(ctx,
+							mpa_bin_tests[i].arg2);
+		res = isl_multi_pw_aff_read_from_str(ctx,
+							mpa_bin_tests[i].res);
+		mpa1 = mpa_bin_tests[i].fn(mpa1, mpa2);
+		ok = isl_multi_pw_aff_plain_is_equal(mpa1, res);
+		isl_multi_pw_aff_free(mpa1);
+		isl_multi_pw_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
 /* Inputs for basic tests of binary operations on
  * pairs of isl_multi_union_pw_aff and isl_union_set objects.
  * "fn" is the function that is tested.
@@ -4910,6 +4984,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_bin_upma(ctx) < 0)
 		return -1;
 	if (test_bin_upma_fail(ctx) < 0)
+		return -1;
+	if (test_bin_mpa(ctx) < 0)
 		return -1;
 	if (test_mupa_uset(ctx) < 0)
 		return -1;
