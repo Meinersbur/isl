@@ -2796,22 +2796,36 @@ error:
 	return NULL;
 }
 
-__isl_give isl_union_set *isl_stream_read_union_set(__isl_keep isl_stream *s)
+/* Extract an isl_union_set from "obj".
+ * This only works if the object was detected as either a set
+ * (in which case it is converted to a union set) or a union set.
+ */
+static __isl_give isl_union_set *extract_union_set(isl_ctx *ctx,
+	struct isl_obj obj)
 {
-	struct isl_obj obj;
-
-	obj = obj_read(s);
 	if (obj.type == isl_obj_set) {
 		obj.type = isl_obj_union_set;
 		obj.v = isl_union_set_from_set(obj.v);
 	}
 	if (obj.v)
-		isl_assert(s->ctx, obj.type == isl_obj_union_set, goto error);
+		isl_assert(ctx, obj.type == isl_obj_union_set, goto error);
 
 	return obj.v;
 error:
 	obj.type->free(obj.v);
 	return NULL;
+}
+
+/* Read an isl_union_set from "s".
+ * First read a generic object and then try and extract
+ * an isl_union_set from that.
+ */
+__isl_give isl_union_set *isl_stream_read_union_set(__isl_keep isl_stream *s)
+{
+	struct isl_obj obj;
+
+	obj = obj_read(s);
+	return extract_union_set(s->ctx, obj);
 }
 
 static __isl_give isl_basic_map *basic_map_read(__isl_keep isl_stream *s)
