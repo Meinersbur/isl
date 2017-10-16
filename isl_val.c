@@ -1658,8 +1658,8 @@ static __isl_give isl_multi_val *isl_multi_val_fn_val(
 		goto error;
 
 	for (i = 0; i < mv->n; ++i) {
-		mv->p[i] = fn(mv->p[i], isl_val_copy(v));
-		if (!mv->p[i])
+		mv->u.p[i] = fn(mv->u.p[i], isl_val_copy(v));
+		if (!mv->u.p[i])
 			goto error;
 	}
 

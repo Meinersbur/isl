@@ -12231,7 +12231,7 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff2(
 		isl_aff *aff;
 		isl_basic_map *bmap_i;
 
-		aff = isl_aff_copy(maff->p[i]);
+		aff = isl_aff_copy(maff->u.p[i]);
 		bmap_i = isl_basic_map_from_aff2(aff, rational);
 
 		bmap = isl_basic_map_flat_range_product(bmap, bmap_i);
@@ -12762,7 +12762,7 @@ static int set_ma_divs(__isl_keep isl_basic_map *bmap,
 	if (n_div == 0)
 		return 0;
 
-	ls = isl_aff_get_domain_local_space(ma->p[0]);
+	ls = isl_aff_get_domain_local_space(ma->u.p[0]);
 	if (!ls)
 		return -1;
 
@@ -12808,7 +12808,7 @@ static int multi_aff_strides(__isl_keep isl_multi_aff *ma)
 	int strides = 0;
 
 	for (i = 0; i < ma->n; ++i)
-		if (!isl_int_is_one(ma->p[i]->v->el[0]))
+		if (!isl_int_is_one(ma->u.p[i]->v->el[0]))
 			strides++;
 
 	return strides;
@@ -12848,7 +12848,7 @@ static __isl_give isl_basic_map *add_ma_strides(
 	for (i = 0; i < ma->n; ++i) {
 		int o_bmap = 0, o_ma = 1;
 
-		if (isl_int_is_one(ma->p[i]->v->el[0]))
+		if (isl_int_is_one(ma->u.p[i]->v->el[0]))
 			continue;
 		div = isl_basic_map_alloc_div(bmap);
 		k = isl_basic_map_alloc_equality(bmap);
@@ -12856,23 +12856,23 @@ static __isl_give isl_basic_map *add_ma_strides(
 			goto error;
 		isl_int_set_si(bmap->div[div][0], 0);
 		isl_seq_cpy(bmap->eq[k] + o_bmap,
-			    ma->p[i]->v->el + o_ma, 1 + n_param);
+			    ma->u.p[i]->v->el + o_ma, 1 + n_param);
 		o_bmap += 1 + n_param;
 		o_ma += 1 + n_param;
 		isl_seq_clr(bmap->eq[k] + o_bmap, n_before);
 		o_bmap += n_before;
 		isl_seq_cpy(bmap->eq[k] + o_bmap,
-			    ma->p[i]->v->el + o_ma, n_in);
+			    ma->u.p[i]->v->el + o_ma, n_in);
 		o_bmap += n_in;
 		o_ma += n_in;
 		isl_seq_clr(bmap->eq[k] + o_bmap, n_after);
 		o_bmap += n_after;
 		isl_seq_cpy(bmap->eq[k] + o_bmap,
-			    ma->p[i]->v->el + o_ma, n_div_ma);
+			    ma->u.p[i]->v->el + o_ma, n_div_ma);
 		o_bmap += n_div_ma;
 		o_ma += n_div_ma;
 		isl_seq_clr(bmap->eq[k] + o_bmap, 1 + total - o_bmap);
-		isl_int_neg(bmap->eq[k][1 + total], ma->p[i]->v->el[0]);
+		isl_int_neg(bmap->eq[k][1 + total], ma->u.p[i]->v->el[0]);
 		total++;
 	}
 
@@ -12975,7 +12975,7 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 		n_after = 0;
 	}
 	n_div_bmap = isl_basic_map_dim(bmap, isl_dim_div);
-	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
+	n_div_ma = ma->n ? isl_aff_dim(ma->u.p[0], isl_dim_div) : 0;
 
 	space = isl_multi_aff_get_domain_space(ma);
 	space = isl_space_set(isl_basic_map_get_space(bmap), type, space);

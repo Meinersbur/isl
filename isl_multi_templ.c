@@ -85,7 +85,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),dup)(__isl_keep MULTI(BASE) *multi)
 
 	for (i = 0; i < multi->n; ++i)
 		dup = FN(FN(MULTI(BASE),set),BASE)(dup, i,
-						    FN(EL,copy)(multi->p[i]));
+						    FN(EL,copy)(multi->u.p[i]));
 
 	return dup;
 }
@@ -123,7 +123,7 @@ __isl_null MULTI(BASE) *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 
 	isl_space_free(multi->space);
 	for (i = 0; i < multi->n; ++i)
-		FN(EL,free)(multi->p[i]);
+		FN(EL,free)(multi->u.p[i]);
 	free(multi);
 
 	return NULL;
@@ -171,8 +171,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),set_dim_name)(
 	if (type == isl_dim_out)
 		return multi;
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,set_dim_name)(multi->p[i], type, pos, s);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,set_dim_name)(multi->u.p[i],
+							type, pos, s);
+		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
 	}
 
@@ -214,7 +215,7 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 	if (pos < 0 || pos >= multi->n)
 		isl_die(ctx, isl_error_invalid,
 			"index out of bounds", return NULL);
-	return FN(EL,copy)(multi->p[pos]);
+	return FN(EL,copy)(multi->u.p[pos]);
 }
 
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
@@ -246,8 +247,8 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
 			"index out of bounds", goto error);
 
-	FN(EL,free)(multi->p[pos]);
-	multi->p[pos] = el;
+	FN(EL,free)(multi->u.p[pos]);
+	multi->u.p[pos] = el;
 
 	isl_space_free(multi_space);
 	isl_space_free(el_space);
@@ -278,9 +279,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space_and_domain)(
 		goto error;
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,reset_domain_space)(multi->p[i],
+		multi->u.p[i] = FN(EL,reset_domain_space)(multi->u.p[i],
 				 isl_space_copy(domain));
-		if (!multi->p[i])
+		if (!multi->u.p[i])
 			goto error;
 	}
 	isl_space_free(domain);
@@ -417,9 +418,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 		goto error;
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,realign_domain)(multi->p[i],
+		multi->u.p[i] = FN(EL,realign_domain)(multi->u.p[i],
 						isl_reordering_copy(exp));
-		if (!multi->p[i])
+		if (!multi->u.p[i])
 			goto error;
 	}
 
@@ -644,17 +645,17 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 
 	if (type == isl_dim_out) {
 		for (i = 0; i < n; ++i)
-			FN(EL,free)(multi->p[first + i]);
+			FN(EL,free)(multi->u.p[first + i]);
 		for (i = first; i + n < multi->n; ++i)
-			multi->p[i] = multi->p[i + n];
+			multi->u.p[i] = multi->u.p[i + n];
 		multi->n -= n;
 
 		return multi;
 	}
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,drop_dims)(multi->p[i], type, first, n);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,drop_dims)(multi->u.p[i], type, first, n);
+		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
 	}
 
@@ -1040,8 +1041,9 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
 			"spaces don't match", goto error);
 
 	for (i = 0; i < multi1->n; ++i) {
-		multi1->p[i] = fn(multi1->p[i], FN(EL,copy)(multi2->p[i]));
-		if (!multi1->p[i])
+		multi1->u.p[i] = fn(multi1->u.p[i],
+						FN(EL,copy)(multi2->u.p[i]));
+		if (!multi1->u.p[i])
 			goto error;
 	}
 
@@ -1115,8 +1117,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_val)(__isl_take MULTI(BASE) *multi,
 		return NULL;
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,scale_val)(multi->p[i], isl_val_copy(v));
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,scale_val)(multi->u.p[i],
+						isl_val_copy(v));
+		if (!multi->u.p[i])
 			goto error;
 	}
 
@@ -1154,9 +1157,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_down_val)(
 		return NULL;
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,scale_down_val)(multi->p[i],
+		multi->u.p[i] = FN(EL,scale_down_val)(multi->u.p[i],
 						    isl_val_copy(v));
-		if (!multi->p[i])
+		if (!multi->u.p[i])
 			goto error;
 	}
 
@@ -1191,8 +1194,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_multi_val)(
 		isl_val *v;
 
 		v = isl_multi_val_get_val(mv, i);
-		multi->p[i] = FN(EL,scale_val)(multi->p[i], v);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,scale_val)(multi->u.p[i], v);
+		if (!multi->u.p[i])
 			goto error;
 	}
 
@@ -1227,8 +1230,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_down_multi_val)(
 		isl_val *v;
 
 		v = isl_multi_val_get_val(mv, i);
-		multi->p[i] = FN(EL,scale_down_val)(multi->p[i], v);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,scale_down_val)(multi->u.p[i], v);
+		if (!multi->u.p[i])
 			goto error;
 	}
 
@@ -1263,8 +1266,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),mod_multi_val)(
 		isl_val *v;
 
 		v = isl_multi_val_get_val(mv, i);
-		multi->p[i] = FN(EL,mod_val)(multi->p[i], v);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,mod_val)(multi->u.p[i], v);
+		if (!multi->u.p[i])
 			goto error;
 	}
 
@@ -1322,9 +1325,10 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 		return FN(MULTI(BASE),free)(multi);
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,move_dims)(multi->p[i], dst_type, dst_pos,
+		multi->u.p[i] = FN(EL,move_dims)(multi->u.p[i],
+						dst_type, dst_pos,
 						src_type, src_pos, n);
-		if (!multi->p[i])
+		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
 	}
 
@@ -1371,7 +1375,7 @@ isl_bool FN(MULTI(BASE),plain_is_equal)(__isl_keep MULTI(BASE) *multi1,
 		return equal;
 
 	for (i = 0; i < multi1->n; ++i) {
-		equal = FN(EL,plain_is_equal)(multi1->p[i], multi2->p[i]);
+		equal = FN(EL,plain_is_equal)(multi1->u.p[i], multi2->u.p[i]);
 		if (equal < 0 || !equal)
 			return equal;
 	}
@@ -1391,7 +1395,7 @@ isl_bool FN(MULTI(BASE),involves_nan)(__isl_keep MULTI(BASE) *multi)
 		return isl_bool_false;
 
 	for (i = 0; i < multi->n; ++i) {
-		isl_bool has_nan = FN(EL,involves_nan)(multi->p[i]);
+		isl_bool has_nan = FN(EL,involves_nan)(multi->u.p[i]);
 		if (has_nan < 0 || has_nan)
 			return has_nan;
 	}
@@ -1435,8 +1439,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),neg)(__isl_take MULTI(BASE) *multi)
 		return NULL;
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,neg)(multi->p[i]);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,neg)(multi->u.p[i]);
+		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
 	}
 

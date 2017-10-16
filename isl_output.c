@@ -2897,7 +2897,7 @@ static __isl_give isl_printer *print_dim_ma(__isl_take isl_printer *p,
 	isl_multi_aff *ma = data->user;
 
 	if (data->type == isl_dim_out)
-		p = print_aff_body(p, ma->p[pos]);
+		p = print_aff_body(p, ma->u.p[pos]);
 	else
 		p = print_name(data->space, p, data->type, pos, data->latex);
 
@@ -3003,12 +3003,12 @@ static __isl_give isl_printer *print_unnamed_pw_multi_aff_c(
 		p = isl_printer_print_str(p, "(");
 		p = print_set_c(p, space, pma->p[i].set);
 		p = isl_printer_print_str(p, ") ? (");
-		p = print_aff_c(p, pma->p[i].maff->p[0]);
+		p = print_aff_c(p, pma->p[i].maff->u.p[0]);
 		p = isl_printer_print_str(p, ") : ");
 	}
 	isl_space_free(space);
 
-	return print_aff_c(p, pma->p[pma->n - 1].maff->p[0]);
+	return print_aff_c(p, pma->p[pma->n - 1].maff->u.p[0]);
 }
 
 static __isl_give isl_printer *print_pw_multi_aff_c(__isl_take isl_printer *p,
@@ -3130,7 +3130,7 @@ static __isl_give isl_printer *print_dim_mpa(__isl_take isl_printer *p,
 	if (data->type != isl_dim_out)
 		return print_name(data->space, p, data->type, pos, data->latex);
 
-	pa = mpa->p[pos];
+	pa = mpa->u.p[pos];
 	if (pa->n == 0)
 		return isl_printer_print_str(p, "(0 : false)");
 
@@ -3197,7 +3197,7 @@ static __isl_give isl_printer *print_dim_mv(__isl_take isl_printer *p,
 	isl_multi_val *mv = data->user;
 
 	if (data->type == isl_dim_out)
-		return isl_printer_print_val(p, mv->p[pos]);
+		return isl_printer_print_val(p, mv->u.p[pos]);
 	else
 		return print_name(data->space, p, data->type, pos, data->latex);
 }

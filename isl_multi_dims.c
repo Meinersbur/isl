@@ -29,7 +29,7 @@ isl_bool FN(MULTI(BASE),involves_dims)(__isl_keep MULTI(BASE) *multi,
 	for (i = 0; i < multi->n; ++i) {
 		isl_bool involves;
 
-		involves = FN(EL,involves_dims)(multi->p[i], type, first, n);
+		involves = FN(EL,involves_dims)(multi->u.p[i], type, first, n);
 		if (involves < 0 || involves)
 			return involves;
 	}
@@ -61,8 +61,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 		return FN(MULTI(BASE),free)(multi);
 
 	for (i = 0; i < multi->n; ++i) {
-		multi->p[i] = FN(EL,insert_dims)(multi->p[i], type, first, n);
-		if (!multi->p[i])
+		multi->u.p[i] = FN(EL,insert_dims)(multi->u.p[i],
+							type, first, n);
+		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
 	}
 

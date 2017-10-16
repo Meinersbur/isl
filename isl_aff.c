@@ -3350,7 +3350,7 @@ isl_bool isl_multi_pw_aff_is_cst(__isl_keep isl_multi_pw_aff *mpa)
 		return isl_bool_error;
 
 	for (i = 0; i < mpa->n; ++i) {
-		isl_bool is_cst = isl_pw_aff_is_cst(mpa->p[i]);
+		isl_bool is_cst = isl_pw_aff_is_cst(mpa->u.p[i]);
 		if (is_cst < 0 || !is_cst)
 			return is_cst;
 	}
@@ -4111,9 +4111,9 @@ static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
 		goto error;
 
 	for (i = 0; i < maff->n; ++i) {
-		maff->p[i] = isl_aff_substitute_equalities(maff->p[i],
+		maff->u.p[i] = isl_aff_substitute_equalities(maff->u.p[i],
 						    isl_basic_set_copy(eq));
-		if (!maff->p[i])
+		if (!maff->u.p[i])
 			goto error;
 	}
 
@@ -4135,8 +4135,8 @@ __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 		return NULL;
 
 	for (i = 0; i < maff->n; ++i) {
-		maff->p[i] = isl_aff_scale(maff->p[i], f);
-		if (!maff->p[i])
+		maff->u.p[i] = isl_aff_scale(maff->u.p[i], f);
+		if (!maff->u.p[i])
 			return isl_multi_aff_free(maff);
 	}
 
@@ -5396,8 +5396,9 @@ __isl_give isl_multi_aff *isl_multi_aff_substitute(
 		type = isl_dim_set;
 
 	for (i = 0; i < maff->n; ++i) {
-		maff->p[i] = isl_aff_substitute(maff->p[i], type, pos, subs);
-		if (!maff->p[i])
+		maff->u.p[i] = isl_aff_substitute(maff->u.p[i],
+						type, pos, subs);
+		if (!maff->u.p[i])
 			return isl_multi_aff_free(maff);
 	}
 
@@ -5538,7 +5539,7 @@ void isl_seq_preimage(isl_int *dst, isl_int *src,
 
 		if (isl_int_is_zero(src[offset]))
 			continue;
-		isl_int_set(c1, ma->p[i]->v->el[0]);
+		isl_int_set(c1, ma->u.p[i]->v->el[0]);
 		isl_int_mul(c2, f, src[offset]);
 		isl_int_gcd(g, c1, c2);
 		isl_int_divexact(c1, c1, g);
@@ -5548,19 +5549,19 @@ void isl_seq_preimage(isl_int *dst, isl_int *src,
 		o_dst = has_denom;
 		o_src = 1;
 		isl_seq_combine(dst + o_dst, c1, dst + o_dst,
-				c2, ma->p[i]->v->el + o_src, 1 + n_param);
+				c2, ma->u.p[i]->v->el + o_src, 1 + n_param);
 		o_dst += 1 + n_param;
 		o_src += 1 + n_param;
 		isl_seq_scale(dst + o_dst, dst + o_dst, c1, n_before);
 		o_dst += n_before;
 		isl_seq_combine(dst + o_dst, c1, dst + o_dst,
-				c2, ma->p[i]->v->el + o_src, n_in);
+				c2, ma->u.p[i]->v->el + o_src, n_in);
 		o_dst += n_in;
 		o_src += n_in;
 		isl_seq_scale(dst + o_dst, dst + o_dst, c1, n_after);
 		o_dst += n_after;
 		isl_seq_combine(dst + o_dst, c1, dst + o_dst,
-				c2, ma->p[i]->v->el + o_src, n_div_ma);
+				c2, ma->u.p[i]->v->el + o_src, n_div_ma);
 		o_dst += n_div_ma;
 		o_src += n_div_ma;
 		isl_seq_scale(dst + o_dst, dst + o_dst, c1, n_div_bmap);
@@ -5601,7 +5602,7 @@ __isl_give isl_aff *isl_aff_pullback_multi_aff(__isl_take isl_aff *aff,
 		goto error;
 
 	n_div_aff = isl_aff_dim(aff, isl_dim_div);
-	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
+	n_div_ma = ma->n ? isl_aff_dim(ma->u.p[0], isl_dim_div) : 0;
 
 	ls = isl_aff_get_domain_local_space(aff);
 	ls = isl_local_space_preimage_multi_aff(ls, isl_multi_aff_copy(ma));
@@ -5669,9 +5670,9 @@ static __isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff_aligned(
 				isl_multi_aff_get_space(ma1));
 
 	for (i = 0; i < ma1->n; ++i) {
-		ma1->p[i] = isl_aff_pullback_multi_aff(ma1->p[i],
+		ma1->u.p[i] = isl_aff_pullback_multi_aff(ma1->u.p[i],
 						    isl_multi_aff_copy(ma2));
-		if (!ma1->p[i])
+		if (!ma1->u.p[i])
 			goto error;
 	}
 
@@ -5766,10 +5767,10 @@ __isl_give isl_multi_aff *isl_multi_aff_align_divs(
 		return NULL;
 
 	for (i = 1; i < maff->n; ++i)
-		maff->p[0] = isl_aff_align_divs(maff->p[0], maff->p[i]);
+		maff->u.p[0] = isl_aff_align_divs(maff->u.p[0], maff->u.p[i]);
 	for (i = 1; i < maff->n; ++i) {
-		maff->p[i] = isl_aff_align_divs(maff->p[i], maff->p[0]);
-		if (!maff->p[i])
+		maff->u.p[i] = isl_aff_align_divs(maff->u.p[i], maff->u.p[0]);
+		if (!maff->u.p[i])
 			return isl_multi_aff_free(maff);
 	}
 
@@ -5822,7 +5823,7 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	if (!maff)
 		return NULL;
 
-	n_div = isl_aff_dim(maff->p[0], isl_dim_div);
+	n_div = isl_aff_dim(maff->u.p[0], isl_dim_div);
 	space = isl_multi_aff_get_space(maff);
 	space = isl_space_lift(isl_space_domain(space), n_div);
 	space = isl_space_extend_domain_with_range(space,
@@ -5833,14 +5834,14 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	maff->space = space;
 
 	if (ls) {
-		*ls = isl_aff_get_domain_local_space(maff->p[0]);
+		*ls = isl_aff_get_domain_local_space(maff->u.p[0]);
 		if (!*ls)
 			return isl_multi_aff_free(maff);
 	}
 
 	for (i = 0; i < maff->n; ++i) {
-		maff->p[i] = isl_aff_lift(maff->p[i]);
-		if (!maff->p[i])
+		maff->u.p[i] = isl_aff_lift(maff->u.p[i]);
+		if (!maff->u.p[i])
 			goto error;
 	}
 
@@ -6434,7 +6435,7 @@ static __isl_give isl_map *map_from_multi_pw_aff(
 		isl_pw_aff *pa;
 		isl_map *map_i;
 
-		pa = isl_pw_aff_copy(mpa->p[i]);
+		pa = isl_pw_aff_copy(mpa->u.p[i]);
 		map_i = map_from_pw_aff(pa);
 
 		map = isl_map_flat_range_product(map, map_i);
@@ -6657,7 +6658,7 @@ isl_bool isl_multi_pw_aff_is_equal(__isl_keep isl_multi_pw_aff *mpa1,
 		return equal;
 
 	for (i = 0; i < mpa1->n; ++i) {
-		equal = isl_pw_aff_is_equal(mpa1->p[i], mpa2->p[i]);
+		equal = isl_pw_aff_is_equal(mpa1->u.p[i], mpa2->u.p[i]);
 		if (equal < 0 || !equal)
 			return equal;
 	}
@@ -6723,9 +6724,9 @@ static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff_aligned(
 		goto error;
 
 	for (i = 0; i < mpa->n; ++i) {
-		mpa->p[i] = isl_pw_aff_pullback_multi_aff(mpa->p[i],
+		mpa->u.p[i] = isl_pw_aff_pullback_multi_aff(mpa->u.p[i],
 						    isl_multi_aff_copy(ma));
-		if (!mpa->p[i])
+		if (!mpa->u.p[i])
 			goto error;
 	}
 
@@ -6784,9 +6785,9 @@ isl_multi_pw_aff_pullback_pw_multi_aff_aligned(
 				isl_multi_pw_aff_get_space(mpa));
 
 	for (i = 0; i < mpa->n; ++i) {
-		mpa->p[i] = isl_pw_aff_pullback_pw_multi_aff_aligned(mpa->p[i],
-						    isl_pw_multi_aff_copy(pma));
-		if (!mpa->p[i])
+		mpa->u.p[i] = isl_pw_aff_pullback_pw_multi_aff_aligned(
+				    mpa->u.p[i], isl_pw_multi_aff_copy(pma));
+		if (!mpa->u.p[i])
 			goto error;
 	}
 
@@ -7035,9 +7036,9 @@ isl_multi_pw_aff_pullback_multi_pw_aff_aligned(
 				isl_multi_pw_aff_get_space(mpa1));
 
 	for (i = 0; i < mpa1->n; ++i) {
-		mpa1->p[i] = isl_pw_aff_pullback_multi_pw_aff_aligned(
-				mpa1->p[i], isl_multi_pw_aff_copy(mpa2));
-		if (!mpa1->p[i])
+		mpa1->u.p[i] = isl_pw_aff_pullback_multi_pw_aff_aligned(
+				mpa1->u.p[i], isl_multi_pw_aff_copy(mpa2));
+		if (!mpa1->u.p[i])
 			goto error;
 	}
 

@@ -1344,7 +1344,7 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 			"spaces don't match", goto error);
 
 	n_div_ls = isl_local_space_dim(ls, isl_dim_div);
-	n_div_ma = ma->n ? isl_aff_dim(ma->p[0], isl_dim_div) : 0;
+	n_div_ma = ma->n ? isl_aff_dim(ma->u.p[0], isl_dim_div) : 0;
 
 	space = isl_space_domain(isl_multi_aff_get_space(ma));
 	res = isl_local_space_alloc(space, n_div_ma + n_div_ls);
@@ -1353,7 +1353,7 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 
 	if (n_div_ma) {
 		isl_mat_free(res->div);
-		res->div = isl_mat_copy(ma->p[0]->ls->div);
+		res->div = isl_mat_copy(ma->u.p[0]->ls->div);
 		res->div = isl_mat_add_zero_cols(res->div, n_div_ls);
 		res->div = isl_mat_add_rows(res->div, n_div_ls);
 		if (!res->div)
