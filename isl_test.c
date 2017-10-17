@@ -5681,6 +5681,144 @@ int test_union_pw(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of functions that select
+ * subparts of the domain of an isl_multi_union_pw_aff.
+ * "fn" is the function that is tested.
+ * "arg" is a string description of the input.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_union_set *(*fn)(
+		__isl_take isl_multi_union_pw_aff *mupa);
+	const char *arg;
+	const char *res;
+} un_locus_tests[] = {
+	{ &isl_multi_union_pw_aff_zero_union_set,
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }]",
+	  "{ A[0,j]; B[0,j] }" },
+	{ &isl_multi_union_pw_aff_zero_union_set,
+	  "F[{ A[i,j] -> [i-j]; B[i,j] -> [i-j] : i >= 0 }]",
+	  "{ A[i,i]; B[i,i] : i >= 0 }" },
+};
+
+/* Perform some basic tests of functions that select
+ * subparts of the domain of an isl_multi_union_pw_aff.
+ */
+static int test_un_locus(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_union_set *uset, *res;
+	isl_multi_union_pw_aff *mupa;
+
+	for (i = 0; i < ARRAY_SIZE(un_locus_tests); ++i) {
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx,
+						    un_locus_tests[i].arg);
+		res = isl_union_set_read_from_str(ctx, un_locus_tests[i].res);
+		uset = un_locus_tests[i].fn(mupa);
+		ok = isl_union_set_is_equal(uset, res);
+		isl_union_set_free(uset);
+		isl_union_set_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+/* Inputs for basic tests of functions that select
+ * subparts of an isl_union_map based on a relation
+ * specified by an isl_multi_union_pw_aff.
+ * "fn" is the function that is tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_union_map *(*fn)(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_multi_union_pw_aff *mupa);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} bin_locus_tests[] = {
+	{ &isl_union_map_eq_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }]",
+	  "{ A[i,j] -> B[i,j'] }" },
+	{ &isl_union_map_eq_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [j] }]",
+	  "{ A[i,j] -> B[i,j] }" },
+	{ &isl_union_map_eq_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j']; A[i,j] -> C[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }]",
+	  "{ A[i,j] -> B[i,j'] }" },
+	{ &isl_union_map_eq_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j']; A[i,j] -> C[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i]; C[i,j] -> [0] }]",
+	  "{ A[i,j] -> B[i,j']; A[0,j] -> C[i',j'] }" },
+	{ &isl_union_map_eq_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i] : i > j; B[i,j] -> [i] }]",
+	  "{ A[i,j] -> B[i,j'] : i > j }" },
+	{ &isl_union_map_lex_lt_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [j] }]",
+	  "{ A[i,j] -> B[i',j'] : i,j << i',j' }" },
+	{ &isl_union_map_lex_gt_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [j] }]",
+	  "{ A[i,j] -> B[i',j'] : i,j >> i',j' }" },
+};
+
+/* Perform some basic tests of functions that select
+ * subparts of an isl_union_map based on a relation
+ * specified by an isl_multi_union_pw_aff.
+ */
+static int test_bin_locus(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_union_map *umap, *res;
+	isl_multi_union_pw_aff *mupa;
+
+	for (i = 0; i < ARRAY_SIZE(bin_locus_tests); ++i) {
+		umap = isl_union_map_read_from_str(ctx,
+						    bin_locus_tests[i].arg1);
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx,
+						    bin_locus_tests[i].arg2);
+		res = isl_union_map_read_from_str(ctx, bin_locus_tests[i].res);
+		umap = bin_locus_tests[i].fn(umap, mupa);
+		ok = isl_union_map_is_equal(umap, res);
+		isl_union_map_free(umap);
+		isl_union_map_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+/* Perform basic locus tests.
+ */
+static int test_locus(isl_ctx *ctx)
+{
+	if (test_un_locus(ctx) < 0)
+		return -1;
+	if (test_bin_locus(ctx) < 0)
+		return -1;
+	return 0;
+}
+
 /* Test that isl_union_pw_qpolynomial_eval picks up the function
  * defined over the correct domain space.
  */
@@ -7692,6 +7830,7 @@ struct {
 	{ "schedule tree grouping", &test_schedule_tree_group },
 	{ "tile", &test_tile },
 	{ "union_pw", &test_union_pw },
+	{ "locus", &test_locus },
 	{ "eval", &test_eval },
 	{ "parse", &test_parse },
 	{ "single-valued", &test_sv },
