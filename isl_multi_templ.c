@@ -333,7 +333,7 @@ error:
 /* Reset the space of "multi".  This function is called from isl_pw_templ.c
  * and doesn't know if the space of an element object is represented
  * directly or through its domain.  It therefore passes along both,
- * which we pass along to the element function since we don't how
+ * which we pass along to the element function since we don't know how
  * that is represented either.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space_and_domain)(
