@@ -5978,6 +5978,52 @@ static int test_mpa_conversion(isl_ctx *ctx)
 	return 0;
 }
 
+/* Descriptions of union maps that should be convertible
+ * to an isl_multi_union_pw_aff.
+ */
+const char *umap_mupa_conversion_tests[] = {
+	"{ [a, b, c, d] -> s0[a, b, e, f] : "
+	    "exists (e0 = [(a - 2c)/3], e1 = [(-4 + b - 5d)/9], "
+	    "e2 = [(-d + f)/9]: 3e0 = a - 2c and 9e1 = -4 + b - 5d and "
+	    "9e2 = -d + f and f >= 0 and f <= 8 and 9e >= -5 - 2a and "
+	    "9e <= -2 - 2a) }",
+	"{ [a, b] -> [c] : exists (e0 = floor((-a - b + c)/5): "
+	    "5e0 = -a - b + c and c >= -a and c <= 4 - a) }",
+	"{ [a, b] -> [c] : exists d : 18 * d = -3 - a + 2c and 1 <= c <= 3 }",
+	"{ A[] -> B[0]; C[] -> B[1] }",
+};
+
+/* Check that converting from isl_union_map to isl_multi_union_pw_aff and back
+ * to isl_union_map produces the original isl_union_map.
+ */
+static int test_union_map_mupa_conversion(isl_ctx *ctx)
+{
+	int i;
+	isl_union_map *umap1, *umap2;
+	isl_multi_union_pw_aff *mupa;
+	int equal;
+
+	for (i = 0; i < ARRAY_SIZE(umap_mupa_conversion_tests); ++i) {
+		const char *str;
+		str = umap_mupa_conversion_tests[i];
+		umap1 = isl_union_map_read_from_str(ctx, str);
+		umap2 = isl_union_map_copy(umap1);
+		mupa = isl_multi_union_pw_aff_from_union_map(umap2);
+		umap2 = isl_union_map_from_multi_union_pw_aff(mupa);
+		equal = isl_union_map_is_equal(umap1, umap2);
+		isl_union_map_free(umap1);
+		isl_union_map_free(umap2);
+
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "bad conversion",
+				return -1);
+	}
+
+	return 0;
+}
+
 static int test_conversion(isl_ctx *ctx)
 {
 	if (test_set_conversion(ctx) < 0)
@@ -5985,6 +6031,8 @@ static int test_conversion(isl_ctx *ctx)
 	if (test_map_conversion(ctx) < 0)
 		return -1;
 	if (test_mpa_conversion(ctx) < 0)
+		return -1;
+	if (test_union_map_mupa_conversion(ctx) < 0)
 		return -1;
 	return 0;
 }
