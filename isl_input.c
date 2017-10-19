@@ -2672,7 +2672,6 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 
 	for (;;) {
 		struct isl_obj o;
-		tok = NULL;
 		o = obj_read_body(s, isl_map_copy(map), v);
 		if (o.type == isl_obj_none || !o.v)
 			goto error;
