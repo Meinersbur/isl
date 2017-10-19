@@ -2682,16 +2682,13 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 			if (obj.type == isl_obj_none || !obj.v)
 				goto error;
 		}
-		tok = isl_stream_next_token(s);
-		if (!tok || tok->type != ';')
+		if (!isl_stream_eat_if_available(s, ';'))
 			break;
-		isl_token_free(tok);
-		if (isl_stream_next_token_is(s, '}')) {
-			tok = isl_stream_next_token(s);
+		if (isl_stream_next_token_is(s, '}'))
 			break;
-		}
 	}
 
+	tok = isl_stream_next_token(s);
 	if (tok && tok->type == '}') {
 		isl_token_free(tok);
 	} else {
