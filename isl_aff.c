@@ -8857,6 +8857,25 @@ error:
 	return NULL;
 }
 
+/* Apply "ma" to "mupa", in the special case where "mupa" is 0D.
+ * The space of "mupa" is known to be compatible with the domain of "ma".
+ *
+ * This function is currently only called when the number of output
+ * dimensions of "ma" is greater than zero, in which case no result
+ * can be computed because a 0D isl_multi_union_pw_aff
+ * does not carry any domain information.
+ */
+static __isl_give isl_multi_union_pw_aff *mupa_apply_multi_aff_0D(
+	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_multi_aff *ma)
+{
+	isl_die(isl_multi_aff_get_ctx(ma), isl_error_invalid,
+		"cannot determine domains", goto error);
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	isl_multi_aff_free(ma);
+	return NULL;
+}
+
 /* Apply "ma" to "mupa".  The space of "mupa" needs to be compatible
  * with the domain of "ma".
  * Furthermore, the dimension of this space needs to be greater than zero,
@@ -8890,8 +8909,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_multi_aff(
 			"spaces don't match", goto error);
 	n_out = isl_multi_aff_dim(ma, isl_dim_out);
 	if (isl_multi_aff_dim(ma, isl_dim_in) == 0 && n_out != 0)
-		isl_die(isl_multi_aff_get_ctx(ma), isl_error_invalid,
-			"cannot determine domains", goto error);
+		return mupa_apply_multi_aff_0D(mupa, ma);
 
 	space1 = isl_space_range(isl_multi_aff_get_space(ma));
 	res = isl_multi_union_pw_aff_alloc(space1);
