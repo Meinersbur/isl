@@ -8647,6 +8647,24 @@ isl_union_pw_multi_aff_from_multi_union_pw_aff(
 	return upma;
 }
 
+/* Intersect the range of "mupa" with "range",
+ * in the special case where "mupa" is 0D.
+ *
+ * A 0D isl_multi_union_pw_aff does not carry any domain information,
+ * so the information in "range" cannot be included.
+ */
+static __isl_give isl_multi_union_pw_aff *mupa_intersect_range_0D(
+	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_set *range)
+{
+	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+		"cannot intersect range of zero-dimensional "
+		"isl_multi_union_pw_aff", goto error);
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	isl_set_free(range);
+	return NULL;
+}
+
 /* Intersect the range of "mupa" with "range".
  * That is, keep only those domain elements that have a function value
  * in "range".
@@ -8674,9 +8692,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_intersect_range(
 			"space don't match", goto error);
 	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	if (n == 0)
-		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-			"cannot intersect range of zero-dimensional "
-			"isl_multi_union_pw_aff", goto error);
+		return mupa_intersect_range_0D(mupa, range);
 
 	upma = isl_union_pw_multi_aff_from_multi_union_pw_aff(
 					isl_multi_union_pw_aff_copy(mupa));
