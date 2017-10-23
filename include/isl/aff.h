@@ -963,6 +963,9 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_multi_val_on_domain(
 	__isl_take isl_union_set *domain, __isl_take isl_multi_val *mv);
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_multi_aff_on_domain(
 	__isl_take isl_union_set *domain, __isl_take isl_multi_aff *ma);
+__isl_give isl_multi_union_pw_aff *
+isl_multi_union_pw_aff_pw_multi_aff_on_domain(__isl_take isl_union_set *domain,
+	__isl_take isl_pw_multi_aff *pma);
 
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_floor(
 	__isl_take isl_multi_union_pw_aff *mupa);
