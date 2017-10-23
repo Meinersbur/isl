@@ -6490,6 +6490,25 @@ error:
 
 /* Construct and return a piecewise multi affine expression
  * that is equal to the given multi piecewise affine expression
+ * on the shared domain of the piecewise affine expressions,
+ * in the special case of a 0D multi piecewise affine expression.
+ *
+ * A 0D multi piecewise affine expression does not carry any domain
+ * information, so create a piecewise multi affine expression
+ * with a universe domain.
+ */
+static __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff_0D(
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	isl_space *space;
+
+	space = isl_multi_pw_aff_get_space(mpa);
+	isl_multi_pw_aff_free(mpa);
+	return isl_pw_multi_aff_zero(space);
+}
+
+/* Construct and return a piecewise multi affine expression
+ * that is equal to the given multi piecewise affine expression
  * on the shared domain of the piecewise affine expressions.
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(
@@ -6503,13 +6522,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(
 	if (!mpa)
 		return NULL;
 
+	if (mpa->n == 0)
+		return isl_pw_multi_aff_from_multi_pw_aff_0D(mpa);
+
 	space = isl_multi_pw_aff_get_space(mpa);
-
-	if (mpa->n == 0) {
-		isl_multi_pw_aff_free(mpa);
-		return isl_pw_multi_aff_zero(space);
-	}
-
 	pa = isl_multi_pw_aff_get_pw_aff(mpa, 0);
 	pma = isl_pw_multi_aff_from_pw_aff(pa);
 
