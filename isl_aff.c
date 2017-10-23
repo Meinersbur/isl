@@ -7608,37 +7608,6 @@ error:
 	return NULL;
 }
 
-/* Internal data structure for isl_union_pw_aff_aff_on_domain.
- * "aff" is the symbolic value that the resulting isl_union_pw_aff
- * needs to attain.
- * "res" collects the results.
- */
-struct isl_union_pw_aff_aff_on_domain_data {
-	isl_aff *aff;
-	isl_union_pw_aff *res;
-};
-
-/* Construct a piecewise affine expression that is equal to data->aff
- * on "domain" and add the result to data->res.
- */
-static isl_stat pw_aff_aff_on_domain(__isl_take isl_set *domain, void *user)
-{
-	struct isl_union_pw_aff_aff_on_domain_data *data = user;
-	isl_pw_aff *pa;
-	isl_aff *aff;
-	int dim;
-
-	aff = isl_aff_copy(data->aff);
-	dim = isl_set_dim(domain, isl_dim_set);
-	aff = isl_aff_from_range(aff);
-	aff = isl_aff_add_dims(aff, isl_dim_in, dim);
-	aff = isl_aff_reset_domain_space(aff, isl_set_get_space(domain));
-	pa = isl_pw_aff_alloc(domain, aff);
-	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
-
-	return data->res ? isl_stat_ok : isl_stat_error;
-}
-
 /* Internal data structure for isl_union_pw_multi_aff_get_union_pw_aff.
  * pos is the output position that needs to be extracted.
  * res collects the results.
@@ -7701,71 +7670,112 @@ __isl_give isl_union_pw_aff *isl_union_pw_multi_aff_get_union_pw_aff(
 }
 
 /* Return a union piecewise affine expression
- * that is equal to "aff" on "domain", assuming "domain" and "aff"
+ * that is equal to "aff" on "domain".
+ */
+__isl_give isl_union_pw_aff *isl_union_pw_aff_aff_on_domain(
+	__isl_take isl_union_set *domain, __isl_take isl_aff *aff)
+{
+	isl_pw_aff *pa;
+
+	pa = isl_pw_aff_from_aff(aff);
+	return isl_union_pw_aff_pw_aff_on_domain(domain, pa);
+}
+
+/* Internal data structure for isl_union_pw_aff_pw_aff_on_domain.
+ * "pa" is the piecewise symbolic value that the resulting isl_union_pw_aff
+ * needs to attain.
+ * "res" collects the results.
+ */
+struct isl_union_pw_aff_pw_aff_on_domain_data {
+	isl_pw_aff *pa;
+	isl_union_pw_aff *res;
+};
+
+/* Construct a piecewise affine expression that is equal to data->pa
+ * on "domain" and add the result to data->res.
+ */
+static isl_stat pw_aff_on_domain(__isl_take isl_set *domain, void *user)
+{
+	struct isl_union_pw_aff_pw_aff_on_domain_data *data = user;
+	isl_pw_aff *pa;
+	int dim;
+
+	pa = isl_pw_aff_copy(data->pa);
+	dim = isl_set_dim(domain, isl_dim_set);
+	pa = isl_pw_aff_from_range(pa);
+	pa = isl_pw_aff_add_dims(pa, isl_dim_in, dim);
+	pa = isl_pw_aff_reset_domain_space(pa, isl_set_get_space(domain));
+	pa = isl_pw_aff_intersect_domain(pa, domain);
+	data->res = isl_union_pw_aff_add_pw_aff(data->res, pa);
+
+	return data->res ? isl_stat_ok : isl_stat_error;
+}
+
+/* Return a union piecewise affine expression
+ * that is equal to "pa" on "domain", assuming "domain" and "pa"
  * have been aligned.
  *
  * Construct an isl_pw_aff on each of the sets in "domain" and
  * collect the results.
  */
-static __isl_give isl_union_pw_aff *isl_union_pw_aff_aff_on_domain_aligned(
-	__isl_take isl_union_set *domain, __isl_take isl_aff *aff)
+static __isl_give isl_union_pw_aff *isl_union_pw_aff_pw_aff_on_domain_aligned(
+	__isl_take isl_union_set *domain, __isl_take isl_pw_aff *pa)
 {
-	struct isl_union_pw_aff_aff_on_domain_data data;
+	struct isl_union_pw_aff_pw_aff_on_domain_data data;
 	isl_space *space;
 
 	space = isl_union_set_get_space(domain);
 	data.res = isl_union_pw_aff_empty(space);
-	data.aff = aff;
-	if (isl_union_set_foreach_set(domain, &pw_aff_aff_on_domain, &data) < 0)
+	data.pa = pa;
+	if (isl_union_set_foreach_set(domain, &pw_aff_on_domain, &data) < 0)
 		data.res = isl_union_pw_aff_free(data.res);
 	isl_union_set_free(domain);
-	isl_aff_free(aff);
+	isl_pw_aff_free(pa);
 	return data.res;
 }
 
 /* Return a union piecewise affine expression
- * that is equal to "aff" on "domain".
+ * that is equal to "pa" on "domain".
  *
- * Check that "aff" is a parametric expression,
+ * Check that "pa" is a parametric expression,
  * align the parameters if needed and call
- * isl_union_pw_aff_aff_on_domain_aligned.
+ * isl_union_pw_aff_pw_aff_on_domain_aligned.
  */
-__isl_give isl_union_pw_aff *isl_union_pw_aff_aff_on_domain(
-	__isl_take isl_union_set *domain, __isl_take isl_aff *aff)
+__isl_give isl_union_pw_aff *isl_union_pw_aff_pw_aff_on_domain(
+	__isl_take isl_union_set *domain, __isl_take isl_pw_aff *pa)
 {
-	isl_bool domain_is_params;
+	isl_bool is_set;
 	isl_bool equal_params;
-	isl_space *domain_space, *aff_space;
+	isl_space *domain_space, *pa_space;
 
-	if (!domain || !aff)
+	pa_space = isl_pw_aff_peek_space(pa);
+	is_set = isl_space_is_set(pa_space);
+	if (is_set < 0)
 		goto error;
-	domain_is_params = isl_local_space_is_params(aff->ls);
-	if (domain_is_params < 0)
-		goto error;
-	if (!domain_is_params)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+	if (!is_set)
+		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
 			"expecting parametric expression", goto error);
 
 	domain_space = isl_union_set_get_space(domain);
-	aff_space = isl_aff_get_domain_space(aff);
-	equal_params = isl_space_has_equal_params(domain_space, aff_space);
+	pa_space = isl_pw_aff_get_space(pa);
+	equal_params = isl_space_has_equal_params(domain_space, pa_space);
 	if (equal_params >= 0 && !equal_params) {
 		isl_space *space;
 
-		space = isl_space_align_params(domain_space, aff_space);
-		aff = isl_aff_align_params(aff, isl_space_copy(space));
+		space = isl_space_align_params(domain_space, pa_space);
+		pa = isl_pw_aff_align_params(pa, isl_space_copy(space));
 		domain = isl_union_set_align_params(domain, space);
 	} else {
 		isl_space_free(domain_space);
-		isl_space_free(aff_space);
+		isl_space_free(pa_space);
 	}
 
 	if (equal_params < 0)
 		goto error;
-	return isl_union_pw_aff_aff_on_domain_aligned(domain, aff);
+	return isl_union_pw_aff_pw_aff_on_domain_aligned(domain, pa);
 error:
 	isl_union_set_free(domain);
-	isl_aff_free(aff);
+	isl_pw_aff_free(pa);
 	return NULL;
 }
 
