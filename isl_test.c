@@ -5173,6 +5173,62 @@ static int test_mupa_ma(isl_ctx *ctx)
 }
 
 /* Inputs for basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_pw_aff objects.
+ * "fn" is the function that is tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_union_pw_aff *(*fn)(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_pw_aff *pa);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} mupa_pa_tests[] = {
+	{ &isl_multi_union_pw_aff_apply_pw_aff,
+	  "C[{ A[i,j] -> [i]; B[i,j] -> [j] }]",
+	  "[N] -> { C[a] -> [a + N] }",
+	  "[N] -> { A[i,j] -> [i + N]; B[i,j] -> [j + N] }" },
+	{ &isl_multi_union_pw_aff_apply_pw_aff,
+	  "C[{ A[i,j] -> [i]; B[i,j] -> [j] }]",
+	  "{ C[a] -> [a] : a >= 0; C[a] -> [-a] : a < 0 }",
+	  "{ A[i,j] -> [i] : i >= 0; A[i,j] -> [-i] : i < 0; "
+	    "B[i,j] -> [j] : j >= 0; B[i,j] -> [-j] : j < 0 }" },
+};
+
+/* Perform some basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_pw_aff objects.
+ */
+static int test_mupa_pa(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_multi_union_pw_aff *mupa;
+	isl_union_pw_aff *upa, *res;
+	isl_pw_aff *pa;
+
+	for (i = 0; i < ARRAY_SIZE(mupa_pa_tests); ++i) {
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_pa_tests[i].arg1);
+		pa = isl_pw_aff_read_from_str(ctx, mupa_pa_tests[i].arg2);
+		res = isl_union_pw_aff_read_from_str(ctx,
+						    mupa_pa_tests[i].res);
+		upa = mupa_pa_tests[i].fn(mupa, pa);
+		ok = isl_union_pw_aff_plain_is_equal(upa, res);
+		isl_union_pw_aff_free(upa);
+		isl_union_pw_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+/* Inputs for basic tests of binary operations on
  * pairs of isl_multi_union_pw_aff and isl_union_pw_multi_aff objects.
  * "fn" is the function that is tested.
  * "arg1" and "arg2" are string descriptions of the inputs.
@@ -5262,6 +5318,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_mupa_uset(ctx) < 0)
 		return -1;
 	if (test_mupa_ma(ctx) < 0)
+		return -1;
+	if (test_mupa_pa(ctx) < 0)
 		return -1;
 	if (test_mupa_upma(ctx) < 0)
 		return -1;
