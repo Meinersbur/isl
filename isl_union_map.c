@@ -28,6 +28,7 @@
 #include <bset_from_bmap.c>
 #include <set_to_map.c>
 #include <set_from_map.c>
+#include <uset_to_umap.c>
 
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
@@ -346,6 +347,14 @@ isl_bool isl_union_map_space_has_equal_params(__isl_keep isl_union_map *umap,
 
 	umap_space = isl_union_map_peek_space(umap);
 	return isl_space_has_equal_params(umap_space, space);
+}
+
+/* Do "uset" and "space" have the same parameters?
+ */
+isl_bool isl_union_set_space_has_equal_params(__isl_keep isl_union_set *uset,
+	__isl_keep isl_space *space)
+{
+	return isl_union_map_space_has_equal_params(uset_to_umap(uset), space);
 }
 
 static int has_space(const void *entry, const void *val)
