@@ -5229,6 +5229,86 @@ static int test_mupa_pa(isl_ctx *ctx)
 }
 
 /* Inputs for basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_pw_multi_aff objects.
+ * "fn" is the function that is tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_multi_union_pw_aff *(*fn)(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_pw_multi_aff *pma);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} mupa_pma_tests[] = {
+	{ &isl_multi_union_pw_aff_apply_pw_multi_aff,
+	  "C[{ A[i,j] -> [i]; B[i,j] -> [j] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [i] }]",
+	  "{ C[a,b] -> D[b,a] }",
+	  "D[{ A[i,j] -> [j]; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [i]; B[i,j] -> [j] }]" },
+	{ &isl_multi_union_pw_aff_apply_pw_multi_aff,
+	  "C[{ A[i,j] -> [i] : i >= 0; B[i,j] -> [j] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [i] }]",
+	  "{ C[a,b] -> D[b,a] }",
+	  "D[{ A[i,j] -> [j] : i >= 0; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [i] : i >= 0; B[i,j] -> [j] }]" },
+	{ &isl_multi_union_pw_aff_apply_pw_multi_aff,
+	  "C[{ A[i,j] -> [i]; B[i,j] -> [j] }]",
+	  "[N] -> { C[a] -> D[a + N] }",
+	  "[N] -> D[{ A[i,j] -> [i + N]; B[i,j] -> [j + N] }]" },
+	{ &isl_multi_union_pw_aff_apply_pw_multi_aff,
+	  "C[{ A[i,j] -> [i]; B[i,j] -> [j] }]",
+	  "{ C[a] -> D[a] : a >= 0; C[a] -> D[-a] : a < 0 }",
+	  "D[{ A[i,j] -> [i] : i >= 0; A[i,j] -> [-i] : i < 0; "
+	      "B[i,j] -> [j] : j >= 0; B[i,j] -> [-j] : j < 0 }]" },
+	{ &isl_multi_union_pw_aff_apply_pw_multi_aff,
+	  "C[{ A[i,j] -> [i]; B[i,j] -> [j] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [i] }]",
+	  "{ C[a,b] -> D[a,b] : a >= b; C[a,b] -> D[b,a] : a < b }",
+	  "D[{ A[i,j] -> [i] : i >= j; A[i,j] -> [j] : i < j; "
+	      "B[i,j] -> [j] : i <= j; B[i,j] -> [i] : i > j }, "
+	    "{ A[i,j] -> [j] : i >= j; A[i,j] -> [i] : i < j; "
+	      "B[i,j] -> [i] : i <= j; B[i,j] -> [j] : i > j }]" },
+	{ &isl_multi_union_pw_aff_apply_pw_multi_aff,
+	  "C[]",
+	  "{ C[] -> D[] }",
+	  "D[]" },
+};
+
+/* Perform some basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_pw_multi_aff objects.
+ */
+static int test_mupa_pma(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_multi_union_pw_aff *mupa, *res;
+	isl_pw_multi_aff *pma;
+
+	for (i = 0; i < ARRAY_SIZE(mupa_pma_tests); ++i) {
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_pma_tests[i].arg1);
+		pma = isl_pw_multi_aff_read_from_str(ctx,
+						    mupa_pma_tests[i].arg2);
+		res = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_pma_tests[i].res);
+		mupa = mupa_pma_tests[i].fn(mupa, pma);
+		ok = isl_multi_union_pw_aff_plain_is_equal(mupa, res);
+		isl_multi_union_pw_aff_free(mupa);
+		isl_multi_union_pw_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+/* Inputs for basic tests of binary operations on
  * pairs of isl_multi_union_pw_aff and isl_union_pw_multi_aff objects.
  * "fn" is the function that is tested.
  * "arg1" and "arg2" are string descriptions of the inputs.
@@ -5320,6 +5400,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_mupa_ma(ctx) < 0)
 		return -1;
 	if (test_mupa_pa(ctx) < 0)
+		return -1;
+	if (test_mupa_pma(ctx) < 0)
 		return -1;
 	if (test_mupa_upma(ctx) < 0)
 		return -1;
