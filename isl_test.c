@@ -4990,6 +4990,64 @@ static int test_bin_mupa(isl_ctx *ctx)
 }
 
 /* Inputs for basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_set objects.
+ * "fn" is the function that is tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_multi_union_pw_aff *(*fn)(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_set *set);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} mupa_set_tests[] = {
+	{ &isl_multi_union_pw_aff_intersect_range,
+	  "C[{ B[i,j] -> [i + 2j] }]", "{ C[1] }",
+	  "C[{ B[i,j] -> [i + 2j] : i + 2j = 1 }]" },
+	{ &isl_multi_union_pw_aff_intersect_range,
+	  "C[{ B[i,j] -> [i + 2j] }]", "[N] -> { C[N] }",
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : i + 2j = N }]" },
+	{ &isl_multi_union_pw_aff_intersect_range,
+	  "[N] -> C[{ B[i,j] -> [i + 2j + N] }]", "{ C[1] }",
+	  "[N] -> C[{ B[i,j] -> [i + 2j + N] : i + 2j + N = 1 }]" },
+	{ &isl_multi_union_pw_aff_intersect_range,
+	  "C[{ B[i,j] -> [i + 2j] }]", "[N] -> { C[x] : N >= 0 }",
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : N >= 0 }]" },
+};
+
+/* Perform some basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_set objects.
+ */
+static int test_mupa_set(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_multi_union_pw_aff *mupa, *res;
+	isl_set *set;
+
+	for (i = 0; i < ARRAY_SIZE(mupa_set_tests); ++i) {
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_set_tests[i].arg1);
+		set = isl_set_read_from_str(ctx, mupa_set_tests[i].arg2);
+		res = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_set_tests[i].res);
+		mupa = mupa_set_tests[i].fn(mupa, set);
+		ok = isl_multi_union_pw_aff_plain_is_equal(mupa, res);
+		isl_multi_union_pw_aff_free(mupa);
+		isl_multi_union_pw_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
+/* Inputs for basic tests of binary operations on
  * pairs of isl_multi_union_pw_aff and isl_union_set objects.
  * "fn" is the function that is tested.
  * "arg1" and "arg2" are string descriptions of the inputs.
@@ -5123,6 +5181,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_bin_mpa(ctx) < 0)
 		return -1;
 	if (test_bin_mupa(ctx) < 0)
+		return -1;
+	if (test_mupa_set(ctx) < 0)
 		return -1;
 	if (test_mupa_uset(ctx) < 0)
 		return -1;
