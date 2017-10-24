@@ -8691,6 +8691,22 @@ error:
 	return NULL;
 }
 
+/* Return the shared domain of the elements of "mupa",
+ * in the special case where "mupa" is zero-dimensional.
+ *
+ * There is no way to extract a domain from a zero-dimensional
+ * isl_multi_union_pw_aff.
+ */
+__isl_give isl_union_set *isl_multi_union_pw_aff_domain_0D(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+		"cannot determine domain", goto error);
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}
+
 /* Return the shared domain of the elements of "mupa".
  */
 __isl_give isl_union_set *isl_multi_union_pw_aff_domain(
@@ -8705,8 +8721,7 @@ __isl_give isl_union_set *isl_multi_union_pw_aff_domain(
 
 	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	if (n == 0)
-		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-			"cannot determine domain", goto error);
+		return isl_multi_union_pw_aff_domain_0D(mupa);
 
 	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
 	dom = isl_union_pw_aff_domain(upa);
@@ -8720,9 +8735,6 @@ __isl_give isl_union_set *isl_multi_union_pw_aff_domain(
 
 	isl_multi_union_pw_aff_free(mupa);
 	return dom;
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	return NULL;
 }
 
 /* Apply "aff" to "mupa".  The space of "mupa" is equal to the domain of "aff".
