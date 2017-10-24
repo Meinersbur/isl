@@ -5015,6 +5015,15 @@ struct {
 	{ &isl_multi_union_pw_aff_intersect_range,
 	  "C[{ B[i,j] -> [i + 2j] }]", "[N] -> { C[x] : N >= 0 }",
 	  "[N] -> C[{ B[i,j] -> [i + 2j] : N >= 0 }]" },
+	{ &isl_multi_union_pw_aff_intersect_params,
+	  "C[{ B[i,j] -> [i + 2j] }]", "[N] -> { : N >= 0 }",
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : N >= 0}]" },
+	{ &isl_multi_union_pw_aff_intersect_params,
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : N <= 256 }]", "[N] -> { : N >= 0 }",
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : 0 <= N <= 256 }]" },
+	{ &isl_multi_union_pw_aff_intersect_params,
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : N <= 256 }]", "{ : }",
+	  "[N] -> C[{ B[i,j] -> [i + 2j] : N <= 256 }]" },
 };
 
 /* Perform some basic tests of binary operations on
