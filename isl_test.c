@@ -4766,6 +4766,56 @@ static int test_bin_upma_fail(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_union_set objects.
+ * "fn" is the function that is tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_multi_union_pw_aff *(*fn)(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_union_set *uset);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} mupa_uset_tests[] = {
+	{ &isl_multi_union_pw_aff_intersect_domain,
+	  "C[{ B[i,j] -> [i + 2j] }]", "{ B[i,i] }",
+	  "C[{ B[i,i] -> [3i] }]" },
+};
+
+/* Perform some basic tests of binary operations on
+ * pairs of isl_multi_union_pw_aff and isl_union_set objects.
+ */
+static int test_mupa_uset(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_multi_union_pw_aff *mupa, *res;
+	isl_union_set *uset;
+
+	for (i = 0; i < ARRAY_SIZE(mupa_uset_tests); ++i) {
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_uset_tests[i].arg1);
+		uset = isl_union_set_read_from_str(ctx,
+						    mupa_uset_tests[i].arg2);
+		res = isl_multi_union_pw_aff_read_from_str(ctx,
+						    mupa_uset_tests[i].res);
+		mupa = mupa_uset_tests[i].fn(mupa, uset);
+		ok = isl_multi_union_pw_aff_plain_is_equal(mupa, res);
+		isl_multi_union_pw_aff_free(mupa);
+		isl_multi_union_pw_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -4782,6 +4832,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_bin_upma(ctx) < 0)
 		return -1;
 	if (test_bin_upma_fail(ctx) < 0)
+		return -1;
+	if (test_mupa_uset(ctx) < 0)
 		return -1;
 
 	space = isl_space_set_alloc(ctx, 0, 1);
