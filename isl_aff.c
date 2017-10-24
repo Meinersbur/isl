@@ -8589,6 +8589,25 @@ isl_union_pw_multi_aff_reset_range_space(
 }
 
 /* Construct and return a union piecewise multi affine expression
+ * that is equal to the given multi union piecewise affine expression,
+ * in the special case of a 0D multi union piecewise affine expression.
+ *
+ * There is no way to extract a domain from a zero-dimensional
+ * isl_multi_union_pw_aff.
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_from_multi_union_pw_aff_0D(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
+		"cannot determine domain of zero-dimensional "
+		"isl_multi_union_pw_aff", goto error);
+error:
+	isl_multi_union_pw_aff_free(mupa);
+	return NULL;
+}
+
+/* Construct and return a union piecewise multi affine expression
  * that is equal to the given multi union piecewise affine expression.
  *
  * In order to be able to perform the conversion, the input
@@ -8608,9 +8627,7 @@ isl_union_pw_multi_aff_from_multi_union_pw_aff(
 
 	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	if (n == 0)
-		isl_die(isl_multi_union_pw_aff_get_ctx(mupa), isl_error_invalid,
-			"cannot determine domain of zero-dimensional "
-			"isl_multi_union_pw_aff", goto error);
+		return isl_union_pw_multi_aff_from_multi_union_pw_aff_0D(mupa);
 
 	space = isl_multi_union_pw_aff_get_space(mupa);
 	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, 0);
@@ -8628,9 +8645,6 @@ isl_union_pw_multi_aff_from_multi_union_pw_aff(
 
 	isl_multi_union_pw_aff_free(mupa);
 	return upma;
-error:
-	isl_multi_union_pw_aff_free(mupa);
-	return NULL;
 }
 
 /* Intersect the range of "mupa" with "range".
