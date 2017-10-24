@@ -3970,6 +3970,33 @@ static int next_is_param_tuple(__isl_keep isl_stream *s)
 	return is_tuple;
 }
 
+/* Read the body of an isl_multi_union_pw_aff from "s",
+ * i.e., everything except the parameter specification.
+ * "v" contains a description of the identifiers parsed so far.
+ * The parameters, if any, are specified by "space".
+ *
+ * The body is of the form
+ *
+ *	[{ [..] : ... ; [..] : ... }, { [..] : ... ; [..] : ... }]
+ *
+ * Read the tuple, collecting the individual isl_union_pw_aff
+ * elements in a list and construct the result from the tuple space and
+ * the list.
+ */
+static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_body(
+	__isl_keep isl_stream *s, struct vars *v, __isl_take isl_space *space)
+{
+	isl_union_pw_aff_list *list;
+	isl_multi_union_pw_aff *mupa;
+
+	list = isl_union_pw_aff_list_alloc(s->ctx, 0);
+	space = read_tuple_space(s, v, space, 1, 0,
+				&read_union_pw_aff_el, &list);
+	mupa = isl_multi_union_pw_aff_from_union_pw_aff_list(space, list);
+
+	return mupa;
+}
+
 /* Read an isl_multi_union_pw_aff from "s".
  *
  * The input has the form
@@ -3982,9 +4009,7 @@ static int next_is_param_tuple(__isl_keep isl_stream *s)
  *
  * We first check for the special case of an empty tuple "[]".
  * Then we check if there are any parameters.
- * Finally, we read the tuple, collecting the individual isl_union_pw_aff
- * elements in a list and construct the result from the tuple space and
- * the list.
+ * Finally, read the tuple and construct the result.
  */
 __isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
 	__isl_keep isl_stream *s)
@@ -3993,7 +4018,6 @@ __isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
 	isl_set *dom = NULL;
 	isl_space *space;
 	isl_multi_union_pw_aff *mupa = NULL;
-	isl_union_pw_aff_list *list;
 
 	if (next_is_empty_tuple(s)) {
 		if (isl_stream_eat(s, '['))
@@ -4016,10 +4040,7 @@ __isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
 	}
 	space = isl_set_get_space(dom);
 	isl_set_free(dom);
-	list = isl_union_pw_aff_list_alloc(s->ctx, 0);
-	space = read_tuple_space(s, v, space, 1, 0,
-				&read_union_pw_aff_el, &list);
-	mupa = isl_multi_union_pw_aff_from_union_pw_aff_list(space, list);
+	mupa = read_multi_union_pw_aff_body(s, v, space);
 
 	vars_free(v);
 
