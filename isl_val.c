@@ -1490,7 +1490,7 @@ __isl_give isl_val *isl_val_insert_dims(__isl_take isl_val *v,
 	return v;
 }
 
-/* Drop the the "n" first dimensions of type "type" at position "first".
+/* Drop the "n" first dimensions of type "type" at position "first".
  *
  * This function is only meant to be used in the generic isl_multi_*
  * functions which have to deal with base objects that have an associated
