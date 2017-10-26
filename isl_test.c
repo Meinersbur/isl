@@ -4842,6 +4842,70 @@ static int test_bin_upma_fail(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of unary operations on isl_multi_pw_aff objects.
+ * "fn" is the function that is tested.
+ * "arg" is a string description of the input.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_multi_pw_aff *(*fn)(__isl_take isl_multi_pw_aff *mpa);
+	const char *arg;
+	const char *res;
+} mpa_un_tests[] = {
+	{ &isl_multi_pw_aff_range_factor_domain,
+	  "{ A[x] -> [B[(1 : x >= 5)] -> C[(2 : x <= 10)]] }",
+	  "{ A[x] -> B[(1 : x >= 5)] }" },
+	{ &isl_multi_pw_aff_range_factor_range,
+	  "{ A[x] -> [B[(1 : x >= 5)] -> C[(2 : x <= 10)]] }",
+	  "{ A[y] -> C[(2 : y <= 10)] }" },
+	{ &isl_multi_pw_aff_range_factor_domain,
+	  "{ A[x] -> [B[(1 : x >= 5)] -> C[]] }",
+	  "{ A[x] -> B[(1 : x >= 5)] }" },
+	{ &isl_multi_pw_aff_range_factor_range,
+	  "{ A[x] -> [B[(1 : x >= 5)] -> C[]] }",
+	  "{ A[y] -> C[] }" },
+	{ &isl_multi_pw_aff_range_factor_domain,
+	  "{ A[x] -> [B[] -> C[(2 : x <= 10)]] }",
+	  "{ A[x] -> B[] }" },
+	{ &isl_multi_pw_aff_range_factor_range,
+	  "{ A[x] -> [B[] -> C[(2 : x <= 10)]] }",
+	  "{ A[y] -> C[(2 : y <= 10)] }" },
+	{ &isl_multi_pw_aff_range_factor_domain,
+	  "{ A[x] -> [B[] -> C[]] }",
+	  "{ A[x] -> B[] }" },
+	{ &isl_multi_pw_aff_range_factor_range,
+	  "{ A[x] -> [B[] -> C[]] }",
+	  "{ A[y] -> C[] }" },
+	{ &isl_multi_pw_aff_factor_range,
+	  "{ [B[] -> C[]] }",
+	  "{ C[] }" },
+};
+
+/* Perform some basic tests of unary operations on isl_multi_pw_aff objects.
+ */
+static int test_un_mpa(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_multi_pw_aff *mpa, *res;
+
+	for (i = 0; i < ARRAY_SIZE(mpa_un_tests); ++i) {
+		mpa = isl_multi_pw_aff_read_from_str(ctx, mpa_un_tests[i].arg);
+		res = isl_multi_pw_aff_read_from_str(ctx, mpa_un_tests[i].res);
+		mpa = mpa_un_tests[i].fn(mpa);
+		ok = isl_multi_pw_aff_plain_is_equal(mpa, res);
+		isl_multi_pw_aff_free(mpa);
+		isl_multi_pw_aff_free(res);
+		if (ok < 0)
+			return -1;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return -1);
+	}
+
+	return 0;
+}
+
 /* Inputs for basic tests of binary operations on isl_multi_pw_aff objects.
  * "fn" is the function that is tested.
  * "arg1" and "arg2" are string descriptions of the inputs.
@@ -5388,6 +5452,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_bin_upma(ctx) < 0)
 		return -1;
 	if (test_bin_upma_fail(ctx) < 0)
+		return -1;
+	if (test_un_mpa(ctx) < 0)
 		return -1;
 	if (test_bin_mpa(ctx) < 0)
 		return -1;
