@@ -296,7 +296,7 @@ int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
  *
  * "initialized" is set if the filter field has been initialized.
  * If "universe_domain" is not set, then the collected filter is intersected
- * with the the domain of the root domain node.
+ * with the domain of the root domain node.
  * "universe_filter" is set if we are only collecting the universes of filters
  * "collect_prefix" is set if we are collecting prefixes.
  * "filter" collects all outer filters and is NULL until "initialized" is set.
@@ -2013,7 +2013,7 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
  * dimensions and one with the remaining dimensions.
  * The schedules of the two band nodes live in anonymous spaces.
  * The loop AST generation type options and the isolate option
- * are split over the the two band nodes.
+ * are split over the two band nodes.
  */
 __isl_give isl_schedule_node *isl_schedule_node_band_split(
 	__isl_take isl_schedule_node *node, int pos)
