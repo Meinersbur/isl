@@ -163,7 +163,7 @@ void python_generator::print_callback(QualType type, int arg)
  * If the argument is a callback, then print a reference to
  * the callback wrapper "cb".
  * Otherwise, if the argument is marked as consuming a reference,
- * then pass a copy of the the pointer stored in the corresponding
+ * then pass a copy of the pointer stored in the corresponding
  * argument passed to the Python method.
  * Otherwise, if the argument is a pointer, then pass this pointer itself.
  * Otherwise, pass the argument directly.
