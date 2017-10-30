@@ -323,7 +323,7 @@ static int is_multi_edge_type(struct isl_sched_edge *edge)
  *	rows in the node schedules
  * n_total_row is the current number of rows in the node schedules
  * band_start is the starting row in the node schedules of the current band
- * root is set to the the original dependence graph from which this graph
+ * root is set to the original dependence graph from which this graph
  *	is derived through splitting.  If this graph is not the result of
  *	splitting, then the root field points to the graph itself.
  *
