@@ -23,9 +23,17 @@ isl_ctx *FN(MULTI(BASE),get_ctx)(__isl_keep MULTI(BASE) *multi)
 	return multi ? isl_space_get_ctx(multi->space) : NULL;
 }
 
+/* Return the space of "multi".
+ */
+static __isl_keep isl_space *FN(MULTI(BASE),peek_space)(
+	__isl_keep MULTI(BASE) *multi)
+{
+	return multi ? multi->space : NULL;
+}
+
 __isl_give isl_space *FN(MULTI(BASE),get_space)(__isl_keep MULTI(BASE) *multi)
 {
-	return multi ? isl_space_copy(multi->space) : NULL;
+	return isl_space_copy(FN(MULTI(BASE),peek_space)(multi));
 }
 
 /* Return the position of the dimension of the given type and name
