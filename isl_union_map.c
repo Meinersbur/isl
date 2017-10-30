@@ -3509,8 +3509,8 @@ static __isl_give isl_union_map *preimage_union_pw_multi_aff(
  * In other words, plug in "upma" in the domain of "umap".
  * The result contains maps that live in the same spaces as the maps of "umap"
  * with domain space equal to one of the target spaces of "upma",
- * except that the domain has been replaced by one of the the domain spaces that
- * corresponds to that target space of "upma".
+ * except that the domain has been replaced by one of the domain spaces that
+ * correspond to that target space of "upma".
  */
 __isl_give isl_union_map *isl_union_map_preimage_domain_union_pw_multi_aff(
 	__isl_take isl_union_map *umap,
@@ -3525,8 +3525,8 @@ __isl_give isl_union_map *isl_union_map_preimage_domain_union_pw_multi_aff(
  * In other words, plug in "upma" in the range of "umap".
  * The result contains maps that live in the same spaces as the maps of "umap"
  * with range space equal to one of the target spaces of "upma",
- * except that the range has been replaced by one of the the domain spaces that
- * corresponds to that target space of "upma".
+ * except that the range has been replaced by one of the domain spaces that
+ * correspond to that target space of "upma".
  */
 __isl_give isl_union_map *isl_union_map_preimage_range_union_pw_multi_aff(
 	__isl_take isl_union_map *umap,
@@ -3540,8 +3540,8 @@ __isl_give isl_union_map *isl_union_map_preimage_range_union_pw_multi_aff(
  * In other words, plug in "upma" in the range of "uset".
  * The result contains sets that live in the same spaces as the sets of "uset"
  * with space equal to one of the target spaces of "upma",
- * except that the space has been replaced by one of the the domain spaces that
- * corresponds to that target space of "upma".
+ * except that the space has been replaced by one of the domain spaces that
+ * correspond to that target space of "upma".
  */
 __isl_give isl_union_set *isl_union_set_preimage_union_pw_multi_aff(
 	__isl_take isl_union_set *uset,
