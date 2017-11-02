@@ -704,6 +704,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	bool has_callback = false;
 
 	print_method_header(os, clazz, method, fullname, false, kind);
+	osprintf(os, "{\n");
 
 	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
@@ -859,9 +860,8 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 		osprintf(os, " const");
 
 	if (is_declaration)
-		osprintf(os, ";\n");
-	else
-		osprintf(os, " {\n");
+		osprintf(os, ";");
+	osprintf(os, "\n");
 }
 
 /* Generate the list of argument types for a callback function of
