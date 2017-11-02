@@ -388,6 +388,8 @@ EXTRA_DIST = \
 	imath/imrat.h \
 	interface/all.h \
 	interface/isl-noexceptions.h.top \
+	interface/isl-noexceptions.h.pre \
+	interface/isl-noexceptions.h.bot \
 	interface/isl.py.top \
 	interface/isl_test_python.py \
 	test_inputs

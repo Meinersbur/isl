@@ -94,8 +94,7 @@ void cpp_generator::generate()
 	print_implementations(os);
 
 	osprintf(os, "} // namespace noexceptions\n");
-	osprintf(os, "} // namespace isl\n\n");
-	osprintf(os, "#endif /* ISL_CPP_NOEXCEPTIONS */\n");
+	osprintf(os, "} // namespace isl\n");
 }
 
 /* Print forward declarations for all classes to "os".
