@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <isl/options.h>
 #include <isl-noexceptions.h>
 
 static void assert_impl(bool condition, const char *file, int line,
@@ -332,6 +333,8 @@ void test_foreach(isl::ctx ctx)
 int main()
 {
 	isl_ctx *ctx = isl_ctx_alloc();
+
+	isl_options_set_on_error(ctx, ISL_ON_ERROR_ABORT);
 
 	test_pointer(ctx);
 	test_constructors(ctx);
