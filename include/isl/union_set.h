@@ -80,10 +80,13 @@ __isl_give isl_union_set *isl_union_set_gist_params(
 __isl_export
 __isl_give isl_union_set *isl_union_set_apply(
 	__isl_take isl_union_set *uset, __isl_take isl_union_map *umap);
+__isl_overload
 __isl_give isl_union_set *isl_union_set_preimage_multi_aff(
 	__isl_take isl_union_set *uset, __isl_take isl_multi_aff *ma);
+__isl_overload
 __isl_give isl_union_set *isl_union_set_preimage_pw_multi_aff(
 	__isl_take isl_union_set *uset, __isl_take isl_pw_multi_aff *pma);
+__isl_overload
 __isl_give isl_union_set *isl_union_set_preimage_union_pw_multi_aff(
 	__isl_take isl_union_set *uset,
 	__isl_take isl_union_pw_multi_aff *upma);
