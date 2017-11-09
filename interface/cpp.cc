@@ -962,7 +962,8 @@ string cpp_generator::generate_callback_type(QualType type)
  * The double indirection is used to avoid having to worry about
  * const casting.
  */
-void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param) {
+void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
+{
 	string pname;
 	QualType ptype;
 	string call_args, c_args, cpp_args, rettype, last_idx;
