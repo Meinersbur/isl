@@ -931,6 +931,20 @@ string cpp_generator::generate_callback_type(QualType type)
 	return type_str;
 }
 
+/* Print the call to the C++ callback function "call", wrapped
+ * for use inside the lambda function that is used as the C callback function.
+ *
+ * In particular, print
+ *
+ *        stat ret = @call@;
+ *        return isl_stat(ret);
+ */
+void cpp_generator::print_wrapped_call(ostream &os, const string &call)
+{
+	osprintf(os, "    stat ret = %s;\n", call.c_str());
+	osprintf(os, "    return isl_stat(ret);\n");
+}
+
 /* Print the local variables that are needed for a callback argument,
  * in particular, print a lambda function that wraps the callback and
  * a pointer to the actual C++ callback function.
@@ -963,7 +977,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 {
 	string pname;
 	QualType ptype;
-	string call_args, c_args, cpp_args, rettype, last_idx;
+	string call, c_args, cpp_args, rettype, last_idx;
 	const FunctionProtoType *callback;
 	int num_params;
 
@@ -979,19 +993,20 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 
 	last_idx = ::to_string(num_params - 1);
 
+	call = "(*func)(";
 	for (long i = 0; i < num_params - 1; i++) {
-		call_args += "isl::manage(arg_" + ::to_string(i) + ")";
+		call += "isl::manage(arg_" + ::to_string(i) + ")";
 		if (i != num_params - 2)
-			call_args += ", ";
+			call += ", ";
 	}
+	call += ")";
 
 	osprintf(os, "  auto %s_p = &%s;\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
 	osprintf(os, "    auto *func = *static_cast<const %s **>(arg_%s);\n",
 		 cpp_args.c_str(), last_idx.c_str());
-	osprintf(os, "    stat ret = (*func)(%s);\n", call_args.c_str());
-	osprintf(os, "    return isl_stat(ret);\n");
+	print_wrapped_call(os, call);
 	osprintf(os, "  };\n");
 }
 
