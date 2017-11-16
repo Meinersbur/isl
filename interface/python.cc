@@ -239,6 +239,14 @@ static bool is_string(QualType type)
 	return false;
 }
 
+/* Is "type" that of "long"?
+ */
+static bool is_long(QualType type)
+{
+	const BuiltinType *builtin = type->getAs<BuiltinType>();
+	return builtin && builtin->getKind() == BuiltinType::Long;
+}
+
 /* Return the name of the type that "type" points to.
  * The input "type" is assumed to be a pointer type.
  */
@@ -752,6 +760,8 @@ static void print_argtypes(FunctionDecl *fd)
 			printf("c_void_p");
 		else if (is_string(type))
 			printf("c_char_p");
+		else if (is_long(type))
+			printf("c_long");
 		else
 			printf("c_int");
 	}
