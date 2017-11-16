@@ -252,15 +252,21 @@ void test_return_bool(isl::ctx ctx)
 }
 
 /* Test that strings are returned correctly.
+ * Do so by calling overloaded isl::ast_build::from_expr methods.
  */
 void test_return_string(isl::ctx ctx)
 {
 	isl::set context(ctx, "[n] -> { : }");
 	isl::ast_build build = isl::ast_build::from_context(context);
 	isl::pw_aff pw_aff(ctx, "[n] -> { [n] }");
+	isl::set set(ctx, "[n] -> { : n >= 0 }");
 
 	isl::ast_expr expr = build.expr_from(pw_aff);
 	const char *expected_string = "n";
+	assert(expected_string == expr.to_C_str());
+
+	expr = build.expr_from(set);
+	expected_string = "n >= 0";
 	assert(expected_string == expr.to_C_str());
 }
 
