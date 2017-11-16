@@ -519,6 +519,8 @@ void python_generator::print_argtypes(FunctionDecl *fd)
 			printf("c_void_p");
 		else if (is_string(type))
 			printf("c_char_p");
+		else if (is_long(type))
+			printf("c_long");
 		else
 			printf("c_int");
 	}

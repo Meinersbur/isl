@@ -62,6 +62,7 @@ protected:
 	bool is_isl_type(QualType type);
 	bool is_isl_bool(QualType type);
 	bool is_isl_stat(QualType type);
+	bool is_long(QualType type);
 	bool is_callback(QualType type);
 	bool is_string(QualType type);
 	bool is_static(const isl_class &clazz, FunctionDecl *method);
