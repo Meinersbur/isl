@@ -443,6 +443,7 @@ EXTRA_DIST = \
 	all.h \
 	cpp \
 	python \
+	isl_test_cpp-generic.cc \
 	isl_test_python.py \
 	test_inputs
 
