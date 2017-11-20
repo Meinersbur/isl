@@ -202,7 +202,7 @@ isl_ctx *isl_ctx_alloc_with_options(struct isl_args *args, void *user_opt)
 	ctx->n_cached = 0;
 	ctx->n_miss = 0;
 
-	ctx->error = isl_error_none;
+	isl_ctx_reset_error(ctx);
 
 	ctx->operations = 0;
 	isl_ctx_set_max_operations(ctx, ctx->opt->max_operations);
