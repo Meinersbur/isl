@@ -283,6 +283,8 @@ enum isl_error isl_ctx_last_error(isl_ctx *ctx)
 
 void isl_ctx_reset_error(isl_ctx *ctx)
 {
+	if (!ctx)
+		return;
 	ctx->error = isl_error_none;
 }
 
