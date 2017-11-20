@@ -843,14 +843,23 @@ C<NULL>.  In case of functions returning an C<isl_bool> or an
 C<isl_stat>, this value is C<isl_bool_error> or C<isl_stat_error>.
 An error does not corrupt internal state,
 such that isl can continue to be used. C<isl> also provides functions to
-read the last error and to reset the memory that stores the last error. The
+read the last error, including the specific error message,
+the isl source file where the error occurred and the line number,
+and to reset all information about the last error. The
 last error is only stored for information purposes. Its presence does not
 change the behavior of C<isl>. Hence, resetting an error is not required to
 continue to use isl, but only to observe new errors.
 
 	#include <isl/ctx.h>
 	enum isl_error isl_ctx_last_error(isl_ctx *ctx);
+	const char *isl_ctx_last_error_msg(isl_ctx *ctx);
+	const char *isl_ctx_last_error_file(isl_ctx *ctx);
+	int isl_ctx_last_error_line(isl_ctx *ctx);
 	void isl_ctx_reset_error(isl_ctx *ctx);
+
+If no error has occurred since the last call to C<isl_ctx_reset_error>,
+then the functions C<isl_ctx_last_error_msg> and
+C<isl_ctx_last_error_file> return C<NULL>.
 
 Another option is to continue on error. This is similar to warn on error mode,
 except that C<isl> does not print any warning. This allows a program to
