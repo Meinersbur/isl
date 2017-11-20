@@ -807,6 +807,12 @@ isl_stat isl_union_pw_multi_aff_foreach_pw_multi_aff(
 __isl_export
 __isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_extract_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma, __isl_take isl_space *space);
+__isl_export
+isl_bool isl_union_pw_multi_aff_isa_pw_multi_aff(
+	__isl_keep isl_union_pw_multi_aff *upma);
+__isl_export
+__isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_as_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma);
 
 isl_bool isl_union_pw_multi_aff_involves_nan(
 	__isl_keep isl_union_pw_multi_aff *upma);
