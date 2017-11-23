@@ -4606,6 +4606,10 @@ flat anonymous space.
 		__isl_take isl_set *set);
 
 	#include <isl/union_map.h>
+	__isl_give isl_union_map *isl_union_map_from_domain(
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *isl_union_map_from_range(
+		__isl_take isl_union_set *uset);
 	__isl_give isl_union_map *
 	isl_union_map_from_domain_and_range(
 		__isl_take isl_union_set *domain,
