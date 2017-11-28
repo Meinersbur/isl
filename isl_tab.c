@@ -787,6 +787,14 @@ static void swap_rows(struct isl_tab *tab, int row1, int row2)
 
 static isl_stat push_union(struct isl_tab *tab,
 	enum isl_tab_undo_type type, union isl_tab_undo_val u) WARN_UNUSED;
+
+/* Push record "u" onto the undo stack of "tab", provided "tab"
+ * keeps track of undo information.
+ *
+ * If the record cannot be pushed, then mark the undo stack as invalid
+ * such that a later rollback attempt will not try to undo earlier
+ * records without having been able to undo the current record.
+ */
 static isl_stat push_union(struct isl_tab *tab,
 	enum isl_tab_undo_type type, union isl_tab_undo_val u)
 {
@@ -799,13 +807,17 @@ static isl_stat push_union(struct isl_tab *tab,
 
 	undo = isl_alloc_type(tab->mat->ctx, struct isl_tab_undo);
 	if (!undo)
-		return isl_stat_error;
+		goto error;
 	undo->type = type;
 	undo->u = u;
 	undo->next = tab->top;
 	tab->top = undo;
 
 	return isl_stat_ok;
+error:
+	free_undo(tab);
+	tab->top = NULL;
+	return isl_stat_error;
 }
 
 isl_stat isl_tab_push_var(struct isl_tab *tab,
