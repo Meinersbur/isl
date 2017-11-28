@@ -475,13 +475,12 @@ void cpp_generator::print_private_constructors_impl(ostream &os,
 void cpp_generator::print_public_constructors_impl(ostream &os,
 	const isl_class &clazz)
 {
-	const char *name = clazz.name.c_str();
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	osprintf(os, "%s::%s()\n    : ptr(nullptr) {}\n\n", cppname, cppname);
 	osprintf(os, "%s::%s(const isl::%s &obj)\n    : ptr(obj.copy()) {}\n",
-		 cppname, cppname, cppname, name);
+		 cppname, cppname, cppname);
 }
 
 /* Print implementations of constructors for class "clazz" to "os".
