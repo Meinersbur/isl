@@ -438,7 +438,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_methods_impl(os, clazz);
 }
 
-/* Print implementation of global factory function to "os".
+/* Print implementation of global factory functions to "os".
  */
 void cpp_generator::print_class_factory_impl(ostream &os,
 	const isl_class &clazz)
