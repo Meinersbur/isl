@@ -453,7 +453,8 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 
 	osprintf(os, "isl::%s manage_copy(__isl_keep %s *ptr) {\n", cppname,
 		name);
-	osprintf(os, "  return %s(%s_copy(ptr));\n", cppname, name);
+	osprintf(os, "  ptr = %s_copy(ptr);\n", name);
+	osprintf(os, "  return %s(ptr);\n", cppname);
 	osprintf(os, "}\n");
 }
 
