@@ -1453,7 +1453,8 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	__isl_take isl_ast_build *build)
 {
 	int depth;
-	int degenerate, eliminated;
+	int degenerate;
+	isl_bool eliminated;
 	isl_basic_set *hull;
 	isl_basic_set *enforced;
 	isl_set *guard, *hoisted;

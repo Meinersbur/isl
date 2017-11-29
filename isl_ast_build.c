@@ -2088,23 +2088,20 @@ __isl_give isl_aff *isl_ast_build_get_offset(
  * Otherwise, it is set to the requested expression in terms of
  * outer dimensions and parameters.
  */
-int isl_ast_build_has_affine_value(__isl_keep isl_ast_build *build,
+isl_bool isl_ast_build_has_affine_value(__isl_keep isl_ast_build *build,
 	int pos)
 {
 	isl_aff *aff;
-	int involves;
+	isl_bool involves;
 
 	if (!build)
-		return -1;
+		return isl_bool_error;
 
 	aff = isl_multi_aff_get_aff(build->values, pos);
 	involves = isl_aff_involves_dims(aff, isl_dim_in, pos, 1);
 	isl_aff_free(aff);
 
-	if (involves < 0)
-		return -1;
-
-	return !involves;
+	return isl_bool_not(involves);
 }
 
 /* Plug in the known values (fixed affine expressions in terms of
