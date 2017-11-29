@@ -1180,9 +1180,14 @@ __isl_give isl_space *isl_ast_build_get_space(__isl_keep isl_ast_build *build,
 	dim = isl_set_dim(build->domain, isl_dim_set);
 	space = isl_space_drop_dims(space, isl_dim_set,
 				    build->depth, dim - build->depth);
-	for (i = build->depth - 1; i >= 0; --i)
-		if (isl_ast_build_has_affine_value(build, i))
+	for (i = build->depth - 1; i >= 0; --i) {
+		isl_bool affine = isl_ast_build_has_affine_value(build, i);
+
+		if (affine < 0)
+			return isl_space_free(space);
+		if (affine)
 			space = isl_space_drop_dims(space, isl_dim_set, i, 1);
+	}
 
 	return space;
 }
