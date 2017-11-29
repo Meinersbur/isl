@@ -4288,6 +4288,8 @@ static __isl_give isl_schedule_node *isl_schedule_node_graft_before_or_after(
 	if (isl_schedule_node_get_type(graft) == isl_schedule_node_domain)
 		graft = extension_from_domain(graft, node);
 
+	if (!graft)
+		goto error;
 	if (isl_schedule_node_get_type(graft) != isl_schedule_node_extension)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"expecting domain or extension as root of graft",
