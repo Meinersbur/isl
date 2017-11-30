@@ -785,30 +785,30 @@ static void swap_rows(struct isl_tab *tab, int row1, int row2)
 	tab->row_sign[row2] = s;
 }
 
-static int push_union(struct isl_tab *tab,
+static isl_stat push_union(struct isl_tab *tab,
 	enum isl_tab_undo_type type, union isl_tab_undo_val u) WARN_UNUSED;
-static int push_union(struct isl_tab *tab,
+static isl_stat push_union(struct isl_tab *tab,
 	enum isl_tab_undo_type type, union isl_tab_undo_val u)
 {
 	struct isl_tab_undo *undo;
 
 	if (!tab)
-		return -1;
+		return isl_stat_error;
 	if (!tab->need_undo)
-		return 0;
+		return isl_stat_ok;
 
 	undo = isl_alloc_type(tab->mat->ctx, struct isl_tab_undo);
 	if (!undo)
-		return -1;
+		return isl_stat_error;
 	undo->type = type;
 	undo->u = u;
 	undo->next = tab->top;
 	tab->top = undo;
 
-	return 0;
+	return isl_stat_ok;
 }
 
-int isl_tab_push_var(struct isl_tab *tab,
+isl_stat isl_tab_push_var(struct isl_tab *tab,
 	enum isl_tab_undo_type type, struct isl_tab_var *var)
 {
 	union isl_tab_undo_val u;
@@ -819,7 +819,7 @@ int isl_tab_push_var(struct isl_tab *tab,
 	return push_union(tab, type, u);
 }
 
-int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type)
+isl_stat isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type)
 {
 	union isl_tab_undo_val u = { 0 };
 	return push_union(tab, type, u);
@@ -828,20 +828,21 @@ int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type)
 /* Push a record on the undo stack describing the current basic
  * variables, so that the this state can be restored during rollback.
  */
-int isl_tab_push_basis(struct isl_tab *tab)
+isl_stat isl_tab_push_basis(struct isl_tab *tab)
 {
 	int i;
 	union isl_tab_undo_val u;
 
 	u.col_var = isl_alloc_array(tab->mat->ctx, int, tab->n_col);
 	if (tab->n_col && !u.col_var)
-		return -1;
+		return isl_stat_error;
 	for (i = 0; i < tab->n_col; ++i)
 		u.col_var[i] = tab->col_var[i];
 	return push_union(tab, isl_tab_undo_saved_basis, u);
 }
 
-int isl_tab_push_callback(struct isl_tab *tab, struct isl_tab_callback *callback)
+isl_stat isl_tab_push_callback(struct isl_tab *tab,
+	struct isl_tab_callback *callback)
 {
 	union isl_tab_undo_val u;
 	u.callback = callback;
@@ -916,12 +917,12 @@ struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s)
 /* Record the current number of samples so that we can remove newer
  * samples during a rollback.
  */
-int isl_tab_save_samples(struct isl_tab *tab)
+isl_stat isl_tab_save_samples(struct isl_tab *tab)
 {
 	union isl_tab_undo_val u;
 
 	if (!tab)
-		return -1;
+		return isl_stat_error;
 
 	u.n = tab->n_sample;
 	return push_union(tab, isl_tab_undo_saved_samples, u);
