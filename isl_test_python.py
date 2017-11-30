@@ -221,6 +221,103 @@ def test_every():
 		caught = True
 	assert(caught)
 
+# Construct a simple schedule tree with an outer sequence node and
+# a single-dimensional band node in each branch, with one of them
+# marked coincident.
+#
+def construct_schedule_tree():
+	A = isl.union_set("{ A[i] : 0 <= i < 10 }")
+	B = isl.union_set("{ B[i] : 0 <= i < 20 }")
+
+	node = isl.schedule_node.from_domain(A.union(B))
+	node = node.child(0)
+
+	filters = isl.union_set_list(A).add(B)
+	node = node.insert_sequence(filters)
+
+	f_A = isl.multi_union_pw_aff("[ { A[i] -> [i] } ]")
+	node = node.child(0)
+	node = node.child(0)
+	node = node.insert_partial_schedule(f_A)
+	node = node.member_set_coincident(0, True)
+	node = node.ancestor(2)
+
+	f_B = isl.multi_union_pw_aff("[ { B[i] -> [i] } ]")
+	node = node.child(1)
+	node = node.child(0)
+	node = node.insert_partial_schedule(f_B)
+	node = node.ancestor(2)
+
+	return node.get_schedule()
+
+# Test basic schedule tree functionality.
+#
+# In particular, create a simple schedule tree and
+# - check that the root node is a domain node
+# - test map_descendant_bottom_up
+# - test foreach_descendant_top_down
+# - test every_descendant
+#
+def test_schedule_tree():
+	schedule = construct_schedule_tree()
+	root = schedule.get_root()
+
+	assert(type(root) == isl.schedule_node_domain)
+
+	count = [0]
+	def inc_count(node):
+		count[0] += 1
+		return node
+	root = root.map_descendant_bottom_up(inc_count)
+	assert(count[0] == 8)
+
+	def fail_map(node):
+		raise "fail"
+		return node
+	caught = False
+	try:
+		root.map_descendant_bottom_up(fail_map)
+	except:
+		caught = True
+	assert(caught)
+
+	count = [0]
+	def inc_count(node):
+		count[0] += 1
+		return True
+	root.foreach_descendant_top_down(inc_count)
+	assert(count[0] == 8)
+
+	count = [0]
+	def inc_count(node):
+		count[0] += 1
+		return False
+	root.foreach_descendant_top_down(inc_count)
+	assert(count[0] == 1)
+
+	def is_not_domain(node):
+		return type(node) != isl.schedule_node_domain
+	assert(root.child(0).every_descendant(is_not_domain))
+	assert(not root.every_descendant(is_not_domain))
+
+	def fail(node):
+		raise "fail"
+	caught = False
+	try:
+		root.every_descendant(fail)
+	except:
+		caught = True
+	assert(caught)
+
+	domain = root.get_domain()
+	filters = [isl.union_set("{}")]
+	def collect_filters(node):
+		if type(node) == isl.schedule_node_filter:
+			filters[0] = filters[0].union(node.get_filter())
+		return True
+	root.every_descendant(collect_filters)
+	assert(domain.is_equal(filters[0]))
+
 # Test the isl Python interface
 #
 # This includes:
@@ -229,9 +326,11 @@ def test_every():
 #  - Different return types
 #  - Foreach functions
 #  - Every functions
+#  - Schedule trees
 #
 test_constructors()
 test_parameters()
 test_return()
 test_foreach()
 test_every()
+test_schedule_tree()
