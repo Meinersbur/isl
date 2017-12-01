@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
 #include <iostream>
 
 #include <clang/AST/Attr.h>
@@ -103,18 +104,69 @@ FunctionDecl *generator::find_by_name(const string &name, bool required)
 	return NULL;
 }
 
+/* Add a subclass derived from "decl" called "sub_name" to the set of classes,
+ * keeping track of the _to_str, _copy and _free functions, if any, separately.
+ * "sub_name" is either the name of the class itself or
+ * the name of a type based subclass.
+ * If the class is a proper subclass, then "super_name" is the name
+ * of its immediate superclass.
+ */
+void generator::add_subclass(RecordDecl *decl, const string &super_name,
+	const string &sub_name)
+{
+	string name = decl->getName();
+
+	classes[sub_name].name = name;
+	classes[sub_name].superclass_name = super_name;
+	classes[sub_name].subclass_name = sub_name;
+	classes[sub_name].type = decl;
+	classes[sub_name].fn_to_str = find_by_name(name + "_to_str", false);
+	classes[sub_name].fn_copy = find_by_name(name + "_copy", true);
+	classes[sub_name].fn_free = find_by_name(name + "_free", true);
+}
+
 /* Add a class derived from "decl" to the set of classes,
  * keeping track of the _to_str, _copy and _free functions, if any, separately.
  */
 void generator::add_class(RecordDecl *decl)
 {
-	string name = decl->getName();
+	return add_subclass(decl, "", decl->getName());
+}
 
-	classes[name].name = name;
-	classes[name].type = decl;
-	classes[name].fn_to_str = find_by_name(name + "_to_str", false);
-	classes[name].fn_copy = find_by_name(name + "_copy", true);
-	classes[name].fn_free = find_by_name(name + "_free", true);
+/* Given a function "fn_type" that returns the subclass type
+ * of a C object, create subclasses for each of the (non-negative)
+ * return values.
+ *
+ * The function "fn_type" is also stored in the superclass,
+ * along with all pairs of type values and subclass names.
+ */
+void generator::add_type_subclasses(FunctionDecl *fn_type)
+{
+	QualType return_type = fn_type->getReturnType();
+	const EnumType *enum_type = return_type->getAs<EnumType>();
+	EnumDecl *decl = enum_type->getDecl();
+	isl_class *c = method2class(fn_type);
+	DeclContext::decl_iterator i;
+
+	c->fn_type = fn_type;
+	for (i = decl->decls_begin(); i != decl->decls_end(); ++i) {
+		EnumConstantDecl *ecd = dyn_cast<EnumConstantDecl>(*i);
+		int val = (int) ecd->getInitVal().getSExtValue();
+		string name = ecd->getNameAsString();
+
+		if (val < 0)
+			continue;
+		c->type_subclasses[val] = name;
+		add_subclass(c->type, c->subclass_name, name);
+	}
+}
+
+/* Sorting function that places declaration of functions
+ * with a shorter name first.
+ */
+static bool less_name(const FunctionDecl *a, const FunctionDecl *b)
+{
+	return a->getName().size() < b->getName().size();
 }
 
 /* Collect all functions that belong to a certain type, separating
@@ -122,6 +174,11 @@ void generator::add_class(RecordDecl *decl)
  * _copy and _free functions, if any, separately.  If there are any overloaded
  * functions, then they are grouped based on their name after removing the
  * argument type suffix.
+ * Check for functions that describe subclasses before considering
+ * any other functions in order to be able to detect those other
+ * functions as belonging to the subclasses.
+ * Sort the names of the functions based on their lengths
+ * to ensure that nested subclasses are handled later.
  */
 generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions) :
@@ -129,6 +186,8 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 {
 	set<FunctionDecl *>::iterator in;
 	set<RecordDecl *>::iterator it;
+	vector<FunctionDecl *> type_subclasses;
+	vector<FunctionDecl *>::iterator iv;
 
 	for (in = functions.begin(); in != functions.end(); ++in) {
 		FunctionDecl *decl = *in;
@@ -140,9 +199,23 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 
 	for (in = exported_functions.begin(); in != exported_functions.end();
 	     ++in) {
-		FunctionDecl *method = *in;
-		isl_class *c = method2class(method);
+		if (is_subclass(*in))
+			type_subclasses.push_back(*in);
+	}
+	std::sort(type_subclasses.begin(), type_subclasses.end(), &less_name);
+	for (iv = type_subclasses.begin(); iv != type_subclasses.end(); ++iv) {
+		add_type_subclasses(*iv);
+	}
 
+	for (in = exported_functions.begin(); in != exported_functions.end();
+	     ++in) {
+		FunctionDecl *method = *in;
+		isl_class *c;
+
+		if (is_subclass(method))
+			continue;
+
+		c = method2class(method);
 		if (!c)
 			continue;
 		if (is_constructor(method)) {
@@ -198,6 +271,13 @@ std::vector<string> generator::find_superclasses(Decl *decl)
 	}
 
 	return super;
+}
+
+/* Is "decl" marked as describing subclasses?
+ */
+bool generator::is_subclass(FunctionDecl *decl)
+{
+	return find_superclasses(decl).size() > 0;
 }
 
 /* Is decl marked as being part of an overloaded method?

@@ -7,6 +7,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 /* ISL_USE_EXCEPTIONS should be defined to 1 if exceptions are available.
  * gcc and clang define __cpp_exceptions; MSVC and xlC define _CPPUNWIND.
