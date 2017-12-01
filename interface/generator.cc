@@ -100,7 +100,7 @@ generator::generator(set<RecordDecl *> &exported_types,
 
 	for (in = exported_functions.begin(); in != exported_functions.end();
 	     ++in) {
-		isl_class *c = method2class(classes, *in);
+		isl_class *c = method2class(*in);
 		if (!c)
 			continue;
 		if (is_constructor(*in)) {
@@ -198,8 +198,7 @@ bool generator::gives(Decl *decl)
 /* Return the class that has a name that matches the initial part
  * of the name of function "fd" or NULL if no such class could be found.
  */
-isl_class *generator::method2class(map<string, isl_class> &classes,
-	FunctionDecl *fd)
+isl_class *generator::method2class(FunctionDecl *fd)
 {
 	string best;
 	map<string, isl_class>::iterator ci;
