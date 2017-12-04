@@ -697,7 +697,6 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	const string &fullname, FunctionDecl *method, function_kind kind)
 {
-	string cname = fullname.substr(clazz.name.length() + 1);
 	string methodname = method->getName();
 	int num_params = method->getNumParams();
 	QualType return_type = method->getReturnType();
