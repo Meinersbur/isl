@@ -32,13 +32,22 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <iostream>
 
 #include <clang/AST/Attr.h>
+#include <clang/Basic/SourceManager.h>
 
 #include "isl_config.h"
 #include "extract_interface.h"
 #include "generator.h"
+
+/* Compare the prefix of "s" to "prefix" up to the length of "prefix".
+ */
+static int prefixcmp(const char *s, const char *prefix)
+{
+	return strncmp(s, prefix, strlen(prefix));
+}
 
 /* Should "method" be considered to be a static method?
  * That is, is the first argument something other than
@@ -241,6 +250,82 @@ bool generator::first_arg_is_isl_ctx(FunctionDecl *fd)
 
 	param = fd->getParamDecl(0);
 	return is_isl_ctx(param->getOriginalType());
+}
+
+namespace {
+
+struct ClangAPI {
+	/* Return the first location in the range returned by
+	 * clang::SourceManager::getImmediateExpansionRange.
+	 * Older versions of clang return a pair of SourceLocation objects.
+	 * More recent versions return a CharSourceRange.
+	 */
+	static SourceLocation range_begin(
+			const std::pair<SourceLocation,SourceLocation> &p) {
+		return p.first;
+	}
+	static SourceLocation range_begin(const CharSourceRange &range) {
+		return range.getBegin();
+	}
+};
+
+}
+
+/* Does the callback argument "param" take its argument at position "pos"?
+ *
+ * The memory management annotations of arguments to function pointers
+ * are not recorded by clang, so the information cannot be extracted
+ * from the type of "param".
+ * Instead, go to the location in the source where the callback argument
+ * is declared, look for the right argument of the callback itself and
+ * then check if it has an "__isl_take" memory management annotation.
+ *
+ * If the return value of the function has a memory management annotation,
+ * then the spelling of "param" will point to the spelling
+ * of this memory management annotation.  Since the macro is defined
+ * on the command line (in main), this location does not have a file entry.
+ * In this case, move up one level in the macro expansion to the location
+ * where the memory management annotation is used.
+ */
+bool generator::callback_takes_argument(ParmVarDecl *param,
+	int pos)
+{
+	SourceLocation loc;
+	const char *s, *end, *next;
+	bool takes, keeps;
+
+	loc = param->getSourceRange().getBegin();
+	if (!SM.getFileEntryForID(SM.getFileID(SM.getSpellingLoc(loc))))
+		loc = ClangAPI::range_begin(SM.getImmediateExpansionRange(loc));
+	s = SM.getCharacterData(loc);
+	if (!s)
+		die("No character data");
+	s = strchr(s, '(');
+	if (!s)
+		die("Cannot find function pointer");
+	s = strchr(s + 1, '(');
+	if (!s)
+		die("Cannot find function pointer arguments");
+	end = strchr(s + 1, ')');
+	if (!end)
+		die("Cannot find end of function pointer arguments");
+	while (pos-- > 0) {
+		s = strchr(s + 1, ',');
+		if (!s || s > end)
+			die("Cannot find function pointer argument");
+	}
+	next = strchr(s + 1, ',');
+	if (next && next < end)
+		end = next;
+	s = strchr(s + 1, '_');
+	if (!s || s > end)
+		die("Cannot find function pointer argument annotation");
+	takes = prefixcmp(s, "__isl_take") == 0;
+	keeps = prefixcmp(s, "__isl_keep") == 0;
+	if (!takes && !keeps)
+		die("Cannot find function pointer argument annotation");
+
+	return takes;
 }
 
 /* Is "type" that of a pointer to an isl_* structure?

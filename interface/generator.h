@@ -54,6 +54,7 @@ public:
 
 protected:
 	isl_class *method2class(FunctionDecl *fd);
+	bool callback_takes_argument(ParmVarDecl *param, int pos);
 	FunctionDecl *find_by_name(const string &name, bool required);
 public:
 	static void die(const char *msg) __attribute__((noreturn));

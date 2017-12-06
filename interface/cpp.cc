@@ -1253,6 +1253,9 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call)
  *
  *        stat ret = (*data->func)(manage(arg_0));
  *        return isl_stat(ret);
+ *
+ * If the C callback does not take its arguments, then
+ * manage_copy is used instead of manage.
  */
 void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 {
@@ -1276,7 +1279,11 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 
 	call = "(*data->func)(";
 	for (long i = 0; i < num_params - 1; i++) {
-		call += "manage(arg_" + ::to_string(i) + ")";
+		if (!callback_takes_argument(param, i))
+			call += "manage_copy";
+		else
+			call += "manage";
+		call += "(arg_" + ::to_string(i) + ")";
 		if (i != num_params - 2)
 			call += ", ";
 	}
