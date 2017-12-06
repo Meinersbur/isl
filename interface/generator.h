@@ -59,7 +59,7 @@ protected:
 public:
 	static void die(const char *msg) __attribute__((noreturn));
 	static void die(string msg) __attribute__((noreturn));
-	static vector<string> find_superclasses(RecordDecl *decl);
+	static vector<string> find_superclasses(Decl *decl);
 	static bool is_overload(Decl *decl);
 	static bool is_constructor(Decl *decl);
 	static bool takes(Decl *decl);

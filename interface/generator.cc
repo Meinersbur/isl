@@ -145,7 +145,7 @@ void generator::die(string msg)
  * is the one that is closest to the annotated type and the corresponding
  * type is then also the first that will appear in the sequence of types.
  */
-std::vector<string> generator::find_superclasses(RecordDecl *decl)
+std::vector<string> generator::find_superclasses(Decl *decl)
 {
 	vector<string> super;
 
