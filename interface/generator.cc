@@ -204,7 +204,7 @@ bool generator::gives(Decl *decl)
 	return has_annotation(decl, "isl_give");
 }
 
-/* Return the class that has a name that matches the initial part
+/* Return the class that has a name that best matches the initial part
  * of the name of function "fd" or NULL if no such class could be found.
  */
 isl_class *generator::method2class(FunctionDecl *fd)
@@ -214,7 +214,8 @@ isl_class *generator::method2class(FunctionDecl *fd)
 	string name = fd->getNameAsString();
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {
-		if (name.substr(0, ci->first.length()) == ci->first)
+		size_t len = ci->first.length();
+		if (len > best.length() && name.substr(0, len) == ci->first)
 			best = ci->first;
 	}
 
