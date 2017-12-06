@@ -106,6 +106,15 @@ void python_generator::print_type_check(const string &type, int pos,
 		printf("            raise\n");
 }
 
+/* Print a call to the *_copy function corresponding to "type".
+ */
+void python_generator::print_copy(QualType type)
+{
+	string type_s = extract_type(type);
+
+	printf("isl.%s_copy", type_s.c_str());
+}
+
 /* Construct a wrapper for callback argument "param" (at position "arg").
  * Assign the wrapper to "cb".  We assume here that a function call
  * has at most one callback argument.
@@ -176,8 +185,8 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 	if (is_callback(type)) {
 		printf("cb");
 	} else if (takes(param)) {
-		string type_s = extract_type(type);
-		printf("isl.%s_copy(arg%d.ptr)", type_s.c_str(), arg - skip);
+		print_copy(type);
+		printf("(arg%d.ptr)", arg - skip);
 	} else if (type->isPointerType()) {
 		printf("arg%d.ptr", arg - skip);
 	} else {
@@ -440,13 +449,9 @@ void python_generator::print_constructor(const isl_class &clazz,
 		if (i)
 			printf(", ");
 		if (is_isl_type(type)) {
-			if (takes(param)) {
-				string type;
-				type = extract_type(param->getOriginalType());
-				printf("isl.%s_copy(args[%d].ptr)",
-					type.c_str(), i - drop_ctx);
-			} else
-				printf("args[%d].ptr", i - drop_ctx);
+			if (takes(param))
+				print_copy(param->getOriginalType());
+			printf("(args[%d].ptr)", i - drop_ctx);
 		} else if (is_string(type)) {
 			printf("args[%d].encode('ascii')", i - drop_ctx);
 		} else {
