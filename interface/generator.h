@@ -29,6 +29,11 @@ struct isl_class {
 
 	/* Return name of "fd" without type suffix, if any. */
 	static string name_without_type_suffix(FunctionDecl *fd);
+	/* Extract the method name corresponding to "fd". */
+	string method_name(FunctionDecl *fd) const {
+		string m_name = name_without_type_suffix(fd);
+		return m_name.substr(name.length() + 1);
+	}
 };
 
 /* Base class for interface generators.
