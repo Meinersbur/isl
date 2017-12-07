@@ -577,8 +577,8 @@ void cpp_generator::print_private_constructors_impl(ostream &os,
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "%s::%s(__isl_take %s *ptr)\n    : ptr(ptr) {}\n",
-		 cppname, cppname, name);
+	osprintf(os, "%s::%s(__isl_take %s *ptr)\n", cppname, cppname, name);
+	osprintf(os, "    : ptr(ptr) {}\n");
 }
 
 /* Print implementations of public constructors for class "clazz" to "os".
