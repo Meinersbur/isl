@@ -164,9 +164,10 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	osprintf(os, "class %s {\n", cppname);
 	print_class_factory_decl(os, clazz, "  friend ");
 	osprintf(os, "\n");
+	osprintf(os, "protected:\n");
 	osprintf(os, "  %s *ptr = nullptr;\n", name);
 	osprintf(os, "\n");
-	print_private_constructors_decl(os, clazz);
+	print_protected_constructors_decl(os, clazz);
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
 	print_public_constructors_decl(os, clazz);
@@ -221,9 +222,9 @@ void cpp_generator::print_class_factory_decl(ostream &os,
 		cppname, name);
 }
 
-/* Print declarations of private constructors for class "clazz" to "os".
+/* Print declarations of protected constructors for class "clazz" to "os".
  *
- * Each class has currently one private constructor:
+ * Each class has currently one protected constructor:
  *
  * 	1) Constructor from a plain isl_* C pointer
  *
@@ -231,10 +232,10 @@ void cpp_generator::print_class_factory_decl(ostream &os,
  *
  * 	set(__isl_take isl_set *ptr);
  *
- * The raw pointer constructor is kept private. Object creation is only
+ * The raw pointer constructor is kept protected. Object creation is only
  * possible through manage() or manage_copy().
  */
-void cpp_generator::print_private_constructors_decl(ostream &os,
+void cpp_generator::print_protected_constructors_decl(ostream &os,
 	const isl_class &clazz)
 {
 	const char *name = clazz.name.c_str();
@@ -416,7 +417,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	print_public_constructors_impl(os, clazz);
 	osprintf(os, "\n");
-	print_private_constructors_impl(os, clazz);
+	print_protected_constructors_impl(os, clazz);
 	osprintf(os, "\n");
 	print_constructors_impl(os, clazz);
 	osprintf(os, "\n");
@@ -568,9 +569,9 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 	osprintf(os, "}\n");
 }
 
-/* Print implementations of private constructors for class "clazz" to "os".
+/* Print implementations of protected constructors for class "clazz" to "os".
  */
-void cpp_generator::print_private_constructors_impl(ostream &os,
+void cpp_generator::print_protected_constructors_impl(ostream &os,
 	const isl_class &clazz)
 {
 	const char *name = clazz.name.c_str();

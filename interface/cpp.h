@@ -33,7 +33,7 @@ private:
 	void print_class_forward_decl(ostream &os, const isl_class &clazz);
 	void print_class_factory_decl(ostream &os, const isl_class &clazz,
 		const std::string &prefix = std::string());
-	void print_private_constructors_decl(ostream &os,
+	void print_protected_constructors_decl(ostream &os,
 		const isl_class &clazz);
 	void print_copy_assignment_decl(ostream &os, const isl_class &clazz);
 	void print_public_constructors_decl(ostream &os,
@@ -54,7 +54,7 @@ private:
 		const char *ptr);
 	void print_check_ptr_end(ostream &os, const char *ptr);
 	void print_class_factory_impl(ostream &os, const isl_class &clazz);
-	void print_private_constructors_impl(ostream &os,
+	void print_protected_constructors_impl(ostream &os,
 		const isl_class &clazz);
 	void print_public_constructors_impl(ostream &os,
 		const isl_class &clazz);
