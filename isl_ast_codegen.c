@@ -5179,7 +5179,7 @@ static __isl_give isl_ast_graft_list *hoist_out_of_context(
  * to the domain elements executed by those iterations.
  *
  * The context node may introduce additional parameters as well as
- * constraints on the outer schedule dimenions or original parameters.
+ * constraints on the outer schedule dimensions or original parameters.
  *
  * We add the extra parameters to a new build and the context
  * constraints to both the build and (as a single disjunct)
