@@ -5736,6 +5736,8 @@ __isl_give isl_ast_node *isl_ast_build_node_from_schedule(
 	ctx = isl_ast_build_get_ctx(build);
 
 	node = isl_schedule_get_root(schedule);
+	if (!node)
+		goto error;
 	isl_schedule_free(schedule);
 
 	build = isl_ast_build_copy(build);
