@@ -4454,6 +4454,9 @@ parameters.
 	__isl_give isl_union_map *isl_union_map_project_out(
 		__isl_take isl_union_map *umap,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	__isl_give isl_union_map *
+	isl_union_map_project_out_all_params(
+		__isl_take isl_union_map *umap);
 	__isl_give isl_set *isl_union_map_params(
 		__isl_take isl_union_map *umap);
 	__isl_give isl_union_set *isl_union_map_domain(

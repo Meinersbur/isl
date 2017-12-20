@@ -3650,6 +3650,20 @@ __isl_give isl_union_map *isl_union_map_project_out(
 	return data.res;
 }
 
+/* Project out all parameters from "umap" by existentially quantifying
+ * over them.
+ */
+__isl_give isl_union_map *isl_union_map_project_out_all_params(
+	__isl_take isl_union_map *umap)
+{
+	unsigned n;
+
+	if (!umap)
+		return NULL;
+	n = isl_union_map_dim(umap, isl_dim_param);
+	return isl_union_map_project_out(umap, isl_dim_param, 0, n);
+}
+
 /* Turn the "n" dimensions of type "type", starting at "first"
  * into existentially quantified variables.
  * Since the space of an isl_union_set only contains parameters,
