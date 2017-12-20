@@ -245,41 +245,53 @@ static isl_stat detect_stride(__isl_take isl_constraint *c, void *user)
 }
 
 /* Check if the constraints in "set" imply any stride on set dimension "pos" and
- * return the results in the form of an offset and a stride.
+ * store the results in data->stride and data->offset.
  *
  * In particular, compute the affine hull and then check if
  * any of the constraints in the hull impose any stride on the dimension.
  * If no such constraint can be found, then the offset is taken
  * to be the zero expression and the stride is taken to be one.
  */
-__isl_give isl_stride_info *isl_set_get_stride_info(__isl_keep isl_set *set,
-	int pos)
+static void set_detect_stride(__isl_keep isl_set *set, int pos,
+	struct isl_detect_stride_data *data)
 {
-	struct isl_detect_stride_data data = { pos };
 	isl_basic_set *hull;
 
 	hull = isl_set_affine_hull(isl_set_copy(set));
 
-	data.found = 0;
-	data.stride = NULL;
-	data.offset = NULL;
-	if (isl_basic_set_foreach_constraint(hull, &detect_stride, &data) < 0)
+	data->pos = pos;
+	data->found = 0;
+	data->stride = NULL;
+	data->offset = NULL;
+	if (isl_basic_set_foreach_constraint(hull, &detect_stride, data) < 0)
 		goto error;
 
-	if (!data.found) {
+	if (!data->found) {
 		isl_space *space;
 		isl_local_space *ls;
 
-		data.stride = isl_val_one(isl_set_get_ctx(set));
+		data->stride = isl_val_one(isl_set_get_ctx(set));
 		space = isl_set_get_space(set);
 		ls = isl_local_space_from_space(space);
-		data.offset = isl_aff_zero_on_domain(ls);
+		data->offset = isl_aff_zero_on_domain(ls);
 	}
 	isl_basic_set_free(hull);
-	return isl_stride_info_alloc(data.stride, data.offset);
+	return;
 error:
 	isl_basic_set_free(hull);
-	isl_val_free(data.stride);
-	isl_aff_free(data.offset);
-	return NULL;
+	data->stride = isl_val_free(data->stride);
+	data->offset = isl_aff_free(data->offset);
+}
+
+/* Check if the constraints in "set" imply any stride on set dimension "pos" and
+ * return the results in the form of an offset and a stride.
+ */
+__isl_give isl_stride_info *isl_set_get_stride_info(__isl_keep isl_set *set,
+	int pos)
+{
+	struct isl_detect_stride_data data;
+
+	set_detect_stride(set, pos, &data);
+
+	return isl_stride_info_alloc(data.stride, data.offset);
 }
