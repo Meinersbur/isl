@@ -4559,14 +4559,17 @@ static isl_stat union_pw_aff_check_plain_equal(__isl_keep isl_union_pw_aff *upa,
 	return isl_stat_ok;
 }
 
-/* Basic test on isl_union_pw_aff.
+/* Basic tests on isl_union_pw_aff.
  *
  * In particular, check that isl_union_pw_aff_aff_on_domain
- * aligns the parameters of the input objects.
+ * aligns the parameters of the input objects and
+ * that isl_union_pw_aff_param_on_domain_id properly
+ * introduces the parameter.
  */
 static int test_upa(isl_ctx *ctx)
 {
 	const char *str;
+	isl_id *id;
 	isl_aff *aff;
 	isl_union_set *domain;
 	isl_union_pw_aff *upa;
@@ -4576,6 +4579,16 @@ static int test_upa(isl_ctx *ctx)
 	str = "[M] -> { A[i] : 0 <= i < M; B[] }";
 	domain = isl_union_set_read_from_str(ctx, str);
 	upa = isl_union_pw_aff_aff_on_domain(domain, aff);
+	str = "[N, M] -> { A[i] -> [N] : 0 <= i < M; B[] -> [N] }";
+	ok = union_pw_aff_check_plain_equal(upa, str);
+	isl_union_pw_aff_free(upa);
+	if (ok < 0)
+		return -1;
+
+	id = isl_id_alloc(ctx, "N", NULL);
+	str = "[M] -> { A[i] : 0 <= i < M; B[] }";
+	domain = isl_union_set_read_from_str(ctx, str);
+	upa = isl_union_pw_aff_param_on_domain_id(domain, id);
 	str = "[N, M] -> { A[i] -> [N] : 0 <= i < M; B[] -> [N] }";
 	ok = union_pw_aff_check_plain_equal(upa, str);
 	isl_union_pw_aff_free(upa);

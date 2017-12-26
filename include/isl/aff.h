@@ -638,6 +638,8 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_domain(
 	__isl_take isl_union_set *uset);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_multi_val_on_domain(
 	__isl_take isl_union_set *domain, __isl_take isl_multi_val *mv);
+__isl_give isl_union_pw_aff *isl_union_pw_aff_param_on_domain_id(
+	__isl_take isl_union_set *domain, __isl_take isl_id *id);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_copy(
 	__isl_keep isl_union_pw_multi_aff *upma);
 __isl_null isl_union_pw_multi_aff *isl_union_pw_multi_aff_free(

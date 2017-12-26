@@ -3289,6 +3289,14 @@ of the sets in the union set and collect the results.
 	isl_union_pw_multi_aff_multi_val_on_domain(
 		__isl_take isl_union_set *domain,
 		__isl_take isl_multi_val *mv);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_param_on_domain_id(
+		__isl_take isl_union_set *domain,
+		__isl_take isl_id *id);
+
+The C<id> argument of C<isl_union_pw_aff_param_on_domain_id>
+is the identifier of a parameter that may or may not already
+be present in C<domain>.
 
 An C<isl_union_pw_aff> that is equal to a (parametric) affine
 or piecewise affine
