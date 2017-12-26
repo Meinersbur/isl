@@ -1257,7 +1257,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),mod_multi_val)(
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi)
-		return NULL;
+		goto error;
 
 	for (i = 0; i < multi->n; ++i) {
 		isl_val *v;

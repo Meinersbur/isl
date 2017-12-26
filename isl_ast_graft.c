@@ -1231,6 +1231,7 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_merge(
 				disjoint = isl_set_is_disjoint(graft->guard,
 							list1->p[j - 1]->guard);
 				if (disjoint < 0) {
+					isl_ast_graft_free(graft);
 					list1 = isl_ast_graft_list_free(list1);
 					break;
 				}
@@ -1254,10 +1255,12 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_merge(
 			break;
 		}
 
-		if (j < 0)
+		if (j < 0) {
+			isl_ast_graft_free(graft);
 			isl_die(isl_ast_build_get_ctx(build),
 				isl_error_internal,
 				"element failed to get inserted", break);
+		}
 
 		first = j + 1;
 		if (!list1)

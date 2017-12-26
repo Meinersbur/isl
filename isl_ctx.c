@@ -278,11 +278,13 @@ struct isl_options *isl_ctx_options(isl_ctx *ctx)
 
 enum isl_error isl_ctx_last_error(isl_ctx *ctx)
 {
-	return ctx->error;
+	return ctx ? ctx->error : isl_error_invalid;
 }
 
 void isl_ctx_reset_error(isl_ctx *ctx)
 {
+	if (!ctx)
+		return;
 	ctx->error = isl_error_none;
 }
 

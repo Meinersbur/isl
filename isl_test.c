@@ -4522,6 +4522,69 @@ static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 	return 0;
 }
 
+/* Is "upa" obviously equal to the isl_union_pw_aff represented by "str"?
+ */
+static isl_bool union_pw_aff_plain_is_equal(__isl_keep isl_union_pw_aff *upa,
+	const char *str)
+{
+	isl_ctx *ctx;
+	isl_union_pw_aff *upa2;
+	isl_bool equal;
+
+	if (!upa)
+		return isl_bool_error;
+
+	ctx = isl_union_pw_aff_get_ctx(upa);
+	upa2 = isl_union_pw_aff_read_from_str(ctx, str);
+	equal = isl_union_pw_aff_plain_is_equal(upa, upa2);
+	isl_union_pw_aff_free(upa2);
+
+	return equal;
+}
+
+/* Check that "upa" is obviously equal to the isl_union_pw_aff
+ * represented by "str".
+ */
+static isl_stat union_pw_aff_check_plain_equal(__isl_keep isl_union_pw_aff *upa,
+	const char *str)
+{
+	isl_bool equal;
+
+	equal = union_pw_aff_plain_is_equal(upa, str);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_union_pw_aff_get_ctx(upa), isl_error_unknown,
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Basic test on isl_union_pw_aff.
+ *
+ * In particular, check that isl_union_pw_aff_aff_on_domain
+ * aligns the parameters of the input objects.
+ */
+static int test_upa(isl_ctx *ctx)
+{
+	const char *str;
+	isl_aff *aff;
+	isl_union_set *domain;
+	isl_union_pw_aff *upa;
+	isl_stat ok;
+
+	aff = isl_aff_read_from_str(ctx, "[N] -> { [N] }");
+	str = "[M] -> { A[i] : 0 <= i < M; B[] }";
+	domain = isl_union_set_read_from_str(ctx, str);
+	upa = isl_union_pw_aff_aff_on_domain(domain, aff);
+	str = "[N, M] -> { A[i] -> [N] : 0 <= i < M; B[] -> [N] }";
+	ok = union_pw_aff_check_plain_equal(upa, str);
+	isl_union_pw_aff_free(upa);
+	if (ok < 0)
+		return -1;
+
+	return 0;
+}
+
 struct {
 	__isl_give isl_aff *(*fn)(__isl_take isl_aff *aff1,
 				__isl_take isl_aff *aff2);
@@ -4825,6 +4888,8 @@ int test_aff(isl_ctx *ctx)
 	isl_aff *aff;
 	int zero, equal;
 
+	if (test_upa(ctx) < 0)
+		return -1;
 	if (test_bin_aff(ctx) < 0)
 		return -1;
 	if (test_bin_pw_aff(ctx) < 0)
