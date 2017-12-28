@@ -1168,6 +1168,16 @@ an C<isl_union_pw_qpolynomial> and
 an C<isl_union_pw_qpolynomial_fold>
 only have parameters.
 
+Additional parameters can be added to a space using the following function.
+
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_add_param_id(
+		__isl_take isl_space *space,
+		__isl_take isl_id *id);
+
+If a parameter with the given identifier already appears in the space,
+then it is not added again.
+
 The identifiers or names of the individual dimensions of spaces
 may be set or read off using the following functions on spaces
 or objects that live in spaces.

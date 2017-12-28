@@ -985,6 +985,33 @@ error:
 	return NULL;
 }
 
+/* Add a parameter with identifier "id" to "space", provided
+ * it does not already appear in "space".
+ */
+__isl_give isl_space *isl_space_add_param_id(__isl_take isl_space *space,
+	__isl_take isl_id *id)
+{
+	int pos;
+
+	if (!space || !id)
+		goto error;
+
+	if (isl_space_find_dim_by_id(space, isl_dim_param, id) >= 0) {
+		isl_id_free(id);
+		return space;
+	}
+
+	pos = isl_space_dim(space, isl_dim_param);
+	space = isl_space_add_dims(space, isl_dim_param, 1);
+	space = isl_space_set_dim_id(space, isl_dim_param, pos, id);
+
+	return space;
+error:
+	isl_space_free(space);
+	isl_id_free(id);
+	return NULL;
+}
+
 static int valid_dim_type(enum isl_dim_type type)
 {
 	switch (type) {
