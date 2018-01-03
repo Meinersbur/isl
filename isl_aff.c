@@ -227,7 +227,7 @@ __isl_give isl_pw_aff *isl_pw_aff_var_on_domain(__isl_take isl_local_space *ls,
 /* Return an affine expression that is equal to the parameter
  * in the domain space "space" with identifier "id".
  */
-static __isl_give isl_aff *isl_aff_param_on_domain_space_id(
+__isl_give isl_aff *isl_aff_param_on_domain_space_id(
 	__isl_take isl_space *space, __isl_take isl_id *id)
 {
 	int pos;
