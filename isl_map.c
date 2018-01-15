@@ -9250,8 +9250,8 @@ error:
  *	 0 if bset1 and bset2 are incomparable
  *	-2 if some error occurred.
  */
-int isl_basic_set_compare_at(struct isl_basic_set *bset1,
-	struct isl_basic_set *bset2, int pos)
+int isl_basic_set_compare_at(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2, int pos)
 {
 	isl_int opt;
 	enum isl_lp_result res;
