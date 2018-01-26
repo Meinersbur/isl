@@ -69,5 +69,5 @@ isl-noexceptions.h: extract_interface libdep.a isl-noexceptions.h.top \
 		cat $(srcdir)/isl-noexceptions.h.bot) \
 			> isl-noexceptions.h
 
-dist-hook: isl.py isl-noexceptions.h
-	cp isl.py isl-noexceptions.h $(distdir)/
+dist-hook: isl.py
+	cp isl.py $(distdir)/
