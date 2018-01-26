@@ -1,5 +1,8 @@
 if HAVE_CLANG
-    MAYBE_INTERFACE = interface
+MAYBE_INTERFACE = interface
+FORCE:
+interface/extract_interface: FORCE
+	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface
 endif
 SUBDIRS = . $(MAYBE_INTERFACE) doc
 DIST_SUBDIRS = $(MAYBE_INTERFACE) doc
@@ -15,6 +18,21 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_flow isl_flow_cmp isl_schedule_cmp
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
+if HAVE_CLANG
+if HAVE_CXX11
+  noinst_PROGRAMS += isl_test_cpp-noexceptions
+  TESTS += isl_test_cpp-noexceptions
+endif
+if HAVE_PYTHON
+  TESTS += isl_test_python.py
+  isl_test_python.py: interface/isl.py libisl.la
+endif
+endif
+TEST_EXTENSIONS = .py
+AM_TESTS_ENVIRONMENT = \
+	export PYTHONPATH=interface; \
+	export LD_LIBRARY_PATH=.libs;
+PY_LOG_COMPILER = $(PYTHON)
 
 if IMATH_FOR_MP
 
@@ -263,6 +281,36 @@ isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
 
+isl_test_cpp_noexceptions_CXXFLAGS = @CXX11FLAGS@
+isl_test_cpp_noexceptions_SOURCES = \
+	isl_test_cpp-noexceptions.cc \
+	interface/isl-noexceptions.h
+isl_test_cpp_noexceptions_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp_noexceptions_LDADD = libisl.la @MP_LIBS@
+
+# dummy library that captures the dependencies on all headers
+# that are relevant for the bindings
+noinst_LIBRARIES = libdep.a
+libdep_a_SOURCES = all.c
+
+if HAVE_CLANG
+interface/isl.py: interface/extract_interface libdep.a python/isl.py.top
+	(cat $(srcdir)/python/isl.py.top; \
+		interface/extract_interface$(EXEEXT) --language=python \
+			$(includes) $(srcdir)/all.h) \
+			> $@
+
+interface/isl-noexceptions.h: interface/extract_interface libdep.a \
+		cpp/isl-noexceptions.h.top \
+		cpp/isl-noexceptions.h.pre cpp/isl-noexceptions.h.bot
+	(cat $(srcdir)/cpp/isl-noexceptions.h.top $(srcdir)/all.h \
+	    $(srcdir)/cpp/isl-noexceptions.h.pre; \
+		interface/extract_interface$(EXEEXT) --language=cpp \
+			$(includes) $(srcdir)/all.h; \
+		cat $(srcdir)/cpp/isl-noexceptions.h.bot) \
+			> $@
+endif
+
 nodist_pkginclude_HEADERS = \
 	include/isl/stdint.h
 pkginclude_HEADERS = \
@@ -321,10 +369,11 @@ pkginclude_HEADERS = \
 	include/isl/version.h \
 	include/isl/vertices.h
 
-BUILT_SOURCES = gitversion.h
-
-CLEANFILES = \
-	gitversion.h
+if HAVE_CLANG
+    CPP_INTERFACE = interface/isl-noexceptions.h
+endif
+BUILT_SOURCES = gitversion.h $(CPP_INTERFACE)
+CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACE)
 
 DISTCLEANFILES = \
 	isl-uninstalled.sh \
@@ -390,15 +439,18 @@ EXTRA_DIST = \
 	imath/imath.h \
 	imath/imrat.c \
 	imath/imrat.h \
-	interface/all.h \
-	interface/isl-noexceptions.h.top \
-	interface/isl-noexceptions.h.pre \
-	interface/isl-noexceptions.h.bot \
-	interface/isl.py.top \
-	interface/isl_test_python.py \
+	all.h \
+	cpp \
+	python \
+	isl_test_python.py \
 	test_inputs
 
+if HAVE_CLANG
+dist-hook: interface/isl.py
+	cp interface/isl.py $(distdir)/interface/
+else
 dist-hook:
+endif
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
 	(cd doc; make manual.pdf)
 	cp doc/manual.pdf $(distdir)/doc/
