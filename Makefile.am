@@ -374,7 +374,7 @@ EXTRA_DIST = \
 	isl_union_multi.c \
 	isl_union_eval.c \
 	isl_union_neg.c \
-	isl.py \
+	libisl-gdb.py \
 	doc/CodingStyle \
 	doc/SubmittingPatches \
 	doc/implementation.tex \
@@ -408,15 +408,17 @@ pkgconfig_DATA = $(pkgconfig_libfile)
 gitversion.h: @GIT_HEAD@
 	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
 
-install-data-local: $(srcdir)/isl.py
+install-data-local: $(srcdir)/libisl-gdb.py
 	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
 		 $(builddir)/libisl.la`; \
 	case $$libisl in \
 	'') echo Cannot find isl library name. GDB bindings not installed.;; \
-	*) echo $(INSTALL_DATA) $(srcdir)/isl.py \
+	*) echo $(INSTALL_DATA) $(srcdir)/libisl-gdb.py \
 		$(DESTDIR)$(libdir)/$$libisl-gdb.py; \
 	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"; \
-	$(INSTALL_DATA) $(srcdir)/isl.py $(DESTDIR)$(libdir)/$$libisl-gdb.py; esac
+	$(INSTALL_DATA) $(srcdir)/libisl-gdb.py \
+	    $(DESTDIR)$(libdir)/$$libisl-gdb.py; \
+	esac
 
 uninstall-local:
 	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
