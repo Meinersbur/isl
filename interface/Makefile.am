@@ -58,7 +58,7 @@ isl.py: extract_interface libdep.a isl.py.top
 	(cat $(srcdir)/isl.py.top; \
 		./extract_interface$(EXEEXT) --language=python $(includes) \
 			$(srcdir)/all.h) \
-			> isl.py
+			> $@
 
 isl-noexceptions.h: extract_interface libdep.a isl-noexceptions.h.top \
 		isl-noexceptions.h.pre isl-noexceptions.h.bot
@@ -67,7 +67,7 @@ isl-noexceptions.h: extract_interface libdep.a isl-noexceptions.h.top \
 		./extract_interface$(EXEEXT) --language=cpp $(includes) \
 			$(srcdir)/all.h; \
 		cat $(srcdir)/isl-noexceptions.h.bot) \
-			> isl-noexceptions.h
+			> $@
 
 dist-hook: isl.py
 	cp isl.py $(distdir)/
