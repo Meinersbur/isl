@@ -295,20 +295,20 @@ libdep_a_SOURCES = all.c
 
 if HAVE_CLANG
 interface/isl.py: interface/extract_interface libdep.a python/isl.py.top
-	(cat $(srcdir)/python/isl.py.top; \
+	(cat $(srcdir)/python/isl.py.top && \
 		interface/extract_interface$(EXEEXT) --language=python \
 			$(includes) $(srcdir)/all.h) \
-			> $@
+			> $@ || (rm $@ && false)
 
 interface/cpp-checked.h: interface/extract_interface libdep.a \
 		cpp/cpp-checked.h.top \
 		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
-	    $(srcdir)/cpp/cpp-checked.h.pre; \
+	    $(srcdir)/cpp/cpp-checked.h.pre && \
 		interface/extract_interface$(EXEEXT) --language=cpp \
-			$(includes) $(srcdir)/all.h; \
+			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
-			> $@
+			> $@ || (rm $@ && false)
 endif
 
 nodist_pkginclude_HEADERS = \

@@ -35,6 +35,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <stdlib.h>
 #ifdef HAVE_ADT_OWNINGPTR_H
 #include <llvm/ADT/OwningPtr.h>
 #else
@@ -447,15 +448,17 @@ int main(int argc, char *argv[])
 	Diags.getClient()->EndSourceFile();
 
 	generator *gen = NULL;
-	if (Language.compare("python") == 0)
+	if (Language.compare("python") == 0) {
 		gen = new python_generator(consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	else if (Language.compare("cpp") == 0)
+	} else if (Language.compare("cpp") == 0) {
 		gen = new cpp_generator(consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	else
+	} else {
 		cerr << "Language '" << Language << "' not recognized." << endl
 		     << "Not generating bindings." << endl;
+		exit(EXIT_FAILURE);
+	}
 
 	if (gen)
 		gen->generate();
@@ -464,5 +467,5 @@ int main(int argc, char *argv[])
 	delete Clang;
 	llvm::llvm_shutdown();
 
-	return 0;
+	return EXIT_SUCCESS;
 }
