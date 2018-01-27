@@ -95,7 +95,7 @@ static __isl_give isl_id *generate_name(isl_ctx *ctx, int i,
 	__isl_keep isl_ast_build *build)
 {
 	int j;
-	char name[16];
+	char name[23];
 	isl_set *dom = build->domain;
 
 	snprintf(name, sizeof(name), "c%d", i);
