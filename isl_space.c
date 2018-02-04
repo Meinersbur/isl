@@ -821,15 +821,6 @@ isl_bool isl_space_tuple_is_equal(__isl_keep isl_space *space1,
 	return isl_bool_true;
 }
 
-/* This is the old, undocumented, name for isl_space_tuple_is_equal.
- * It will be removed at some point.
- */
-int isl_space_tuple_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
-	__isl_keep isl_space *space2, enum isl_dim_type type2)
-{
-	return isl_space_tuple_is_equal(space1, type1, space2, type2);
-}
-
 static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
