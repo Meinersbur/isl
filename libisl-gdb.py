@@ -64,10 +64,10 @@ class IslPrintCommand (gdb.Command):
 		printer = str_lookup_function(arg)
 
 		if printer == None:
-			print "No isl printer for this type"
+			print("No isl printer for this type")
 			return
 
-		print printer.to_string()
+		print(printer.to_string())
 
 IslPrintCommand()
 
