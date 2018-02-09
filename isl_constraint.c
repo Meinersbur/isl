@@ -18,7 +18,6 @@
 #include <isl_local_space_private.h>
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
-#include <isl/deprecated/constraint_int.h>
 
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
@@ -762,8 +761,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_from_constraint(
-	struct isl_constraint *constraint)
+__isl_give isl_basic_set *isl_basic_set_from_constraint(
+	__isl_take isl_constraint *constraint)
 {
 	if (!constraint)
 		return NULL;

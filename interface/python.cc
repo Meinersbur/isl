@@ -37,217 +37,9 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <clang/AST/Attr.h>
-#include "extract_interface.h"
+
 #include "python.h"
-
-static void die(const char *msg) __attribute__((noreturn));
-
-/* Print error message "msg" and abort.
- */
-static void die(const char *msg)
-{
-	fprintf(stderr, "%s", msg);
-	abort();
-}
-
-/* Return a sequence of the types of which the given type declaration is
- * marked as being a subtype.
- * The order of the types is the opposite of the order in which they
- * appear in the source.  In particular, the first annotation
- * is the one that is closest to the annotated type and the corresponding
- * type is then also the first that will appear in the sequence of types.
- */
-static vector<string> find_superclasses(RecordDecl *decl)
-{
-	vector<string> super;
-
-	if (!decl->hasAttrs())
-		return super;
-
-	string sub = "isl_subclass";
-	size_t len = sub.length();
-	AttrVec attrs = decl->getAttrs();
-	for (AttrVec::const_iterator i = attrs.begin() ; i != attrs.end(); ++i) {
-		const AnnotateAttr *ann = dyn_cast<AnnotateAttr>(*i);
-		if (!ann)
-			continue;
-		string s = ann->getAnnotation().str();
-		if (s.substr(0, len) == sub) {
-			s = s.substr(len + 1, s.length() - len  - 2);
-			super.push_back(s);
-		}
-	}
-
-	return super;
-}
-
-/* Is decl marked as being part of an overloaded method?
- */
-static bool is_overload(Decl *decl)
-{
-	return has_annotation(decl, "isl_overload");
-}
-
-/* Is decl marked as a constructor?
- */
-static bool is_constructor(Decl *decl)
-{
-	return has_annotation(decl, "isl_constructor");
-}
-
-/* Is decl marked as consuming a reference?
- */
-static bool takes(Decl *decl)
-{
-	return has_annotation(decl, "isl_take");
-}
-
-/* Is decl marked as returning a reference that is required to be freed.
- */
-static bool gives(Decl *decl)
-{
-	return has_annotation(decl, "isl_give");
-}
-
-/* isl_class collects all constructors and methods for an isl "class".
- * "name" is the name of the class.
- * "type" is the declaration that introduces the type.
- * "methods" contains the set of methods, grouped by method name.
- * "fn_to_str" is a reference to the *_to_str method of this class, if any.
- * "fn_free" is a reference to the *_free method of this class, if any.
- */
-struct isl_class {
-	string name;
-	RecordDecl *type;
-	set<FunctionDecl *> constructors;
-	map<string, set<FunctionDecl *> > methods;
-	FunctionDecl *fn_to_str;
-	FunctionDecl *fn_free;
-
-	bool is_static(FunctionDecl *method);
-
-	void print(map<string, isl_class> &classes, set<string> &done);
-	void print_constructor(FunctionDecl *method);
-	void print_representation(const string &python_name);
-	void print_method_type(FunctionDecl *fd);
-	void print_method_types();
-	void print_method(FunctionDecl *method, vector<string> super);
-	void print_method_overload(FunctionDecl *method);
-	void print_method(const string &fullname,
-		const set<FunctionDecl *> &methods, vector<string> super);
-};
-
-/* Return the class that has a name that matches the initial part
- * of the name of function "fd" or NULL if no such class could be found.
- */
-static isl_class *method2class(map<string, isl_class> &classes,
-	FunctionDecl *fd)
-{
-	string best;
-	map<string, isl_class>::iterator ci;
-	string name = fd->getNameAsString();
-
-	for (ci = classes.begin(); ci != classes.end(); ++ci) {
-		if (name.substr(0, ci->first.length()) == ci->first)
-			best = ci->first;
-	}
-
-	if (classes.find(best) == classes.end()) {
-		cerr << "Unable to find class of " << name << endl;
-		return NULL;
-	}
-
-	return &classes[best];
-}
-
-/* Is "type" the type "isl_ctx *"?
- */
-static bool is_isl_ctx(QualType type)
-{
-	if (!type->isPointerType())
-		return 0;
-	type = type->getPointeeType();
-	if (type.getAsString() != "isl_ctx")
-		return false;
-
-	return true;
-}
-
-/* Is the first argument of "fd" of type "isl_ctx *"?
- */
-static bool first_arg_is_isl_ctx(FunctionDecl *fd)
-{
-	ParmVarDecl *param;
-
-	if (fd->getNumParams() < 1)
-		return false;
-
-	param = fd->getParamDecl(0);
-	return is_isl_ctx(param->getOriginalType());
-}
-
-/* Is "type" that of a pointer to an isl_* structure?
- */
-static bool is_isl_type(QualType type)
-{
-	if (type->isPointerType()) {
-		string s;
-
-		type = type->getPointeeType();
-		if (type->isFunctionType())
-			return false;
-		s = type.getAsString();
-		return s.substr(0, 4) == "isl_";
-	}
-
-	return false;
-}
-
-/* Is "type" the type isl_bool?
- */
-static bool is_isl_bool(QualType type)
-{
-	string s;
-
-	if (type->isPointerType())
-		return false;
-
-	s = type.getAsString();
-	return s == "isl_bool";
-}
-
-/* Is "type" that of a pointer to a function?
- */
-static bool is_callback(QualType type)
-{
-	if (!type->isPointerType())
-		return false;
-	type = type->getPointeeType();
-	return type->isFunctionType();
-}
-
-/* Is "type" that of "char *" of "const char *"?
- */
-static bool is_string(QualType type)
-{
-	if (type->isPointerType()) {
-		string s = type->getPointeeType().getAsString();
-		return s == "const char" || s == "char";
-	}
-
-	return false;
-}
-
-/* Return the name of the type that "type" points to.
- * The input "type" is assumed to be a pointer type.
- */
-static string extract_type(QualType type)
-{
-	if (type->isPointerType())
-		return type->getPointeeType().getAsString();
-	die("Cannot extract type from non-pointer type");
-}
+#include "generator.h"
 
 /* Drop the "isl_" initial part of the type name "name".
  */
@@ -256,55 +48,14 @@ static string type2python(string name)
 	return name.substr(4);
 }
 
-/* If "method" is overloaded, then drop the suffix of "name"
- * corresponding to the type of the final argument and
- * return the modified name (or the original name if
- * no modifications were made).
- */
-static string drop_type_suffix(string name, FunctionDecl *method)
-{
-	int num_params;
-	ParmVarDecl *param;
-	string type;
-	size_t name_len, type_len;
-
-	if (!is_overload(method))
-		return name;
-
-	num_params = method->getNumParams();
-	param = method->getParamDecl(num_params - 1);
-	type = extract_type(param->getOriginalType());
-	type = type.substr(4);
-	name_len = name.length();
-	type_len = type.length();
-
-	if (name_len > type_len && name.substr(name_len - type_len) == type)
-		name = name.substr(0, name_len - type_len - 1);
-
-	return name;
-}
-
-/* Should "method" be considered to be a static method?
- * That is, is the first argument something other than
- * an instance of the class?
- */
-bool isl_class::is_static(FunctionDecl *method)
-{
-	ParmVarDecl *param = method->getParamDecl(0);
-	QualType type = param->getOriginalType();
-
-	if (!is_isl_type(type))
-		return true;
-	return extract_type(type) != name;
-}
-
 /* Print the header of the method "name" with "n_arg" arguments.
  * If "is_static" is set, then mark the python method as static.
  *
  * If the method is called "from", then rename it to "convert_from"
  * because "from" is a python keyword.
  */
-static void print_method_header(bool is_static, const string &name, int n_arg)
+void python_generator::print_method_header(bool is_static, const string &name,
+	int n_arg)
 {
 	const char *s;
 
@@ -333,8 +84,8 @@ static void print_method_header(bool is_static, const string &name, int n_arg)
  * If "upcast" is not set, then the "super", "name" and "n" arguments
  * to this function are ignored.
  */
-static void print_type_check(const string &type, int pos, bool upcast,
-	const string &super, const string &name, int n)
+void python_generator::print_type_check(const string &type, int pos,
+	bool upcast, const string &super, const string &name, int n)
 {
 	printf("        try:\n");
 	printf("            if not arg%d.__class__ is %s:\n",
@@ -363,7 +114,7 @@ static void print_type_check(const string &type, int pos, bool upcast,
  * If any exception is thrown, the wrapper keeps track of it in exc_info[0]
  * and returns -1.  Otherwise the wrapper returns 0.
  */
-static void print_callback(QualType type, int arg)
+void python_generator::print_callback(QualType type, int arg)
 {
 	const FunctionProtoType *fn = type->getAs<FunctionProtoType>();
 	unsigned n_arg = fn->getNumArgs();
@@ -412,12 +163,12 @@ static void print_callback(QualType type, int arg)
  * If the argument is a callback, then print a reference to
  * the callback wrapper "cb".
  * Otherwise, if the argument is marked as consuming a reference,
- * then pass a copy of the the pointer stored in the corresponding
+ * then pass a copy of the pointer stored in the corresponding
  * argument passed to the Python method.
  * Otherwise, if the argument is a pointer, then pass this pointer itself.
  * Otherwise, pass the argument directly.
  */
-static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
+void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 {
 	ParmVarDecl *param = fd->getParamDecl(arg);
 	QualType type = param->getOriginalType();
@@ -438,12 +189,14 @@ static void print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  *
  * If the return type is a (const) char *, then convert the result
  * to a Python string, raising an error on NULL and freeing
- * the C string if needed.
+ * the C string if needed.  For python 3 compatibility, the string returned
+ * by isl is explicitly decoded as an 'ascii' string.  This is correct
+ * as all strings returned by isl are expected to be 'ascii'.
  *
  * If the return type is isl_bool, then convert the result to
  * a Python boolean, raising an error on isl_bool_error.
  */
-static void print_method_return(FunctionDecl *method)
+void python_generator::print_method_return(FunctionDecl *method)
 {
 	QualType return_type = method->getReturnType();
 
@@ -455,7 +208,8 @@ static void print_method_return(FunctionDecl *method)
 	} else if (is_string(return_type)) {
 		printf("        if res == 0:\n");
 		printf("            raise\n");
-		printf("        string = str(cast(res, c_char_p).value)\n");
+		printf("        string = "
+		       "cast(res, c_char_p).value.decode('ascii')\n");
 
 		if (gives(method))
 			printf("        libc.free(res)\n");
@@ -498,10 +252,11 @@ static void print_method_return(FunctionDecl *method)
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
  */
-void isl_class::print_method(FunctionDecl *method, vector<string> super)
+void python_generator::print_method(const isl_class &clazz,
+	FunctionDecl *method, vector<string> super)
 {
 	string fullname = method->getName();
-	string cname = fullname.substr(name.length() + 1);
+	string cname = fullname.substr(clazz.name.length() + 1);
 	int num_params = method->getNumParams();
 	int drop_user = 0;
 	int drop_ctx = first_arg_is_isl_ctx(method);
@@ -513,7 +268,7 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
 			drop_user = 1;
 	}
 
-	print_method_header(is_static(method), cname,
+	print_method_header(is_static(clazz, method), cname,
 			    num_params - drop_ctx - drop_user);
 
 	for (int i = drop_ctx; i < num_params; ++i) {
@@ -569,14 +324,15 @@ void isl_class::print_method(FunctionDecl *method, vector<string> super)
  * the python method correspond to the arguments expected by "method"
  * and to call "method" if they do.
  */
-void isl_class::print_method_overload(FunctionDecl *method)
+void python_generator::print_method_overload(const isl_class &clazz,
+	FunctionDecl *method)
 {
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
 	int first;
 	string type;
 
-	first = is_static(method) ? 0 : 1;
+	first = is_static(clazz, method) ? 0 : 1;
 
 	printf("        if ");
 	for (int i = first; i < num_params; ++i) {
@@ -612,8 +368,9 @@ void isl_class::print_method_overload(FunctionDecl *method)
  * Otherwise, print an overloaded method with pieces corresponding
  * to each function in "methods".
  */
-void isl_class::print_method(const string &fullname,
-	const set<FunctionDecl *> &methods, vector<string> super)
+void python_generator::print_method(const isl_class &clazz,
+	const string &fullname, const set<FunctionDecl *> &methods,
+	vector<string> super)
 {
 	string cname;
 	set<FunctionDecl *>::const_iterator it;
@@ -622,17 +379,17 @@ void isl_class::print_method(const string &fullname,
 
 	any_method = *methods.begin();
 	if (methods.size() == 1 && !is_overload(any_method)) {
-		print_method(any_method, super);
+		print_method(clazz, any_method, super);
 		return;
 	}
 
-	cname = fullname.substr(name.length() + 1);
+	cname = fullname.substr(clazz.name.length() + 1);
 	num_params = any_method->getNumParams();
 
-	print_method_header(is_static(any_method), cname, num_params);
+	print_method_header(is_static(clazz, any_method), cname, num_params);
 
 	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method_overload(*it);
+		print_method_overload(clazz, *it);
 }
 
 /* Print part of the constructor for this isl_class.
@@ -643,11 +400,16 @@ void isl_class::print_method(const string &fullname,
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
+ *
+ * If the function takes a string argument, the python string is first
+ * encoded as a byte sequence, using 'ascii' as encoding.  This assumes
+ * that all strings passed to isl can be converted to 'ascii'.
  */
-void isl_class::print_constructor(FunctionDecl *cons)
+void python_generator::print_constructor(const isl_class &clazz,
+	FunctionDecl *cons)
 {
 	string fullname = cons->getName();
-	string cname = fullname.substr(name.length() + 1);
+	string cname = fullname.substr(clazz.name.length() + 1);
 	int num_params = cons->getNumParams();
 	int drop_ctx = first_arg_is_isl_ctx(cons);
 
@@ -673,9 +435,10 @@ void isl_class::print_constructor(FunctionDecl *cons)
 		printf("self.ctx");
 	for (int i = drop_ctx; i < num_params; ++i) {
 		ParmVarDecl *param = cons->getParamDecl(i);
+		QualType type = param->getOriginalType();
 		if (i)
 			printf(", ");
-		if (is_isl_type(param->getOriginalType())) {
+		if (is_isl_type(type)) {
 			if (takes(param)) {
 				string type;
 				type = extract_type(param->getOriginalType());
@@ -683,8 +446,11 @@ void isl_class::print_constructor(FunctionDecl *cons)
 					type.c_str(), i - drop_ctx);
 			} else
 				printf("args[%d].ptr", i - drop_ctx);
-		} else
+		} else if (is_string(type)) {
+			printf("args[%d].encode('ascii')", i - drop_ctx);
+		} else {
 			printf("args[%d]", i - drop_ctx);
+		}
 	}
 	printf(")\n");
 	printf("            return\n");
@@ -694,7 +460,8 @@ void isl_class::print_constructor(FunctionDecl *cons)
  * The order of the superclasses is the opposite of the order
  * in which the corresponding annotations appear in the source code.
  */
-static void print_class_header(const string &name, const vector<string> &super)
+void python_generator::print_class_header(const isl_class &clazz,
+	const string &name, const vector<string> &super)
 {
 	printf("class %s", name.c_str());
 	if (super.size() > 0) {
@@ -718,7 +485,7 @@ static void print_class_header(const string &name, const vector<string> &super)
  * then tell ctypes it returns a "c_bool".
  * If "fd" returns a char *, then simply tell ctypes.
  */
-static void print_restype(FunctionDecl *fd)
+void python_generator::print_restype(FunctionDecl *fd)
 {
 	string fullname = fd->getName();
 	QualType type = fd->getReturnType();
@@ -732,7 +499,7 @@ static void print_restype(FunctionDecl *fd)
 
 /* Tell ctypes about the types of the arguments of the function "fd".
  */
-static void print_argtypes(FunctionDecl *fd)
+void python_generator::print_argtypes(FunctionDecl *fd)
 {
 	string fullname = fd->getName();
 	int n = fd->getNumParams();
@@ -752,6 +519,8 @@ static void print_argtypes(FunctionDecl *fd)
 			printf("c_void_p");
 		else if (is_string(type))
 			printf("c_char_p");
+		else if (is_long(type))
+			printf("c_long");
 		else
 			printf("c_int");
 	}
@@ -762,7 +531,7 @@ static void print_argtypes(FunctionDecl *fd)
 
 /* Print type definitions for the method 'fd'.
  */
-void isl_class::print_method_type(FunctionDecl *fd)
+void python_generator::print_method_type(FunctionDecl *fd)
 {
 	print_restype(fd);
 	print_argtypes(fd);
@@ -779,17 +548,21 @@ void isl_class::print_method_type(FunctionDecl *fd)
  *
  * Check the type of the argument before calling the *_to_str function
  * on it in case the method was called on an object from a subclass.
+ *
+ * The return value of the *_to_str function is decoded to a python string
+ * assuming an 'ascii' encoding.  This is necessary for python 3 compatibility.
  */
-void isl_class::print_representation(const string &python_name)
+void python_generator::print_representation(const isl_class &clazz,
+	const string &python_name)
 {
-	if (!fn_to_str)
+	if (!clazz.fn_to_str)
 		return;
 
 	printf("    def __str__(arg0):\n");
 	print_type_check(python_name, 0, false, "", "", -1);
 	printf("        ptr = isl.%s(arg0.ptr)\n",
-		string(fn_to_str->getName()).c_str());
-	printf("        res = str(cast(ptr, c_char_p).value)\n");
+		string(clazz.fn_to_str->getName()).c_str());
+	printf("        res = cast(ptr, c_char_p).value.decode('ascii')\n");
 	printf("        libc.free(ptr)\n");
 	printf("        return res\n");
 	printf("    def __repr__(self):\n");
@@ -807,24 +580,26 @@ void isl_class::print_representation(const string &python_name)
  * To be able to call C functions it is necessary to explicitly set their
  * argument and result types.  Do this for all exported constructors and
  * methods, as well as for the *_to_str method, if it exists.
- * Assuming each exported class has a *_free method,
+ * Assuming each exported class has a *_copy and a *_free method,
  * also unconditionally set the type of such methods.
  */
-void isl_class::print_method_types()
+void python_generator::print_method_types(const isl_class &clazz)
 {
-	set<FunctionDecl *>::iterator in;
-	map<string, set<FunctionDecl *> >::iterator it;
+	set<FunctionDecl *>::const_iterator in;
+	map<string, set<FunctionDecl *> >::const_iterator it;
 
-	for (in = constructors.begin(); in != constructors.end(); ++in)
+	for (in = clazz.constructors.begin(); in != clazz.constructors.end();
+		++in)
 		print_method_type(*in);
 
-	for (it = methods.begin(); it != methods.end(); ++it)
+	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
 		for (in = it->second.begin(); in != it->second.end(); ++in)
 			print_method_type(*in);
 
-	print_method_type(fn_free);
-	if (fn_to_str)
-		print_method_type(fn_to_str);
+	print_method_type(clazz.fn_copy);
+	print_method_type(clazz.fn_free);
+	if (clazz.fn_to_str)
+		print_method_type(clazz.fn_to_str);
 }
 
 /* Print out the definition of this isl_class.
@@ -843,20 +618,20 @@ void isl_class::print_method_types()
  * constructor functions and the return types of those function returning
  * an isl object.
  */
-void isl_class::print(map<string, isl_class> &classes, set<string> &done)
+void python_generator::print(const isl_class &clazz)
 {
-	string p_name = type2python(name);
-	set<FunctionDecl *>::iterator in;
-	map<string, set<FunctionDecl *> >::iterator it;
-	vector<string> super = find_superclasses(type);
+	string p_name = type2python(clazz.name);
+	set<FunctionDecl *>::const_iterator in;
+	map<string, set<FunctionDecl *> >::const_iterator it;
+	vector<string> super = find_superclasses(clazz.type);
 
 	for (unsigned i = 0; i < super.size(); ++i)
 		if (done.find(super[i]) == done.end())
-			classes[super[i]].print(classes, done);
-	done.insert(name);
+			print(classes[super[i]]);
+	done.insert(clazz.name);
 
 	printf("\n");
-	print_class_header(p_name, super);
+	print_class_header(clazz, p_name, super);
 	printf("    def __init__(self, *args, **keywords):\n");
 
 	printf("        if \"ptr\" in keywords:\n");
@@ -864,85 +639,37 @@ void isl_class::print(map<string, isl_class> &classes, set<string> &done)
 	printf("            self.ptr = keywords[\"ptr\"]\n");
 	printf("            return\n");
 
-	for (in = constructors.begin(); in != constructors.end(); ++in)
-		print_constructor(*in);
+	for (in = clazz.constructors.begin(); in != clazz.constructors.end();
+		++in)
+		print_constructor(clazz, *in);
 	printf("        raise Error\n");
 	printf("    def __del__(self):\n");
 	printf("        if hasattr(self, 'ptr'):\n");
-	printf("            isl.%s_free(self.ptr)\n", name.c_str());
+	printf("            isl.%s_free(self.ptr)\n", clazz.name.c_str());
 
-	print_representation(p_name);
+	print_representation(clazz, p_name);
 
-	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method(it->first, it->second, super);
+	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
+		print_method(clazz, it->first, it->second, super);
 
 	printf("\n");
 
-	print_method_types();
+	print_method_types(clazz);
 }
 
-/* Generate a python interface based on the extracted types and functions.
- * We first collect all functions that belong to a certain type,
- * separating constructors from regular methods and keeping track
- * of the _to_str and _free functions, if any, separately.  If there are any
- * overloaded functions, then they are grouped based on their name
- * after removing the argument type suffix.
+/* Generate a python interface based on the extracted types and
+ * functions.
  *
- * Then we print out each class in turn.  If one of these is a subclass
- * of some other class, it will make sure the superclass is printed out first.
+ * Print out each class in turn.  If one of these is a subclass of some
+ * other class, make sure the superclass is printed out first.
+ * functions.
  */
-void generate_python(set<RecordDecl *> &exported_types,
-	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions)
+void python_generator::generate()
 {
-	map<string, isl_class> classes;
 	map<string, isl_class>::iterator ci;
-	set<string> done;
-	map<string, FunctionDecl *> functions_by_name;
-
-	set<FunctionDecl *>::iterator in;
-	for (in = functions.begin(); in != functions.end(); ++in) {
-		FunctionDecl *decl = *in;
-		functions_by_name[decl->getName()] = decl;
-	}
-
-	set<RecordDecl *>::iterator it;
-	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
-		RecordDecl *decl = *it;
-		map<string, FunctionDecl *>::iterator i;
-
-		string name = decl->getName();
-		classes[name].name = name;
-		classes[name].type = decl;
-		classes[name].fn_to_str = NULL;
-		classes[name].fn_free = NULL;
-
-		i = functions_by_name.find(name + "_to_str");
-		if (i != functions_by_name.end())
-			classes[name].fn_to_str = i->second;
-
-		i = functions_by_name.find (name + "_free");
-		if (i == functions_by_name.end())
-			die("No _free function found");
-		classes[name].fn_free = i->second;
-	}
-
-	for (in = exported_functions.begin(); in != exported_functions.end();
-	     ++in) {
-		isl_class *c = method2class(classes, *in);
-		if (!c)
-			continue;
-		if (is_constructor(*in)) {
-			c->constructors.insert(*in);
-		} else {
-			FunctionDecl *method = *in;
-			string fullname = method->getName();
-			fullname = drop_type_suffix(fullname, method);
-			c->methods[fullname].insert(method);
-		}
-	}
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {
 		if (done.find(ci->first) == done.end())
-			ci->second.print(classes, done);
+			print(ci->second);
 	}
 }

@@ -13,7 +13,6 @@
 #include <isl_seq.h>
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
-#include <isl/deprecated/vec_int.h>
 
 isl_ctx *isl_vec_get_ctx(__isl_keep isl_vec *vec)
 {
@@ -30,7 +29,7 @@ uint32_t isl_vec_get_hash(__isl_keep isl_vec *vec)
 	return isl_seq_get_hash(vec->el, vec->size);
 }
 
-struct isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
+__isl_give isl_vec *isl_vec_alloc(struct isl_ctx *ctx, unsigned size)
 {
 	struct isl_vec *vec;
 
@@ -123,6 +122,19 @@ __isl_give isl_vec *isl_vec_expand(__isl_take isl_vec *vec, int pos, int n,
 		}
 	}
 
+	return vec;
+}
+
+/* Create a vector of size "size" with zero-valued elements.
+ */
+__isl_give isl_vec *isl_vec_zero(isl_ctx *ctx, unsigned size)
+{
+	isl_vec *vec;
+
+	vec = isl_vec_alloc(ctx, size);
+	if (!vec)
+		return NULL;
+	isl_seq_clr(vec->el, size);
 	return vec;
 }
 
@@ -238,18 +250,6 @@ int isl_vec_size(__isl_keep isl_vec *vec)
 	return vec ? vec->size : -1;
 }
 
-int isl_vec_get_element(__isl_keep isl_vec *vec, int pos, isl_int *v)
-{
-	if (!vec)
-		return -1;
-
-	if (pos < 0 || pos >= vec->size)
-		isl_die(vec->ctx, isl_error_invalid, "position out of range",
-			return -1);
-	isl_int_set(*v, vec->el[pos]);
-	return 0;
-}
-
 /* Extract the element at position "pos" of "vec".
  */
 __isl_give isl_val *isl_vec_get_element_val(__isl_keep isl_vec *vec, int pos)
@@ -326,6 +326,15 @@ int isl_vec_cmp_element(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2,
 		isl_die(isl_vec_get_ctx(vec1), isl_error_invalid,
 			"position out of range", return 0);
 	return isl_int_cmp(vec1->el[pos], vec2->el[pos]);
+}
+
+/* Does "vec" contain only zero elements?
+ */
+isl_bool isl_vec_is_zero(__isl_keep isl_vec *vec)
+{
+	if (!vec)
+		return isl_bool_error;
+	return isl_seq_first_non_zero(vec->el, vec->size) < 0;
 }
 
 isl_bool isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2)
@@ -430,7 +439,7 @@ void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm)
 /* Given a rational vector, with the denominator in the first element
  * of the vector, round up all coordinates.
  */
-struct isl_vec *isl_vec_ceil(struct isl_vec *vec)
+__isl_give isl_vec *isl_vec_ceil(__isl_take isl_vec *vec)
 {
 	vec = isl_vec_cow(vec);
 	if (!vec)
