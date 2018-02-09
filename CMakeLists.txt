@@ -229,7 +229,6 @@ set (libisl_common_sources
     ${ISL_SOURCE_DIR}/isl_ast.c
     ${ISL_SOURCE_DIR}/isl_ast_codegen.c
     ${ISL_SOURCE_DIR}/isl_ast_graft.c
-    ${ISL_SOURCE_DIR}/isl_band.c
     ${ISL_SOURCE_DIR}/isl_bernstein.c
     ${ISL_SOURCE_DIR}/isl_blk.c
     ${ISL_SOURCE_DIR}/isl_bound.c
@@ -274,11 +273,11 @@ set (libisl_common_sources
     ${ISL_SOURCE_DIR}/isl_scan.c
     ${ISL_SOURCE_DIR}/isl_schedule.c
     ${ISL_SOURCE_DIR}/isl_schedule_band.c
+    ${ISL_SOURCE_DIR}/isl_schedule_constraints.c
     ${ISL_SOURCE_DIR}/isl_schedule_node.c
     ${ISL_SOURCE_DIR}/isl_schedule_read.c
     ${ISL_SOURCE_DIR}/isl_schedule_tree.c
     ${ISL_SOURCE_DIR}/isl_scheduler.c
-    ${ISL_SOURCE_DIR}/isl_schedule_constraints.c
     ${ISL_SOURCE_DIR}/isl_seq.c
     ${ISL_SOURCE_DIR}/isl_set_list.c
     ${ISL_SOURCE_DIR}/isl_sort.c
