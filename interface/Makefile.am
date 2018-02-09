@@ -48,13 +48,6 @@ isl_test_cpp_noexceptions_LDADD = ../libisl.la @MP_LIBS@
 BUILT_SOURCES = isl-noexceptions.h
 CLEANFILES = isl.py isl-noexceptions.h
 
-EXTRA_DIST = \
-	all.h \
-	isl.py.top \
-	isl.py \
-	isl-noexceptions.h
-
-
 # dummy library that captures the dependencies on all headers
 # that are relevant for the bindings
 noinst_LIBRARIES = libdep.a

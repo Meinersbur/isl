@@ -135,7 +135,9 @@ AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_FILES(isl_srcdir.c)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
-AC_CONFIG_FILES(interface/Makefile)
+if test $with_clang = system; then
+	AC_CONFIG_FILES(interface/Makefile)
+fi
 AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
 AC_CONFIG_FILES([codegen_test.sh], [chmod +x codegen_test.sh])
 AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])

@@ -13,17 +13,6 @@ CLEANFILES = \
 	manual.bcf \
 	manual.run.xml
 
-EXTRA_DIST = \
-	CodingStyle \
-	SubmittingPatches \
-	implementation.tex \
-	isl.bib \
-	mypod2latex \
-	manual.tex \
-	reading.tex \
-	user.pod \
-	manual.pdf
-
 if GENERATE_DOC
 export TEXINPUTS := $(srcdir):$(TEXINPUTS)
 export BIBINPUTS := $(srcdir):$(BIBINPUTS)
@@ -31,16 +20,13 @@ export BSTINPUTS := $(srcdir):$(BSTINPUTS)
 
 user.tex: user.pod
 	$(PERL) $(srcdir)/mypod2latex $< $@
-
 manual.pdf: manual.tex user.tex $(srcdir)/implementation.tex reading.tex
 	(cd ..; echo "@GIT_HEAD_VERSION@") > version.tex
 	$(PDFLATEX) $<
 	biber manual
 	$(PDFLATEX) $<
 	$(PDFLATEX) $<
-
 user.html: user.pod
 	(cd ..; echo "@GIT_HEAD_VERSION@") > version
 	$(POD2HTML) --infile=$< --outfile=$@ --title="Integer Set Library: Manual [version `cat version`]"
-
 endif
