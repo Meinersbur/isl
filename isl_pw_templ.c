@@ -100,6 +100,41 @@ error:
 	return NULL;
 }
 
+/* Does the space of "set" correspond to that of the domain of "el".
+ */
+static isl_bool FN(PW,compatible_domain)(__isl_keep EL *el,
+	__isl_keep isl_set *set)
+{
+	isl_bool ok;
+	isl_space *el_space, *set_space;
+
+	if (!set || !el)
+		return isl_bool_error;
+	set_space = isl_set_get_space(set);
+	el_space = FN(EL,get_space)(el);
+	ok = isl_space_is_domain_internal(set_space, el_space);
+	isl_space_free(el_space);
+	isl_space_free(set_space);
+	return ok;
+}
+
+/* Check that the space of "set" corresponds to that of the domain of "el".
+ */
+static isl_stat FN(PW,check_compatible_domain)(__isl_keep EL *el,
+	__isl_keep isl_set *set)
+{
+	isl_bool ok;
+
+	ok = FN(PW,compatible_domain)(el, set);
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"incompatible spaces", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 #ifdef HAS_TYPE
 __isl_give PW *FN(PW,alloc)(enum isl_fold type,
 	__isl_take isl_set *set, __isl_take EL *el)
@@ -109,7 +144,7 @@ __isl_give PW *FN(PW,alloc)(__isl_take isl_set *set, __isl_take EL *el)
 {
 	PW *pw;
 
-	if (!set || !el)
+	if (FN(PW,check_compatible_domain)(el, set) < 0)
 		goto error;
 
 #ifdef HAS_TYPE
@@ -269,6 +304,7 @@ error:
 __isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_space *model)
 {
 	isl_ctx *ctx;
+	isl_bool equal_params;
 
 	if (!pw || !model)
 		goto error;
@@ -280,7 +316,10 @@ __isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_space *mode
 	if (!isl_space_has_named_params(pw->dim))
 		isl_die(ctx, isl_error_invalid,
 			"input has unnamed parameters", goto error);
-	if (!isl_space_match(pw->dim, isl_dim_param, model, isl_dim_param)) {
+	equal_params = isl_space_has_equal_params(pw->dim, model);
+	if (equal_params < 0)
+		goto error;
+	if (!equal_params) {
 		isl_reordering *exp;
 
 		model = isl_space_drop_dims(model, isl_dim_in,
@@ -306,10 +345,14 @@ static __isl_give PW *FN(PW,align_params_pw_pw_and)(__isl_take PW *pw1,
 	__isl_give PW *(*fn)(__isl_take PW *pw1, __isl_take PW *pw2))
 {
 	isl_ctx *ctx;
+	isl_bool equal_params;
 
 	if (!pw1 || !pw2)
 		goto error;
-	if (isl_space_match(pw1->dim, isl_dim_param, pw2->dim, isl_dim_param))
+	equal_params = isl_space_has_equal_params(pw1->dim, pw2->dim);
+	if (equal_params < 0)
+		goto error;
+	if (equal_params)
 		return fn(pw1, pw2);
 	ctx = FN(PW,get_ctx)(pw1);
 	if (!isl_space_has_named_params(pw1->dim) ||
@@ -330,10 +373,14 @@ static __isl_give PW *FN(PW,align_params_pw_set_and)(__isl_take PW *pw,
 	__isl_give PW *(*fn)(__isl_take PW *pw, __isl_take isl_set *set))
 {
 	isl_ctx *ctx;
+	isl_bool aligned;
 
 	if (!pw || !set)
 		goto error;
-	if (isl_space_match(pw->dim, isl_dim_param, set->dim, isl_dim_param))
+	aligned = isl_set_space_has_equal_params(set, pw->dim);
+	if (aligned < 0)
+		goto error;
+	if (aligned)
 		return fn(pw, set);
 	ctx = FN(PW,get_ctx)(pw);
 	if (!isl_space_has_named_params(pw->dim) ||
@@ -935,6 +982,7 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 {
 	int i;
 	int is_universe;
+	isl_bool aligned;
 	isl_basic_set *hull = NULL;
 
 	if (!pw || !context)
@@ -953,8 +1001,10 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		return pw;
 	}
 
-	if (!isl_space_match(pw->dim, isl_dim_param,
-				context->dim, isl_dim_param)) {
+	aligned = isl_set_space_has_equal_params(context, pw->dim);
+	if (aligned < 0)
+		goto error;
+	if (!aligned) {
 		pw = FN(PW,align_params)(pw, isl_set_get_space(context));
 		context = isl_set_align_params(context, FN(PW,get_space)(pw));
 	}
@@ -1449,9 +1499,16 @@ __isl_give isl_val *FN(PW,min)(__isl_take PW *pw)
 }
 #endif
 
+/* Return the space of "pw".
+ */
+__isl_keep isl_space *FN(PW,peek_space)(__isl_keep PW *pw)
+{
+	return pw ? pw->dim : NULL;
+}
+
 __isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
 {
-	return pw ? isl_space_copy(pw->dim) : NULL;
+	return isl_space_copy(FN(PW,peek_space)(pw));
 }
 
 __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
@@ -2041,12 +2098,16 @@ static __isl_give PW *FN(PW,align_params_pw_multi_aff_and)(__isl_take PW *pw,
 	__isl_give PW *(*fn)(__isl_take PW *pw, __isl_take isl_multi_aff *ma))
 {
 	isl_ctx *ctx;
+	isl_bool equal_params;
 	isl_space *ma_space;
 
 	ma_space = isl_multi_aff_get_space(ma);
 	if (!pw || !ma || !ma_space)
 		goto error;
-	if (isl_space_match(pw->dim, isl_dim_param, ma_space, isl_dim_param)) {
+	equal_params = isl_space_has_equal_params(pw->dim, ma_space);
+	if (equal_params < 0)
+		goto error;
+	if (equal_params) {
 		isl_space_free(ma_space);
 		return fn(pw, ma);
 	}
@@ -2071,12 +2132,16 @@ static __isl_give PW *FN(PW,align_params_pw_pw_multi_aff_and)(__isl_take PW *pw,
 		__isl_take isl_pw_multi_aff *ma))
 {
 	isl_ctx *ctx;
+	isl_bool equal_params;
 	isl_space *pma_space;
 
 	pma_space = isl_pw_multi_aff_get_space(pma);
 	if (!pw || !pma || !pma_space)
 		goto error;
-	if (isl_space_match(pw->dim, isl_dim_param, pma_space, isl_dim_param)) {
+	equal_params = isl_space_has_equal_params(pw->dim, pma_space);
+	if (equal_params < 0)
+		goto error;
+	if (equal_params) {
 		isl_space_free(pma_space);
 		return fn(pw, pma);
 	}

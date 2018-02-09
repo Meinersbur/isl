@@ -260,20 +260,20 @@ __isl_give isl_pw_multi_aff *isl_tab_basic_map_partial_lexopt_pw_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, unsigned flags);
 
-/* An isl_region represents a sequence of consecutive variables.
+/* An isl_trivial_region represents a non-triviality region.
+ * The region is trivial if applying "trivial" to a given sequence
+ * of variables results in a zero vector.
  * pos is the location (starting at 0) of the first variable in the sequence.
  */
-struct isl_region {
+struct isl_trivial_region {
 	int pos;
-	int len;
+	isl_mat *trivial;
 };
 
 __isl_give isl_vec *isl_tab_basic_set_non_trivial_lexmin(
 	__isl_take isl_basic_set *bset, int n_op, int n_region,
-	struct isl_region *region,
+	struct isl_trivial_region *region,
 	int (*conflict)(int con, void *user), void *user);
-__isl_give isl_vec *isl_tab_basic_set_non_neg_lexmin(
-	__isl_take isl_basic_set *bset);
 
 struct isl_tab_lexmin;
 typedef struct isl_tab_lexmin isl_tab_lexmin;
@@ -283,6 +283,8 @@ __isl_give isl_tab_lexmin *isl_tab_lexmin_from_basic_set(
 int isl_tab_lexmin_dim(__isl_keep isl_tab_lexmin *tl);
 __isl_give isl_tab_lexmin *isl_tab_lexmin_add_eq(__isl_take isl_tab_lexmin *tl,
 	isl_int *eq);
+__isl_give isl_tab_lexmin *isl_tab_lexmin_cut_to_integer(
+	__isl_take isl_tab_lexmin *tl);
 __isl_give isl_vec *isl_tab_lexmin_get_solution(__isl_keep isl_tab_lexmin *tl);
 __isl_null isl_tab_lexmin *isl_tab_lexmin_free(__isl_take isl_tab_lexmin *tl);
 
@@ -306,23 +308,24 @@ int isl_tab_min_at_most_neg_one(struct isl_tab *tab, struct isl_tab_var *var);
 int isl_tab_sign_of_max(struct isl_tab *tab, int con);
 int isl_tab_kill_col(struct isl_tab *tab, int col) WARN_UNUSED;
 
-int isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type) WARN_UNUSED;
-int isl_tab_push_var(struct isl_tab *tab,
+isl_stat isl_tab_push(struct isl_tab *tab, enum isl_tab_undo_type type)
+	WARN_UNUSED;
+isl_stat isl_tab_push_var(struct isl_tab *tab,
 	enum isl_tab_undo_type type, struct isl_tab_var *var) WARN_UNUSED;
-int isl_tab_push_basis(struct isl_tab *tab) WARN_UNUSED;
+isl_stat isl_tab_push_basis(struct isl_tab *tab) WARN_UNUSED;
 
 struct isl_tab *isl_tab_init_samples(struct isl_tab *tab) WARN_UNUSED;
 int isl_tab_add_sample(struct isl_tab *tab,
 	__isl_take isl_vec *sample) WARN_UNUSED;
 struct isl_tab *isl_tab_drop_sample(struct isl_tab *tab, int s);
-int isl_tab_save_samples(struct isl_tab *tab) WARN_UNUSED;
+isl_stat isl_tab_save_samples(struct isl_tab *tab) WARN_UNUSED;
 
 struct isl_tab *isl_tab_detect_equalities(struct isl_tab *tab,
 	struct isl_tab *tab_cone) WARN_UNUSED;
 isl_bool isl_tab_is_constant(struct isl_tab *tab, int var, isl_int *value);
 isl_stat isl_tab_detect_constants(struct isl_tab *tab);
 
-int isl_tab_push_callback(struct isl_tab *tab,
+isl_stat isl_tab_push_callback(struct isl_tab *tab,
 	struct isl_tab_callback *callback) WARN_UNUSED;
 
 int isl_tab_insert_div(struct isl_tab *tab, int pos, __isl_keep isl_vec *div,

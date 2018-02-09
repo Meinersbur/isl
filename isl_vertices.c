@@ -35,15 +35,15 @@ __isl_give isl_vertices *isl_vertices_copy(__isl_keep isl_vertices *vertices)
 	return vertices;
 }
 
-void isl_vertices_free(__isl_take isl_vertices *vertices)
+__isl_null isl_vertices *isl_vertices_free(__isl_take isl_vertices *vertices)
 {
 	int i;
 
 	if (!vertices)
-		return;
+		return NULL;
 
 	if (--vertices->ref > 0)
-		return;
+		return NULL;
 
 	for (i = 0; i < vertices->n_vertices; ++i) {
 		isl_basic_set_free(vertices->v[i].vertex);
@@ -59,6 +59,8 @@ void isl_vertices_free(__isl_take isl_vertices *vertices)
 
 	isl_basic_set_free(vertices->bset);
 	free(vertices);
+
+	return NULL;
 }
 
 struct isl_vertex_list {
@@ -66,7 +68,7 @@ struct isl_vertex_list {
 	struct isl_vertex_list *next;
 };
 
-static void free_vertex_list(struct isl_vertex_list *list)
+static struct isl_vertex_list *free_vertex_list(struct isl_vertex_list *list)
 {
 	struct isl_vertex_list *next;
 
@@ -76,6 +78,8 @@ static void free_vertex_list(struct isl_vertex_list *list)
 		isl_basic_set_free(list->v.dom);
 		free(list);
 	}
+
+	return NULL;
 }
 
 static __isl_give isl_vertices *vertices_from_list(__isl_keep isl_basic_set *bset,
@@ -223,28 +227,6 @@ static __isl_give isl_vertices *vertices_0D(__isl_keep isl_basic_set *bset)
 error:
 	isl_vertices_free(vertices);
 	return NULL;
-}
-
-static int isl_mat_rank(__isl_keep isl_mat *mat)
-{
-	int row, col;
-	isl_mat *H;
-
-	H = isl_mat_left_hermite(isl_mat_copy(mat), 0, NULL, NULL);
-	if (!H)
-		return -1;
-
-	for (col = 0; col < H->n_col; ++col) {
-		for (row = 0; row < H->n_row; ++row)
-			if (!isl_int_is_zero(H->row[row][col]))
-				break;
-		if (row == H->n_row)
-			break;
-	}
-
-	isl_mat_free(H);
-
-	return col;
 }
 
 /* Is the row pointed to by "f" linearly independent of the "n" first
@@ -997,23 +979,6 @@ isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex)
 int isl_vertex_get_id(__isl_keep isl_vertex *vertex)
 {
 	return vertex ? vertex->id : -1;
-}
-
-__isl_give isl_basic_set *isl_basic_set_set_integral(__isl_take isl_basic_set *bset)
-{
-	if (!bset)
-		return NULL;
-
-	if (!ISL_F_ISSET(bset, ISL_BASIC_MAP_RATIONAL))
-		return bset;
-
-	bset = isl_basic_set_cow(bset);
-	if (!bset)
-		return NULL;
-
-	ISL_F_CLR(bset, ISL_BASIC_MAP_RATIONAL);
-
-	return isl_basic_set_finalize(bset);
 }
 
 /* Return the activity domain of the vertex "vertex".

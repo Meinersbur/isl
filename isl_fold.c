@@ -20,7 +20,6 @@
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
 #include <isl_config.h>
-#include <isl/deprecated/polynomial_int.h>
 
 enum isl_fold isl_fold_type_negate(enum isl_fold type)
 {
@@ -946,10 +945,8 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_fold_pw_
 
 	if (!part || !u)
 		goto error;
-
-	isl_assert(u->space->ctx,
-	    isl_space_match(part->dim, isl_dim_param, u->space, isl_dim_param),
-	    goto error);
+	if (isl_space_check_equal_params(part->dim, u->space) < 0)
+		goto error;
 
 	entry = isl_union_pw_qpolynomial_fold_find_part_entry(u, part->dim, 1);
 	if (!entry)
@@ -1499,7 +1496,7 @@ static isl_bool join_compatible(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
 	isl_bool m;
-	m = isl_space_match(space1, isl_dim_param, space2, isl_dim_param);
+	m = isl_space_has_equal_params(space1, space2);
 	if (m < 0 || !m)
 		return m;
 	return isl_space_tuple_is_equal(space1, isl_dim_out,
