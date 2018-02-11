@@ -9219,28 +9219,33 @@ int isl_basic_set_compare_at(struct isl_basic_set *bset1,
 int isl_basic_set_follows_at(__isl_keep isl_basic_set *bset1,
 	__isl_keep isl_basic_set *bset2, int pos)
 {
-	isl_int opt;
-	enum isl_lp_result res;
-	int cmp;
+	isl_bool empty;
+	isl_basic_map *bmap;
+	unsigned dim1;
 
-	isl_int_init(opt);
-
-	res = basic_set_maximal_difference_at(bset1, bset2, pos, &opt);
-
-	if (res == isl_lp_empty)
-		cmp = -1;
-	else if ((res == isl_lp_ok && isl_int_is_pos(opt)) ||
-		  res == isl_lp_unbounded)
-		cmp = 1;
-	else if (res == isl_lp_ok && isl_int_is_neg(opt))
-		cmp = -1;
-	else if (res == isl_lp_ok)
-		cmp = 0;
-	else
-		cmp = -2;
-
-	isl_int_clear(opt);
-	return cmp;
+	dim1 = isl_basic_set_dim(bset1, isl_dim_set);
+	bmap = join_initial(bset1, bset2, pos);
+	bmap = isl_basic_map_order_ge(bmap, isl_dim_out, 0,
+					    isl_dim_out, dim1 - pos);
+	empty = isl_basic_map_is_empty(bmap);
+	if (empty < 0)
+		goto error;
+	if (empty) {
+		isl_basic_map_free(bmap);
+		return -1;
+	}
+	bmap = isl_basic_map_order_gt(bmap, isl_dim_out, 0,
+					    isl_dim_out, dim1 - pos);
+	empty = isl_basic_map_is_empty(bmap);
+	if (empty < 0)
+		goto error;
+	isl_basic_map_free(bmap);
+	if (empty)
+		return 0;
+	return 1;
+error:
+	isl_basic_map_free(bmap);
+	return -2;
 }
 
 /* Given two sets set1 and set2, check whether
