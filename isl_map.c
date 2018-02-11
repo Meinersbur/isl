@@ -9107,6 +9107,24 @@ struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
 	return set_from_map(isl_map_remove_empty_parts(set_to_map(set)));
 }
 
+/* Create a binary relation that maps the shared initial "pos" dimensions
+ * of "bset1" and "bset2" to the remaining dimensions of "bset1" and "bset2".
+ */
+static __isl_give isl_basic_map *join_initial(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2, int pos)
+{
+	isl_basic_map *bmap1;
+	isl_basic_map *bmap2;
+
+	bmap1 = isl_basic_map_from_range(isl_basic_set_copy(bset1));
+	bmap2 = isl_basic_map_from_range(isl_basic_set_copy(bset2));
+	bmap1 = isl_basic_map_move_dims(bmap1, isl_dim_in, 0,
+					isl_dim_out, 0, pos);
+	bmap2 = isl_basic_map_move_dims(bmap2, isl_dim_in, 0,
+					isl_dim_out, 0, pos);
+	return isl_basic_map_range_product(bmap1, bmap2);
+}
+
 /* Given two basic sets bset1 and bset2, compute the maximal difference
  * between the values of dimension pos in bset1 and those in bset2
  * for any common value of the parameters and dimensions preceding pos.
@@ -9116,7 +9134,6 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 	int pos, isl_int *opt)
 {
 	isl_basic_map *bmap1;
-	isl_basic_map *bmap2;
 	struct isl_ctx *ctx;
 	struct isl_vec *obj;
 	unsigned total;
@@ -9130,13 +9147,7 @@ static enum isl_lp_result basic_set_maximal_difference_at(
 	nparam = isl_basic_set_n_param(bset1);
 	dim1 = isl_basic_set_n_dim(bset1);
 
-	bmap1 = isl_basic_map_from_range(isl_basic_set_copy(bset1));
-	bmap2 = isl_basic_map_from_range(isl_basic_set_copy(bset2));
-	bmap1 = isl_basic_map_move_dims(bmap1, isl_dim_in, 0,
-					isl_dim_out, 0, pos);
-	bmap2 = isl_basic_map_move_dims(bmap2, isl_dim_in, 0,
-					isl_dim_out, 0, pos);
-	bmap1 = isl_basic_map_range_product(bmap1, bmap2);
+	bmap1 = join_initial(bset1, bset2, pos);
 	if (!bmap1)
 		return isl_lp_error;
 
