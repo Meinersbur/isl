@@ -1164,7 +1164,7 @@ static int is_obviously_nonneg(struct isl_tab *tab, int row)
  * Pivoting with column c will increment the sample value by a non-negative
  * constant times a_{V,c}/a_{r,c}, with a_{V,c} the elements of column c
  * corresponding to the non-parametric variables.
- * If variable v appears in a column c_v, the a_{v,c} = 1 iff c = c_v,
+ * If variable v appears in a column c_v, then a_{v,c} = 1 iff c = c_v,
  * with all other entries in this virtual row equal to zero.
  * If variable v appears in a row, then a_{v,c} is the element in column c
  * of that row.
