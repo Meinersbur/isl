@@ -41,6 +41,11 @@ struct isl_pw_aff {
 	struct isl_pw_aff_piece p[1];
 };
 
+#undef PW
+#define PW isl_pw_aff
+
+#include <isl_pw_templ.h>
+
 #undef EL
 #define EL isl_pw_aff
 
@@ -61,6 +66,11 @@ struct isl_pw_multi_aff {
 	size_t size;
 	struct isl_pw_multi_aff_piece p[1];
 };
+
+#undef PW
+#define PW isl_pw_multi_aff
+
+#include <isl_pw_templ.h>
 
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
 	__isl_take isl_vec *v);

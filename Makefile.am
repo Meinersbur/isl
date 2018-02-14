@@ -368,6 +368,7 @@ EXTRA_DIST = \
 	isl_power_templ.c \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
+	isl_pw_templ.h \
 	isl_pw_hash.c \
 	isl_pw_union_opt.c \
 	read_in_string_templ.c \
