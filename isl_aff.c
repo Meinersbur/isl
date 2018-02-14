@@ -2639,7 +2639,6 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 0
 
-#define NO_EVAL
 #define NO_OPT
 #define NO_LIFT
 #define NO_MORPH
@@ -4242,7 +4241,6 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define DEFAULT_IS_ZERO 0
 
 #define NO_SUB
-#define NO_EVAL
 #define NO_OPT
 #define NO_INVOLVES_DIMS
 #define NO_INSERT_DIMS

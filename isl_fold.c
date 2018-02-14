@@ -685,6 +685,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 #define NO_PULLBACK
 
 #include <isl_pw_templ.c>
+#include <isl_pw_eval.c>
 
 #undef UNION
 #define UNION isl_union_pw_qpolynomial_fold
