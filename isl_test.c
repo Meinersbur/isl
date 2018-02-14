@@ -641,6 +641,36 @@ static int test_dim(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that "val" is equal to the value described by "str".
+ * If "str" is "NaN", then check for a NaN value explicitly.
+ */
+static isl_stat val_check_equal(__isl_keep isl_val *val, const char *str)
+{
+	isl_bool ok, is_nan;
+	isl_ctx *ctx;
+	isl_val *res;
+
+	if (!val)
+		return isl_stat_error;
+
+	ctx = isl_val_get_ctx(val);
+	res = isl_val_read_from_str(ctx, str);
+	is_nan = isl_val_is_nan(res);
+	if (is_nan < 0)
+		ok = isl_bool_error;
+	else if (is_nan)
+		ok = isl_val_is_nan(val);
+	else
+		ok = isl_val_eq(val, res);
+	isl_val_free(res);
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected result", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 struct {
 	__isl_give isl_val *(*op)(__isl_take isl_val *v);
 	const char *arg;
@@ -700,29 +730,19 @@ struct {
 static int test_un_val(isl_ctx *ctx)
 {
 	int i;
-	isl_val *v, *res;
+	isl_val *v;
 	__isl_give isl_val *(*fn)(__isl_take isl_val *v);
-	isl_bool ok, is_nan;
 
 	for (i = 0; i < ARRAY_SIZE(val_un_tests); ++i) {
+		isl_stat r;
+
 		v = isl_val_read_from_str(ctx, val_un_tests[i].arg);
-		res = isl_val_read_from_str(ctx, val_un_tests[i].res);
 		fn = val_un_tests[i].op;
 		v = fn(v);
-		is_nan = isl_val_is_nan(res);
-		if (is_nan < 0)
-			ok = isl_bool_error;
-		else if (is_nan)
-			ok = isl_val_is_nan(v);
-		else
-			ok = isl_val_eq(v, res);
+		r = val_check_equal(v, val_un_tests[i].res);
 		isl_val_free(v);
-		isl_val_free(res);
-		if (ok < 0)
+		if (r < 0)
 			return -1;
-		if (!ok)
-			isl_die(ctx, isl_error_unknown,
-				"unexpected result", return -1);
 	}
 
 	return 0;
