@@ -5755,6 +5755,9 @@ The following functions evaluate a function in a point.
 	__isl_give isl_val *isl_aff_eval(
 		__isl_take isl_aff *aff,
 		__isl_take isl_point *pnt);
+	__isl_give isl_val *isl_pw_aff_eval(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_point *pnt);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_val *isl_pw_qpolynomial_eval(
@@ -5771,6 +5774,9 @@ The following functions evaluate a function in a point.
 		__isl_take isl_point *pnt);
 
 These functions return NaN when evaluated at a void point.
+Note that C<isl_pw_aff_eval> returns NaN when the function is evaluated outside
+its definition domain, while C<isl_pw_qpolynomial_eval> returns zero
+when the function is evaluated outside its explicit domain.
 
 =item * Dimension manipulation
 

@@ -2644,6 +2644,7 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+#include <isl_pw_eval.c>
 #include <isl_pw_hash.c>
 #include <isl_pw_union_opt.c>
 

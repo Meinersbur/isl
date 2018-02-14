@@ -6817,13 +6817,75 @@ static int test_eval_2(isl_ctx *ctx)
 	return 0;
 }
 
-/* Perform basic polynomial evaluation tests.
+/* Inputs for isl_pw_aff_eval test.
+ * "f" is the affine function.
+ * "p" is the point where the function should be evaluated.
+ * "res" is the expected result.
+ */
+struct {
+	const char *f;
+	const char *p;
+	const char *res;
+} aff_eval_tests[] = {
+	{ "{ [i] -> [2 * i] }", "{ [4] }", "8" },
+	{ "{ [i] -> [2 * i] }", "{ [x] : false }", "NaN" },
+	{ "{ [i] -> [i + floor(i/2) + floor(i/3)] }", "{ [0] }", "0" },
+	{ "{ [i] -> [i + floor(i/2) + floor(i/3)] }", "{ [1] }", "1" },
+	{ "{ [i] -> [i + floor(i/2) + floor(i/3)] }", "{ [2] }", "3" },
+	{ "{ [i] -> [i + floor(i/2) + floor(i/3)] }", "{ [3] }", "5" },
+	{ "{ [i] -> [i + floor(i/2) + floor(i/3)] }", "{ [4] }", "7" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [0] }", "0" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [1] }", "0" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [2] }", "0" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [3] }", "0" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [4] }", "1" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [6] }", "1" },
+	{ "{ [i] -> [floor((3 * floor(i/2))/5)] }", "{ [8] }", "2" },
+	{ "{ [i] -> [i] : i > 0; [i] -> [-i] : i < 0 }", "{ [4] }", "4" },
+	{ "{ [i] -> [i] : i > 0; [i] -> [-i] : i < 0 }", "{ [-2] }", "2" },
+	{ "{ [i] -> [i] : i > 0; [i] -> [-i] : i < 0 }", "{ [0] }", "NaN" },
+	{ "[N] -> { [2 * N] }", "[N] -> { : N = 4 }", "8" },
+	{ "{ [i, j] -> [(i + j)/2] }", "{ [1, 1] }", "1" },
+	{ "{ [i, j] -> [(i + j)/2] }", "{ [1, 2] }", "3/2" },
+	{ "{ [i] -> [i] : i mod 2 = 0 }", "{ [4] }", "4" },
+	{ "{ [i] -> [i] : i mod 2 = 0 }", "{ [3] }", "NaN" },
+	{ "{ [i] -> [i] : i mod 2 = 0 }", "{ [x] : false }", "NaN" },
+};
+
+/* Perform basic isl_pw_aff_eval tests.
+ */
+static int test_eval_aff(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(aff_eval_tests); ++i) {
+		isl_stat r;
+		isl_pw_aff *pa;
+		isl_set *set;
+		isl_point *pnt;
+		isl_val *v;
+
+		pa = isl_pw_aff_read_from_str(ctx, aff_eval_tests[i].f);
+		set = isl_set_read_from_str(ctx, aff_eval_tests[i].p);
+		pnt = isl_set_sample_point(set);
+		v = isl_pw_aff_eval(pa, pnt);
+		r = val_check_equal(v, aff_eval_tests[i].res);
+		isl_val_free(v);
+		if (r < 0)
+			return -1;
+	}
+	return 0;
+}
+
+/* Perform basic evaluation tests.
  */
 static int test_eval(isl_ctx *ctx)
 {
 	if (test_eval_1(ctx) < 0)
 		return -1;
 	if (test_eval_2(ctx) < 0)
+		return -1;
+	if (test_eval_aff(ctx) < 0)
 		return -1;
 	return 0;
 }
