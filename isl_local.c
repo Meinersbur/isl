@@ -9,8 +9,9 @@
 
 #include <isl_mat_private.h>
 #include <isl_seq.h>
+#include <isl_local.h>
 
-/* Given a matrix "div" representing local variables,
+/* Given local variables "local",
  * is the variable at position "pos" marked as not having
  * an explicit representation?
  * Note that even if this variable is not marked in this way and therefore
@@ -18,47 +19,50 @@
  * depend (indirectly) on other local variables that do not
  * have an explicit representation.
  */
-isl_bool isl_local_div_is_marked_unknown(__isl_keep isl_mat *div, int pos)
+isl_bool isl_local_div_is_marked_unknown(__isl_keep isl_local *local, int pos)
 {
-	if (!div)
+	isl_mat *mat = local;
+
+	if (!local)
 		return isl_bool_error;
-	if (pos < 0 || pos >= div->n_row)
-		isl_die(isl_mat_get_ctx(div), isl_error_invalid,
+	if (pos < 0 || pos >= mat->n_row)
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
 			"position out of bounds", return isl_bool_error);
-	return isl_int_is_zero(div->row[pos][0]);
+	return isl_int_is_zero(mat->row[pos][0]);
 }
 
-/* Given a matrix "div" representing local variables,
+/* Given local variables "local",
  * does the variable at position "pos" have a complete explicit representation?
  * Having a complete explicit representation requires not only
  * an explicit representation, but also that all local variables
  * that appear in this explicit representation in turn have
  * a complete explicit representation.
  */
-isl_bool isl_local_div_is_known(__isl_keep isl_mat *div, int pos)
+isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 {
 	isl_bool marked;
 	int i, n, off;
+	isl_mat *mat = local;
 
-	if (!div)
+	if (!local)
 		return isl_bool_error;
-	if (pos < 0 || pos >= div->n_row)
-		isl_die(isl_mat_get_ctx(div), isl_error_invalid,
+	if (pos < 0 || pos >= mat->n_row)
+		isl_die(isl_mat_get_ctx(mat), isl_error_invalid,
 			"position out of bounds", return isl_bool_error);
 
-	marked = isl_local_div_is_marked_unknown(div, pos);
+	marked = isl_local_div_is_marked_unknown(local, pos);
 	if (marked < 0 || marked)
 		return isl_bool_not(marked);
 
-	n = isl_mat_rows(div);
-	off = isl_mat_cols(div) - n;
+	n = isl_mat_rows(mat);
+	off = isl_mat_cols(mat) - n;
 
 	for (i = n - 1; i >= 0; --i) {
 		isl_bool known;
 
-		if (isl_int_is_zero(div->row[pos][off + i]))
+		if (isl_int_is_zero(mat->row[pos][off + i]))
 			continue;
-		known = isl_local_div_is_known(div, i);
+		known = isl_local_div_is_known(local, i);
 		if (known < 0 || !known)
 			return known;
 	}
@@ -66,49 +70,51 @@ isl_bool isl_local_div_is_known(__isl_keep isl_mat *div, int pos)
 	return isl_bool_true;
 }
 
-/* Compare two matrices representing local variables, defined over
+/* Compare two sets of local variables, defined over
  * the same space.
  *
- * Return -1 if "div1" is "smaller" than "div2", 1 if "div1" is "greater"
- * than "div2" and 0 if they are equal.
+ * Return -1 if "local1" is "smaller" than "local2", 1 if "local1" is "greater"
+ * than "local2" and 0 if they are equal.
  *
  * The order is fairly arbitrary.  We do "prefer" divs that only involve
  * earlier dimensions in the sense that we consider matrices where
  * the first differing div involves earlier dimensions to be smaller.
  */
-int isl_local_cmp(__isl_keep isl_mat *div1, __isl_keep isl_mat *div2)
+int isl_local_cmp(__isl_keep isl_local *local1, __isl_keep isl_local *local2)
 {
 	int i;
 	int cmp;
 	isl_bool unknown1, unknown2;
 	int last1, last2;
 	int n_col;
+	isl_mat *mat1 = local1;
+	isl_mat *mat2 = local2;
 
-	if (div1 == div2)
+	if (local1 == local2)
 		return 0;
-	if (!div1)
+	if (!local1)
 		return -1;
-	if (!div2)
+	if (!local2)
 		return 1;
 
-	if (div1->n_row != div2->n_row)
-		return div1->n_row - div2->n_row;
+	if (mat1->n_row != mat2->n_row)
+		return mat1->n_row - mat2->n_row;
 
-	n_col = isl_mat_cols(div1);
-	for (i = 0; i < div1->n_row; ++i) {
-		unknown1 = isl_local_div_is_marked_unknown(div1, i);
-		unknown2 = isl_local_div_is_marked_unknown(div2, i);
+	n_col = isl_mat_cols(mat1);
+	for (i = 0; i < mat1->n_row; ++i) {
+		unknown1 = isl_local_div_is_marked_unknown(local1, i);
+		unknown2 = isl_local_div_is_marked_unknown(local2, i);
 		if (unknown1 && unknown2)
 			continue;
 		if (unknown1)
 			return 1;
 		if (unknown2)
 			return -1;
-		last1 = isl_seq_last_non_zero(div1->row[i] + 1, n_col - 1);
-		last2 = isl_seq_last_non_zero(div2->row[i] + 1, n_col - 1);
+		last1 = isl_seq_last_non_zero(mat1->row[i] + 1, n_col - 1);
+		last2 = isl_seq_last_non_zero(mat2->row[i] + 1, n_col - 1);
 		if (last1 != last2)
 			return last1 - last2;
-		cmp = isl_seq_cmp(div1->row[i], div2->row[i], n_col);
+		cmp = isl_seq_cmp(mat1->row[i], mat2->row[i], n_col);
 		if (cmp != 0)
 			return cmp;
 	}
