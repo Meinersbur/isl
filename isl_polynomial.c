@@ -3129,16 +3129,14 @@ __isl_give isl_val *isl_qpolynomial_eval(__isl_take isl_qpolynomial *qp,
 	if (is_void)
 		return eval_void(qp, pnt);
 
-	if (qp->div->n_row == 0)
-		ext = isl_vec_copy(pnt->vec);
-	else {
+	ext = isl_vec_copy(pnt->vec);
+	if (qp->div->n_row != 0) {
 		int i;
 		unsigned dim = isl_space_dim(qp->dim, isl_dim_all);
-		ext = isl_vec_alloc(qp->dim->ctx, 1 + dim + qp->div->n_row);
+		ext = isl_vec_add_els(ext, qp->div->n_row);
 		if (!ext)
 			goto error;
 
-		isl_seq_cpy(ext->el, pnt->vec->el, pnt->vec->size);
 		for (i = 0; i < qp->div->n_row; ++i) {
 			isl_seq_inner_product(qp->div->row[i] + 1, ext->el,
 						1 + dim + i, &ext->el[1+dim+i]);
