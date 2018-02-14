@@ -21,6 +21,20 @@ isl_ctx *isl_local_get_ctx(__isl_keep isl_local *local)
 	return isl_mat_get_ctx(local);
 }
 
+/* Check that "pos" is a valid position for a variable in "local".
+ */
+static isl_stat isl_local_check_pos(__isl_keep isl_local *local, int pos)
+{
+	isl_mat *mat = local;
+
+	if (!local)
+		return isl_stat_error;
+	if (pos < 0 || pos >= mat->n_row)
+		isl_die(isl_local_get_ctx(local), isl_error_invalid,
+			"position out of bounds", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Given local variables "local",
  * is the variable at position "pos" marked as not having
  * an explicit representation?
@@ -33,11 +47,8 @@ isl_bool isl_local_div_is_marked_unknown(__isl_keep isl_local *local, int pos)
 {
 	isl_mat *mat = local;
 
-	if (!local)
+	if (isl_local_check_pos(local, pos) < 0)
 		return isl_bool_error;
-	if (pos < 0 || pos >= mat->n_row)
-		isl_die(isl_local_get_ctx(local), isl_error_invalid,
-			"position out of bounds", return isl_bool_error);
 	return isl_int_is_zero(mat->row[pos][0]);
 }
 
@@ -54,11 +65,8 @@ isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 	int i, n, off;
 	isl_mat *mat = local;
 
-	if (!local)
+	if (isl_local_check_pos(local, pos) < 0)
 		return isl_bool_error;
-	if (pos < 0 || pos >= mat->n_row)
-		isl_die(isl_local_get_ctx(local), isl_error_invalid,
-			"position out of bounds", return isl_bool_error);
 
 	marked = isl_local_div_is_marked_unknown(local, pos);
 	if (marked < 0 || marked)
