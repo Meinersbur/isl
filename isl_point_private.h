@@ -1,3 +1,6 @@
+#ifndef ISL_POINT_PRIVATE_H
+#define ISL_POINT_PRIVATE_H
+
 #include <isl/space.h>
 #include <isl/point.h>
 #include <isl/vec.h>
@@ -10,3 +13,5 @@ struct isl_point {
 
 __isl_give isl_point *isl_point_alloc(__isl_take isl_space *dim,
 	__isl_take isl_vec *vec);
+
+#endif
