@@ -346,9 +346,16 @@ int isl_aff_find_dim_by_name(__isl_keep isl_aff *aff, enum isl_dim_type type,
 	return isl_local_space_find_dim_by_name(aff->ls, type, name);
 }
 
+/* Return the domain space of "aff".
+ */
+static __isl_keep isl_space *isl_aff_peek_domain_space(__isl_keep isl_aff *aff)
+{
+	return aff ? isl_local_space_peek_space(aff->ls) : NULL;
+}
+
 __isl_give isl_space *isl_aff_get_domain_space(__isl_keep isl_aff *aff)
 {
-	return aff ? isl_local_space_get_space(aff->ls) : NULL;
+	return isl_space_copy(isl_aff_peek_domain_space(aff));
 }
 
 __isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff)
