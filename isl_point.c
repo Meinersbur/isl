@@ -17,9 +17,16 @@ isl_ctx *isl_point_get_ctx(__isl_keep isl_point *pnt)
 	return pnt ? isl_space_get_ctx(pnt->dim) : NULL;
 }
 
+/* Return the space of "pnt".
+ */
+__isl_keep isl_space *isl_point_peek_space(__isl_keep isl_point *pnt)
+{
+	return pnt ? pnt->dim : NULL;
+}
+
 __isl_give isl_space *isl_point_get_space(__isl_keep isl_point *pnt)
 {
-	return pnt ? isl_space_copy(pnt->dim) : NULL;
+	return isl_space_copy(isl_point_peek_space(pnt));
 }
 
 __isl_give isl_point *isl_point_alloc(__isl_take isl_space *dim,

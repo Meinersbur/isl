@@ -14,4 +14,6 @@ struct isl_point {
 __isl_give isl_point *isl_point_alloc(__isl_take isl_space *dim,
 	__isl_take isl_vec *vec);
 
+__isl_keep isl_space *isl_point_peek_space(__isl_keep isl_point *pnt);
+
 #endif
