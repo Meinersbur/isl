@@ -363,12 +363,19 @@ __isl_give isl_aff *isl_local_space_get_div(__isl_keep isl_local_space *ls,
 		return drop_unknown_divs_and_extract_div(ls, pos);
 }
 
-__isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls)
+/* Return the space of "ls".
+ */
+__isl_keep isl_space *isl_local_space_peek_space(__isl_keep isl_local_space *ls)
 {
 	if (!ls)
 		return NULL;
 
-	return isl_space_copy(ls->dim);
+	return ls->dim;
+}
+
+__isl_give isl_space *isl_local_space_get_space(__isl_keep isl_local_space *ls)
+{
+	return isl_space_copy(isl_local_space_peek_space(ls));
 }
 
 /* Return the space of "ls".

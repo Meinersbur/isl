@@ -19,6 +19,9 @@ __isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *dim,
 __isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
 	__isl_take isl_mat *div);
 
+__isl_keep isl_space *isl_local_space_peek_space(
+	__isl_keep isl_local_space *ls);
+
 __isl_give isl_local_space *isl_local_space_swap_div(
 	__isl_take isl_local_space *ls, int a, int b);
 __isl_give isl_local_space *isl_local_space_add_div(
