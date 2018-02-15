@@ -437,6 +437,13 @@ error:
 	return NULL;
 }
 
+/* Return the local variables of "ls".
+ */
+__isl_keep isl_local *isl_local_space_peek_local(__isl_keep isl_local_space *ls)
+{
+	return ls ? ls->div : NULL;
+}
+
 /* Replace the identifier of the tuple of type "type" by "id".
  */
 __isl_give isl_local_space *isl_local_space_set_tuple_id(
