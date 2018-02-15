@@ -30,6 +30,11 @@ static __isl_give isl_val *FN(PW,eval_void)(__isl_take PW *pw,
 	return isl_val_nan(ctx);
 }
 
+/* Evaluate the piecewise function "pw" in "pnt".
+ * If the point is void, then return NaN.
+ * If the point lies outside the domain of "pw", then return 0 or NaN
+ * depending on whether 0 is the default value for this type of function.
+ */
 __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 {
 	int i;
@@ -63,11 +68,14 @@ __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 		if (found)
 			break;
 	}
-	if (found)
+	if (found) {
 		v = FN(EL,eval)(FN(EL,copy)(pw->p[i].FIELD),
 					    isl_point_copy(pnt));
-	else
+	} else if (DEFAULT_IS_ZERO) {
 		v = isl_val_zero(ctx);
+	} else {
+		v = isl_val_nan(ctx);
+	}
 	FN(PW,free)(pw);
 	isl_point_free(pnt);
 	return v;
