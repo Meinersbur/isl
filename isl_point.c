@@ -139,6 +139,20 @@ isl_bool isl_point_is_void(__isl_keep isl_point *pnt)
 	return pnt->vec->size == 0;
 }
 
+/* Return the coordinate vector of "pnt".
+ */
+__isl_keep isl_vec *isl_point_peek_vec(__isl_keep isl_point *pnt)
+{
+	return pnt ? pnt->vec : NULL;
+}
+
+/* Return a copy of the coordinate vector of "pnt".
+ */
+__isl_give isl_vec *isl_point_get_vec(__isl_keep isl_point *pnt)
+{
+	return isl_vec_copy(isl_point_peek_vec(pnt));
+}
+
 /* Return the value of coordinate "pos" of type "type" of "pnt".
  */
 __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
