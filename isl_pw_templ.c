@@ -718,7 +718,7 @@ __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 {
 	int i;
 	isl_bool is_void;
-	int found = 0;
+	isl_bool found;
 	isl_ctx *ctx;
 	isl_space *pnt_dim = NULL;
 	isl_val *v;
@@ -735,6 +735,7 @@ __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 	if (is_void)
 		return FN(PW,eval_void)(pw, pnt);
 
+	found = isl_bool_false;
 	for (i = 0; i < pw->n; ++i) {
 		found = isl_set_contains_point(pw->p[i].set, pnt);
 		if (found < 0)
