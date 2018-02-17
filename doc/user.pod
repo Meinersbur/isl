@@ -5752,6 +5752,8 @@ The following functions evaluate a function in a point.
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_point *pnt);
 
+These functions return NaN when evaluated at a void point.
+
 =item * Dimension manipulation
 
 It is usually not advisable to directly change the (input or output)

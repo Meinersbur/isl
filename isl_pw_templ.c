@@ -700,9 +700,24 @@ __isl_give PW *FN(PW,sub)(__isl_take PW *pw1, __isl_take PW *pw2)
 #endif
 
 #ifndef NO_EVAL
+/* Evaluate "pw" in the void point "pnt".
+ * In particular, return the value NaN.
+ */
+static __isl_give isl_val *FN(PW,eval_void)(__isl_take PW *pw,
+	__isl_take isl_point *pnt)
+{
+	isl_ctx *ctx;
+
+	ctx = isl_point_get_ctx(pnt);
+	FN(PW,free)(pw);
+	isl_point_free(pnt);
+	return isl_val_nan(ctx);
+}
+
 __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 {
 	int i;
+	isl_bool is_void;
 	int found = 0;
 	isl_ctx *ctx;
 	isl_space *pnt_dim = NULL;
@@ -714,6 +729,11 @@ __isl_give isl_val *FN(PW,eval)(__isl_take PW *pw, __isl_take isl_point *pnt)
 	pnt_dim = isl_point_get_space(pnt);
 	isl_assert(ctx, isl_space_is_domain_internal(pnt_dim, pw->dim),
 		    goto error);
+	is_void = isl_point_is_void(pnt);
+	if (is_void < 0)
+		goto error;
+	if (is_void)
+		return FN(PW,eval_void)(pw, pnt);
 
 	for (i = 0; i < pw->n; ++i) {
 		found = isl_set_contains_point(pw->p[i].set, pnt);
