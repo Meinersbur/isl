@@ -69,6 +69,7 @@ __isl_give isl_ast_build *isl_ast_build_set_options(
 __isl_give isl_ast_build *isl_ast_build_set_iterators(
 	__isl_take isl_ast_build *build,
 	__isl_take isl_id_list *iterators);
+__isl_export
 __isl_give isl_ast_build *isl_ast_build_set_at_each_domain(
 	__isl_take isl_ast_build *build,
 	__isl_give isl_ast_node *(*fn)(__isl_take isl_ast_node *node,

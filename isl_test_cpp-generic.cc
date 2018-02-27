@@ -277,11 +277,29 @@ static isl::schedule_node test_schedule_tree_generic(isl::ctx ctx)
  *
  * In particular, create a simple schedule tree and
  * - generate an AST from the schedule tree
+ * - test at_each_domain in the successful case
  */
-static void test_ast_build(isl::ctx ctx)
+static isl::schedule test_ast_build_generic(isl::ctx ctx)
 {
 	auto schedule = construct_schedule_tree(ctx);
 
+	int count_ast = 0;
+	auto inc_count_ast =
+	    [&count_ast](isl::ast_node node, isl::ast_build build) {
+		count_ast++;
+		return node;
+	};
 	auto build = isl::ast_build(ctx);
+	auto build_copy = build.set_at_each_domain(inc_count_ast);
 	auto ast = build.node_from(schedule);
+	assert(count_ast == 0);
+	count_ast = 0;
+	ast = build_copy.node_from(schedule);
+	assert(count_ast == 2);
+	build = build_copy;
+	count_ast = 0;
+	ast = build.node_from(schedule);
+	assert(count_ast == 2);
+
+	return schedule;
 }

@@ -322,12 +322,53 @@ def test_schedule_tree():
 #
 # In particular, create a simple schedule tree and
 # - generate an AST from the schedule tree
+# - test at_each_domain
 #
 def test_ast_build():
 	schedule = construct_schedule_tree()
 
+	count_ast = [0]
+	def inc_count_ast(node, build):
+		count_ast[0] += 1
+		return node
+
 	build = isl.ast_build()
+	build_copy = build.set_at_each_domain(inc_count_ast)
 	ast = build.node_from(schedule)
+	assert(count_ast[0] == 0)
+	count_ast[0] = 0
+	ast = build_copy.node_from(schedule)
+	assert(count_ast[0] == 2)
+	build = build_copy
+	count_ast[0] = 0
+	ast = build.node_from(schedule)
+	assert(count_ast[0] == 2)
+
+	do_fail = True;
+	count_ast_fail = [0]
+	def fail_inc_count_ast(node, build):
+		count_ast_fail[0] += 1
+		if do_fail:
+			raise "fail"
+		return node
+	build = isl.ast_build()
+	build = build.set_at_each_domain(fail_inc_count_ast)
+	caught = False
+	try:
+		ast = build.node_from(schedule)
+	except:
+		caught = True
+	assert(caught)
+	assert(count_ast_fail[0] > 0)
+	build_copy = build
+	build_copy = build_copy.set_at_each_domain(inc_count_ast)
+	count_ast[0] = 0
+	ast = build_copy.node_from(schedule)
+	assert(count_ast[0] == 2)
+	count_ast_fail[0] = 0
+	do_fail = False;
+	ast = build.node_from(schedule)
+	assert(count_ast_fail[0] == 2)
 
 # Test the isl Python interface
 #
