@@ -1632,7 +1632,7 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call,
  *      auto fn_lambda = [](isl_map *arg_0, void *arg_1) -> isl_stat {
  *        auto *data = static_cast<struct fn_data *>(arg_1);
  *        try {
- *          stat ret = (*data->func)(manage(arg_0));
+ *          stat ret = (data->func)(manage(arg_0));
  *          return isl_stat_ok;
  *        } catch (...) {
  *          data->eptr = std::current_exception();
@@ -1640,15 +1640,15 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call,
  *        }
  *      };
  *
- * The pointer to the std::function C++ callback function is stored in
+ * A copy of the std::function C++ callback function is stored in
  * a fn_data data structure for passing to the C callback function,
  * along with an std::exception_ptr that is used to store any
  * exceptions thrown in the C++ callback.
  *
  *      struct fn_data {
- *        const std::function<stat(map)> *func;
+ *        std::function<stat(map)> func;
  *        std::exception_ptr eptr;
- *      } fn_data = { &fn };
+ *      } fn_data = { fn };
  *
  * This std::function object represents the actual user
  * callback function together with the locally captured state at the caller.
@@ -1663,7 +1663,7 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call,
  * if checked C++ bindings are being generated.
  * The body of the generated lambda function then is as follows:
  *
- *        stat ret = (*data->func)(manage(arg_0));
+ *        stat ret = (data->func)(manage(arg_0));
  *        return isl_stat(ret);
  *
  * If the C callback does not take its arguments, then
@@ -1690,7 +1690,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 
 	last_idx = ::to_string(num_params - 1);
 
-	call = "(*data->func)(";
+	call = "(data->func)(";
 	for (long i = 0; i < num_params - 1; i++) {
 		if (!callback_takes_argument(param, i))
 			call += "manage_copy";
@@ -1703,10 +1703,10 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	call += ")";
 
 	osprintf(os, "  struct %s_data {\n", pname.c_str());
-	osprintf(os, "    const %s *func;\n", cpp_args.c_str());
+	osprintf(os, "    %s func;\n", cpp_args.c_str());
 	if (!checked)
 		osprintf(os, "    std::exception_ptr eptr;\n");
-	osprintf(os, "  } %s_data = { &%s };\n", pname.c_str(), pname.c_str());
+	osprintf(os, "  } %s_data = { %s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
 	osprintf(os,
