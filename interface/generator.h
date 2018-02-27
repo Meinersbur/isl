@@ -44,27 +44,28 @@ public:
 	virtual ~generator() {};
 
 protected:
-	string drop_type_suffix(string name, FunctionDecl *method);
-	void die(const char *msg) __attribute__((noreturn));
-	void die(string msg) __attribute__((noreturn));
-	vector<string> find_superclasses(RecordDecl *decl);
-	bool is_overload(Decl *decl);
-	bool is_constructor(Decl *decl);
-	bool takes(Decl *decl);
-	bool keeps(Decl *decl);
-	bool gives(Decl *decl);
 	isl_class *method2class(FunctionDecl *fd);
-	bool is_isl_ctx(QualType type);
-	bool first_arg_is_isl_ctx(FunctionDecl *fd);
-	bool is_isl_type(QualType type);
-	bool is_isl_bool(QualType type);
-	bool is_isl_stat(QualType type);
-	bool is_long(QualType type);
-	bool is_callback(QualType type);
-	bool is_string(QualType type);
-	bool is_static(const isl_class &clazz, FunctionDecl *method);
-	string extract_type(QualType type);
 	FunctionDecl *find_by_name(const string &name, bool required);
+public:
+	static string drop_type_suffix(string name, FunctionDecl *method);
+	static void die(const char *msg) __attribute__((noreturn));
+	static void die(string msg) __attribute__((noreturn));
+	static vector<string> find_superclasses(RecordDecl *decl);
+	static bool is_overload(Decl *decl);
+	static bool is_constructor(Decl *decl);
+	static bool takes(Decl *decl);
+	static bool keeps(Decl *decl);
+	static bool gives(Decl *decl);
+	static bool is_isl_ctx(QualType type);
+	static bool first_arg_is_isl_ctx(FunctionDecl *fd);
+	static bool is_isl_type(QualType type);
+	static bool is_isl_bool(QualType type);
+	static bool is_isl_stat(QualType type);
+	static bool is_long(QualType type);
+	static bool is_callback(QualType type);
+	static bool is_string(QualType type);
+	static bool is_static(const isl_class &clazz, FunctionDecl *method);
+	static string extract_type(QualType type);
 };
 
 #endif /* ISL_INTERFACE_GENERATOR_H */
