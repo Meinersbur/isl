@@ -110,13 +110,14 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 
 	for (in = exported_functions.begin(); in != exported_functions.end();
 	     ++in) {
-		isl_class *c = method2class(*in);
+		FunctionDecl *method = *in;
+		isl_class *c = method2class(method);
+
 		if (!c)
 			continue;
-		if (is_constructor(*in)) {
-			c->constructors.insert(*in);
+		if (is_constructor(method)) {
+			c->constructors.insert(method);
 		} else {
-			FunctionDecl *method = *in;
 			string fullname = c->name_without_type_suffix(method);
 			c->methods[fullname].insert(method);
 		}
