@@ -263,7 +263,8 @@ void python_generator::print_method_return(int indent, FunctionDecl *method)
 
 		type = type2python(extract_type(return_type));
 		print_indent(indent,
-			"return %s(ctx=ctx, ptr=res)\n", type.c_str());
+			"obj = %s(ctx=ctx, ptr=res)\n", type.c_str());
+		print_indent(indent, "return obj\n");
 	} else if (is_string(return_type)) {
 		print_indent(indent, "if res == 0:\n");
 		print_indent(indent, "    raise\n");
