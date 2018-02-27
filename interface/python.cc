@@ -106,7 +106,7 @@ void python_generator::print_type_check(const string &type, int pos,
 		printf("            raise\n");
 }
 
-/* Construct a wrapper for a callback argument (at position "arg").
+/* Construct a wrapper for callback argument "param" (at position "arg").
  * Assign the wrapper to "cb".  We assume here that a function call
  * has at most one callback argument.
  *
@@ -114,8 +114,9 @@ void python_generator::print_type_check(const string &type, int pos,
  * If any exception is thrown, the wrapper keeps track of it in exc_info[0]
  * and returns -1.  Otherwise the wrapper returns 0.
  */
-void python_generator::print_callback(QualType type, int arg)
+void python_generator::print_callback(ParmVarDecl *param, int arg)
 {
+	QualType type = param->getOriginalType()->getPointeeType();
 	const FunctionProtoType *fn = type->getAs<FunctionProtoType>();
 	unsigned n_arg = fn->getNumArgs();
 
@@ -289,7 +290,7 @@ void python_generator::print_method(const isl_class &clazz,
 		QualType type = param->getOriginalType();
 		if (!is_callback(type))
 			continue;
-		print_callback(type->getPointeeType(), i - drop_ctx);
+		print_callback(param, i - drop_ctx);
 	}
 	if (drop_ctx)
 		printf("        ctx = Context.getDefaultInstance()\n");
