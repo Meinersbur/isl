@@ -63,6 +63,30 @@ bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
 	return extract_type(type) != clazz.name;
 }
 
+/* Does "fd" modify an object of "clazz"?
+ * That is, is it an object method that takes the object and
+ * returns (gives) an object of the same type?
+ */
+bool generator::is_mutator(const isl_class &clazz, FunctionDecl *fd)
+{
+	ParmVarDecl *param;
+	QualType type, return_type;
+
+	if (fd->getNumParams() < 1)
+		return false;
+	if (is_static(clazz, fd))
+		return false;
+
+	if (!gives(fd))
+		return false;
+	param = fd->getParamDecl(0);
+	if (!takes(param))
+		return false;
+	type = param->getOriginalType();
+	return_type = fd->getReturnType();
+	return return_type == type;
+}
+
 /* Find the FunctionDecl with name "name",
  * returning NULL if there is no such FunctionDecl.
  * If "required" is set, then error out if no FunctionDecl can be found.
