@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include <functional>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <type_traits>

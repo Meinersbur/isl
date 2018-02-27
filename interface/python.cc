@@ -249,8 +249,44 @@ static void print_rethrow(int indent, const char *exc_info)
 		exc_info, exc_info, exc_info);
 }
 
+/* Print code with the given indentation that checks
+ * whether any of the persistent callbacks of "clazz"
+ * is set and if it failed with an exception.  If so, the 'exc_info'
+ * field contains the exception and is raised again.
+ * The field is cleared because the callback and its data may get reused.
+ */
+static void print_persistent_callback_failure_check(int indent,
+	const isl_class &clazz)
+{
+	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
+	set<FunctionDecl *>::const_iterator in;
+
+	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
+		string callback_name = clazz.persistent_callback_name(*in);
+
+		print_indent(indent, "if hasattr(arg0, '%s') and "
+			"arg0.%s['exc_info'] != None:\n",
+			callback_name.c_str(), callback_name.c_str());
+		print_indent(indent, "    exc_info = arg0.%s['exc_info'][0]\n",
+			callback_name.c_str());
+		print_indent(indent, "    arg0.%s['exc_info'][0] = None\n",
+			callback_name.c_str());
+		print_rethrow(indent + 4, "exc_info");
+	}
+}
+
 /* Print the return statement of the python method corresponding
  * to the C function "method" with the given indentation.
+ * If the object on which the method was called
+ * may have a persistent callback, then first check if any of those failed.
+ *
+ * If the method returns a new instance of the same object type and
+ * if the class has any persistent callbacks, then the data
+ * for these callbacks are copied from the original to the new object.
+ * If the method it itself setting a persistent callback,
+ * then keep track of the constructed C callback (such that it doesn't
+ * get destroyed) and the data structure that holds the captured exception
+ * (such that it can be raised again).
  *
  * If the return type is a (const) char *, then convert the result
  * to a Python string, raising an error on NULL and freeing
@@ -264,9 +300,13 @@ static void print_rethrow(int indent, const char *exc_info)
  * a Python boolean.
  * In case of isl_size, the result is converted to a Python int.
  */
-void python_generator::print_method_return(int indent, FunctionDecl *method)
+void python_generator::print_method_return(int indent, const isl_class &clazz,
+	FunctionDecl *method)
 {
 	QualType return_type = method->getReturnType();
+
+	if (!is_static(clazz, method))
+		print_persistent_callback_failure_check(indent, clazz);
 
 	if (is_isl_type(return_type)) {
 		string type;
@@ -274,6 +314,17 @@ void python_generator::print_method_return(int indent, FunctionDecl *method)
 		type = type2python(extract_type(return_type));
 		print_indent(indent,
 			"obj = %s(ctx=ctx, ptr=res)\n", type.c_str());
+		if (is_mutator(clazz, method) &&
+		    clazz.has_persistent_callbacks())
+			print_indent(indent, "obj.copy_callbacks(arg0)\n");
+		if (clazz.persistent_callbacks.count(method)) {
+			string callback_name;
+
+			callback_name = clazz.persistent_callback_name(method);
+			print_indent(indent, "obj.%s = { 'func': cb, "
+				"'exc_info': exc_info }\n",
+				callback_name.c_str());
+		}
 		print_indent(indent, "return obj\n");
 	} else if (is_string(return_type)) {
 		print_indent(indent, "if res == 0:\n");
@@ -384,7 +435,7 @@ void python_generator::print_method(const isl_class &clazz,
 	if (drop_user)
 		print_rethrow(8, "exc_info[0]");
 
-	print_method_return(8, method);
+	print_method_return(8, clazz, method);
 }
 
 /* Print part of an overloaded python method corresponding to the C function
@@ -425,7 +476,7 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	}
 	printf(")\n");
 	printf("            ctx = arg0.ctx\n");
-	print_method_return(12, method);
+	print_method_return(12, clazz, method);
 }
 
 /* Print a python method with a name derived from "fullname"
@@ -702,11 +753,35 @@ void python_generator::print_representation(const isl_class &clazz,
 		python_name.c_str());
 }
 
+/* If "clazz" has any persistent callbacks, then print the definition
+ * of a "copy_callbacks" function that copies the persistent callbacks
+ * from one object to another.
+ */
+void python_generator::print_copy_callbacks(const isl_class &clazz)
+{
+	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
+	set<FunctionDecl *>::const_iterator in;
+
+	if (!clazz.has_persistent_callbacks())
+		return;
+
+	printf("    def copy_callbacks(self, obj):\n");
+	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
+		string callback_name = clazz.persistent_callback_name(*in);
+
+		printf("        if hasattr(obj, '%s'):\n",
+			callback_name.c_str());
+		printf("            self.%s = obj.%s\n",
+			callback_name.c_str(), callback_name.c_str());
+	}
+}
+
 /* Print code to set method type signatures.
  *
  * To be able to call C functions it is necessary to explicitly set their
  * argument and result types.  Do this for all exported constructors and
- * methods, as well as for the *_to_str and the type function, if they exist.
+ * methods (including those that set a persistent callback),
+ * as well as for the *_to_str and the type function, if they exist.
  * Assuming each exported class has a *_copy and a *_free method,
  * also unconditionally set the type of such methods.
  */
@@ -714,11 +789,14 @@ void python_generator::print_method_types(const isl_class &clazz)
 {
 	set<FunctionDecl *>::const_iterator in;
 	map<string, set<FunctionDecl *> >::const_iterator it;
+	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
 	for (in = clazz.constructors.begin(); in != clazz.constructors.end();
 		++in)
 		print_method_type(*in);
 
+	for (in = callbacks.begin(); in != callbacks.end(); ++in)
+		print_method_type(*in);
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
 		for (in = it->second.begin(); in != it->second.end(); ++in)
 			print_method_type(*in);
@@ -741,7 +819,8 @@ void python_generator::print_method_types(const isl_class &clazz)
  * was marked as a constructor and for each type based subclass.
  *
  * Next, we print out some common methods and the methods corresponding
- * to functions that are not marked as constructors.
+ * to functions that are not marked as constructors, including those
+ * that set a persistent callback.
  *
  * Finally, we tell ctypes about the types of the arguments of the
  * constructor functions and the return types of those function returning
@@ -753,6 +832,7 @@ void python_generator::print(const isl_class &clazz)
 	set<FunctionDecl *>::const_iterator in;
 	map<string, set<FunctionDecl *> >::const_iterator it;
 	vector<string> super = find_superclasses(clazz.type);
+	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
 	for (unsigned i = 0; i < super.size(); ++i)
 		if (done.find(super[i]) == done.end())
@@ -781,7 +861,10 @@ void python_generator::print(const isl_class &clazz)
 
 	print_new(clazz, p_name);
 	print_representation(clazz, p_name);
+	print_copy_callbacks(clazz);
 
+	for (in = callbacks.begin(); in != callbacks.end(); ++in)
+		print_method(clazz, *in, super);
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
 		print_method(clazz, it->first, it->second, super);
 
