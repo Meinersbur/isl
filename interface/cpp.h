@@ -12,11 +12,11 @@ class cpp_generator : public generator {
 protected:
 	bool checked;
 public:
-	cpp_generator(set<RecordDecl *> &exported_types,
+	cpp_generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		set<FunctionDecl *> exported_functions,
 		set<FunctionDecl *> functions,
 		bool checked = false) :
-		generator(exported_types, exported_functions, functions),
+		generator(SM, exported_types, exported_functions, functions),
 		checked(checked) {}
 
 	enum function_kind {

@@ -40,11 +40,12 @@ struct isl_class {
  */
 class generator {
 protected:
+	SourceManager &SM;
 	map<string,isl_class> classes;
 	map<string, FunctionDecl *> functions_by_name;
 
 public:
-	generator(set<RecordDecl *> &exported_types,
+	generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		set<FunctionDecl *> exported_functions,
 		set<FunctionDecl *> functions);
 

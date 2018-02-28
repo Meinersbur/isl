@@ -76,8 +76,9 @@ FunctionDecl *generator::find_by_name(const string &name, bool required)
  * functions, then they are grouped based on their name after removing the
  * argument type suffix.
  */
-generator::generator(set<RecordDecl *> &exported_types,
-	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions)
+generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
+	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions) :
+	SM(SM)
 {
 	map<string, isl_class>::iterator ci;
 
