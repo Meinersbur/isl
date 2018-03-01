@@ -107,8 +107,7 @@ generator::generator(set<RecordDecl *> &exported_types,
 			c->constructors.insert(*in);
 		} else {
 			FunctionDecl *method = *in;
-			string fullname = method->getName();
-			fullname = drop_type_suffix(fullname, method);
+			string fullname = name_without_type_suffix(method);
 			c->methods[fullname].insert(method);
 		}
 	}
@@ -327,18 +326,18 @@ string generator::extract_type(QualType type)
 	die("Cannot extract type from non-pointer type");
 }
 
-/* If "method" is overloaded, then drop the suffix of "name"
- * corresponding to the type of the final argument and
- * return the modified name (or the original name if
- * no modifications were made).
+/* If "method" is overloaded, then return its name with the suffix
+ * corresponding to the type of the final argument removed.
+ * Otherwise, simply return the name of the function.
  */
-string generator::drop_type_suffix(string name, FunctionDecl *method)
+string generator::name_without_type_suffix(FunctionDecl *method)
 {
 	int num_params;
 	ParmVarDecl *param;
-	string type;
+	string name, type;
 	size_t name_len, type_len;
 
+	name = method->getName();
 	if (!is_overload(method))
 		return name;
 
