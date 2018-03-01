@@ -26,6 +26,9 @@ struct isl_class {
 	FunctionDecl *fn_to_str;
 	FunctionDecl *fn_copy;
 	FunctionDecl *fn_free;
+
+	/* Return name of "fd" without type suffix, if any. */
+	static string name_without_type_suffix(FunctionDecl *fd);
 };
 
 /* Base class for interface generators.
@@ -47,7 +50,6 @@ protected:
 	isl_class *method2class(FunctionDecl *fd);
 	FunctionDecl *find_by_name(const string &name, bool required);
 public:
-	static string name_without_type_suffix(FunctionDecl *method);
 	static void die(const char *msg) __attribute__((noreturn));
 	static void die(string msg) __attribute__((noreturn));
 	static vector<string> find_superclasses(RecordDecl *decl);

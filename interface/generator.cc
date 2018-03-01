@@ -107,7 +107,7 @@ generator::generator(set<RecordDecl *> &exported_types,
 			c->constructors.insert(*in);
 		} else {
 			FunctionDecl *method = *in;
-			string fullname = name_without_type_suffix(method);
+			string fullname = c->name_without_type_suffix(method);
 			c->methods[fullname].insert(method);
 		}
 	}
@@ -330,7 +330,7 @@ string generator::extract_type(QualType type)
  * corresponding to the type of the final argument removed.
  * Otherwise, simply return the name of the function.
  */
-string generator::name_without_type_suffix(FunctionDecl *method)
+string isl_class::name_without_type_suffix(FunctionDecl *method)
 {
 	int num_params;
 	ParmVarDecl *param;
@@ -338,12 +338,12 @@ string generator::name_without_type_suffix(FunctionDecl *method)
 	size_t name_len, type_len;
 
 	name = method->getName();
-	if (!is_overload(method))
+	if (!generator::is_overload(method))
 		return name;
 
 	num_params = method->getNumParams();
 	param = method->getParamDecl(num_params - 1);
-	type = extract_type(param->getOriginalType());
+	type = generator::extract_type(param->getOriginalType());
 	type = type.substr(4);
 	name_len = name.length();
 	type_len = type.length();
