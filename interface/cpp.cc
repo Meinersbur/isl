@@ -1619,6 +1619,42 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call,
 	osprintf(os, "    }\n");
 }
 
+/* Print the declaration for a "prefix"_data data structure
+ * that can be used for passing to a C callback function
+ * containing a copy of the C++ callback function "param",
+ * along with an std::exception_ptr that is used to store any
+ * exceptions thrown in the C++ callback.
+ *
+ * If the C callback is of the form
+ *
+ *      isl_stat (*fn)(__isl_take isl_map *map, void *user)
+ *
+ * then the following declaration is printed:
+ *
+ *      struct <prefix>_data {
+ *        std::function<stat(map)> func;
+ *        std::exception_ptr eptr;
+ *      }
+ *
+ * (without a newline or a semicolon).
+ *
+ * The std::exception_ptr object is not added to "prefix"_data
+ * if checked C++ bindings are being generated.
+ */
+void cpp_generator::print_callback_data_decl(ostream &os, ParmVarDecl *param,
+	const string &prefix)
+{
+	string cpp_args;
+
+	cpp_args = generate_callback_type(param->getType());
+
+	osprintf(os, "  struct %s_data {\n", prefix.c_str());
+	osprintf(os, "    %s func;\n", cpp_args.c_str());
+	if (!checked)
+		osprintf(os, "    std::exception_ptr eptr;\n");
+	osprintf(os, "  }");
+}
+
 /* Print the local variables that are needed for a callback argument,
  * in particular, print a lambda function that wraps the callback and
  * a pointer to the actual C++ callback function.
@@ -1681,7 +1717,6 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	ptype = param->getType();
 
 	c_args = generate_callback_args(ptype, false);
-	cpp_args = generate_callback_type(ptype);
 
 	callback = extract_prototype(ptype);
 	rtype = callback->getReturnType();
@@ -1702,11 +1737,8 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	}
 	call += ")";
 
-	osprintf(os, "  struct %s_data {\n", pname.c_str());
-	osprintf(os, "    %s func;\n", cpp_args.c_str());
-	if (!checked)
-		osprintf(os, "    std::exception_ptr eptr;\n");
-	osprintf(os, "  } %s_data = { %s };\n", pname.c_str(), pname.c_str());
+	print_callback_data_decl(os, param, pname);
+	osprintf(os, " %s_data = { %s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
 	osprintf(os,
