@@ -1109,7 +1109,7 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
 	const FunctionProtoType *callback;
 	int num_params;
 
-	callback = type->getPointeeType()->getAs<FunctionProtoType>();
+	callback = extract_prototype(type);
 	num_params = callback->getNumArgs();
 	if (cpp)
 		num_params--;
@@ -1145,7 +1145,7 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
 string cpp_generator::generate_callback_type(QualType type)
 {
 	std::string type_str;
-	const FunctionProtoType *callback = type->getPointeeType()->getAs<FunctionProtoType>();
+	const FunctionProtoType *callback = extract_prototype(type);
 	QualType return_type = callback->getReturnType();
 	string rettype_str = type2cpp(return_type);
 
@@ -1271,7 +1271,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	c_args = generate_callback_args(ptype, false);
 	cpp_args = generate_callback_type(ptype);
 
-	callback = ptype->getPointeeType()->getAs<FunctionProtoType>();
+	callback = extract_prototype(ptype);
 	rettype = callback->getReturnType().getAsString();
 	num_params = callback->getNumArgs();
 

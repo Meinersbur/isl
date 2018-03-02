@@ -412,6 +412,14 @@ string generator::extract_type(QualType type)
 	die("Cannot extract type from non-pointer type");
 }
 
+/* Given the type of a function pointer, return the corresponding
+ * function prototype.
+ */
+const FunctionProtoType *generator::extract_prototype(QualType type)
+{
+	return type->getPointeeType()->getAs<FunctionProtoType>();
+}
+
 /* If "method" is overloaded, then return its name with the suffix
  * corresponding to the type of the final argument removed.
  * Otherwise, simply return the name of the function.
