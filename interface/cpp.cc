@@ -1536,7 +1536,8 @@ string cpp_generator::generate_callback_type(QualType type)
 	return type_str;
 }
 
-/* Print the call to the C++ callback function "call", wrapped
+/* Print the call to the C++ callback function "call",
+ * with the given indentation, wrapped
  * for use inside the lambda function that is used as the C callback function,
  * in the case where checked C++ bindings are being generated.
  *
@@ -1545,15 +1546,15 @@ string cpp_generator::generate_callback_type(QualType type)
  *        auto ret = @call@;
  *        return ret.release();
  */
-void cpp_generator::print_wrapped_call_checked(ostream &os,
+void cpp_generator::print_wrapped_call_checked(ostream &os, int indent,
 	const string &call)
 {
-	osprintf(os, "    auto ret = %s;\n", call.c_str());
-	osprintf(os, "    return ret.release();\n");
+	osprintf(os, indent, "auto ret = %s;\n", call.c_str());
+	osprintf(os, indent, "return ret.release();\n");
 }
 
 /* Print the call to the C++ callback function "call",
- * with return type "rtype", wrapped
+ * with the given indentation and with return type "rtype", wrapped
  * for use inside the lambda function that is used as the C callback function.
  *
  * In particular, print
@@ -1590,33 +1591,33 @@ void cpp_generator::print_wrapped_call_checked(ostream &os,
  * If checked C++ bindings are being generated, then
  * the call is wrapped differently.
  */
-void cpp_generator::print_wrapped_call(ostream &os, const string &call,
-	QualType rtype)
+void cpp_generator::print_wrapped_call(ostream &os, int indent,
+	const string &call, QualType rtype)
 {
 	if (checked)
-		return print_wrapped_call_checked(os, call);
+		return print_wrapped_call_checked(os, indent, call);
 
-	osprintf(os, "    ISL_CPP_TRY {\n");
+	osprintf(os, indent, "ISL_CPP_TRY {\n");
 	if (is_isl_stat(rtype))
-		osprintf(os, "      %s;\n", call.c_str());
+		osprintf(os, indent, "  %s;\n", call.c_str());
 	else
-		osprintf(os, "      auto ret = %s;\n", call.c_str());
+		osprintf(os, indent, "  auto ret = %s;\n", call.c_str());
 	if (is_isl_stat(rtype))
-		osprintf(os, "      return isl_stat_ok;\n");
+		osprintf(os, indent, "  return isl_stat_ok;\n");
 	else if (is_isl_bool(rtype))
-		osprintf(os,
-			"      return ret ? isl_bool_true : isl_bool_false;\n");
+		osprintf(os, indent,
+			"  return ret ? isl_bool_true : isl_bool_false;\n");
 	else
-		osprintf(os, "      return ret.release();\n");
-	osprintf(os, "    } ISL_CPP_CATCH_ALL {\n"
-		     "      data->eptr = std::current_exception();\n");
+		osprintf(os, indent, "  return ret.release();\n");
+	osprintf(os, indent, "} ISL_CPP_CATCH_ALL {\n");
+	osprintf(os, indent, "  data->eptr = std::current_exception();\n");
 	if (is_isl_stat(rtype))
-		osprintf(os, "      return isl_stat_error;\n");
+		osprintf(os, indent, "  return isl_stat_error;\n");
 	else if (is_isl_bool(rtype))
-		osprintf(os, "      return isl_bool_error;\n");
+		osprintf(os, indent, "  return isl_bool_error;\n");
 	else
-		osprintf(os, "      return NULL;\n");
-	osprintf(os, "    }\n");
+		osprintf(os, indent, "  return NULL;\n");
+	osprintf(os, indent, "}\n");
 }
 
 /* Print the declaration for a "prefix"_data data structure
@@ -1653,6 +1654,68 @@ void cpp_generator::print_callback_data_decl(ostream &os, ParmVarDecl *param,
 	if (!checked)
 		osprintf(os, "    std::exception_ptr eptr;\n");
 	osprintf(os, "  }");
+}
+
+/* Print the body of C function callback with the given indentation
+ * that can be use as an argument to "param" for marshalling
+ * the corresponding C++ callback.
+ * The data structure that contains the C++ callback is of type
+ * "prefix"_data.
+ *
+ * For a callback of the form
+ *
+ *      isl_stat (*fn)(__isl_take isl_map *map, void *user)
+ *
+ * the following code is generated:
+ *
+ *        auto *data = static_cast<struct <prefix>_data *>(arg_1);
+ *        ISL_CPP_TRY {
+ *          stat ret = (data->func)(manage(arg_0));
+ *          return isl_stat_ok;
+ *        } ISL_CPP_CATCH_ALL {
+ *          data->eptr = std::current_exception();
+ *          return isl_stat_error;
+ *        }
+ *
+ * If checked C++ bindings are being generated, then
+ * generate the following code:
+ *
+ *        auto *data = static_cast<struct <prefix>_data *>(arg_1);
+ *        stat ret = (data->func)(manage(arg_0));
+ *        return isl_stat(ret);
+ */
+void cpp_generator::print_callback_body(ostream &os, int indent,
+	ParmVarDecl *param, const string &prefix)
+{
+	QualType ptype, rtype;
+	string call, last_idx;
+	const FunctionProtoType *callback;
+	int num_params;
+
+	ptype = param->getType();
+
+	callback = extract_prototype(ptype);
+	rtype = callback->getReturnType();
+	num_params = callback->getNumArgs();
+
+	last_idx = ::to_string(num_params - 1);
+
+	call = "(data->func)(";
+	for (long i = 0; i < num_params - 1; i++) {
+		if (!callback_takes_argument(param, i))
+			call += "manage_copy";
+		else
+			call += "manage";
+		call += "(arg_" + ::to_string(i) + ")";
+		if (i != num_params - 2)
+			call += ", ";
+	}
+	call += ")";
+
+	osprintf(os, indent,
+		 "auto *data = static_cast<struct %s_data *>(arg_%s);\n",
+		 prefix.c_str(), last_idx.c_str());
+	print_wrapped_call(os, indent, call, rtype);
 }
 
 /* Print the local variables that are needed for a callback argument,
@@ -1709,9 +1772,8 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 {
 	string pname;
 	QualType ptype, rtype;
-	string call, c_args, cpp_args, rettype, last_idx;
+	string c_args, cpp_args, rettype;
 	const FunctionProtoType *callback;
-	int num_params;
 
 	pname = param->getName().str();
 	ptype = param->getType();
@@ -1721,30 +1783,12 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	callback = extract_prototype(ptype);
 	rtype = callback->getReturnType();
 	rettype = rtype.getAsString();
-	num_params = callback->getNumArgs();
-
-	last_idx = ::to_string(num_params - 1);
-
-	call = "(data->func)(";
-	for (long i = 0; i < num_params - 1; i++) {
-		if (!callback_takes_argument(param, i))
-			call += "manage_copy";
-		else
-			call += "manage";
-		call += "(arg_" + ::to_string(i) + ")";
-		if (i != num_params - 2)
-			call += ", ";
-	}
-	call += ")";
 
 	print_callback_data_decl(os, param, pname);
 	osprintf(os, " %s_data = { %s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
-	osprintf(os,
-		 "    auto *data = static_cast<struct %s_data *>(arg_%s);\n",
-		 pname.c_str(), last_idx.c_str());
-	print_wrapped_call(os, call, rtype);
+	print_callback_body(os, 4, param, pname);
 	osprintf(os, "  };\n");
 }
 
