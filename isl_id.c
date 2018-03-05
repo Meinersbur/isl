@@ -269,3 +269,16 @@ __isl_give isl_id *isl_stream_read_id(__isl_keep isl_stream *s)
 
 	return id;
 }
+
+/* Read an isl_id object from the string "str".
+ */
+__isl_give isl_id *isl_id_read_from_str(isl_ctx *ctx, const char *str)
+{
+	isl_id *id;
+	isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	id = isl_stream_read_id(s);
+	isl_stream_free(s);
+	return id;
+}
