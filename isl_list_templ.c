@@ -262,9 +262,16 @@ static __isl_keep EL *FN(LIST(EL),peek)(__isl_keep LIST(EL) *list, int index)
 
 /* Return a copy of the element at position "index" in "list".
  */
-__isl_give EL *FN(FN(LIST(EL),get),BASE)(__isl_keep LIST(EL) *list, int index)
+__isl_give EL *FN(LIST(EL),get_at)(__isl_keep LIST(EL) *list, int index)
 {
 	return FN(EL,copy)(FN(LIST(EL),peek)(list, index));
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give EL *FN(FN(LIST(EL),get),BASE)(__isl_keep LIST(EL) *list, int index)
+{
+	return FN(LIST(EL),get_at)(list, index);
 }
 
 /* Replace the element at position "index" in "list" by "el".
