@@ -47,21 +47,33 @@
  * This osprintf method allows us to use printf style formatting constructs when
  * writing to an ostream.
  */
-static void osprintf(ostream &os, const char *format, ...)
+static void osprintf(ostream &os, const char *format, va_list arguments)
 {
-	va_list arguments;
+	va_list copy;
 	char *string_pointer;
 	size_t size;
 
-	va_start(arguments, format);
-	size = vsnprintf(NULL, 0, format, arguments);
+	va_copy(copy, arguments);
+	size = vsnprintf(NULL, 0, format, copy);
 	string_pointer = new char[size + 1];
-	va_end(arguments);
-	va_start(arguments, format);
+	va_end(copy);
 	vsnprintf(string_pointer, size + 1, format, arguments);
-	va_end(arguments);
 	os << string_pointer;
 	delete[] string_pointer;
+}
+
+/* Print string formatted according to "fmt" to ostream "os".
+ *
+ * This osprintf method allows us to use printf style formatting constructs when
+ * writing to an ostream.
+ */
+static void osprintf(ostream &os, const char *format, ...)
+{
+	va_list arguments;
+
+	va_start(arguments, format);
+	osprintf(os, format, arguments);
+	va_end(arguments);
 }
 
 /* Convert "l" to a string.
