@@ -3880,7 +3880,7 @@ static int first_offset(struct isl_set_map_pair *domain, int *order, int n,
  * with "<<" the lexicographic order, proving that the order is preserved
  * in all cases.
  */
-static __isl_give isl_union_map *contruct_shifted_executed(
+static __isl_give isl_union_map *construct_shifted_executed(
 	struct isl_set_map_pair *domain, int *order, int n,
 	__isl_keep isl_val *stride, __isl_keep isl_multi_val *offset,
 	__isl_take isl_ast_build *build)
@@ -3951,7 +3951,7 @@ static __isl_give isl_union_map *contruct_shifted_executed(
  * domain is equal to zero.  The other offsets are reduced modulo stride.
  *
  * Based on this information, we construct a new inverse schedule in
- * contruct_shifted_executed that exposes the stride.
+ * construct_shifted_executed that exposes the stride.
  * Since this involves the introduction of a new schedule dimension,
  * the build needs to be changed accodingly.
  * After computing the AST, the newly introduced dimension needs
@@ -3985,7 +3985,7 @@ static __isl_give isl_ast_graft_list *generate_shift_component(
 	mv = isl_multi_val_add_val(mv, val);
 	mv = isl_multi_val_mod_val(mv, isl_val_copy(stride));
 
-	executed = contruct_shifted_executed(domain, order, n, stride, mv,
+	executed = construct_shifted_executed(domain, order, n, stride, mv,
 						build);
 	space = isl_ast_build_get_space(build, 1);
 	space = isl_space_map_from_set(space);
