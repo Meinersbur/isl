@@ -2651,7 +2651,7 @@ static int foreach_iteration(__isl_take isl_set *domain,
  * "executed" and "build" are inputs to compute_domains.
  * "schedule_domain" is the domain of "executed".
  *
- * "option" constains the domains at the current depth that should by
+ * "option" contains the domains at the current depth that should by
  * atomic, separated or unrolled.  These domains are as specified by
  * the user, except that inner dimensions have been eliminated and
  * that they have been made pair-wise disjoint.
@@ -3953,7 +3953,7 @@ static __isl_give isl_union_map *construct_shifted_executed(
  * Based on this information, we construct a new inverse schedule in
  * construct_shifted_executed that exposes the stride.
  * Since this involves the introduction of a new schedule dimension,
- * the build needs to be changed accodingly.
+ * the build needs to be changed accordingly.
  * After computing the AST, the newly introduced dimension needs
  * to be removed again from the list of grafts.  We do this by plugging
  * in a mapping that represents the new schedule domain in terms of the
