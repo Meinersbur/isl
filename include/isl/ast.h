@@ -105,6 +105,7 @@ __isl_give isl_ast_node *isl_ast_node_copy(__isl_keep isl_ast_node *node);
 __isl_null isl_ast_node *isl_ast_node_free(__isl_take isl_ast_node *node);
 
 isl_ctx *isl_ast_node_get_ctx(__isl_keep isl_ast_node *node);
+__isl_subclass(isl_ast_node)
 enum isl_ast_node_type isl_ast_node_get_type(__isl_keep isl_ast_node *node);
 
 __isl_give isl_ast_node *isl_ast_node_set_annotation(
