@@ -946,6 +946,14 @@ void cpp_generator::print_exceptional_execution_check(ostream &os,
 	print_throw_last_error(os);
 }
 
+/* Return the C++ return type of the method corresponding to "fd" in "clazz".
+ */
+std::string cpp_generator::get_return_type(const isl_class &clazz,
+	FunctionDecl *fd)
+{
+	return type2cpp(fd->getReturnType());
+}
+
 /* Print the return statement of the C++ method corresponding
  * to the C function "method" in class "clazz" to "os".
  *
@@ -1101,7 +1109,7 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	FunctionDecl *method, bool is_declaration, function_kind kind)
 {
 	string cname = clazz.method_name(method);
-	string rettype_str = type2cpp(method->getReturnType());
+	string rettype_str = get_return_type(clazz, method);
 	string classname = type2cpp(clazz);
 	int num_params = method->getNumParams();
 	int first_param = 0;
