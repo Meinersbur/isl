@@ -56,9 +56,14 @@ static int prefixcmp(const char *s, const char *prefix)
  */
 bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
 {
-	ParmVarDecl *param = method->getParamDecl(0);
-	QualType type = param->getOriginalType();
+	ParmVarDecl *param;
+	QualType type;
 
+	if (method->getNumParams() < 1)
+		return true;
+
+	param = method->getParamDecl(0);
+	type = param->getOriginalType();
 	if (!is_isl_type(type))
 		return true;
 	return extract_type(type) != clazz.name;
