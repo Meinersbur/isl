@@ -3019,6 +3019,38 @@ static int map_check_equal(__isl_keep isl_map *map, const char *str)
 	return 0;
 }
 
+/* Is "set" equal to the set described by "str"?
+ */
+static isl_bool set_is_equal(__isl_keep isl_set *set, const char *str)
+{
+	isl_set *set2;
+	isl_bool equal;
+
+	if (!set)
+		return isl_bool_error;
+
+	set2 = isl_set_read_from_str(isl_set_get_ctx(set), str);
+	equal = isl_set_is_equal(set, set2);
+	isl_set_free(set2);
+
+	return equal;
+}
+
+/* Check that "set" is equal to the set described by "str".
+ */
+static isl_stat set_check_equal(__isl_keep isl_set *set, const char *str)
+{
+	isl_bool equal;
+
+	equal = set_is_equal(set, str);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_set_get_ctx(set), isl_error_unknown,
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 static int test_dep(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -6325,6 +6357,65 @@ int test_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_set_unbind_params tests.
+ * "set" is the input parameter domain.
+ * "tuple" is the tuple of the constructed set.
+ * "res" is the expected result.
+ */
+struct {
+	const char *set;
+	const char *tuple;
+	const char *res;
+} unbind_set_tests[] = {
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ A[M, N] }",
+	  "{ A[M, N] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ B[N, M] }",
+	  "{ B[N, M] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ C[N] }",
+	  "[M] -> { C[N] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ D[T, N] }",
+	  "[M] -> { D[x, N] : M mod 2 = 0 and N mod 8 = 3 }" },
+};
+
+/* Perform basic isl_set_unbind_params tests.
+ */
+static isl_stat test_unbind_set(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(unbind_set_tests); ++i) {
+		const char *str;
+		isl_set *set;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		set = isl_set_read_from_str(ctx, unbind_set_tests[i].set);
+		str = unbind_set_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		set = isl_set_unbind_params(set, tuple);
+		r = set_check_equal(set, unbind_set_tests[i].res);
+		isl_set_free(set);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Perform tests that reinterpret parameters.
+ */
+static int test_unbind(isl_ctx *ctx)
+{
+	if (test_unbind_set(ctx) < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Check that "pa" consists of a single expression.
  */
 static int check_single_piece(isl_ctx *ctx, __isl_take isl_pw_aff *pa)
@@ -9449,6 +9540,7 @@ struct {
 	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 	{ "lift", &test_lift },
+	{ "unbind parameters", &test_unbind },
 	{ "bound", &test_bound },
 	{ "get lists", &test_get_list },
 	{ "union", &test_union },

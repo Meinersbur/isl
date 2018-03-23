@@ -11999,6 +11999,62 @@ __isl_give isl_basic_set *isl_basic_set_drop_unused_params(
 							bset_to_bmap(bset)));
 }
 
+/* Insert a domain corresponding to "tuple"
+ * into the nullary or unary relation "set".
+ * The result has an extra initial tuple and is therefore
+ * either a unary or binary relation.
+ * Any parameters with identifiers in "tuple" are reinterpreted
+ * as the corresponding domain dimensions.
+ */
+static __isl_give isl_map *unbind_params_insert_domain(
+	__isl_take isl_set *set, __isl_take isl_multi_id *tuple)
+{
+	isl_space *space;
+	isl_reordering *r;
+
+	space = isl_set_peek_space(set);
+	r = isl_reordering_unbind_params_insert_domain(space, tuple);
+	isl_multi_id_free(tuple);
+
+	return isl_map_realign(set_to_map(set), r);
+}
+
+/* Construct a set with "tuple" as domain from the parameter domain "set".
+ * Any parameters with identifiers in "tuple" are reinterpreted
+ * as the corresponding set dimensions.
+ */
+__isl_give isl_set *isl_set_unbind_params(__isl_take isl_set *set,
+	__isl_take isl_multi_id *tuple)
+{
+	isl_bool is_params;
+
+	is_params = isl_set_is_params(set);
+	if (is_params < 0)
+		set = isl_set_free(set);
+	else if (!is_params)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"expecting parameter domain", set = isl_set_free(set));
+	return set_from_map(unbind_params_insert_domain(set, tuple));
+}
+
+/* Construct a map with "domain" as domain and "set" as range.
+ * Any parameters with identifiers in "domain" are reinterpreted
+ * as the corresponding domain dimensions.
+ */
+__isl_give isl_map *isl_set_unbind_params_insert_domain(
+	__isl_take isl_set *set, __isl_take isl_multi_id *domain)
+{
+	isl_bool is_params;
+
+	is_params = isl_set_is_params(set);
+	if (is_params < 0)
+		set = isl_set_free(set);
+	else if (is_params)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"expecting proper set", set = isl_set_free(set));
+	return unbind_params_insert_domain(set, domain);
+}
+
 __isl_give isl_mat *isl_basic_map_equalities_matrix(
 		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
 		enum isl_dim_type c2, enum isl_dim_type c3,

@@ -4900,6 +4900,17 @@ can be created from a parameter space using the following functions.
 		__isl_take isl_space *space,
 		__isl_take isl_id *tuple_id, unsigned dim);
 
+A set with a given tuple can be created from a parameter domain
+using the following function.
+
+	#include <isl/set.h>
+	__isl_give isl_set *isl_set_unbind_params(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_id *tuple);
+
+Any parameters with identifiers in C<tuple> are reinterpreted
+as the corresponding set dimensions.
+
 A zero-dimensional (local) space or (basic) set can be constructed
 on a given parameter domain using the following functions.
 
@@ -4924,6 +4935,19 @@ A map space with a range of a given dimension and with an optional name
 can be created from a domain space using the functions
 C<isl_space_add_unnamed_tuple_ui> and C<isl_space_add_named_tuple_id_ui>
 described above.
+
+A relation with a given domain tuple can be created from a set
+that will become the range of the relation
+using the following function.
+
+	#include <isl/set.h>
+	__isl_give isl_map *
+	isl_set_unbind_params_insert_domain(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_id *domain);
+
+Any parameters with identifiers in C<domain> are reinterpreted
+as the corresponding input dimensions.
 
 Create a relation with the given set(s) as domain and/or range.
 If only the domain or the range is specified, then
