@@ -11629,6 +11629,7 @@ __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	}
 
 	map = isl_map_reset_space(map, isl_space_copy(r->dim));
+	map = isl_map_unmark_normalized(map);
 
 	isl_reordering_free(r);
 	free(dim_map);
