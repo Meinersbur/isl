@@ -6192,14 +6192,21 @@ struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 					isl_dim_set, dim, value));
 }
 
-static int remove_if_empty(__isl_keep isl_map *map, int i)
+/* Remove the basic map at position "i" from "map" if this basic map
+ * is (obviously) empty.
+ */
+static __isl_give isl_map *remove_if_empty(__isl_take isl_map *map, int i)
 {
-	isl_bool empty = isl_basic_map_plain_is_empty(map->p[i]);
+	isl_bool empty;
 
+	if (!map)
+		return NULL;
+
+	empty = isl_basic_map_plain_is_empty(map->p[i]);
 	if (empty < 0)
-		return -1;
+		return isl_map_free(map);
 	if (!empty)
-		return 0;
+		return map;
 
 	isl_basic_map_free(map->p[i]);
 	if (i != map->n - 1) {
@@ -6208,7 +6215,7 @@ static int remove_if_empty(__isl_keep isl_map *map, int i)
 	}
 	map->n--;
 
-	return 0;
+	return map;
 }
 
 /* Perform "fn" on each basic map of "map", where we may not be holding
@@ -6234,8 +6241,9 @@ __isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
 			goto error;
 		isl_basic_map_free(map->p[i]);
 		map->p[i] = bmap;
-		if (remove_if_empty(map, i) < 0)
-			goto error;
+		map = remove_if_empty(map, i);
+		if (!map)
+			return NULL;
 	}
 
 	return map;
@@ -6256,8 +6264,9 @@ __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = isl_basic_map_fix_si(map->p[i], type, pos, value);
-		if (remove_if_empty(map, i) < 0)
-			goto error;
+		map = remove_if_empty(map, i);
+		if (!map)
+			return NULL;
 	}
 	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	return map;
@@ -6321,7 +6330,8 @@ __isl_give isl_map *isl_map_fix_val(__isl_take isl_map *map,
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = isl_basic_map_fix_val(map->p[i], type, pos,
 							isl_val_copy(v));
-		if (remove_if_empty(map, i) < 0)
+		map = remove_if_empty(map, i);
+		if (!map)
 			goto error;
 	}
 	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
@@ -6496,8 +6506,9 @@ static __isl_give isl_map *map_bound(__isl_take isl_map *map,
 			"index out of bounds", goto error);
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = basic_map_bound(map->p[i], type, pos, value, upper);
-		if (remove_if_empty(map, i) < 0)
-			goto error;
+		map = remove_if_empty(map, i);
+		if (!map)
+			return NULL;
 	}
 	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	return map;
@@ -9049,7 +9060,7 @@ __isl_give isl_map *isl_map_remove_empty_parts(__isl_take isl_map *map)
 		return NULL;
 
 	for (i = map->n - 1; i >= 0; --i)
-		remove_if_empty(map, i);
+		map = remove_if_empty(map, i);
 
 	return map;
 }
@@ -12704,8 +12715,9 @@ __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 
 	for (i = set->n - 1; i >= 0; --i) {
 		set->p[i] = isl_basic_set_substitute(set->p[i], type, pos, subs);
-		if (remove_if_empty(set, i) < 0)
-			goto error;
+		set = set_from_map(remove_if_empty(set_to_map(set), i));
+		if (!set)
+			return NULL;
 	}
 
 	return set;
