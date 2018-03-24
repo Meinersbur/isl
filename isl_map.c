@@ -6194,7 +6194,7 @@ struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 
 static int remove_if_empty(__isl_keep isl_map *map, int i)
 {
-	int empty = isl_basic_map_plain_is_empty(map->p[i]);
+	isl_bool empty = isl_basic_map_plain_is_empty(map->p[i]);
 
 	if (empty < 0)
 		return -1;
