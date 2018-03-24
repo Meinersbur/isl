@@ -11643,7 +11643,6 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 	unsigned flags;
 	unsigned n_div;
 
-	bmap = isl_basic_map_cow(bmap);
 	if (!bmap || !space || !dim_map)
 		goto error;
 
