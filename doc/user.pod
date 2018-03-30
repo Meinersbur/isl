@@ -10072,6 +10072,7 @@ Each type of expression has its own additional properties.
 	#include <isl/ast.h>
 	enum isl_ast_op_type isl_ast_expr_get_op_type(
 		__isl_keep isl_ast_expr *expr);
+	isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr);
 	isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
 	__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(
 		__isl_keep isl_ast_expr *expr, int pos);
@@ -10085,9 +10086,12 @@ Each type of expression has its own additional properties.
 			void *user), void *user);
 
 C<isl_ast_expr_get_op_type> returns the type of the operation
-performed.  C<isl_ast_expr_get_op_n_arg> returns the number of
+performed.  C<isl_ast_expr_op_get_n_arg> returns the number of
 arguments.  C<isl_ast_expr_get_op_arg> returns the specified
 argument.
+C<isl_ast_expr_get_op_n_arg> is an alternative name for
+C<isl_ast_expr_op_get_n_arg>.
+
 C<isl_ast_expr_foreach_ast_op_type> calls C<fn> for each distinct
 C<isl_ast_op_type> that appears in C<expr>.
 C<isl_ast_node_foreach_ast_op_type> does the same for each distinct

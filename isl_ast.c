@@ -292,7 +292,9 @@ enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)
 	return expr->u.op.op;
 }
 
-isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
+/* Return the number of arguments of the operation represented by "expr".
+ */
+isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
 		return isl_size_error;
@@ -300,6 +302,13 @@ isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"expression not an operation", return isl_size_error);
 	return expr->u.op.n_arg;
+}
+
+/* This is an alternative name for the function above.
+ */
+isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
+{
+	return isl_ast_expr_op_get_n_arg(expr);
 }
 
 __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
