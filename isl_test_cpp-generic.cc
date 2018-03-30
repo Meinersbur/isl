@@ -316,5 +316,6 @@ static void test_ast_build_expr(isl::ctx ctx)
 
 	auto expr = build.expr_from(pa);
 	auto op = expr.as<isl::ast_expr_op>();
+	assert(IS_TRUE(op.isa<isl::ast_expr_op_add>()));
 	assert(SIZE_VAL(op.get_n_arg()) == 2);
 }

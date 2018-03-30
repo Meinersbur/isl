@@ -71,6 +71,7 @@ __isl_export
 __isl_give isl_id *isl_ast_expr_id_get_id(__isl_keep isl_ast_expr *expr);
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr);
 
+__isl_subclass(isl_ast_expr_op)
 enum isl_ast_expr_op_type isl_ast_expr_op_get_type(
 	__isl_keep isl_ast_expr *expr);
 enum isl_ast_expr_op_type isl_ast_expr_get_op_type(

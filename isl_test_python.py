@@ -377,6 +377,7 @@ def test_ast_build_expr():
 	build = isl.ast_build.from_context(pa.domain())
 
 	op = build.expr_from(pa)
+	assert(type(op) == isl.ast_expr_op_add)
 	assert(op.get_n_arg() == 2)
 
 # Test the isl Python interface
