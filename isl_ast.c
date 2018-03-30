@@ -264,7 +264,7 @@ __isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr)
 	return isl_ast_expr_int_get_val(expr);
 }
 
-__isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
+__isl_give isl_id *isl_ast_expr_id_get_id(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
 		return NULL;
@@ -273,6 +273,13 @@ __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
 			"expression not an identifier", return NULL);
 
 	return isl_id_copy(expr->u.id);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
+{
+	return isl_ast_expr_id_get_id(expr);
 }
 
 enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)

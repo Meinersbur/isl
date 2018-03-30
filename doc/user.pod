@@ -10228,10 +10228,14 @@ the member of the structure being accessed.
 =back
 
 	#include <isl/ast.h>
+	__isl_give isl_id *isl_ast_expr_id_get_id(
+		__isl_keep isl_ast_expr *expr);
 	__isl_give isl_id *isl_ast_expr_get_id(
 		__isl_keep isl_ast_expr *expr);
 
 Return the identifier represented by the AST expression.
+C<isl_ast_expr_get_id> is an alternative name for
+C<isl_ast_expr_id_get_id>.
 
 	#include <isl/ast.h>
 	__isl_give isl_val *isl_ast_expr_int_get_val(
