@@ -32,8 +32,16 @@ static void assert_impl(isl::boolean condition, const char *file, int line,
 	assert_impl(bool(condition), file, line, message);
 }
 
+/* Return the value encapsulated by "s".
+ */
+static int size_val(isl::size s)
+{
+	return s.is_error() ? -1 : unsigned(s);
+}
+
 #define assert(exp) assert_impl(exp, __FILE__, __LINE__, #exp)
 #define IS_TRUE(b)	(b).is_true()
+#define SIZE_VAL(s)	size_val(s)
 
 #include "isl_test_cpp-generic.cc"
 
@@ -277,6 +285,7 @@ static void test_ast_build(isl::ctx ctx)
  *  - Every functions
  *  - Schedule trees
  *  - AST generation
+ *  - AST expression generation
  */
 int main()
 {
@@ -292,6 +301,7 @@ int main()
 	test_every(ctx);
 	test_schedule_tree(ctx);
 	test_ast_build(ctx);
+	test_ast_build_expr(ctx);
 
 	isl_ctx_free(ctx);
 

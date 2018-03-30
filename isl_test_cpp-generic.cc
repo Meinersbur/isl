@@ -8,6 +8,9 @@
 #ifndef IS_TRUE
 #define IS_TRUE(b)	(b)
 #endif
+#ifndef SIZE_VAL
+#define SIZE_VAL(s)	(s)
+#endif
 
 /* Test the pointer interface for interaction between isl C and C++ types.
  *
@@ -302,4 +305,16 @@ static isl::schedule test_ast_build_generic(isl::ctx ctx)
 	assert(count_ast == 2);
 
 	return schedule;
+}
+
+/* Test basic AST expression generation from an affine expression.
+ */
+static void test_ast_build_expr(isl::ctx ctx)
+{
+	isl::pw_aff pa(ctx, "[n] -> { [n + 1] }");
+	isl::ast_build build = isl::ast_build::from_context(pa.domain());
+
+	auto expr = build.expr_from(pa);
+	auto op = expr.as<isl::ast_expr_op>();
+	assert(SIZE_VAL(op.get_n_arg()) == 2);
 }
