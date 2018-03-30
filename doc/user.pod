@@ -10074,6 +10074,8 @@ Each type of expression has its own additional properties.
 		__isl_keep isl_ast_expr *expr);
 	isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr);
 	isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
+	__isl_give isl_ast_expr *isl_ast_expr_op_get_arg(
+		__isl_keep isl_ast_expr *expr, int pos);
 	__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(
 		__isl_keep isl_ast_expr *expr, int pos);
 	isl_stat isl_ast_expr_foreach_ast_op_type(
@@ -10091,6 +10093,9 @@ arguments.  C<isl_ast_expr_get_op_arg> returns the specified
 argument.
 C<isl_ast_expr_get_op_n_arg> is an alternative name for
 C<isl_ast_expr_op_get_n_arg>.
+Similarly,
+C<isl_ast_expr_get_op_arg> is an alternative name for
+C<isl_ast_expr_op_get_arg>.
 
 C<isl_ast_expr_foreach_ast_op_type> calls C<fn> for each distinct
 C<isl_ast_op_type> that appears in C<expr>.

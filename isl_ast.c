@@ -311,7 +311,9 @@ isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
 	return isl_ast_expr_op_get_n_arg(expr);
 }
 
-__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
+/* Return the argument at position "pos" of the operation represented by "expr".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_op_get_arg(__isl_keep isl_ast_expr *expr,
 	int pos)
 {
 	if (!expr)
@@ -324,6 +326,14 @@ __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
 			"index out of bounds", return NULL);
 
 	return isl_ast_expr_copy(expr->u.op.args[pos]);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
+	int pos)
+{
+	return isl_ast_expr_op_get_arg(expr, pos);
 }
 
 /* Replace the argument at position "pos" of "expr" by "arg".
