@@ -10234,10 +10234,14 @@ the member of the structure being accessed.
 Return the identifier represented by the AST expression.
 
 	#include <isl/ast.h>
+	__isl_give isl_val *isl_ast_expr_int_get_val(
+		__isl_keep isl_ast_expr *expr);
 	__isl_give isl_val *isl_ast_expr_get_val(
 		__isl_keep isl_ast_expr *expr);
 
 Return the integer represented by the AST expression.
+C<isl_ast_expr_get_val> is an alternative name for
+C<isl_ast_expr_int_get_val>.
 
 =head3 Properties of ASTs
 

@@ -247,7 +247,7 @@ enum isl_ast_expr_type isl_ast_expr_get_type(__isl_keep isl_ast_expr *expr)
 
 /* Return the integer value represented by "expr".
  */
-__isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr)
+__isl_give isl_val *isl_ast_expr_int_get_val(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
 		return NULL;
@@ -255,6 +255,13 @@ __isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"expression not an int", return NULL);
 	return isl_val_copy(expr->u.v);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr)
+{
+	return isl_ast_expr_int_get_val(expr);
 }
 
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
