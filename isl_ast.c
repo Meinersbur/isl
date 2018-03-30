@@ -282,7 +282,9 @@ __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
 	return isl_ast_expr_id_get_id(expr);
 }
 
-enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)
+/* Return the type of operation represented by "expr".
+ */
+enum isl_ast_op_type isl_ast_expr_op_get_type(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
 		return isl_ast_op_error;
@@ -290,6 +292,13 @@ enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"expression not an operation", return isl_ast_op_error);
 	return expr->u.op.op;
+}
+
+/* This is an alternative name for the function above.
+ */
+enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)
+{
+	return isl_ast_expr_op_get_type(expr);
 }
 
 /* Return the number of arguments of the operation represented by "expr".

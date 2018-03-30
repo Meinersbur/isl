@@ -10074,6 +10074,8 @@ An C<isl_ast_expr_int> represents an integer value.
 Each type of expression has its own additional properties.
 
 	#include <isl/ast.h>
+	enum isl_ast_op_type isl_ast_expr_op_get_type(
+		__isl_keep isl_ast_expr *expr);
 	enum isl_ast_op_type isl_ast_expr_get_op_type(
 		__isl_keep isl_ast_expr *expr);
 	isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr);
@@ -10091,13 +10093,15 @@ Each type of expression has its own additional properties.
 		isl_stat (*fn)(enum isl_ast_op_type type,
 			void *user), void *user);
 
-C<isl_ast_expr_get_op_type> returns the type of the operation
+C<isl_ast_expr_op_get_type> returns the type of the operation
 performed.  C<isl_ast_expr_op_get_n_arg> returns the number of
 arguments.  C<isl_ast_expr_get_op_arg> returns the specified
 argument.
-C<isl_ast_expr_get_op_n_arg> is an alternative name for
-C<isl_ast_expr_op_get_n_arg>.
+C<isl_ast_expr_get_op_type> is an alternative name for
+C<isl_ast_expr_op_get_type>.
 Similarly,
+C<isl_ast_expr_get_op_n_arg> is an alternative name for
+C<isl_ast_expr_op_get_n_arg> and
 C<isl_ast_expr_get_op_arg> is an alternative name for
 C<isl_ast_expr_op_get_arg>.
 
