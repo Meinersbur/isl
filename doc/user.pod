@@ -10675,7 +10675,8 @@ range of the schedule.
 The range of the options can consist of elements in one or more spaces,
 the names of which determine the effect of the option.
 The values of the range typically also refer to the schedule dimension
-to which the option applies.  In case of nested AST generation
+to which the option applies, with value C<0> representing
+the outermost schedule dimension.  In case of nested AST generation
 (see L</"Nested AST Generation">), these values refer to the position
 of the schedule dimension within the innermost AST generation.
 The constraints on the domain elements of
