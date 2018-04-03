@@ -4156,7 +4156,7 @@ functions.
 =item * Dependence
 
 To check whether the description of a set, relation or function depends
-on one or more given dimensions,
+on a parameter or one or more given dimensions,
 the following functions can be used.
 
 	#include <isl/constraint.h>
@@ -4186,12 +4186,18 @@ the following functions can be used.
 	#include <isl/aff.h>
 	isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_aff_involves_param_id(
+		__isl_keep isl_pw_aff *pa,
+		__isl_keep isl_id *id);
 	isl_bool isl_pw_aff_involves_dims(
 		__isl_keep isl_pw_aff *pwaff,
 		enum isl_dim_type type, unsigned first, unsigned n);
 	isl_bool isl_multi_aff_involves_dims(
 		__isl_keep isl_multi_aff *ma,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_multi_aff_involves_param_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		__isl_keep isl_id *id);
 	isl_bool isl_pw_multi_aff_involves_dims(
 		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type, unsigned first, unsigned n);
@@ -4203,6 +4209,12 @@ the following functions can be used.
 	isl_bool isl_qpolynomial_involves_dims(
 		__isl_keep isl_qpolynomial *qp,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_qpolynomial_involves_param_id(
+		__isl_keep isl_pw_qpolynomial *pwqp,
+		__isl_keep isl_id *id);
+	isl_bool isl_pw_qpolynomial_fold_involves_param_id(
+		__isl_keep isl_pw_qpolynomial_fold *pwf,
+		__isl_keep isl_id *id);
 
 Similarly, the following functions can be used to check whether
 a given dimension is involved in any lower or upper bound.

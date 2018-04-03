@@ -1514,6 +1514,37 @@ int FN(PW,find_dim_by_name)(__isl_keep PW *pw,
 	return isl_space_find_dim_by_name(pw->dim, type, name);
 }
 
+/* Return the position of the dimension of the given type and identifier
+ * in "pw".
+ * Return -1 if no such dimension can be found.
+ */
+static int FN(PW,find_dim_by_id)(__isl_keep PW *pw,
+	enum isl_dim_type type, __isl_keep isl_id *id)
+{
+	isl_space *space;
+
+	space = FN(PW,peek_space)(pw);
+	return isl_space_find_dim_by_id(space, type, id);
+}
+
+/* Does the piecewise expression "pw" depend in any way
+ * on the parameter with identifier "id"?
+ */
+isl_bool FN(PW,involves_param_id)(__isl_keep PW *pw, __isl_keep isl_id *id)
+{
+	int pos;
+
+	if (!pw || !id)
+		return isl_bool_error;
+	if (pw->n == 0)
+		return isl_bool_false;
+
+	pos = FN(PW,find_dim_by_id)(pw, isl_dim_param, id);
+	if (pos < 0)
+		return isl_bool_false;
+	return FN(PW,involves_dims)(pw, isl_dim_param, pos, 1);
+}
+
 #ifndef NO_RESET_DIM
 /* Reset the space of "pw".  Since we don't know if the elements
  * represent the spaces themselves or their domains, we pass along
