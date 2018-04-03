@@ -17,11 +17,20 @@ isl_ctx *FN(UNION,get_ctx)(__isl_keep UNION *u)
 	return u ? u->space->ctx : NULL;
 }
 
-__isl_give isl_space *FN(UNION,get_space)(__isl_keep UNION *u)
+/* Return the space of "u".
+ */
+static __isl_keep isl_space *FN(UNION,peek_space)(__isl_keep UNION *u)
 {
 	if (!u)
 		return NULL;
-	return isl_space_copy(u->space);
+	return u->space;
+}
+
+/* Return a copy of the space of "u".
+ */
+__isl_give isl_space *FN(UNION,get_space)(__isl_keep UNION *u)
+{
+	return isl_space_copy(FN(UNION,peek_space)(u));
 }
 
 /* Return the number of parameters of "u", where "type"
