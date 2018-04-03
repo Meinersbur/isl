@@ -6229,6 +6229,7 @@ error:
 #include <isl_multi_align_set.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_move_dims_templ.c>
+#include <isl_multi_param_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_zero_templ.c>

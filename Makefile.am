@@ -485,6 +485,7 @@ EXTRA_DIST = \
 	isl_multi_intersect.c \
 	isl_multi_identity_templ.c \
 	isl_multi_move_dims_templ.c \
+	isl_multi_param_templ.c \
 	isl_multi_product_templ.c \
 	isl_multi_splice_templ.c \
 	isl_multi_zero_templ.c \
