@@ -3461,6 +3461,27 @@ the following functions.
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		__isl_take isl_space *space);
 
+It is also possible to obtain a list of the base expressions using
+the following functions.
+
+	#include <isl/aff.h>
+	__isl_give isl_pw_aff_list *
+	isl_union_pw_aff_get_pw_aff_list(
+		__isl_keep isl_union_pw_aff *upa);
+	__isl_give isl_pw_multi_aff_list *
+	isl_union_pw_multi_aff_get_pw_multi_aff_list(
+		__isl_keep isl_union_pw_multi_aff *upma);
+
+	#include <isl/polynomial.h>
+	__isl_give isl_pw_qpolynomial_list *
+	isl_union_pw_qpolynomial_get_pw_qpolynomial_list(
+		__isl_keep isl_union_pw_qpolynomial *upwqp);
+	__isl_give isl_pw_qpolynomial_fold_list *
+	isl_union_pw_qpolynomial_fold_get_pw_qpolynomial_fold_list(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+The returned list can be manipulated using the functions in L<"Lists">.
+
 =head2 Input and Output
 
 For set and relation,

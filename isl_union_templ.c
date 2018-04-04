@@ -1165,3 +1165,39 @@ __isl_give UNION *FN(UNION,reset_user)(__isl_take UNION *u)
 	return FN(UNION,transform_space)(u, space, &FN(UNION,reset_user_entry),
 					NULL);
 }
+
+/* Add the base expression held by "entry" to "list".
+ */
+static isl_stat FN(UNION,add_to_list)(void **entry, void *user)
+{
+	PW *pw = *entry;
+	LIST(PART) **list = user;
+
+	*list = FN(LIST(PART),add)(*list, FN(PART,copy)(pw));
+	if (!*list)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Return a list containing all the base expressions in "u".
+ *
+ * First construct a list of the appropriate size and
+ * then add all the elements.
+ */
+__isl_give LIST(PART) *FN(FN(UNION,get),LIST(BASE))(__isl_keep UNION *u)
+{
+	int n;
+	LIST(PART) *list;
+
+	if (!u)
+		return NULL;
+	n = FN(FN(UNION,n),BASE)(u);
+	if (n < 0)
+		return NULL;
+	list = FN(LIST(PART),alloc)(FN(UNION,get_ctx(u)), n);
+	if (FN(UNION,foreach_inplace)(u, &FN(UNION,add_to_list), &list) < 0)
+		return FN(LIST(PART),free)(list);
+
+	return list;
+}
