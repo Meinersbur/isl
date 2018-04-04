@@ -695,6 +695,8 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_map_apply_union_pw_qpolynomi
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_to_polynomial(
 	__isl_take isl_union_pw_qpolynomial *upwqp, int sign);
 
+ISL_DECLARE_LIST_FN(pw_qpolynomial)
+
 #if defined(__cplusplus)
 }
 #endif
