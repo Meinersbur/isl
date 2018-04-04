@@ -111,6 +111,11 @@ struct isl_pw_qpolynomial_fold {
 
 #include <isl_pw_templ.h>
 
+#undef EL
+#define EL isl_pw_qpolynomial_fold
+
+#include <isl_list_templ.h>
+
 void isl_term_get_num(__isl_keep isl_term *term, isl_int *n);
 
 __isl_give struct isl_upoly *isl_upoly_zero(struct isl_ctx *ctx);
