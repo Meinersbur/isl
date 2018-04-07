@@ -9350,25 +9350,14 @@ __isl_give isl_multi_pw_aff *isl_multi_union_pw_aff_extract_multi_pw_aff(
 	__isl_keep isl_multi_union_pw_aff *mupa, __isl_take isl_space *space)
 {
 	int i, n;
-	isl_bool equal_params;
-	isl_space *space_mpa = NULL;
+	isl_space *space_mpa;
 	isl_multi_pw_aff *mpa;
 
 	if (!mupa || !space)
 		goto error;
 
 	space_mpa = isl_multi_union_pw_aff_get_space(mupa);
-	equal_params = isl_space_has_equal_params(space_mpa, space);
-	if (equal_params < 0)
-		goto error;
-	if (!equal_params) {
-		space = isl_space_drop_dims(space, isl_dim_param,
-					0, isl_space_dim(space, isl_dim_param));
-		space = isl_space_align_params(space,
-					isl_space_copy(space_mpa));
-		if (!space)
-			goto error;
-	}
+	space = isl_space_replace_params(space, space_mpa);
 	space_mpa = isl_space_map_from_domain_and_range(isl_space_copy(space),
 							space_mpa);
 	mpa = isl_multi_pw_aff_alloc(space_mpa);
@@ -9390,7 +9379,6 @@ __isl_give isl_multi_pw_aff *isl_multi_union_pw_aff_extract_multi_pw_aff(
 	isl_space_free(space);
 	return mpa;
 error:
-	isl_space_free(space_mpa);
 	isl_space_free(space);
 	return NULL;
 }
