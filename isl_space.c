@@ -2301,7 +2301,14 @@ __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *space)
 __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 	__isl_keep isl_space *src)
 {
+	isl_bool equal_params;
 	enum isl_dim_type type = isl_dim_param;
+
+	equal_params = isl_space_has_equal_params(dst, src);
+	if (equal_params < 0)
+		return isl_space_free(dst);
+	if (equal_params)
+		return dst;
 
 	dst = isl_space_cow(dst);
 
