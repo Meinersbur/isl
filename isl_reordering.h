@@ -4,7 +4,7 @@
 #include <isl/space.h>
 
 /* pos maps original dimensions to new dimensions.
- * The final dimension is given by dim.
+ * The final space is given by "space".
  * The number of dimensions (i.e., the range of values) in the result
  * may be larger than the number of dimensions in the input.
  * In particular, the possible values of the entries in pos ranges from 0 to
@@ -13,7 +13,7 @@
  */
 struct isl_reordering {
 	int ref;
-	isl_space *dim;
+	isl_space *space;
 	unsigned len;
 	int pos[1];
 };

@@ -24,7 +24,7 @@ __isl_give isl_reordering *isl_reordering_alloc(isl_ctx *ctx, int len)
 
 	exp->ref = 1;
 	exp->len = len;
-	exp->dim = NULL;
+	exp->space = NULL;
 
 	return exp;
 }
@@ -50,8 +50,8 @@ __isl_give isl_reordering *isl_reordering_dup(__isl_keep isl_reordering *r)
 	if (!dup)
 		return NULL;
 
-	dup->dim = isl_reordering_get_space(r);
-	if (!dup->dim)
+	dup->space = isl_reordering_get_space(r);
+	if (!dup->space)
 		return isl_reordering_free(dup);
 	for (i = 0; i < dup->len; ++i)
 		dup->pos[i] = r->pos[i];
@@ -78,7 +78,7 @@ void *isl_reordering_free(__isl_take isl_reordering *exp)
 	if (--exp->ref > 0)
 		return NULL;
 
-	isl_space_free(exp->dim);
+	isl_space_free(exp->space);
 	free(exp);
 	return NULL;
 }
@@ -96,7 +96,7 @@ __isl_keep isl_space *isl_reordering_peek_space(__isl_keep isl_reordering *r)
 {
 	if (!r)
 		return NULL;
-	return r->dim;
+	return r->space;
 }
 
 /* Return a copy of the space of "r".
@@ -124,7 +124,7 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 	if (!exp)
 		return NULL;
 
-	exp->dim = isl_space_copy(aligner);
+	exp->space = isl_space_copy(aligner);
 
 	for (i = 0; i < alignee->nparam; ++i) {
 		isl_id *id_i;
@@ -144,15 +144,16 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 			isl_id_free(id_i);
 		} else {
 			int pos;
-			pos = isl_space_dim(exp->dim, isl_dim_param);
-			exp->dim = isl_space_add_dims(exp->dim, isl_dim_param, 1);
-			exp->dim = isl_space_set_dim_id(exp->dim,
+			pos = isl_space_dim(exp->space, isl_dim_param);
+			exp->space = isl_space_add_dims(exp->space,
+						isl_dim_param, 1);
+			exp->space = isl_space_set_dim_id(exp->space,
 						isl_dim_param, pos, id_i);
 			exp->pos[i] = pos;
 		}
 	}
 
-	if (!exp->dim)
+	if (!exp->space)
 		return isl_reordering_free(exp);
 	return exp;
 error:
@@ -180,7 +181,7 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	res = isl_reordering_alloc(ctx, exp->len + extra);
 	if (!res)
 		goto error;
-	res->dim = isl_reordering_get_space(exp);
+	res->space = isl_reordering_get_space(exp);
 	for (i = 0; i < exp->len; ++i)
 		res->pos[i] = exp->pos[i];
 	for (i = exp->len; i < res->len; ++i)
@@ -208,13 +209,13 @@ __isl_give isl_reordering *isl_reordering_extend_space(
 	res = isl_reordering_cow(res);
 	if (!res)
 		goto error;
-	isl_space_free(res->dim);
+	isl_space_free(res->space);
 	exp_space = isl_reordering_peek_space(exp);
-	res->dim = isl_space_replace_params(space, exp_space);
+	res->space = isl_space_replace_params(space, exp_space);
 
 	isl_reordering_free(exp);
 
-	if (!res->dim)
+	if (!res->space)
 		return isl_reordering_free(res);
 
 	return res;
@@ -228,7 +229,7 @@ void isl_reordering_dump(__isl_keep isl_reordering *exp)
 {
 	int i;
 
-	isl_space_dump(exp->dim);
+	isl_space_dump(exp->space);
 	for (i = 0; i < exp->len; ++i)
 		fprintf(stderr, "%d -> %d; ", i, exp->pos[i]);
 	fprintf(stderr, "\n");
