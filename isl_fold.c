@@ -8,7 +8,6 @@
  * 91893 Orsay, France 
  */
 
-#define ISL_DIM_H
 #include <isl_map_private.h>
 #include <isl_union_map_private.h>
 #include <isl_polynomial_private.h>

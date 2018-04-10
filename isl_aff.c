@@ -15,7 +15,6 @@
  */
 
 #include <isl_ctx_private.h>
-#define ISL_DIM_H
 #include <isl_map_private.h>
 #include <isl_union_map_private.h>
 #include <isl_aff_private.h>
