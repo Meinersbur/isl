@@ -6406,11 +6406,62 @@ static isl_stat test_unbind_set(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_aff_unbind_params_insert_domain tests.
+ * "aff" is the input affine expression defined over a parameter domain.
+ * "tuple" is the tuple of the domain that gets introduced.
+ * "res" is the expected result.
+ */
+struct {
+	const char *aff;
+	const char *tuple;
+	const char *res;
+} unbind_aff_tests[] = {
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ A[M, N] }",
+	  "{ A[M, N] -> [M + floor(N/2)] }" },
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ B[N, M] }",
+	  "{ B[N, M] -> [M + floor(N/2)] }" },
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ C[N] }",
+	  "[M] -> { C[N] -> [M + floor(N/2)] }" },
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ D[A, B, C, N, Z] }",
+	  "[M] -> { D[A, B, C, N, Z] -> [M + floor(N/2)] }" },
+};
+
+/* Perform basic isl_aff_unbind_params_insert_domain tests.
+ */
+static isl_stat test_unbind_aff(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(unbind_aff_tests); ++i) {
+		const char *str;
+		isl_aff *aff;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		aff = isl_aff_read_from_str(ctx, unbind_aff_tests[i].aff);
+		str = unbind_aff_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		aff = isl_aff_unbind_params_insert_domain(aff, tuple);
+		r = aff_check_plain_equal(aff, unbind_aff_tests[i].res);
+		isl_aff_free(aff);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform tests that reinterpret parameters.
  */
 static int test_unbind(isl_ctx *ctx)
 {
 	if (test_unbind_set(ctx) < 0)
+		return -1;
+	if (test_unbind_aff(ctx) < 0)
 		return -1;
 
 	return 0;

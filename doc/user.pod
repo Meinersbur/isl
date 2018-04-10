@@ -4949,6 +4949,20 @@ using the following function.
 Any parameters with identifiers in C<domain> are reinterpreted
 as the corresponding input dimensions.
 
+Similarly, a function defined over a parameter domain can
+be converted into one defined over a set domain
+using the following function.
+
+	#include <isl/aff.h>
+	__isl_give isl_aff *
+	isl_aff_unbind_params_insert_domain(
+		__isl_take isl_aff *aff,
+		__isl_take isl_multi_id *domain);
+
+Again,
+any parameters with identifiers in C<domain> are reinterpreted
+as the corresponding input dimensions.
+
 Create a relation with the given set(s) as domain and/or range.
 If only the domain or the range is specified, then
 the range or domain of the created relation is a zero-dimensional

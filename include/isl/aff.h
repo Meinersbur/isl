@@ -128,6 +128,9 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_aff *isl_aff_project_domain_on_params(__isl_take isl_aff *aff);
+__isl_export
+__isl_give isl_aff *isl_aff_unbind_params_insert_domain(
+	__isl_take isl_aff *aff, __isl_take isl_multi_id *domain);
 
 __isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
 	__isl_take isl_space *model);
