@@ -254,7 +254,6 @@ __isl_give isl_union_map *isl_union_map_align_params(
 		return umap;
 	}
 
-	model = isl_space_params(model);
 	data.exp = isl_parameter_alignment_reordering(umap->dim, model);
 	if (!data.exp)
 		goto error;

@@ -557,10 +557,6 @@ __isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
 	if (!equal_params) {
 		isl_reordering *exp;
 
-		model = isl_space_drop_dims(model, isl_dim_in,
-					0, isl_space_dim(model, isl_dim_in));
-		model = isl_space_drop_dims(model, isl_dim_out,
-					0, isl_space_dim(model, isl_dim_out));
 		exp = isl_parameter_alignment_reordering(aff->ls->dim, model);
 		exp = isl_reordering_extend_space(exp,
 					isl_aff_get_domain_space(aff));

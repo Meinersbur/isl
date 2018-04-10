@@ -124,7 +124,7 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 	if (!exp)
 		return NULL;
 
-	exp->space = isl_space_copy(aligner);
+	exp->space = isl_space_params(isl_space_copy(aligner));
 
 	for (i = 0; i < alignee->nparam; ++i) {
 		isl_id *id_i;
