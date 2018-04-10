@@ -557,7 +557,7 @@ __isl_give isl_local_space *isl_local_space_realign(
 	if (!ls->div)
 		goto error;
 
-	ls = isl_local_space_reset_space(ls, isl_space_copy(r->dim));
+	ls = isl_local_space_reset_space(ls, isl_reordering_get_space(r));
 
 	isl_reordering_free(r);
 	return ls;

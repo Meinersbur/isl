@@ -50,7 +50,7 @@ __isl_give isl_reordering *isl_reordering_dup(__isl_keep isl_reordering *r)
 	if (!dup)
 		return NULL;
 
-	dup->dim = isl_space_copy(r->dim);
+	dup->dim = isl_reordering_get_space(r);
 	if (!dup->dim)
 		return isl_reordering_free(dup);
 	for (i = 0; i < dup->len; ++i)
@@ -97,6 +97,13 @@ __isl_keep isl_space *isl_reordering_peek_space(__isl_keep isl_reordering *r)
 	if (!r)
 		return NULL;
 	return r->dim;
+}
+
+/* Return a copy of the space of "r".
+ */
+__isl_give isl_space *isl_reordering_get_space(__isl_keep isl_reordering *r)
+{
+	return isl_space_copy(isl_reordering_peek_space(r));
 }
 
 /* Construct a reordering that maps the parameters of "alignee"
@@ -173,7 +180,7 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	res = isl_reordering_alloc(ctx, exp->len + extra);
 	if (!res)
 		goto error;
-	res->dim = isl_space_copy(exp->dim);
+	res->dim = isl_reordering_get_space(exp);
 	for (i = 0; i < exp->len; ++i)
 		res->pos[i] = exp->pos[i];
 	for (i = exp->len; i < res->len; ++i)

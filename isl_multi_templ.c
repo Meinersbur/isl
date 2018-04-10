@@ -439,6 +439,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_reordering *exp)
 {
 	int i;
+	isl_space *space;
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi || !exp)
@@ -451,8 +452,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 			goto error;
 	}
 
-	multi = FN(MULTI(BASE),reset_domain_space)(multi,
-						    isl_space_copy(exp->dim));
+	space = isl_reordering_get_space(exp);
+	multi = FN(MULTI(BASE),reset_domain_space)(multi, space);
 
 	isl_reordering_free(exp);
 	return multi;

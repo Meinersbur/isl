@@ -4230,6 +4230,8 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_mul(
 __isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_reordering *r)
 {
+	isl_space *space;
+
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		goto error;
@@ -4246,7 +4248,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_realign_domain(
 	if (!qp->upoly)
 		goto error;
 
-	qp = isl_qpolynomial_reset_domain_space(qp, isl_space_copy(r->dim));
+	space = isl_reordering_get_space(r);
+	qp = isl_qpolynomial_reset_domain_space(qp, space);
 
 	isl_reordering_free(r);
 	return qp;

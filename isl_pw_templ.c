@@ -290,7 +290,7 @@ __isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
 			goto error;
 	}
 
-	pw = FN(PW,reset_domain_space)(pw, isl_space_copy(exp->dim));
+	pw = FN(PW,reset_domain_space)(pw, isl_reordering_get_space(exp));
 
 	isl_reordering_free(exp);
 	return pw;

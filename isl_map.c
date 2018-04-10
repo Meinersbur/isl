@@ -11680,17 +11680,18 @@ __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 
 	for (i = 0; i < map->n; ++i) {
 		struct isl_dim_map *dim_map_i;
+		isl_space *space;
 
 		dim_map_i = isl_dim_map_extend(dim_map, map->p[i]);
 
-		map->p[i] = isl_basic_map_realign(map->p[i],
-					    isl_space_copy(r->dim), dim_map_i);
+		space = isl_reordering_get_space(r);
+		map->p[i] = isl_basic_map_realign(map->p[i], space, dim_map_i);
 
 		if (!map->p[i])
 			goto error;
 	}
 
-	map = isl_map_reset_space(map, isl_space_copy(r->dim));
+	map = isl_map_reset_space(map, isl_reordering_get_space(r));
 
 	isl_reordering_free(r);
 	free(dim_map);
@@ -11786,7 +11787,7 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 					isl_basic_map_get_space(bmap));
 		dim_map = isl_dim_map_from_reordering(exp);
 		bmap = isl_basic_map_realign(bmap,
-				    exp ? isl_space_copy(exp->dim) : NULL,
+				    isl_reordering_get_space(exp),
 				    isl_dim_map_extend(dim_map, bmap));
 		isl_reordering_free(exp);
 		free(dim_map);

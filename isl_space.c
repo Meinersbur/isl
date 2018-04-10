@@ -2566,9 +2566,7 @@ __isl_give isl_space *isl_space_align_params(__isl_take isl_space *space1,
 	exp = isl_parameter_alignment_reordering(space1, space2);
 	exp = isl_reordering_extend_space(exp, space1);
 	isl_space_free(space2);
-	if (!exp)
-		return NULL;
-	space1 = isl_space_copy(exp->dim);
+	space1 = isl_reordering_get_space(exp);
 	isl_reordering_free(exp);
 	return space1;
 error:
