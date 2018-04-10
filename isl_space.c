@@ -1963,6 +1963,80 @@ __isl_give isl_space *isl_space_add_named_tuple_id_ui(
 	return space;
 }
 
+/* Insert a domain tuple in "space" corresponding to the set space "domain".
+ * In particular, if "space" is a parameter space, then the result
+ * is the set space "domain" combined with the parameters of "space".
+ * If "space" is a set space, then the result
+ * is a map space with "domain" as domain and the original space as range.
+ */
+static __isl_give isl_space *isl_space_insert_domain(
+	__isl_take isl_space *space, __isl_take isl_space *domain)
+{
+	isl_bool is_params;
+
+	domain = isl_space_replace_params(domain, space);
+
+	is_params = isl_space_is_params(space);
+	if (is_params < 0) {
+		isl_space_free(domain);
+		space = isl_space_free(space);
+	} else if (is_params) {
+		isl_space_free(space);
+		space = domain;
+	} else {
+		space = isl_space_map_from_domain_and_range(domain, space);
+	}
+	return space;
+}
+
+/* Internal function that introduces a domain in "space"
+ * corresponding to the range space of "tuple".
+ * In particular, if "space" is a parameter space, then the result
+ * is a set space.  If "space" is a set space, then the result
+ * is a map space with the original space as range.
+ * Parameters that correspond to the identifiers in "tuple" are removed.
+ *
+ * The parameters are removed in reverse order (under the assumption
+ * that they appear in the same order in "multi") because
+ * it is slightly more efficient to remove parameters at the end.
+ *
+ * For pretty-printing purposes, the identifiers of the set dimensions
+ * of the introduced domain are set to the identifiers in "tuple".
+ */
+__isl_give isl_space *isl_space_unbind_params_insert_domain(
+	__isl_take isl_space *space, __isl_keep isl_multi_id *tuple)
+{
+	int i;
+	isl_size n;
+	isl_space *tuple_space;
+
+	n = isl_multi_id_size(tuple);
+	if (!space || n < 0)
+		return isl_space_free(space);
+	for (i = n - 1; i >= 0; --i) {
+		isl_id *id;
+		int pos;
+
+		id = isl_multi_id_get_id(tuple, i);
+		if (!id)
+			return isl_space_free(space);
+		pos = isl_space_find_dim_by_id(space, isl_dim_param, id);
+		isl_id_free(id);
+		if (pos < 0)
+			continue;
+		space = isl_space_drop_dims(space, isl_dim_param, pos, 1);
+	}
+	tuple_space = isl_multi_id_get_space(tuple);
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+
+		id = isl_multi_id_get_id(tuple, i);
+		tuple_space = isl_space_set_dim_id(tuple_space,
+						    isl_dim_set, i, id);
+	}
+	return isl_space_insert_domain(space, tuple_space);
+}
+
 __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div)
 {
