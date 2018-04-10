@@ -214,13 +214,15 @@ __isl_give isl_local *isl_local_reorder(__isl_take isl_local *local,
 {
 	isl_mat *div = local;
 	int i, j;
+	isl_space *space;
 	isl_mat *mat;
 	int extra;
 
 	if (!local || !r)
 		goto error;
 
-	extra = isl_space_dim(r->dim, isl_dim_all) + div->n_row - r->len;
+	space = isl_reordering_peek_space(r);
+	extra = isl_space_dim(space, isl_dim_all) + div->n_row - r->len;
 	mat = isl_mat_alloc(div->ctx, div->n_row, div->n_col + extra);
 	if (!mat)
 		goto error;

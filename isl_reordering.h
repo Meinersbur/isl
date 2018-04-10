@@ -19,6 +19,7 @@ struct isl_reordering {
 };
 typedef struct isl_reordering isl_reordering;
 
+__isl_keep isl_space *isl_reordering_peek_space(__isl_keep isl_reordering *r);
 __isl_give isl_reordering *isl_parameter_alignment_reordering(
 	__isl_keep isl_space *alignee, __isl_keep isl_space *aligner);
 __isl_give isl_reordering *isl_reordering_copy(__isl_keep isl_reordering *exp);

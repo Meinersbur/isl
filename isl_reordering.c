@@ -83,6 +83,15 @@ void *isl_reordering_free(__isl_take isl_reordering *exp)
 	return NULL;
 }
 
+/* Return the space of "r".
+ */
+__isl_keep isl_space *isl_reordering_peek_space(__isl_keep isl_reordering *r)
+{
+	if (!r)
+		return NULL;
+	return r->dim;
+}
+
 /* Construct a reordering that maps the parameters of "alignee"
  * to the corresponding parameters in a new dimension specification
  * that has the parameters of "aligner" first, followed by
@@ -141,6 +150,7 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	unsigned extra)
 {
 	int i;
+	isl_space *space;
 	isl_reordering *res;
 	int offset;
 
@@ -149,7 +159,8 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	if (extra == 0)
 		return exp;
 
-	offset = isl_space_dim(exp->dim, isl_dim_all) - exp->len;
+	space = isl_reordering_peek_space(exp);
+	offset = isl_space_dim(space, isl_dim_all) - exp->len;
 	res = isl_reordering_alloc(exp->dim->ctx, exp->len + extra);
 	if (!res)
 		goto error;
@@ -170,6 +181,7 @@ error:
 __isl_give isl_reordering *isl_reordering_extend_space(
 	__isl_take isl_reordering *exp, __isl_take isl_space *space)
 {
+	isl_space *exp_space;
 	isl_reordering *res;
 
 	if (!exp || !space)
@@ -181,7 +193,8 @@ __isl_give isl_reordering *isl_reordering_extend_space(
 	if (!res)
 		goto error;
 	isl_space_free(res->dim);
-	res->dim = isl_space_replace_params(space, exp->dim);
+	exp_space = isl_reordering_peek_space(exp);
+	res->dim = isl_space_replace_params(space, exp_space);
 
 	isl_reordering_free(exp);
 
