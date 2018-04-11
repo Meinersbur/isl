@@ -276,6 +276,7 @@ pkginclude_HEADERS = \
 	include/isl/ctx.h \
 	include/isl/flow.h \
 	include/isl/id.h \
+	include/isl/id_type.h \
 	include/isl/id_to_ast_expr.h \
 	include/isl/id_to_id.h \
 	include/isl/id_to_pw_aff.h \
