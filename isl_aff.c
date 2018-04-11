@@ -1990,7 +1990,7 @@ __isl_give isl_aff *isl_aff_set_tuple_id(__isl_take isl_aff *aff,
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		goto error;
-	if (type != isl_dim_out)
+	if (type != isl_dim_in)
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"cannot only set id of input tuple", goto error);
 	aff->ls = isl_local_space_set_tuple_id(aff->ls, isl_dim_set, id);

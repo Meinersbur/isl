@@ -4892,6 +4892,25 @@ static int test_mupa_uset(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the input tuple of an isl_aff can be set properly.
+ */
+static isl_stat test_aff_set_tuple_id(isl_ctx *ctx)
+{
+	isl_id *id;
+	isl_aff *aff;
+	int equal;
+
+	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x + 1] }");
+	id = isl_id_alloc(ctx, "A", NULL);
+	aff = isl_aff_set_tuple_id(aff, isl_dim_in, id);
+	equal = aff_check_plain_equal(aff, "{ A[x] -> [x + 1] }");
+	isl_aff_free(aff);
+	if (equal < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -4945,6 +4964,9 @@ int test_aff(isl_ctx *ctx)
 	equal = aff_check_plain_equal(aff, "{ [-1] }");
 	isl_aff_free(aff);
 	if (equal < 0)
+		return -1;
+
+	if (test_aff_set_tuple_id(ctx) < 0)
 		return -1;
 
 	return 0;
