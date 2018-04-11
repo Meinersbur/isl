@@ -11,6 +11,7 @@
  */
 
 #include <isl_ctx_private.h>
+#include <isl/id.h>
 #include <isl_map_private.h>
 #include <isl_local_space_private.h>
 #include <isl_space_private.h>
