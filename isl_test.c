@@ -22,6 +22,7 @@
 #include <isl_map_private.h>
 #include <isl_aff_private.h>
 #include <isl_space_private.h>
+#include <isl/id.h>
 #include <isl/set.h>
 #include <isl/flow.h>
 #include <isl_constraint_private.h>
