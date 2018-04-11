@@ -1,6 +1,7 @@
 #ifndef ISL_VAL_H
 #define ISL_VAL_H
 
+#include <isl/stdint.h>
 #include <isl/ctx.h>
 #include <isl/list.h>
 #include <isl/multi.h>
