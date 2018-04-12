@@ -38,6 +38,8 @@ __isl_give isl_printer *isl_printer_print_id(__isl_take isl_printer *p,
 	__isl_keep isl_id *id);
 void isl_id_dump(__isl_keep isl_id *id);
 
+__isl_give isl_multi_id *isl_multi_id_read_from_str(isl_ctx *ctx,
+	const char *str);
 __isl_give isl_printer *isl_printer_print_multi_id(__isl_take isl_printer *p,
 	__isl_keep isl_multi_id *mi);
 void isl_multi_id_dump(__isl_keep isl_multi_id *mi);

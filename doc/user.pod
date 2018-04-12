@@ -3674,6 +3674,8 @@ Objects can be read from input using the following functions.
 	#include <isl/id.h>
 	__isl_give isl_id *isl_id_read_from_str(isl_ctx *ctx,
 		const char *str);
+	__isl_give isl_multi_id *isl_multi_id_read_from_str(
+		isl_ctx *ctx, const char *str);
 
 	#include <isl/val.h>
 	__isl_give isl_val *isl_val_read_from_str(isl_ctx *ctx,
