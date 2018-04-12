@@ -466,6 +466,7 @@ EXTRA_DIST = \
 	isl_multi_pw_aff_explicit_domain.c \
 	isl_multi_union_pw_aff_explicit_domain.c \
 	isl_multi_no_explicit_domain.c \
+	isl_multi_no_domain_templ.c \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
 	isl_multi_align_templ.c \
