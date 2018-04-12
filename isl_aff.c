@@ -3825,6 +3825,7 @@ error:
 #include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
+#include <isl_multi_arith_templ.c>
 #include <isl_multi_cmp.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_floor.c>
@@ -6219,6 +6220,7 @@ error:
 #include <isl_multi_pw_aff_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
+#include <isl_multi_arith_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_domain_templ.c>
 #include <isl_multi_dims.c>
@@ -7995,6 +7997,7 @@ error:
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
+#include <isl_multi_arith_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
