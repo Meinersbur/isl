@@ -419,6 +419,7 @@ __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 ISL_DECLARE_MULTI(aff)
 ISL_DECLARE_MULTI_CMP(aff)
 ISL_DECLARE_MULTI_ARITH(aff)
+ISL_DECLARE_MULTI_NAN(aff)
 ISL_DECLARE_MULTI_DIMS(aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(aff)
 
@@ -475,6 +476,7 @@ void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 
 ISL_DECLARE_MULTI(pw_aff)
 ISL_DECLARE_MULTI_ARITH(pw_aff)
+ISL_DECLARE_MULTI_NAN(pw_aff)
 ISL_DECLARE_MULTI_DIMS(pw_aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_PARAM(pw_aff)
@@ -1003,6 +1005,7 @@ void isl_union_pw_aff_dump(__isl_keep isl_union_pw_aff *upa);
 
 ISL_DECLARE_MULTI(union_pw_aff)
 ISL_DECLARE_MULTI_ARITH(union_pw_aff)
+ISL_DECLARE_MULTI_NAN(union_pw_aff)
 
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
