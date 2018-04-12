@@ -782,7 +782,7 @@ static __isl_give isl_multi_val *isl_multi_union_pw_aff_opt_multi_val(
 	isl_size n;
 	isl_multi_val *mv;
 
-	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	n = isl_multi_union_pw_aff_size(mupa);
 	if (n < 0)
 		mupa = isl_multi_union_pw_aff_free(mupa);
 	if (!mupa)

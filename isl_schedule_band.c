@@ -54,7 +54,7 @@ __isl_give isl_schedule_band *isl_schedule_band_from_multi_union_pw_aff(
 	isl_space *space;
 
 	mupa = isl_multi_union_pw_aff_floor(mupa);
-	dim = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	dim = isl_multi_union_pw_aff_size(mupa);
 	if (dim < 0)
 		goto error;
 	ctx = isl_multi_union_pw_aff_get_ctx(mupa);
@@ -1090,7 +1090,7 @@ static isl_multi_union_pw_aff *isl_multi_union_pw_aff_tile(
 	ctx = isl_multi_val_get_ctx(sizes);
 	scale = isl_options_get_tile_scale_tile_loops(ctx);
 
-	n = isl_multi_union_pw_aff_dim(sched, isl_dim_set);
+	n = isl_multi_union_pw_aff_size(sched);
 	if (n < 0)
 		sched = isl_multi_union_pw_aff_free(sched);
 	for (i = 0; i < n; ++i) {

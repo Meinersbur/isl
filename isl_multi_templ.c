@@ -226,6 +226,13 @@ __isl_give isl_id *FN(MULTI(BASE),get_tuple_id)(__isl_keep MULTI(BASE) *multi,
 	return multi ? isl_space_get_tuple_id(multi->space, type) : NULL;
 }
 
+/* Return the number of base expressions in "multi".
+ */
+isl_size FN(MULTI(BASE),size)(__isl_keep MULTI(BASE) *multi)
+{
+	return multi ? multi->n : isl_size_error;
+}
+
 #undef TYPE
 #define TYPE	MULTI(BASE)
 static
@@ -684,8 +691,8 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product_aligned)(
 	isl_space *space;
 	MULTI(BASE) *res;
 
-	n1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
-	n2 = FN(MULTI(BASE),dim)(multi2, isl_dim_out);
+	n1 = FN(MULTI(BASE),size)(multi1);
+	n2 = FN(MULTI(BASE),size)(multi2);
 	if (n1 < 0 || n2 < 0)
 		goto error;
 
@@ -869,7 +876,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_splice)(
 	MULTI(BASE) *res;
 	isl_size dim;
 
-	dim = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
+	dim = FN(MULTI(BASE),size)(multi1);
 	if (dim < 0 || !multi2)
 		goto error;
 
