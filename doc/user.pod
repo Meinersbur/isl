@@ -559,6 +559,8 @@ in which the object was created.
 
 	#include <isl/id.h>
 	isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id);
+	isl_ctx *isl_multi_id_get_ctx(
+		__isl_keep isl_multi_id *mi);
 
 	#include <isl/local_space.h>
 	isl_ctx *isl_local_space_get_ctx(
@@ -1120,6 +1122,10 @@ of the original object.
 	__isl_give isl_space *isl_union_pw_qpolynomial_fold_get_space(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 
+	#include <isl/id.h>
+	__isl_give isl_space *isl_multi_id_get_space(
+		__isl_keep isl_multi_id *mi);
+
 	#include <isl/val.h>
 	__isl_give isl_space *isl_multi_val_get_space(
 		__isl_keep isl_multi_val *mv);
@@ -1265,6 +1271,9 @@ These functions are mostly useful to obtain the identifiers, positions
 or names of the parameters.  Identifiers of individual dimensions are
 essentially only useful for printing.  They are ignored by all other
 operations and may not be preserved across those operations.
+To keep track of a space along with names/identifiers of
+the set dimensions, use an C<isl_multi_id> as described in
+L</"Functions">.
 
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_set_dim_id(
@@ -1781,6 +1790,10 @@ of all the corresponding identifiers, use the following function.
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_reset_user(
 		__isl_take isl_union_map *umap);
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_reset_user(
+		__isl_take isl_multi_id *mi);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_reset_user(
@@ -2583,6 +2596,9 @@ Besides sets and relation, C<isl> also supports various types of functions.
 Each of these types is derived from the value type (see L</"Values">)
 or from one of two primitive function types
 through the application of zero or more type constructors.
+As a special case, a multiple expression can also be derived
+from an identifier (see L</"Identifiers">) although the result
+is not really a function.
 We first describe the primitive type and then we describe
 the types derived from these primitive types.
 
@@ -2851,8 +2867,9 @@ as that of the base expressions, but the range space
 can be any space.  In case the base expressions have
 a set space, the corresponding multiple expression
 also has a set space.
-Objects of the value type do not have an associated space.
-The space of a multiple value is therefore always a set space.
+Objects of the value or identifier type do not have an associated space.
+The space of a multiple value or
+multiple identifier is therefore always a set space.
 Similarly, the space of a multiple union piecewise
 affine expression is always a set space.
 If the base expressions are not total, then
@@ -2861,7 +2878,7 @@ have an explicit domain that keeps track of the domain
 outside of any base expressions.
 
 The multiple expression types defined by C<isl>
-are C<isl_multi_val>, C<isl_multi_aff>, C<isl_multi_pw_aff>,
+are C<isl_multi_val>, C<isl_multi_id>, C<isl_multi_aff>, C<isl_multi_pw_aff>,
 C<isl_multi_union_pw_aff>.
 
 A multiple expression with the value zero for
@@ -2933,6 +2950,11 @@ The domain of this space needs to be the same
 as the domains of the base expressions in the list.
 If the base expressions have a set space (or no associated space),
 then this space also needs to be a set space.
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_from_id_list(
+		__isl_take isl_space *space,
+		__isl_take isl_id_list *list);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_from_val_list(
@@ -3006,6 +3028,12 @@ using the following functions.
 Multiple expressions can be copied and freed using
 the following functions.
 
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_copy(
+		__isl_keep isl_multi_id *mi);
+	__isl_null isl_multi_id *isl_multi_id_free(
+		__isl_take isl_multi_id *mi);
+
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_copy(
 		__isl_keep isl_multi_val *mv);
@@ -3031,6 +3059,9 @@ the following functions.
 The number of base expressions in a multiple
 expression can be obtained using the following functions.
 
+	#include <isl/id.h>
+	int isl_multi_id_size(__isl_keep isl_multi_id *mi);
+
 	#include <isl/val.h>
 	isl_size isl_multi_val_size(__isl_keep isl_multi_val *mv);
 
@@ -3044,6 +3075,10 @@ expression can be obtained using the following functions.
 
 The base expression at a given position of a multiple
 expression can be extracted using the following functions.
+
+	#include <isl/id.h>
+	__isl_give isl_id *isl_multi_id_get_id(
+		__isl_keep isl_multi_id *mi, int pos);
 
 	#include <isl/val.h>
 	__isl_give isl_val *isl_multi_val_get_val(
@@ -3059,6 +3094,11 @@ expression can be extracted using the following functions.
 		__isl_keep isl_multi_union_pw_aff *mupa, int pos);
 
 It can be replaced using the following functions.
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_set_id(
+		__isl_take isl_multi_id *mi, int pos,
+		__isl_take isl_id *id);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_set_val(
@@ -3804,6 +3844,11 @@ To actually print something, use
 		__isl_take isl_printer *p,
 		__isl_keep isl_multi_val *mv);
 
+	#include <isl/id.h>
+	__isl_give isl_printer *isl_printer_print_multi_id(
+		__isl_take isl_printer *p,
+		__isl_keep isl_multi_id *mi);
+
 	#include <isl/aff.h>
 	__isl_give isl_printer *isl_printer_print_aff(
 		__isl_take isl_printer *p, __isl_keep isl_aff *aff);
@@ -3921,6 +3966,8 @@ in isl format.
 	#include <isl/id.h>
 	__isl_give char *isl_id_to_str(
 		__isl_keep isl_id *id);
+	__isl_give char *isl_multi_id_to_str(
+		__isl_keep isl_multi_id *mi);
 
 	#include <isl/space.h>
 	__isl_give char *isl_space_to_str(
@@ -4281,6 +4328,10 @@ The following functions check whether the space of the given
 		__isl_keep isl_map *map);
 	isl_bool isl_map_is_product(__isl_keep isl_map *map);
 
+	#include <isl/id.h>
+	isl_bool isl_multi_id_range_is_wrapping(
+		__isl_keep isl_multi_id *mi);
+
 	#include <isl/val.h>
 	isl_bool isl_multi_val_range_is_wrapping(
 		__isl_keep isl_multi_val *mv);
@@ -4447,6 +4498,11 @@ return true if the objects are not the same.
 	isl_bool isl_union_map_is_equal(
 		__isl_keep isl_union_map *umap1,
 		__isl_keep isl_union_map *umap2);
+
+	#include <isl/id.h>
+	isl_bool isl_multi_id_plain_is_equal(
+		__isl_keep isl_multi_id *mi1,
+		__isl_keep isl_multi_id *mi2);
 
 	#include <isl/val.h>
 	isl_bool isl_multi_val_plain_is_equal(
@@ -4902,6 +4958,10 @@ flat anonymous space.
 	isl_union_map_from_domain_and_range(
 		__isl_take isl_union_set *domain,
 		__isl_take isl_union_set *range);
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_from_range(
+		__isl_take isl_multi_id *mi);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_from_range(
@@ -5751,6 +5811,10 @@ then the name of the space is also removed.
 	__isl_give isl_map *isl_map_flatten(
 		__isl_take isl_map *map);
 
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_flatten_range(
+		__isl_take isl_multi_id *mi);
+
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_flatten_range(
 		__isl_take isl_multi_val *mv);
@@ -5900,6 +5964,11 @@ All parameters need to be named.
 		__isl_take isl_space *model);
 	__isl_give isl_map *isl_map_align_params(
 		__isl_take isl_map *map,
+		__isl_take isl_space *model);
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_align_params(
+		__isl_take isl_multi_id *mi,
 		__isl_take isl_space *model);
 
 	#include <isl/val.h>
@@ -6998,6 +7067,11 @@ two input spaces.
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
 
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_range_product(
+		__isl_take isl_multi_id *mi1,
+		__isl_take isl_multi_id *mi2);
+
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_range_product(
 		__isl_take isl_multi_val *mv1,
@@ -7072,6 +7146,12 @@ instead.
 	isl_union_map_flat_range_product(
 		__isl_take isl_union_map *umap1,
 		__isl_take isl_union_map *umap2);
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *
+	isl_multi_id_flat_range_product(
+		__isl_take isl_multi_id *mi1,
+		__isl_take isl_multi_id *mi2);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_flat_range_product(
@@ -7152,6 +7232,16 @@ from the result using the following functions.
 	isl_union_map_range_factor_range(
 		__isl_take isl_union_map *umap);
 
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_factor_range(
+		__isl_take isl_multi_id *mi);
+	__isl_give isl_multi_id *
+	isl_multi_id_range_factor_domain(
+		__isl_take isl_multi_id *mi);
+	__isl_give isl_multi_id *
+	isl_multi_id_range_factor_range(
+		__isl_take isl_multi_id *mi);
+
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_factor_range(
 		__isl_take isl_multi_val *mv);
@@ -7198,6 +7288,11 @@ C<isl_multi_aff_factor_range>,
 C<isl_multi_pw_aff_factor_range> and
 C<isl_multi_union_pw_aff_factor_range>
 take functions that live in a set space.
+
+	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_range_splice(
+		__isl_take isl_multi_id *mi1, unsigned pos,
+		__isl_take isl_multi_id *mi2);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_range_splice(

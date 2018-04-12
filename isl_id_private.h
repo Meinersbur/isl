@@ -40,4 +40,9 @@ __isl_give isl_id *isl_stream_read_id(__isl_keep isl_stream *s);
 
 extern isl_id isl_id_none;
 
+#undef BASE
+#define BASE id
+
+#include <isl_multi_templ.h>
+
 #endif
