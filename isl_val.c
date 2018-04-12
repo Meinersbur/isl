@@ -1491,15 +1491,15 @@ int isl_val_plain_is_equal(__isl_keep isl_val *val1, __isl_keep isl_val *val2)
  * This function is only meant to be used in the generic isl_multi_*
  * functions which have to deal with base objects that have an associated
  * space.  Since an isl_val does not have any coefficients, this function
- * always returns 0.
+ * always returns isl_bool_false.
  */
-int isl_val_involves_dims(__isl_keep isl_val *v, enum isl_dim_type type,
+isl_bool isl_val_involves_dims(__isl_keep isl_val *v, enum isl_dim_type type,
 	unsigned first, unsigned n)
 {
 	if (!v)
-		return -1;
+		return isl_bool_error;
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Insert "n" dimensions of type "type" at position "first".
