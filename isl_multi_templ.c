@@ -1185,7 +1185,7 @@ error:
 	return NULL;
 }
 
-/* Add "multi2" from "multi1" and return the result.
+/* Add "multi2" to "multi1" and return the result.
  *
  * The parameters of "multi1" and "multi2" are assumed to have been aligned.
  */
@@ -1195,7 +1195,7 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),add_aligned)(
 	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,add));
 }
 
-/* Add "multi2" from "multi1" and return the result.
+/* Add "multi2" to "multi1" and return the result.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),add)(__isl_take MULTI(BASE) *multi1,
 	__isl_take MULTI(BASE) *multi2)
