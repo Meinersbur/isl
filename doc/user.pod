@@ -3986,18 +3986,26 @@ can be found then assign C<1> to C<*modulo> and C<1> to C<*residue>.
 	__isl_give isl_val *isl_set_get_stride(
 		__isl_keep isl_set *set, int pos);
 
+	#include <isl/map.h>
+	__isl_give isl_stride_info *
+	isl_map_get_range_stride_info(
+		__isl_keep isl_map *map, int pos);
+
 Check if the values of the given set dimension are equal to
 some affine expression of the other dimensions (the offset)
+modulo some integer stride or
+check if the values of the given output dimensions are equal to
+some affine expression of the input dimensions (the offset)
 modulo some integer stride.
 If no more specific information can be found, then the stride
 is taken to be one and the offset is taken to be the zero expression.
 The function C<isl_set_get_stride> performs the same
-computation but only returns the stride.
-Otherwise,
+computation as C<isl_set_get_stride_info> but only returns the stride.
+For the other functions,
 the stride and offset can be extracted from the returned object
 using the following functions.
 
-	#include <isl/set.h>
+	#include <isl/stride_info.h>
 	__isl_give isl_val *isl_stride_info_get_stride(
 		__isl_keep isl_stride_info *si);
 	__isl_give isl_aff *isl_stride_info_get_offset(
@@ -4005,7 +4013,7 @@ using the following functions.
 
 The stride info object can be released using the following function.
 
-	#include <isl/set.h>
+	#include <isl/stride_info.h>
 	__isl_null isl_stride_info *isl_stride_info_free(
 		__isl_take isl_stride_info *si);
 

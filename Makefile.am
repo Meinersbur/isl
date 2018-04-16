@@ -311,6 +311,7 @@ pkginclude_HEADERS = \
 	include/isl/set_type.h \
 	include/isl/space.h \
 	include/isl/stream.h \
+	include/isl/stride_info.h \
 	include/isl/union_map.h \
 	include/isl/union_map_type.h \
 	include/isl/union_set.h \

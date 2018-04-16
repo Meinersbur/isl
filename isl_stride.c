@@ -8,7 +8,8 @@
  */
 
 #include <isl/val.h>
-#include <isl/aff.h>
+#include <isl_map_private.h>
+#include <isl_aff_private.h>
 #include <isl/constraint.h>
 #include <isl/set.h>
 
@@ -331,4 +332,33 @@ __isl_give isl_val *isl_set_get_stride(__isl_keep isl_set *set, int pos)
 	set_detect_stride(set, pos, &data);
 
 	return data.stride;
+}
+
+/* Check if the constraints in "map" imply any stride on output dimension "pos",
+ * independently of any other output dimensions, and
+ * return the results in the form of an offset and a stride.
+ *
+ * Convert the input to a set with only the input dimensions and
+ * the single output dimension such that it be passed to
+ * isl_set_get_stride_info and convert the result back to
+ * an expression defined over the domain of "map".
+ */
+__isl_give isl_stride_info *isl_map_get_range_stride_info(
+	__isl_keep isl_map *map, int pos)
+{
+	isl_stride_info *si;
+	isl_set *set;
+
+	map = isl_map_copy(map);
+	map = isl_map_project_onto(map, isl_dim_out, pos, 1);
+	pos = isl_map_dim(map, isl_dim_in);
+	set = isl_map_wrap(map);
+	si = isl_set_get_stride_info(set, pos);
+	isl_set_free(set);
+	if (!si)
+		return NULL;
+	si->offset = isl_aff_domain_factor_domain(si->offset);
+	if (!si->offset)
+		return isl_stride_info_free(si);
+	return si;
 }
