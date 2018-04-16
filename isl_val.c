@@ -1312,6 +1312,31 @@ isl_bool isl_val_gt(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
 	return isl_val_lt(v2, v1);
 }
 
+/* Is "v" (strictly) greater than "i"?
+ */
+isl_bool isl_val_gt_si(__isl_keep isl_val *v, long i)
+{
+	isl_val *vi;
+	isl_bool res;
+
+	if (!v)
+		return isl_bool_error;
+	if (isl_val_is_int(v))
+		return isl_int_cmp_si(v->n, i) > 0;
+	if (isl_val_is_nan(v))
+		return isl_bool_false;
+	if (isl_val_is_infty(v))
+		return isl_bool_true;
+	if (isl_val_is_neginfty(v))
+		return isl_bool_false;
+
+	vi = isl_val_int_from_si(isl_val_get_ctx(v), i);
+	res = isl_val_gt(v, vi);
+	isl_val_free(vi);
+
+	return res;
+}
+
 /* Is "v1" less than or equal to "v2"?
  */
 isl_bool isl_val_le(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
