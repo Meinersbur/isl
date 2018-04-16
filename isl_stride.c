@@ -208,9 +208,13 @@ static isl_stat detect_stride(__isl_take isl_constraint *c, void *user)
 	isl_ctx *ctx;
 	isl_stat r = isl_stat_ok;
 	isl_val *v, *stride, *m;
+	isl_bool is_eq, relevant, has_stride;
 
-	if (!isl_constraint_is_equality(c) ||
-	    !isl_constraint_involves_dims(c, isl_dim_set, data->pos, 1)) {
+	is_eq = isl_constraint_is_equality(c);
+	relevant = isl_constraint_involves_dims(c, isl_dim_set, data->pos, 1);
+	if (is_eq < 0 || relevant < 0)
+		goto error;
+	if (!is_eq || !relevant) {
 		isl_constraint_free(c);
 		return isl_stat_ok;
 	}
@@ -228,7 +232,8 @@ static isl_stat detect_stride(__isl_take isl_constraint *c, void *user)
 	stride = isl_val_div(stride, isl_val_copy(m));
 	v = isl_val_div(v, isl_val_copy(m));
 
-	if (!isl_val_is_zero(stride) && !isl_val_is_one(stride)) {
+	has_stride = isl_val_gt_si(stride, 1);
+	if (has_stride >= 0 && has_stride) {
 		isl_aff *aff;
 		isl_val *gcd, *a, *b;
 
@@ -252,7 +257,12 @@ static isl_stat detect_stride(__isl_take isl_constraint *c, void *user)
 	}
 
 	isl_constraint_free(c);
+	if (has_stride < 0)
+		return isl_stat_error;
 	return r;
+error:
+	isl_constraint_free(c);
+	return isl_stat_error;
 }
 
 /* Check if the constraints in "set" imply any stride on set dimension "pos" and
