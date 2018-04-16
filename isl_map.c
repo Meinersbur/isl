@@ -4378,6 +4378,22 @@ error:
 	return NULL;
 }
 
+/* Turn all the dimensions of type "type", except the "n" starting at "first"
+ * into existentially quantified variables.
+ */
+__isl_give isl_map *isl_map_project_onto(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	unsigned dim;
+
+	if (isl_map_check_range(map, type, first, n) < 0)
+		return isl_map_free(map);
+	dim = isl_map_dim(map, type);
+	map = isl_map_project_out(map, type, first + n, dim - (first + n));
+	map = isl_map_project_out(map, type, 0, first);
+	return map;
+}
+
 /* Turn the n dimensions of type type, starting at first
  * into existentially quantified variables.
  */
