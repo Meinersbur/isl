@@ -1164,7 +1164,7 @@ static int is_obviously_nonneg(struct isl_tab *tab, int row)
  * Pivoting with column c will increment the sample value by a non-negative
  * constant times a_{V,c}/a_{r,c}, with a_{V,c} the elements of column c
  * corresponding to the non-parametric variables.
- * If variable v appears in a column c_v, the a_{v,c} = 1 iff c = c_v,
+ * If variable v appears in a column c_v, then a_{v,c} = 1 iff c = c_v,
  * with all other entries in this virtual row equal to zero.
  * If variable v appears in a row, then a_{v,c} is the element in column c
  * of that row.
@@ -5765,7 +5765,7 @@ static int need_substitution(__isl_keep isl_multi_aff *maff)
 	pos = isl_multi_aff_dim(maff, isl_dim_in) - 1;
 
 	for (i = 0; i < maff->n; ++i)
-		if (isl_aff_involves_dims(maff->p[i], isl_dim_in, pos, 1))
+		if (isl_aff_involves_dims(maff->u.p[i], isl_dim_in, pos, 1))
 			return 1;
 
 	return 0;
