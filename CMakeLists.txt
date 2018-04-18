@@ -220,6 +220,10 @@ configure_file("${ISL_BINARY_DIR}/include/isl/stdint.h.tmp"
 configure_file("isl_config.h.cmake" "${ISL_BINARY_DIR}/isl_config.h")
 configure_file("isl_srcdir.c.cmake" "${ISL_BINARY_DIR}/isl_srcdir.c")
 
+set(EXEEXT "${CMAKE_EXECUTABLE_SUFFIX}")
+set(srcdir "${ISL_SOURCE_DIR}")
+configure_file("codegen_test.sh.in" "${ISL_BINARY_DIR}/codegen_test.sh" @ONLY)
+
 # ISL files to compile
 set (libisl_common_sources
     ${ISL_SOURCE_DIR}/basis_reduction_tab.c
@@ -393,7 +397,5 @@ add_test(NAME isl_test
   COMMAND "$<TARGET_FILE:isl_test>"
 )
 add_test(NAME codegen_test
-  COMMAND "${ISL_SOURCE_DIR}/codegen_test.sh"
+  COMMAND "${ISL_BINARY_DIR}/codegen_test.sh"
 )
-set_tests_properties(isl_test codegen_test PROPERTIES ENVIRONMENT "srcdir=${ISL_SOURCE_DIR}")
-
