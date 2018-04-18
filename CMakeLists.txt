@@ -349,7 +349,7 @@ endif ()
 
 # General compiler options
 if (CMAKE_COMPILER_IS_CLANGCC OR CMAKE_COMPILER_IS_GNUCC)
-  target_definitions(isl -Wall)
+  target_compile_options(isl PRIVATE -Wall)
 endif ()
 
 
