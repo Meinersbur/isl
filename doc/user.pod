@@ -3990,7 +3990,7 @@ some affine expression of the other dimensions (the offset)
 modulo some integer stride.
 If no more specific information can be found, then the stride
 is taken to be one and the offset is taken to be the zero expression.
-The function C<isl_set_get_stride_info> performs the same
+The function C<isl_set_get_stride> performs the same
 computation but only returns the stride.
 Otherwise,
 the stride and offset can be extracted from the returned object
