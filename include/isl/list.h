@@ -43,6 +43,7 @@ __isl_give isl_##EL##_list *isl_##EL##_list_add(			\
 __isl_give isl_##EL##_list *isl_##EL##_list_insert(			\
 	__isl_take isl_##EL##_list *list, unsigned pos,			\
 	__isl_take struct isl_##EL *el);				\
+EXPORT									\
 __isl_give isl_##EL##_list *isl_##EL##_list_drop(			\
 	__isl_take isl_##EL##_list *list, unsigned first, unsigned n);	\
 EXPORT									\
