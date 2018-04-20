@@ -1297,6 +1297,28 @@ __isl_give PW *FN(PW,project_domain_on_params)(__isl_take PW *pw)
 	return pw;
 }
 
+/* Drop all parameters not referenced by "pw".
+ */
+__isl_give PW *FN(PW,drop_unused_params)(__isl_take PW *pw)
+{
+	int i;
+
+	if (FN(PW,check_named_params)(pw) < 0)
+		return FN(PW,free)(pw);
+
+	for (i = FN(PW,dim)(pw, isl_dim_param) - 1; i >= 0; i--) {
+		isl_bool involves;
+
+		involves = FN(PW,involves_dims)(pw, isl_dim_param, i, 1);
+		if (involves < 0)
+			return FN(PW,free)(pw);
+		if (!involves)
+			pw = FN(PW,drop_dims)(pw, isl_dim_param, i, 1);
+	}
+
+	return pw;
+}
+
 #ifndef NO_INSERT_DIMS
 __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 	unsigned first, unsigned n)
