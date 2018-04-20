@@ -1349,6 +1349,14 @@ isl_stat isl_map_check_named_params(__isl_keep isl_map *map)
 	return isl_space_check_named_params(isl_map_peek_space(map));
 }
 
+/* Check that "bmap" has only named parameters, reporting an error
+ * if it does not.
+ */
+static isl_stat isl_basic_map_check_named_params(__isl_keep isl_basic_map *bmap)
+{
+	return isl_space_check_named_params(isl_basic_map_peek_space(bmap));
+}
+
 /* Check that "bmap1" and "bmap2" have the same parameters,
  * reporting an error if they do not.
  */
@@ -11760,9 +11768,8 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 	if (!isl_space_has_named_params(model))
 		isl_die(ctx, isl_error_invalid,
 			"model has unnamed parameters", goto error);
-	if (!isl_space_has_named_params(bmap->dim))
-		isl_die(ctx, isl_error_invalid,
-			"relation has unnamed parameters", goto error);
+	if (isl_basic_map_check_named_params(bmap) < 0)
+		goto error;
 	equal_params = isl_space_has_equal_params(bmap->dim, model);
 	if (equal_params < 0)
 		goto error;
