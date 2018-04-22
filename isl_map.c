@@ -13369,9 +13369,8 @@ __isl_give isl_map *isl_map_preimage_pw_multi_aff(__isl_take isl_map *map,
 
 	if (isl_map_check_named_params(map) < 0)
 		goto error;
-	if (!isl_space_has_named_params(pma->dim))
-		isl_die(map->ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
+	if (isl_pw_multi_aff_check_named_params(pma) < 0)
+		goto error;
 	map = isl_map_align_params(map, isl_pw_multi_aff_get_space(pma));
 	pma = isl_pw_multi_aff_align_params(pma, isl_map_get_space(map));
 
