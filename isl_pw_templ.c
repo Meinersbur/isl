@@ -1141,7 +1141,6 @@ isl_ctx *FN(PW,get_ctx)(__isl_keep PW *pw)
 	return pw ? isl_space_get_ctx(pw->dim) : NULL;
 }
 
-#ifndef NO_INVOLVES_DIMS
 isl_bool FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	unsigned first, unsigned n)
 {
@@ -1167,7 +1166,6 @@ isl_bool FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 	}
 	return isl_bool_false;
 }
-#endif
 
 __isl_give PW *FN(PW,set_dim_name)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, const char *s)

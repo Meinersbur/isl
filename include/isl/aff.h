@@ -486,6 +486,8 @@ __isl_null isl_pw_multi_aff *isl_pw_multi_aff_free(
 
 unsigned isl_pw_multi_aff_dim(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type);
+isl_bool isl_pw_multi_aff_involves_dims(__isl_keep isl_pw_multi_aff *pma,
+	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 	__isl_keep isl_pw_multi_aff *pma, int pos);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(

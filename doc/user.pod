@@ -4056,6 +4056,9 @@ the following functions can be used.
 	isl_bool isl_multi_aff_involves_dims(
 		__isl_keep isl_multi_aff *ma,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_multi_aff_involves_dims(
+		__isl_keep isl_pw_multi_aff *pma,
+		enum isl_dim_type type, unsigned first, unsigned n);
 	isl_bool isl_multi_pw_aff_involves_dims(
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned first, unsigned n);
