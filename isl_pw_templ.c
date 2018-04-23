@@ -1201,7 +1201,6 @@ error:
 	return NULL;
 }
 
-#ifndef NO_DROP_DIMS
 __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
@@ -1292,7 +1291,6 @@ __isl_give PW *FN(PW,project_domain_on_params)(__isl_take PW *pw)
 	pw = FN(PW,reset_domain_space)(pw, space);
 	return pw;
 }
-#endif
 
 #ifndef NO_INSERT_DIMS
 __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
