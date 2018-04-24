@@ -358,6 +358,18 @@ __isl_give LIST(EL) *FN(LIST(EL),swap)(__isl_take LIST(EL) *list,
 	return list;
 }
 
+/* Reverse the elements of "list".
+ */
+__isl_give LIST(EL) *FN(LIST(EL),reverse)(__isl_take LIST(EL) *list)
+{
+	int i, n;
+
+	n = FN(LIST(EL),size)(list);
+	for (i = 0; i < n - 1 - i; ++i)
+		list = FN(LIST(EL),swap)(list, i, n - 1 - i);
+	return list;
+}
+
 isl_stat FN(LIST(EL),foreach)(__isl_keep LIST(EL) *list,
 	isl_stat (*fn)(__isl_take EL *el, void *user), void *user)
 {

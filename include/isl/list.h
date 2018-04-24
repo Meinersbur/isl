@@ -41,6 +41,8 @@ __isl_give isl_##EL##_list *isl_##EL##_list_drop(			\
 __isl_give isl_##EL##_list *isl_##EL##_list_swap(			\
 	__isl_take isl_##EL##_list *list, unsigned pos1,		\
 	unsigned pos2);							\
+__isl_give isl_##EL##_list *isl_##EL##_list_reverse(			\
+	__isl_take isl_##EL##_list *list);				\
 __isl_give isl_##EL##_list *isl_##EL##_list_concat(			\
 	__isl_take isl_##EL##_list *list1,				\
 	__isl_take isl_##EL##_list *list2);				\
