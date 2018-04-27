@@ -8272,6 +8272,30 @@ static int test_multi_pw_aff_2(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that isl_multi_union_pw_aff_multi_val_on_domain
+ * sets the explicit domain of a zero-dimensional result,
+ * such that it can be converted to an isl_union_map.
+ */
+static isl_stat test_multi_pw_aff_3(isl_ctx *ctx)
+{
+	isl_space *space;
+	isl_union_set *dom;
+	isl_multi_val *mv;
+	isl_multi_union_pw_aff *mupa;
+	isl_union_map *umap;
+
+	dom = isl_union_set_read_from_str(ctx, "{ A[]; B[] }");
+	space = isl_union_set_get_space(dom);
+	mv = isl_multi_val_zero(isl_space_set_from_params(space));
+	mupa = isl_multi_union_pw_aff_multi_val_on_domain(dom, mv);
+	umap = isl_union_map_from_multi_union_pw_aff(mupa);
+	isl_union_map_free(umap);
+	if (!umap)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Perform some tests on multi piecewise affine expressions.
  */
 static int test_multi_pw_aff(isl_ctx *ctx)
@@ -8279,6 +8303,8 @@ static int test_multi_pw_aff(isl_ctx *ctx)
 	if (test_multi_pw_aff_1(ctx) < 0)
 		return -1;
 	if (test_multi_pw_aff_2(ctx) < 0)
+		return -1;
+	if (test_multi_pw_aff_3(ctx) < 0)
 		return -1;
 	return 0;
 }

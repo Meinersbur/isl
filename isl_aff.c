@@ -8499,6 +8499,10 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
 /* Return a multiple union piecewise affine expression
  * that is equal to "mv" on "domain", assuming "domain" and "mv"
  * have been aligned.
+ *
+ * If the resulting multi union piecewise affine expression has
+ * an explicit domain, then assign it the input domain.
+ * In other cases, the domain is stored in the individual elements.
  */
 static __isl_give isl_multi_union_pw_aff *
 isl_multi_union_pw_aff_multi_val_on_domain_aligned(
@@ -8523,6 +8527,9 @@ isl_multi_union_pw_aff_multi_val_on_domain_aligned(
 							v);
 		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
 	}
+	if (isl_multi_union_pw_aff_has_explicit_domain(mupa))
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa,
+						    isl_union_set_copy(domain));
 
 	isl_union_set_free(domain);
 	isl_multi_val_free(mv);
