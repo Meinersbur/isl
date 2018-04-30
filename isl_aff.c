@@ -8196,7 +8196,6 @@ error:
 #define NO_SPLICE
 #define NO_ZERO
 #define NO_IDENTITY
-#define NO_GIST
 
 #include <isl_multi_explicit_domain.c>
 #include <isl_multi_union_pw_aff_explicit_domain.c>
