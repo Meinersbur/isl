@@ -469,6 +469,7 @@ EXTRA_DIST = \
 	isl_multi_hash.c \
 	isl_multi_intersect.c \
 	isl_multi_identity_templ.c \
+	isl_multi_move_dims_templ.c \
 	print_templ.c \
 	print_templ_yaml.c \
 	isl_power_templ.c \

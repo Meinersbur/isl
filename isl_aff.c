@@ -3823,6 +3823,7 @@ error:
 #include <isl_multi_from_base_templ.c>
 #include <isl_multi_gist.c>
 #include <isl_multi_identity_templ.c>
+#include <isl_multi_move_dims_templ.c>
 
 /* Construct an isl_multi_aff living in "space" that corresponds
  * to the affine transformation matrix "mat".
@@ -6171,6 +6172,7 @@ error:
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_align_set.c>
 #include <isl_multi_intersect.c>
+#include <isl_multi_move_dims_templ.c>
 
 /* Does "mpa" have a non-trivial explicit domain?
  *
@@ -7910,7 +7912,6 @@ error:
 #undef DOMBASE
 #define DOMBASE union_set
 
-#define NO_MOVE_DIMS
 #define NO_PRODUCT
 #define NO_SPLICE
 #define NO_ZERO
