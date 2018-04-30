@@ -3820,6 +3820,7 @@ error:
 #include <isl_multi_cmp.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_floor.c>
+#include <isl_multi_from_base_templ.c>
 #include <isl_multi_gist.c>
 #include <isl_multi_identity_templ.c>
 
@@ -6164,6 +6165,7 @@ error:
 #include <isl_multi_coalesce.c>
 #include <isl_multi_domain_templ.c>
 #include <isl_multi_dims.c>
+#include <isl_multi_from_base_templ.c>
 #include <isl_multi_gist.c>
 #include <isl_multi_hash.c>
 #include <isl_multi_identity_templ.c>
@@ -7920,6 +7922,7 @@ error:
 #include <isl_multi_apply_union_set.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_floor.c>
+#include <isl_multi_from_base_templ.c>
 #include <isl_multi_gist.c>
 #include <isl_multi_align_set.c>
 #include <isl_multi_align_union_set.c>
