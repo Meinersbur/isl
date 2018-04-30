@@ -2558,11 +2558,9 @@ __isl_give isl_space *isl_space_align_params(__isl_take isl_space *space1,
 {
 	isl_reordering *exp;
 
-	if (!isl_space_has_named_params(space1) ||
-	    !isl_space_has_named_params(space2))
-		isl_die(isl_space_get_ctx(space1), isl_error_invalid,
-			"parameter alignment requires named parameters",
-			goto error);
+	if (isl_space_check_named_params(space1) < 0 ||
+	    isl_space_check_named_params(space2) < 0)
+		goto error;
 
 	space2 = isl_space_params(space2);
 	exp = isl_parameter_alignment_reordering(space1, space2);
