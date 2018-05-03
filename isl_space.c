@@ -1922,6 +1922,47 @@ error:
 	return NULL;
 }
 
+/* Add an unnamed tuple of dimension "dim" to "space".
+ * This requires "space" to be a parameter or set space.
+ *
+ * In particular, if "space" is a parameter space, then return
+ * a set space with the given dimension.
+ * If "space" is a set space, then return a map space
+ * with "space" as domain and a range of the given dimension.
+ */
+__isl_give isl_space *isl_space_add_unnamed_tuple_ui(
+	__isl_take isl_space *space, unsigned dim)
+{
+	isl_bool is_params, is_set;
+
+	is_params = isl_space_is_params(space);
+	is_set = isl_space_is_set(space);
+	if (is_params < 0 || is_set < 0)
+		return isl_space_free(space);
+	if (!is_params && !is_set)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"cannot add tuple to map space",
+			return isl_space_free(space));
+	if (is_params)
+		space = isl_space_set_from_params(space);
+	else
+		space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, dim);
+	return space;
+}
+
+/* Add a tuple of dimension "dim" and with tuple identifier "tuple_id"
+ * to "space".
+ * This requires "space" to be a parameter or set space.
+ */
+__isl_give isl_space *isl_space_add_named_tuple_id_ui(
+	__isl_take isl_space *space, __isl_take isl_id *tuple_id, unsigned dim)
+{
+	space = isl_space_add_unnamed_tuple_ui(space, dim);
+	space = isl_space_set_tuple_id(space, isl_dim_out, tuple_id);
+	return space;
+}
+
 __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div)
 {

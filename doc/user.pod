@@ -1013,7 +1013,8 @@ For other sets, the space
 needs to be created using C<isl_space_set_alloc>, while
 for a relation, the space
 needs to be created using C<isl_space_alloc>.
-The use of C<isl_space_params_alloc> is discouraged as it allows
+The use of C<isl_space_params_alloc>,
+C<isl_space_set_alloc> and C<isl_space_alloc> is discouraged as they allow
 for the introduction of unnamed parameters.
 
 To check whether a given space is that of a set or a map
@@ -4798,6 +4799,17 @@ without removing the dimensions.
 
 =item * Constructing a set from a parameter domain
 
+A set space of a given dimension and with an optional name
+can be created from a parameter space using the following functions.
+
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_add_unnamed_tuple_ui(
+		__isl_take isl_space *space, unsigned dim);
+	__isl_give isl_space *
+	isl_space_add_named_tuple_id_ui(
+		__isl_take isl_space *space,
+		__isl_take isl_id *tuple_id, unsigned dim);
+
 A zero-dimensional (local) space or (basic) set can be constructed
 on a given parameter domain using the following functions.
 
@@ -4817,6 +4829,11 @@ on a given parameter domain using the following functions.
 		__isl_take isl_set *set);
 
 =item * Constructing a relation from one or two sets
+
+A map space with a range of a given dimension and with an optional name
+can be created from a domain space using the functions
+C<isl_space_add_unnamed_tuple_ui> and C<isl_space_add_named_tuple_id_ui>
+described above.
 
 Create a relation with the given set(s) as domain and/or range.
 If only the domain or the range is specified, then
