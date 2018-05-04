@@ -126,6 +126,7 @@ __isl_give isl_space *isl_space_domain_map(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_range_map(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_space *isl_space_params(__isl_take isl_space *space);
+__isl_overload
 __isl_give isl_space *isl_space_add_unnamed_tuple_ui(
 	__isl_take isl_space *space, unsigned dim);
 __isl_overload
