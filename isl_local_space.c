@@ -1674,7 +1674,7 @@ __isl_give isl_local_space *isl_local_space_wrap(__isl_take isl_local_space *ls)
 	return ls;
 }
 
-/* Lift the point "pnt", living in the space of "ls"
+/* Lift the point "pnt", living in the (set) space of "ls"
  * to live in a space with extra coordinates corresponding
  * to the local variables of "ls".
  */
