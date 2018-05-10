@@ -1266,6 +1266,34 @@ isl_bool isl_local_space_is_div_constraint(__isl_keep isl_local_space *ls,
 	return isl_bool_true;
 }
 
+/* Is the constraint pointed to by "constraint" one
+ * of an equality that corresponds to integer division "div" in "ls"?
+ *
+ * That is, given an integer division of the form
+ *
+ *	a = floor((f + c)/m)
+ *
+ * is the equality of the form
+ *
+ *		-f + m d + c' = 0
+ * ?
+ * Note that the constant term is not checked explicitly, but given
+ * that this is a valid equality constraint, the constant c' necessarily
+ * has a value close to -c.
+ */
+isl_bool isl_local_space_is_div_equality(__isl_keep isl_local_space *ls,
+	isl_int *constraint, unsigned div)
+{
+	int sign;
+	isl_bool linear;
+
+	linear = is_linear_div_constraint(ls, constraint, div, &sign);
+	if (linear < 0 || !linear)
+		return linear;
+
+	return sign < 0;
+}
+
 /*
  * Set active[i] to 1 if the dimension at position i is involved
  * in the linear expression l.
