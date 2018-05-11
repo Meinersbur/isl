@@ -77,14 +77,32 @@ error:
 }
 
 /* Intersect the domain of "dst" with the explicit domain of "src".
+ *
+ * In the case of isl_multi_union_pw_aff objects, the explicit domain
+ * of "src" is allowed to have only constraints on the parameters, even
+ * if the domain of "dst" contains actual domain elements.  In this case,
+ * the domain of "dst" is intersected with those parameter constraints.
  */
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_explicit_domain)(
 	__isl_take MULTI(BASE) *dst, __isl_keep MULTI(BASE) *src)
 {
+	isl_bool is_params;
 	DOM *dom;
 
-	dom = FN(MULTI(BASE),get_explicit_domain)(src);
-	dst = FN(MULTI(BASE),intersect_domain)(dst, dom);
+	dom = FN(MULTI(BASE),peek_explicit_domain)(src);
+	is_params = FN(DOM,is_params)(dom);
+	if (is_params < 0)
+		return FN(MULTI(BASE),free)(dst);
+
+	dom = FN(DOM,copy)(dom);
+	if (!is_params) {
+		dst = FN(MULTI(BASE),intersect_domain)(dst, dom);
+	} else {
+		isl_set *params;
+
+		params = FN(DOM,params)(dom);
+		dst = FN(MULTI(BASE),intersect_params)(dst, params);
+	}
 
 	return dst;
 }

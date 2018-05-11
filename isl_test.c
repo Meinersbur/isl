@@ -5421,6 +5421,14 @@ struct {
 	  "B[{ A[] -> [1]; D[] -> [3] }]",
 	  "C[{ A[] -> [2] }]",
 	  "[B[{ A[] -> [1]; D[] -> [3] }] -> C[{ A[] -> [2] }]]" },
+	{ &isl_multi_union_pw_aff_range_product,
+	  "B[] }]",
+	  "(C[] : { A[x] })",
+	  "([B[] -> C[]] : { A[x] })" },
+	{ &isl_multi_union_pw_aff_range_product,
+	  "(B[] : { A[x] })",
+	  "C[] }]",
+	  "([B[] -> C[]] : { A[x] })" },
 };
 
 /* Perform some basic tests of binary operations on
