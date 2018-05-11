@@ -39,12 +39,20 @@ static isl_stat FN(MULTI(BASE),check_has_explicit_domain)(
 
 /* Return the explicit domain of "multi", assuming it has one.
  */
-static __isl_give DOM *FN(MULTI(BASE),get_explicit_domain)(
+static __isl_keep DOM *FN(MULTI(BASE),peek_explicit_domain)(
 	__isl_keep MULTI(BASE) *multi)
 {
 	if (FN(MULTI(BASE),check_has_explicit_domain)(multi) < 0)
 		return NULL;
-	return FN(DOM,copy)(multi->u.dom);
+	return multi->u.dom;
+}
+
+/* Return a copy of the explicit domain of "multi", assuming it has one.
+ */
+static __isl_give DOM *FN(MULTI(BASE),get_explicit_domain)(
+	__isl_keep MULTI(BASE) *multi)
+{
+	return FN(DOM,copy)(FN(MULTI(BASE),peek_explicit_domain)(multi));
 }
 
 /* Replace the explicit domain of "multi" by "dom", assuming it has one.
