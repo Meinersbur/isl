@@ -2293,6 +2293,16 @@ __isl_give isl_basic_set *isl_basic_set_drop(__isl_take isl_basic_set *bset,
 							type, first, n));
 }
 
+/* No longer consider "map" to be normalized.
+ */
+static __isl_give isl_map *isl_map_unmark_normalized(__isl_take isl_map *map)
+{
+	if (!map)
+		return NULL;
+	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	return map;
+}
+
 __isl_give isl_map *isl_map_drop(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
@@ -2315,7 +2325,7 @@ __isl_give isl_map *isl_map_drop(__isl_take isl_map *map,
 		if (!map->p[i])
 			goto error;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 
 	return map;
 error:
@@ -4776,12 +4786,12 @@ __isl_give isl_map *isl_map_floordiv(__isl_take isl_map *map, isl_int d)
 		return NULL;
 
 	ISL_F_CLR(map, ISL_MAP_DISJOINT);
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] = isl_basic_map_floordiv(map->p[i], d);
 		if (!map->p[i])
 			goto error;
 	}
+	map = isl_map_unmark_normalized(map);
 
 	return map;
 error:
@@ -5852,7 +5862,7 @@ __isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map)
 			goto error;
 	}
 	ISL_F_CLR(map, ISL_MAP_DISJOINT);
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -5880,7 +5890,7 @@ __isl_give isl_map *isl_map_range_map(__isl_take isl_map *map)
 			goto error;
 	}
 	ISL_F_CLR(map, ISL_MAP_DISJOINT);
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -6113,7 +6123,7 @@ __isl_give isl_map *isl_map_add_basic_map(__isl_take isl_map *map,
 	isl_assert(map->ctx, map->n < map->size, goto error);
 	map->p[map->n] = bmap;
 	map->n++;
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	if (map)
@@ -6260,23 +6270,31 @@ struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
 					isl_dim_set, dim, value));
 }
 
-static int remove_if_empty(__isl_keep isl_map *map, int i)
+/* Remove the basic map at position "i" from "map" if this basic map
+ * is (obviously) empty.
+ */
+static __isl_give isl_map *remove_if_empty(__isl_take isl_map *map, int i)
 {
-	int empty = isl_basic_map_plain_is_empty(map->p[i]);
+	isl_bool empty;
 
+	if (!map)
+		return NULL;
+
+	empty = isl_basic_map_plain_is_empty(map->p[i]);
 	if (empty < 0)
-		return -1;
+		return isl_map_free(map);
 	if (!empty)
-		return 0;
+		return map;
 
 	isl_basic_map_free(map->p[i]);
-	if (i != map->n - 1) {
-		ISL_F_CLR(map, ISL_MAP_NORMALIZED);
-		map->p[i] = map->p[map->n - 1];
-	}
 	map->n--;
+	if (i != map->n) {
+		map->p[i] = map->p[map->n];
+		map = isl_map_unmark_normalized(map);
 
-	return 0;
+	}
+
+	return map;
 }
 
 /* Perform "fn" on each basic map of "map", where we may not be holding
@@ -6302,8 +6320,9 @@ __isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
 			goto error;
 		isl_basic_map_free(map->p[i]);
 		map->p[i] = bmap;
-		if (remove_if_empty(map, i) < 0)
-			goto error;
+		map = remove_if_empty(map, i);
+		if (!map)
+			return NULL;
 	}
 
 	return map;
@@ -6324,10 +6343,11 @@ __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 	isl_assert(map->ctx, pos < isl_map_dim(map, type), goto error);
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = isl_basic_map_fix_si(map->p[i], type, pos, value);
-		if (remove_if_empty(map, i) < 0)
-			goto error;
+		map = remove_if_empty(map, i);
+		if (!map)
+			return NULL;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -6355,7 +6375,7 @@ __isl_give isl_map *isl_map_fix(__isl_take isl_map *map,
 		if (!map->p[i])
 			goto error;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -6389,10 +6409,11 @@ __isl_give isl_map *isl_map_fix_val(__isl_take isl_map *map,
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = isl_basic_map_fix_val(map->p[i], type, pos,
 							isl_val_copy(v));
-		if (remove_if_empty(map, i) < 0)
+		map = remove_if_empty(map, i);
+		if (!map)
 			goto error;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	isl_val_free(v);
 	return map;
 error:
@@ -6483,7 +6504,7 @@ static __isl_give isl_map *map_bound_si(__isl_take isl_map *map,
 		if (!map->p[i])
 			goto error;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -6564,10 +6585,11 @@ static __isl_give isl_map *map_bound(__isl_take isl_map *map,
 			"index out of bounds", goto error);
 	for (i = map->n - 1; i >= 0; --i) {
 		map->p[i] = basic_map_bound(map->p[i], type, pos, value, upper);
-		if (remove_if_empty(map, i) < 0)
-			goto error;
+		map = remove_if_empty(map, i);
+		if (!map)
+			return NULL;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -6704,7 +6726,7 @@ __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map)
 		if (!map->p[i])
 			goto error;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -8177,7 +8199,7 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 		if (!map->p[i])
 			goto error;
 	}
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 error:
 	isl_map_free(map);
@@ -9013,7 +9035,7 @@ __isl_give isl_map *isl_map_align_divs_internal(__isl_take isl_map *map)
 			return isl_map_free(map);
 	}
 
-	ISL_F_CLR(map, ISL_MAP_NORMALIZED);
+	map = isl_map_unmark_normalized(map);
 	return map;
 }
 
@@ -9117,7 +9139,7 @@ __isl_give isl_map *isl_map_remove_empty_parts(__isl_take isl_map *map)
 		return NULL;
 
 	for (i = map->n - 1; i >= 0; --i)
-		remove_if_empty(map, i);
+		map = remove_if_empty(map, i);
 
 	return map;
 }
@@ -11692,6 +11714,7 @@ __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	}
 
 	map = isl_map_reset_space(map, isl_reordering_get_space(r));
+	map = isl_map_unmark_normalized(map);
 
 	isl_reordering_free(r);
 	free(dim_map);
@@ -12851,8 +12874,9 @@ __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 
 	for (i = set->n - 1; i >= 0; --i) {
 		set->p[i] = isl_basic_set_substitute(set->p[i], type, pos, subs);
-		if (remove_if_empty(set, i) < 0)
-			goto error;
+		set = set_from_map(remove_if_empty(set_to_map(set), i));
+		if (!set)
+			return NULL;
 	}
 
 	return set;
