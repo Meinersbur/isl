@@ -611,6 +611,10 @@ in which the object was created.
 	isl_ctx *isl_stride_info_get_ctx(
 		__isl_keep isl_stride_info *si);
 
+	#include <isl/fixed_box.h>
+	isl_ctx *isl_fixed_box_get_ctx(
+		__isl_keep isl_fixed_box *box);
+
 =head2 Return Types
 
 C<isl> uses two special return types for functions that either return
@@ -1115,6 +1119,10 @@ of the original object.
 	#include <isl/point.h>
 	__isl_give isl_space *isl_point_get_space(
 		__isl_keep isl_point *pnt);
+
+	#include <isl/fixed_box.h>
+	__isl_give isl_space *isl_fixed_box_get_space(
+		__isl_keep isl_fixed_box *box);
 
 The number of dimensions of a given type of space
 may be read off from a space or an object that lives
@@ -5226,6 +5234,42 @@ not involving any existentially quantified variables
 that contains the whole input set or relation.
 In case of union sets and relations, the polyhedral hull is computed
 per space.
+
+=item * Box hull
+
+	#include <isl/map.h>
+	__isl_give isl_fixed_box *
+	isl_map_get_range_simple_fixed_box_hull(
+		__isl_keep isl_map *map);
+
+This function tries to approximate the range of the map by a box of fixed size.
+The box is described in terms of an offset living in the same space as
+the input map and a size living in the range space.  For any element
+in the input map, the range value is greater than or equal to
+the offset applied to the domain value and the difference with
+this offset is strictly smaller than the size.
+If no fixed-size approximation of the range can be found,
+an I<invalid> box is returned, i.e., one for which
+C<isl_fixed_box_is_valid> below returns false.
+
+The validity, the offset and the size of the box can be obtained using
+the following functions.
+
+	#include <isl/fixed_box.h>
+	isl_bool isl_fixed_box_is_valid(
+		__isl_keep isl_fixed_box *box);
+	__isl_give isl_multi_aff *isl_fixed_box_get_offset(
+		__isl_keep isl_fixed_box *box);
+	__isl_give isl_multi_val *isl_fixed_box_get_size(
+		__isl_keep isl_fixed_box *box);
+
+The box can be copied and freed using the following functions.
+
+	#include <isl/fixed_box.h>
+	__isl_give isl_fixed_box *isl_fixed_box_copy(
+		__isl_keep isl_fixed_box *box);
+	__isl_null isl_fixed_box *isl_fixed_box_free(
+		__isl_take isl_fixed_box *box);
 
 =item * Other approximations
 
