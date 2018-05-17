@@ -7171,7 +7171,7 @@ static int test_residue_class(isl_ctx *ctx)
 	return res;
 }
 
-int test_align_parameters(isl_ctx *ctx)
+static int test_align_parameters_1(isl_ctx *ctx)
 {
 	const char *str;
 	isl_space *space;
@@ -7198,6 +7198,43 @@ int test_align_parameters(isl_ctx *ctx)
 	if (!equal)
 		isl_die(ctx, isl_error_unknown,
 			"result not as expected", return -1);
+
+	return 0;
+}
+
+/* Check the isl_multi_*_from_*_list operation in case inputs
+ * have unaligned parameters.
+ * In particular, older versions of isl would simply fail
+ * (without printing any error message).
+ */
+static isl_stat test_align_parameters_2(isl_ctx *ctx)
+{
+	isl_space *space;
+	isl_map *map;
+	isl_aff *aff;
+	isl_multi_aff *ma;
+
+	map = isl_map_read_from_str(ctx, "{ A[] -> M[x] }");
+	space = isl_map_get_space(map);
+	isl_map_free(map);
+
+	aff = isl_aff_read_from_str(ctx, "[N] -> { A[] -> [N] }");
+	ma = isl_multi_aff_from_aff_list(space, isl_aff_list_from_aff(aff));
+	isl_multi_aff_free(ma);
+
+	if (!ma)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Perform basic parameter alignment tests.
+ */
+static int test_align_parameters(isl_ctx *ctx)
+{
+	if (test_align_parameters_1(ctx) < 0)
+		return -1;
+	if (test_align_parameters_2(ctx) < 0)
+		return -1;
 
 	return 0;
 }
