@@ -217,16 +217,36 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 	return FN(EL,copy)(multi->p[pos]);
 }
 
+/* Set the element at position "pos" of "multi" to "el",
+ * where the position may be empty if "multi" has only a single reference.
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),restore)(
+	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
+{
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi || !el)
+		goto error;
+
+	if (pos < 0 || pos >= multi->n)
+		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
+			"index out of bounds", goto error);
+
+	FN(EL,free)(multi->p[pos]);
+	multi->p[pos] = el;
+
+	return multi;
+error:
+	FN(MULTI(BASE),free)(multi);
+	FN(EL,free)(el);
+	return NULL;
+}
+
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
 	isl_space *multi_space = NULL;
 	isl_space *el_space = NULL;
 	isl_bool match;
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi || !el)
-		goto error;
 
 	multi_space = FN(MULTI(BASE),get_space)(multi);
 	match = FN(EL,matching_params)(el, multi_space);
@@ -242,12 +262,7 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 	if (FN(EL,check_match_domain_space)(el, multi_space) < 0)
 		goto error;
 
-	if (pos < 0 || pos >= multi->n)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"index out of bounds", goto error);
-
-	FN(EL,free)(multi->p[pos]);
-	multi->p[pos] = el;
+	multi = FN(MULTI(BASE),restore)(multi, pos, el);
 
 	isl_space_free(multi_space);
 	isl_space_free(el_space);
