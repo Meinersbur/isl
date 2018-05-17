@@ -476,6 +476,13 @@ error:
 	return NULL;
 }
 
+/* Create a multi expression in the given space with the elements of "list"
+ * as base expressions.
+ *
+ * Since isl_multi_*_set_* fails if the element and
+ * the multi expression do not have matching spaces, the alignment
+ * (if any) needs to be performed beforehand.
+ */
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	__isl_take isl_space *space, __isl_take LIST(EL) *list)
 {
@@ -493,10 +500,15 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 		isl_die(ctx, isl_error_invalid,
 			"invalid number of elements in list", goto error);
 
+	for (i = 0; i < n; ++i) {
+		EL *el = FN(LIST(EL),peek)(list, i);
+		space = isl_space_align_params(space, FN(EL,get_space)(el));
+	}
 	multi = FN(MULTI(BASE),alloc)(isl_space_copy(space));
 	for (i = 0; i < n; ++i) {
-		multi = FN(FN(MULTI(BASE),set),BASE)(multi, i,
-					FN(FN(LIST(EL),get),BASE)(list, i));
+		EL *el = FN(FN(LIST(EL),get),BASE)(list, i);
+		el = FN(EL,align_params)(el, isl_space_copy(space));
+		multi = FN(FN(MULTI(BASE),set),BASE)(multi, i, el);
 	}
 
 	isl_space_free(space);
