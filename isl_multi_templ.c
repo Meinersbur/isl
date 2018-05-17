@@ -494,8 +494,8 @@ error:
 /* Create a multi expression in the given space with the elements of "list"
  * as base expressions.
  *
- * Since isl_multi_*_set_* fails if the element and
- * the multi expression do not have matching spaces, the alignment
+ * Since isl_multi_*_restore_* assumes that the element and
+ * the multi expression have matching spaces, the alignment
  * (if any) needs to be performed beforehand.
  */
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
@@ -523,7 +523,7 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	for (i = 0; i < n; ++i) {
 		EL *el = FN(FN(LIST(EL),get),BASE)(list, i);
 		el = FN(EL,align_params)(el, isl_space_copy(space));
-		multi = FN(FN(MULTI(BASE),set),BASE)(multi, i, el);
+		multi = FN(MULTI(BASE),restore)(multi, i, el);
 	}
 
 	isl_space_free(space);
