@@ -9959,18 +9959,22 @@ Exact division.  That is, the result is known to be an integer.
 
 Result of integer division, rounded towards negative
 infinity.
+The divisor is known to be positive.
 
 =item C<isl_ast_op_pdiv_q>
 
 Result of integer division, where dividend is known to be non-negative.
+The divisor is known to be positive.
 
 =item C<isl_ast_op_pdiv_r>
 
 Remainder of integer division, where dividend is known to be non-negative.
+The divisor is known to be positive.
 
 =item C<isl_ast_op_zdiv_r>
 
 Equal to zero iff the remainder on integer division is zero.
+The divisor is known to be positive.
 
 =item C<isl_ast_op_cond>
 
@@ -10139,7 +10143,10 @@ the context of an C<isl_ast_build>.
 
 The function C<isl_ast_expr_address_of> can be applied to an
 C<isl_ast_expr> of type C<isl_ast_op_access> only. It is meant
-to represent the address of the C<isl_ast_expr_access>. The function
+to represent the address of the C<isl_ast_expr_access>.
+The second argument of the functions C<isl_ast_expr_pdiv_q> and
+C<isl_ast_expr_pdiv_r> should always evaluate to a positive number.
+The function
 C<isl_ast_expr_and_then> as well as C<isl_ast_expr_or_else> are short-circuit
 versions of C<isl_ast_expr_and> and C<isl_ast_expr_or>, respectively.
 
