@@ -10167,7 +10167,7 @@ versions of C<isl_ast_expr_and> and C<isl_ast_expr_or>, respectively.
 		__isl_keep isl_ast_build *build,
 		__isl_take isl_multi_pw_aff *mpa);
 
-The set <set> and
+The set C<set> and
 the domains of C<pa>, C<mpa> and C<pma> should correspond
 to the schedule space of C<build>.
 The tuple id of C<mpa> or C<pma> is used as the array being accessed or
