@@ -29,6 +29,7 @@
 #include <set_from_map.c>
 #include <uset_to_umap.c>
 #include <uset_from_umap.c>
+#include <set_list_from_map_list_inl.c>
 
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
@@ -586,6 +587,15 @@ __isl_give isl_map_list *isl_union_map_get_map_list(
 		list = isl_map_list_free(list);
 
 	return list;
+}
+
+/* Return the sets in "uset" as a list.
+ */
+__isl_give isl_set_list *isl_union_set_get_set_list(
+	__isl_keep isl_union_set *uset)
+{
+	return set_list_from_map_list(
+		isl_union_map_get_map_list(uset_to_umap(uset)));
 }
 
 static isl_stat copy_map(void **entry, void *user)

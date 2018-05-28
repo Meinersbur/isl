@@ -2277,7 +2277,7 @@ from
 	#include <isl/map.h>
 	int isl_map_n_basic_map(__isl_keep isl_map *map);
 
-It is also possible to obtain a list of basic sets from a set
+It is also possible to obtain a list of (basic) sets from a set
 or union set, a list of basic maps from a map and a list of maps from a union
 map.
 
@@ -2288,6 +2288,8 @@ map.
 	#include <isl/union_set.h>
 	__isl_give isl_basic_set_list *
 	isl_union_set_get_basic_set_list(
+		__isl_keep isl_union_set *uset);
+	__isl_give isl_set_list *isl_union_set_get_set_list(
 		__isl_keep isl_union_set *uset);
 
 	#include <isl/map.h>

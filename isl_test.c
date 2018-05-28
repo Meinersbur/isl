@@ -3458,6 +3458,42 @@ static isl_stat test_get_list_bset_from_uset(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Check that the conversion from 'union set' to 'set list' works as expected.
+ */
+static isl_stat test_get_list_set_from_uset(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_union_set *uset, *uset2;
+	isl_set_list *set_list;
+
+	uset = isl_union_set_read_from_str(ctx, "{ A[0]; A[2]; B[3] }");
+	set_list = isl_union_set_get_set_list(uset);
+
+	uset2 = isl_union_set_empty(isl_union_set_get_space(uset));
+
+	for (i = 0; i < isl_set_list_n_set(set_list); i++) {
+		isl_set *set;
+		set = isl_set_list_get_set(set_list, i);
+		uset2 = isl_union_set_union(uset2, isl_union_set_from_set(set));
+	}
+
+	equal = isl_union_set_is_equal(uset, uset2);
+
+	isl_union_set_free(uset);
+	isl_union_set_free(uset2);
+	isl_set_list_free(set_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "union sets are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Check that the conversion from 'map' to 'basic map list' works as expected.
  */
 static isl_stat test_get_list_bmap_from_map(isl_ctx *ctx)
@@ -3539,6 +3575,8 @@ static int test_get_list(isl_ctx *ctx)
 	if (test_get_list_bset_from_set(ctx))
 		return -1;
 	if (test_get_list_bset_from_uset(ctx))
+		return -1;
+	if (test_get_list_set_from_uset(ctx))
 		return -1;
 	if (test_get_list_bmap_from_map(ctx))
 		return -1;
