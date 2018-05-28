@@ -3458,6 +3458,43 @@ static isl_stat test_get_list_bset_from_uset(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Check that the conversion from 'map' to 'basic map list' works as expected.
+ */
+static isl_stat test_get_list_bmap_from_map(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_map *map, *map2;
+	isl_basic_map_list *bmap_list;
+
+	map = isl_map_read_from_str(ctx,
+		"{ [0] -> [0]; [2] -> [0]; [3] -> [0] }");
+	bmap_list = isl_map_get_basic_map_list(map);
+
+	map2 = isl_map_empty(isl_map_get_space(map));
+
+	for (i = 0; i < isl_basic_map_list_n_basic_map(bmap_list); i++) {
+		isl_basic_map *bmap;
+		bmap = isl_basic_map_list_get_basic_map(bmap_list, i);
+		map2 = isl_map_union(map2, isl_map_from_basic_map(bmap));
+	}
+
+	equal = isl_map_is_equal(map, map2);
+
+	isl_map_free(map);
+	isl_map_free(map2);
+	isl_basic_map_list_free(bmap_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "maps are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Check that the conversion from isl objects to lists works as expected.
  */
 static int test_get_list(isl_ctx *ctx)
@@ -3465,6 +3502,8 @@ static int test_get_list(isl_ctx *ctx)
 	if (test_get_list_bset_from_set(ctx))
 		return -1;
 	if (test_get_list_bset_from_uset(ctx))
+		return -1;
+	if (test_get_list_bmap_from_map(ctx))
 		return -1;
 
 	return 0;
