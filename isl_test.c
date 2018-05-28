@@ -3384,6 +3384,92 @@ static int test_bound(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the conversion from 'set' to 'basic set list' works as expected.
+ */
+static isl_stat test_get_list_bset_from_set(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_set *set, *set2;
+	isl_basic_set_list *bset_list;
+
+	set = isl_set_read_from_str(ctx, "{ [0]; [2]; [3] }");
+	bset_list = isl_set_get_basic_set_list(set);
+
+	set2 = isl_set_empty(isl_set_get_space(set));
+
+	for (i = 0; i < isl_basic_set_list_n_basic_set(bset_list); i++) {
+		isl_basic_set *bset;
+		bset = isl_basic_set_list_get_basic_set(bset_list, i);
+		set2 = isl_set_union(set2, isl_set_from_basic_set(bset));
+	}
+
+	equal = isl_set_is_equal(set, set2);
+
+	isl_set_free(set);
+	isl_set_free(set2);
+	isl_basic_set_list_free(bset_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "sets are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from 'union set' to 'basic set list' works as
+ * expected.
+ */
+static isl_stat test_get_list_bset_from_uset(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_union_set *uset, *uset2;
+	isl_basic_set_list *bset_list;
+
+	uset = isl_union_set_read_from_str(ctx, "{ A[0]; B[2]; B[3] }");
+	bset_list = isl_union_set_get_basic_set_list(uset);
+
+	uset2 = isl_union_set_empty(isl_union_set_get_space(uset));
+
+	for (i = 0; i < isl_basic_set_list_n_basic_set(bset_list); i++) {
+		isl_basic_set *bset;
+		bset = isl_basic_set_list_get_basic_set(bset_list, i);
+		uset2 = isl_union_set_union(uset2,
+				isl_union_set_from_basic_set(bset));
+	}
+
+	equal = isl_union_set_is_equal(uset, uset2);
+
+	isl_union_set_free(uset);
+	isl_union_set_free(uset2);
+	isl_basic_set_list_free(bset_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "sets are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from isl objects to lists works as expected.
+ */
+static int test_get_list(isl_ctx *ctx)
+{
+	if (test_get_list_bset_from_set(ctx))
+		return -1;
+	if (test_get_list_bset_from_uset(ctx))
+		return -1;
+
+	return 0;
+}
+
 static int test_lift(isl_ctx *ctx)
 {
 	const char *str;
@@ -9109,6 +9195,7 @@ struct {
 	{ "piecewise quasi-polynomials", &test_pwqp },
 	{ "lift", &test_lift },
 	{ "bound", &test_bound },
+	{ "get lists", &test_get_list },
 	{ "union", &test_union },
 	{ "split periods", &test_split_periods },
 	{ "lexicographic order", &test_lex },
