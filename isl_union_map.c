@@ -551,6 +551,43 @@ isl_bool isl_union_map_every_map(__isl_keep isl_union_map *umap,
 	return isl_bool_error;
 }
 
+/* Add "map" to "list".
+ */
+static isl_stat add_list_map(__isl_take isl_map *map, void *user)
+{
+	isl_map_list **list = user;
+
+	*list = isl_map_list_add(*list, map);
+
+	if (!*list)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Return the maps in "umap" as a list.
+ *
+ * First construct a list of the appropriate size and then add all the
+ * elements.
+ */
+__isl_give isl_map_list *isl_union_map_get_map_list(
+	__isl_keep isl_union_map *umap)
+{
+	int n_maps;
+	isl_ctx *ctx;
+	isl_map_list *list;
+
+	if (!umap)
+		return NULL;
+	ctx = isl_union_map_get_ctx(umap);
+	n_maps = isl_union_map_n_map(umap);
+	list = isl_map_list_alloc(ctx, n_maps);
+
+	if (isl_union_map_foreach_map(umap, &add_list_map, &list) < 0)
+		list = isl_map_list_free(list);
+
+	return list;
+}
+
 static isl_stat copy_map(void **entry, void *user)
 {
 	isl_map *map = *entry;

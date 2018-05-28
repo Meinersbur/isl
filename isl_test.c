@@ -3495,6 +3495,43 @@ static isl_stat test_get_list_bmap_from_map(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Check that the conversion from 'union map' to 'map list' works as expected.
+ */
+static isl_stat test_get_list_map_from_umap(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_union_map *umap, *umap2;
+	isl_map_list *map_list;
+
+	umap = isl_union_map_read_from_str(ctx,
+		"{ A[0] -> [0]; A[2] -> [0]; B[3] -> [0] }");
+	map_list = isl_union_map_get_map_list(umap);
+
+	umap2 = isl_union_map_empty(isl_union_map_get_space(umap));
+
+	for (i = 0; i < isl_map_list_n_map(map_list); i++) {
+		isl_map *map;
+		map = isl_map_list_get_map(map_list, i);
+		umap2 = isl_union_map_union(umap2, isl_union_map_from_map(map));
+	}
+
+	equal = isl_union_map_is_equal(umap, umap2);
+
+	isl_union_map_free(umap);
+	isl_union_map_free(umap2);
+	isl_map_list_free(map_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "union maps are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Check that the conversion from isl objects to lists works as expected.
  */
 static int test_get_list(isl_ctx *ctx)
@@ -3504,6 +3541,8 @@ static int test_get_list(isl_ctx *ctx)
 	if (test_get_list_bset_from_uset(ctx))
 		return -1;
 	if (test_get_list_bmap_from_map(ctx))
+		return -1;
+	if (test_get_list_map_from_umap(ctx))
 		return -1;
 
 	return 0;
