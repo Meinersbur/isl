@@ -3824,6 +3824,7 @@ error:
 #include <isl_multi_gist.c>
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_move_dims_templ.c>
+#include <isl_multi_splice_templ.c>
 #include <isl_multi_zero_templ.c>
 
 /* Construct an isl_multi_aff living in "space" that corresponds
@@ -6174,6 +6175,7 @@ error:
 #include <isl_multi_align_set.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_move_dims_templ.c>
+#include <isl_multi_splice_templ.c>
 #include <isl_multi_zero_templ.c>
 
 /* Does "mpa" have a non-trivial explicit domain?
@@ -7915,7 +7917,6 @@ error:
 #define DOMBASE union_set
 
 #define NO_PRODUCT
-#define NO_SPLICE
 
 #include <isl_multi_explicit_domain.c>
 #include <isl_multi_union_pw_aff_explicit_domain.c>
