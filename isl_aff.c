@@ -7614,7 +7614,7 @@ static isl_stat isl_union_pw_aff_check_match_domain_space(
 		return isl_stat_error;
 	if (!match)
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"expecting set space", return -1);
+			"expecting set space", return isl_stat_error);
 
 	upa_space = isl_union_pw_aff_get_space(upa);
 	match = isl_space_has_equal_params(space, upa_space);
