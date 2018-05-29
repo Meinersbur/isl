@@ -23,9 +23,6 @@ __isl_give isl_space *isl_multi_##BASE##_get_domain_space(		\
 __isl_constructor							\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_##BASE##_list(	\
 	__isl_take isl_space *space, __isl_take isl_##BASE##_list *list); \
-__isl_export								\
-__isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\
-	__isl_take isl_space *space);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_copy(			\
 	__isl_keep isl_multi_##BASE *multi);				\
 __isl_null isl_multi_##BASE *isl_multi_##BASE##_free(			\
@@ -102,6 +99,11 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_sub(			\
 __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_neg(		 	\
 	__isl_take isl_multi_##BASE *multi);
+
+#define ISL_DECLARE_MULTI_ZERO(BASE)					\
+__isl_export								\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\
+	__isl_take isl_space *space);
 
 #define ISL_DECLARE_MULTI_NAN(BASE)					\
 isl_bool isl_multi_##BASE##_involves_nan(				\
