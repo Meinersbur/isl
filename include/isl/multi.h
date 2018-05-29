@@ -11,8 +11,6 @@ extern "C" {
 #endif
 
 #define ISL_DECLARE_MULTI(BASE)						\
-isl_size isl_multi_##BASE##_dim(__isl_keep isl_multi_##BASE *multi,	\
-	enum isl_dim_type type);					\
 isl_ctx *isl_multi_##BASE##_get_ctx(					\
 	__isl_keep isl_multi_##BASE *multi);				\
 __isl_export								\
@@ -33,9 +31,6 @@ isl_bool isl_multi_##BASE##_plain_is_equal(				\
 	__isl_keep isl_multi_##BASE *multi2);				\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_reset_user(		\
 	__isl_take isl_multi_##BASE *multi);				\
-__isl_give isl_multi_##BASE *isl_multi_##BASE##_drop_dims(		\
-	__isl_take isl_multi_##BASE *multi, enum isl_dim_type type,	\
-	unsigned first, unsigned n);					\
 __isl_export								\
 isl_size isl_multi_##BASE##_size(__isl_keep isl_multi_##BASE *multi);	\
 __isl_give isl_##BASE *isl_multi_##BASE##_get_##BASE(			\
@@ -109,7 +104,14 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\
 isl_bool isl_multi_##BASE##_involves_nan(				\
 	__isl_keep isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_DROP_DIMS(BASE)				\
+isl_size isl_multi_##BASE##_dim(__isl_keep isl_multi_##BASE *multi,	\
+	enum isl_dim_type type);					\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_drop_dims(		\
+	__isl_take isl_multi_##BASE *multi, enum isl_dim_type type,	\
+	unsigned first, unsigned n);
 #define ISL_DECLARE_MULTI_DIMS(BASE)					\
+ISL_DECLARE_MULTI_DROP_DIMS(BASE)					\
 isl_bool isl_multi_##BASE##_involves_dims(				\
 	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type,	\
 	unsigned first, unsigned n);					\

@@ -1013,6 +1013,7 @@ ISL_DECLARE_MULTI(union_pw_aff)
 ISL_DECLARE_MULTI_ARITH(union_pw_aff)
 ISL_DECLARE_MULTI_ZERO(union_pw_aff)
 ISL_DECLARE_MULTI_NAN(union_pw_aff)
+ISL_DECLARE_MULTI_DROP_DIMS(union_pw_aff)
 ISL_DECLARE_MULTI_DIM_ID(union_pw_aff)
 ISL_DECLARE_MULTI_TUPLE_ID(union_pw_aff)
 
