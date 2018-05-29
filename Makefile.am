@@ -491,6 +491,7 @@ EXTRA_DIST = \
 	isl_multi_param_templ.c \
 	isl_multi_product_templ.c \
 	isl_multi_splice_templ.c \
+	isl_multi_tuple_id_templ.c \
 	isl_multi_zero_templ.c \
 	print_templ.c \
 	print_templ_yaml.c \

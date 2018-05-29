@@ -3837,6 +3837,7 @@ error:
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
+#include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
 
 /* Construct an isl_multi_aff living in "space" that corresponds
@@ -6238,6 +6239,7 @@ error:
 #include <isl_multi_param_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
+#include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
 
 /* Does "mpa" have a non-trivial explicit domain?
@@ -8011,6 +8013,7 @@ error:
 #include <isl_multi_align_union_set.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_nan_templ.c>
+#include <isl_multi_tuple_id_templ.c>
 
 /* Does "mupa" have a non-trivial explicit domain?
  *
