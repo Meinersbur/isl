@@ -4376,7 +4376,7 @@ static isl_stat set_div(__isl_take isl_set *set,
 error:
 	isl_set_free(set);
 	isl_qpolynomial_free(qp);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Split the domain "set" such that integer division "div"
