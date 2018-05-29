@@ -4341,6 +4341,11 @@ return true if the objects are not the same.
 		__isl_keep isl_union_map *umap1,
 		__isl_keep isl_union_map *umap2);
 
+	#include <isl/val.h>
+	isl_bool isl_multi_val_plain_is_equal(
+		__isl_keep isl_multi_val *mv1,
+		__isl_keep isl_multi_val *mv2);
+
 	#include <isl/aff.h>
 	isl_bool isl_aff_plain_is_equal(
 		__isl_keep isl_aff *aff1,
