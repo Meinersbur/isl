@@ -451,6 +451,7 @@ EXTRA_DIST = \
 	check_type_range_templ.c \
 	extract_key.c \
 	has_single_reference_templ.c \
+	isl_list_macro.h \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \

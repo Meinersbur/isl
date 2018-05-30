@@ -17,14 +17,8 @@
 #include <isl_tarjan.h>
 #include <isl/printer.h>
 
-#define xCAT(A,B) A ## B
-#define CAT(A,B) xCAT(A,B)
-#undef EL
-#define EL CAT(isl_,BASE)
-#define xFN(TYPE,NAME) TYPE ## _ ## NAME
-#define FN(TYPE,NAME) xFN(TYPE,NAME)
-#define xLIST(EL) EL ## _list
-#define LIST(EL) xLIST(EL)
+#include <isl_list_macro.h>
+
 #define xS(TYPE,NAME) struct TYPE ## _ ## NAME
 #define S(TYPE,NAME) xS(TYPE,NAME)
 

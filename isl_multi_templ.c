@@ -17,8 +17,6 @@
 #include <isl_multi_macro.h>
 
 #define MULTI_NAME(BASE) "isl_multi_" #BASE
-#define xLIST(EL) EL ## _list
-#define LIST(EL) xLIST(EL)
 
 isl_ctx *FN(MULTI(BASE),get_ctx)(__isl_keep MULTI(BASE) *multi)
 {
