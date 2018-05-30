@@ -249,6 +249,22 @@ error:
 	return NULL;
 }
 
+/* Set the element at position "pos" of "multi" to "el",
+ * where the position may be empty if "multi" has only a single reference.
+ * However, the space of "multi" is available and is checked
+ * for compatibility with "el".
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),restore_check_space)(
+	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
+{
+	isl_space *space;
+
+	space = FN(MULTI(BASE),peek_space)(multi);
+	if (FN(EL,check_match_domain_space)(el, space) < 0)
+		multi = FN(MULTI(BASE),free)(multi);
+	return FN(MULTI(BASE),restore)(multi, pos, el);
+}
+
 __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
@@ -267,10 +283,8 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
 		multi_space = FN(MULTI(BASE),get_space)(multi);
 		el = FN(EL,align_params)(el, isl_space_copy(multi_space));
 	}
-	if (FN(EL,check_match_domain_space)(el, multi_space) < 0)
-		goto error;
 
-	multi = FN(MULTI(BASE),restore)(multi, pos, el);
+	multi = FN(MULTI(BASE),restore_check_space)(multi, pos, el);
 
 	isl_space_free(multi_space);
 	isl_space_free(el_space);
@@ -531,7 +545,7 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	for (i = 0; i < n; ++i) {
 		EL *el = FN(FN(LIST(EL),get),BASE)(list, i);
 		el = FN(EL,align_params)(el, isl_space_copy(space));
-		multi = FN(MULTI(BASE),restore)(multi, i, el);
+		multi = FN(MULTI(BASE),restore_check_space)(multi, i, el);
 	}
 
 	isl_space_free(space);
