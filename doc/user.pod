@@ -607,6 +607,10 @@ in which the object was created.
 	isl_ctx *isl_ast_node_get_ctx(
 		__isl_keep isl_ast_node *node);
 
+	#include <isl/stride_info.h>
+	isl_ctx *isl_stride_info_get_ctx(
+		__isl_keep isl_stride_info *si);
+
 =head2 Return Types
 
 C<isl> uses two special return types for functions that either return

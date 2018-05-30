@@ -22,6 +22,16 @@ struct isl_stride_info {
 	isl_aff *offset;
 };
 
+/* Return the ctx to which "si" belongs.
+ */
+isl_ctx *isl_stride_info_get_ctx(__isl_keep isl_stride_info *si)
+{
+	if (!si)
+		return NULL;
+
+	return isl_val_get_ctx(si->stride);
+}
+
 /* Free "si" and return NULL.
  */
 __isl_null isl_stride_info *isl_stride_info_free(
