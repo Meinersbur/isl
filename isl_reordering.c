@@ -70,7 +70,7 @@ __isl_give isl_reordering *isl_reordering_cow(__isl_take isl_reordering *r)
 	return isl_reordering_dup(r);
 }
 
-void *isl_reordering_free(__isl_take isl_reordering *exp)
+__isl_null isl_reordering *isl_reordering_free(__isl_take isl_reordering *exp)
 {
 	if (!exp)
 		return NULL;
