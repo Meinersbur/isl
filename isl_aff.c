@@ -492,14 +492,16 @@ __isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
 static __isl_give isl_vec *vec_reorder(__isl_take isl_vec *vec,
 	__isl_take isl_reordering *r, int n_div)
 {
+	isl_space *space;
 	isl_vec *res;
 	int i;
 
 	if (!vec || !r)
 		goto error;
 
+	space = isl_reordering_peek_space(r);
 	res = isl_vec_alloc(vec->ctx,
-			    2 + isl_space_dim(r->dim, isl_dim_all) + n_div);
+			    2 + isl_space_dim(space, isl_dim_all) + n_div);
 	if (!res)
 		goto error;
 	isl_seq_cpy(res->el, vec->el, 2);
@@ -555,10 +557,6 @@ __isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
 	if (!equal_params) {
 		isl_reordering *exp;
 
-		model = isl_space_drop_dims(model, isl_dim_in,
-					0, isl_space_dim(model, isl_dim_in));
-		model = isl_space_drop_dims(model, isl_dim_out,
-					0, isl_space_dim(model, isl_dim_out));
 		exp = isl_parameter_alignment_reordering(aff->ls->dim, model);
 		exp = isl_reordering_extend_space(exp,
 					isl_aff_get_domain_space(aff));
@@ -1998,7 +1996,7 @@ __isl_give isl_aff *isl_aff_set_tuple_id(__isl_take isl_aff *aff,
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		goto error;
-	if (type != isl_dim_out)
+	if (type != isl_dim_in)
 		isl_die(aff->v->ctx, isl_error_invalid,
 			"cannot only set id of input tuple", goto error);
 	aff->ls = isl_local_space_set_tuple_id(aff->ls, isl_dim_set, id);
@@ -2716,10 +2714,9 @@ static __isl_give isl_set *align_params_pw_pw_set_and(
 		goto error;
 	if (equal_params)
 		return fn(pwaff1, pwaff2);
-	if (!isl_space_has_named_params(pwaff1->dim) ||
-	    !isl_space_has_named_params(pwaff2->dim))
-		isl_die(isl_pw_aff_get_ctx(pwaff1), isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
+	if (isl_pw_aff_check_named_params(pwaff1) < 0 ||
+	    isl_pw_aff_check_named_params(pwaff2) < 0)
+		goto error;
 	pwaff1 = isl_pw_aff_align_params(pwaff1, isl_pw_aff_get_space(pwaff2));
 	pwaff2 = isl_pw_aff_align_params(pwaff2, isl_pw_aff_get_space(pwaff1));
 	return fn(pwaff1, pwaff2);
@@ -2746,10 +2743,9 @@ static __isl_give isl_map *align_params_pw_pw_map_and(
 		goto error;
 	if (equal_params)
 		return fn(pa1, pa2);
-	if (!isl_space_has_named_params(pa1->dim) ||
-	    !isl_space_has_named_params(pa2->dim))
-		isl_die(isl_pw_aff_get_ctx(pa1), isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
+	if (isl_pw_aff_check_named_params(pa1) < 0 ||
+	    isl_pw_aff_check_named_params(pa2) < 0)
+		goto error;
 	pa1 = isl_pw_aff_align_params(pa1, isl_pw_aff_get_space(pa2));
 	pa2 = isl_pw_aff_align_params(pa2, isl_pw_aff_get_space(pa1));
 	return fn(pa1, pa2);
@@ -4287,7 +4283,6 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 
 #define NO_SUB
 #define NO_OPT
-#define NO_INVOLVES_DIMS
 #define NO_INSERT_DIMS
 #define NO_LIFT
 #define NO_MORPH
@@ -6257,10 +6252,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(
 		goto error;
 	if (equal_params)
 		return pw_multi_aff_set_pw_aff(pma, pos, pa);
-	if (!isl_space_has_named_params(pma->dim) ||
-	    !isl_space_has_named_params(pa->dim))
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
+	if (isl_pw_multi_aff_check_named_params(pma) < 0 ||
+	    isl_pw_aff_check_named_params(pa) < 0)
+		goto error;
 	pma = isl_pw_multi_aff_align_params(pma, isl_pw_aff_get_space(pa));
 	pa = isl_pw_aff_align_params(pa, isl_pw_multi_aff_get_space(pma));
 	return pw_multi_aff_set_pw_aff(pma, pos, pa);
@@ -7620,7 +7614,7 @@ static isl_stat isl_union_pw_aff_check_match_domain_space(
 		return isl_stat_error;
 	if (!match)
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"expecting set space", return -1);
+			"expecting set space", return isl_stat_error);
 
 	upa_space = isl_union_pw_aff_get_space(upa);
 	match = isl_space_has_equal_params(space, upa_space);
@@ -8198,7 +8192,6 @@ error:
 #define NO_SPLICE
 #define NO_ZERO
 #define NO_IDENTITY
-#define NO_GIST
 
 #include <isl_multi_explicit_domain.c>
 #include <isl_multi_union_pw_aff_explicit_domain.c>
@@ -8503,6 +8496,10 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
 /* Return a multiple union piecewise affine expression
  * that is equal to "mv" on "domain", assuming "domain" and "mv"
  * have been aligned.
+ *
+ * If the resulting multi union piecewise affine expression has
+ * an explicit domain, then assign it the input domain.
+ * In other cases, the domain is stored in the individual elements.
  */
 static __isl_give isl_multi_union_pw_aff *
 isl_multi_union_pw_aff_multi_val_on_domain_aligned(
@@ -8527,6 +8524,9 @@ isl_multi_union_pw_aff_multi_val_on_domain_aligned(
 							v);
 		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
 	}
+	if (isl_multi_union_pw_aff_has_explicit_domain(mupa))
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa,
+						    isl_union_set_copy(domain));
 
 	isl_union_set_free(domain);
 	isl_multi_val_free(mv);

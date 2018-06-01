@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 #include <isl/ctx.h>
-#include <isl/space.h>
+#include <isl/space_type.h>
 #include <isl/vec.h>
 #include <isl/mat.h>
 #include <isl/printer.h>
@@ -21,7 +21,7 @@
 #include <isl/aff_type.h>
 #include <isl/list.h>
 #include <isl/map_type.h>
-#include <isl/val.h>
+#include <isl/val_type.h>
 #include <isl/stdint.h>
 #include <isl/stride_info.h>
 
@@ -620,6 +620,8 @@ int isl_map_n_basic_map(__isl_keep isl_map *map);
 __isl_export
 isl_stat isl_map_foreach_basic_map(__isl_keep isl_map *map,
 	isl_stat (*fn)(__isl_take isl_basic_map *bmap, void *user), void *user);
+__isl_give isl_basic_map_list *isl_map_get_basic_map_list(
+	__isl_keep isl_map *map);
 
 __isl_give isl_map *isl_map_fixed_power_val(__isl_take isl_map *map,
 	__isl_take isl_val *exp);
@@ -642,6 +644,9 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 	__isl_take isl_basic_map *bmap, __isl_take isl_space *model);
 __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
 	__isl_take isl_space *model);
+__isl_give isl_basic_map *isl_basic_map_drop_unused_params(
+	__isl_take isl_basic_map *bmap);
+__isl_give isl_map *isl_map_drop_unused_params(__isl_take isl_map *map);
 
 __isl_give isl_mat *isl_basic_map_equalities_matrix(
 		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,

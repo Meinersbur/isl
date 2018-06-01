@@ -2108,6 +2108,10 @@ struct {
 	{ 0, "{ [a, b] : a >= 0 and 0 <= b <= 1 - a; [-1, 3] }" },
 	{ 1, "{ [a, b] : a, b >= 0 and a + 2b <= 2; [1, 1] }" },
 	{ 0, "{ [a, b] : a, b >= 0 and a + 2b <= 2; [2, 1] }" },
+	{ 0, "{ [a, c] : (2 + a) mod 4 = 0 or "
+		"(c = 4 + a and 4 * floor((a)/4) = a and a >= 0 and a <= 4) or "
+		"(c = 3 + a and 4 * floor((-1 + a)/4) = -1 + a and "
+		    "a > 0 and a <= 5) }" },
 };
 
 /* A specialized coalescing test case that would result
@@ -3376,6 +3380,208 @@ static int test_bound(isl_ctx *ctx)
 	if (dim != 1)
 		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
 			return -1);
+
+	return 0;
+}
+
+/* Check that the conversion from 'set' to 'basic set list' works as expected.
+ */
+static isl_stat test_get_list_bset_from_set(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_set *set, *set2;
+	isl_basic_set_list *bset_list;
+
+	set = isl_set_read_from_str(ctx, "{ [0]; [2]; [3] }");
+	bset_list = isl_set_get_basic_set_list(set);
+
+	set2 = isl_set_empty(isl_set_get_space(set));
+
+	for (i = 0; i < isl_basic_set_list_n_basic_set(bset_list); i++) {
+		isl_basic_set *bset;
+		bset = isl_basic_set_list_get_basic_set(bset_list, i);
+		set2 = isl_set_union(set2, isl_set_from_basic_set(bset));
+	}
+
+	equal = isl_set_is_equal(set, set2);
+
+	isl_set_free(set);
+	isl_set_free(set2);
+	isl_basic_set_list_free(bset_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "sets are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from 'union set' to 'basic set list' works as
+ * expected.
+ */
+static isl_stat test_get_list_bset_from_uset(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_union_set *uset, *uset2;
+	isl_basic_set_list *bset_list;
+
+	uset = isl_union_set_read_from_str(ctx, "{ A[0]; B[2]; B[3] }");
+	bset_list = isl_union_set_get_basic_set_list(uset);
+
+	uset2 = isl_union_set_empty(isl_union_set_get_space(uset));
+
+	for (i = 0; i < isl_basic_set_list_n_basic_set(bset_list); i++) {
+		isl_basic_set *bset;
+		bset = isl_basic_set_list_get_basic_set(bset_list, i);
+		uset2 = isl_union_set_union(uset2,
+				isl_union_set_from_basic_set(bset));
+	}
+
+	equal = isl_union_set_is_equal(uset, uset2);
+
+	isl_union_set_free(uset);
+	isl_union_set_free(uset2);
+	isl_basic_set_list_free(bset_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "sets are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from 'union set' to 'set list' works as expected.
+ */
+static isl_stat test_get_list_set_from_uset(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_union_set *uset, *uset2;
+	isl_set_list *set_list;
+
+	uset = isl_union_set_read_from_str(ctx, "{ A[0]; A[2]; B[3] }");
+	set_list = isl_union_set_get_set_list(uset);
+
+	uset2 = isl_union_set_empty(isl_union_set_get_space(uset));
+
+	for (i = 0; i < isl_set_list_n_set(set_list); i++) {
+		isl_set *set;
+		set = isl_set_list_get_set(set_list, i);
+		uset2 = isl_union_set_union(uset2, isl_union_set_from_set(set));
+	}
+
+	equal = isl_union_set_is_equal(uset, uset2);
+
+	isl_union_set_free(uset);
+	isl_union_set_free(uset2);
+	isl_set_list_free(set_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "union sets are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from 'map' to 'basic map list' works as expected.
+ */
+static isl_stat test_get_list_bmap_from_map(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_map *map, *map2;
+	isl_basic_map_list *bmap_list;
+
+	map = isl_map_read_from_str(ctx,
+		"{ [0] -> [0]; [2] -> [0]; [3] -> [0] }");
+	bmap_list = isl_map_get_basic_map_list(map);
+
+	map2 = isl_map_empty(isl_map_get_space(map));
+
+	for (i = 0; i < isl_basic_map_list_n_basic_map(bmap_list); i++) {
+		isl_basic_map *bmap;
+		bmap = isl_basic_map_list_get_basic_map(bmap_list, i);
+		map2 = isl_map_union(map2, isl_map_from_basic_map(bmap));
+	}
+
+	equal = isl_map_is_equal(map, map2);
+
+	isl_map_free(map);
+	isl_map_free(map2);
+	isl_basic_map_list_free(bmap_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "maps are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from 'union map' to 'map list' works as expected.
+ */
+static isl_stat test_get_list_map_from_umap(isl_ctx *ctx)
+{
+	int i;
+	isl_bool equal;
+	isl_union_map *umap, *umap2;
+	isl_map_list *map_list;
+
+	umap = isl_union_map_read_from_str(ctx,
+		"{ A[0] -> [0]; A[2] -> [0]; B[3] -> [0] }");
+	map_list = isl_union_map_get_map_list(umap);
+
+	umap2 = isl_union_map_empty(isl_union_map_get_space(umap));
+
+	for (i = 0; i < isl_map_list_n_map(map_list); i++) {
+		isl_map *map;
+		map = isl_map_list_get_map(map_list, i);
+		umap2 = isl_union_map_union(umap2, isl_union_map_from_map(map));
+	}
+
+	equal = isl_union_map_is_equal(umap, umap2);
+
+	isl_union_map_free(umap);
+	isl_union_map_free(umap2);
+	isl_map_list_free(map_list);
+
+	if (equal < 0)
+		return isl_stat_error;
+
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "union maps are not equal",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that the conversion from isl objects to lists works as expected.
+ */
+static int test_get_list(isl_ctx *ctx)
+{
+	if (test_get_list_bset_from_set(ctx))
+		return -1;
+	if (test_get_list_bset_from_uset(ctx))
+		return -1;
+	if (test_get_list_set_from_uset(ctx))
+		return -1;
+	if (test_get_list_bmap_from_map(ctx))
+		return -1;
+	if (test_get_list_map_from_umap(ctx))
+		return -1;
 
 	return 0;
 }
@@ -5421,6 +5627,14 @@ struct {
 	  "B[{ A[] -> [1]; D[] -> [3] }]",
 	  "C[{ A[] -> [2] }]",
 	  "[B[{ A[] -> [1]; D[] -> [3] }] -> C[{ A[] -> [2] }]]" },
+	{ &isl_multi_union_pw_aff_range_product,
+	  "B[] }]",
+	  "(C[] : { A[x] })",
+	  "([B[] -> C[]] : { A[x] })" },
+	{ &isl_multi_union_pw_aff_range_product,
+	  "(B[] : { A[x] })",
+	  "C[] }]",
+	  "([B[] -> C[]] : { A[x] })" },
 };
 
 /* Perform some basic tests of binary operations on
@@ -6008,6 +6222,25 @@ static int test_mupa_upma(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the input tuple of an isl_aff can be set properly.
+ */
+static isl_stat test_aff_set_tuple_id(isl_ctx *ctx)
+{
+	isl_id *id;
+	isl_aff *aff;
+	int equal;
+
+	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x + 1] }");
+	id = isl_id_alloc(ctx, "A", NULL);
+	aff = isl_aff_set_tuple_id(aff, isl_dim_in, id);
+	equal = aff_check_plain_equal(aff, "{ A[x] -> [x + 1] }");
+	isl_aff_free(aff);
+	if (equal < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -6079,6 +6312,9 @@ int test_aff(isl_ctx *ctx)
 	equal = aff_check_plain_equal(aff, "{ [-1] }");
 	isl_aff_free(aff);
 	if (equal < 0)
+		return -1;
+
+	if (test_aff_set_tuple_id(ctx) < 0)
 		return -1;
 
 	return 0;
@@ -7137,7 +7373,7 @@ static int test_residue_class(isl_ctx *ctx)
 	return res;
 }
 
-int test_align_parameters(isl_ctx *ctx)
+static int test_align_parameters_1(isl_ctx *ctx)
 {
 	const char *str;
 	isl_space *space;
@@ -7158,6 +7394,101 @@ int test_align_parameters(isl_ctx *ctx)
 
 	isl_multi_aff_free(ma1);
 	isl_multi_aff_free(ma2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"result not as expected", return -1);
+
+	return 0;
+}
+
+/* Check the isl_multi_*_from_*_list operation in case inputs
+ * have unaligned parameters.
+ * In particular, older versions of isl would simply fail
+ * (without printing any error message).
+ */
+static isl_stat test_align_parameters_2(isl_ctx *ctx)
+{
+	isl_space *space;
+	isl_map *map;
+	isl_aff *aff;
+	isl_multi_aff *ma;
+
+	map = isl_map_read_from_str(ctx, "{ A[] -> M[x] }");
+	space = isl_map_get_space(map);
+	isl_map_free(map);
+
+	aff = isl_aff_read_from_str(ctx, "[N] -> { A[] -> [N] }");
+	ma = isl_multi_aff_from_aff_list(space, isl_aff_list_from_aff(aff));
+	isl_multi_aff_free(ma);
+
+	if (!ma)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Perform basic parameter alignment tests.
+ */
+static int test_align_parameters(isl_ctx *ctx)
+{
+	if (test_align_parameters_1(ctx) < 0)
+		return -1;
+	if (test_align_parameters_2(ctx) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* Check that isl_*_drop_unused_params actually drops the unused parameters
+ * by comparing the result using isl_*_plain_is_equal.
+ * Note that this assumes that isl_*_plain_is_equal does not consider
+ * objects that only differ by unused parameters to be equal.
+ */
+int test_drop_unused_parameters(isl_ctx *ctx)
+{
+	const char *str_with, *str_without;
+	isl_basic_set *bset1, *bset2;
+	isl_set *set1, *set2;
+	isl_pw_aff *pwa1, *pwa2;
+	int equal;
+
+	str_with = "[n, m, o] -> { [m] }";
+	str_without = "[m] -> { [m] }";
+
+	bset1 = isl_basic_set_read_from_str(ctx, str_with);
+	bset2 = isl_basic_set_read_from_str(ctx, str_without);
+	bset1 = isl_basic_set_drop_unused_params(bset1);
+	equal = isl_basic_set_plain_is_equal(bset1, bset2);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"result not as expected", return -1);
+
+	set1 = isl_set_read_from_str(ctx, str_with);
+	set2 = isl_set_read_from_str(ctx, str_without);
+	set1 = isl_set_drop_unused_params(set1);
+	equal = isl_set_plain_is_equal(set1, set2);
+	isl_set_free(set1);
+	isl_set_free(set2);
+
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"result not as expected", return -1);
+
+	pwa1 = isl_pw_aff_read_from_str(ctx, str_with);
+	pwa2 = isl_pw_aff_read_from_str(ctx, str_without);
+	pwa1 = isl_pw_aff_drop_unused_params(pwa1);
+	equal = isl_pw_aff_plain_is_equal(pwa1, pwa2);
+	isl_pw_aff_free(pwa1);
+	isl_pw_aff_free(pwa2);
 
 	if (equal < 0)
 		return -1;
@@ -8214,6 +8545,30 @@ static int test_multi_pw_aff_2(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that isl_multi_union_pw_aff_multi_val_on_domain
+ * sets the explicit domain of a zero-dimensional result,
+ * such that it can be converted to an isl_union_map.
+ */
+static isl_stat test_multi_pw_aff_3(isl_ctx *ctx)
+{
+	isl_space *space;
+	isl_union_set *dom;
+	isl_multi_val *mv;
+	isl_multi_union_pw_aff *mupa;
+	isl_union_map *umap;
+
+	dom = isl_union_set_read_from_str(ctx, "{ A[]; B[] }");
+	space = isl_union_set_get_space(dom);
+	mv = isl_multi_val_zero(isl_space_set_from_params(space));
+	mupa = isl_multi_union_pw_aff_multi_val_on_domain(dom, mv);
+	umap = isl_union_map_from_multi_union_pw_aff(mupa);
+	isl_union_map_free(umap);
+	if (!umap)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Perform some tests on multi piecewise affine expressions.
  */
 static int test_multi_pw_aff(isl_ctx *ctx)
@@ -8221,6 +8576,8 @@ static int test_multi_pw_aff(isl_ctx *ctx)
 	if (test_multi_pw_aff_1(ctx) < 0)
 		return -1;
 	if (test_multi_pw_aff_2(ctx) < 0)
+		return -1;
+	if (test_multi_pw_aff_3(ctx) < 0)
 		return -1;
 	return 0;
 }
@@ -8908,6 +9265,7 @@ struct {
 	{ "conversion", &test_conversion },
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
+	{ "drop unused parameters", &test_drop_unused_parameters },
 	{ "preimage", &test_preimage },
 	{ "pullback", &test_pullback },
 	{ "AST", &test_ast },
@@ -8953,6 +9311,7 @@ struct {
 	{ "piecewise quasi-polynomials", &test_pwqp },
 	{ "lift", &test_lift },
 	{ "bound", &test_bound },
+	{ "get lists", &test_get_list },
 	{ "union", &test_union },
 	{ "split periods", &test_split_periods },
 	{ "lexicographic order", &test_lex },
