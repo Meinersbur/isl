@@ -94,6 +94,13 @@ __isl_keep isl_space *isl_map_peek_space(__isl_keep const isl_map *map)
 	return map ? map->dim : NULL;
 }
 
+/* Return the space of "set".
+ */
+__isl_keep isl_space *isl_set_peek_space(__isl_keep isl_set *set)
+{
+	return isl_map_peek_space(set_to_map(set));
+}
+
 unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type)
 {
 	return map ? n(map->dim, type) : 0;

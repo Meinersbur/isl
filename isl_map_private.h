@@ -170,6 +170,7 @@ __isl_keep isl_space *isl_basic_map_peek_space(
 	__isl_keep const isl_basic_map *bmap);
 __isl_keep isl_space *isl_basic_set_peek_space(__isl_keep isl_basic_set *bset);
 __isl_keep isl_space *isl_map_peek_space(__isl_keep const isl_map *map);
+__isl_keep isl_space *isl_set_peek_space(__isl_keep isl_set *set);
 
 __isl_give isl_basic_set *isl_basic_set_reset_space(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
