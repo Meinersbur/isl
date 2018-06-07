@@ -92,6 +92,7 @@ __isl_give isl_aff *isl_aff_domain_factor_domain(__isl_take isl_aff *aff);
 
 int isl_aff_plain_cmp(__isl_keep isl_aff *aff1, __isl_keep isl_aff *aff2);
 
+__isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff);
 __isl_give isl_aff *isl_aff_normalize(__isl_take isl_aff *aff);
 
 __isl_give isl_aff *isl_aff_expand_divs( __isl_take isl_aff *aff,
