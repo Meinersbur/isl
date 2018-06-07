@@ -295,15 +295,15 @@ long isl_val_get_num_si(__isl_keep isl_val *v)
  *
  * If "v" is not a rational value, then the result is undefined.
  */
-int isl_val_get_num_isl_int(__isl_keep isl_val *v, isl_int *n)
+isl_stat isl_val_get_num_isl_int(__isl_keep isl_val *v, isl_int *n)
 {
 	if (!v)
-		return -1;
+		return isl_stat_error;
 	if (!isl_val_is_rat(v))
 		isl_die(isl_val_get_ctx(v), isl_error_invalid,
-			"expecting rational value", return -1);
+			"expecting rational value", return isl_stat_error);
 	isl_int_set(*n, v->n);
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Extract the denominator of a rational value "v" as an integer.
