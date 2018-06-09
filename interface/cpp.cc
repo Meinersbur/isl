@@ -85,7 +85,7 @@ void cpp_generator::generate()
 
 	osprintf(os, "\n");
 	osprintf(os, "namespace isl {\n\n");
-	osprintf(os, "inline namespace noexceptions {\n\n");
+	osprintf(os, "inline namespace checked {\n\n");
 
 	print_forward_declarations(os);
 	osprintf(os, "\n");
@@ -93,7 +93,7 @@ void cpp_generator::generate()
 	osprintf(os, "\n");
 	print_implementations(os);
 
-	osprintf(os, "} // namespace noexceptions\n");
+	osprintf(os, "} // namespace checked\n");
 	osprintf(os, "} // namespace isl\n");
 }
 

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include <isl/options.h>
-#include "interface/isl-noexceptions.h"
+#include "interface/cpp-checked.h"
 
 static void assert_impl(bool condition, const char *file, int line,
 	const char *message)

@@ -20,8 +20,8 @@ TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
 if HAVE_CLANG
 if HAVE_CXX11
-  noinst_PROGRAMS += isl_test_cpp-noexceptions
-  TESTS += isl_test_cpp-noexceptions
+  noinst_PROGRAMS += isl_test_cpp-checked
+  TESTS += isl_test_cpp-checked
 endif
 if HAVE_PYTHON
   TESTS += isl_test_python.py
@@ -281,12 +281,12 @@ isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
 
-isl_test_cpp_noexceptions_CXXFLAGS = @CXX11FLAGS@
-isl_test_cpp_noexceptions_SOURCES = \
-	isl_test_cpp-noexceptions.cc \
-	interface/isl-noexceptions.h
-isl_test_cpp_noexceptions_LDFLAGS = @MP_LDFLAGS@
-isl_test_cpp_noexceptions_LDADD = libisl.la @MP_LIBS@
+isl_test_cpp_checked_CXXFLAGS = @CXX11FLAGS@
+isl_test_cpp_checked_SOURCES = \
+	isl_test_cpp-checked.cc \
+	interface/cpp-checked.h
+isl_test_cpp_checked_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp_checked_LDADD = libisl.la @MP_LIBS@
 
 # dummy library that captures the dependencies on all headers
 # that are relevant for the bindings
@@ -300,14 +300,14 @@ interface/isl.py: interface/extract_interface libdep.a python/isl.py.top
 			$(includes) $(srcdir)/all.h) \
 			> $@
 
-interface/isl-noexceptions.h: interface/extract_interface libdep.a \
-		cpp/isl-noexceptions.h.top \
-		cpp/isl-noexceptions.h.pre cpp/isl-noexceptions.h.bot
-	(cat $(srcdir)/cpp/isl-noexceptions.h.top $(srcdir)/all.h \
-	    $(srcdir)/cpp/isl-noexceptions.h.pre; \
+interface/cpp-checked.h: interface/extract_interface libdep.a \
+		cpp/cpp-checked.h.top \
+		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
+	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
+	    $(srcdir)/cpp/cpp-checked.h.pre; \
 		interface/extract_interface$(EXEEXT) --language=cpp \
 			$(includes) $(srcdir)/all.h; \
-		cat $(srcdir)/cpp/isl-noexceptions.h.bot) \
+		cat $(srcdir)/cpp/cpp-checked.h.bot) \
 			> $@
 endif
 
@@ -370,7 +370,7 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 if HAVE_CLANG
-    CPP_INTERFACE = interface/isl-noexceptions.h
+    CPP_INTERFACE = interface/cpp-checked.h
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACE)
 CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACE)
