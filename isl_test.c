@@ -3723,7 +3723,7 @@ static int test_subtract(isl_ctx *ctx)
  * does not increase the number of constraints.  In particular,
  * the empty basic set should maintain its canonical representation.
  */
-static int test_intersect(isl_ctx *ctx)
+static int test_intersect_1(isl_ctx *ctx)
 {
 	int n1, n2;
 	isl_basic_set *bset1, *bset2;
@@ -3740,6 +3740,35 @@ static int test_intersect(isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown,
 			"number of constraints of empty set changed",
 			return -1);
+
+	return 0;
+}
+
+/* Check that intersecting a set with itself does not cause
+ * an explosion in the number of disjuncts.
+ */
+static isl_stat test_intersect_2(isl_ctx *ctx)
+{
+	int i;
+	isl_set *set;
+
+	set = isl_set_read_from_str(ctx, "{ [x,y] : x >= 0 or y >= 0 }");
+	for (i = 0; i < 100; ++i)
+		set = isl_set_intersect(set, isl_set_copy(set));
+	isl_set_free(set);
+	if (!set)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Perform some intersection tests.
+ */
+static int test_intersect(isl_ctx *ctx)
+{
+	if (test_intersect_1(ctx) < 0)
+		return -1;
+	if (test_intersect_2(ctx) < 0)
+		return -1;
 
 	return 0;
 }

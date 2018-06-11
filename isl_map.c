@@ -3721,6 +3721,7 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	unsigned flags = 0;
+	isl_bool equal;
 	isl_map *result;
 	int i, j;
 
@@ -3746,6 +3747,14 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 	    (map1->p[0]->n_eq + map1->p[0]->n_ineq == 1 ||
 	     map2->p[0]->n_eq + map2->p[0]->n_ineq == 1))
 		return map_intersect_add_constraint(map1, map2);
+
+	equal = isl_map_plain_is_equal(map1, map2);
+	if (equal < 0)
+		goto error;
+	if (equal) {
+		isl_map_free(map2);
+		return map1;
+	}
 
 	if (isl_space_dim(map2->dim, isl_dim_all) !=
 				isl_space_dim(map2->dim, isl_dim_param))
