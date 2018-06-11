@@ -3699,6 +3699,7 @@ static __isl_give isl_map *map_intersect_add_constraint(
 
 	isl_map_free(map2);
 
+	map1 = isl_map_unmark_normalized(map1);
 	return map1;
 error:
 	isl_map_free(map1);
