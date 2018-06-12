@@ -196,8 +196,8 @@ void cpp_generator::print_class_forward_decl(ostream &os,
  *
  * Each class has two global factory functions:
  *
- * 	isl::set manage(__isl_take isl_set *ptr);
- * 	isl::set manage_copy(__isl_keep isl_set *ptr);
+ * 	set manage(__isl_take isl_set *ptr);
+ * 	set manage_copy(__isl_keep isl_set *ptr);
  *
  * A user can construct isl C++ objects from a raw pointer and indicate whether
  * they intend to take the ownership of the object or not through these global
@@ -215,10 +215,9 @@ void cpp_generator::print_class_factory_decl(ostream &os,
 	const char *cppname = cppstring.c_str();
 
 	os << prefix;
-	osprintf(os, "inline isl::%s manage(__isl_take %s *ptr);\n", cppname,
-		 name);
+	osprintf(os, "inline %s manage(__isl_take %s *ptr);\n", cppname, name);
 	os << prefix;
-	osprintf(os, "inline isl::%s manage_copy(__isl_keep %s *ptr);\n",
+	osprintf(os, "inline %s manage_copy(__isl_keep %s *ptr);\n",
 		cppname, name);
 }
 
@@ -233,7 +232,7 @@ void cpp_generator::print_class_factory_decl(ostream &os,
  * 	set(__isl_take isl_set *ptr);
  *
  * The raw pointer constructor is kept private. Object creation is only
- * possible through isl::manage() or isl::manage_copy().
+ * possible through manage() or manage_copy().
  */
 void cpp_generator::print_private_constructors_decl(ostream &os,
 	const isl_class &clazz)
@@ -256,7 +255,7 @@ void cpp_generator::print_private_constructors_decl(ostream &os,
  * Example:
  *
  *	set();
- *	set(const isl::set &set);
+ *	set(const set &set);
  */
 void cpp_generator::print_public_constructors_decl(ostream &os,
 	const isl_class &clazz)
@@ -265,7 +264,7 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
 	const char *cppname = cppstring.c_str();
 	osprintf(os, "  inline /* implicit */ %s();\n", cppname);
 
-	osprintf(os, "  inline /* implicit */ %s(const isl::%s &obj);\n",
+	osprintf(os, "  inline /* implicit */ %s(const %s &obj);\n",
 		 cppname, cppname);
 }
 
@@ -276,10 +275,10 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
  *
  * Example:
  *
- * 	inline /\* implicit *\/ union_set(isl::basic_set bset);
- * 	inline /\* implicit *\/ union_set(isl::set set);
- * 	inline explicit val(isl::ctx ctx, long i);
- * 	inline explicit val(isl::ctx ctx, const std::string &str);
+ * 	inline /\* implicit *\/ union_set(basic_set bset);
+ * 	inline /\* implicit *\/ union_set(set set);
+ * 	inline explicit val(ctx ctx, long i);
+ * 	inline explicit val(ctx ctx, const std::string &str);
  */
 void cpp_generator::print_constructors_decl(ostream &os,
        const isl_class &clazz)
@@ -301,7 +300,7 @@ void cpp_generator::print_constructors_decl(ostream &os,
  *
  * Each class has one assignment operator.
  *
- * 	isl:set &set::operator=(isl::set obj)
+ * 	isl:set &set::operator=(set obj)
  *
  */
 void cpp_generator::print_copy_assignment_decl(ostream &os,
@@ -310,8 +309,7 @@ void cpp_generator::print_copy_assignment_decl(ostream &os,
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "  inline isl::%s &operator=(isl::%s obj);\n", cppname,
-		 cppname);
+	osprintf(os, "  inline %s &operator=(%s obj);\n", cppname, cppname);
 }
 
 /* Print declaration of destructor for class "clazz" to "os".
@@ -371,7 +369,7 @@ void cpp_generator::print_ptr_decl(ostream &os, const isl_class &clazz)
  */
 void cpp_generator::print_get_ctx_decl(ostream &os)
 {
-	osprintf(os, "  inline isl::ctx get_ctx() const;\n");
+	osprintf(os, "  inline ctx get_ctx() const;\n");
 }
 
 /* Print declarations for methods in class "clazz" to "os".
@@ -465,8 +463,8 @@ static void print_throw_NULL_input(ostream &os)
  *
  * Each class has two global factory functions:
  *
- * 	isl::set manage(__isl_take isl_set *ptr);
- * 	isl::set manage_copy(__isl_keep isl_set *ptr);
+ * 	set manage(__isl_take isl_set *ptr);
+ * 	set manage_copy(__isl_keep isl_set *ptr);
  *
  * Unless checked C++ bindings are being generated,
  * both functions require the argument to be non-NULL.
@@ -482,7 +480,7 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "isl::%s manage(__isl_take %s *ptr) {\n", cppname, name);
+	osprintf(os, "%s manage(__isl_take %s *ptr) {\n", cppname, name);
 	if (!checked) {
 		osprintf(os, "  if (!ptr)\n");
 		print_throw_NULL_input(os);
@@ -490,7 +488,7 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 	osprintf(os, "  return %s(ptr);\n", cppname);
 	osprintf(os, "}\n");
 
-	osprintf(os, "isl::%s manage_copy(__isl_keep %s *ptr) {\n", cppname,
+	osprintf(os, "%s manage_copy(__isl_keep %s *ptr) {\n", cppname,
 		name);
 	if (!checked) {
 		osprintf(os, "  if (!ptr)\n");
@@ -537,7 +535,7 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 	const char *cppname = cppstring.c_str();
 
 	osprintf(os, "%s::%s()\n    : ptr(nullptr) {}\n\n", cppname, cppname);
-	osprintf(os, "%s::%s(const isl::%s &obj)\n    : ptr(nullptr)\n",
+	osprintf(os, "%s::%s(const %s &obj)\n    : ptr(nullptr)\n",
 		 cppname, cppname, cppname);
 	osprintf(os, "{\n");
 	if (!checked) {
@@ -580,7 +578,7 @@ void cpp_generator::print_copy_assignment_impl(ostream &os,
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "%s &%s::operator=(isl::%s obj) {\n", cppname,
+	osprintf(os, "%s &%s::operator=(%s obj) {\n", cppname,
 		 cppname, cppname);
 	osprintf(os, "  std::swap(this->ptr, obj.ptr);\n", name);
 	osprintf(os, "  return *this;\n");
@@ -634,8 +632,8 @@ void cpp_generator::print_get_ctx_impl(ostream &os, const isl_class &clazz)
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "isl::ctx %s::get_ctx() const {\n", cppname);
-	osprintf(os, "  return isl::ctx(%s_get_ctx(ptr));\n", name);
+	osprintf(os, "ctx %s::get_ctx() const {\n", cppname);
+	osprintf(os, "  return ctx(%s_get_ctx(ptr));\n", name);
 	osprintf(os, "}\n");
 }
 
@@ -919,8 +917,8 @@ void cpp_generator::print_exceptional_execution_check(ostream &os,
  * as std::string if the isl function returns 'const char *', and as
  * unmodified return value otherwise.
  * If checked C++ bindings are being generated,
- * then an isl_bool return type is transformed into an isl::boolean and
- * an isl_stat into an isl::stat since no exceptions can be generated
+ * then an isl_bool return type is transformed into a boolean and
+ * an isl_stat into a stat since no exceptions can be generated
  * on negative results from the isl function.
  *
  * Static methods call "method" by passing all arguments to the underlying isl
@@ -1031,7 +1029,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
  *
  * is translated into:
  *
- * 	inline isl::set intersect(isl::set set2) const;
+ * 	inline set intersect(set set2) const;
  *
  * For static functions and constructors all parameters of the original isl
  * function are exposed.
@@ -1129,7 +1127,7 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
  *
  * the following C++ argument list is generated:
  *
- *      isl::map
+ *      map
  */
 string cpp_generator::generate_callback_args(QualType type, bool cpp)
 {
@@ -1168,7 +1166,7 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
  *
  * the following type is generated:
  *
- *      std::function<isl::stat(isl::map)>
+ *      std::function<stat(map)>
  */
 string cpp_generator::generate_callback_type(QualType type)
 {
@@ -1248,7 +1246,7 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call)
  *      auto fn_lambda = [](isl_map *arg_0, void *arg_1) -> isl_stat {
  *        auto *data = static_cast<struct fn_data *>(arg_1);
  *        try {
- *          stat ret = (*data->func)(isl::manage(arg_0));
+ *          stat ret = (*data->func)(manage(arg_0));
  *          return isl_stat_ok;
  *        } catch (...) {
  *          data->eptr = std::current_exception();
@@ -1279,7 +1277,7 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call)
  * if checked C++ bindings are being generated.
  * The body of the generated lambda function then is as follows:
  *
- *        stat ret = (*data->func)(isl::manage(arg_0));
+ *        stat ret = (*data->func)(manage(arg_0));
  *        return isl_stat(ret);
  */
 void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
@@ -1304,7 +1302,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 
 	call = "(*data->func)(";
 	for (long i = 0; i < num_params - 1; i++) {
-		call += "isl::manage(arg_" + ::to_string(i) + ")";
+		call += "manage(arg_" + ::to_string(i) + ")";
 		if (i != num_params - 2)
 			call += ", ";
 	}
@@ -1370,13 +1368,13 @@ string cpp_generator::type2cpp(string type_str)
 string cpp_generator::type2cpp(QualType type)
 {
 	if (is_isl_type(type))
-		return "isl::" + type2cpp(type->getPointeeType().getAsString());
+		return type2cpp(type->getPointeeType().getAsString());
 
 	if (is_isl_bool(type))
-		return checked ? "isl::boolean" : "bool";
+		return checked ? "boolean" : "bool";
 
 	if (is_isl_stat(type))
-		return checked ? "isl::stat" : "void";
+		return checked ? "stat" : "void";
 
 	if (type->isIntegerType())
 		return type.getAsString();
