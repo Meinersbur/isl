@@ -3,7 +3,7 @@
 #include <string>
 
 namespace isl {
-inline namespace checked {
+namespace checked {
 
 #define ISLPP_STRINGIZE_(X) #X
 #define ISLPP_STRINGIZE(X) ISLPP_STRINGIZE_(X)

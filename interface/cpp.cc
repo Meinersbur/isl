@@ -80,7 +80,7 @@ static std::string to_string(long l)
  * implementations.
  *
  * If checked C++ bindings are being generated,
- * then wrap them in an inline namespace to avoid conflicts
+ * then wrap them in a namespace to avoid conflicts
  * with the default C++ bindings (with automatic checks using exceptions).
  */
 void cpp_generator::generate()
@@ -90,7 +90,7 @@ void cpp_generator::generate()
 	osprintf(os, "\n");
 	osprintf(os, "namespace isl {\n\n");
 	if (checked)
-		osprintf(os, "inline namespace checked {\n\n");
+		osprintf(os, "namespace checked {\n\n");
 
 	print_forward_declarations(os);
 	osprintf(os, "\n");

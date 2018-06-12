@@ -14,6 +14,8 @@
 #include <isl/options.h>
 #include <isl/cpp-checked.h>
 
+namespace isl { using namespace checked; }
+
 static void assert_impl(bool condition, const char *file, int line,
 	const char *message)
 {
