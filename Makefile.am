@@ -27,8 +27,8 @@ endif
 endif
 if HAVE_CLANG
 if HAVE_CXX11
-  noinst_PROGRAMS += isl_test_cpp-checked
-  TESTS += isl_test_cpp-checked
+  noinst_PROGRAMS += isl_test_cpp-checked isl_test_cpp-checked-conversion
+  TESTS += isl_test_cpp-checked isl_test_cpp-checked-conversion
 endif
 if HAVE_PYTHON
   TESTS += isl_test_python.py
@@ -302,6 +302,13 @@ isl_test_cpp_checked_SOURCES = \
 isl_test_cpp_checked_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_checked_LDADD = libisl.la @MP_LIBS@
 
+isl_test_cpp_checked_conversion_CXXFLAGS = @CXX11FLAGS@
+isl_test_cpp_checked_conversion_SOURCES = \
+	isl_test_cpp-checked-conversion.cc \
+	include/isl/cpp-checked-conversion.h
+isl_test_cpp_checked_conversion_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp_checked_conversion_LDADD = libisl.la @MP_LIBS@
+
 # dummy library that captures the dependencies on all headers
 # that are relevant for the bindings
 noinst_LIBRARIES = libdep.a
@@ -333,6 +340,16 @@ include/isl/cpp-checked.h: interface/extract_interface libdep.a \
 			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
+			> $@ || (rm $@ && false)
+
+include/isl/cpp-checked-conversion.h: interface/extract_interface libdep.a \
+		cpp/cpp-checked-conversion.h.top \
+		cpp/cpp-checked-conversion.h.bot
+	(cat $(srcdir)/cpp/cpp-checked-conversion.h.top && \
+		interface/extract_interface$(EXEEXT) \
+			--language=cpp-checked-conversion \
+			$(includes) $(srcdir)/all.h && \
+		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \
 			> $@ || (rm $@ && false)
 endif
 
@@ -396,7 +413,10 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 if HAVE_CLANG
-    CPP_INTERFACES = include/isl/cpp.h include/isl/cpp-checked.h
+    CPP_INTERFACES = \
+	include/isl/cpp.h \
+	include/isl/cpp-checked.h \
+	include/isl/cpp-checked-conversion.h
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
 CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACES)

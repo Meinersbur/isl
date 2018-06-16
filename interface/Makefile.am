@@ -14,6 +14,8 @@ extract_interface_SOURCES = \
 	python.cc \
 	cpp.h \
 	cpp.cc \
+	cpp_conversion.h \
+	cpp_conversion.cc \
 	extract_interface.h \
 	extract_interface.cc
 extract_interface_LDFLAGS = $(CLANG_LDFLAGS)
