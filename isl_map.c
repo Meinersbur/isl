@@ -12450,14 +12450,14 @@ __isl_give isl_basic_map *isl_basic_map_from_aff_list(
 	__isl_take isl_space *domain_space, __isl_take isl_aff_list *list)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *bmap;
 
 	if (!list)
 		return NULL;
 
-	dim = isl_space_from_domain(domain_space);
-	bmap = isl_basic_map_universe(dim);
+	space = isl_space_from_domain(domain_space);
+	bmap = isl_basic_map_universe(space);
 
 	for (i = 0; i < list->n; ++i) {
 		isl_aff *aff;
