@@ -2807,8 +2807,9 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 
 /* Construct a map with as domain the domain of pwaff and
  * one-dimensional range corresponding to the affine expressions.
+ * If "pwaff" lives in a set space, then the result is actually a set.
  */
-static __isl_give isl_map *map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
+__isl_give isl_map *isl_map_from_pw_aff_internal(__isl_take isl_pw_aff *pwaff)
 {
 	int i;
 	isl_space *space;
@@ -2846,7 +2847,7 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	if (isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
 			"space of input is not a map", goto error);
-	return map_from_pw_aff(pwaff);
+	return isl_map_from_pw_aff_internal(pwaff);
 error:
 	isl_pw_aff_free(pwaff);
 	return NULL;
@@ -2863,7 +2864,7 @@ __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	if (!isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
 			"space of input is not a set", goto error);
-	return set_from_map(map_from_pw_aff(pwaff));
+	return set_from_map(isl_map_from_pw_aff_internal(pwaff));
 error:
 	isl_pw_aff_free(pwaff);
 	return NULL;
@@ -6499,7 +6500,7 @@ static __isl_give isl_map *map_from_multi_pw_aff(
 		isl_map *map_i;
 
 		pa = isl_pw_aff_copy(mpa->u.p[i]);
-		map_i = map_from_pw_aff(pa);
+		map_i = isl_map_from_pw_aff_internal(pa);
 
 		map = isl_map_flat_range_product(map, map_i);
 	}
@@ -6702,8 +6703,8 @@ isl_bool isl_pw_aff_is_equal(__isl_keep isl_pw_aff *pa1,
 	if (has_nan)
 		return isl_bool_false;
 
-	map1 = map_from_pw_aff(isl_pw_aff_copy(pa1));
-	map2 = map_from_pw_aff(isl_pw_aff_copy(pa2));
+	map1 = isl_map_from_pw_aff_internal(isl_pw_aff_copy(pa1));
+	map2 = isl_map_from_pw_aff_internal(isl_pw_aff_copy(pa2));
 	equal = isl_map_is_equal(map1, map2);
 	isl_map_free(map1);
 	isl_map_free(map2);
