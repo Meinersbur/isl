@@ -12444,10 +12444,10 @@ __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff)
  * where each coordinate in the range is prescribed by the
  * corresponding affine expression.
  * The domains of all affine expressions in the list are assumed to match
- * domain_dim.
+ * domain_space.
  */
 __isl_give isl_basic_map *isl_basic_map_from_aff_list(
-	__isl_take isl_space *domain_dim, __isl_take isl_aff_list *list)
+	__isl_take isl_space *domain_space, __isl_take isl_aff_list *list)
 {
 	int i;
 	isl_space *dim;
@@ -12456,7 +12456,7 @@ __isl_give isl_basic_map *isl_basic_map_from_aff_list(
 	if (!list)
 		return NULL;
 
-	dim = isl_space_from_domain(domain_dim);
+	dim = isl_space_from_domain(domain_space);
 	bmap = isl_basic_map_universe(dim);
 
 	for (i = 0; i < list->n; ++i) {
