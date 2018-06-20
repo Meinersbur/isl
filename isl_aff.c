@@ -4497,7 +4497,7 @@ __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 			"isl_pw_multi_aff cannot be converted into an isl_set",
 			goto error);
 
-	return isl_map_from_pw_multi_aff(pma);
+	return set_from_map(isl_map_from_pw_multi_aff(pma));
 error:
 	isl_pw_multi_aff_free(pma);
 	return NULL;
