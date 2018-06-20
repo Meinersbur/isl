@@ -12374,7 +12374,7 @@ __isl_give isl_map *isl_map_from_aff(__isl_take isl_aff *aff)
 	return isl_map_from_basic_map(bmap);
 }
 
-/* Construct a basic map mapping the domain the multi-affine expression
+/* Construct a basic map mapping the domain of the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
  * If "rational" is set, then construct a rational basic map.
@@ -12417,7 +12417,7 @@ error:
 	return NULL;
 }
 
-/* Construct a basic map mapping the domain the multi-affine expression
+/* Construct a basic map mapping the domain of the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
  */
@@ -12427,7 +12427,7 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 	return isl_basic_map_from_multi_aff2(ma, 0);
 }
 
-/* Construct a map mapping the domain the multi-affine expression
+/* Construct a map mapping the domain of the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
  */
