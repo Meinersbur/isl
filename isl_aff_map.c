@@ -38,6 +38,22 @@ static isl_stat check_input_is_map(__isl_keep isl_space *space)
 	return isl_stat_ok;
 }
 
+/* Check that the input living in "space" lives in a set space.
+ * That is, check that "space" is a set space.
+ */
+static isl_stat check_input_is_set(__isl_keep isl_space *space)
+{
+	isl_bool is_set;
+
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_stat_error;
+	if (!is_set)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"space of input is not a set", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
  * If "rational" is set, then construct a rational basic map.
@@ -279,15 +295,9 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
-	if (!pwaff)
-		return NULL;
-	if (!isl_space_is_set(pwaff->dim))
-		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
-			"space of input is not a set", goto error);
+	if (check_input_is_set(isl_pw_aff_peek_space(pwaff)) < 0)
+		pwaff = isl_pw_aff_free(pwaff);
 	return set_from_map(isl_map_from_pw_aff_internal(pwaff));
-error:
-	isl_pw_aff_free(pwaff);
-	return NULL;
 }
 
 /* Construct a map mapping the domain of the piecewise multi-affine expression
@@ -329,18 +339,9 @@ __isl_give isl_map *isl_map_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 
 __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 {
-	if (!pma)
-		return NULL;
-
-	if (!isl_space_is_set(pma->dim))
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-			"isl_pw_multi_aff cannot be converted into an isl_set",
-			goto error);
-
+	if (check_input_is_set(isl_pw_multi_aff_peek_space(pma)) < 0)
+		pma = isl_pw_multi_aff_free(pma);
 	return set_from_map(isl_map_from_pw_multi_aff(pma));
-error:
-	isl_pw_multi_aff_free(pma);
-	return NULL;
 }
 
 /* Construct a set or map mapping the shared (parameter) domain
@@ -403,16 +404,9 @@ __isl_give isl_map *isl_map_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
  */
 __isl_give isl_set *isl_set_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
 {
-	if (!mpa)
-		return NULL;
-	if (!isl_space_is_set(mpa->space))
-		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
-			"space of input is not a set", goto error);
-
+	if (check_input_is_set(isl_multi_pw_aff_peek_space(mpa)) < 0)
+		mpa = isl_multi_pw_aff_free(mpa);
 	return set_from_map(map_from_multi_pw_aff(mpa));
-error:
-	isl_multi_pw_aff_free(mpa);
-	return NULL;
 }
 
 /* Convert "pa" to an isl_map and add it to *umap.
