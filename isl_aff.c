@@ -6545,7 +6545,7 @@ __isl_give isl_set *isl_set_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
 		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
 			"space of input is not a set", goto error);
 
-	return map_from_multi_pw_aff(mpa);
+	return set_from_map(map_from_multi_pw_aff(mpa));
 error:
 	isl_multi_pw_aff_free(mpa);
 	return NULL;
