@@ -55,6 +55,8 @@
 
 #include <isl_list_templ.c>
 
+#include <set_from_map.c>
+
 __isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
 	__isl_take isl_vec *v)
 {
@@ -2861,7 +2863,7 @@ __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	if (!isl_space_is_set(pwaff->dim))
 		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
 			"space of input is not a set", goto error);
-	return map_from_pw_aff(pwaff);
+	return set_from_map(map_from_pw_aff(pwaff));
 error:
 	isl_pw_aff_free(pwaff);
 	return NULL;
