@@ -2809,14 +2809,14 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 static __isl_give isl_map *map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	isl_map *map;
 
 	if (!pwaff)
 		return NULL;
 
-	dim = isl_pw_aff_get_space(pwaff);
-	map = isl_map_empty(dim);
+	space = isl_pw_aff_get_space(pwaff);
+	map = isl_map_empty(space);
 
 	for (i = 0; i < pwaff->n; ++i) {
 		isl_basic_map *bmap;
