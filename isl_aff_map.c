@@ -226,6 +226,17 @@ __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *ma)
 	return isl_map_from_multi_aff_internal(ma);
 }
 
+/* Construct a set mapping the parameter domain the multi-affine expression
+ * to its space, with each dimension in the space equated to the
+ * corresponding affine expression.
+ */
+__isl_give isl_set *isl_set_from_multi_aff(__isl_take isl_multi_aff *ma)
+{
+	if (check_input_is_set(isl_multi_aff_peek_space(ma)) < 0)
+		ma = isl_multi_aff_free(ma);
+	return isl_map_from_multi_aff_internal(ma);
+}
+
 /* Construct a basic map mapping a domain in the given space to
  * to an n-dimensional range, with n the number of elements in the list,
  * where each coordinate in the range is prescribed by the

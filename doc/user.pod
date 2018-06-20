@@ -2099,6 +2099,8 @@ involve any NaN.
 	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_from_multi_aff(
 		__isl_take isl_multi_aff *ma);
+	__isl_give isl_set *isl_set_from_multi_aff(
+		__isl_take isl_multi_aff *ma);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
