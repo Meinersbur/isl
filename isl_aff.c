@@ -4174,8 +4174,8 @@ static __isl_give isl_set *isl_multi_aff_order_set(
 	isl_map *map1, *map2;
 	isl_map *map, *ge;
 
-	map1 = isl_map_from_multi_aff(ma1);
-	map2 = isl_map_from_multi_aff(ma2);
+	map1 = isl_map_from_multi_aff_internal(ma1);
+	map2 = isl_map_from_multi_aff_internal(ma2);
 	map = isl_map_range_product(map1, map2);
 	space = isl_space_range(isl_map_get_space(map));
 	space = isl_space_domain(isl_space_unwrap(space));
@@ -4761,7 +4761,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 						isl_multi_aff_from_aff(aff));
 	}
 
-	insert = isl_map_from_multi_aff(isl_multi_aff_copy(ma));
+	insert = isl_map_from_multi_aff_internal(isl_multi_aff_copy(ma));
 	map = isl_map_apply_domain(map, insert);
 	map = isl_map_equate(map, isl_dim_in, n_in, isl_dim_out, d);
 	pma = isl_pw_multi_aff_from_map(map);

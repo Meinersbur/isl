@@ -162,13 +162,26 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 /* Construct a map mapping the domain of the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
+ * If "maff" lives in a set space, then the result is actually a set.
  */
-__isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff)
+__isl_give isl_map *isl_map_from_multi_aff_internal(
+	__isl_take isl_multi_aff *maff)
 {
 	isl_basic_map *bmap;
 
 	bmap = isl_basic_map_from_multi_aff(maff);
 	return isl_map_from_basic_map(bmap);
+}
+
+/* Construct a map mapping the domain the multi-affine expression
+ * to its range, with each dimension in the range equated to the
+ * corresponding affine expression.
+ */
+__isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *ma)
+{
+	if (check_input_is_map(isl_multi_aff_peek_space(ma)) < 0)
+		ma = isl_multi_aff_free(ma);
+	return isl_map_from_multi_aff_internal(ma);
 }
 
 /* Construct a basic map mapping a domain in the given space to
