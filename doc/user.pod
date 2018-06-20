@@ -2096,14 +2096,11 @@ or a list of affine expressions
 (See L</"Functions">), provided these affine expressions do not
 involve any NaN.
 
+	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_from_aff(
 		__isl_take isl_aff *aff);
 	__isl_give isl_map *isl_map_from_aff(
 		__isl_take isl_aff *aff);
-	__isl_give isl_set *isl_set_from_pw_aff(
-		__isl_take isl_pw_aff *pwaff);
-	__isl_give isl_map *isl_map_from_pw_aff(
-		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_basic_map *isl_basic_map_from_aff_list(
 		__isl_take isl_space *domain_space,
 		__isl_take isl_aff_list *list);
@@ -2111,6 +2108,12 @@ involve any NaN.
 		__isl_take isl_multi_aff *maff)
 	__isl_give isl_map *isl_map_from_multi_aff(
 		__isl_take isl_multi_aff *maff)
+
+	#include <isl/aff.h>
+	__isl_give isl_set *isl_set_from_pw_aff(
+		__isl_take isl_pw_aff *pwaff);
+	__isl_give isl_map *isl_map_from_pw_aff(
+		__isl_take isl_pw_aff *pwaff);
 	__isl_give isl_set *isl_set_from_pw_multi_aff(
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_map *isl_map_from_pw_multi_aff(
