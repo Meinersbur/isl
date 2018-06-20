@@ -152,11 +152,24 @@ error:
 /* Construct a basic map mapping the domain of the multi-affine expression
  * to its range, with each dimension in the range equated to the
  * corresponding affine expression.
+ * If "ma" lives in a set space, then the result is actually a set.
+ */
+static __isl_give isl_basic_map *basic_map_from_multi_aff(
+	__isl_take isl_multi_aff *ma)
+{
+	return isl_basic_map_from_multi_aff2(ma, 0);
+}
+
+/* Construct a basic map mapping the domain of the multi-affine expression
+ * to its range, with each dimension in the range equated to the
+ * corresponding affine expression.
  */
 __isl_give isl_basic_map *isl_basic_map_from_multi_aff(
 	__isl_take isl_multi_aff *ma)
 {
-	return isl_basic_map_from_multi_aff2(ma, 0);
+	if (check_input_is_map(isl_multi_aff_peek_space(ma)) < 0)
+		ma = isl_multi_aff_free(ma);
+	return basic_map_from_multi_aff(ma);
 }
 
 /* Construct a map mapping the domain of the multi-affine expression
@@ -169,7 +182,7 @@ __isl_give isl_map *isl_map_from_multi_aff_internal(
 {
 	isl_basic_map *bmap;
 
-	bmap = isl_basic_map_from_multi_aff(maff);
+	bmap = basic_map_from_multi_aff(maff);
 	return isl_map_from_basic_map(bmap);
 }
 
