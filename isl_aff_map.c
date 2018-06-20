@@ -22,6 +22,22 @@
 
 #include <set_from_map.c>
 
+/* Check that the input living in "space" lives in a map space.
+ * That is, check that "space" is a map space.
+ */
+static isl_stat check_input_is_map(__isl_keep isl_space *space)
+{
+	isl_bool is_set;
+
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_stat_error;
+	if (is_set)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"space of input is not a map", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Construct a basic map mapping the domain of the affine expression
  * to a one-dimensional range prescribed by the affine expression.
  * If "rational" is set, then construct a rational basic map.
@@ -226,15 +242,9 @@ __isl_give isl_map *isl_map_from_pw_aff_internal(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 {
-	if (!pwaff)
-		return NULL;
-	if (isl_space_is_set(pwaff->dim))
-		isl_die(isl_pw_aff_get_ctx(pwaff), isl_error_invalid,
-			"space of input is not a map", goto error);
+	if (check_input_is_map(isl_pw_aff_peek_space(pwaff)) < 0)
+		pwaff = isl_pw_aff_free(pwaff);
 	return isl_map_from_pw_aff_internal(pwaff);
-error:
-	isl_pw_aff_free(pwaff);
-	return NULL;
 }
 
 /* Construct a one-dimensional set with as parameter domain
@@ -355,16 +365,9 @@ error:
  */
 __isl_give isl_map *isl_map_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
 {
-	if (!mpa)
-		return NULL;
-	if (isl_space_is_set(mpa->space))
-		isl_die(isl_multi_pw_aff_get_ctx(mpa), isl_error_internal,
-			"space of input is not a map", goto error);
-
+	if (check_input_is_map(isl_multi_pw_aff_peek_space(mpa)) < 0)
+		mpa = isl_multi_pw_aff_free(mpa);
 	return map_from_multi_pw_aff(mpa);
-error:
-	isl_multi_pw_aff_free(mpa);
-	return NULL;
 }
 
 /* Construct a set mapping the shared parameter domain
