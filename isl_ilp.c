@@ -841,6 +841,32 @@ __isl_give isl_multi_val *isl_union_set_min_multi_union_pw_aff(
 	return isl_union_set_opt_multi_union_pw_aff(uset, 0, obj);
 }
 
+/* Return a list of minima
+ * for each of the expressions in "mupa" over their domains.
+ *
+ * An element in the list is negative infinity if the optimal
+ * value of the corresponding expression is unbounded and
+ * NaN if the domain of the expression is empty.
+ */
+__isl_give isl_multi_val *isl_multi_union_pw_aff_min_multi_val(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	return isl_multi_union_pw_aff_opt_multi_val(mupa, 0);
+}
+
+/* Return a list of maxima
+ * for each of the expressions in "mupa" over their domains.
+ *
+ * An element in the list is infinity if the optimal
+ * value of the corresponding expression is unbounded and
+ * NaN if the domain of the expression is empty.
+ */
+__isl_give isl_multi_val *isl_multi_union_pw_aff_max_multi_val(
+	__isl_take isl_multi_union_pw_aff *mupa)
+{
+	return isl_multi_union_pw_aff_opt_multi_val(mupa, 1);
+}
+
 /* Return the maximal value attained by the given set dimension,
  * independently of the parameter values and of any other dimensions.
  *

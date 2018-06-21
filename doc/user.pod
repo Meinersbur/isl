@@ -5409,6 +5409,12 @@ NaN if the problem is empty.
 		__isl_take isl_union_pw_aff *upa);
 	__isl_give isl_val *isl_union_pw_aff_max_val(
 		__isl_take isl_union_pw_aff *upa);
+	__isl_give isl_multi_val *
+	isl_multi_union_pw_aff_min_multi_val(
+		__isl_take isl_multi_union_pw_aff *mupa);
+	__isl_give isl_multi_val *
+	isl_multi_union_pw_aff_max_multi_val(
+		__isl_take isl_multi_union_pw_aff *mupa);
 
 Compute the minimum or maximum of the integer affine expression
 over its definition domain.
