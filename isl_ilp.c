@@ -769,6 +769,28 @@ static __isl_give isl_val *isl_union_set_opt_union_pw_aff(
 	return isl_union_pw_aff_opt_val(obj, max);
 }
 
+/* Return the minimum of the integer piecewise affine
+ * expression "upa" over its definition domain.
+ *
+ * Return negative infinity if the optimal value is unbounded and
+ * NaN if the domain of the expression is empty.
+ */
+__isl_give isl_val *isl_union_pw_aff_min_val(__isl_take isl_union_pw_aff *upa)
+{
+	return isl_union_pw_aff_opt_val(upa, 0);
+}
+
+/* Return the maximum of the integer piecewise affine
+ * expression "upa" over its definition domain.
+ *
+ * Return infinity if the optimal value is unbounded and
+ * NaN if the domain of the expression is empty.
+ */
+__isl_give isl_val *isl_union_pw_aff_max_val(__isl_take isl_union_pw_aff *upa)
+{
+	return isl_union_pw_aff_opt_val(upa, 1);
+}
+
 /* Return a list of minima (maxima if "max" is set) over the points in "uset"
  * for each of the expressions in "obj".
  *
