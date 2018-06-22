@@ -5399,7 +5399,7 @@ a singleton subset of the input.  Otherwise, return an empty set.
 		__isl_keep isl_multi_union_pw_aff *obj);
 
 Compute the minimum or maximum of the integer affine expression C<obj>
-over the points in C<set>, returning the result in C<opt>.
+over the points in C<set>.
 The result is C<NULL> in case of an error, the optimal value in case
 there is one, negative infinity or infinity if the problem is unbounded and
 NaN if the problem is empty.
