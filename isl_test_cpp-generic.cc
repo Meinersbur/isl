@@ -5,6 +5,10 @@
  * Written by Tobias Grosser, Weststrasse 47, CH-8003, Zurich
  */
 
+#ifndef IS_TRUE
+#define IS_TRUE(b)	(b)
+#endif
+
 /* Test the pointer interface for interaction between isl C and C++ types.
  *
  * This tests:
@@ -23,7 +27,7 @@ void test_pointer(isl::ctx ctx)
 {
 	isl_set *c_empty = isl_set_read_from_str(ctx.get(), "{ : false }");
 	isl::set empty = isl::manage(c_empty);
-	assert(empty.is_empty());
+	assert(IS_TRUE(empty.is_empty()));
 	assert(isl_set_is_empty(empty.get()));
 
 	assert(!empty.is_null());
@@ -56,20 +60,20 @@ void test_constructors(isl::ctx ctx)
 	assert(null.is_null());
 
 	isl::val zero_from_str = isl::val(ctx, "0");
-	assert(zero_from_str.is_zero());
+	assert(IS_TRUE(zero_from_str.is_zero()));
 
 	isl::val zero_int_con = isl::val(ctx, 0);
-	assert(zero_int_con.is_zero());
+	assert(IS_TRUE(zero_int_con.is_zero()));
 
 	isl::val zero_static_con = isl::val::zero(ctx);
-	assert(zero_static_con.is_zero());
+	assert(IS_TRUE(zero_static_con.is_zero()));
 
 	isl::basic_set bs(ctx, "{ [1] }");
 	isl::set result(ctx, "{ [1] }");
 	isl::set s = bs;
-	assert(s.is_equal(result));
+	assert(IS_TRUE(s.is_equal(result)));
 	isl::set s2(bs);
-	assert(s.unite(s2).is_equal(result));
+	assert(IS_TRUE(s.unite(s2).is_equal(result)));
 }
 
 /* Test integer function parameters.
@@ -80,15 +84,15 @@ void test_parameters_int(isl::ctx ctx)
 {
 	isl::val long_max_str(ctx, std::to_string(LONG_MAX));
 	isl::val long_max_int(ctx, LONG_MAX);
-	assert(long_max_str.eq(long_max_int));
+	assert(IS_TRUE(long_max_str.eq(long_max_int)));
 
 	isl::val long_min_str(ctx, std::to_string(LONG_MIN));
 	isl::val long_min_int(ctx, LONG_MIN);
-	assert(long_min_str.eq(long_min_int));
+	assert(IS_TRUE(long_min_str.eq(long_min_int)));
 
 	isl::val long_zero_str = isl::val(ctx, std::to_string(0));
 	isl::val long_zero_int = isl::val(ctx, 0);
-	assert(long_zero_str.eq(long_zero_int));
+	assert(IS_TRUE(long_zero_str.eq(long_zero_int)));
 }
 
 /* Test isl objects parameters.
@@ -108,18 +112,18 @@ void test_parameters_obj(isl::ctx ctx)
 
 	isl::set tmp = a.unite(b);
 	isl::set res_lvalue_param = tmp.unite(c);
-	assert(res_lvalue_param.is_equal(expected));
+	assert(IS_TRUE(res_lvalue_param.is_equal(expected)));
 
 	isl::set res_rvalue_param = a.unite(b).unite(c);
-	assert(res_rvalue_param.is_equal(expected));
+	assert(IS_TRUE(res_rvalue_param.is_equal(expected)));
 
 	isl::basic_set a2(ctx, "{ [0] }");
-	assert(a.is_equal(a2));
+	assert(IS_TRUE(a.is_equal(a2)));
 
 	isl::val two(ctx, 2);
 	isl::val half(ctx, "1/2");
 	isl::val res_only_this_param = two.inv();
-	assert(res_only_this_param.eq(half));
+	assert(IS_TRUE(res_only_this_param.eq(half)));
 }
 
 /* Test different kinds of parameters to be passed to functions.
@@ -145,7 +149,7 @@ void test_return_obj(isl::ctx ctx)
 
 	isl::val res = one.add(two);
 
-	assert(res.eq(three));
+	assert(IS_TRUE(res.eq(three)));
 }
 
 /* Test that integer values are returned correctly.

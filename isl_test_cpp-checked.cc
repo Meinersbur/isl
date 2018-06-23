@@ -33,6 +33,7 @@ static void assert_impl(isl::boolean condition, const char *file, int line,
 }
 
 #define assert(exp) assert_impl(exp, __FILE__, __LINE__, #exp)
+#define IS_TRUE(b)	(b).is_true()
 
 #include "isl_test_cpp-generic.cc"
 
@@ -136,10 +137,10 @@ void test_foreach(isl::ctx ctx)
 
 	assert(ret1 == isl::stat::ok);
 	assert(basic_sets.size() == 3);
-	assert(isl::set(basic_sets[0]).is_subset(s));
-	assert(isl::set(basic_sets[1]).is_subset(s));
-	assert(isl::set(basic_sets[2]).is_subset(s));
-	assert(!basic_sets[0].is_equal(basic_sets[1]));
+	assert(isl::set(basic_sets[0]).is_subset(s).is_true());
+	assert(isl::set(basic_sets[1]).is_subset(s).is_true());
+	assert(isl::set(basic_sets[2]).is_subset(s).is_true());
+	assert(!basic_sets[0].is_equal(basic_sets[1]).is_true());
 
 	auto fail = [&] (isl::basic_set bs) {
 		return isl::stat::error;
