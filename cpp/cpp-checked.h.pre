@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <functional>
 #include <string>
@@ -17,6 +18,7 @@ namespace checked {
     fputs("Assertion \"" #test "\" failed at " __FILE__      \
       ":" ISLPP_STRINGIZE(__LINE__) "\n  " message "\n",     \
       stderr);                                               \
+    abort();                                                 \
   } while (0)
 
 class boolean {
