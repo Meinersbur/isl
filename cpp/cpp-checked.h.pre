@@ -31,6 +31,9 @@ private:
 public:
   boolean()
       : val(isl_bool_error) {}
+  ~boolean() {
+    ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+  }
 
   /* implicit */ boolean(bool val)
       : val(val ? isl_bool_true : isl_bool_false) {}
