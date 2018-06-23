@@ -23,6 +23,7 @@ namespace checked {
 
 class boolean {
 private:
+  mutable bool checked = false;
   isl_bool val;
 
   friend boolean manage(isl_bool val);
@@ -34,11 +35,12 @@ public:
   /* implicit */ boolean(bool val)
       : val(val ? isl_bool_true : isl_bool_false) {}
 
-  bool is_error() const { return val == isl_bool_error; }
-  bool is_false() const { return val == isl_bool_false; }
-  bool is_true() const { return val == isl_bool_true; }
+  bool is_error() const { checked = true; return val == isl_bool_error; }
+  bool is_false() const { checked = true; return val == isl_bool_false; }
+  bool is_true() const { checked = true; return val == isl_bool_true; }
 
   explicit operator bool() const {
+    ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked error state");
     ISLPP_ASSERT(!is_error(), "IMPLEMENTATION ERROR: Unhandled error state");
     return is_true();
   }
