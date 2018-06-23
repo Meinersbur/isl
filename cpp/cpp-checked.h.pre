@@ -74,10 +74,34 @@ public:
   }
 };
 
-enum class stat {
-  ok = isl_stat_ok,
-  error = isl_stat_error
+/* Class encapsulating an isl_stat value.
+ */
+class stat {
+private:
+	isl_stat val;
+
+	friend stat manage(isl_stat val);
+	constexpr stat(isl_stat val) : val(val) {}
+public:
+	static const stat ok;
+	static const stat error;
+	stat() : val(isl_stat_error) {}
+
+	isl_stat release() {
+		return val;
+	}
+	bool operator==(const stat& b) {
+		return val == b.val;
+	}
 };
+
+constexpr const stat stat::ok = stat(isl_stat_ok);
+constexpr const stat stat::error = stat(isl_stat_error);
+
+inline stat manage(isl_stat val)
+{
+	return stat(val);
+}
 
 }
 } // namespace isl

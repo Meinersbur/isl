@@ -986,7 +986,8 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	if (kind == function_kind_constructor) {
 		osprintf(os, "  ptr = res;\n");
 	} else if (is_isl_type(return_type) ||
-		    (checked && is_isl_bool(return_type))) {
+		    (checked &&
+		     (is_isl_bool(return_type) || is_isl_stat(return_type)))) {
 		osprintf(os, "  return manage(res);\n");
 	} else if (has_callback) {
 		osprintf(os, "  return %s(res);\n", rettype_str.c_str());
@@ -1191,13 +1192,13 @@ string cpp_generator::generate_callback_type(QualType type)
  * In particular, print
  *
  *        stat ret = @call@;
- *        return isl_stat(ret);
+ *        return ret.release();
  */
 void cpp_generator::print_wrapped_call_checked(ostream &os,
 	const string &call)
 {
 	osprintf(os, "    stat ret = %s;\n", call.c_str());
-	osprintf(os, "    return isl_stat(ret);\n");
+	osprintf(os, "    return ret.release();\n");
 }
 
 /* Print the call to the C++ callback function "call", wrapped
