@@ -78,6 +78,7 @@ public:
  */
 class stat {
 private:
+	mutable bool checked = false;
 	isl_stat val;
 
 	friend stat manage(isl_stat val);
@@ -90,15 +91,21 @@ public:
 		return stat(isl_stat_error);
 	}
 	stat() : val(isl_stat_error) {}
+	~stat() {
+		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+	}
 
 	isl_stat release() {
+		checked = true;
 		return val;
 	}
 
 	bool is_error() const {
+		checked = true;
 		return val == isl_stat_error;
 	}
 	bool is_ok() const {
+		checked = true;
 		return val == isl_stat_ok;
 	}
 };
