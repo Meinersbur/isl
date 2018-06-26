@@ -4436,56 +4436,6 @@ static int test_conflicting_context_schedule(isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that the bounds on the coefficients are respected.
- * This function checks for a particular output schedule,
- * but the exact output is not important, only that it does
- * not contain any coefficients greater than 4.
- * It is, however, easier to check for a particular output.
- * This test is only run for the whole component scheduler
- * because the incremental scheduler produces a slightly different schedule.
- */
-static int test_bounded_coefficients_schedule_whole(isl_ctx *ctx)
-{
-	const char *domain, *dep, *str;
-	isl_union_set *I;
-	isl_union_map *D;
-	isl_schedule_constraints *sc;
-	isl_schedule *schedule;
-	isl_union_map *sched1, *sched2;
-	isl_bool equal;
-
-	domain = "{ S_4[i, j, k] : 0 <= i < j <= 10 and 0 <= k <= 100; "
-	    "S_2[i, j] : 0 <= i < j <= 10; S_6[i, j] : 0 <= i < j <= 10 }";
-	dep = "{ S_2[0, j] -> S_4[0, j, 0] : 0 < j <= 10; "
-	    "S_4[0, j, 100] -> S_6[0, j] : 0 < j <= 10 }";
-	I = isl_union_set_read_from_str(ctx, domain);
-	D = isl_union_map_read_from_str(ctx, dep);
-	sc = isl_schedule_constraints_on_domain(I);
-	sc = isl_schedule_constraints_set_validity(sc, D);
-	isl_options_set_schedule_max_constant_term(ctx, 10);
-	isl_options_set_schedule_max_coefficient(ctx, 4);
-	schedule = isl_schedule_constraints_compute_schedule(sc);
-	isl_options_set_schedule_max_coefficient(ctx, -1);
-	isl_options_set_schedule_max_constant_term(ctx, -1);
-	sched1 = isl_schedule_get_map(schedule);
-	isl_schedule_free(schedule);
-
-	str = "{ S_4[i, j, k] -> [i, j, 10 - k]; "
-	    "S_2[i, j] -> [0, i, j]; S_6[i, j] -> [0, 10 + i, j] }";
-	sched2 = isl_union_map_read_from_str(ctx, str);
-	equal = isl_union_map_is_equal(sched1, sched2);
-	isl_union_map_free(sched1);
-	isl_union_map_free(sched2);
-
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown,
-			"unexpected schedule", return -1);
-
-	return 0;
-}
-
 /* Check that a set of schedule constraints that only allow for
  * a coalescing schedule still produces a schedule even if the user
  * request a non-coalescing schedule.  Earlier versions of isl
@@ -4859,8 +4809,6 @@ static int test_schedule_whole(isl_ctx *ctx)
 	whole = isl_options_get_schedule_whole_component(ctx);
 	isl_options_set_schedule_whole_component(ctx, 1);
 	r = test_schedule(ctx);
-	if (r >= 0)
-		r = test_bounded_coefficients_schedule_whole(ctx);
 	isl_options_set_schedule_whole_component(ctx, whole);
 
 	return r;
