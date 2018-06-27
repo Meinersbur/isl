@@ -645,8 +645,7 @@ __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
-	space = isl_space_drop_dims(space, isl_dim_param,
-					0, isl_space_dim(space, isl_dim_param));
+	space = isl_space_drop_all_params(space);
 	space = isl_space_align_params(space, isl_union_map_get_space(umap));
 	if (!umap || !space)
 		goto error;

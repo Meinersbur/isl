@@ -1555,7 +1555,6 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 	isl_space *space;
 	isl_basic_set *bounds;
 	int i;
-	unsigned nparam;
 
 	if (node->bounds)
 		return isl_basic_set_copy(node->bounds);
@@ -1564,8 +1563,7 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 		space = isl_multi_aff_get_domain_space(node->decompress);
 	else
 		space = isl_space_copy(node->space);
-	nparam = isl_space_dim(space, isl_dim_param);
-	space = isl_space_drop_dims(space, isl_dim_param, 0, nparam);
+	space = isl_space_drop_all_params(space);
 	bounds = isl_basic_set_universe(space);
 
 	for (i = 0; i < node->nvar; ++i) {
