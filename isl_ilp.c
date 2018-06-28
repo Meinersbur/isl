@@ -704,35 +704,24 @@ static __isl_give isl_val *isl_pw_aff_opt_val(__isl_take isl_pw_aff *pa,
 	return data.res;
 }
 
-/* Internal data structure for isl_union_set_opt_union_pw_aff.
+/* Internal data structure for isl_union_pw_aff_opt_val.
  *
  * "max" is set if the maximum should be computed.
- * "obj" is the objective function that needs to be optimized.
  * "res" contains the current optimum and is initialized to NaN.
  */
-struct isl_union_set_opt_data {
+struct isl_union_pw_aff_opt_data {
 	int max;
-	isl_union_pw_aff *obj;
 
 	isl_val *res;
 };
 
-/* Update the optimum in data->res with the optimum over "set".
- * Do so by first extracting the matching objective function
- * from data->obj.
+/* Update the optimum in data->res with the optimum of "pa".
  */
-static isl_stat set_opt(__isl_take isl_set *set, void *user)
+static isl_stat pw_aff_opt(__isl_take isl_pw_aff *pa, void *user)
 {
-	struct isl_union_set_opt_data *data = user;
-	isl_space *space;
-	isl_pw_aff *pa;
+	struct isl_union_pw_aff_opt_data *data = user;
 	isl_val *opt;
 
-	space = isl_set_get_space(set);
-	space = isl_space_from_domain(space);
-	space = isl_space_add_dims(space, isl_dim_out, 1);
-	pa = isl_union_pw_aff_extract_pw_aff(data->obj, space);
-	pa = isl_pw_aff_intersect_domain(pa, set);
 	opt = isl_pw_aff_opt_val(pa, data->max);
 
 	data->res = val_opt(data->res, opt, data->max);
@@ -743,25 +732,41 @@ static isl_stat set_opt(__isl_take isl_set *set, void *user)
 }
 
 /* Return the minimum (maximum if "max" is set) of the integer piecewise affine
+ * expression "upa" over its definition domain.
+ *
+ * Return infinity or negative infinity if the optimal value is unbounded and
+ * NaN if the domain of the expression is empty.
+ *
+ * Initialize the result to NaN and then update it
+ * for each of the piecewise affine expressions in "upa".
+ */
+static __isl_give isl_val *isl_union_pw_aff_opt_val(
+	__isl_take isl_union_pw_aff *upa, int max)
+{
+	struct isl_union_pw_aff_opt_data data = { max };
+
+	data.res = isl_val_nan(isl_union_pw_aff_get_ctx(upa));
+	if (isl_union_pw_aff_foreach_pw_aff(upa, &pw_aff_opt, &data) < 0)
+		data.res = isl_val_free(data.res);
+	isl_union_pw_aff_free(upa);
+
+	return data.res;
+}
+
+/* Return the minimum (maximum if "max" is set) of the integer piecewise affine
  * expression "obj" over the points in "uset".
  *
  * Return infinity or negative infinity if the optimal value is unbounded and
  * NaN if the intersection of "uset" with the domain of "obj" is empty.
- *
- * Initialize the result to NaN and then update it for each of the sets
- * in "uset".
  */
 static __isl_give isl_val *isl_union_set_opt_union_pw_aff(
 	__isl_keep isl_union_set *uset, int max,
 	__isl_keep isl_union_pw_aff *obj)
 {
-	struct isl_union_set_opt_data data = { max, obj };
-
-	data.res = isl_val_nan(isl_union_set_get_ctx(uset));
-	if (isl_union_set_foreach_set(uset, &set_opt, &data) < 0)
-		return isl_val_free(data.res);
-
-	return data.res;
+	uset = isl_union_set_copy(uset);
+	obj = isl_union_pw_aff_copy(obj);
+	obj = isl_union_pw_aff_intersect_domain(obj, uset);
+	return isl_union_pw_aff_opt_val(obj, max);
 }
 
 /* Return a list of minima (maxima if "max" is set) over the points in "uset"
