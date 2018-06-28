@@ -753,22 +753,6 @@ static __isl_give isl_val *isl_union_pw_aff_opt_val(
 	return data.res;
 }
 
-/* Return the minimum (maximum if "max" is set) of the integer piecewise affine
- * expression "obj" over the points in "uset".
- *
- * Return infinity or negative infinity if the optimal value is unbounded and
- * NaN if the intersection of "uset" with the domain of "obj" is empty.
- */
-static __isl_give isl_val *isl_union_set_opt_union_pw_aff(
-	__isl_keep isl_union_set *uset, int max,
-	__isl_keep isl_union_pw_aff *obj)
-{
-	uset = isl_union_set_copy(uset);
-	obj = isl_union_pw_aff_copy(obj);
-	obj = isl_union_pw_aff_intersect_domain(obj, uset);
-	return isl_union_pw_aff_opt_val(obj, max);
-}
-
 /* Return the minimum of the integer piecewise affine
  * expression "upa" over its definition domain.
  *
@@ -791,6 +775,40 @@ __isl_give isl_val *isl_union_pw_aff_max_val(__isl_take isl_union_pw_aff *upa)
 	return isl_union_pw_aff_opt_val(upa, 1);
 }
 
+/* Return a list of minima (maxima if "max" is set)
+ * for each of the expressions in "mupa" over their domains.
+ *
+ * An element in the list is infinity or negative infinity if the optimal
+ * value of the corresponding expression is unbounded and
+ * NaN if the domain of the expression is empty.
+ *
+ * Iterate over all the expressions in "mupa" and collect the results.
+ */
+static __isl_give isl_multi_val *isl_multi_union_pw_aff_opt_multi_val(
+	__isl_take isl_multi_union_pw_aff *mupa, int max)
+{
+	int i, n;
+	isl_multi_val *mv;
+
+	if (!mupa)
+		return NULL;
+
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	mv = isl_multi_val_zero(isl_multi_union_pw_aff_get_space(mupa));
+
+	for (i = 0; i < n; ++i) {
+		isl_val *v;
+		isl_union_pw_aff *upa;
+
+		upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, i);
+		v = isl_union_pw_aff_opt_val(upa, max);
+		mv = isl_multi_val_set_val(mv, i, v);
+	}
+
+	isl_multi_union_pw_aff_free(mupa);
+	return mv;
+}
+
 /* Return a list of minima (maxima if "max" is set) over the points in "uset"
  * for each of the expressions in "obj".
  *
@@ -798,33 +816,15 @@ __isl_give isl_val *isl_union_pw_aff_max_val(__isl_take isl_union_pw_aff *upa)
  * value of the corresponding expression is unbounded and
  * NaN if the intersection of "uset" with the domain of the expression
  * is empty.
- *
- * Iterate over all the expressions in "obj" and collect the results.
  */
 static __isl_give isl_multi_val *isl_union_set_opt_multi_union_pw_aff(
 	__isl_keep isl_union_set *uset, int max,
 	__isl_keep isl_multi_union_pw_aff *obj)
 {
-	int i, n;
-	isl_multi_val *mv;
-
-	if (!uset || !obj)
-		return NULL;
-
-	n = isl_multi_union_pw_aff_dim(obj, isl_dim_set);
-	mv = isl_multi_val_zero(isl_multi_union_pw_aff_get_space(obj));
-
-	for (i = 0; i < n; ++i) {
-		isl_val *v;
-		isl_union_pw_aff *upa;
-
-		upa = isl_multi_union_pw_aff_get_union_pw_aff(obj, i);
-		v = isl_union_set_opt_union_pw_aff(uset, max, upa);
-		isl_union_pw_aff_free(upa);
-		mv = isl_multi_val_set_val(mv, i, v);
-	}
-
-	return mv;
+	uset = isl_union_set_copy(uset);
+	obj = isl_multi_union_pw_aff_copy(obj);
+	obj = isl_multi_union_pw_aff_intersect_domain(obj, uset);
+	return isl_multi_union_pw_aff_opt_multi_val(obj, max);
 }
 
 /* Return a list of minima over the points in "uset"
