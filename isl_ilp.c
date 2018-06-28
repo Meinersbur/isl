@@ -651,15 +651,13 @@ error:
 	return NULL;
 }
 
-/* Internal data structure for isl_set_opt_pw_aff.
+/* Internal data structure for isl_pw_aff_opt_val.
  *
  * "max" is set if the maximum should be computed.
- * "set" is the set over which the optimum should be computed.
  * "res" contains the current optimum and is initialized to NaN.
  */
-struct isl_set_opt_data {
+struct isl_pw_aff_opt_data {
 	int max;
-	isl_set *set;
 
 	isl_val *res;
 };
@@ -670,10 +668,9 @@ struct isl_set_opt_data {
 static isl_stat piece_opt(__isl_take isl_set *set, __isl_take isl_aff *aff,
 	void *user)
 {
-	struct isl_set_opt_data *data = user;
+	struct isl_pw_aff_opt_data *data = user;
 	isl_val *opt;
 
-	set = isl_set_intersect(set, isl_set_copy(data->set));
 	opt = isl_set_opt_val(set, data->max, aff);
 	isl_set_free(set);
 	isl_aff_free(aff);
@@ -686,23 +683,24 @@ static isl_stat piece_opt(__isl_take isl_set *set, __isl_take isl_aff *aff,
 }
 
 /* Return the minimum (maximum if "max" is set) of the integer piecewise affine
- * expression "obj" over the points in "set".
+ * expression "pa" over its definition domain.
  *
  * Return infinity or negative infinity if the optimal value is unbounded and
- * NaN if the intersection of "set" with the domain of "obj" is empty.
+ * NaN if the domain of "pa" is empty.
  *
  * Initialize the result to NaN and then update it for each of the pieces
- * in "obj".
+ * in "pa".
  */
-static __isl_give isl_val *isl_set_opt_pw_aff(__isl_keep isl_set *set, int max,
-	__isl_keep isl_pw_aff *obj)
+static __isl_give isl_val *isl_pw_aff_opt_val(__isl_take isl_pw_aff *pa,
+	int max)
 {
-	struct isl_set_opt_data data = { max, set };
+	struct isl_pw_aff_opt_data data = { max };
 
-	data.res = isl_val_nan(isl_set_get_ctx(set));
-	if (isl_pw_aff_foreach_piece(obj, &piece_opt, &data) < 0)
-		return isl_val_free(data.res);
+	data.res = isl_val_nan(isl_pw_aff_get_ctx(pa));
+	if (isl_pw_aff_foreach_piece(pa, &piece_opt, &data) < 0)
+		data.res = isl_val_free(data.res);
 
+	isl_pw_aff_free(pa);
 	return data.res;
 }
 
@@ -734,9 +732,8 @@ static isl_stat set_opt(__isl_take isl_set *set, void *user)
 	space = isl_space_from_domain(space);
 	space = isl_space_add_dims(space, isl_dim_out, 1);
 	pa = isl_union_pw_aff_extract_pw_aff(data->obj, space);
-	opt = isl_set_opt_pw_aff(set, data->max, pa);
-	isl_pw_aff_free(pa);
-	isl_set_free(set);
+	pa = isl_pw_aff_intersect_domain(pa, set);
+	opt = isl_pw_aff_opt_val(pa, data->max);
 
 	data->res = val_opt(data->res, opt, data->max);
 	if (!data->res)
