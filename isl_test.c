@@ -1895,6 +1895,7 @@ struct {
 		"(c = 4 + a and 4 * floor((a)/4) = a and a >= 0 and a <= 4) or "
 		"(c = 3 + a and 4 * floor((-1 + a)/4) = -1 + a and "
 		    "a > 0 and a <= 5) }" },
+	{ 1, "{ [1, 0, 0]; [a, b, c] : -1 <= -a < b <= 0 and 2c > b }" },
 };
 
 /* A specialized coalescing test case that would result
