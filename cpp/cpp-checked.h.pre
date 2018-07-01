@@ -90,6 +90,13 @@ public:
 	isl_stat release() {
 		return val;
 	}
+
+	bool is_error() const {
+		return val == isl_stat_error;
+	}
+	bool is_ok() const {
+		return val == isl_stat_ok;
+	}
 	bool operator==(const stat& b) {
 		return val == b.val;
 	}
