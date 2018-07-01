@@ -83,8 +83,12 @@ private:
 	friend stat manage(isl_stat val);
 	constexpr stat(isl_stat val) : val(val) {}
 public:
-	static const stat ok;
-	static const stat error;
+	static stat ok() {
+		return stat(isl_stat_ok);
+	}
+	static stat error() {
+		return stat(isl_stat_error);
+	}
 	stat() : val(isl_stat_error) {}
 
 	isl_stat release() {
@@ -101,9 +105,6 @@ public:
 		return val == b.val;
 	}
 };
-
-constexpr const stat stat::ok = stat(isl_stat_ok);
-constexpr const stat stat::error = stat(isl_stat_error);
 
 inline stat manage(isl_stat val)
 {

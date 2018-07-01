@@ -130,7 +130,7 @@ void test_foreach(isl::ctx ctx)
 
 	auto add_to_vector = [&] (isl::basic_set bs) {
 		basic_sets.push_back(bs);
-		return isl::stat::ok;
+		return isl::stat::ok();
 	};
 
 	isl::stat ret1 = s.foreach_basic_set(add_to_vector);
@@ -143,7 +143,7 @@ void test_foreach(isl::ctx ctx)
 	assert(!basic_sets[0].is_equal(basic_sets[1]).is_true());
 
 	auto fail = [&] (isl::basic_set bs) {
-		return isl::stat::error;
+		return isl::stat::error();
 	};
 
 	isl::stat ret2 = s.foreach_basic_set(fail);
