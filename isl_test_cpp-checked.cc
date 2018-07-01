@@ -135,7 +135,7 @@ void test_foreach(isl::ctx ctx)
 
 	isl::stat ret1 = s.foreach_basic_set(add_to_vector);
 
-	assert(ret1 == isl::stat::ok);
+	assert(ret1.is_ok());
 	assert(basic_sets.size() == 3);
 	assert(isl::set(basic_sets[0]).is_subset(s).is_true());
 	assert(isl::set(basic_sets[1]).is_subset(s).is_true());
@@ -148,7 +148,7 @@ void test_foreach(isl::ctx ctx)
 
 	isl::stat ret2 = s.foreach_basic_set(fail);
 
-	assert(ret2 == isl::stat::error);
+	assert(ret2.is_error());
 }
 
 /* Test the isl checked C++ interface
