@@ -284,7 +284,7 @@ isl_closure_SOURCES = \
 isl_test_cpp_checked_CXXFLAGS = @CXX11FLAGS@
 isl_test_cpp_checked_SOURCES = \
 	isl_test_cpp-checked.cc \
-	interface/cpp-checked.h
+	include/isl/cpp-checked.h
 isl_test_cpp_checked_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_checked_LDADD = libisl.la @MP_LIBS@
 
@@ -300,7 +300,7 @@ interface/isl.py: interface/extract_interface libdep.a python/isl.py.top
 			$(includes) $(srcdir)/all.h) \
 			> $@ || (rm $@ && false)
 
-interface/cpp-checked.h: interface/extract_interface libdep.a \
+include/isl/cpp-checked.h: interface/extract_interface libdep.a \
 		cpp/cpp-checked.h.top \
 		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
@@ -370,7 +370,7 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 if HAVE_CLANG
-    CPP_INTERFACE = interface/cpp-checked.h
+    CPP_INTERFACE = include/isl/cpp-checked.h
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACE)
 CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACE)

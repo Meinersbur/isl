@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include <isl/options.h>
-#include "interface/cpp-checked.h"
+#include <isl/cpp-checked.h>
 
 static void assert_impl(bool condition, const char *file, int line,
 	const char *message)
