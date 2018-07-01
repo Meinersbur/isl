@@ -101,9 +101,6 @@ public:
 	bool is_ok() const {
 		return val == isl_stat_ok;
 	}
-	bool operator==(const stat& b) {
-		return val == b.val;
-	}
 };
 
 inline stat manage(isl_stat val)
