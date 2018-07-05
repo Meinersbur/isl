@@ -228,6 +228,7 @@ configure_file("codegen_test.sh.in" "${ISL_BINARY_DIR}/codegen_test.sh" @ONLY)
 set (libisl_common_sources
     ${ISL_SOURCE_DIR}/basis_reduction_tab.c
     ${ISL_SOURCE_DIR}/isl_aff.c
+    ${ISL_SOURCE_DIR}/isl_aff_map.c
     ${ISL_SOURCE_DIR}/isl_affine_hull.c
     ${ISL_SOURCE_DIR}/isl_arg.c
     ${ISL_SOURCE_DIR}/isl_ast_build.c
@@ -238,6 +239,7 @@ set (libisl_common_sources
     ${ISL_SOURCE_DIR}/isl_bernstein.c
     ${ISL_SOURCE_DIR}/isl_blk.c
     ${ISL_SOURCE_DIR}/isl_bound.c
+    ${ISL_SOURCE_DIR}/isl_box.c
     ${ISL_SOURCE_DIR}/isl_coalesce.c
     ${ISL_SOURCE_DIR}/isl_constraint.c
     ${ISL_SOURCE_DIR}/isl_convex_hull.c
@@ -300,6 +302,10 @@ set (libisl_common_sources
     ${ISL_SOURCE_DIR}/isl_version.c
     ${ISL_SOURCE_DIR}/isl_vertices.c
     ${ISL_SOURCE_DIR}/print.c
+    ${ISL_SOURCE_DIR}/set_to_map.c
+    ${ISL_SOURCE_DIR}/set_from_map.c
+    ${ISL_SOURCE_DIR}/uset_to_umap.c
+    ${ISL_SOURCE_DIR}/uset_from_umap.c
 )
 
 set(libisl_gmp_sources
