@@ -87,10 +87,11 @@ private:
 	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
 	string type2cpp(const isl_class &clazz);
-	string type2cpp(string type_string);
 	string type2cpp(QualType type);
 	bool is_implicit_conversion(const isl_class &clazz, FunctionDecl *cons);
 	bool is_subclass(QualType subclass_type, const isl_class &class_type);
 	function_kind get_method_kind(const isl_class &clazz,
 		FunctionDecl *method);
+public:
+	static string type2cpp(string type_string);
 };
