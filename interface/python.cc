@@ -108,6 +108,36 @@ void python_generator::print_type_check(const string &type, int pos,
 		printf("            raise\n");
 }
 
+/* For each of the "n" initial arguments of the function "method"
+ * that refer to an isl structure,
+ * including the object on which the method is called,
+ * check if the corresponding actual argument is of the right type.
+ * If not, try and convert it to the right type.
+ * If that doesn't work and if "super" contains at least one element,
+ * try and convert self to the type of the first superclass in "super" and
+ * call the corresponding method.
+ * If "first_is_ctx" is set, then the first argument is skipped.
+ */
+void python_generator::print_type_checks(const string &cname,
+	FunctionDecl *method, bool first_is_ctx, int n,
+	const vector<string> &super)
+{
+	for (int i = first_is_ctx; i < n; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		string type;
+
+		if (!is_isl_type(param->getOriginalType()))
+			continue;
+		type = type2python(extract_type(param->getOriginalType()));
+		if (!first_is_ctx && i > 0 && super.size() > 0)
+			print_type_check(type, i - first_is_ctx, true, super[0],
+					cname, n);
+		else
+			print_type_check(type, i - first_is_ctx, false, "",
+					cname, -1);
+	}
+}
+
 /* Print a call to the *_copy function corresponding to "type".
  */
 void python_generator::print_copy(QualType type)
@@ -365,14 +395,6 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
  * a user argument in the Python interface, so we simply drop it.
  * We also create a wrapper ("cb") for the callback.
  *
- * For each argument of the function that refers to an isl structure,
- * including the object on which the method is called,
- * we check if the corresponding actual argument is of the right type.
- * If not, we try to convert it to the right type.
- * If that doesn't work and if "super" contains at least one element, we try
- * to convert self to the type of the first superclass in "super" and
- * call the corresponding method.
- *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
  */
@@ -395,19 +417,8 @@ void python_generator::print_method(const isl_class &clazz,
 	print_method_header(is_static(clazz, method), cname,
 			    num_params - drop_ctx - drop_user);
 
-	for (int i = drop_ctx; i < num_params; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		string type;
-		if (!is_isl_type(param->getOriginalType()))
-			continue;
-		type = type2python(extract_type(param->getOriginalType()));
-		if (!drop_ctx && i > 0 && super.size() > 0)
-			print_type_check(type, i - drop_ctx, true, super[0],
-					cname, num_params - drop_user);
-		else
-			print_type_check(type, i - drop_ctx, false, "",
-					cname, -1);
-	}
+	print_type_checks(cname, method, drop_ctx,
+			    num_params - drop_user, super);
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		QualType type = param->getOriginalType();
