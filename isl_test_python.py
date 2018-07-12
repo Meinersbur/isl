@@ -318,11 +318,37 @@ def test_schedule_tree():
 	root.every_descendant(collect_filters)
 	assert(domain.is_equal(filters[0]))
 
+# Test marking band members for unrolling.
+# "schedule" is the schedule created by construct_schedule_tree.
+# It schedules two statements, with 10 and 20 instances, respectively.
+# Unrolling all band members therefore results in 30 at-domain calls
+# by the AST generator.
+#
+def test_ast_build_unroll(schedule):
+	root = schedule.get_root()
+	def mark_unroll(node):
+		if type(node) == isl.schedule_node_band:
+			node = node.member_set_ast_loop_unroll(0)
+		return node
+	root = root.map_descendant_bottom_up(mark_unroll)
+	schedule = root.get_schedule()
+
+	count_ast = [0]
+	def inc_count_ast(node, build):
+		count_ast[0] += 1
+		return node
+
+	build = isl.ast_build()
+	build = build.set_at_each_domain(inc_count_ast)
+	ast = build.node_from(schedule)
+	assert(count_ast[0] == 30)
+
 # Test basic AST generation from a schedule tree.
 #
 # In particular, create a simple schedule tree and
 # - generate an AST from the schedule tree
 # - test at_each_domain
+# - test unrolling
 #
 def test_ast_build():
 	schedule = construct_schedule_tree()
@@ -369,6 +395,8 @@ def test_ast_build():
 	do_fail = False;
 	ast = build.node_from(schedule)
 	assert(count_ast_fail[0] == 2)
+
+	test_ast_build_unroll(schedule);
 
 # Test basic AST expression generation from an affine expression.
 #
