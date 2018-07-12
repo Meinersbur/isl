@@ -4,11 +4,25 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <clang/AST/Decl.h>
 
 using namespace std;
 using namespace clang;
+
+/* Information about a single enum value of an enum set by a function.
+ * "value" is the enum value.
+ * "name" is the corresponding name.
+ * "method_name" is the the name of the method that sets this value.
+ */
+struct set_enum {
+	int	value;
+	string	name;
+	string	method_name;
+	set_enum(int value, string name, string method_name) :
+		value(value), name(name), method_name(method_name) {}
+};
 
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
@@ -19,6 +33,10 @@ using namespace clang;
  * "type" is the declaration that introduces the type.
  * "persistent_callbacks" contains the set of functions that
  * set a persistent callback.
+ * "set_enums" maps the set of functions that set an enum value
+ * to information associated to each value.
+ * A function is considered to set an enum value if it returns
+ * an object of the same type and if its last argument is of an enum type.
  * "methods" contains the set of methods, grouped by method name.
  * "fn_to_str" is a reference to the *_to_str method of this class, if any.
  * "fn_copy" is a reference to the *_copy method of this class, if any.
@@ -34,6 +52,7 @@ struct isl_class {
 	RecordDecl *type;
 	set<FunctionDecl *> constructors;
 	set<FunctionDecl *> persistent_callbacks;
+	map<FunctionDecl *, vector<set_enum> > set_enums;
 	map<string, set<FunctionDecl *> > methods;
 	map<int, string> type_subclasses;
 	FunctionDecl *fn_type;

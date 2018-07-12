@@ -49,5 +49,9 @@ private:
 		FunctionDecl *method);
 	void print_method(const isl_class &clazz, const string &fullname,
 		const set<FunctionDecl *> &methods, vector<string> super);
+	void print_set_enum(const isl_class &clazz, FunctionDecl *fd,
+		int value, const string &name, const vector<string> &super);
+	void print_set_enum(const isl_class &clazz, FunctionDecl *fd,
+		const vector<string> &super);
 
 };

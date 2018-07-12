@@ -61,6 +61,11 @@ private:
 		const set<FunctionDecl *> &methods);
 	void print_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
+	void print_set_enum_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd, const string &name);
+	void print_set_enums_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd);
+	void print_set_enums_decl(ostream &os, const isl_class &clazz);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -99,6 +104,12 @@ private:
 		FunctionDecl *method);
 	void print_method_impl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
+	void print_set_enum_impl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd, const string &enum_name,
+		const string &method_name);
+	void print_set_enums_impl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd);
+	void print_set_enums_impl(ostream &os, const isl_class &clazz);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
 	void print_stream_insertion(ostream &os, const isl_class &clazz);

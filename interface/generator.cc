@@ -168,6 +168,73 @@ void generator::add_type_subclasses(FunctionDecl *fn_type)
 	}
 }
 
+/* Add information about the enum values in "decl", set by "fd",
+ * to c->set_enums. "prefix" is the prefix of the generated method names.
+ * In particular, it has the name of the enum type removed.
+ *
+ * In particular, for each non-negative enum value, keep track of
+ * the value, the name and the corresponding method name.
+ */
+static void add_set_enum(isl_class *c, const string &prefix, EnumDecl *decl,
+	FunctionDecl *fd)
+{
+	DeclContext::decl_iterator i;
+
+	for (i = decl->decls_begin(); i != decl->decls_end(); ++i) {
+		EnumConstantDecl *ecd = dyn_cast<EnumConstantDecl>(*i);
+		int val = (int) ecd->getInitVal().getSExtValue();
+		string name = ecd->getNameAsString();
+		string method_name;
+
+		if (val < 0)
+			continue;
+		method_name = prefix + name.substr(4);
+		c->set_enums[fd].emplace_back(set_enum(val, name, method_name));
+	}
+}
+
+/* Check if "fd" sets an enum value and, if so, add information
+ * about the enum values to c->set_enums.
+ *
+ * A function is considered to set an enum value if:
+ * - the function returns an object of the same type
+ * - the last argument is of type enum
+ * - the name of the function ends with the name of the enum
+ */
+static bool handled_sets_enum(isl_class *c, FunctionDecl *fd)
+{
+	unsigned n;
+	ParmVarDecl *param;
+	const EnumType *enum_type;
+	EnumDecl *decl;
+	string enum_name;
+	string fd_name;
+	string prefix;
+	size_t pos;
+
+	if (!generator::is_mutator(*c, fd))
+		return false;
+	n = fd->getNumParams();
+	if (n < 2)
+		return false;
+	param = fd->getParamDecl(n - 1);
+	enum_type = param->getType()->getAs<EnumType>();
+	if (!enum_type)
+		return false;
+	decl = enum_type->getDecl();
+	enum_name = decl->getName();
+	enum_name = enum_name.substr(4);
+	fd_name = c->method_name(fd);
+	pos = fd_name.find(enum_name);
+	if (pos == std::string::npos)
+		return false;
+	prefix = fd_name.substr(0, pos);
+
+	add_set_enum(c, prefix, decl, fd);
+
+	return true;
+}
+
 /* Return the callback argument of a function setting
  * a persistent callback.
  * This callback is in the second argument (position 1).
@@ -259,6 +326,7 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 			continue;
 		if (is_constructor(method)) {
 			c->constructors.insert(method);
+		} else if (handled_sets_enum(c, method)) {
 		} else if (sets_persistent_callback(c, method)) {
 			c->persistent_callbacks.insert(method);
 		} else {
