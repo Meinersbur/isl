@@ -1634,7 +1634,8 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	osprintf(os, "}\n");
 }
 
-/* Print the header for "method" in class "clazz" to "os".
+/* Print the header for "method" in class "clazz", with name "cname" and
+ * "num_params" number of arguments, to "os".
  *
  * Print the header of a declaration if "is_declaration" is set, otherwise print
  * the header of a method definition.
@@ -1674,15 +1675,13 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
  * know that implicit construction is allowed in absence of an explicit keyword.
  */
 void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, bool is_declaration, function_kind kind)
+	FunctionDecl *method, const string &cname, int num_params,
+	bool is_declaration, function_kind kind)
 {
-	string cname = clazz.method_name(method);
 	string rettype_str = get_return_type(clazz, method);
 	string classname = type2cpp(clazz);
-	int num_params = method->getNumParams();
 	int first_param = 0;
 
-	cname = rename_method(cname);
 	if (kind == function_kind_member_method)
 		first_param = 1;
 
@@ -1742,6 +1741,24 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	if (is_declaration)
 		osprintf(os, ";");
 	osprintf(os, "\n");
+}
+
+/* Print the header for "method" in class "clazz" to "os".
+ *
+ * Print the header of a declaration if "is_declaration" is set, otherwise print
+ * the header of a method definition.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
+	FunctionDecl *method, bool is_declaration, function_kind kind)
+{
+	string cname = clazz.method_name(method);
+	int num_params = method->getNumParams();
+
+	cname = rename_method(cname);
+	print_method_header(os, clazz, method, cname, num_params,
+			    is_declaration, kind);
 }
 
 /* Generate the list of argument types for a callback function of

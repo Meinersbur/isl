@@ -106,6 +106,9 @@ private:
 		bool load_from_this_ptr);
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
 	void print_method_header(ostream &os, const isl_class &clazz,
+		FunctionDecl *method, const string &cname, int num_params,
+		bool is_declaration, function_kind kind);
+	void print_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, bool is_declaration, function_kind kind);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
