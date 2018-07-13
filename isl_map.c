@@ -776,6 +776,20 @@ __isl_give isl_id *isl_map_get_tuple_id(__isl_keep isl_map *map,
 	return map ? isl_space_get_tuple_id(map->dim, type) : NULL;
 }
 
+/* Return the identifier of the domain tuple of "map", assuming it has one.
+ */
+__isl_give isl_id *isl_map_get_domain_tuple_id(__isl_keep isl_map *map)
+{
+	return isl_map_get_tuple_id(map, isl_dim_in);
+}
+
+/* Return the identifier of the range tuple of "map", assuming it has one.
+ */
+__isl_give isl_id *isl_map_get_range_tuple_id(__isl_keep isl_map *map)
+{
+	return isl_map_get_tuple_id(map, isl_dim_out);
+}
+
 isl_bool isl_set_has_tuple_id(__isl_keep isl_set *set)
 {
 	return isl_map_has_tuple_id(set, isl_dim_set);
