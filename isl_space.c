@@ -594,6 +594,28 @@ __isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *space,
 	return isl_id_copy(space->tuple_id[type - isl_dim_in]);
 }
 
+/* Return the identifier of the domain tuple of the map space "space",
+ * assuming it has one.
+ */
+__isl_give isl_id *isl_space_get_domain_tuple_id(
+	__isl_keep isl_space *space)
+{
+	if (isl_space_check_is_map(space) < 0)
+		return NULL;
+	return isl_space_get_tuple_id(space, isl_dim_in);
+}
+
+/* Return the identifier of the range tuple of the map space "space",
+ * assuming it has one.
+ */
+__isl_give isl_id *isl_space_get_range_tuple_id(
+	__isl_keep isl_space *space)
+{
+	if (isl_space_check_is_map(space) < 0)
+		return NULL;
+	return isl_space_get_tuple_id(space, isl_dim_out);
+}
+
 __isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *space,
 	enum isl_dim_type type, __isl_take isl_id *id)
 {
