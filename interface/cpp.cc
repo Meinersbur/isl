@@ -951,7 +951,6 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	int num_params = method->getNumParams();
 	QualType return_type = method->getReturnType();
 	string rettype_str = type2cpp(return_type);
-	bool has_callback = false;
 
 	print_method_header(os, clazz, method, false, kind);
 	osprintf(os, "{\n");
@@ -962,7 +961,6 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		if (is_callback(param->getType())) {
-			has_callback = true;
 			num_params -= 1;
 			print_callback_local(os, param);
 		}
@@ -991,7 +989,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 		    (checked &&
 		     (is_isl_bool(return_type) || is_isl_stat(return_type)))) {
 		osprintf(os, "  return manage(res);\n");
-	} else if (has_callback) {
+	} else if (is_isl_stat(return_type)) {
 		osprintf(os, "  return %s(res);\n", rettype_str.c_str());
 	} else if (is_string(return_type)) {
 		osprintf(os, "  std::string tmp(res);\n");
