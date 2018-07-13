@@ -4507,6 +4507,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_pw_move_dims_templ.c>
 #include <isl_pw_neg_templ.c>
 #include <isl_pw_pullback_templ.c>
+#include <isl_pw_range_tuple_id_templ.c>
 #include <isl_pw_union_opt.c>
 
 #undef BASE
