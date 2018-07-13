@@ -96,6 +96,19 @@ error:
 	return NULL;
 }
 
+/* Replace the identifier of the (range) tuple of "multi" by "id".
+ *
+ * Technically, the implementation should use isl_dim_set if "multi"
+ * lives in a set space and isl_dim_out if it lives in a map space.
+ * Internally, however, it can be assumed that isl_dim_set is equal
+ * to isl_dim_out.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_range_tuple_id)(
+	__isl_take MULTI(BASE) *multi, __isl_take isl_id *id)
+{
+	return FN(MULTI(BASE),set_tuple_id)(multi, isl_dim_out, id);
+}
+
 /* Drop the id on the specified tuple.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_tuple_id)(
