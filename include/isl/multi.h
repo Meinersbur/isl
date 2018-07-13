@@ -210,8 +210,14 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_dim_id(		\
 #define ISL_DECLARE_MULTI_TUPLE_ID(BASE)				\
 const char *isl_multi_##BASE##_get_tuple_name(				\
 	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type);	\
+__isl_export								\
+isl_bool isl_multi_##BASE##_has_range_tuple_id(				\
+	__isl_keep isl_multi_##BASE *multi);				\
 isl_bool isl_multi_##BASE##_has_tuple_id(				\
 	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type);	\
+__isl_export								\
+__isl_give isl_id *isl_multi_##BASE##_get_range_tuple_id(		\
+	__isl_keep isl_multi_##BASE *multi);				\
 __isl_give isl_id *isl_multi_##BASE##_get_tuple_id(			\
 	__isl_keep isl_multi_##BASE *multi, enum isl_dim_type type);	\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_set_tuple_name(		\
