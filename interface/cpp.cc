@@ -903,16 +903,10 @@ void cpp_generator::print_exceptional_execution_check(ostream &os,
 	print_throw_last_error(os);
 }
 
-/* Print definition for "method" in class "clazz" to "os".
+/* Print the return statement of the C++ method corresponding
+ * to the C function "method" in class "clazz" to "os".
  *
- * "kind" specifies the kind of method that should be generated.
- *
- * This method distinguishes three kinds of methods: member methods, static
- * methods, and constructors.
- *
- * Member methods call "method" by passing to the underlying isl function the
- * isl object belonging to "this" as first argument and the remaining arguments
- * as subsequent arguments. The result of the isl function is returned as a new
+ * The result of the isl function is returned as a new
  * object if the underlying isl function returns an isl_* ptr, as a bool
  * if the isl function returns an isl_bool, as void if the isl functions
  * returns an isl_stat,
@@ -922,6 +916,38 @@ void cpp_generator::print_exceptional_execution_check(ostream &os,
  * then an isl_bool return type is transformed into a boolean and
  * an isl_stat into a stat since no exceptions can be generated
  * on negative results from the isl function.
+ */
+void cpp_generator::print_method_return(ostream &os, const isl_class &clazz,
+	FunctionDecl *method)
+{
+	QualType return_type = method->getReturnType();
+
+	if (is_isl_type(return_type) ||
+		    (checked &&
+		     (is_isl_bool(return_type) || is_isl_stat(return_type)))) {
+		osprintf(os, "  return manage(res);\n");
+	} else if (is_isl_stat(return_type)) {
+		osprintf(os, "  return;\n");
+	} else if (is_string(return_type)) {
+		osprintf(os, "  std::string tmp(res);\n");
+		if (gives(method))
+			osprintf(os, "  free(res);\n");
+		osprintf(os, "  return tmp;\n");
+	} else {
+		osprintf(os, "  return res;\n");
+	}
+}
+
+/* Print definition for "method" in class "clazz" to "os".
+ *
+ * "kind" specifies the kind of method that should be generated.
+ *
+ * This method distinguishes three kinds of methods: member methods, static
+ * methods, and constructors.
+ *
+ * Member methods call "method" by passing to the underlying isl function the
+ * isl object belonging to "this" as first argument and the remaining arguments
+ * as subsequent arguments.
  *
  * Static methods call "method" by passing all arguments to the underlying isl
  * function, as no this-pointer is available. The result is a newly managed
@@ -949,7 +975,6 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 {
 	string methodname = method->getName();
 	int num_params = method->getNumParams();
-	QualType return_type = method->getReturnType();
 
 	print_method_header(os, clazz, method, false, kind);
 	osprintf(os, "{\n");
@@ -984,19 +1009,8 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	print_exceptional_execution_check(os, method);
 	if (kind == function_kind_constructor) {
 		osprintf(os, "  ptr = res;\n");
-	} else if (is_isl_type(return_type) ||
-		    (checked &&
-		     (is_isl_bool(return_type) || is_isl_stat(return_type)))) {
-		osprintf(os, "  return manage(res);\n");
-	} else if (is_isl_stat(return_type)) {
-		osprintf(os, "  return;\n");
-	} else if (is_string(return_type)) {
-		osprintf(os, "  std::string tmp(res);\n");
-		if (gives(method))
-			osprintf(os, "  free(res);\n");
-		osprintf(os, "  return tmp;\n");
 	} else {
-		osprintf(os, "  return res;\n");
+		print_method_return(os, clazz, method);
 	}
 
 	osprintf(os, "}\n");

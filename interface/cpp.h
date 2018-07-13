@@ -74,6 +74,8 @@ private:
 	void print_on_error_continue(ostream &os);
 	void print_exceptional_execution_check(ostream &os,
 		FunctionDecl *method);
+	void print_method_return(ostream &os, const isl_class &clazz,
+		FunctionDecl *method);
 	void print_method_impl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
