@@ -177,6 +177,7 @@ static bool is_exported(Decl *decl)
 		N.find("compute_divs") == std::string::npos &&
 		N.find("dims_get_sign") == std::string::npos &&
 		N.find("basic_set_add") == std::string::npos &&
+		N.find("id_alloc") == std::string::npos &&
 		N.find("align_divs") == std::string::npos &&
 		N.find("_n_div") == std::string::npos &&
 		N.find("_n_in") == std::string::npos &&
@@ -201,6 +202,7 @@ static bool is_exported(Decl *decl)
 		N.find("isl_val_get_abs_num_chunks") == std::string::npos &&
 		N.find("isl_val_int_from_chunks") == std::string::npos &&
 		N.find("isl_ast_build_set") == std::string::npos &&
+		N.find("isl_id_get_user") == std::string::npos &&
 		N.find("copy") == std::string::npos &&
 		N.find("try_get") == std::string::npos &&
 		N.find("get_parent_type") == std::string::npos &&
