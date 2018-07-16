@@ -6,7 +6,7 @@
 #include <string>
 
 namespace isl {
-namespace checked {
+inline namespace noexceptions {
 
 #define ISLPP_STRINGIZE_(X) #X
 #define ISLPP_STRINGIZE(X) ISLPP_STRINGIZE_(X)
