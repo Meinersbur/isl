@@ -167,6 +167,7 @@ static bool is_exported(Decl *decl)
 		N.find("isl_space_tuple_match") == std::string::npos &&
 		N.find("isl_union_map_compute_flow") == std::string::npos &&
 		N.find("isl_val_gcdext") == std::string::npos &&
+		N.find("list_map") == std::string::npos &&
 		N.find("multiplicative_call") == std::string::npos &&
 		N.find("pw_qpolynomial_fold") == std::string::npos &&
 		N.find("fold") == std::string::npos &&
