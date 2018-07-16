@@ -155,7 +155,6 @@ static bool is_exported(Decl *decl)
 		N.find("foreach_descendant_top_down") == std::string::npos &&
 		N.find("set_dim_name") == std::string::npos &&
 		N.find("set_dim_name") == std::string::npos &&
-		N.find("_list_") == std::string::npos &&
 		N.find("isl_qpolynomial_substitute") == std::string::npos &&
 		N.find("from_constraint_matrices") == std::string::npos &&
 		N.find("partial_") == std::string::npos &&
