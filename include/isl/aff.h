@@ -16,7 +16,9 @@
 extern "C" {
 #endif
 
+__isl_constructor
 __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls);
+__isl_constructor
 __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 	__isl_take isl_val *val);
 __isl_give isl_aff *isl_aff_var_on_domain(__isl_take isl_local_space *ls,
@@ -194,6 +196,7 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff);
 __isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_space *dim);
 __isl_give isl_pw_aff *isl_pw_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_aff *aff);
+__isl_constructor
 __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(
 	__isl_take isl_local_space *ls);
 __isl_give isl_pw_aff *isl_pw_aff_var_on_domain(__isl_take isl_local_space *ls,
