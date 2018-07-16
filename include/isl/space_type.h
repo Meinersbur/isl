@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-struct isl_space;
+struct __isl_export isl_space;
 typedef struct isl_space isl_space;
 
 enum isl_dim_type {

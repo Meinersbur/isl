@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-struct isl_constraint;
+struct __isl_export isl_constraint;
 typedef struct isl_constraint isl_constraint;
 
 ISL_DECLARE_LIST(constraint)

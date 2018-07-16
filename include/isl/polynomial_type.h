@@ -1,10 +1,10 @@
 #ifndef ISL_POLYNOMIAL_TYPE_H
 #define ISL_POLYNOMIAL_TYPE_H
 
-struct isl_qpolynomial;
+struct __isl_export isl_qpolynomial;
 typedef struct isl_qpolynomial isl_qpolynomial;
 
-struct isl_term;
+struct __isl_export isl_term;
 typedef struct isl_term isl_term;
 
 struct __isl_export isl_pw_qpolynomial;

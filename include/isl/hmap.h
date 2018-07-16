@@ -11,7 +11,7 @@ extern "C" {
 #define ISL_xFN(TYPE,NAME) TYPE ## _ ## NAME
 #define ISL_FN(TYPE,NAME) ISL_xFN(TYPE,NAME)
 
-struct ISL_HMAP;
+struct __isl_export ISL_HMAP;
 typedef struct ISL_HMAP	ISL_HMAP;
 
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,alloc)(isl_ctx *ctx, int min_size);

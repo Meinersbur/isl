@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-struct isl_vec;
+struct __isl_export isl_vec;
 typedef struct isl_vec isl_vec;
 
 __isl_give isl_vec *isl_vec_alloc(isl_ctx *ctx, unsigned size);

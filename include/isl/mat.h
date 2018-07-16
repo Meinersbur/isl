@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-struct isl_mat;
+struct __isl_export isl_mat;
 typedef struct isl_mat	isl_mat;
 
 isl_ctx *isl_mat_get_ctx(__isl_keep isl_mat *mat);
