@@ -775,7 +775,7 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 		return;
 	}
 
-	if (type->isIntegerType()) {
+	if (type->isIntegerType() || type->isVoidPointerType()) {
 		osprintf(os, "%s", name_str);
 		return;
 	}
@@ -1468,6 +1468,11 @@ string cpp_generator::type2cpp(QualType type)
 
 	if (is_callback(type))
 		return generate_callback_type(type);
+
+	if (type->isVoidType())
+		return "void";
+
+	return "void *";
 
 	die("Cannot convert type to C++ type");
 }
