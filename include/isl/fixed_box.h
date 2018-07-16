@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-struct isl_fixed_box;
+struct __isl_export isl_fixed_box;
 typedef struct isl_fixed_box isl_fixed_box;
 
 isl_ctx *isl_fixed_box_get_ctx(__isl_keep isl_fixed_box *box);

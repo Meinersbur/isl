@@ -15,3 +15,4 @@
 #include <isl/constraint.h>
 #include <isl/polynomial.h>
 #include <isl/mat.h>
+#include <isl/fixed_box.h>
