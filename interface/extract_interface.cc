@@ -180,6 +180,7 @@ static bool is_exported(Decl *decl)
 		N.find("id_alloc") == std::string::npos &&
 		N.find("align_divs") == std::string::npos &&
 		N.find("_n_div") == std::string::npos &&
+		N.find("schedule_set") == std::string::npos &&
 		N.find("_n_in") == std::string::npos &&
 		N.find("_n_out") == std::string::npos &&
 		N.find("_n_param") == std::string::npos &&
