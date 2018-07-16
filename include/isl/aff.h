@@ -648,6 +648,7 @@ void isl_pw_multi_aff_dump(__isl_keep isl_pw_multi_aff *pma);
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_empty(
 	__isl_take isl_space *space);
+__isl_constructor
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_aff(
 	__isl_take isl_aff *aff);
 __isl_constructor

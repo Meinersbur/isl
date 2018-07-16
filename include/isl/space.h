@@ -26,7 +26,6 @@ __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 __isl_constructor
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim);
-__isl_constructor
 __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam);
 __isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim);
 __isl_null isl_space *isl_space_free(__isl_take isl_space *space);
