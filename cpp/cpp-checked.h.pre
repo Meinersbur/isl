@@ -32,7 +32,7 @@ public:
   boolean()
       : val(isl_bool_error) {}
   ~boolean() {
-    ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+    // ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
   }
 
   /* implicit */ boolean(bool val)
@@ -43,7 +43,7 @@ public:
   bool is_true() const { checked = true; return val == isl_bool_true; }
 
   operator bool() const {
-    ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked error state");
+    // ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked error state");
     ISLPP_ASSERT(!is_error(), "IMPLEMENTATION ERROR: Unhandled error state");
     return is_true();
   }
@@ -92,7 +92,7 @@ public:
 	}
 	stat() : val(isl_stat_error) {}
 	~stat() {
-		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+		// ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
 	}
 
 	isl_stat release() {
