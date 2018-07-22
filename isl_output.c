@@ -2689,6 +2689,9 @@ static __isl_give isl_printer *print_ls_term_c(__isl_take isl_printer *p,
 {
 	enum isl_dim_type type;
 
+	if (!p || !ls)
+		return isl_printer_free(p);
+
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
 
