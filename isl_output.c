@@ -606,7 +606,7 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 	unsigned n_div;
 	enum isl_dim_type type;
 
-	if (!p)
+	if (!p || !space)
 		return -1;
 	n_div = isl_mat_rows(div);
 	if (p->output_format == ISL_FORMAT_C)
