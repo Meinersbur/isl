@@ -267,6 +267,9 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
 	enum isl_dim_type type;
 	int print_div_def;
 
+	if (!p || !space)
+		return isl_printer_free(p);
+
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
 
