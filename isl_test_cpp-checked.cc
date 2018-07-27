@@ -321,7 +321,7 @@ void test_foreach(isl::ctx ctx)
 	assert(ret2 == isl::stat::error);
 }
 
-/* Test the isl C++ interface
+/* Test the isl checked C++ interface
  *
  * This includes:
  *  - The isl C <-> C++ pointer interface
