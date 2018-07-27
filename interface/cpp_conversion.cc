@@ -16,8 +16,8 @@
 /* Print a function called "function" for converting objects of
  * type "name" from the "from" bindings to the "to" bindings.
  */
-static void convert(const char *name, const char *from, const char *to,
-	const char *function)
+void cpp_conversion_generator::convert(const char *name,
+	const char *from, const char *to, const char *function)
 {
 	printf("%s%s %s(%s%s obj) {\n", to, name, function, from, name);
 	printf("\t""return %s""manage(obj.copy());\n", to);
@@ -40,7 +40,7 @@ static void convert(const char *name, const char *from, const char *to,
  *		return manage(obj.copy());
  *	}
  */
-static void print(const isl_class &clazz)
+void cpp_conversion_generator::print(const isl_class &clazz)
 {
 	string name = cpp_generator::type2cpp(clazz.name);
 
