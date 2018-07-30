@@ -35,6 +35,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <stdlib.h>
 #ifdef HAVE_ADT_OWNINGPTR_H
 #include <llvm/ADT/OwningPtr.h>
 #else
@@ -76,6 +77,8 @@
 #include "extract_interface.h"
 #include "generator.h"
 #include "python.h"
+#include "cpp.h"
+#include "cpp_conversion.h"
 
 using namespace std;
 using namespace clang;
@@ -393,6 +396,34 @@ static void set_invocation(CompilerInstance *Clang,
 
 #endif
 
+/* Create an interface generator for the selected language and
+ * then use it to generate the interface.
+ */
+static void generate(MyASTConsumer &consumer)
+{
+	generator *gen;
+
+	if (Language.compare("python") == 0) {
+		gen = new python_generator(consumer.exported_types,
+			consumer.exported_functions, consumer.functions);
+	} else if (Language.compare("cpp") == 0) {
+		gen = new cpp_generator(consumer.exported_types,
+			consumer.exported_functions, consumer.functions);
+	} else if (Language.compare("cpp-checked") == 0) {
+		gen = new cpp_generator(consumer.exported_types,
+			consumer.exported_functions, consumer.functions, true);
+	} else if (Language.compare("cpp-checked-conversion") == 0) {
+		gen = new cpp_conversion_generator(consumer.exported_types,
+			consumer.exported_functions, consumer.functions);
+	} else {
+		cerr << "Language '" << Language << "' not recognized." << endl
+		     << "Not generating bindings." << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	gen->generate();
+}
+
 int main(int argc, char *argv[])
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -445,20 +476,11 @@ int main(int argc, char *argv[])
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
 
-	generator *gen = NULL;
-	if (Language.compare("python") == 0)
-		gen = new python_generator(consumer.exported_types,
-			consumer.exported_functions, consumer.functions);
-	else
-		cerr << "Language '" << Language << "' not recognized." << endl
-		     << "Not generating bindings." << endl;
-
-	if (gen)
-		gen->generate();
+	generate(consumer);
 
 	delete sema;
 	delete Clang;
 	llvm::llvm_shutdown();
 
-	return 0;
+	return EXIT_SUCCESS;
 }
