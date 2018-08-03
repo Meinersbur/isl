@@ -429,6 +429,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_get_ctx_impl(os, clazz);
 	osprintf(os, "\n");
 	print_methods_impl(os, clazz);
+	print_stream_insertion(os, clazz);
 }
 
 /* Print code for throwing an exception corresponding to the last error
@@ -446,6 +447,46 @@ static void print_throw_last_error(ostream &os)
 static void print_throw_NULL_input(ostream &os)
 {
 	osprintf(os, "    exception::throw_NULL_input(__FILE__, __LINE__);\n");
+}
+
+/* Print an operator for inserting objects of "class"
+ * into an output stream.
+ *
+ * Unless checked C++ bindings are being generated,
+ * the operator requires its argument to be non-NULL.
+ * An exception is thrown if anything went wrong during the printing.
+ * During this printing, isl is made not to print any error message
+ * because the error message is included in the exception.
+ *
+ * If checked C++ bindings are being generated and anything went wrong,
+ * then record this failure in the output stream.
+ */
+void cpp_generator::print_stream_insertion(ostream &os, const isl_class &clazz)
+{
+	const char *name = clazz.name.c_str();
+	std::string cppstring = type2cpp(clazz);
+	const char *cppname = cppstring.c_str();
+
+	if (!clazz.fn_to_str)
+		return;
+
+	osprintf(os, "\n");
+	osprintf(os, "inline std::ostream &operator<<(std::ostream &os, ");
+	osprintf(os, "const %s &obj)\n", cppname);
+	osprintf(os, "{\n");
+	print_check_ptr_start(os, clazz, "obj.get()");
+	osprintf(os, "  char *str = %s_to_str(obj.get());\n", name);
+	print_check_ptr_end(os, "str");
+	if (checked) {
+		osprintf(os, "  if (!str) {\n");
+		osprintf(os, "    os.setstate(std::ios_base::badbit);\n");
+		osprintf(os, "    return os;\n");
+		osprintf(os, "  }\n");
+	}
+	osprintf(os, "  os << str;\n");
+	osprintf(os, "  free(str);\n");
+	osprintf(os, "  return os;\n");
+	osprintf(os, "}\n");
 }
 
 /* Print code that checks that "ptr" is not NULL at input.
