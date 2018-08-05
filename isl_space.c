@@ -1024,6 +1024,7 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 {
 	isl_ctx *ctx;
 	isl_id **ids = NULL;
+	unsigned total;
 
 	if (!space)
 		return NULL;
@@ -1036,6 +1037,11 @@ __isl_give isl_space *isl_space_insert_dims(__isl_take isl_space *space,
 			"cannot insert dimensions of specified type",
 			goto error);
 
+	total = isl_space_dim(space, isl_dim_all);
+	if (total + n < total)
+		isl_die(ctx, isl_error_invalid,
+			"overflow in total number of dimensions",
+			return isl_space_free(space));
 	isl_assert(ctx, pos <= isl_space_dim(space, type), goto error);
 
 	space = isl_space_cow(space);
