@@ -3887,11 +3887,10 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 	if (n == 0)
 		return basic_map_space_reset(bmap, type);
 
-	if (!bmap)
-		return NULL;
-
 	res_space = isl_space_insert_dims(isl_basic_map_get_space(bmap),
 					type, pos, n);
+	if (!res_space)
+		return isl_basic_map_free(bmap);
 
 	total = isl_basic_map_total_dim(bmap) + n;
 	dim_map = isl_dim_map_alloc(bmap->ctx, total);
