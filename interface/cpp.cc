@@ -535,7 +535,7 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 	}
 	osprintf(os, "  ptr = obj.copy();\n");
 	if (!checked) {
-		osprintf(os, "  if (obj.ptr && !ptr)\n");
+		osprintf(os, "  if (!ptr)\n");
 		print_throw_last_error(os);
 	}
 	osprintf(os, "}\n");
