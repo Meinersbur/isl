@@ -950,7 +950,6 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	string methodname = method->getName();
 	int num_params = method->getNumParams();
 	QualType return_type = method->getReturnType();
-	string rettype_str = type2cpp(return_type);
 
 	print_method_header(os, clazz, method, false, kind);
 	osprintf(os, "{\n");
@@ -990,7 +989,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 		     (is_isl_bool(return_type) || is_isl_stat(return_type)))) {
 		osprintf(os, "  return manage(res);\n");
 	} else if (is_isl_stat(return_type)) {
-		osprintf(os, "  return %s(res);\n", rettype_str.c_str());
+		osprintf(os, "  return;\n");
 	} else if (is_string(return_type)) {
 		osprintf(os, "  std::string tmp(res);\n");
 		if (gives(method))
