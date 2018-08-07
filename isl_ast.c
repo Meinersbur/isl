@@ -278,13 +278,13 @@ enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)
 	return expr->u.op.op;
 }
 
-int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
+isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
-		return -1;
+		return isl_size_error;
 	if (expr->type != isl_ast_expr_op)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"expression not an operation", return -1);
+			"expression not an operation", return isl_size_error);
 	return expr->u.op.n_arg;
 }
 
@@ -1919,7 +1919,8 @@ static __isl_give isl_printer *print_ast_expr_isl(__isl_take isl_printer *p,
 static __isl_give isl_printer *print_arguments(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_ast_expr_get_op_n_arg(expr);
 	if (n < 0)

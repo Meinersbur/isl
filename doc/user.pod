@@ -10072,7 +10072,7 @@ Each type of expression has its own additional properties.
 	#include <isl/ast.h>
 	enum isl_ast_op_type isl_ast_expr_get_op_type(
 		__isl_keep isl_ast_expr *expr);
-	int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
+	isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
 	__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(
 		__isl_keep isl_ast_expr *expr, int pos);
 	isl_stat isl_ast_expr_foreach_ast_op_type(
