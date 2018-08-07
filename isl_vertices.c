@@ -977,9 +977,9 @@ isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex)
 	return vertex ? isl_vertices_get_ctx(vertex->vertices) : NULL;
 }
 
-int isl_vertex_get_id(__isl_keep isl_vertex *vertex)
+isl_size isl_vertex_get_id(__isl_keep isl_vertex *vertex)
 {
-	return vertex ? vertex->id : -1;
+	return vertex ? vertex->id : isl_size_error;
 }
 
 /* Return the activity domain of the vertex "vertex".

@@ -8211,7 +8211,7 @@ the following.
 
 Vertices can be inspected and destroyed using the following functions.
 
-	int isl_vertex_get_id(__isl_keep isl_vertex *vertex);
+	isl_size isl_vertex_get_id(__isl_keep isl_vertex *vertex);
 	__isl_give isl_basic_set *isl_vertex_get_domain(
 		__isl_keep isl_vertex *vertex);
 	__isl_give isl_multi_aff *isl_vertex_get_expr(
