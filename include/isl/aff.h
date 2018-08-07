@@ -711,7 +711,7 @@ isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_align_params(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_space *model);
 
-int isl_union_pw_multi_aff_n_pw_multi_aff(
+isl_size isl_union_pw_multi_aff_n_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma);
 
 isl_stat isl_union_pw_multi_aff_foreach_pw_multi_aff(
@@ -894,7 +894,7 @@ __isl_constructor
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_pw_aff(
 	__isl_take isl_union_pw_aff *upa);
 
-int isl_union_pw_aff_n_pw_aff(__isl_keep isl_union_pw_aff *upa);
+isl_size isl_union_pw_aff_n_pw_aff(__isl_keep isl_union_pw_aff *upa);
 
 isl_stat isl_union_pw_aff_foreach_pw_aff(__isl_keep isl_union_pw_aff *upa,
 	isl_stat (*fn)(__isl_take isl_pw_aff *pa, void *user), void *user);

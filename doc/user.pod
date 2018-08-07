@@ -3465,13 +3465,13 @@ To iterate over the base expressions in a union expression,
 use the following functions.
 
 	#include <isl/aff.h>
-	int isl_union_pw_aff_n_pw_aff(
+	isl_size isl_union_pw_aff_n_pw_aff(
 		__isl_keep isl_union_pw_aff *upa);
 	isl_stat isl_union_pw_aff_foreach_pw_aff(
 		__isl_keep isl_union_pw_aff *upa,
 		isl_stat (*fn)(__isl_take isl_pw_aff *pa,
 			void *user), void *user);
-	int isl_union_pw_multi_aff_n_pw_multi_aff(
+	isl_size isl_union_pw_multi_aff_n_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma);
 	isl_stat isl_union_pw_multi_aff_foreach_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma,
@@ -3479,13 +3479,13 @@ use the following functions.
 			    void *user), void *user);
 
 	#include <isl/polynomial.h>
-	int isl_union_pw_qpolynomial_n_pw_qpolynomial(
+	isl_size isl_union_pw_qpolynomial_n_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp);
 	isl_stat isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		isl_stat (*fn)(__isl_take isl_pw_qpolynomial *pwqp,
 			    void *user), void *user);
-	int isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
+	isl_size isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	isl_stat isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,

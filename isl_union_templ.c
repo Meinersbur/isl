@@ -990,7 +990,7 @@ static isl_stat FN(UNION,plain_is_equal_entry)(void **entry, void *user)
 isl_bool FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
 {
 	S(UNION,plain_is_equal_data) data = { NULL, isl_bool_true };
-	int n1, n2;
+	isl_size n1, n2;
 
 	if (!u1 || !u2)
 		return isl_bool_error;
@@ -1189,7 +1189,7 @@ static isl_stat FN(UNION,add_to_list)(void **entry, void *user)
  */
 __isl_give LIST(PART) *FN(FN(UNION,get),LIST(BASE))(__isl_keep UNION *u)
 {
-	int n;
+	isl_size n;
 	LIST(PART) *list;
 
 	if (!u)

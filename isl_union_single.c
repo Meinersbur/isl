@@ -29,9 +29,9 @@ struct UNION {
 
 /* Return the number of base expressions in "u".
  */
-int FN(FN(UNION,n),BASE)(__isl_keep UNION *u)
+isl_size FN(FN(UNION,n),BASE)(__isl_keep UNION *u)
 {
-	return u ? u->table.n : 0;
+	return u ? u->table.n : isl_size_error;
 }
 
 S(UNION,foreach_data)

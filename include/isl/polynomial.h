@@ -578,7 +578,7 @@ __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_align_params(
 	__isl_take isl_union_pw_qpolynomial *upwqp,
 	__isl_take isl_space *model);
 
-int isl_union_pw_qpolynomial_n_pw_qpolynomial(
+isl_size isl_union_pw_qpolynomial_n_pw_qpolynomial(
 	__isl_keep isl_union_pw_qpolynomial *upwqp);
 isl_stat isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
 	__isl_keep isl_union_pw_qpolynomial *upwqp,
@@ -683,7 +683,7 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_fold_align_pa
 	__isl_take isl_union_pw_qpolynomial_fold *upwf,
 	__isl_take isl_space *model);
 
-int isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
+isl_size isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 isl_stat isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf,
