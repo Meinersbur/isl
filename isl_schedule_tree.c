@@ -714,12 +714,16 @@ int isl_schedule_tree_has_children(__isl_keep isl_schedule_tree *tree)
 }
 
 /* Return the number of children of "tree", excluding implicit leaves.
+ * The "children" field is NULL if there are
+ * no children (except for the implicit leaves).
  */
 int isl_schedule_tree_n_children(__isl_keep isl_schedule_tree *tree)
 {
 	if (!tree)
 		return -1;
 
+	if (!tree->children)
+		return 0;
 	return isl_schedule_tree_list_n_schedule_tree(tree->children);
 }
 
