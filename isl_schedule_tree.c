@@ -1546,10 +1546,12 @@ static isl_stat set_range_dim(__isl_take isl_map *map, void *user)
 static isl_size range_dim(__isl_keep isl_union_map *umap)
 {
 	isl_size dim = isl_size_error;
+	isl_size n;
 
-	if (!umap)
+	n = isl_union_map_n_map(umap);
+	if (n < 0)
 		return isl_size_error;
-	if (isl_union_map_n_map(umap) == 0)
+	if (n == 0)
 		isl_die(isl_union_map_get_ctx(umap), isl_error_internal,
 			"unexpected empty input", return isl_size_error);
 

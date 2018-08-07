@@ -2289,8 +2289,8 @@ of these calls returns false.
 The number of sets or maps in a union set or map can be obtained
 from
 
-	int isl_union_set_n_set(__isl_keep isl_union_set *uset);
-	int isl_union_map_n_map(__isl_keep isl_union_map *umap);
+	isl_size isl_union_set_n_set(__isl_keep isl_union_set *uset);
+	isl_size isl_union_map_n_map(__isl_keep isl_union_map *umap);
 
 To extract the set or map in a given space from a union, use
 

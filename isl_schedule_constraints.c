@@ -740,13 +740,19 @@ int isl_schedule_constraints_n_basic_map(
 
 /* Return the total number of isl_maps in the constraints of "sc".
  */
-int isl_schedule_constraints_n_map(__isl_keep isl_schedule_constraints *sc)
+isl_size isl_schedule_constraints_n_map(__isl_keep isl_schedule_constraints *sc)
 {
 	enum isl_edge_type i;
 	int n = 0;
 
-	for (i = isl_edge_first; i <= isl_edge_last; ++i)
-		n += isl_union_map_n_map(sc->constraint[i]);
+	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
+		isl_size n_i;
+
+		n_i = isl_union_map_n_map(sc->constraint[i]);
+		if (n_i < 0)
+			return isl_size_error;
+		n += n_i;
+	}
 
 	return n;
 }

@@ -2831,6 +2831,7 @@ static isl_bool count_sink_source(__isl_keep isl_schedule_node *node,
 	isl_union_set *domain;
 	isl_union_map *umap;
 	isl_bool r = isl_bool_false;
+	isl_size n;
 
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_leaf)
 		return isl_bool_true;
@@ -2839,23 +2840,23 @@ static isl_bool count_sink_source(__isl_keep isl_schedule_node *node,
 
 	umap = isl_union_map_copy(data->access->access[isl_access_sink]);
 	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(domain));
-	data->n_sink += isl_union_map_n_map(umap);
+	data->n_sink += n = isl_union_map_n_map(umap);
 	isl_union_map_free(umap);
-	if (!umap)
+	if (n < 0)
 		r = isl_bool_error;
 
 	umap = isl_union_map_copy(data->access->access[isl_access_must_source]);
 	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(domain));
-	data->n_source += isl_union_map_n_map(umap);
+	data->n_source += n = isl_union_map_n_map(umap);
 	isl_union_map_free(umap);
-	if (!umap)
+	if (n < 0)
 		r = isl_bool_error;
 
 	umap = isl_union_map_copy(data->access->access[isl_access_may_source]);
 	umap = isl_union_map_intersect_domain(umap, isl_union_set_copy(domain));
-	data->n_source += isl_union_map_n_map(umap);
+	data->n_source += n = isl_union_map_n_map(umap);
 	isl_union_map_free(umap);
-	if (!umap)
+	if (n < 0)
 		r = isl_bool_error;
 
 	isl_union_set_free(domain);

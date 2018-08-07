@@ -3865,6 +3865,7 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	isl_schedule_constraints *sc;
 	isl_schedule *sched;
 	int is_nonneg, is_parallel, is_tilable, is_injection, is_complete;
+	isl_size n;
 
 	D = isl_union_set_read_from_str(ctx, d);
 	W = isl_union_map_read_from_str(ctx, w);
@@ -3915,7 +3916,12 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	test = isl_union_map_apply_range(test, schedule);
 
 	delta = isl_union_map_deltas(test);
-	if (isl_union_set_n_set(delta) == 0) {
+	n = isl_union_set_n_set(delta);
+	if (n < 0) {
+		isl_union_set_free(delta);
+		return -1;
+	}
+	if (n == 0) {
 		is_tilable = 1;
 		is_parallel = 1;
 		is_nonneg = 1;
@@ -8041,6 +8047,7 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 	isl_union_set *uset;
 	isl_set *set;
 	isl_bool empty;
+	isl_size n;
 	char name[] = "d0";
 
 	ctx = isl_ast_build_get_ctx(build);
@@ -8058,10 +8065,11 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 
 	schedule = isl_ast_build_get_schedule(build);
 	uset = isl_union_map_range(schedule);
-	if (!uset)
-		return NULL;
-	if (isl_union_set_n_set(uset) != 1) {
+	n = isl_union_set_n_set(uset);
+	if (n != 1) {
 		isl_union_set_free(uset);
+		if (n < 0)
+			return NULL;
 		isl_die(ctx, isl_error_unknown,
 			"expecting single range space", return NULL);
 	}

@@ -4723,13 +4723,16 @@ static __isl_give isl_ast_graft_list *generate_components(
 {
 	int i;
 	isl_ctx *ctx = isl_ast_build_get_ctx(build);
-	int n = isl_union_map_n_map(executed);
+	isl_size n = isl_union_map_n_map(executed);
 	struct isl_any_scheduled_after_data data;
 	struct isl_set_map_pair *next;
 	struct isl_tarjan_graph *g = NULL;
 	isl_ast_graft_list *list = NULL;
 	int n_domain = 0;
 
+	data.domain = NULL;
+	if (n < 0)
+		goto error;
 	data.domain = isl_calloc_array(ctx, struct isl_set_map_pair, n);
 	if (!data.domain)
 		goto error;
@@ -4804,6 +4807,7 @@ static __isl_give isl_ast_graft_list *generate_next_level(
 {
 	int depth;
 	isl_size dim;
+	isl_size n;
 
 	if (!build || !executed)
 		goto error;
@@ -4822,7 +4826,10 @@ static __isl_give isl_ast_graft_list *generate_next_level(
 	if (depth >= dim)
 		return generate_inner_level(executed, build);
 
-	if (isl_union_map_n_map(executed) == 1)
+	n = isl_union_map_n_map(executed);
+	if (n < 0)
+		goto error;
+	if (n == 1)
 		return generate_shifted_component(executed, build);
 
 	return generate_components(executed, build);

@@ -2923,13 +2923,13 @@ static __isl_give isl_union_map *deltas_map(__isl_take isl_space *dim)
 __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
 	int *exact)
 {
-	int n;
+	isl_size n;
 	isl_union_map *inc;
 	isl_union_map *dm;
 
-	if (!umap)
-		return NULL;
 	n = isl_union_map_n_map(umap);
+	if (n < 0)
+		return isl_union_map_free(umap);
 	if (n == 0)
 		return umap;
 	if (n == 1) {
