@@ -54,14 +54,14 @@ isl_stat isl_val_get_abs_num_chunks(__isl_keep isl_val *v, size_t size,
 /* Return the number of chunks of size "size" required to
  * store the absolute value of the numerator of "v".
  */
-size_t isl_val_n_abs_num_chunks(__isl_keep isl_val *v, size_t size)
+isl_size isl_val_n_abs_num_chunks(__isl_keep isl_val *v, size_t size)
 {
 	if (!v)
-		return 0;
+		return isl_size_error;
 
 	if (!isl_val_is_rat(v))
 		isl_die(isl_val_get_ctx(v), isl_error_invalid,
-			"expecting rational value", return 0);
+			"expecting rational value", return isl_size_error);
 
 	size *= 8;
 	return (isl_sioimath_sizeinbase(*v->n, 2) + size - 1) / size;
