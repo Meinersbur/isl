@@ -634,7 +634,7 @@ static __isl_give isl_printer *print_mod(__isl_take isl_printer *p,
  * with explicit representation and "c" needs to be a multiple
  * of the denominator of the integer division.
  */
-static int print_as_modulo_pos(__isl_keep isl_printer *p,
+static isl_size print_as_modulo_pos(__isl_keep isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div, unsigned pos,
 	isl_int c)
 {
@@ -644,7 +644,7 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 
 	n_div = isl_mat_rows(div);
 	if (!p || !space || n_div < 0)
-		return -1;
+		return isl_size_error;
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
 	if (pos2type(space, &type, &pos) < 0)
@@ -653,7 +653,7 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 		return n_div;
 	can_print = can_print_div_expr(p, div, pos);
 	if (can_print < 0)
-		return -1;
+		return isl_size_error;
 	if (!can_print)
 		return n_div;
 	if (!isl_int_is_divisible_by(c, div->row[pos][0]))
@@ -716,7 +716,7 @@ static __isl_give isl_printer *print_eq_constraint(__isl_take isl_printer *p,
 	int last, int latex)
 {
 	isl_size n_div;
-	int div_pos;
+	isl_size div_pos;
 
 	n_div = isl_mat_rows(div);
 	div_pos = print_as_modulo_pos(p, space, div, last, c[last]);
