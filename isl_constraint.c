@@ -185,10 +185,10 @@ __isl_null isl_constraint *isl_constraint_free(__isl_take isl_constraint *c)
  * number of times isl_basic_map_foreach_constraint will
  * call the callback.
  */
-int isl_basic_map_n_constraint(__isl_keep isl_basic_map *bmap)
+isl_size isl_basic_map_n_constraint(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_size_error;
 
 	return bmap->n_eq + bmap->n_ineq;
 }
@@ -197,7 +197,7 @@ int isl_basic_map_n_constraint(__isl_keep isl_basic_map *bmap)
  * number of times isl_basic_set_foreach_constraint will
  * call the callback.
  */
-int isl_basic_set_n_constraint(__isl_keep isl_basic_set *bset)
+isl_size isl_basic_set_n_constraint(__isl_keep isl_basic_set *bset)
 {
 	return isl_basic_map_n_constraint(bset);
 }
@@ -268,7 +268,7 @@ static isl_stat collect_constraint(__isl_take isl_constraint *constraint,
 __isl_give isl_constraint_list *isl_basic_map_get_constraint_list(
 	__isl_keep isl_basic_map *bmap)
 {
-	int n;
+	isl_size n;
 	isl_bool known;
 	isl_ctx *ctx;
 	isl_constraint_list *list;
@@ -282,6 +282,8 @@ __isl_give isl_constraint_list *isl_basic_map_get_constraint_list(
 			"input involves unknown divs", return NULL);
 
 	n = isl_basic_map_n_constraint(bmap);
+	if (n < 0)
+		return NULL;
 	list = isl_constraint_list_alloc(ctx, n);
 	if (isl_basic_map_foreach_constraint(bmap,
 					    &collect_constraint, &list) < 0)

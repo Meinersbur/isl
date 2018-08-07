@@ -39,8 +39,8 @@ __isl_give isl_constraint *isl_inequality_alloc(__isl_take isl_local_space *ls);
 struct isl_constraint *isl_constraint_copy(struct isl_constraint *c);
 __isl_null isl_constraint *isl_constraint_free(__isl_take isl_constraint *c);
 
-int isl_basic_map_n_constraint(__isl_keep isl_basic_map *bmap);
-int isl_basic_set_n_constraint(__isl_keep isl_basic_set *bset);
+isl_size isl_basic_map_n_constraint(__isl_keep isl_basic_map *bmap);
+isl_size isl_basic_set_n_constraint(__isl_keep isl_basic_set *bset);
 isl_stat isl_basic_map_foreach_constraint(__isl_keep isl_basic_map *bmap,
 	isl_stat (*fn)(__isl_take isl_constraint *c, void *user), void *user);
 isl_stat isl_basic_set_foreach_constraint(__isl_keep isl_basic_set *bset,

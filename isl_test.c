@@ -3743,7 +3743,7 @@ static int test_subtract(isl_ctx *ctx)
  */
 static int test_intersect_1(isl_ctx *ctx)
 {
-	int n1, n2;
+	isl_size n1, n2;
 	isl_basic_set *bset1, *bset2;
 
 	bset1 = isl_basic_set_read_from_str(ctx, "{ [a,b,c] : 1 = 0 }");
@@ -3752,7 +3752,7 @@ static int test_intersect_1(isl_ctx *ctx)
 	bset1 = isl_basic_set_intersect(bset1, bset2);
 	n2 = isl_basic_set_n_constraint(bset1);
 	isl_basic_set_free(bset1);
-	if (!bset1)
+	if (n1 < 0 || n2 < 0)
 		return -1;
 	if (n1 != n2)
 		isl_die(ctx, isl_error_unknown,
