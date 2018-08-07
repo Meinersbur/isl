@@ -966,22 +966,23 @@ isl_bool isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node)
 
 /* Return the position of "node" among the children of its parent.
  */
-int isl_schedule_node_get_child_position(__isl_keep isl_schedule_node *node)
+isl_size isl_schedule_node_get_child_position(
+	__isl_keep isl_schedule_node *node)
 {
-	int n;
+	isl_size n;
 	isl_bool has_parent;
 
 	if (!node)
-		return -1;
+		return isl_size_error;
 	has_parent = isl_schedule_node_has_parent(node);
 	if (has_parent < 0)
-		return -1;
+		return isl_size_error;
 	if (!has_parent)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"node has no parent", return -1);
+			"node has no parent", return isl_size_error);
 
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
-	return n < 0 ? -1 : node->child_pos[n - 1];
+	return n < 0 ? isl_size_error : node->child_pos[n - 1];
 }
 
 /* Does the parent (if any) of "node" have any children with a smaller child
@@ -4165,12 +4166,14 @@ static int is_disjoint_extension(__isl_keep isl_schedule_node *node,
 static __isl_give isl_schedule_node *extend_extension(
 	__isl_take isl_schedule_node *node, __isl_take isl_union_map *extension)
 {
-	int pos;
+	isl_size pos;
 	isl_bool disjoint;
 	isl_union_map *node_extension;
 
 	node = isl_schedule_node_parent(node);
 	pos = isl_schedule_node_get_child_position(node);
+	if (pos < 0)
+		node = isl_schedule_node_free(node);
 	node = isl_schedule_node_parent(node);
 	node = isl_schedule_node_parent(node);
 	node_extension = isl_schedule_node_extension_get_extension(node);
@@ -4290,11 +4293,13 @@ static __isl_give isl_schedule_node *graft_or_splice(
 	__isl_take isl_schedule_node *node, __isl_take isl_schedule_tree *tree,
 	int tree_pos)
 {
-	int pos;
+	isl_size pos;
 
 	if (isl_schedule_node_get_parent_type(node) ==
 	    isl_schedule_node_sequence) {
 		pos = isl_schedule_node_get_child_position(node);
+		if (pos < 0)
+			node = isl_schedule_node_free(node);
 		node = isl_schedule_node_parent(node);
 		node = isl_schedule_node_sequence_splice(node, pos, tree);
 	} else {
