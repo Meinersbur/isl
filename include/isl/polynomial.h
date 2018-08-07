@@ -111,7 +111,7 @@ __isl_null isl_term *isl_term_free(__isl_take isl_term *term);
 
 isl_size isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type);
 __isl_give isl_val *isl_term_get_coefficient_val(__isl_keep isl_term *term);
-int isl_term_get_exp(__isl_keep isl_term *term,
+isl_size isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos);
 

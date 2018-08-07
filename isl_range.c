@@ -199,6 +199,7 @@ static isl_stat collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 	int sign;
 	isl_size nparam;
 	isl_size nvar;
+	isl_size exp;
 
 	nparam = isl_term_dim(term, isl_dim_param);
 	nvar = isl_term_dim(term, isl_dim_set);
@@ -213,13 +214,19 @@ static isl_stat collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 	for (i = 0; i < nparam; ++i) {
 		if (data->signs[i] > 0)
 			continue;
-		if (isl_term_get_exp(term, isl_dim_param, i) % 2)
+		exp = isl_term_get_exp(term, isl_dim_param, i);
+		if (exp < 0)
+			return isl_stat_error;
+		if (exp % 2)
 			sign = -sign;
 	}
 	for (i = 0; i < nvar; ++i) {
 		if (data->signs[nparam + i] > 0)
 			continue;
-		if (isl_term_get_exp(term, isl_dim_set, i) % 2)
+		exp = isl_term_get_exp(term, isl_dim_set, i);
+		if (exp < 0)
+			return isl_stat_error;
+		if (exp % 2)
 			sign = -sign;
 	}
 

@@ -4046,16 +4046,16 @@ __isl_give isl_val *isl_term_get_coefficient_val(__isl_keep isl_term *term)
 static
 #include "check_type_range_templ.c"
 
-int isl_term_get_exp(__isl_keep isl_term *term,
+isl_size isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos)
 {
 	int offset;
 
 	if (isl_term_check_range(term, type, pos, 1) < 0)
-		return -1;
+		return isl_size_error;
 	offset = isl_term_offset(term, type);
 	if (offset < 0)
-		return -1;
+		return isl_size_error;
 
 	return term->pow[offset + pos];
 }
