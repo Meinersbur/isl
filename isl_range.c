@@ -203,10 +203,10 @@ static isl_stat collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 	nvar = isl_term_dim(term, isl_dim_set);
 
 	isl_int_init(n);
-
 	isl_term_get_num(term, &n);
-
 	sign = isl_int_sgn(n);
+	isl_int_clear(n);
+
 	for (i = 0; i < nparam; ++i) {
 		if (data->signs[i] > 0)
 			continue;
@@ -226,8 +226,6 @@ static isl_stat collect_fixed_sign_terms(__isl_take isl_term *term, void *user)
 		data->poly = isl_qpolynomial_add(data->poly, t);
 	} else
 		isl_term_free(term);
-
-	isl_int_clear(n);
 
 	return isl_stat_ok;
 }
