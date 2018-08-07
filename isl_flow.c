@@ -2984,12 +2984,16 @@ static int before_node(void *first, void *second)
 
 	depth = isl_schedule_node_get_schedule_depth(shared);
 	if (isl_schedule_node_get_type(shared) == isl_schedule_node_sequence) {
-		int pos1, pos2;
+		isl_size pos1, pos2;
 
 		pos1 = isl_schedule_node_get_ancestor_child_position(node1,
 								    shared);
 		pos2 = isl_schedule_node_get_ancestor_child_position(node2,
 								    shared);
+		if (pos1 < 0 || pos2 < 0) {
+			isl_schedule_node_free(shared);
+			return -1;
+		}
 		before = pos1 < pos2;
 	}
 

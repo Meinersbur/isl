@@ -58,7 +58,7 @@ isl_bool isl_schedule_node_has_next_sibling(__isl_keep isl_schedule_node *node);
 isl_size isl_schedule_node_n_children(__isl_keep isl_schedule_node *node);
 isl_size isl_schedule_node_get_child_position(
 	__isl_keep isl_schedule_node *node);
-int isl_schedule_node_get_ancestor_child_position(
+isl_size isl_schedule_node_get_ancestor_child_position(
 	__isl_keep isl_schedule_node *node,
 	__isl_keep isl_schedule_node *ancestor);
 __isl_give isl_schedule_node *isl_schedule_node_get_child(

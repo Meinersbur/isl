@@ -4761,9 +4761,9 @@ __isl_give isl_schedule_node *isl_schedule_node_expand(
  * of "ancestor".  "node" is assumed to be a descendant of "ancestor".
  * In particular, both nodes should point to the same schedule tree.
  *
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-int isl_schedule_node_get_ancestor_child_position(
+isl_size isl_schedule_node_get_ancestor_child_position(
 	__isl_keep isl_schedule_node *node,
 	__isl_keep isl_schedule_node *ancestor)
 {
@@ -4777,16 +4777,16 @@ int isl_schedule_node_get_ancestor_child_position(
 
 	if (node->schedule != ancestor->schedule)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a descendant", return -1);
+			"not a descendant", return isl_size_error);
 
 	if (n1 >= n2)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a descendant", return -1);
+			"not a descendant", return isl_size_error);
 	tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors, n1);
 	isl_schedule_tree_free(tree);
 	if (tree != ancestor->tree)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a descendant", return -1);
+			"not a descendant", return isl_size_error);
 
 	return node->child_pos[n1];
 }
