@@ -2211,14 +2211,14 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 static __isl_give isl_vec *ineq_for_div(__isl_keep isl_basic_map *bmap,
 	unsigned div)
 {
-	unsigned total;
+	isl_size total;
 	unsigned div_pos;
 	struct isl_vec *ineq;
 
-	if (!bmap)
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
 		return NULL;
 
-	total = isl_basic_map_total_dim(bmap);
 	div_pos = 1 + total - bmap->n_div + div;
 
 	ineq = isl_vec_alloc(bmap->ctx, 1 + total);
@@ -2248,11 +2248,13 @@ static __isl_give isl_vec *ineq_for_div(__isl_keep isl_basic_map *bmap,
 static isl_stat add_div_constraints(struct isl_tab *tab, unsigned div,
 	isl_stat (*add_ineq)(void *user, isl_int *), void *user)
 {
-	unsigned total;
+	isl_size total;
 	unsigned div_pos;
 	struct isl_vec *ineq;
 
-	total = isl_basic_map_total_dim(tab->bmap);
+	total = isl_basic_map_dim(tab->bmap, isl_dim_all);
+	if (total < 0)
+		return isl_stat_error;
 	div_pos = 1 + total - tab->bmap->n_div + div;
 
 	ineq = ineq_for_div(tab->bmap, div);
@@ -2332,7 +2334,8 @@ int isl_tab_insert_div(struct isl_tab *tab, int pos, __isl_keep isl_vec *div,
 {
 	int r;
 	int nonneg;
-	int n_div, o_div;
+	isl_size n_div;
+	int o_div;
 
 	if (!tab || !div)
 		return -1;
@@ -2341,8 +2344,9 @@ int isl_tab_insert_div(struct isl_tab *tab, int pos, __isl_keep isl_vec *div,
 		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
 			"unexpected size", return -1);
 
-	isl_assert(tab->mat->ctx, tab->bmap, return -1);
 	n_div = isl_basic_map_dim(tab->bmap, isl_dim_div);
+	if (n_div < 0)
+		return -1;
 	o_div = tab->n_var - n_div;
 	if (pos < o_div || pos > tab->n_var)
 		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
@@ -2393,12 +2397,12 @@ __isl_give struct isl_tab *isl_tab_from_basic_map(
 {
 	int i;
 	struct isl_tab *tab;
+	isl_size total;
 
-	if (!bmap)
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
 		return NULL;
-	tab = isl_tab_alloc(bmap->ctx,
-			    isl_basic_map_total_dim(bmap) + bmap->n_ineq + 1,
-			    isl_basic_map_total_dim(bmap), 0);
+	tab = isl_tab_alloc(bmap->ctx, total + bmap->n_ineq + 1, total, 0);
 	if (!tab)
 		return NULL;
 	tab->preserve = track;
@@ -2442,14 +2446,16 @@ struct isl_tab *isl_tab_from_recession_cone(__isl_keep isl_basic_set *bset,
 	isl_int cst;
 	int i;
 	struct isl_tab *tab;
-	unsigned offset = 0;
+	isl_size offset = 0;
+	isl_size total;
 
-	if (!bset)
-		return NULL;
+	total = isl_basic_set_dim(bset, isl_dim_all);
 	if (parametric)
 		offset = isl_basic_set_dim(bset, isl_dim_param);
+	if (total < 0 || offset < 0)
+		return NULL;
 	tab = isl_tab_alloc(bset->ctx, bset->n_eq + bset->n_ineq,
-				isl_basic_set_total_dim(bset) - offset, 0);
+				total - offset, 0);
 	if (!tab)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL);
@@ -3760,8 +3766,12 @@ isl_stat isl_tab_restore_redundant(struct isl_tab *tab)
 static isl_stat drop_bmap_div(struct isl_tab *tab, int pos)
 {
 	int off;
+	isl_size n_div;
 
-	off = tab->n_var - isl_basic_map_dim(tab->bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(tab->bmap, isl_dim_div);
+	if (n_div < 0)
+		return isl_stat_error;
+	off = tab->n_var - n_div;
 	if (isl_basic_map_drop_div(tab->bmap, pos - off) < 0)
 		return isl_stat_error;
 	if (tab->samples) {

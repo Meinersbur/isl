@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+isl_size isl_union_map_dim(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type);
 isl_bool isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type, unsigned first, unsigned n);

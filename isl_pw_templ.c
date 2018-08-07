@@ -1281,9 +1281,11 @@ error:
 __isl_give PW *FN(PW,project_domain_on_params)(__isl_take PW *pw)
 {
 	isl_space *space;
-	unsigned n;
+	isl_size n;
 
 	n = FN(PW,dim)(pw, isl_dim_in);
+	if (n < 0)
+		return FN(PW,free)(pw);
 	pw = FN(PW,project_out)(pw, isl_dim_in, 0, n);
 	space = FN(PW,get_domain_space)(pw);
 	space = isl_space_params(space);
@@ -1295,12 +1297,16 @@ __isl_give PW *FN(PW,project_domain_on_params)(__isl_take PW *pw)
  */
 __isl_give PW *FN(PW,drop_unused_params)(__isl_take PW *pw)
 {
+	isl_size n;
 	int i;
 
 	if (FN(PW,check_named_params)(pw) < 0)
 		return FN(PW,free)(pw);
 
-	for (i = FN(PW,dim)(pw, isl_dim_param) - 1; i >= 0; i--) {
+	n = FN(PW,dim)(pw, isl_dim_param);
+	if (n < 0)
+		return FN(PW,free)(pw);
+	for (i = n - 1; i >= 0; i--) {
 		isl_bool involves;
 
 		involves = FN(PW,involves_dims)(pw, isl_dim_param, i, 1);
@@ -1397,7 +1403,7 @@ error:
 	return FN(PW,free)(pw);
 }
 
-unsigned FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
+isl_size FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
 {
 	return isl_space_dim(FN(PW,peek_space)(pw), type);
 }

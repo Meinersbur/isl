@@ -17,7 +17,8 @@
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),identity)(__isl_take isl_space *space)
 {
-	int i, n;
+	int i;
+	isl_size n_in, n_out;
 	isl_local_space *ls;
 	MULTI(BASE) *multi;
 
@@ -28,15 +29,18 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),identity)(__isl_take isl_space *space)
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"expecting map space", goto error);
 
-	n = isl_space_dim(space, isl_dim_out);
-	if (n != isl_space_dim(space, isl_dim_in))
+	n_in = isl_space_dim(space, isl_dim_in);
+	n_out = isl_space_dim(space, isl_dim_out);
+	if (n_in < 0 || n_out < 0)
+		goto error;
+	if (n_in != n_out)
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"number of input and output dimensions needs to be "
 			"the same", goto error);
 
 	multi = FN(MULTI(BASE),alloc)(isl_space_copy(space));
 
-	if (!n) {
+	if (!n_out) {
 		isl_space_free(space);
 		return multi;
 	}
@@ -44,7 +48,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),identity)(__isl_take isl_space *space)
 	space = isl_space_domain(space);
 	ls = isl_local_space_from_space(space);
 
-	for (i = 0; i < n; ++i) {
+	for (i = 0; i < n_out; ++i) {
 		EL *el;
 		el = FN(EL,var_on_domain)(isl_local_space_copy(ls),
 						isl_dim_set, i);

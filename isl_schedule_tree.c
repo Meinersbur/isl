@@ -1529,7 +1529,7 @@ __isl_give isl_id *isl_schedule_tree_mark_get_id(
  */
 static isl_stat set_range_dim(__isl_take isl_map *map, void *user)
 {
-	int *dim = user;
+	isl_size *dim = user;
 
 	*dim = isl_map_dim(map, isl_dim_out);
 	isl_map_free(map);
@@ -1543,15 +1543,15 @@ static isl_stat set_range_dim(__isl_take isl_map *map, void *user)
  *
  * We extract the range dimension from the first map in "umap".
  */
-static int range_dim(__isl_keep isl_union_map *umap)
+static isl_size range_dim(__isl_keep isl_union_map *umap)
 {
-	int dim = -1;
+	isl_size dim = isl_size_error;
 
 	if (!umap)
-		return -1;
+		return isl_size_error;
 	if (isl_union_map_n_map(umap) == 0)
 		isl_die(isl_union_map_get_ctx(umap), isl_error_internal,
-			"unexpected empty input", return -1);
+			"unexpected empty input", return isl_size_error);
 
 	isl_union_map_foreach_map(umap, &set_range_dim, &dim);
 
@@ -1717,7 +1717,7 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	__isl_keep isl_schedule_tree *tree, __isl_take isl_union_map *outer)
 {
 	int i, n;
-	int dim;
+	isl_size dim;
 	int separate;
 	isl_ctx *ctx;
 	isl_val *v = NULL;
@@ -1747,13 +1747,15 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	mv = isl_multi_val_zero(space);
 
 	dim = isl_multi_val_dim(mv, isl_dim_set);
+	if (dim < 0)
+		umap = isl_union_map_free(umap);
 	for (i = 0; i < n; ++i) {
 		isl_multi_val *mv_copy;
 		isl_union_pw_multi_aff *upma;
 		isl_union_map *umap_i;
 		isl_union_set *dom;
 		isl_schedule_tree *child;
-		int dim_i;
+		isl_size dim_i;
 		isl_bool empty;
 
 		child = isl_schedule_tree_list_get_schedule_tree(

@@ -84,7 +84,7 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	__isl_take isl_mat *Q, __isl_take isl_mat *U, int n, int *len)
 {
 	int i;
-	unsigned nvar;
+	isl_size nvar;
 	unsigned ovar;
 	isl_space *space;
 	isl_basic_set *dom;
@@ -93,7 +93,8 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	isl_factorizer *f;
 	isl_mat *id;
 
-	if (!bset || !Q || !U)
+	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0 || !Q || !U)
 		goto error;
 
 	ovar = 1 + isl_space_offset(bset->dim, isl_dim_set);
@@ -101,7 +102,6 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	Q = isl_mat_diagonal(isl_mat_copy(id), Q);
 	U = isl_mat_diagonal(id, U);
 
-	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	space = isl_basic_set_get_space(bset);
 	dom = isl_basic_set_universe(isl_space_copy(space));
 	space = isl_space_drop_dims(space, isl_dim_set, 0, nvar);
@@ -258,14 +258,14 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 {
 	int i, j, n, done;
 	isl_mat *H, *U, *Q;
-	unsigned nvar;
+	isl_size nvar;
 	struct isl_factor_groups g = { 0 };
 	isl_factorizer *f;
 
-	if (isl_basic_set_check_no_locals(bset) < 0)
+	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0 || isl_basic_set_check_no_locals(bset) < 0)
 		return NULL;
 
-	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	if (nvar <= 1)
 		return isl_factorizer_identity(bset);
 

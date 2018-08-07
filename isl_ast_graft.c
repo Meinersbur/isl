@@ -107,6 +107,7 @@ static isl_bool equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 {
 	int i, n;
 	int depth;
+	isl_size dim;
 	isl_ast_graft *graft_0;
 	isl_bool equal = isl_bool_true;
 	isl_bool skip;
@@ -116,7 +117,10 @@ static isl_bool equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 		return isl_bool_error;
 
 	depth = isl_ast_build_get_depth(build);
-	if (isl_set_dim(graft_0->guard, isl_dim_set) <= depth)
+	dim = isl_set_dim(graft_0->guard, isl_dim_set);
+	if (dim < 0)
+		return isl_bool_error;
+	if (dim <= depth)
 		skip = isl_bool_false;
 	else
 		skip = isl_set_involves_dims(graft_0->guard,
@@ -152,9 +156,13 @@ static __isl_give isl_set *hoist_guard(__isl_take isl_set *guard,
 	__isl_keep isl_ast_build *build)
 {
 	int depth;
+	isl_size dim;
 
 	depth = isl_ast_build_get_depth(build);
-	if (depth < isl_set_dim(guard, isl_dim_set)) {
+	dim = isl_set_dim(guard, isl_dim_set);
+	if (dim < 0)
+		return isl_set_free(guard);
+	if (depth < dim) {
 		guard = isl_set_remove_divs_involving_dims(guard,
 						isl_dim_set, depth, 1);
 		guard = isl_set_eliminate(guard, isl_dim_set, depth, 1);
@@ -389,10 +397,14 @@ static __isl_give isl_basic_set *update_enforced(
 	__isl_take isl_basic_set *enforced, __isl_keep isl_ast_graft *graft,
 	int depth)
 {
+	isl_size dim;
 	isl_basic_set *enforced_g;
 
 	enforced_g = isl_ast_graft_get_enforced(graft);
-	if (depth < isl_basic_set_dim(enforced_g, isl_dim_set))
+	dim = isl_basic_set_dim(enforced_g, isl_dim_set);
+	if (dim < 0)
+		enforced_g = isl_basic_set_free(enforced_g);
+	if (depth < dim)
 		enforced_g = isl_basic_set_eliminate(enforced_g,
 							isl_dim_set, depth, 1);
 	enforced_g = isl_basic_set_remove_unknown_divs(enforced_g);

@@ -82,7 +82,7 @@ __isl_give isl_space *isl_constraint_get_space(
 	__isl_keep isl_constraint *constraint);
 __isl_give isl_local_space *isl_constraint_get_local_space(
 	__isl_keep isl_constraint *constraint);
-int isl_constraint_dim(__isl_keep isl_constraint *constraint,
+isl_size isl_constraint_dim(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type);
 
 isl_bool isl_constraint_involves_dims(__isl_keep isl_constraint *constraint,

@@ -30,11 +30,11 @@
 extern "C" {
 #endif
 
-unsigned isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap);
-unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
+isl_size isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap);
+isl_size isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 				enum isl_dim_type type);
 
-unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
+isl_size isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
 isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map);

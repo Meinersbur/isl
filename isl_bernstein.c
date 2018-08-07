@@ -40,12 +40,14 @@ struct bernstein_data {
 
 static isl_bool vertex_is_integral(__isl_keep isl_basic_set *vertex)
 {
-	unsigned nvar;
-	unsigned nparam;
+	isl_size nvar;
+	isl_size nparam;
 	int i;
 
 	nvar = isl_basic_set_dim(vertex, isl_dim_set);
 	nparam = isl_basic_set_dim(vertex, isl_dim_param);
+	if (nvar < 0 || nparam < 0)
+		return isl_bool_error;
 	for (i = 0; i < nvar; ++i) {
 		int r = nvar - 1 - i;
 		if (!isl_int_is_one(vertex->eq[r][1 + nparam + i]) &&
@@ -59,23 +61,27 @@ static isl_bool vertex_is_integral(__isl_keep isl_basic_set *vertex)
 static __isl_give isl_qpolynomial *vertex_coordinate(
 	__isl_keep isl_basic_set *vertex, int i, __isl_take isl_space *space)
 {
-	unsigned nvar;
-	unsigned nparam;
+	isl_size nvar;
+	isl_size nparam;
+	isl_size total;
 	int r;
 	isl_int denom;
 	isl_qpolynomial *v;
 
+	isl_int_init(denom);
+
 	nvar = isl_basic_set_dim(vertex, isl_dim_set);
 	nparam = isl_basic_set_dim(vertex, isl_dim_param);
+	total = isl_basic_set_dim(vertex, isl_dim_all);
+	if (nvar < 0 || nparam < 0 || total < 0)
+		goto error;
 	r = nvar - 1 - i;
 
-	isl_int_init(denom);
 	isl_int_set(denom, vertex->eq[r][1 + nparam + i]);
 	isl_assert(vertex->ctx, !isl_int_is_zero(denom), goto error);
 
 	if (isl_int_is_pos(denom))
-		isl_seq_neg(vertex->eq[r], vertex->eq[r],
-				1 + isl_basic_set_total_dim(vertex));
+		isl_seq_neg(vertex->eq[r], vertex->eq[r], 1 + total);
 	else
 		isl_int_neg(denom, denom);
 
@@ -148,18 +154,18 @@ static isl_stat extract_coefficients(isl_qpolynomial *poly,
 {
 	int i;
 	int d;
-	int n;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_qpolynomial **c = NULL;
 	int *k = NULL;
 	int *left = NULL;
 	isl_vec *multinom = NULL;
 
-	if (!poly)
+	n = isl_qpolynomial_dim(poly, isl_dim_in);
+	if (n < 0)
 		return isl_stat_error;
 
 	ctx = isl_qpolynomial_get_ctx(poly);
-	n = isl_qpolynomial_dim(poly, isl_dim_in);
 	d = isl_qpolynomial_degree(poly);
 	isl_assert(ctx, n >= 2, return isl_stat_error);
 
@@ -258,6 +264,7 @@ static isl_stat bernstein_coefficients_cell(__isl_take isl_cell *cell,
 	isl_space *space_param;
 	isl_space *space_dst;
 	isl_qpolynomial *poly = data->poly;
+	isl_size n_in;
 	unsigned nvar;
 	int n_vertices;
 	isl_qpolynomial **subs;
@@ -265,10 +272,11 @@ static isl_stat bernstein_coefficients_cell(__isl_take isl_cell *cell,
 	isl_set *dom;
 	isl_ctx *ctx;
 
-	if (!poly)
+	n_in = isl_qpolynomial_dim(poly, isl_dim_in);
+	if (n_in < 0)
 		goto error;
 
-	nvar = isl_qpolynomial_dim(poly, isl_dim_in) - 1;
+	nvar = n_in - 1;
 	n_vertices = cell->n_vertices;
 
 	ctx = isl_qpolynomial_get_ctx(poly);
@@ -349,13 +357,15 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, struct bernstein_data *data, int *tight)
 {
-	unsigned nvar;
+	isl_size nvar;
 	isl_space *space;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_vertices *vertices;
 	isl_bool covers;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0)
+		bset = isl_basic_set_free(bset);
 	if (nvar == 0) {
 		isl_set *dom;
 		isl_qpolynomial_fold *fold;
@@ -426,15 +436,14 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_recursive(
 	int n_group, int *len, struct bernstein_data *data, int *tight)
 {
 	int i;
-	unsigned nparam;
-	unsigned nvar;
+	isl_size nparam;
+	isl_size nvar;
 	isl_pw_qpolynomial_fold *pwf;
-
-	if (!pwqp)
-		return NULL;
 
 	nparam = isl_pw_qpolynomial_dim(pwqp, isl_dim_param);
 	nvar = isl_pw_qpolynomial_dim(pwqp, isl_dim_in);
+	if (nparam < 0 || nvar < 0)
+		goto error;
 
 	pwqp = isl_pw_qpolynomial_move_dims(pwqp, isl_dim_param, nparam,
 					isl_dim_in, 0, nvar - len[n_group - 1]);
@@ -442,6 +451,8 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_recursive(
 
 	for (i = n_group - 2; i >= 0; --i) {
 		nparam = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_param);
+		if (nparam < 0)
+			return isl_pw_qpolynomial_fold_free(pwf);
 		pwf = isl_pw_qpolynomial_fold_move_dims(pwf, isl_dim_in, 0,
 				isl_dim_param, nparam - len[i], len[i]);
 		if (tight && !*tight)
@@ -450,6 +461,9 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_recursive(
 	}
 
 	return pwf;
+error:
+	isl_pw_qpolynomial_free(pwqp);
+	return NULL;
 }
 
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_factors(
@@ -491,15 +505,14 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_full_recursive
 {
 	int i;
 	int *len;
-	unsigned nvar;
+	isl_size nvar;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_set *set;
 	isl_pw_qpolynomial *pwqp;
 
-	if (!bset || !poly)
-		goto error;
-
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0 || !poly)
+		goto error;
 	
 	len = isl_alloc_array(bset->ctx, int, nvar);
 	if (nvar && !len)
@@ -539,17 +552,16 @@ isl_stat isl_qpolynomial_bound_on_domain_bernstein(
 {
 	struct bernstein_data data;
 	isl_pw_qpolynomial_fold *pwf;
-	unsigned nvar;
+	isl_size nvar;
 	int tight = 0;
 	int *tp = bound->check_tight ? &tight : NULL;
 
-	if (!bset || !poly)
+	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0 || !poly)
 		goto error;
 
 	data.type = bound->type;
 	data.check_tight = bound->check_tight;
-
-	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
 	if (bset->ctx->opt->bernstein_recurse & ISL_BERNSTEIN_FACTORS)
 		pwf = bernstein_coefficients_factors(bset, poly, &data, tp);

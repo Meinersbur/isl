@@ -66,13 +66,17 @@ static int *eq_status_in(__isl_keep isl_basic_map *bmap_i,
 	struct isl_tab *tab_j)
 {
 	int k, l;
-	int *eq = isl_calloc_array(bmap_i->ctx, int, 2 * bmap_i->n_eq);
-	unsigned dim;
+	int *eq;
+	isl_size dim;
 
+	dim = isl_basic_map_dim(bmap_i, isl_dim_all);
+	if (dim < 0)
+		return NULL;
+
+	eq = isl_calloc_array(bmap_i->ctx, int, 2 * bmap_i->n_eq);
 	if (!eq)
 		return NULL;
 
-	dim = isl_basic_map_total_dim(bmap_i);
 	for (k = 0; k < bmap_i->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
 			isl_seq_neg(bmap_i->eq[k], bmap_i->eq[k], 1+dim);
@@ -309,11 +313,13 @@ static int all_valid_or_cut(struct isl_coalesce_info *info)
 static int coalesce_info_set_hull_hash(struct isl_coalesce_info *info)
 {
 	isl_basic_map *hull;
-	unsigned n_div;
+	isl_size n_div;
 
 	hull = isl_basic_map_copy(info->bmap);
 	hull = isl_basic_map_plain_affine_hull(hull);
 	n_div = isl_basic_map_dim(hull, isl_dim_div);
+	if (n_div < 0)
+		hull = isl_basic_map_free(hull);
 	hull = isl_basic_map_drop_constraints_involving_dims(hull,
 							isl_dim_div, 0, n_div);
 	info->hull_hash = isl_basic_map_get_hash(hull);
@@ -496,11 +502,13 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	int k, l;
 	struct isl_basic_map *fused = NULL;
 	struct isl_tab *fused_tab = NULL;
-	unsigned total = isl_basic_map_total_dim(info[i].bmap);
+	isl_size total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
 	unsigned extra_rows = extra ? extra->n_row : 0;
 	unsigned n_eq, n_ineq;
 	int simplify = 0;
 
+	if (total < 0)
+		return isl_change_error;
 	if (j < i)
 		return fuse(j, i, info, extra, detect_equalities, check_number);
 
@@ -649,10 +657,12 @@ static enum isl_change check_facets(int i, int j,
 static isl_bool contains(struct isl_coalesce_info *info, struct isl_tab *tab)
 {
 	int k;
-	unsigned dim;
+	isl_size dim;
 	isl_basic_map *bmap = info->bmap;
 
-	dim = isl_basic_map_total_dim(bmap);
+	dim = isl_basic_map_dim(bmap, isl_dim_all);
+	if (dim < 0)
+		return isl_bool_error;
 	for (k = 0; k < bmap->n_eq; ++k) {
 		int stat;
 		isl_seq_neg(bmap->eq[k], bmap->eq[k], 1 + dim);
@@ -728,10 +738,12 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	int k;
 	struct isl_tab_undo *snap;
 	unsigned n_eq = info[i].bmap->n_eq;
-	unsigned total = isl_basic_map_total_dim(info[i].bmap);
+	isl_size total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
 	isl_stat r;
 	isl_bool super;
 
+	if (total < 0)
+		return isl_change_error;
 	if (isl_tab_extend_cons(info[i].tab, 1 + info[j].bmap->n_ineq) < 0)
 		return isl_change_error;
 
@@ -987,7 +999,7 @@ static __isl_give isl_vec *try_tightening(struct isl_coalesce_info *info,
 static isl_stat tighten_on_relaxed_facet(struct isl_coalesce_info *info,
 	int n, int *relaxed, int l)
 {
-	unsigned total;
+	isl_size total;
 	isl_ctx *ctx;
 	isl_vec *v = NULL;
 	isl_mat *T;
@@ -997,7 +1009,9 @@ static isl_stat tighten_on_relaxed_facet(struct isl_coalesce_info *info,
 
 	k = relaxed[l];
 	ctx = isl_basic_map_get_ctx(info->bmap);
-	total = isl_basic_map_total_dim(info->bmap);
+	total = isl_basic_map_dim(info->bmap, isl_dim_all);
+	if (total < 0)
+		return isl_stat_error;
 	isl_int_add_ui(info->bmap->ineq[k][0], info->bmap->ineq[k][0], 1);
 	T = isl_mat_sub_alloc6(ctx, info->bmap->ineq, k, 1, 0, 1 + total);
 	T = isl_mat_variable_compression(T, NULL);
@@ -1062,12 +1076,12 @@ static enum isl_change extend(int i, int j, int n, int *relax,
 	struct isl_coalesce_info *info)
 {
 	int l;
-	unsigned total;
+	isl_size total;
 
 	info[i].bmap = isl_basic_map_cow(info[i].bmap);
-	if (!info[i].bmap)
+	total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
+	if (total < 0)
 		return isl_change_error;
-	total = isl_basic_map_total_dim(info[i].bmap);
 	for (l = 0; l < info[i].bmap->n_div; ++l)
 		if (!isl_seq_eq(info[i].bmap->div[l],
 				info[j].bmap->div[l], 1 + 1 + total)) {
@@ -1196,8 +1210,10 @@ static isl_stat wraps_update_max(struct isl_wraps *wraps,
 {
 	int k;
 	isl_int max_k;
-	unsigned total = isl_basic_map_total_dim(info->bmap);
+	isl_size total = isl_basic_map_dim(info->bmap, isl_dim_all);
 
+	if (total < 0)
+		return isl_stat_error;
 	isl_int_init(max_k);
 
 	for (k = 0; k < info->bmap->n_eq; ++k) {
@@ -1332,7 +1348,11 @@ static isl_stat add_wraps(struct isl_wraps *wraps,
 	int w;
 	int added;
 	isl_basic_map *bmap = info->bmap;
-	unsigned len = 1 + isl_basic_map_total_dim(bmap);
+	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
+	unsigned len = 1 + total;
+
+	if (total < 0)
+		return isl_stat_error;
 
 	w = wraps->mat->n_row;
 
@@ -1445,7 +1465,10 @@ static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 {
 	struct isl_tab_undo *snap;
 	int n;
-	unsigned total = isl_basic_map_total_dim(info->bmap);
+	isl_size total = isl_basic_map_dim(info->bmap, isl_dim_all);
+
+	if (total < 0)
+		return isl_stat_error;
 
 	snap = isl_tab_snap(info->tab);
 
@@ -1499,8 +1522,10 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 	struct isl_set *set_i = NULL;
 	struct isl_set *set_j = NULL;
 	struct isl_vec *bound = NULL;
-	unsigned total = isl_basic_map_total_dim(info[i].bmap);
+	isl_size total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
 
+	if (total < 0)
+		return isl_change_error;
 	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
 	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
@@ -1616,10 +1641,12 @@ static enum isl_change try_wrap_in_facets(int i, int j,
 	__isl_keep isl_set *set_i)
 {
 	int k, l, w;
-	unsigned total;
+	isl_size total;
 	struct isl_tab_undo *snap;
 
-	total = isl_basic_map_total_dim(info[i].bmap);
+	total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
+	if (total < 0)
+		return isl_change_error;
 
 	snap = isl_tab_snap(info[j].tab);
 
@@ -1679,9 +1706,11 @@ static enum isl_change wrap_in_facets(int i, int j, int n,
 	isl_ctx *ctx;
 	isl_mat *mat;
 	isl_set *set_i = NULL;
-	unsigned total = isl_basic_map_total_dim(info[i].bmap);
+	isl_size total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
 	int max_wrap;
 
+	if (total < 0)
+		return isl_change_error;
 	if (isl_tab_extend_cons(info[j].tab, 1) < 0)
 		return isl_change_error;
 
@@ -1786,7 +1815,7 @@ static enum isl_change can_wrap_in_set(int i, int j,
 {
 	int k, l;
 	int n;
-	unsigned total;
+	isl_size total;
 
 	if (ISL_F_ISSET(info[i].bmap, ISL_BASIC_MAP_RATIONAL) ||
 	    ISL_F_ISSET(info[j].bmap, ISL_BASIC_MAP_RATIONAL))
@@ -1796,7 +1825,9 @@ static enum isl_change can_wrap_in_set(int i, int j,
 	if (n == 0)
 		return isl_change_none;
 
-	total = isl_basic_map_total_dim(info[i].bmap);
+	total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
+	if (total < 0)
+		return isl_change_error;
 	for (k = 0; k < info[i].bmap->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
 			enum isl_ineq_type type;
@@ -2033,8 +2064,10 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 	struct isl_set *set_i = NULL;
 	struct isl_set *set_j = NULL;
 	struct isl_vec *bound = NULL;
-	unsigned total = isl_basic_map_total_dim(info[i].bmap);
+	isl_size total = isl_basic_map_dim(info[i].bmap, isl_dim_all);
 
+	if (total < 0)
+		return isl_change_error;
 	if (count_eq(&info[i], STATUS_ADJ_EQ) != 1)
 		detect_equalities = 1;
 
@@ -2377,14 +2410,17 @@ static enum isl_change coalesce_local_pair(int i, int j,
 static isl_stat shift_div(struct isl_coalesce_info *info, int div,
 	isl_int shift)
 {
-	unsigned total;
+	isl_size total, n_div;
 
 	info->bmap = isl_basic_map_shift_div(info->bmap, div, 0, shift);
 	if (!info->bmap)
 		return isl_stat_error;
 
 	total = isl_basic_map_dim(info->bmap, isl_dim_all);
-	total -= isl_basic_map_dim(info->bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(info->bmap, isl_dim_div);
+	if (total < 0 || n_div < 0)
+		return isl_stat_error;
+	total -= n_div;
 	if (isl_tab_shift_var(info->tab, total + div, shift) < 0)
 		return isl_stat_error;
 
@@ -2471,9 +2507,12 @@ static isl_stat normalize_stride_div(struct isl_coalesce_info *info, int div)
 static isl_stat harmonize_stride_divs(struct isl_coalesce_info *info1,
 	struct isl_coalesce_info *info2)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_basic_map_dim(info1->bmap, isl_dim_div);
+	if (n < 0)
+		return isl_stat_error;
 	for (i = 0; i < n; ++i) {
 		isl_bool known, harmonize;
 
@@ -2582,10 +2621,12 @@ static isl_stat harmonize_divs_with_hulls(struct isl_coalesce_info *info1,
 	__isl_keep isl_basic_set *eq2)
 {
 	int i;
-	int total;
+	isl_size total;
 	isl_local_space *ls1, *ls2;
 
-	total = isl_basic_map_total_dim(info1->bmap);
+	total = isl_basic_map_dim(info1->bmap, isl_dim_all);
+	if (total < 0)
+		return isl_stat_error;
 	ls1 = isl_local_space_wrap(isl_basic_map_get_local_space(info1->bmap));
 	ls2 = isl_local_space_wrap(isl_basic_map_get_local_space(info2->bmap));
 	for (i = 0; i < info1->bmap->n_div; ++i) {
@@ -2689,7 +2730,7 @@ static isl_bool same_divs(__isl_keep isl_basic_map *bmap1,
 {
 	int i;
 	isl_bool known;
-	int total;
+	isl_size total;
 
 	if (!bmap1 || !bmap2)
 		return isl_bool_error;
@@ -2706,7 +2747,9 @@ static isl_bool same_divs(__isl_keep isl_basic_map *bmap1,
 	if (known < 0 || !known)
 		return known;
 
-	total = isl_basic_map_total_dim(bmap1);
+	total = isl_basic_map_dim(bmap1, isl_dim_all);
+	if (total < 0)
+		return isl_bool_error;
 	for (i = 0; i < bmap1->n_div; ++i)
 		if (!isl_seq_eq(bmap1->div[i], bmap2->div[i], 2 + total))
 			return isl_bool_false;
@@ -2933,11 +2976,14 @@ static isl_stat expand_tab(struct isl_coalesce_info *info, int *exp,
 	struct isl_expanded *expanded;
 	int i, j, k, n;
 	int extra_var;
-	unsigned total, pos, n_div;
+	isl_size total, n_div;
+	unsigned pos;
 	isl_stat r;
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (total < 0 || n_div < 0)
+		return isl_stat_error;
 	pos = total - n_div;
 	extra_var = total - info->tab->n_var;
 	n = n_div - extra_var;
@@ -3301,11 +3347,13 @@ static enum isl_change coalesce_divs(int i, int j,
 static isl_bool has_nested_div(__isl_keep isl_basic_map *bmap)
 {
 	int i;
-	unsigned total;
-	unsigned n_div;
+	isl_size total;
+	isl_size n_div;
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (total < 0 || n_div < 0)
+		return isl_bool_error;
 	total -= n_div;
 
 	for (i = 0; i < n_div; ++i)
@@ -3331,7 +3379,7 @@ static __isl_give isl_aff_list *set_up_substitutions(
 	__isl_keep isl_basic_map *bmap_i, __isl_keep isl_basic_map *bmap_j,
 	__isl_take isl_basic_map *hull)
 {
-	unsigned n_div_i, n_div_j, total;
+	isl_size n_div_i, n_div_j, total;
 	isl_ctx *ctx;
 	isl_local_space *ls;
 	isl_basic_set *wrap_hull;
@@ -3339,14 +3387,14 @@ static __isl_give isl_aff_list *set_up_substitutions(
 	isl_aff_list *list;
 	int i, j;
 
-	if (!hull)
+	n_div_i = isl_basic_map_dim(bmap_i, isl_dim_div);
+	n_div_j = isl_basic_map_dim(bmap_j, isl_dim_div);
+	total = isl_basic_map_dim(bmap_i, isl_dim_all);
+	if (!hull || n_div_i < 0 || n_div_j < 0 || total < 0)
 		return NULL;
 
 	ctx = isl_basic_map_get_ctx(hull);
-
-	n_div_i = isl_basic_map_dim(bmap_i, isl_dim_div);
-	n_div_j = isl_basic_map_dim(bmap_j, isl_dim_div);
-	total = isl_basic_map_total_dim(bmap_i) - n_div_i;
+	total -= n_div_i;
 
 	ls = isl_basic_map_get_local_space(bmap_i);
 	ls = isl_local_space_wrap(ls);
@@ -3358,6 +3406,7 @@ static __isl_give isl_aff_list *set_up_substitutions(
 	j = 0;
 	for (i = 0; i < n_div_i; ++i) {
 		isl_aff *aff;
+		isl_size n_div;
 
 		if (j < n_div_j &&
 		    isl_basic_map_equal_div_expr_part(bmap_i, i, bmap_j, j,
@@ -3373,9 +3422,10 @@ static __isl_give isl_aff_list *set_up_substitutions(
 		aff = isl_aff_substitute_equalities(aff,
 						isl_basic_set_copy(wrap_hull));
 		aff = isl_aff_floor(aff);
-		if (!aff)
+		n_div = isl_aff_dim(aff, isl_dim_div);
+		if (n_div < 0)
 			goto error;
-		if (isl_aff_dim(aff, isl_dim_div) != 0) {
+		if (n_div != 0) {
 			isl_aff_free(aff);
 			break;
 		}
@@ -3549,14 +3599,17 @@ static enum isl_change coalesce_with_subs(int i, int j,
 {
 	isl_basic_map *bmap_j;
 	struct isl_tab_undo *snap;
-	unsigned dim;
+	isl_size dim, n_div;
 	enum isl_change change;
 
 	bmap_j = isl_basic_map_copy(info[j].bmap);
 	snap = isl_tab_snap(info[j].tab);
 
 	dim = isl_basic_map_dim(bmap_j, isl_dim_all);
-	dim -= isl_basic_map_dim(bmap_j, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap_j, isl_dim_div);
+	if (dim < 0 || n_div < 0)
+		goto error;
+	dim -= n_div;
 	if (add_subs(&info[j], list, dim) < 0)
 		goto error;
 
@@ -3594,7 +3647,7 @@ error:
 static enum isl_change check_coalesce_into_eq(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	unsigned n_div_i, n_div_j;
+	isl_size n_div_i, n_div_j;
 	isl_basic_map *hull_i, *hull_j;
 	isl_bool equal, empty;
 	isl_aff_list *list;
@@ -3602,6 +3655,8 @@ static enum isl_change check_coalesce_into_eq(int i, int j,
 
 	n_div_i = isl_basic_map_dim(info[i].bmap, isl_dim_div);
 	n_div_j = isl_basic_map_dim(info[j].bmap, isl_dim_div);
+	if (n_div_i < 0 || n_div_j < 0)
+		return isl_change_error;
 	if (n_div_i <= n_div_j)
 		return isl_change_none;
 	if (info[j].bmap->n_eq == 0)

@@ -32,7 +32,7 @@ isl_ctx *isl_constraint_get_ctx(__isl_keep isl_constraint *c)
 	return c ? isl_local_space_get_ctx(c->ls) : NULL;
 }
 
-static unsigned n(struct isl_constraint *c, enum isl_dim_type type)
+static isl_size n(struct isl_constraint *c, enum isl_dim_type type)
 {
 	return isl_local_space_dim(c->ls, type);
 }
@@ -69,14 +69,18 @@ error:
 __isl_give isl_constraint *isl_constraint_alloc(int eq,
 	__isl_take isl_local_space *ls)
 {
+	isl_size dim;
 	isl_ctx *ctx;
 	isl_vec *v;
 
+	dim = isl_local_space_dim(ls, isl_dim_all);
+	if (dim < 0)
+		ls = isl_local_space_free(ls);
 	if (!ls)
 		return NULL;
 
 	ctx = isl_local_space_get_ctx(ls);
-	v = isl_vec_alloc(ctx, 1 + isl_local_space_dim(ls, isl_dim_all));
+	v = isl_vec_alloc(ctx, 1 + dim);
 	v = isl_vec_clr(v);
 	return isl_constraint_alloc_vec(eq, ls, v);
 }
@@ -85,6 +89,7 @@ struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
 	isl_int **line)
 {
 	int eq;
+	isl_size dim;
 	isl_ctx *ctx;
 	isl_vec *v;
 	isl_local_space *ls = NULL;
@@ -97,7 +102,10 @@ struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
 
 	ctx = isl_basic_map_get_ctx(bmap);
 	ls = isl_basic_map_get_local_space(bmap);
-	v = isl_vec_alloc(ctx, 1 + isl_local_space_dim(ls, isl_dim_all));
+	dim = isl_local_space_dim(ls, isl_dim_all);
+	if (dim < 0)
+		goto error;
+	v = isl_vec_alloc(ctx, 1 + dim);
 	if (!v)
 		goto error;
 	isl_seq_cpy(v->el, line[0], v->size);
@@ -375,11 +383,11 @@ __isl_give isl_local_space *isl_constraint_get_local_space(
 	return constraint ? isl_local_space_copy(constraint->ls) : NULL;
 }
 
-int isl_constraint_dim(__isl_keep isl_constraint *constraint,
+isl_size isl_constraint_dim(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type)
 {
 	if (!constraint)
-		return -1;
+		return isl_size_error;
 	return n(constraint, type);
 }
 
@@ -655,13 +663,15 @@ isl_bool isl_constraint_is_equality(struct isl_constraint *constraint)
 isl_bool isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
 {
 	int i;
-	int n_div;
+	isl_size n_div;
 
 	if (!constraint)
 		return isl_bool_error;
 	if (isl_constraint_is_equality(constraint))
 		return isl_bool_false;
 	n_div = isl_constraint_dim(constraint, isl_dim_div);
+	if (n_div < 0)
+		return isl_bool_error;
 	for (i = 0; i < n_div; ++i) {
 		isl_bool is_div;
 		is_div = isl_local_space_is_div_constraint(constraint->ls,
@@ -711,7 +721,7 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 	isl_local_space *ls;
 	struct isl_basic_map *bmap;
 	isl_int *c;
-	unsigned total;
+	isl_size total;
 
 	if (!constraint)
 		return NULL;
@@ -731,7 +741,9 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint(
 			goto error;
 		c = bmap->ineq[k];
 	}
-	total = isl_basic_map_total_dim(bmap);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
+		goto error;
 	isl_seq_cpy(c, constraint->v->el, 1 + total);
 	isl_constraint_free(constraint);
 	if (bmap)
@@ -768,12 +780,14 @@ isl_bool isl_basic_map_has_defining_equality(
 {
 	int i;
 	unsigned offset;
-	unsigned total;
+	isl_size total;
 
 	if (isl_basic_map_check_range(bmap, type, pos, 1) < 0)
 		return isl_bool_error;
 	offset = isl_basic_map_offset(bmap, type);
-	total = isl_basic_map_total_dim(bmap);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
+		return isl_bool_error;
 	for (i = 0; i < bmap->n_eq; ++i) {
 		if (isl_int_is_zero(bmap->eq[i][offset + pos]) ||
 		    isl_seq_first_non_zero(bmap->eq[i]+offset+pos+1,
@@ -807,14 +821,16 @@ isl_bool isl_basic_set_has_defining_inequalities(
 {
 	int i, j;
 	unsigned offset;
-	unsigned total;
+	isl_size total;
 	isl_int m;
 	isl_int **lower_line, **upper_line;
 
 	if (isl_basic_set_check_range(bset, type, pos, 1) < 0)
 		return isl_bool_error;
 	offset = isl_basic_set_offset(bset, type);
-	total = isl_basic_set_total_dim(bset);
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
+		return isl_bool_error;
 	isl_int_init(m);
 	for (i = 0; i < bset->n_ineq; ++i) {
 		if (isl_int_is_zero(bset->ineq[i][offset + pos]))
@@ -870,13 +886,14 @@ static __isl_give isl_basic_set *add_larger_bound_constraint(
 {
 	int k;
 	isl_int t;
-	unsigned total;
+	isl_size total;
 
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
+		return isl_basic_set_free(bset);
 	k = isl_basic_set_alloc_inequality(bset);
 	if (k < 0)
 		goto error;
-
-	total = isl_basic_set_dim(bset, isl_dim_all);
 
 	isl_int_init(t);
 	isl_int_neg(t, b[1 + abs_pos]);

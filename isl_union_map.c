@@ -34,15 +34,15 @@
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
  */
-unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+isl_size isl_union_map_dim(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type)
 {
 	if (!umap)
-		return 0;
+		return isl_size_error;
 
 	if (type != isl_dim_param)
 		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
-			"can only reference parameters", return 0);
+			"can only reference parameters", return isl_size_error);
 
 	return isl_space_dim(umap->dim, type);
 }
@@ -50,7 +50,7 @@ unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
 /* Return the number of parameters of "uset", where "type"
  * is required to be set to isl_dim_param.
  */
-unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+isl_size isl_union_set_dim(__isl_keep isl_union_set *uset,
 	enum isl_dim_type type)
 {
 	return isl_union_map_dim(uset, type);
@@ -3045,12 +3045,17 @@ error:
 static isl_bool plain_injective_on_range_wrap(__isl_keep isl_set *ran,
 	void *user)
 {
+	isl_size dim;
 	isl_union_map *umap = user;
+
+	dim = isl_set_dim(ran, isl_dim_set);
+	if (dim < 0)
+		return isl_bool_error;
 
 	umap = isl_union_map_copy(umap);
 	umap = isl_union_map_intersect_range(umap,
 			isl_union_set_from_set(isl_set_copy(ran)));
-	return plain_injective_on_range(umap, 0, isl_set_dim(ran, isl_dim_set));
+	return plain_injective_on_range(umap, 0, dim);
 }
 
 /* Check if the given union_map is obviously injective.
@@ -3748,11 +3753,11 @@ __isl_give isl_union_map *isl_union_map_project_out(
 __isl_give isl_union_map *isl_union_map_project_out_all_params(
 	__isl_take isl_union_map *umap)
 {
-	unsigned n;
+	isl_size n;
 
-	if (!umap)
-		return NULL;
 	n = isl_union_map_dim(umap, isl_dim_param);
+	if (n < 0)
+		return isl_union_map_free(umap);
 	return isl_union_map_project_out(umap, isl_dim_param, 0, n);
 }
 
@@ -3876,12 +3881,12 @@ __isl_give isl_union_map *isl_union_map_reset_range_space(
 static isl_stat check_union_map_space_equal_dim(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space)
 {
-	unsigned dim1, dim2;
+	isl_size dim1, dim2;
 
-	if (!umap || !space)
-		return isl_stat_error;
 	dim1 = isl_union_map_dim(umap, isl_dim_param);
 	dim2 = isl_space_dim(space, isl_dim_param);
+	if (dim1 < 0 || dim2 < 0)
+		return isl_stat_error;
 	if (dim1 == dim2)
 		return isl_stat_ok;
 	isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,

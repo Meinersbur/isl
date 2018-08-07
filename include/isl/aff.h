@@ -31,7 +31,7 @@ __isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff);
 isl_ctx *isl_aff_get_ctx(__isl_keep isl_aff *aff);
 uint32_t isl_aff_get_hash(__isl_keep isl_aff *aff);
 
-int isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type);
+isl_size isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type);
 isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
@@ -236,7 +236,7 @@ __isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
 __isl_give isl_pw_aff *isl_pw_aff_copy(__isl_keep isl_pw_aff *pwaff);
 __isl_null isl_pw_aff *isl_pw_aff_free(__isl_take isl_pw_aff *pwaff);
 
-unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff, enum isl_dim_type type);
+isl_size isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff, enum isl_dim_type type);
 isl_bool isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
@@ -487,7 +487,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(
 __isl_null isl_pw_multi_aff *isl_pw_multi_aff_free(
 	__isl_take isl_pw_multi_aff *pma);
 
-unsigned isl_pw_multi_aff_dim(__isl_keep isl_pw_multi_aff *pma,
+isl_size isl_pw_multi_aff_dim(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type);
 isl_bool isl_pw_multi_aff_involves_dims(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type, unsigned first, unsigned n);
@@ -678,7 +678,7 @@ __isl_give isl_space *isl_union_pw_multi_aff_get_space(
 __isl_give isl_pw_multi_aff_list *isl_union_pw_multi_aff_get_pw_multi_aff_list(
 	__isl_keep isl_union_pw_multi_aff *upma);
 
-unsigned isl_union_pw_multi_aff_dim(__isl_keep isl_union_pw_multi_aff *upma,
+isl_size isl_union_pw_multi_aff_dim(__isl_keep isl_union_pw_multi_aff *upma,
 	enum isl_dim_type type);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_set_dim_name(
 	__isl_take isl_union_pw_multi_aff *upma,
@@ -861,7 +861,7 @@ __isl_give isl_space *isl_union_pw_aff_get_space(
 __isl_give isl_pw_aff_list *isl_union_pw_aff_get_pw_aff_list(
 	__isl_keep isl_union_pw_aff *upa);
 
-unsigned isl_union_pw_aff_dim(__isl_keep isl_union_pw_aff *upa,
+isl_size isl_union_pw_aff_dim(__isl_keep isl_union_pw_aff *upa,
 	enum isl_dim_type type);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_set_dim_name(
 	__isl_take isl_union_pw_aff *upa, enum isl_dim_type type,

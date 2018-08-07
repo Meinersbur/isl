@@ -711,6 +711,7 @@ isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 	__isl_keep isl_schedule_node *node)
 {
 	int n;
+	isl_size dim;
 	isl_space *space;
 	isl_union_pw_multi_aff *prefix;
 	struct isl_schedule_node_get_filter_prefix_data data;
@@ -734,8 +735,10 @@ isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 	if (collect_filter_prefix(node->ancestors, n, &data) < 0)
 		data.prefix = isl_multi_union_pw_aff_free(data.prefix);
 
-	if (data.prefix &&
-	    isl_multi_union_pw_aff_dim(data.prefix, isl_dim_set) == 0) {
+	dim = isl_multi_union_pw_aff_dim(data.prefix, isl_dim_set);
+	if (dim < 0)
+		data.prefix = isl_multi_union_pw_aff_free(data.prefix);
+	if (data.prefix && dim == 0) {
 		isl_multi_union_pw_aff_free(data.prefix);
 		prefix = isl_union_pw_multi_aff_from_domain(data.filter);
 	} else {
@@ -776,6 +779,7 @@ __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_relation(
 	__isl_keep isl_schedule_node *node)
 {
 	int n;
+	isl_size dim;
 	isl_space *space;
 	isl_union_map *prefix;
 	struct isl_schedule_node_get_filter_prefix_data data;
@@ -799,8 +803,10 @@ __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_relation(
 	if (collect_filter_prefix(node->ancestors, n, &data) < 0)
 		data.prefix = isl_multi_union_pw_aff_free(data.prefix);
 
-	if (data.prefix &&
-	    isl_multi_union_pw_aff_dim(data.prefix, isl_dim_set) == 0) {
+	dim = isl_multi_union_pw_aff_dim(data.prefix, isl_dim_set);
+	if (dim < 0)
+		data.prefix = isl_multi_union_pw_aff_free(data.prefix);
+	if (data.prefix && dim == 0) {
 		isl_multi_union_pw_aff_free(data.prefix);
 		prefix = isl_union_map_from_domain(data.filter);
 	} else {
@@ -2839,10 +2845,12 @@ static __isl_give isl_schedule_tree *group_band(
 static __isl_give isl_union_set *union_set_drop_extra_params(
 	__isl_take isl_union_set *uset, __isl_keep isl_space *space, int n)
 {
-	int n2;
+	isl_size n2;
 
 	uset = isl_union_set_align_params(uset, isl_space_copy(space));
 	n2 = isl_union_set_dim(uset, isl_dim_param);
+	if (n2 < 0)
+		return isl_union_set_free(uset);
 	uset = isl_union_set_project_out(uset, isl_dim_param, n, n2 - n);
 
 	return uset;
@@ -2863,7 +2871,7 @@ static __isl_give isl_schedule_tree *group_context(
 {
 	isl_space *space;
 	isl_union_set *domain;
-	int n1, n2;
+	isl_size n1, n2;
 	isl_bool involves;
 
 	if (isl_schedule_node_get_tree_depth(pos) == 1)
@@ -2877,7 +2885,7 @@ static __isl_give isl_schedule_tree *group_context(
 	data->expansion = isl_union_map_align_params(data->expansion, space);
 	n2 = isl_union_map_dim(data->expansion, isl_dim_param);
 
-	if (!data->expansion)
+	if (n1 < 0 || n2 < 0)
 		return isl_schedule_tree_free(tree);
 	if (n1 == n2)
 		return tree;
@@ -2898,6 +2906,9 @@ static __isl_give isl_schedule_tree *group_context(
 	data->contraction = isl_union_pw_multi_aff_align_params(
 				data->contraction, isl_space_copy(space));
 	n2 = isl_union_pw_multi_aff_dim(data->contraction, isl_dim_param);
+	if (n2 < 0)
+		data->contraction =
+				isl_union_pw_multi_aff_free(data->contraction);
 	data->contraction = isl_union_pw_multi_aff_drop_dims(data->contraction,
 				isl_dim_param, n1, n2 - n1);
 
@@ -2911,6 +2922,8 @@ static __isl_give isl_schedule_tree *group_context(
 	data->sched = isl_multi_aff_align_params(data->sched,
 				isl_space_copy(space));
 	n2 = isl_multi_aff_dim(data->sched, isl_dim_param);
+	if (n2 < 0)
+		data->sched = isl_multi_aff_free(data->sched);
 	data->sched = isl_multi_aff_drop_dims(data->sched,
 				isl_dim_param, n1, n2 - n1);
 

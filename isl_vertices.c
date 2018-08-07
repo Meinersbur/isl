@@ -122,13 +122,15 @@ error:
 static isl_bool add_vertex(struct isl_vertex_list **list,
 	__isl_keep isl_basic_set *bset, struct isl_tab *tab)
 {
-	unsigned nvar;
+	isl_size nvar;
 	struct isl_vertex_list *v = NULL;
 
 	if (isl_tab_detect_implicit_equalities(tab) < 0)
 		return isl_bool_error;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0)
+		return isl_bool_error;
 
 	v = isl_calloc_type(tab->mat->ctx, struct isl_vertex_list);
 	if (!v)
@@ -376,7 +378,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	struct isl_tab *tab;
 	int level;
 	int init;
-	unsigned nvar;
+	isl_size nvar;
 	int *selection = NULL;
 	int selected;
 	struct isl_tab_undo **snap = NULL;
@@ -397,10 +399,11 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	if (isl_basic_set_check_no_locals(bset) < 0)
 		return NULL;
 
-	if (isl_basic_set_dim(bset, isl_dim_set) == 0)
-		return vertices_0D(bset);
-
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
+	if (nvar < 0)
+		return NULL;
+	if (nvar == 0)
+		return vertices_0D(bset);
 
 	bset = isl_basic_set_copy(bset);
 	bset = isl_basic_set_set_rational(bset);
@@ -1110,11 +1113,13 @@ static struct isl_tab *tab_for_shifted_cone(__isl_keep isl_basic_set *bset)
 	int i;
 	isl_vec *c = NULL;
 	struct isl_tab *tab;
+	isl_size total;
 
-	if (!bset)
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
 		return NULL;
 	tab = isl_tab_alloc(bset->ctx, bset->n_eq + bset->n_ineq + 1,
-			    1 + isl_basic_set_total_dim(bset), 0);
+			    1 + total, 0);
 	if (!tab)
 		return NULL;
 	tab->rational = ISL_F_ISSET(bset, ISL_BASIC_SET_RATIONAL);
@@ -1124,7 +1129,7 @@ static struct isl_tab *tab_for_shifted_cone(__isl_keep isl_basic_set *bset)
 		return tab;
 	}
 
-	c = isl_vec_alloc(bset->ctx, 1 + 1 + isl_basic_set_total_dim(bset));
+	c = isl_vec_alloc(bset->ctx, 1 + 1 + total);
 	if (!c)
 		goto error;
 
@@ -1454,7 +1459,7 @@ static isl_stat triangulate(__isl_keep isl_cell *cell, __isl_keep isl_vec *v,
 	isl_stat (*fn)(__isl_take isl_cell *simplex, void *user), void *user)
 {
 	int i, j, k;
-	int d, nparam;
+	isl_size d, nparam;
 	int *ids;
 	isl_ctx *ctx;
 	isl_basic_set *vertex;
@@ -1463,6 +1468,8 @@ static isl_stat triangulate(__isl_keep isl_cell *cell, __isl_keep isl_vec *v,
 	ctx = isl_cell_get_ctx(cell);
 	d = isl_basic_set_dim(cell->vertices->bset, isl_dim_set);
 	nparam = isl_basic_set_dim(cell->vertices->bset, isl_dim_param);
+	if (d < 0 || nparam < 0)
+		return isl_stat_error;
 
 	if (n_simplex + n_other == d + 1)
 		return call_on_simplex(cell, simplex_ids, n_simplex,
@@ -1508,7 +1515,7 @@ error:
 isl_stat isl_cell_foreach_simplex(__isl_take isl_cell *cell,
 	isl_stat (*fn)(__isl_take isl_cell *simplex, void *user), void *user)
 {
-	int d, total;
+	isl_size d, total;
 	isl_stat r;
 	isl_ctx *ctx;
 	isl_vec *v = NULL;
@@ -1518,7 +1525,9 @@ isl_stat isl_cell_foreach_simplex(__isl_take isl_cell *cell,
 		return isl_stat_error;
 
 	d = isl_basic_set_dim(cell->vertices->bset, isl_dim_set);
-	total = isl_basic_set_total_dim(cell->vertices->bset);
+	total = isl_basic_set_dim(cell->vertices->bset, isl_dim_all);
+	if (d < 0 || total < 0)
+		return isl_stat_error;
 
 	if (cell->n_vertices == d + 1)
 		return fn(cell, user);

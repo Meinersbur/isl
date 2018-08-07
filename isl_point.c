@@ -34,15 +34,17 @@ __isl_give isl_point *isl_point_alloc(__isl_take isl_space *space,
 	__isl_take isl_vec *vec)
 {
 	struct isl_point *pnt;
+	isl_size dim;
 
-	if (!space || !vec)
+	dim = isl_space_dim(space, isl_dim_all);
+	if (dim < 0 || !vec)
 		goto error;
 
-	if (vec->size > 1 + isl_space_dim(space, isl_dim_all)) {
+	if (vec->size > 1 + dim) {
 		vec = isl_vec_cow(vec);
 		if (!vec)
 			goto error;
-		vec->size = 1 + isl_space_dim(space, isl_dim_all);
+		vec->size = 1 + dim;
 	}
 
 	pnt = isl_alloc_type(space->ctx, struct isl_point);
@@ -63,10 +65,12 @@ error:
 __isl_give isl_point *isl_point_zero(__isl_take isl_space *space)
 {
 	isl_vec *vec;
+	isl_size dim;
 
-	if (!space)
-		return NULL;
-	vec = isl_vec_alloc(space->ctx, 1 + isl_space_dim(space, isl_dim_all));
+	dim = isl_space_dim(space, isl_dim_all);
+	if (dim < 0)
+		goto error;
+	vec = isl_vec_alloc(space->ctx, 1 + dim);
 	if (!vec)
 		goto error;
 	isl_int_set_si(vec->el[0], 1);
@@ -259,7 +263,7 @@ error:
 
 /* Return the number of variables of the given type.
  */
-static unsigned isl_point_dim(__isl_keep isl_point *pnt, enum isl_dim_type type)
+static isl_size isl_point_dim(__isl_keep isl_point *pnt, enum isl_dim_type type)
 {
 	return isl_space_dim(isl_point_peek_space(pnt), type);
 }
@@ -577,7 +581,7 @@ __isl_give isl_basic_set *isl_basic_set_box_from_points(
 	__isl_take isl_point *pnt1, __isl_take isl_point *pnt2)
 {
 	isl_basic_set *bset = NULL;
-	unsigned total;
+	isl_size total;
 	int i;
 	int k;
 	isl_int t;
@@ -609,6 +613,8 @@ __isl_give isl_basic_set *isl_basic_set_box_from_points(
 	}
 
 	total = isl_point_dim(pnt1, isl_dim_all);
+	if (total < 0)
+		goto error;
 	bset = isl_basic_set_alloc_space(isl_space_copy(pnt1->dim), 0, 0, 2 * total);
 
 	for (i = 0; i < total; ++i) {
@@ -687,7 +693,7 @@ __isl_give isl_printer *isl_printer_print_point(
 {
 	struct isl_print_space_data data = { 0 };
 	int i;
-	unsigned nparam;
+	isl_size nparam;
 
 	if (!pnt)
 		return p;
@@ -697,6 +703,8 @@ __isl_give isl_printer *isl_printer_print_point(
 	}
 
 	nparam = isl_point_dim(pnt, isl_dim_param);
+	if (nparam < 0)
+		return isl_printer_free(p);
 	if (nparam > 0) {
 		p = isl_printer_print_str(p, "[");
 		for (i = 0; i < nparam; ++i) {

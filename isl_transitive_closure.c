@@ -56,8 +56,9 @@ static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 {
 	isl_space *space;
 	struct isl_basic_map *bmap;
-	unsigned d;
-	unsigned nparam;
+	isl_size d;
+	isl_size nparam;
+	isl_size total;
 	int k;
 	isl_int *c;
 
@@ -67,6 +68,9 @@ static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 	space = isl_map_get_space(map);
 	d = isl_space_dim(space, isl_dim_in);
 	nparam = isl_space_dim(space, isl_dim_param);
+	total = isl_space_dim(space, isl_dim_all);
+	if (d < 0 || nparam < 0 || total < 0)
+		space = isl_space_free(space);
 	bmap = isl_basic_map_alloc_space(space, 0, 1, 1);
 	if (exactly) {
 		k = isl_basic_map_alloc_equality(bmap);
@@ -79,7 +83,7 @@ static __isl_give isl_map *set_path_length(__isl_take isl_map *map,
 			goto error;
 		c = bmap->ineq[k];
 	}
-	isl_seq_clr(c, 1 + isl_basic_map_total_dim(bmap));
+	isl_seq_clr(c, 1 + total);
 	isl_int_set_si(c[0], -length);
 	isl_int_set_si(c[1 + nparam + d - 1], -1);
 	isl_int_set_si(c[1 + nparam + d + d - 1], 1);
@@ -171,12 +175,14 @@ static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
 {
 	isl_map *test;
 	int exact;
-	unsigned d;
+	isl_size d;
 
 	if (!project)
 		return check_power_exactness(map, app);
 
 	d = isl_map_dim(map, isl_dim_in);
+	if (d < 0)
+		app = isl_map_free(app);
 	app = set_path_length(app, 0, 1);
 	app = isl_map_project_out(app, isl_dim_in, d, 1);
 	app = isl_map_project_out(app, isl_dim_out, d, 1);
@@ -220,16 +226,17 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_space *space,
 {
 	int i, j, k;
 	struct isl_basic_map *path = NULL;
-	unsigned d;
+	isl_size d;
 	unsigned n;
-	unsigned nparam;
-
-	if (!space || !steps)
-		goto error;
+	isl_size nparam;
+	isl_size total;
 
 	d = isl_space_dim(space, isl_dim_in);
-	n = steps->n_row;
 	nparam = isl_space_dim(space, isl_dim_param);
+	if (d < 0 || nparam < 0 || !steps)
+		goto error;
+
+	n = steps->n_row;
 
 	path = isl_basic_map_alloc_space(isl_space_copy(space), n, d, n);
 
@@ -241,11 +248,14 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_space *space,
 		isl_int_set_si(path->div[k][0], 0);
 	}
 
+	total = isl_basic_map_dim(path, isl_dim_all);
+	if (total < 0)
+		goto error;
 	for (i = 0; i < d; ++i) {
 		k = isl_basic_map_alloc_equality(path);
 		if (k < 0)
 			goto error;
-		isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
+		isl_seq_clr(path->eq[k], 1 + total);
 		isl_int_set_si(path->eq[k][1 + nparam + i], 1);
 		isl_int_set_si(path->eq[k][1 + nparam + d + i], -1);
 		if (i == d - 1)
@@ -261,7 +271,7 @@ static __isl_give isl_map *path_along_steps(__isl_take isl_space *space,
 		k = isl_basic_map_alloc_inequality(path);
 		if (k < 0)
 			goto error;
-		isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
+		isl_seq_clr(path->ineq[k], 1 + total);
 		isl_int_set_si(path->ineq[k][1 + nparam + 2 * d + i], 1);
 	}
 
@@ -287,9 +297,10 @@ error:
 static isl_bool parametric_constant_never_positive(
 	__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity)
 {
-	unsigned d;
-	unsigned n_div;
-	unsigned nparam;
+	isl_size d;
+	isl_size n_div;
+	isl_size nparam;
+	isl_size total;
 	int i;
 	int k;
 	isl_bool empty;
@@ -297,6 +308,9 @@ static isl_bool parametric_constant_never_positive(
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (n_div < 0 || d < 0 || nparam < 0 || total < 0)
+		return isl_bool_error;
 
 	bset = isl_basic_set_copy(bset);
 	bset = isl_basic_set_cow(bset);
@@ -304,7 +318,7 @@ static isl_bool parametric_constant_never_positive(
 	k = isl_basic_set_alloc_inequality(bset);
 	if (k < 0)
 		goto error;
-	isl_seq_clr(bset->ineq[k], 1 + isl_basic_set_total_dim(bset));
+	isl_seq_clr(bset->ineq[k], 1 + total);
 	isl_seq_cpy(bset->ineq[k], c, 1 + nparam);
 	for (i = 0; i < n_div; ++i) {
 		if (div_purity[i] != PURE_PARAM)
@@ -332,9 +346,9 @@ error:
 static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	int eq)
 {
-	unsigned d;
-	unsigned n_div;
-	unsigned nparam;
+	isl_size d;
+	isl_size n_div;
+	isl_size nparam;
 	isl_bool empty;
 	int i;
 	int p = 0, v = 0;
@@ -342,6 +356,8 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	if (n_div < 0 || d < 0 || nparam < 0)
+		return -1;
 
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(c[1 + nparam + d + i]))
@@ -377,16 +393,15 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
 {
 	int i, j;
 	int *div_purity;
-	unsigned d;
-	unsigned n_div;
-	unsigned nparam;
-
-	if (!bset)
-		return NULL;
+	isl_size d;
+	isl_size n_div;
+	isl_size nparam;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	d = isl_basic_set_dim(bset, isl_dim_set);
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
+	if (n_div < 0 || d < 0 || nparam < 0)
+		return NULL;
 
 	div_purity = isl_alloc_array(bset->ctx, int, n_div);
 	if (n_div && !div_purity)
@@ -451,9 +466,12 @@ static __isl_give isl_basic_map *add_delta_constraints(
 	int i, k;
 	int n = eq ? delta->n_eq : delta->n_ineq;
 	isl_int **delta_c = eq ? delta->eq : delta->ineq;
-	unsigned n_div;
+	isl_size n_div, total;
 
 	n_div = isl_basic_set_dim(delta, isl_dim_div);
+	total = isl_basic_map_dim(path, isl_dim_all);
+	if (n_div < 0 || total < 0)
+		return isl_basic_map_free(path);
 
 	for (i = 0; i < n; ++i) {
 		isl_int *path_c;
@@ -477,7 +495,7 @@ static __isl_give isl_basic_map *add_delta_constraints(
 				goto error;
 			path_c = path->ineq[k];
 		}
-		isl_seq_clr(path_c, 1 + isl_basic_map_total_dim(path));
+		isl_seq_clr(path_c, 1 + total);
 		if (p == PURE_VAR) {
 			isl_seq_cpy(path_c + off,
 				    delta_c[i] + 1 + nparam, d);
@@ -558,20 +576,21 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 	__isl_take isl_basic_set *delta)
 {
 	isl_basic_map *path = NULL;
-	unsigned d;
-	unsigned n_div;
-	unsigned nparam;
+	isl_size d;
+	isl_size n_div;
+	isl_size nparam;
+	isl_size total;
 	unsigned off;
 	int i, k;
 	isl_bool is_id;
 	int *div_purity = NULL;
 	int impurity = 0;
 
-	if (!delta)
-		goto error;
 	n_div = isl_basic_set_dim(delta, isl_dim_div);
 	d = isl_basic_set_dim(delta, isl_dim_set);
 	nparam = isl_basic_set_dim(delta, isl_dim_param);
+	if (n_div < 0 || d < 0 || nparam < 0)
+		goto error;
 	path = isl_basic_map_alloc_space(isl_space_copy(space), n_div + d + 1,
 			d + 1 + delta->n_eq, delta->n_eq + delta->n_ineq + 1);
 	off = 1 + nparam + 2 * (d + 1) + n_div;
@@ -583,11 +602,14 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 		isl_int_set_si(path->div[k][0], 0);
 	}
 
+	total = isl_basic_map_dim(path, isl_dim_all);
+	if (total < 0)
+		goto error;
 	for (i = 0; i < d + 1; ++i) {
 		k = isl_basic_map_alloc_equality(path);
 		if (k < 0)
 			goto error;
-		isl_seq_clr(path->eq[k], 1 + isl_basic_map_total_dim(path));
+		isl_seq_clr(path->eq[k], 1 + total);
 		isl_int_set_si(path->eq[k][1 + nparam + i], 1);
 		isl_int_set_si(path->eq[k][1 + nparam + d + 1 + i], -1);
 		isl_int_set_si(path->eq[k][off + i], 1);
@@ -625,7 +647,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 	k = isl_basic_map_alloc_inequality(path);
 	if (k < 0)
 		goto error;
-	isl_seq_clr(path->ineq[k], 1 + isl_basic_map_total_dim(path));
+	isl_seq_clr(path->ineq[k], 1 + total);
 	if (!is_id)
 		isl_int_set_si(path->ineq[k][0], -1);
 	isl_int_set_si(path->ineq[k][off + d], 1);
@@ -657,17 +679,21 @@ static __isl_give isl_map *equate_parameter_to_length(
 	__isl_take isl_space *space, unsigned param)
 {
 	struct isl_basic_map *bmap;
-	unsigned d;
-	unsigned nparam;
+	isl_size d;
+	isl_size nparam;
+	isl_size total;
 	int k;
 
 	d = isl_space_dim(space, isl_dim_in);
 	nparam = isl_space_dim(space, isl_dim_param);
+	total = isl_space_dim(space, isl_dim_all);
+	if (d < 0 || nparam < 0 || total < 0)
+		space = isl_space_free(space);
 	bmap = isl_basic_map_alloc_space(space, 0, 1, 1);
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)
 		goto error;
-	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_seq_clr(bmap->eq[k], 1 + total);
 	isl_int_set_si(bmap->eq[k][1 + param], -1);
 	isl_int_set_si(bmap->eq[k][1 + nparam + d - 1], -1);
 	isl_int_set_si(bmap->eq[k][1 + nparam + d + d - 1], 1);
@@ -675,7 +701,7 @@ static __isl_give isl_map *equate_parameter_to_length(
 	k = isl_basic_map_alloc_inequality(bmap);
 	if (k < 0)
 		goto error;
-	isl_seq_clr(bmap->ineq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_seq_clr(bmap->ineq[k], 1 + total);
 	isl_int_set_si(bmap->ineq[k][1 + param], 1);
 	isl_int_set_si(bmap->ineq[k][0], -1);
 
@@ -699,11 +725,13 @@ static isl_bool is_acyclic(__isl_take isl_map *path)
 {
 	int i;
 	isl_bool acyclic;
-	unsigned dim;
+	isl_size dim;
 	struct isl_set *delta;
 
 	delta = isl_map_deltas(path);
 	dim = isl_set_dim(delta, isl_dim_set);
+	if (dim < 0)
+		delta = isl_set_free(delta);
 	for (i = 0; i < dim; ++i) {
 		if (i == dim -1)
 			delta = isl_set_lower_bound_si(delta, isl_dim_set, i, 1);
@@ -747,13 +775,12 @@ static __isl_give isl_map *construct_extended_path(__isl_take isl_space *space,
 {
 	struct isl_mat *steps = NULL;
 	struct isl_map *path = NULL;
-	unsigned d;
+	isl_size d;
 	int i, j, n;
 
-	if (!map)
-		goto error;
-
 	d = isl_map_dim(map, isl_dim_in);
+	if (d < 0)
+		goto error;
 
 	path = isl_map_identity(isl_space_copy(space));
 
@@ -959,12 +986,11 @@ static isl_bool has_spurious_elements(__isl_keep isl_map *qc,
 {
 	isl_set *s;
 	isl_bool subset;
-	unsigned d;
-
-	if (!qc || !dom || !ran)
-		return isl_bool_error;
+	isl_size d;
 
 	d = isl_map_dim(qc, isl_dim_in);
+	if (d < 0 || !dom || !ran)
+		return isl_bool_error;
 
 	qc = isl_map_copy(qc);
 	qc = set_path_length(qc, 0, 1);
@@ -1209,9 +1235,13 @@ static isl_bool incremental_on_entire_domain(__isl_keep isl_space *space,
 {
 	int i;
 	isl_set *C;
-	unsigned d;
+	isl_size d;
 
 	*res = NULL;
+
+	d = isl_map_dim(map, isl_dim_in);
+	if (d < 0)
+		return isl_bool_error;
 
 	C = isl_set_union(isl_map_domain(isl_map_copy(map)),
 			  isl_map_range(isl_map_copy(map)));
@@ -1222,8 +1252,6 @@ static isl_bool incremental_on_entire_domain(__isl_keep isl_space *space,
 		isl_set_free(C);
 		return isl_bool_false;
 	}
-
-	d = isl_map_dim(map, isl_dim_in);
 
 	for (i = 0; i < map->n; ++i) {
 		isl_map *qc;
@@ -1296,7 +1324,7 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
 	int *left = NULL;
 	int *right = NULL;
 	isl_set *C;
-	unsigned d;
+	isl_size d;
 	isl_map *res = NULL;
 
 	if (!project)
@@ -1310,6 +1338,8 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
 							project);
 
 	d = isl_map_dim(map, isl_dim_in);
+	if (d < 0)
+		goto error;
 
 	dom = isl_calloc_array(map->ctx, isl_set *, map->n);
 	ran = isl_calloc_array(map->ctx, isl_set *, map->n);
@@ -1469,15 +1499,17 @@ static __isl_give isl_map *increment(__isl_take isl_space *space)
 {
 	int k;
 	isl_basic_map *bmap;
+	isl_size total;
 
 	space = isl_space_set_from_params(space);
 	space = isl_space_add_dims(space, isl_dim_set, 1);
 	space = isl_space_map_from_set(space);
 	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
 	k = isl_basic_map_alloc_equality(bmap);
-	if (k < 0)
+	if (total < 0 || k < 0)
 		goto error;
-	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_seq_clr(bmap->eq[k], 1 + total);
 	isl_int_set_si(bmap->eq[k][0], 1);
 	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
 	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
@@ -2024,14 +2056,13 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
 	isl_space *target_space;
 	isl_space *space;
 	isl_map *diff;
-	unsigned d;
-	unsigned param;
-
-	if (!map)
-		return NULL;
+	isl_size d;
+	isl_size param;
 
 	d = isl_map_dim(map, isl_dim_in);
 	param = isl_map_dim(map, isl_dim_param);
+	if (d < 0 || param < 0)
+		return isl_map_free(map);
 
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
@@ -2078,14 +2109,13 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 {
 	isl_space *space;
 	isl_map *diff;
-	unsigned d;
-	unsigned param;
-
-	if (!map)
-		return NULL;
+	isl_size d;
+	isl_size param;
 
 	d = isl_map_dim(map, isl_dim_in);
 	param = isl_map_dim(map, isl_dim_param);
+	if (d < 0 || param < 0)
+		return isl_map_free(map);
 
 	map = isl_map_compute_divs(map);
 	map = isl_map_coalesce(map);
@@ -2323,11 +2353,13 @@ static isl_bool check_exactness_omega(__isl_keep isl_map *map,
 	isl_set *delta;
 	int i;
 	isl_bool is_empty, is_exact;
-	unsigned d;
+	isl_size d;
 	isl_map *test;
 
 	delta = isl_map_deltas(isl_map_copy(app));
 	d = isl_set_dim(delta, isl_dim_set);
+	if (d < 0)
+		delta = isl_set_free(delta);
 	for (i = 0; i < d; ++i)
 		delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
 	is_empty = isl_set_is_empty(delta);

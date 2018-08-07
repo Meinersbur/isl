@@ -36,14 +36,14 @@ __isl_give isl_space *FN(UNION,get_space)(__isl_keep UNION *u)
 /* Return the number of parameters of "u", where "type"
  * is required to be set to isl_dim_param.
  */
-unsigned FN(UNION,dim)(__isl_keep UNION *u, enum isl_dim_type type)
+isl_size FN(UNION,dim)(__isl_keep UNION *u, enum isl_dim_type type)
 {
 	if (!u)
-		return 0;
+		return isl_size_error;
 
 	if (type != isl_dim_param)
 		isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
-			"can only reference parameters", return 0);
+			"can only reference parameters", return isl_size_error);
 
 	return isl_space_dim(u->space, type);
 }

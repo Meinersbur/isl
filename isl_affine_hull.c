@@ -121,11 +121,14 @@ static isl_stat construct_column(
 	int r;
 	isl_int a;
 	isl_int b;
-	unsigned total;
+	isl_size total;
+
+	total = isl_basic_set_dim(bset1, isl_dim_set);
+	if (total < 0)
+		return isl_stat_error;
 
 	isl_int_init(a);
 	isl_int_init(b);
-	total = 1 + isl_basic_set_n_dim(bset1);
 	for (r = 0; r < row; ++r) {
 		if (isl_int_is_zero(bset2->eq[r][col]))
 			continue;
@@ -133,8 +136,8 @@ static isl_stat construct_column(
 		isl_int_divexact(a, bset1->eq[row][col], b);
 		isl_int_divexact(b, bset2->eq[r][col], b);
 		isl_seq_combine(bset1->eq[r], a, bset1->eq[r],
-					      b, bset1->eq[row], total);
-		isl_seq_scale(bset2->eq[r], bset2->eq[r], a, total);
+					      b, bset1->eq[row], 1 + total);
+		isl_seq_scale(bset2->eq[r], bset2->eq[r], a, 1 + total);
 	}
 	isl_int_clear(a);
 	isl_int_clear(b);
@@ -158,7 +161,7 @@ static isl_bool transform_column(
 {
 	int i, t;
 	isl_int a, b, g;
-	unsigned total;
+	isl_size total;
 
 	for (t = row-1; t >= 0; --t)
 		if (isl_int_ne(bset1->eq[t][col], bset2->eq[t][col]))
@@ -166,7 +169,9 @@ static isl_bool transform_column(
 	if (t < 0)
 		return isl_bool_false;
 
-	total = 1 + isl_basic_set_n_dim(bset1);
+	total = isl_basic_set_dim(bset1, isl_dim_set);
+	if (total < 0)
+		return isl_bool_error;
 	isl_int_init(a);
 	isl_int_init(b);
 	isl_int_init(g);
@@ -177,9 +182,9 @@ static isl_bool transform_column(
 		isl_int_divexact(a, a, g);
 		isl_int_divexact(g, b, g);
 		isl_seq_combine(bset1->eq[i], g, bset1->eq[i], a, bset1->eq[t],
-				total);
+				1 + total);
 		isl_seq_combine(bset2->eq[i], g, bset2->eq[i], a, bset2->eq[t],
-				total);
+				1 + total);
 	}
 	isl_int_clear(a);
 	isl_int_clear(b);
@@ -197,14 +202,16 @@ static isl_bool transform_column(
 static __isl_give isl_basic_set *affine_hull(
 	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
+	isl_size dim;
 	unsigned total;
 	int col;
 	int row;
 
-	if (!bset1 || !bset2)
+	dim = isl_basic_set_dim(bset1, isl_dim_set);
+	if (dim < 0 || !bset2)
 		goto error;
 
-	total = 1 + isl_basic_set_n_dim(bset1);
+	total = 1 + dim;
 
 	row = 0;
 	for (col = total-1; col >= 0; --col) {
@@ -348,12 +355,11 @@ static __isl_give isl_basic_set *add_adjacent_points(
 	__isl_keep isl_basic_set *bset)
 {
 	int i, up;
-	int dim;
-
-	if (!sample)
-		goto error;
+	isl_size dim;
 
 	dim = isl_basic_set_dim(hull, isl_dim_set);
+	if (!sample || dim < 0)
+		goto error;
 
 	for (i = 0; i < dim; ++i) {
 		for (up = 0; up <= 1; ++up) {
@@ -487,12 +493,14 @@ static __isl_give isl_basic_set *uset_affine_hull_bounded(
 	struct isl_vec *sample = NULL;
 	struct isl_basic_set *hull;
 	struct isl_tab *tab = NULL;
-	unsigned dim;
+	isl_size dim;
 
 	if (isl_basic_set_plain_is_empty(bset))
 		return bset;
 
-	dim = isl_basic_set_n_dim(bset);
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	if (dim < 0)
+		return isl_basic_set_free(bset);
 
 	if (bset->sample && bset->sample->size == 1 + dim) {
 		int contains = isl_basic_set_contains(bset, bset->sample);
@@ -563,7 +571,7 @@ static __isl_give isl_basic_set *initial_hull(struct isl_tab *tab,
 	int k;
 	struct isl_basic_set *bset = NULL;
 	struct isl_ctx *ctx;
-	unsigned dim;
+	isl_size dim;
 
 	if (!vec || !tab)
 		return NULL;
@@ -571,9 +579,10 @@ static __isl_give isl_basic_set *initial_hull(struct isl_tab *tab,
 	isl_assert(ctx, vec->size != 0, goto error);
 
 	bset = isl_basic_set_alloc(ctx, 0, vec->size - 1, 0, vec->size - 1, 0);
-	if (!bset)
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	if (dim < 0)
 		goto error;
-	dim = isl_basic_set_n_dim(bset) - tab->n_unbounded;
+	dim -= tab->n_unbounded;
 	for (i = 0; i < dim; ++i) {
 		k = isl_basic_set_alloc_equality(bset);
 		if (k < 0)
@@ -713,15 +722,15 @@ error:
 static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
 	struct isl_basic_set *cone)
 {
-	unsigned total;
+	isl_size total;
 	unsigned cone_dim;
 	struct isl_basic_set *hull;
 	struct isl_mat *M, *U, *Q;
 
-	if (!bset || !cone)
+	total = isl_basic_set_dim(cone, isl_dim_all);
+	if (!bset || total < 0)
 		goto error;
 
-	total = isl_basic_set_total_dim(cone);
 	cone_dim = total - cone->n_eq;
 
 	M = isl_mat_sub_alloc6(bset->ctx, cone->eq, 0, cone->n_eq, 1, total);
@@ -791,6 +800,7 @@ error:
 static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 {
 	struct isl_basic_set *cone;
+	isl_size total;
 
 	if (isl_basic_set_plain_is_empty(bset))
 		return bset;
@@ -806,7 +816,10 @@ static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
 		return isl_basic_set_universe(space);
 	}
 
-	if (cone->n_eq < isl_basic_set_total_dim(cone))
+	total = isl_basic_set_dim(cone, isl_dim_all);
+	if (total < 0)
+		bset = isl_basic_set_free(bset);
+	if (cone->n_eq < total)
 		return affine_hull_with_cone(bset, cone);
 
 	isl_basic_set_free(cone);
@@ -882,6 +895,7 @@ __isl_give isl_basic_map *isl_basic_map_detect_equalities(
 	__isl_take isl_basic_map *bmap)
 {
 	int i, j;
+	isl_size total;
 	struct isl_basic_set *hull = NULL;
 
 	if (!bmap)
@@ -904,12 +918,14 @@ __isl_give isl_basic_map *isl_basic_map_detect_equalities(
 	}
 	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim), 0,
 					hull->n_eq, 0);
+	total = isl_basic_set_dim(hull, isl_dim_all);
+	if (total < 0)
+		goto error;
 	for (i = 0; i < hull->n_eq; ++i) {
 		j = isl_basic_map_alloc_equality(bmap);
 		if (j < 0)
 			goto error;
-		isl_seq_cpy(bmap->eq[j], hull->eq[i],
-				1 + isl_basic_set_total_dim(hull));
+		isl_seq_cpy(bmap->eq[j], hull->eq[i], 1 + total);
 	}
 	isl_vec_free(bmap->sample);
 	bmap->sample = isl_vec_copy(hull->sample);

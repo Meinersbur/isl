@@ -281,6 +281,19 @@ by various operations that take such objects as input.
 
 =back
 
+=head3 Changes since isl-0.20
+
+=over
+
+=item * Several functions that used to return C<unsigned>
+now return C<isl_size>.  This means that these functions may
+now return a negative value in case an error occurred.
+The same holds for functions that used to return C<int>,
+although some of those were already returning
+a negative value in case of error.
+
+=back
+
 =head1 License
 
 C<isl> is released under the MIT license.
@@ -1145,65 +1158,65 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 (only for sets) or C<isl_dim_all>.
 
 	#include <isl/space.h>
-	unsigned isl_space_dim(__isl_keep isl_space *space,
+	isl_size isl_space_dim(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
 	#include <isl/local_space.h>
-	int isl_local_space_dim(__isl_keep isl_local_space *ls,
+	isl_size isl_local_space_dim(__isl_keep isl_local_space *ls,
 		enum isl_dim_type type);
 
 	#include <isl/set.h>
-	unsigned isl_basic_set_dim(__isl_keep isl_basic_set *bset,
+	isl_size isl_basic_set_dim(__isl_keep isl_basic_set *bset,
 		enum isl_dim_type type);
-	unsigned isl_set_dim(__isl_keep isl_set *set,
+	isl_size isl_set_dim(__isl_keep isl_set *set,
 		enum isl_dim_type type);
 
 	#include <isl/union_set.h>
-	unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+	isl_size isl_union_set_dim(__isl_keep isl_union_set *uset,
 		enum isl_dim_type type);
 
 	#include <isl/map.h>
-	unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
+	isl_size isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 		enum isl_dim_type type);
-	unsigned isl_map_dim(__isl_keep isl_map *map,
+	isl_size isl_map_dim(__isl_keep isl_map *map,
 		enum isl_dim_type type);
 
 	#include <isl/union_map.h>
-	unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+	isl_size isl_union_map_dim(__isl_keep isl_union_map *umap,
 		enum isl_dim_type type);
 
 	#include <isl/val.h>
-	unsigned isl_multi_val_dim(__isl_keep isl_multi_val *mv,
+	isl_size isl_multi_val_dim(__isl_keep isl_multi_val *mv,
 		enum isl_dim_type type);
 
 	#include <isl/aff.h>
-	int isl_aff_dim(__isl_keep isl_aff *aff,
+	isl_size isl_aff_dim(__isl_keep isl_aff *aff,
 		enum isl_dim_type type);
-	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
+	isl_size isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
 		enum isl_dim_type type);
-	unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
+	isl_size isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
 		enum isl_dim_type type);
-	unsigned isl_pw_multi_aff_dim(
+	isl_size isl_pw_multi_aff_dim(
 		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type);
-	unsigned isl_multi_pw_aff_dim(
+	isl_size isl_multi_pw_aff_dim(
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
-	unsigned isl_union_pw_aff_dim(
+	isl_size isl_union_pw_aff_dim(
 		__isl_keep isl_union_pw_aff *upa,
 		enum isl_dim_type type);
-	unsigned isl_union_pw_multi_aff_dim(
+	isl_size isl_union_pw_multi_aff_dim(
 		__isl_keep isl_union_pw_multi_aff *upma,
 		enum isl_dim_type type);
-	unsigned isl_multi_union_pw_aff_dim(
+	isl_size isl_multi_union_pw_aff_dim(
 		__isl_keep isl_multi_union_pw_aff *mupa,
 		enum isl_dim_type type);
 
 	#include <isl/polynomial.h>
-	unsigned isl_union_pw_qpolynomial_dim(
+	isl_size isl_union_pw_qpolynomial_dim(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		enum isl_dim_type type);
-	unsigned isl_union_pw_qpolynomial_fold_dim(
+	isl_size isl_union_pw_qpolynomial_fold_dim(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
 		enum isl_dim_type type);
 
@@ -2759,7 +2772,7 @@ use
 The terms themselves can be inspected and freed using
 these functions
 
-	unsigned isl_term_dim(__isl_keep isl_term *term,
+	isl_size isl_term_dim(__isl_keep isl_term *term,
 		enum isl_dim_type type);
 	__isl_give isl_val *isl_term_get_coefficient_val(
 		__isl_keep isl_term *term);
