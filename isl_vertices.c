@@ -236,7 +236,7 @@ error:
  */
 static isl_bool is_independent(__isl_keep isl_mat *facets, int n, isl_int *f)
 {
-	int rank;
+	isl_size rank;
 
 	if (isl_seq_first_non_zero(f, facets->n_col) < 0)
 		return isl_bool_false;

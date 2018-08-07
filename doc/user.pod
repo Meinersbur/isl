@@ -8107,7 +8107,7 @@ The following function computes the rank of a matrix.
 The return value may be -1 if some error occurred.
 
 	#include <isl/mat.h>
-	int isl_mat_rank(__isl_keep isl_mat *mat);
+	isl_size isl_mat_rank(__isl_keep isl_mat *mat);
 
 The following function can be used to compute the (right) inverse
 of a matrix, i.e., a matrix such that the product of the original

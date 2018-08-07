@@ -843,16 +843,16 @@ static int hermite_first_zero_col(__isl_keep isl_mat *H, int first_col,
 	return H->n_col;
 }
 
-/* Return the rank of "mat", or -1 in case of error.
+/* Return the rank of "mat", or isl_size_error in case of error.
  */
-int isl_mat_rank(__isl_keep isl_mat *mat)
+isl_size isl_mat_rank(__isl_keep isl_mat *mat)
 {
 	int rank;
 	isl_mat *H;
 
 	H = isl_mat_left_hermite(isl_mat_copy(mat), 0, NULL, NULL);
 	if (!H)
-		return -1;
+		return isl_size_error;
 
 	rank = hermite_first_zero_col(H, 0, H->n_row);
 	isl_mat_free(H);
@@ -2080,7 +2080,7 @@ error:
 isl_bool isl_mat_has_linearly_independent_rows(__isl_keep isl_mat *mat1,
 	__isl_keep isl_mat *mat2)
 {
-	int r1, r2, r;
+	isl_size r1, r2, r;
 	isl_mat *mat;
 
 	r1 = isl_mat_rank(mat1);
