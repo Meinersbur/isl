@@ -903,7 +903,7 @@ void cpp_generator::print_on_error_continue(ostream &os)
  * contains the exception that was caught and that needs to be rethrown.
  * Then check if the function call failed in any other way and throw
  * the appropriate exception.
- * In particular, if the return type is isl_stat or isl_bool,
+ * In particular, if the return type is isl_stat, isl_bool or isl_size,
  * then a negative value indicates a failure.  If the return type
  * is an isl type, then a NULL value indicates a failure.
  * Assume print_save_ctx has made sure that a valid isl::ctx
@@ -1416,10 +1416,11 @@ string cpp_generator::type2cpp(string type_str)
 /* Translate QualType "type" to its C++ name counterpart.
  *
  * An isl_bool return type is translated into "bool",
- * while an isl_stat is translated into "void".
+ * while an isl_stat is translated into "void" and
+ * an isl_size is translated to "unsigned".
  * The exceptional cases are handled through exceptions.
  * If checked C++ bindings are being generated, then
- * C++ counterparts of isl_bool and isl_stat need to be used instead.
+ * C++ counterparts of isl_bool, isl_stat and isl_size need to be used instead.
  */
 string cpp_generator::type2cpp(QualType type)
 {
@@ -1431,6 +1432,9 @@ string cpp_generator::type2cpp(QualType type)
 
 	if (is_isl_stat(type))
 		return checked ? "stat" : "void";
+
+	if (is_isl_size(type))
+		return checked ? "class size" : "unsigned";
 
 	if (type->isIntegerType())
 		return type.getAsString();

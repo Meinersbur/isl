@@ -92,6 +92,8 @@ typedef enum {
 } isl_bool;
 isl_bool isl_bool_not(isl_bool b);
 isl_bool isl_bool_ok(int b);
+typedef int	isl_size;
+#define isl_size_error	((int) -1)
 struct isl_ctx;
 typedef struct isl_ctx isl_ctx;
 

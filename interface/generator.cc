@@ -351,7 +351,7 @@ bool generator::is_isl_type(QualType type)
  */
 bool generator::is_isl_neg_error(QualType type)
 {
-	return is_isl_bool(type) || is_isl_stat(type);
+	return is_isl_bool(type) || is_isl_stat(type) || is_isl_size(type);
 }
 
 /* Is "type" the primitive type with the given name?
@@ -381,6 +381,12 @@ bool generator::is_isl_stat(QualType type)
 	return is_isl_primitive(type, "isl_stat");
 }
 
+/* Is "type" the type isl_size?
+ */
+bool generator::is_isl_size(QualType type)
+{
+	return is_isl_primitive(type, "isl_size");
+}
 
 /* Is "type" that of a pointer to a function?
  */

@@ -617,7 +617,13 @@ in which the object was created.
 
 =head2 Return Types
 
-C<isl> uses two special return types for functions that either return
+C<isl> uses the special return type C<isl_size> for functions
+that return a non-negative value, typically a number or a position.
+Besides the regular non-negative return values, a special (negative)
+value C<isl_size_error> may be returned, indicating that something
+went wrong.
+
+C<isl> also uses two special return types for functions that either return
 a boolean or that in principle do not return anything.
 In particular, the C<isl_bool> type has three possible values:
 C<isl_bool_true> (a positive integer value), indicating I<true> or I<yes>;
@@ -639,7 +645,7 @@ operation; and
 C<isl_stat_error> (a negative integer value), indicating that something
 went wrong.
 See L</"Error Handling"> for more information on
-C<isl_bool_error> and C<isl_stat_error>.
+C<isl_size_error>, C<isl_bool_error> and C<isl_stat_error>.
 
 =head2 Values
 
@@ -864,8 +870,9 @@ The default behavior is to warn. In this mode, C<isl> prints a warning, stores
 the last error in the corresponding C<isl_ctx> and the function in which the
 error was triggered returns a value indicating that some error has
 occurred.  In case of functions returning a pointer, this value is
-C<NULL>.  In case of functions returning an C<isl_bool> or an
-C<isl_stat>, this value is C<isl_bool_error> or C<isl_stat_error>.
+C<NULL>.  In case of functions returning an C<isl_size>, C<isl_bool> or an
+C<isl_stat>, this value is C<isl_size_error>,
+C<isl_bool_error> or C<isl_stat_error>.
 An error does not corrupt internal state,
 such that isl can continue to be used. C<isl> also provides functions to
 read the last error, including the specific error message,

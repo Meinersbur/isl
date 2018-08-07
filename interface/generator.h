@@ -71,6 +71,7 @@ public:
 	static bool is_isl_neg_error(QualType type);
 	static bool is_isl_bool(QualType type);
 	static bool is_isl_stat(QualType type);
+	static bool is_isl_size(QualType type);
 	static bool is_long(QualType type);
 	static bool is_callback(QualType type);
 	static bool is_string(QualType type);

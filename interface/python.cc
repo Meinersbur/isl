@@ -207,10 +207,11 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  * by isl is explicitly decoded as an 'ascii' string.  This is correct
  * as all strings returned by isl are expected to be 'ascii'.
  *
- * If the return type is isl_stat or isl_bool, then
- * raise an error on isl_stat_error or isl_bool_error.
+ * If the return type is isl_stat, isl_bool or isl_size, then
+ * raise an error on isl_stat_error, isl_bool_error or isl_size_error.
  * In case of isl_bool, the result is converted to
  * a Python boolean.
+ * In case of isl_size, the result is converted to a Python int.
  */
 void python_generator::print_method_return(FunctionDecl *method)
 {
@@ -236,6 +237,8 @@ void python_generator::print_method_return(FunctionDecl *method)
 		printf("            raise\n");
 		if (is_isl_bool(return_type))
 			printf("        return bool(res)\n");
+		else if (is_isl_size(return_type))
+			printf("        return int(res)\n");
 	} else {
 		printf("        return res\n");
 	}
@@ -497,7 +500,7 @@ void python_generator::print_class_header(const isl_class &clazz,
  * If "fd" returns a char *, then simply tell ctypes.
  *
  * Nothing needs to be done for functions returning
- * isl_bool or isl_stat since they are represented by an int and
+ * isl_bool, isl_stat or isl_size since they are represented by an int and
  * ctypes assumes that a function returns int by default.
  */
 void python_generator::print_restype(FunctionDecl *fd)
