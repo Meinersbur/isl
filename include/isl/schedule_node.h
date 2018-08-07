@@ -49,7 +49,7 @@ __isl_give isl_schedule_node *isl_schedule_node_map_descendant_bottom_up(
 	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
 		void *user), void *user);
 
-int isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node);
+isl_size isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_children(__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_previous_sibling(

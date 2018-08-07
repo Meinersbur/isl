@@ -5316,9 +5316,12 @@ static __isl_give isl_ast_graft_list *build_ast_from_context(
 	isl_multi_aff *internal2input;
 	isl_ast_build *sub_build;
 	isl_ast_graft_list *list;
-	int n, depth;
+	isl_size n;
+	isl_size depth;
 
 	depth = isl_schedule_node_get_tree_depth(node);
+	if (depth < 0)
+		build = isl_ast_build_free(build);
 	space = isl_ast_build_get_space(build, 1);
 	context = isl_schedule_node_context_get_context(node);
 	context = isl_set_align_params(context, space);
