@@ -2424,11 +2424,13 @@ static int before(void *first, void *second)
 {
 	struct isl_sched_info *info1 = first;
 	struct isl_sched_info *info2 = second;
-	int n1, n2;
+	isl_size n1, n2;
 	int i;
 
 	n1 = isl_vec_size(info1->cst);
 	n2 = isl_vec_size(info2->cst);
+	if (n1 < 0 || n2 < 0)
+		return -1;
 
 	if (n2 < n1)
 		n1 = n2;
@@ -2463,11 +2465,13 @@ static isl_bool coscheduled(void *first, void *second)
 {
 	struct isl_sched_info *info1 = first;
 	struct isl_sched_info *info2 = second;
-	int n1, n2;
+	isl_size n1, n2;
 	int i;
 
 	n1 = isl_vec_size(info1->cst);
 	n2 = isl_vec_size(info2->cst);
+	if (n1 < 0 || n2 < 0)
+		return isl_bool_error;
 
 	if (n2 < n1)
 		n1 = n2;

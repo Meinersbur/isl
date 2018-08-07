@@ -267,7 +267,7 @@ error:
 __isl_give isl_vec *isl_local_extend_point_vec(__isl_keep isl_local *local,
 	__isl_take isl_vec *v)
 {
-	isl_size dim, n_div;
+	isl_size dim, n_div, size;
 	isl_bool known;
 	isl_mat *mat = local;
 
@@ -281,9 +281,10 @@ __isl_give isl_vec *isl_local_extend_point_vec(__isl_keep isl_local *local,
 			"unknown local variables", return isl_vec_free(v));
 	dim = isl_local_dim(local, isl_dim_set);
 	n_div = isl_local_dim(local, isl_dim_div);
-	if (dim < 0 || n_div < 0)
+	size = isl_vec_size(v);
+	if (dim < 0 || n_div < 0 || size < 0)
 		return isl_vec_free(v);
-	if (isl_vec_size(v) != 1 + dim)
+	if (size != 1 + dim)
 		isl_die(isl_local_get_ctx(local), isl_error_invalid,
 			"incorrect size", return isl_vec_free(v));
 	if (!isl_int_is_one(v->el[0]))
