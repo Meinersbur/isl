@@ -8204,7 +8204,7 @@ and then iterating over all vertices that are active on the chamber.
 Other operations that can be performed on an C<isl_vertices> object are
 the following.
 
-	int isl_vertices_get_n_vertices(
+	isl_size isl_vertices_get_n_vertices(
 		__isl_keep isl_vertices *vertices);
 	__isl_null isl_vertices *isl_vertices_free(
 		__isl_take isl_vertices *vertices);

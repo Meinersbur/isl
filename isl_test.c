@@ -6740,7 +6740,7 @@ int test_vertices(isl_ctx *ctx)
 		isl_basic_set *bset;
 		isl_vertices *vertices;
 		int ok = 1;
-		int n;
+		isl_size n;
 
 		bset = isl_basic_set_read_from_str(ctx, vertices_tests[i].set);
 		vertices = isl_basic_set_compute_vertices(bset);
@@ -6753,7 +6753,7 @@ int test_vertices(isl_ctx *ctx)
 		isl_vertices_free(vertices);
 		isl_basic_set_free(bset);
 
-		if (!vertices)
+		if (n < 0)
 			return -1;
 		if (!ok)
 			isl_die(ctx, isl_error_unknown, "unexpected vertices",

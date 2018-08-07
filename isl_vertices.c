@@ -1330,9 +1330,9 @@ isl_ctx *isl_vertices_get_ctx(__isl_keep isl_vertices *vertices)
 	return vertices ? vertices->bset->ctx : NULL;
 }
 
-int isl_vertices_get_n_vertices(__isl_keep isl_vertices *vertices)
+isl_size isl_vertices_get_n_vertices(__isl_keep isl_vertices *vertices)
 {
-	return vertices ? vertices->n_vertices : -1;
+	return vertices ? vertices->n_vertices : isl_size_error;
 }
 
 __isl_give isl_vertices *isl_morph_vertices(__isl_take isl_morph *morph,
