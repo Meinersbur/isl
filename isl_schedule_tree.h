@@ -178,7 +178,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_first_schedule_descendant(
 __isl_give isl_union_map *isl_schedule_tree_get_subtree_schedule_union_map(
 	__isl_keep isl_schedule_tree *tree);
 
-unsigned isl_schedule_tree_band_n_member(__isl_keep isl_schedule_tree *tree);
+isl_size isl_schedule_tree_band_n_member(__isl_keep isl_schedule_tree *tree);
 
 isl_bool isl_schedule_tree_band_member_get_coincident(
 	__isl_keep isl_schedule_tree *tree, int pos);

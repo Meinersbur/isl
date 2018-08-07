@@ -290,14 +290,19 @@ int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
 		return -1;
 	for (i = n - 1; i >= 0; --i) {
 		isl_schedule_tree *tree;
+		isl_size n;
 
 		tree = isl_schedule_tree_list_get_schedule_tree(
 						    node->ancestors, i);
 		if (!tree)
 			return -1;
+		n = 0;
 		if (tree->type == isl_schedule_node_band)
-			depth += isl_schedule_tree_band_n_member(tree);
+			n = isl_schedule_tree_band_n_member(tree);
+		depth += n;
 		isl_schedule_tree_free(tree);
+		if (n < 0)
+			return -1;
 	}
 
 	return depth;
@@ -456,6 +461,7 @@ static isl_stat collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 	enum isl_schedule_node_type type;
 	isl_multi_union_pw_aff *mupa;
 	isl_union_set *filter;
+	isl_size n;
 
 	type = isl_schedule_tree_get_type(tree);
 	switch (type) {
@@ -481,7 +487,10 @@ static isl_stat collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 		data->filter = filter;
 		break;
 	case isl_schedule_node_band:
-		if (isl_schedule_tree_band_n_member(tree) == 0)
+		n = isl_schedule_tree_band_n_member(tree);
+		if (n < 0)
+			return isl_stat_error;
+		if (n == 0)
 			return isl_stat_ok;
 		mupa = isl_schedule_tree_band_get_partial_schedule(tree);
 		if (data->collect_prefix) {
@@ -532,6 +541,7 @@ static isl_stat collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	isl_union_set *filter;
 	isl_union_map *extension;
 	isl_bool empty;
+	isl_size n;
 
 	type = isl_schedule_tree_get_type(tree);
 	switch (type) {
@@ -566,7 +576,10 @@ static isl_stat collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 		data->filter = isl_union_set_intersect(data->filter, filter);
 		break;
 	case isl_schedule_node_band:
-		if (isl_schedule_tree_band_n_member(tree) == 0)
+		n = isl_schedule_tree_band_n_member(tree);
+		if (n < 0)
+			return isl_stat_error;
+		if (n == 0)
 			break;
 		if (!data->collect_prefix)
 			break;
@@ -1547,9 +1560,11 @@ isl_bool isl_schedule_node_is_subtree_anchored(
 
 /* Return the number of members in the given band node.
  */
-unsigned isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node)
+isl_size isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node)
 {
-	return node ? isl_schedule_tree_band_n_member(node->tree) : 0;
+	if (!node)
+		return isl_size_error;
+	return isl_schedule_tree_band_n_member(node->tree);
 }
 
 /* Is the band member at position "pos" of the band node "node"
@@ -1649,6 +1664,7 @@ __isl_give isl_multi_union_pw_aff *isl_schedule_node_band_get_partial_schedule(
 __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(
 	__isl_keep isl_schedule_node *node)
 {
+	isl_size n;
 	isl_multi_union_pw_aff *mupa;
 
 	if (!node)
@@ -1657,7 +1673,10 @@ __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_band)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"not a band node", return NULL);
-	if (isl_schedule_node_band_n_member(node) == 0) {
+	n = isl_schedule_node_band_n_member(node);
+	if (n < 0)
+		return NULL;
+	if (n == 0) {
 		isl_union_set *domain;
 
 		domain = isl_schedule_node_get_universe_domain(node);
@@ -2842,8 +2861,7 @@ static __isl_give isl_schedule_tree *group_band(
 	isl_multi_aff *ma;
 	isl_multi_union_pw_aff *mupa, *partial;
 	isl_bool is_covered;
-	isl_size depth;
-	int n;
+	isl_size depth, n;
 	isl_bool has_id;
 
 	domain = isl_schedule_node_get_domain(pos);
@@ -2859,7 +2877,7 @@ static __isl_give isl_schedule_tree *group_band(
 		return isl_schedule_tree_free(tree);
 	depth = isl_schedule_node_get_schedule_depth(pos);
 	n = isl_schedule_tree_band_n_member(tree);
-	if (depth < 0)
+	if (depth < 0 || n < 0)
 		return isl_schedule_tree_free(tree);
 	ma = isl_multi_aff_copy(data->sched);
 	ma = isl_multi_aff_drop_dims(ma, isl_dim_out, 0, depth);

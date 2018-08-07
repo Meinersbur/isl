@@ -1072,18 +1072,22 @@ static __isl_give isl_ast_build *extract_loop_types(
 	__isl_take isl_ast_build *build)
 {
 	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_schedule_node *node;
 
 	if (!build)
 		return NULL;
+	n = isl_schedule_node_band_n_member(build->node);
+	if (n < 0)
+		return isl_ast_build_free(build);
 	ctx = isl_ast_build_get_ctx(build);
 	if (!build->node)
 		isl_die(ctx, isl_error_internal, "missing AST node",
 			return isl_ast_build_free(build));
 
 	free(build->loop_type);
-	build->n = isl_schedule_node_band_n_member(build->node);
+	build->n = n;
 	build->loop_type = isl_alloc_array(ctx,
 					    enum isl_ast_loop_type, build->n);
 	if (build->n && !build->loop_type)

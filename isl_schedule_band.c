@@ -223,9 +223,9 @@ isl_bool isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
 
 /* Return the number of scheduling dimensions in the band.
  */
-int isl_schedule_band_n_member(__isl_keep isl_schedule_band *band)
+isl_size isl_schedule_band_n_member(__isl_keep isl_schedule_band *band)
 {
-	return band ? band->n : 0;
+	return band ? band->n : isl_size_error;
 }
 
 /* Is the given scheduling dimension coincident within the band and

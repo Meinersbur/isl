@@ -4331,8 +4331,12 @@ static isl_bool after_in_band(__isl_keep isl_union_map *umap,
 	isl_space *space;
 	isl_bool empty;
 	isl_bool after;
+	isl_size n;
 
-	if (isl_schedule_node_band_n_member(node) == 0)
+	n = isl_schedule_node_band_n_member(node);
+	if (n < 0)
+		return isl_bool_error;
+	if (n == 0)
 		return after_in_child(umap, node);
 
 	mupa = isl_schedule_node_band_get_partial_schedule(node);
@@ -5192,11 +5196,13 @@ static __isl_give isl_ast_graft_list *build_ast_from_band(
 	isl_union_map *extra_umap;
 	isl_ast_graft_list *list;
 	isl_size n1, n2;
+	isl_size n;
 
-	if (!build || !node || !executed)
+	n = isl_schedule_node_band_n_member(node);
+	if (!build || n < 0 || !executed)
 		goto error;
 
-	if (isl_schedule_node_band_n_member(node) == 0)
+	if (n == 0)
 		return build_ast_from_child(build, node, executed);
 
 	extra = isl_schedule_node_band_get_partial_schedule(node);

@@ -4325,7 +4325,7 @@ static int test_conditional_schedule_constraints(isl_ctx *ctx)
 	isl_schedule_constraints *sc;
 	isl_schedule *schedule;
 	isl_schedule_node *node;
-	int n_member;
+	isl_size n_member;
 
 	if (test_special_conditional_schedule_constraints(ctx) < 0)
 		return -1;
@@ -4356,7 +4356,7 @@ static int test_conditional_schedule_constraints(isl_ctx *ctx)
 		isl_schedule_node_free(node);
 		isl_schedule_free(schedule);
 
-		if (!schedule)
+		if (!schedule || n_member < 0)
 			return -1;
 		if (n_member != live_range_tests[i].outer_band_n)
 			isl_die(ctx, isl_error_unknown,
