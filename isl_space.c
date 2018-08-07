@@ -148,11 +148,11 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
 	return space;
 }
 
-static int global_pos(__isl_keep isl_space *space,
+static isl_size global_pos(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
 	if (isl_space_check_range(space, type, pos, 1) < 0)
-		return -1;
+		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -162,9 +162,9 @@ static int global_pos(__isl_keep isl_space *space,
 	case isl_dim_out:
 		return pos + space->nparam + space->n_in;
 	default:
-		isl_assert(isl_space_get_ctx(space), 0, return -1);
+		isl_assert(isl_space_get_ctx(space), 0, return isl_size_error);
 	}
-	return -1;
+	return isl_size_error;
 }
 
 /* Extend length of ids array to the total number of dimensions.
@@ -205,7 +205,7 @@ error:
 static __isl_give isl_space *set_id(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
-	int gpos;
+	isl_size gpos;
 
 	space = isl_space_cow(space);
 
@@ -233,7 +233,7 @@ error:
 static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	int gpos;
+	isl_size gpos;
 
 	gpos = global_pos(space, type, pos);
 	if (gpos < 0)
