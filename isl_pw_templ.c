@@ -1686,9 +1686,9 @@ error:
 }
 #endif
 
-int FN(PW,n_piece)(__isl_keep PW *pw)
+isl_size FN(PW,n_piece)(__isl_keep PW *pw)
 {
-	return pw ? pw->n : 0;
+	return pw ? pw->n : isl_size_error;
 }
 
 isl_stat FN(PW,foreach_piece)(__isl_keep PW *pw,

@@ -6275,12 +6275,12 @@ int test_aff(isl_ctx *ctx)
  */
 static int check_single_piece(isl_ctx *ctx, __isl_take isl_pw_aff *pa)
 {
-	int n;
+	isl_size n;
 
 	n = isl_pw_aff_n_piece(pa);
 	isl_pw_aff_free(pa);
 
-	if (!pa)
+	if (n < 0)
 		return -1;
 	if (n != 1)
 		isl_die(ctx, isl_error_unknown, "expecting single expression",

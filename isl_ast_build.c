@@ -777,6 +777,7 @@ static __isl_give isl_ast_build *update_values(
 	__isl_take isl_ast_build *build, __isl_take isl_basic_set *bounds)
 {
 	isl_bool sv;
+	isl_size n;
 	isl_pw_multi_aff *pma;
 	isl_aff *aff = NULL;
 	isl_map *it_map;
@@ -801,10 +802,10 @@ static __isl_give isl_ast_build *update_values(
 	build->value = isl_pw_aff_coalesce(build->value);
 	isl_pw_multi_aff_free(pma);
 
-	if (!build->value)
+	n = isl_pw_aff_n_piece(build->value);
+	if (n < 0)
 		return isl_ast_build_free(build);
-
-	if (isl_pw_aff_n_piece(build->value) != 1)
+	if (n != 1)
 		return build;
 
 	isl_pw_aff_foreach_piece(build->value, &extract_single_piece, &aff);

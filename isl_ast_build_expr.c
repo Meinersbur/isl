@@ -1674,11 +1674,13 @@ struct isl_from_pw_aff_data {
 static isl_stat isl_from_pw_aff_data_init(struct isl_from_pw_aff_data *data,
 	__isl_keep isl_ast_build *build, __isl_keep isl_pw_aff *pa)
 {
-	int n;
+	isl_size n;
 	isl_ctx *ctx;
 
 	ctx = isl_pw_aff_get_ctx(pa);
 	n = isl_pw_aff_n_piece(pa);
+	if (n < 0)
+		return isl_stat_error;
 	if (n == 0)
 		isl_die(ctx, isl_error_invalid,
 			"cannot handle void expression", return isl_stat_error);
