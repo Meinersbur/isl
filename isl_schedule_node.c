@@ -274,20 +274,21 @@ isl_bool isl_schedule_node_is_equal(__isl_keep isl_schedule_node *node1,
 /* Return the number of outer schedule dimensions of "node"
  * in its schedule tree.
  *
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
+isl_size isl_schedule_node_get_schedule_depth(
+	__isl_keep isl_schedule_node *node)
 {
 	int i;
 	isl_size n;
 	int depth = 0;
 
 	if (!node)
-		return -1;
+		return isl_size_error;
 
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
 	if (n < 0)
-		return -1;
+		return isl_size_error;
 	for (i = n - 1; i >= 0; --i) {
 		isl_schedule_tree *tree;
 		isl_size n;
@@ -295,14 +296,14 @@ int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node)
 		tree = isl_schedule_tree_list_get_schedule_tree(
 						    node->ancestors, i);
 		if (!tree)
-			return -1;
+			return isl_size_error;
 		n = 0;
 		if (tree->type == isl_schedule_node_band)
 			n = isl_schedule_tree_band_n_member(tree);
 		depth += n;
 		isl_schedule_tree_free(tree);
 		if (n < 0)
-			return -1;
+			return isl_size_error;
 	}
 
 	return depth;
@@ -1783,12 +1784,12 @@ error:
 __isl_give isl_set *isl_schedule_node_band_get_ast_isolate_option(
 	__isl_keep isl_schedule_node *node)
 {
-	int depth;
-
-	if (!node)
-		return NULL;
+	isl_size depth;
 
 	depth = isl_schedule_node_get_schedule_depth(node);
+	if (depth < 0)
+		return NULL;
+
 	return isl_schedule_tree_band_get_ast_isolate_option(node->tree, depth);
 }
 
@@ -2077,10 +2078,12 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 __isl_give isl_schedule_node *isl_schedule_node_band_split(
 	__isl_take isl_schedule_node *node, int pos)
 {
-	int depth;
+	isl_size depth;
 	isl_schedule_tree *tree;
 
 	depth = isl_schedule_node_get_schedule_depth(node);
+	if (depth < 0)
+		return isl_schedule_node_free(node);
 	tree = isl_schedule_node_get_tree(node);
 	tree = isl_schedule_tree_band_split(tree, pos, depth);
 	return isl_schedule_node_graft_tree(node, tree);
@@ -4396,21 +4399,21 @@ static __isl_give isl_schedule_node *extension_from_domain(
 	isl_union_set *universe;
 	isl_union_set *domain;
 	isl_union_map *ext;
-	int depth;
+	isl_size depth;
 	isl_bool anchored;
 	isl_space *space;
 	isl_schedule_node *res;
 	isl_schedule_tree *tree;
 
+	depth = isl_schedule_node_get_schedule_depth(pos);
 	anchored = isl_schedule_node_is_subtree_anchored(node);
-	if (anchored < 0)
+	if (depth < 0 || anchored < 0)
 		return isl_schedule_node_free(node);
 	if (anchored)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_unsupported,
 			"cannot graft anchored tree with domain root",
 			return isl_schedule_node_free(node));
 
-	depth = isl_schedule_node_get_schedule_depth(pos);
 	domain = isl_schedule_node_domain_get_domain(node);
 	space = isl_union_set_get_space(domain);
 	space = isl_space_set_from_params(space);

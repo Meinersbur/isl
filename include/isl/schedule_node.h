@@ -166,7 +166,8 @@ __isl_give isl_set *isl_schedule_node_guard_get_guard(
 __isl_give isl_id *isl_schedule_node_mark_get_id(
 	__isl_keep isl_schedule_node *node);
 
-int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node);
+isl_size isl_schedule_node_get_schedule_depth(
+	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_get_domain(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_get_universe_domain(
