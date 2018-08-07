@@ -10531,14 +10531,14 @@ uint32_t isl_set_get_hash(__isl_keep isl_set *set)
 
 /* Return the number of basic maps in the (current) representation of "map".
  */
-int isl_map_n_basic_map(__isl_keep isl_map *map)
+isl_size isl_map_n_basic_map(__isl_keep isl_map *map)
 {
-	return map ? map->n : 0;
+	return map ? map->n : isl_size_error;
 }
 
-int isl_set_n_basic_set(__isl_keep isl_set *set)
+isl_size isl_set_n_basic_set(__isl_keep isl_set *set)
 {
-	return set ? set->n : 0;
+	return set ? set->n : isl_size_error;
 }
 
 isl_stat isl_map_foreach_basic_map(__isl_keep isl_map *map,

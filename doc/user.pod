@@ -2331,10 +2331,10 @@ or the number of basic maps in a map can be obtained
 from
 
 	#include <isl/set.h>
-	int isl_set_n_basic_set(__isl_keep isl_set *set);
+	isl_size isl_set_n_basic_set(__isl_keep isl_set *set);
 
 	#include <isl/map.h>
-	int isl_map_n_basic_map(__isl_keep isl_map *map);
+	isl_size isl_map_n_basic_map(__isl_keep isl_map *map);
 
 It is also possible to obtain a list of (basic) sets from a set
 or union set, a list of basic maps from a map and a list of maps from a union

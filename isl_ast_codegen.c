@@ -1478,6 +1478,7 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	int depth;
 	int degenerate;
 	isl_bool eliminated;
+	isl_size n;
 	isl_basic_set *hull;
 	isl_basic_set *enforced;
 	isl_set *guard, *hoisted;
@@ -1522,7 +1523,10 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	enforced = extract_shared_enforced(children, build);
 	guard = extract_pending(sub_build, enforced);
 	hoisted = isl_ast_graft_list_extract_hoistable_guard(children, build);
-	if (isl_set_n_basic_set(hoisted) > 1)
+	n = isl_set_n_basic_set(hoisted);
+	if (n < 0)
+		children = isl_ast_graft_list_free(children);
+	if (n > 1)
 		children = isl_ast_graft_list_gist_guards(children,
 						    isl_set_copy(hoisted));
 	guard = isl_set_intersect(guard, hoisted);
@@ -1773,16 +1777,18 @@ static isl_stat collect_basic_set(__isl_take isl_basic_set *bset, void *user)
 static __isl_give isl_basic_set_list *isl_basic_set_list_from_set(
 	__isl_take isl_set *set)
 {
-	int n;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_basic_set_list *list;
 
+	n = isl_set_n_basic_set(set);
+	if (n < 0)
+		set = isl_set_free(set);
 	if (!set)
 		return NULL;
 
 	ctx = isl_set_get_ctx(set);
 
-	n = isl_set_n_basic_set(set);
 	list = isl_basic_set_list_alloc(ctx, n);
 	if (isl_set_foreach_basic_set(set, &collect_basic_set, &list) < 0)
 		list = isl_basic_set_list_free(list);
@@ -3267,9 +3273,13 @@ static isl_bool has_pure_outer_disjunction(__isl_keep isl_set *domain,
 	isl_set *shared, *inner;
 	isl_bool equal;
 	int depth;
+	isl_size n;
 	isl_size dim;
 
-	if (isl_set_n_basic_set(domain) <= 1)
+	n = isl_set_n_basic_set(domain);
+	if (n < 0)
+		return isl_bool_error;
+	if (n <= 1)
 		return isl_bool_false;
 	dim = isl_set_dim(domain, isl_dim_set);
 	if (dim < 0)
@@ -5464,7 +5474,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_guard(
 	isl_ast_build *sub_build;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *list;
-	isl_size n1, n2;
+	isl_size n1, n2, n;
 
 	space = isl_ast_build_get_space(build, 1);
 	guard = isl_schedule_node_guard_get_guard(node);
@@ -5490,7 +5500,10 @@ static __isl_give isl_ast_graft_list *build_ast_from_guard(
 							node, executed);
 
 	hoisted = isl_ast_graft_list_extract_hoistable_guard(list, sub_build);
-	if (isl_set_n_basic_set(hoisted) > 1)
+	n = isl_set_n_basic_set(hoisted);
+	if (n < 0)
+		list = isl_ast_graft_list_free(list);
+	if (n > 1)
 		list = isl_ast_graft_list_gist_guards(list,
 						    isl_set_copy(hoisted));
 	guard = isl_set_intersect(guard, hoisted);

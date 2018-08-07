@@ -710,11 +710,13 @@ isl_schedule_constraints_align_params(__isl_take isl_schedule_constraints *sc)
 static isl_stat add_n_basic_map(__isl_take isl_map *map, void *user)
 {
 	int *n = user;
+	isl_size n_basic_map;
 
-	*n += isl_map_n_basic_map(map);
+	n_basic_map = isl_map_n_basic_map(map);
+	*n += n_basic_map;
 	isl_map_free(map);
 
-	return isl_stat_ok;
+	return n_basic_map < 0 ? isl_stat_error : isl_stat_ok;
 }
 
 /* Return the total number of isl_basic_maps in the constraints of "sc".

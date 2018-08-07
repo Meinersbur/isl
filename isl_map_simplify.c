@@ -3508,7 +3508,7 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 {
 	int equal;
 	int is_universe;
-	int single_disjunct_map, single_disjunct_context;
+	isl_size n_disjunct_map, n_disjunct_context;
 	isl_bool subset;
 	isl_basic_map *hull;
 
@@ -3528,9 +3528,11 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	if (equal)
 		return replace_by_universe(map, context);
 
-	single_disjunct_map = isl_map_n_basic_map(map) == 1;
-	single_disjunct_context = isl_map_n_basic_map(context) == 1;
-	if (!single_disjunct_map || !single_disjunct_context) {
+	n_disjunct_map = isl_map_n_basic_map(map);
+	n_disjunct_context = isl_map_n_basic_map(context);
+	if (n_disjunct_map < 0 || n_disjunct_context < 0)
+		goto error;
+	if (n_disjunct_map != 1 || n_disjunct_context != 1) {
 		subset = isl_map_is_subset(context, map);
 		if (subset < 0)
 			goto error;
@@ -3541,7 +3543,7 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 	context = isl_map_compute_divs(context);
 	if (!context)
 		goto error;
-	if (single_disjunct_context) {
+	if (n_disjunct_context == 1) {
 		hull = isl_map_simple_hull(context);
 	} else {
 		isl_ctx *ctx;

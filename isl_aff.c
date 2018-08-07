@@ -5177,12 +5177,14 @@ error:
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 {
 	isl_bool sv;
+	isl_size n;
 	isl_basic_map *hull;
 
-	if (!map)
-		return NULL;
+	n = isl_map_n_basic_map(map);
+	if (n < 0)
+		goto error;
 
-	if (isl_map_n_basic_map(map) == 1) {
+	if (n == 1) {
 		hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 		hull = isl_basic_map_plain_affine_hull(hull);
 		sv = isl_basic_map_plain_is_single_valued(hull);
@@ -5199,6 +5201,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map)
 	if (sv >= 0)
 		return pw_multi_aff_from_map_check_strides(map, hull);
 	isl_basic_map_free(hull);
+error:
 	isl_map_free(map);
 	return NULL;
 }

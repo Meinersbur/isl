@@ -1920,7 +1920,7 @@ static int sort_pieces_cmp(const void *p1, const void *p2, void *arg)
 {
 	const struct isl_from_pw_aff_piece *piece1 = p1;
 	const struct isl_from_pw_aff_piece *piece2 = p2;
-	int n1, n2;
+	isl_size n1, n2;
 
 	n1 = isl_set_n_basic_set(piece1->set);
 	n2 = isl_set_n_basic_set(piece2->set);

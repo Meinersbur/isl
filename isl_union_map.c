@@ -4156,11 +4156,13 @@ uint32_t isl_union_set_get_hash(__isl_keep isl_union_set *uset)
 static isl_stat add_n(__isl_take isl_set *set, void *user)
 {
 	int *n = user;
+	isl_size set_n;
 
-	*n += isl_set_n_basic_set(set);
+	set_n = isl_set_n_basic_set(set);
+	*n += set_n;
 	isl_set_free(set);
 
-	return isl_stat_ok;
+	return set_n < 0 ? isl_stat_error : isl_stat_ok;
 }
 
 /* Return the total number of basic sets in "uset".

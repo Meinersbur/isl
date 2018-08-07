@@ -285,10 +285,13 @@ static __isl_give isl_ast_node *ast_node_insert_if(
 {
 	struct isl_insert_if_data data;
 	isl_ctx *ctx;
+	isl_size n;
 
+	n = isl_set_n_basic_set(guard);
+	if (n < 0)
+		goto error;
 	ctx = isl_ast_build_get_ctx(build);
-	if (isl_options_get_ast_build_allow_or(ctx) ||
-	    isl_set_n_basic_set(guard) <= 1) {
+	if (isl_options_get_ast_build_allow_or(ctx) || n <= 1) {
 		isl_ast_node *if_node;
 		isl_ast_expr *expr;
 
@@ -309,6 +312,10 @@ static __isl_give isl_ast_node *ast_node_insert_if(
 	isl_set_free(guard);
 	isl_ast_node_free(data.node);
 	return isl_ast_node_alloc_block(data.list);
+error:
+	isl_set_free(guard);
+	isl_ast_node_free(node);
+	return NULL;
 }
 
 /* Insert an if node around a copy of "data->node" testing the condition
