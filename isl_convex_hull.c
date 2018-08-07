@@ -1434,12 +1434,13 @@ static __isl_give isl_basic_set *uset_convex_hull_unbounded(
 	isl_set_free(set);
 
 	while (list) {
-		int n;
-		isl_size total;
+		isl_size n, total;
 		struct isl_basic_set *t;
 		isl_basic_set *bset1, *bset2;
 
 		n = isl_basic_set_list_n_basic_set(list);
+		if (n < 0)
+			goto error;
 		if (n < 2)
 			isl_die(isl_basic_set_list_get_ctx(list),
 				isl_error_internal,
@@ -2769,14 +2770,15 @@ error:
 static __isl_give isl_mat *collect_inequalities(__isl_take isl_mat *mat,
 	__isl_keep isl_basic_set_list *list, isl_int **ineq)
 {
-	int i, j, n, n_eq, n_ineq;
+	int i, j, n_eq, n_ineq;
+	isl_size n;
 
-	if (!mat)
-		return NULL;
+	n = isl_basic_set_list_n_basic_set(list);
+	if (!mat || n < 0)
+		return isl_mat_free(mat);
 
 	n_eq = 0;
 	n_ineq = 0;
-	n = isl_basic_set_list_n_basic_set(list);
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset;
 		bset = isl_basic_set_list_get_basic_set(list, i);
@@ -2826,20 +2828,21 @@ static int cmp_ineq(const void *a, const void *b, void *arg)
 static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_basic_set_list(
 	__isl_take isl_set *set, __isl_take isl_basic_set_list *list)
 {
-	int i, n, n_eq, n_ineq;
+	int i, n_eq, n_ineq;
+	isl_size n;
 	isl_size dim;
 	isl_ctx *ctx;
 	isl_mat *mat = NULL;
 	isl_int **ineq = NULL;
 	isl_basic_set *hull;
 
-	if (!set)
+	n = isl_basic_set_list_n_basic_set(list);
+	if (!set || n < 0)
 		goto error;
 	ctx = isl_set_get_ctx(set);
 
 	n_eq = 0;
 	n_ineq = 0;
-	n = isl_basic_set_list_n_basic_set(list);
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset;
 		bset = isl_basic_set_list_get_basic_set(list, i);
@@ -2893,15 +2896,17 @@ error:
 static __isl_give isl_basic_map *map_unshifted_simple_hull_from_basic_map_list(
 	__isl_take isl_map *map, __isl_take isl_basic_map_list *list)
 {
+	isl_size n;
 	isl_basic_map *model;
 	isl_basic_map *hull;
 	isl_set *set;
 	isl_basic_set_list *bset_list;
 
-	if (!map || !list)
+	n = isl_basic_map_list_n_basic_map(list);
+	if (!map || n < 0)
 		goto error;
 
-	if (isl_basic_map_list_n_basic_map(list) == 0) {
+	if (n == 0) {
 		isl_space *space;
 
 		space = isl_map_get_space(map);
@@ -2939,7 +2944,8 @@ error:
 static __isl_give isl_basic_map_list *collect_basic_maps(
 	__isl_take isl_map_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_basic_map_list *bmap_list;
 
@@ -2948,6 +2954,8 @@ static __isl_give isl_basic_map_list *collect_basic_maps(
 	n = isl_map_list_n_map(list);
 	ctx = isl_map_list_get_ctx(list);
 	bmap_list = isl_basic_map_list_alloc(ctx, 0);
+	if (n < 0)
+		bmap_list = isl_basic_map_list_free(bmap_list);
 
 	for (i = 0; i < n; ++i) {
 		isl_map *map;

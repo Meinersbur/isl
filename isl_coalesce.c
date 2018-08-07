@@ -3465,16 +3465,17 @@ error:
 static isl_stat add_sub_vars(struct isl_coalesce_info *info,
 	__isl_keep isl_aff_list *list, int dim, int extra_var)
 {
-	int i, j, n, d;
+	int i, j, d;
+	isl_size n;
 	isl_space *space;
 
 	space = isl_basic_map_get_space(info->bmap);
 	info->bmap = isl_basic_map_cow(info->bmap);
 	info->bmap = isl_basic_map_extend_space(info->bmap, space,
 						extra_var, 0, 0);
-	if (!info->bmap)
-		return isl_stat_error;
 	n = isl_aff_list_n_aff(list);
+	if (!info->bmap || n < 0)
+		return isl_stat_error;
 	for (i = 0; i < n; ++i) {
 		int is_nan;
 		isl_aff *aff;
@@ -3514,12 +3515,15 @@ static isl_stat add_sub_vars(struct isl_coalesce_info *info,
 static isl_stat add_sub_equalities(struct isl_tab *tab,
 	__isl_keep isl_aff_list *list, int dim)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_vec *sub;
 	isl_aff *aff;
 
 	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		return isl_stat_error;
 
 	ctx = isl_tab_get_ctx(tab);
 	sub = isl_vec_alloc(ctx, 1 + dim + n);
@@ -3563,12 +3567,12 @@ static isl_stat add_subs(struct isl_coalesce_info *info,
 	__isl_keep isl_aff_list *list, int dim)
 {
 	int extra_var;
-	int n;
-
-	if (!list)
-		return isl_stat_error;
+	isl_size n;
 
 	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		return isl_stat_error;
+
 	extra_var = n - (info->tab->n_var - dim);
 
 	if (isl_tab_extend_vars(info->tab, extra_var) < 0)
@@ -3647,7 +3651,7 @@ error:
 static enum isl_change check_coalesce_into_eq(int i, int j,
 	struct isl_coalesce_info *info)
 {
-	isl_size n_div_i, n_div_j;
+	isl_size n_div_i, n_div_j, n;
 	isl_basic_map *hull_i, *hull_j;
 	isl_bool equal, empty;
 	isl_aff_list *list;
@@ -3682,7 +3686,10 @@ static enum isl_change check_coalesce_into_eq(int i, int j,
 	list = set_up_substitutions(info[i].bmap, info[j].bmap, hull_j);
 	if (!list)
 		return isl_change_error;
-	if (isl_aff_list_n_aff(list) < n_div_i)
+	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		change = isl_change_error;
+	else if (n < n_div_i)
 		change = isl_change_none;
 	else
 		change = coalesce_with_subs(i, j, info, list);

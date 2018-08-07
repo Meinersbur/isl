@@ -363,8 +363,7 @@ error:
 __isl_give isl_ast_build *isl_ast_build_set_iterators(
 	__isl_take isl_ast_build *build, __isl_take isl_id_list *iterators)
 {
-	isl_size dim;
-	int n_it;
+	isl_size dim, n_it;
 
 	build = isl_ast_build_cow(build);
 	if (!build)
@@ -372,7 +371,7 @@ __isl_give isl_ast_build *isl_ast_build_set_iterators(
 
 	dim = isl_ast_build_dim(build, isl_dim_set);
 	n_it = isl_id_list_n_id(build->iterators);
-	if (dim < 0)
+	if (dim < 0 || n_it < 0)
 		goto error;
 	if (n_it < dim)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_internal,
@@ -1852,8 +1851,7 @@ __isl_give isl_ast_build *isl_ast_build_product(
 	isl_vec *strides;
 	isl_set *set;
 	isl_multi_aff *embedding;
-	isl_size dim, space_dim;
-	int n_it;
+	isl_size dim, space_dim, n_it;
 
 	build = isl_ast_build_cow(build);
 	if (!build)
@@ -1865,7 +1863,7 @@ __isl_give isl_ast_build *isl_ast_build_product(
 	dim = isl_ast_build_dim(build, isl_dim_set);
 	space_dim = isl_space_dim(space, isl_dim_set);
 	n_it = isl_id_list_n_id(build->iterators);
-	if (dim < 0 || space_dim < 0)
+	if (dim < 0 || space_dim < 0 || n_it < 0)
 		goto error;
 	dim += space_dim;
 	if (n_it < dim) {

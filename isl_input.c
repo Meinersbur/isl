@@ -1477,14 +1477,14 @@ static __isl_give isl_set *list_cmp(__isl_keep isl_set *set, int type,
 	__isl_take isl_pw_aff_list *left, __isl_take isl_pw_aff_list *right)
 {
 	isl_space *space;
-	int n;
+	isl_size n;
 	isl_multi_pw_aff *mpa1, *mpa2;
 
-	if (!set || !left || !right)
+	n = isl_pw_aff_list_n_pw_aff(left);
+	if (!set || n < 0 || !right)
 		goto error;
 
 	space = isl_set_get_space(set);
-	n = isl_pw_aff_list_n_pw_aff(left);
 	space = isl_space_from_domain(space);
 	space = isl_space_add_dims(space, isl_dim_out, n);
 	mpa1 = isl_multi_pw_aff_from_pw_aff_list(isl_space_copy(space), left);
@@ -1589,7 +1589,7 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 	struct isl_token *tok;
 	int type;
 	isl_pw_aff_list *list1 = NULL, *list2 = NULL;
-	int n1, n2;
+	isl_size n1, n2;
 	isl_set *set;
 
 	set = isl_map_wrap(map);
@@ -1607,10 +1607,10 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 	isl_token_free(tok);
 	for (;;) {
 		list2 = accept_affine_list(s, isl_set_get_space(set), v);
-		if (!list2)
-			goto error;
 		n1 = isl_pw_aff_list_n_pw_aff(list1);
 		n2 = isl_pw_aff_list_n_pw_aff(list2);
+		if (n1 < 0 || n2 < 0)
+			goto error;
 		if (is_list_comparator_type(type) && n1 != n2) {
 			isl_stream_error(s, NULL,
 					"list arguments not of same size");

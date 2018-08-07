@@ -5330,12 +5330,13 @@ __isl_give isl_basic_set *isl_basic_set_underlying_set(
 __isl_give isl_basic_set_list *isl_basic_map_list_underlying_set(
 	__isl_take isl_basic_map_list *list)
 {
-	int i, n;
-
-	if (!list)
-		return NULL;
+	int i;
+	isl_size n;
 
 	n = isl_basic_map_list_n_basic_map(list);
+	if (n < 0)
+		goto error;
+
 	for (i = 0; i < n; ++i) {
 		isl_basic_map *bmap;
 		isl_basic_set *bset;
@@ -5346,6 +5347,9 @@ __isl_give isl_basic_set_list *isl_basic_map_list_underlying_set(
 	}
 
 	return list;
+error:
+	isl_basic_map_list_free(list);
+	return NULL;
 }
 
 __isl_give isl_basic_map *isl_basic_map_overlying_set(
@@ -9076,16 +9080,17 @@ struct isl_set *isl_set_align_divs(struct isl_set *set)
 __isl_give isl_map *isl_map_align_divs_to_basic_map_list(
 	__isl_take isl_map *map, __isl_keep isl_basic_map_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
+	n = isl_basic_map_list_n_basic_map(list);
 	map = isl_map_compute_divs(map);
 	map = isl_map_cow(map);
-	if (!map || !list)
+	if (!map || n < 0)
 		return isl_map_free(map);
 	if (map->n == 0)
 		return map;
 
-	n = isl_basic_map_list_n_basic_map(list);
 	for (i = 0; i < n; ++i) {
 		isl_basic_map *bmap;
 
@@ -9105,12 +9110,13 @@ __isl_give isl_map *isl_map_align_divs_to_basic_map_list(
 __isl_give isl_basic_map_list *isl_basic_map_list_align_divs_to_basic_map(
 	__isl_take isl_basic_map_list *list, __isl_keep isl_basic_map *bmap)
 {
-	int i, n;
-
-	if (!list || !bmap)
-		return isl_basic_map_list_free(list);
+	int i;
+	isl_size n;
 
 	n = isl_basic_map_list_n_basic_map(list);
+	if (n < 0 || !bmap)
+		return isl_basic_map_list_free(list);
+
 	for (i = 0; i < n; ++i) {
 		isl_basic_map *bmap_i;
 
@@ -9871,12 +9877,13 @@ __isl_give isl_basic_map_list *isl_map_get_basic_map_list(
 __isl_give isl_basic_map *isl_basic_map_list_intersect(
 	__isl_take isl_basic_map_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_basic_map *bmap;
 
-	if (!list)
-		return NULL;
 	n = isl_basic_map_list_n_basic_map(list);
+	if (n < 0)
+		goto error;
 	if (n < 1)
 		isl_die(isl_basic_map_list_get_ctx(list), isl_error_invalid,
 			"expecting non-empty list", goto error);
@@ -9911,14 +9918,15 @@ __isl_give isl_basic_set *isl_basic_set_list_intersect(
 __isl_give isl_set *isl_basic_set_list_union(
 	__isl_take isl_basic_set_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_space *space;
 	isl_basic_set *bset;
 	isl_set *set;
 
-	if (!list)
-		return NULL;
 	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 0)
+		goto error;
 	if (n < 1)
 		isl_die(isl_basic_set_list_get_ctx(list), isl_error_invalid,
 			"expecting non-empty list", goto error);
@@ -9945,12 +9953,13 @@ error:
  */
 __isl_give isl_set *isl_set_list_union(__isl_take isl_set_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_set *set;
 
-	if (!list)
-		return NULL;
 	n = isl_set_list_n_set(list);
+	if (n < 0)
+		goto error;
 	if (n < 1)
 		isl_die(isl_set_list_get_ctx(list), isl_error_invalid,
 			"expecting non-empty list", goto error);

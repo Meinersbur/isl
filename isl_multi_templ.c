@@ -561,17 +561,16 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	__isl_take isl_space *space, __isl_take LIST(EL) *list)
 {
 	int i;
-	int n;
-	isl_size dim;
+	isl_size n, dim;
 	isl_ctx *ctx;
 	MULTI(BASE) *multi;
 
 	dim = isl_space_dim(space, isl_dim_out);
-	if (dim < 0 || !list)
+	n = FN(FN(LIST(EL),n),BASE)(list);
+	if (dim < 0 || n < 0)
 		goto error;
 
 	ctx = isl_space_get_ctx(space);
-	n = FN(FN(LIST(EL),n),BASE)(list);
 	if (n != dim)
 		isl_die(ctx, isl_error_invalid,
 			"invalid number of elements in list", goto error);

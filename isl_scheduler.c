@@ -5140,7 +5140,7 @@ static __isl_give isl_vec *compute_carrying_sol_coef(isl_ctx *ctx,
 static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 	struct isl_sched_graph *graph, int fallback, int coincidence)
 {
-	int n_intra, n_inter;
+	isl_size n_intra, n_inter;
 	int n_edge;
 	struct isl_carry carry = { 0 };
 	isl_vec *sol;
@@ -5149,10 +5149,10 @@ static __isl_give isl_vec *compute_carrying_sol(isl_ctx *ctx,
 						&carry.lineality);
 	carry.inter = collect_inter_validity(graph, coincidence,
 						&carry.lineality);
-	if (!carry.intra || !carry.inter)
-		goto error;
 	n_intra = isl_basic_set_list_n_basic_set(carry.intra);
 	n_inter = isl_basic_set_list_n_basic_set(carry.inter);
+	if (n_intra < 0 || n_inter < 0)
+		goto error;
 
 	if (fallback && n_intra > 0 &&
 	    isl_options_get_schedule_carry_self_first(ctx)) {

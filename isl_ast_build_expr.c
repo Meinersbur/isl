@@ -1467,7 +1467,8 @@ static int cmp_constraint(__isl_keep isl_constraint *a,
 __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	 __isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_constraint *c;
 	isl_constraint_list *list;
 	isl_ast_expr *res;
@@ -1476,9 +1477,9 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	list = isl_basic_set_get_constraint_list(bset);
 	isl_basic_set_free(bset);
 	list = isl_constraint_list_sort(list, &cmp_constraint, NULL);
-	if (!list)
-		return NULL;
 	n = isl_constraint_list_n_constraint(list);
+	if (n < 0)
+		build = NULL;
 	if (n == 0) {
 		isl_ctx *ctx = isl_constraint_list_get_ctx(list);
 		isl_constraint_list_free(list);
@@ -1533,7 +1534,8 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_basic_set *bset;
 	isl_basic_set_list *list;
 	isl_set *domain;
@@ -1542,9 +1544,9 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 	list = isl_set_get_basic_set_list(set);
 	isl_set_free(set);
 
-	if (!list)
-		return NULL;
 	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 0)
+		build = NULL;
 	if (n == 0) {
 		isl_ctx *ctx = isl_ast_build_get_ctx(build);
 		isl_basic_set_list_free(list);
@@ -1801,9 +1803,10 @@ static __isl_give isl_ast_expr *ast_expr_from_aff_list(
 	__isl_take isl_aff_list *list, enum isl_from_pw_aff_state state,
 	__isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_aff *aff;
-	isl_ast_expr *expr;
+	isl_ast_expr *expr = NULL;
 	enum isl_ast_op_type op_type;
 
 	if (state == isl_state_single) {
@@ -1812,6 +1815,8 @@ static __isl_give isl_ast_expr *ast_expr_from_aff_list(
 		return isl_ast_expr_from_aff(aff, build);
 	}
 	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		goto error;
 	op_type = state == isl_state_min ? isl_ast_op_min : isl_ast_op_max;
 	expr = isl_ast_expr_alloc_op(isl_ast_build_get_ctx(build), op_type, n);
 	if (!expr)
@@ -2013,10 +2018,14 @@ static isl_bool aff_is_rational(__isl_keep isl_aff *aff)
  */
 static isl_bool is_single_rational_aff(__isl_keep isl_aff_list *list)
 {
+	isl_size n;
 	isl_bool rational;
 	isl_aff *aff;
 
-	if (isl_aff_list_n_aff(list) != 1)
+	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		return isl_bool_error;
+	if (n != 1)
 		return isl_bool_false;
 	aff = isl_aff_list_get_aff(list, 0);
 	rational = aff_is_rational(aff);
@@ -2049,7 +2058,8 @@ static isl_bool extends(struct isl_from_pw_aff_data *data,
 	__isl_give isl_basic_set *(*test)(__isl_take isl_aff *aff1,
 		__isl_take isl_aff *aff2))
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_bool is_rational;
 	isl_ctx *ctx;
 	isl_set *dom;
@@ -2064,10 +2074,13 @@ static isl_bool extends(struct isl_from_pw_aff_data *data,
 	if (!isl_options_get_ast_build_detect_min_max(ctx))
 		return isl_bool_false;
 
+	n = isl_set_list_n_set(data->p[data->n].set_list);
+	if (n < 0)
+		return isl_bool_error;
+
 	dom = isl_ast_build_get_domain(data->build);
 	set = isl_set_intersect(dom, isl_set_copy(set));
 
-	n = isl_set_list_n_set(data->p[data->n].set_list);
 	for (i = 0; i < n ; ++i) {
 		isl_aff *aff_i;
 		isl_set *valid;

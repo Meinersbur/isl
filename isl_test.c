@@ -7514,6 +7514,7 @@ static int test_list(isl_ctx *ctx)
 {
 	isl_id *a, *b, *c, *d, *id;
 	isl_id_list *list;
+	isl_size n;
 	int ok;
 
 	a = isl_id_alloc(ctx, "a", NULL);
@@ -7528,9 +7529,10 @@ static int test_list(isl_ctx *ctx)
 	list = isl_id_list_add(list, d);
 	list = isl_id_list_drop(list, 1, 1);
 
-	if (!list)
+	n = isl_id_list_n_id(list);
+	if (n < 0)
 		return -1;
-	if (isl_id_list_n_id(list) != 3) {
+	if (n != 3) {
 		isl_id_list_free(list);
 		isl_die(ctx, isl_error_unknown,
 			"unexpected number of elements in list", return -1);
@@ -9197,12 +9199,13 @@ static isl_stat add_cell(__isl_take isl_cell *cell, void *user)
  */
 static isl_stat check_pairwise_disjoint(__isl_keep isl_basic_set_list *list)
 {
-	int i, j, n;
-
-	if (!list)
-		return isl_stat_error;
+	int i, j;
+	isl_size n;
 
 	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 0)
+		return isl_stat_error;
+
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset_i;
 

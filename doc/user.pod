@@ -7933,8 +7933,8 @@ C<isl_set_list_reverse> reverses the elements in the list.
 Lists can be inspected using the following functions.
 
 	#include <isl/set.h>
-	int isl_set_list_size(__isl_keep isl_set_list *list);
-	int isl_set_list_n_set(__isl_keep isl_set_list *list);
+	isl_size isl_set_list_size(__isl_keep isl_set_list *list);
+	isl_size isl_set_list_n_set(__isl_keep isl_set_list *list);
 	__isl_give isl_set *isl_set_list_get_at(
 		__isl_keep isl_set_list *list, int index);
 	__isl_give isl_set *isl_set_list_get_set(
@@ -8611,7 +8611,7 @@ exists.
 	__isl_give isl_schedule_node *isl_schedule_node_ancestor(
 		__isl_take isl_schedule_node *node,
 		int generation);
-	int isl_schedule_node_n_children(
+	isl_size isl_schedule_node_n_children(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_child(
 		__isl_take isl_schedule_node *node, int pos);
