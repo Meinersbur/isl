@@ -250,12 +250,13 @@ static isl_stat check_final_columns_are_zero(__isl_keep isl_mat *M,
 	unsigned first)
 {
 	int i;
-	unsigned rows, cols, n;
+	isl_size rows, cols;
+	unsigned n;
 
-	if (!M)
-		return isl_stat_error;
 	rows = isl_mat_rows(M);
 	cols = isl_mat_cols(M);
+	if (rows < 0 || cols < 0)
+		return isl_stat_error;
 	n = cols - first;
 	for (i = 0; i < rows; ++i)
 		if (isl_seq_first_non_zero(M->row[i] + first, n) != -1)
@@ -5009,18 +5010,20 @@ static __isl_give isl_vec *extract_sample_sequence(struct isl_tab *tab,
 static isl_bool region_is_trivial(struct isl_tab *tab, int pos,
 	__isl_keep isl_mat *trivial)
 {
-	int n, len;
+	isl_size n, len;
 	isl_vec *v;
 	isl_bool is_trivial;
 
-	if (!trivial)
+	n = isl_mat_rows(trivial);
+	if (n < 0)
 		return isl_bool_error;
 
-	n = isl_mat_rows(trivial);
 	if (n == 0)
 		return isl_bool_false;
 
 	len = isl_mat_cols(trivial);
+	if (len < 0)
+		return isl_bool_error;
 	v = extract_sample_sequence(tab, pos, len);
 	v = isl_mat_vec_product(isl_mat_copy(trivial), v);
 	is_trivial = isl_vec_is_zero(v);
@@ -5153,12 +5156,14 @@ error:
 static isl_stat fix_zero(struct isl_tab *tab, struct isl_trivial_region *region,
 	int dir, struct isl_lexmin_data *data)
 {
-	int len;
+	isl_size len;
 
 	data->v = isl_vec_clr(data->v);
 	if (!data->v)
 		return isl_stat_error;
 	len = isl_mat_cols(region->trivial);
+	if (len < 0)
+		return isl_stat_error;
 	isl_seq_cpy(data->v->el + 1 + region->pos, region->trivial->row[dir],
 		    len);
 	if (add_lexmin_eq(tab, data->v->el) < 0)
@@ -5179,13 +5184,15 @@ static struct isl_tab *pos_neg(struct isl_tab *tab,
 	struct isl_trivial_region *region,
 	int side, struct isl_lexmin_data *data)
 {
-	int len;
+	isl_size len;
 
 	data->v = isl_vec_clr(data->v);
 	if (!data->v)
 		goto error;
 	isl_int_set_si(data->v->el[0], -1);
 	len = isl_mat_cols(region->trivial);
+	if (len < 0)
+		goto error;
 	if (side % 2 == 0)
 		isl_seq_cpy(data->v->el + 1 + region->pos,
 			    region->trivial->row[side / 2], len);
@@ -5265,7 +5272,11 @@ static void update_outer_levels(struct isl_lexmin_data *data, int level)
 static isl_stat init_local_region(struct isl_local_region *local, int region,
 	struct isl_lexmin_data *data)
 {
-	local->n = isl_mat_rows(data->region[region].trivial);
+	isl_size n = isl_mat_rows(data->region[region].trivial);
+
+	if (n < 0)
+		return isl_stat_error;
+	local->n = n;
 	local->region = region;
 	local->side = 0;
 	local->update = 0;

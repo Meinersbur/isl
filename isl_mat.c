@@ -252,14 +252,14 @@ __isl_null isl_mat *isl_mat_free(__isl_take isl_mat *mat)
 	return NULL;
 }
 
-int isl_mat_rows(__isl_keep isl_mat *mat)
+isl_size isl_mat_rows(__isl_keep isl_mat *mat)
 {
-	return mat ? mat->n_row : -1;
+	return mat ? mat->n_row : isl_size_error;
 }
 
-int isl_mat_cols(__isl_keep isl_mat *mat)
+isl_size isl_mat_cols(__isl_keep isl_mat *mat)
 {
-	return mat ? mat->n_col : -1;
+	return mat ? mat->n_col : isl_size_error;
 }
 
 /* Check that "col" is a valid column position for "mat".
@@ -718,15 +718,16 @@ error:
  */
 static __isl_give isl_mat *eliminate(__isl_take isl_mat *mat, int row, int col)
 {
-	int k, nr, nc;
+	int k;
+	isl_size nr, nc;
 	isl_ctx *ctx;
 
-	if (!mat)
-		return NULL;
-
-	ctx = isl_mat_get_ctx(mat);
 	nr = isl_mat_rows(mat);
 	nc = isl_mat_cols(mat);
+	if (nr < 0 || nc < 0)
+		return isl_mat_free(mat);
+
+	ctx = isl_mat_get_ctx(mat);
 
 	for (k = 0; k < nr; ++k) {
 		if (k == row)
@@ -754,13 +755,13 @@ static __isl_give isl_mat *eliminate(__isl_take isl_mat *mat, int row, int col)
  */
 __isl_give isl_mat *isl_mat_reverse_gauss(__isl_take isl_mat *mat)
 {
-	int k, row, last, nr, nc;
-
-	if (!mat)
-		return NULL;
+	int k, row, last;
+	isl_size nr, nc;
 
 	nr = isl_mat_rows(mat);
 	nc = isl_mat_cols(mat);
+	if (nr < 0 || nc < 0)
+		return isl_mat_free(mat);
 
 	last = nc - 1;
 	for (row = nr - 1; row >= 0; --row) {
@@ -793,13 +794,13 @@ __isl_give isl_mat *isl_mat_reverse_gauss(__isl_take isl_mat *mat)
  */
 __isl_give isl_mat *isl_mat_lexnonneg_rows(__isl_take isl_mat *mat)
 {
-	int i, nr, nc;
-
-	if (!mat)
-		return NULL;
+	int i;
+	isl_size nr, nc;
 
 	nr = isl_mat_rows(mat);
 	nc = isl_mat_cols(mat);
+	if (nr < 0 || nc < 0)
+		return isl_mat_free(mat);
 
 	for (i = 0; i < nr; ++i) {
 		int pos;
@@ -2043,19 +2044,22 @@ __isl_give isl_mat *isl_mat_row_basis(__isl_take isl_mat *mat)
 __isl_give isl_mat *isl_mat_row_basis_extension(
 	__isl_take isl_mat *mat1, __isl_take isl_mat *mat2)
 {
-	int n_row;
-	int r1, r, n1;
+	isl_size n_row;
+	int r1, r;
+	isl_size n1;
 	isl_mat *H, *Q;
 
 	n1 = isl_mat_rows(mat1);
 	H = isl_mat_concat(mat1, mat2);
 	H = isl_mat_left_hermite(H, 0, NULL, &Q);
-	if (!H || !Q)
+	if (n1 < 0 || !H || !Q)
 		goto error;
 
 	r1 = hermite_first_zero_col(H, 0, n1);
 	r = hermite_first_zero_col(H, r1, H->n_row);
 	n_row = isl_mat_rows(Q);
+	if (n_row < 0)
+		goto error;
 	Q = isl_mat_drop_rows(Q, r, n_row - r);
 	Q = isl_mat_drop_rows(Q, 0, r1);
 

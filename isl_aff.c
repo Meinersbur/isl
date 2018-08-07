@@ -1686,7 +1686,7 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 	__isl_take isl_mat *div, int *exp)
 {
 	isl_size old_n_div;
-	int new_n_div;
+	isl_size new_n_div;
 	int offset;
 
 	aff = isl_aff_cow(aff);
@@ -1695,7 +1695,7 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 
 	old_n_div = isl_local_space_dim(aff->ls, isl_dim_div);
 	new_n_div = isl_mat_rows(div);
-	if (old_n_div < 0)
+	if (old_n_div < 0 || new_n_div < 0)
 		goto error;
 	offset = 1 + isl_local_space_offset(aff->ls, isl_dim_div);
 
@@ -3839,8 +3839,7 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 	isl_ctx *ctx;
 	isl_local_space *ls = NULL;
 	isl_multi_aff *ma = NULL;
-	int n_row, n_col;
-	isl_size n_out, total;
+	isl_size n_row, n_col, n_out, total;
 	int i;
 
 	if (!space || !mat)
@@ -3852,7 +3851,7 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 	n_col = isl_mat_cols(mat);
 	n_out = isl_space_dim(space, isl_dim_out);
 	total = isl_space_dim(space, isl_dim_all);
-	if (n_out < 0 || total < 0)
+	if (n_row < 0 || n_col < 0 || n_out < 0 || total < 0)
 		goto error;
 	if (n_row < 1)
 		isl_die(ctx, isl_error_invalid,

@@ -60,8 +60,12 @@ isl_size isl_local_dim(__isl_keep isl_local *local, enum isl_dim_type type)
 		return isl_size_error;
 	if (type == isl_dim_div)
 		return isl_mat_rows(mat);
-	if (type == isl_dim_all)
-		return isl_mat_cols(mat) - 2;
+	if (type == isl_dim_all) {
+		isl_size cols = isl_mat_cols(mat);
+		if (cols < 0)
+			return isl_size_error;
+		return cols - 2;
+	}
 	if (type == isl_dim_set) {
 		isl_size total, n_div;
 
@@ -114,8 +118,8 @@ isl_bool isl_local_div_is_marked_unknown(__isl_keep isl_local *local, int pos)
 isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 {
 	isl_bool marked;
-	int i, off, cols;
-	isl_size n;
+	int i, off;
+	isl_size n, cols;
 	isl_mat *mat = local;
 
 	if (isl_local_check_pos(local, pos) < 0)
@@ -127,7 +131,7 @@ isl_bool isl_local_div_is_known(__isl_keep isl_local *local, int pos)
 
 	n = isl_local_dim(local, isl_dim_div);
 	cols = isl_mat_cols(mat);
-	if (n < 0)
+	if (n < 0 || cols < 0)
 		return isl_bool_error;
 	off = cols - n;
 
@@ -180,7 +184,7 @@ int isl_local_cmp(__isl_keep isl_local *local1, __isl_keep isl_local *local2)
 	int cmp;
 	isl_bool unknown1, unknown2;
 	int last1, last2;
-	int n_col;
+	isl_size n_col;
 	isl_mat *mat1 = local1;
 	isl_mat *mat2 = local2;
 
@@ -195,6 +199,8 @@ int isl_local_cmp(__isl_keep isl_local *local1, __isl_keep isl_local *local2)
 		return mat1->n_row - mat2->n_row;
 
 	n_col = isl_mat_cols(mat1);
+	if (n_col < 0)
+		return -1;
 	for (i = 0; i < mat1->n_row; ++i) {
 		unknown1 = isl_local_div_is_marked_unknown(local1, i);
 		unknown2 = isl_local_div_is_marked_unknown(local2, i);

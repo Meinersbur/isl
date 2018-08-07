@@ -2269,8 +2269,10 @@ static __isl_give isl_mat *normalize_independent(__isl_take isl_mat *indep)
  */
 static __isl_give isl_mat *extract_linear_schedule(struct isl_sched_node *node)
 {
-	int n_row = isl_mat_rows(node->sched);
+	isl_size n_row = isl_mat_rows(node->sched);
 
+	if (n_row < 0)
+		return NULL;
 	return isl_mat_sub_alloc(node->sched, 0, n_row,
 			      1 + node->nparam, node->nvar);
 }
@@ -2893,14 +2895,15 @@ static __isl_give isl_mat *construct_trivial(__isl_keep isl_mat *indep)
 {
 	isl_ctx *ctx;
 	isl_mat *mat;
-	int i, j, n, n_var;
+	int i, j;
+	isl_size n, n_var;
 
-	if (!indep)
+	n = isl_mat_rows(indep);
+	n_var = isl_mat_cols(indep);
+	if (n < 0 || n_var < 0)
 		return NULL;
 
 	ctx = isl_mat_get_ctx(indep);
-	n = isl_mat_rows(indep);
-	n_var = isl_mat_cols(indep);
 	mat = isl_mat_alloc(ctx, n, 2 * n_var);
 	if (!mat)
 		return NULL;
@@ -3006,11 +3009,11 @@ static int update_schedule(struct isl_sched_graph *graph,
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 		int pos;
-		int row = isl_mat_rows(node->sched);
+		isl_size row = isl_mat_rows(node->sched);
 
 		isl_vec_free(csol);
 		csol = extract_var_coef(node, sol);
-		if (!csol)
+		if (row < 0 || !csol)
 			goto error;
 
 		isl_map_free(node->sched_map);
@@ -3093,11 +3096,13 @@ static __isl_give isl_multi_aff *node_extract_partial_schedule_multi_aff(
 	isl_local_space *ls;
 	isl_aff *aff;
 	isl_multi_aff *ma;
-	int nrow;
+	isl_size nrow;
 
 	if (!node)
 		return NULL;
 	nrow = isl_mat_rows(node->sched);
+	if (nrow < 0)
+		return NULL;
 	if (node->compressed)
 		space = isl_multi_aff_get_domain_space(node->decompress);
 	else
@@ -3128,9 +3133,11 @@ static __isl_give isl_multi_aff *node_extract_partial_schedule_multi_aff(
 static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 	struct isl_sched_node *node)
 {
-	int nrow;
+	isl_size nrow;
 
 	nrow = isl_mat_rows(node->sched);
+	if (nrow < 0)
+		return NULL;
 	return node_extract_partial_schedule_multi_aff(node, 0, nrow);
 }
 
@@ -4298,6 +4305,7 @@ static __isl_give isl_schedule_node *split_scaled(
 	int row;
 	isl_ctx *ctx;
 	isl_int gcd, gcd_i;
+	isl_size n_row;
 
 	if (!node)
 		return NULL;
@@ -4307,23 +4315,30 @@ static __isl_give isl_schedule_node *split_scaled(
 		return compute_next_band(node, graph, 0);
 	if (graph->n <= 1)
 		return compute_next_band(node, graph, 0);
+	n_row = isl_mat_rows(graph->node[0].sched);
+	if (n_row < 0)
+		return isl_schedule_node_free(node);
 
 	isl_int_init(gcd);
 	isl_int_init(gcd_i);
 
 	isl_int_set_si(gcd, 0);
 
-	row = isl_mat_rows(graph->node[0].sched) - 1;
+	row = n_row - 1;
 
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
-		int cols = isl_mat_cols(node->sched);
+		isl_size cols = isl_mat_cols(node->sched);
 
+		if (cols < 0)
+			break;
 		isl_seq_gcd(node->sched->row[row] + 1, cols - 1, &gcd_i);
 		isl_int_gcd(gcd, gcd, gcd_i);
 	}
 
 	isl_int_clear(gcd_i);
+	if (i < graph->n)
+		goto error;
 
 	if (isl_int_cmp_si(gcd, 1) <= 0) {
 		isl_int_clear(gcd);
@@ -4778,7 +4793,7 @@ static isl_stat add_non_trivial_lineality(__isl_take isl_basic_set *lineality,
 	isl_multi_aff *ma;
 	isl_multi_pw_aff *mpa;
 	isl_map *map;
-	int n;
+	isl_size n;
 
 	if (isl_basic_set_check_no_locals(lineality) < 0)
 		goto error;
@@ -4795,6 +4810,8 @@ static isl_stat add_non_trivial_lineality(__isl_take isl_basic_set *lineality,
 
 	eq = isl_basic_set_extract_equalities(lineality);
 	n = isl_mat_rows(eq);
+	if (n < 0)
+		space = isl_space_free(space);
 	eq = isl_mat_insert_zero_rows(eq, 0, 1);
 	eq = isl_mat_set_element_si(eq, 0, 0, 1);
 	space = isl_space_from_domain(space);
@@ -5420,10 +5437,12 @@ static int has_any_coincidence(struct isl_sched_graph *graph)
 static __isl_give isl_map *final_row(struct isl_sched_node *node)
 {
 	isl_multi_aff *ma;
-	int row;
+	isl_size n_row;
 
-	row = isl_mat_rows(node->sched) - 1;
-	ma = node_extract_partial_schedule_multi_aff(node, row, 1);
+	n_row = isl_mat_rows(node->sched);
+	if (n_row < 0)
+		return NULL;
+	ma = node_extract_partial_schedule_multi_aff(node, n_row - 1, 1);
 	return isl_map_from_multi_aff(ma);
 }
 
@@ -6735,12 +6754,15 @@ static __isl_give isl_mat *node_transformation(isl_ctx *ctx,
 {
 	int i, j;
 	isl_mat *t;
-	int n_row, n_col, n_param, n_var;
+	isl_size n_row, n_col;
+	int n_param, n_var;
 
 	n_param = node->nparam;
 	n_var = node->nvar;
 	n_row = isl_mat_rows(t_node->sched);
 	n_col = isl_mat_cols(node->sched);
+	if (n_row < 0 || n_col < 0)
+		return NULL;
 	t = isl_mat_alloc(ctx, n_row, n_col);
 	if (!t)
 		return NULL;
@@ -6770,13 +6792,15 @@ static isl_stat transform(isl_ctx *ctx, struct isl_sched_graph *graph,
 	struct isl_sched_node *t_node)
 {
 	int i, j;
-	int n_new;
+	isl_size n_new;
 	int start, n;
 
 	start = graph->band_start;
 	n = graph->n_total_row - start;
 
 	n_new = isl_mat_rows(t_node->sched);
+	if (n_new < 0)
+		return isl_stat_error;
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[i];
 		isl_mat *t;

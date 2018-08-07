@@ -349,14 +349,13 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
 static __isl_give isl_printer *print_affine(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div, isl_int *c)
 {
-	unsigned n_div;
-	isl_size total;
+	isl_size n_div, total;
 	unsigned len;
 
 	total = isl_space_dim(space, isl_dim_all);
-	if (total < 0|| !div)
-		return isl_printer_free(p);
 	n_div = isl_mat_rows(div);
+	if (total < 0 || n_div < 0)
+		return isl_printer_free(p);
 	len = 1 + total + n_div;
 	return print_affine_of_len(space, div, p, c, len);
 }
@@ -640,12 +639,12 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 	isl_int c)
 {
 	isl_bool can_print;
-	unsigned n_div;
+	isl_size n_div;
 	enum isl_dim_type type;
 
-	if (!p || !space)
-		return -1;
 	n_div = isl_mat_rows(div);
+	if (!p || !space || n_div < 0)
+		return -1;
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
 	if (pos2type(space, &type, &pos) < 0)
@@ -716,12 +715,12 @@ static __isl_give isl_printer *print_eq_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div, isl_int *c,
 	int last, int latex)
 {
-	unsigned n_div;
+	isl_size n_div;
 	int div_pos;
 
 	n_div = isl_mat_rows(div);
 	div_pos = print_as_modulo_pos(p, space, div, last, c[last]);
-	if (div_pos < 0)
+	if (n_div < 0 || div_pos < 0)
 		return isl_printer_free(p);
 	if (div_pos < n_div)
 		return print_eq_mod_constraint(p, space, div, div_pos,
@@ -895,12 +894,11 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
 {
 	int i;
 	int first = 1;
-	unsigned n_div;
-
-	if (!p || !space || !div)
-		return isl_printer_free(p);
+	isl_size n_div;
 
 	n_div = isl_mat_rows(div);
+	if (!p || !space || n_div < 0)
+		return isl_printer_free(p);
 
 	for (i = 0; i < n_div; ++i) {
 		if (!print_defined_divs && can_print_div_expr(p, div, i))
@@ -926,11 +924,12 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
  */
 static isl_bool need_exists(__isl_keep isl_printer *p, __isl_keep isl_mat *div)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
-	if (!p || !div)
-		return isl_bool_error;
 	n = isl_mat_rows(div);
+	if (!p || n < 0)
+		return isl_bool_error;
 	if (n == 0)
 		return isl_bool_false;
 	if (p->dump)
@@ -968,12 +967,13 @@ static __isl_give isl_printer *open_exists(__isl_take isl_printer *p,
  */
 static __isl_give isl_mat *mark_all_unknown(__isl_take isl_mat *div)
 {
-	int i, n_div;
-
-	if (!div)
-		return NULL;
+	int i;
+	isl_size n_div;
 
 	n_div = isl_mat_rows(div);
+	if (n_div < 0)
+		return isl_mat_free(div);
+
 	for (i = 0; i < n_div; ++i)
 		div = isl_mat_set_element_si(div, i, 0, 0);
 	return div;

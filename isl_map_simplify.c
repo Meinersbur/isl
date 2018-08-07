@@ -1906,7 +1906,7 @@ static isl_stat mark_shifted_constraints(__isl_keep isl_mat *ineq,
 	__isl_keep isl_basic_set *context, int *row)
 {
 	struct isl_constraint_index ci;
-	int n_ineq;
+	isl_size n_ineq, cols;
 	unsigned total;
 	int k;
 
@@ -1918,7 +1918,10 @@ static isl_stat mark_shifted_constraints(__isl_keep isl_mat *ineq,
 		return isl_stat_error;
 
 	n_ineq = isl_mat_rows(ineq);
-	total = isl_mat_cols(ineq) - 1;
+	cols = isl_mat_cols(ineq);
+	if (n_ineq < 0 || cols < 0)
+		return isl_stat_error;
+	total = cols - 1;
 	for (k = 0; k < n_ineq; ++k) {
 		int l;
 		isl_bool redundant;
@@ -2232,10 +2235,12 @@ static __isl_give isl_basic_set *drop_irrelevant_constraints_marked(
 {
 	int *group;
 	isl_size dim;
-	int i, j, n;
+	int i, j;
+	isl_size n;
 
 	dim = isl_basic_set_dim(context, isl_dim_set);
-	if (dim < 0 || !ineq)
+	n = isl_mat_rows(ineq);
+	if (dim < 0 || n < 0)
 		return isl_basic_set_free(context);
 
 	group = alloc_groups(context);
@@ -2243,7 +2248,6 @@ static __isl_give isl_basic_set *drop_irrelevant_constraints_marked(
 	if (!group)
 		return isl_basic_set_free(context);
 
-	n = isl_mat_rows(ineq);
 	for (i = 0; i < dim; ++i) {
 		for (j = 0; j < n; ++j) {
 			if (row[j] < 0)
@@ -2533,7 +2537,8 @@ static __isl_give isl_basic_set *uset_gist_compressed(
 {
 	isl_ctx *ctx;
 	isl_mat *ineq;
-	int i, n_row, n_col;
+	int i;
+	isl_size n_row, n_col;
 	isl_int rem;
 
 	ineq = extract_ineq(bset);
@@ -2551,6 +2556,8 @@ static __isl_give isl_basic_set *uset_gist_compressed(
 	ctx = isl_mat_get_ctx(ineq);
 	n_row = isl_mat_rows(ineq);
 	n_col = isl_mat_cols(ineq);
+	if (n_row < 0 || n_col < 0)
+		goto error;
 	isl_int_init(rem);
 	for (i = 0; i < n_row; ++i) {
 		isl_seq_gcd(ineq->row[i] + 1, n_col - 1, &ctx->normalize_gcd);
@@ -4941,13 +4948,13 @@ error:
  */
 static isl_stat preimage(isl_int *c, __isl_keep isl_mat *T)
 {
-	int n;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_vec *v;
 
-	if (!T)
-		return isl_stat_error;
 	n = isl_mat_rows(T);
+	if (n < 0)
+		return isl_stat_error;
 	if (isl_seq_first_non_zero(c, n) == -1)
 		return isl_stat_ok;
 	ctx = isl_mat_get_ctx(T);
@@ -4971,18 +4978,19 @@ static __isl_give isl_basic_map *isl_basic_map_preimage_vars(
 	__isl_take isl_basic_map *bmap, unsigned pos, __isl_take isl_mat *T)
 {
 	int i;
-	unsigned n;
+	isl_size n_row, n_col;
 
 	bmap = isl_basic_map_cow(bmap);
-	if (!bmap || !T)
+	n_row = isl_mat_rows(T);
+	n_col = isl_mat_cols(T);
+	if (!bmap || n_row < 0 || n_col < 0)
 		goto error;
 
-	n = isl_mat_cols(T);
-	if (n != isl_mat_rows(T))
+	if (n_col != n_row)
 		isl_die(isl_mat_get_ctx(T), isl_error_invalid,
 			"expecting square matrix", goto error);
 
-	if (isl_basic_map_check_range(bmap, isl_dim_all, pos, n) < 0)
+	if (isl_basic_map_check_range(bmap, isl_dim_all, pos, n_col) < 0)
 		goto error;
 
 	for (i = 0; i < bmap->n_eq; ++i)
