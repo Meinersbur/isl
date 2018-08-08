@@ -5130,6 +5130,17 @@ the following option.
 	int isl_options_get_coalesce_bounded_wrapping(
 		isl_ctx *ctx);
 
+One of the other methods tries to combine pairs of basic sets
+with different local variables, treating them as existentially
+quantified variables even if they have known (but different)
+integer division expressions.  The result may then also have
+existentially quantified variables.  Turning on the following
+option prevents this from happening.
+
+	isl_stat isl_options_set_coalesce_preserve_locals(
+		isl_ctx *ctx, int val);
+	int isl_options_get_coalesce_preserve_locals(isl_ctx *ctx);
+
 =item * Detecting equalities
 
 	__isl_give isl_basic_set *isl_basic_set_detect_equalities(

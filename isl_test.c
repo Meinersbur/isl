@@ -1599,6 +1599,49 @@ static int test_plain_gist(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_basic_set_gist tests that are expected to fail.
+ */
+struct {
+	const char *set;
+	const char *context;
+} gist_fail_tests[] = {
+	{ "{ [i] : exists (e0, e1: 3e1 >= 1 + 2e0 and "
+	    "8e1 <= -1 + 5i - 5e0 and 2e1 >= 1 + 2i - 5e0) }",
+	  "{ [i] : i >= 0 }" },
+};
+
+/* Check that isl_basic_set_gist fails (gracefully) when expected.
+ * In particular, the user should be able to recover from the failure.
+ */
+static isl_stat test_gist_fail(struct isl_ctx *ctx)
+{
+	int i, n;
+	int on_error;
+
+	on_error = isl_options_get_on_error(ctx);
+	isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+	n = ARRAY_SIZE(gist_fail_tests);
+	for (i = 0; i < n; ++i) {
+		const char *str;
+		isl_basic_set *bset, *context;
+
+		bset = isl_basic_set_read_from_str(ctx, gist_fail_tests[i].set);
+		str = gist_fail_tests[i].context;
+		context = isl_basic_set_read_from_str(ctx, str);
+		bset = isl_basic_set_gist(bset, context);
+		isl_basic_set_free(bset);
+		if (bset)
+			break;
+	}
+	isl_options_set_on_error(ctx, on_error);
+	if (i < n)
+		isl_die(ctx, isl_error_unknown,
+			"operation not expected to succeed",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 struct {
 	const char *set;
 	const char *context;
@@ -1723,6 +1766,9 @@ static int test_gist(struct isl_ctx *ctx)
 			isl_die(ctx, isl_error_unknown,
 				"inconsistent gist test case", return -1);
 	}
+
+	if (test_gist_fail(ctx) < 0)
+		return -1;
 
 	test_gist_case(ctx, "gist1");
 
