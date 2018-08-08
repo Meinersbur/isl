@@ -207,8 +207,10 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  * by isl is explicitly decoded as an 'ascii' string.  This is correct
  * as all strings returned by isl are expected to be 'ascii'.
  *
- * If the return type is isl_bool, then convert the result to
- * a Python boolean, raising an error on isl_bool_error.
+ * If the return type is isl_stat or isl_bool, then
+ * raise an error on isl_stat_error or isl_bool_error.
+ * In case of isl_bool, the result is converted to
+ * a Python boolean.
  */
 void python_generator::print_method_return(FunctionDecl *method)
 {
@@ -229,10 +231,11 @@ void python_generator::print_method_return(FunctionDecl *method)
 			printf("        libc.free(res)\n");
 
 		printf("        return string\n");
-	} else if (is_isl_bool(return_type)) {
+	} else if (is_isl_neg_error(return_type)) {
 		printf("        if res < 0:\n");
 		printf("            raise\n");
-		printf("        return bool(res)\n");
+		if (is_isl_bool(return_type))
+			printf("        return bool(res)\n");
 	} else {
 		printf("        return res\n");
 	}
