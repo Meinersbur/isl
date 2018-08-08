@@ -8908,7 +8908,7 @@ __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_pw_aff *pa)
 {
 	int i;
-	int equal;
+	isl_bool equal;
 	isl_space *space, *space2;
 	isl_union_pw_aff *upa;
 
