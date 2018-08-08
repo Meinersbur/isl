@@ -254,11 +254,11 @@ static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 	}
 }
 
-unsigned isl_space_dim(__isl_keep isl_space *dim, enum isl_dim_type type)
+unsigned isl_space_dim(__isl_keep isl_space *space, enum isl_dim_type type)
 {
-	if (!dim)
+	if (!space)
 		return 0;
-	return n(dim, type);
+	return n(space, type);
 }
 
 unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type)
