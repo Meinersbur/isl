@@ -1397,18 +1397,18 @@ static __isl_give struct isl_sched_info *sched_info_alloc(
 	__isl_keep isl_map *map)
 {
 	isl_ctx *ctx;
-	isl_space *dim;
+	isl_space *space;
 	struct isl_sched_info *info;
 	int i, n;
 
 	if (!map)
 		return NULL;
 
-	dim = isl_space_unwrap(isl_space_domain(isl_map_get_space(map)));
-	if (!dim)
+	space = isl_space_unwrap(isl_space_domain(isl_map_get_space(map)));
+	if (!space)
 		return NULL;
-	n = isl_space_dim(dim, isl_dim_in);
-	isl_space_free(dim);
+	n = isl_space_dim(space, isl_dim_in);
+	isl_space_free(space);
 
 	ctx = isl_map_get_ctx(map);
 	info = isl_alloc_type(ctx, struct isl_sched_info);
