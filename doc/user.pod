@@ -681,7 +681,7 @@ They can be inspected using the following functions.
 	double isl_val_get_d(__isl_keep isl_val *v);
 	size_t isl_val_n_abs_num_chunks(__isl_keep isl_val *v,
 		size_t size);
-	int isl_val_get_abs_num_chunks(__isl_keep isl_val *v,
+	isl_stat isl_val_get_abs_num_chunks(__isl_keep isl_val *v,
 		size_t size, void *chunks);
 
 C<isl_val_n_abs_num_chunks> returns the number of I<digits>
