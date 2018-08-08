@@ -61,9 +61,9 @@
  * to the left, with the leftmost ending up in the constant position.
  */
 
-/* Add the given prefix to all named isl_dim_set dimensions in "dim".
+/* Add the given prefix to all named isl_dim_set dimensions in "space".
  */
-static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *dim,
+static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *space,
 	const char *prefix)
 {
 	int i;
@@ -71,17 +71,17 @@ static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *dim,
 	unsigned nvar;
 	size_t prefix_len = strlen(prefix);
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	ctx = isl_space_get_ctx(dim);
-	nvar = isl_space_dim(dim, isl_dim_set);
+	ctx = isl_space_get_ctx(space);
+	nvar = isl_space_dim(space, isl_dim_set);
 
 	for (i = 0; i < nvar; ++i) {
 		const char *name;
 		char *prefix_name;
 
-		name = isl_space_get_dim_name(dim, isl_dim_set, i);
+		name = isl_space_get_dim_name(space, isl_dim_set, i);
 		if (!name)
 			continue;
 
@@ -92,13 +92,14 @@ static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *dim,
 		memcpy(prefix_name, prefix, prefix_len);
 		strcpy(prefix_name + prefix_len, name);
 
-		dim = isl_space_set_dim_name(dim, isl_dim_set, i, prefix_name);
+		space = isl_space_set_dim_name(space,
+						isl_dim_set, i, prefix_name);
 		free(prefix_name);
 	}
 
-	return dim;
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
