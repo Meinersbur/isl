@@ -68,6 +68,7 @@ public:
 	static bool is_isl_ctx(QualType type);
 	static bool first_arg_is_isl_ctx(FunctionDecl *fd);
 	static bool is_isl_type(QualType type);
+	static bool is_isl_neg_error(QualType type);
 	static bool is_isl_bool(QualType type);
 	static bool is_isl_stat(QualType type);
 	static bool is_long(QualType type);

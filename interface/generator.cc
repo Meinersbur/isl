@@ -346,6 +346,14 @@ bool generator::is_isl_type(QualType type)
 	return false;
 }
 
+/* Is "type" one of the integral types with a negative value
+ * indicating an error condition?
+ */
+bool generator::is_isl_neg_error(QualType type)
+{
+	return is_isl_bool(type) || is_isl_stat(type);
+}
+
 /* Is "type" the type isl_bool?
  */
 bool generator::is_isl_bool(QualType type)

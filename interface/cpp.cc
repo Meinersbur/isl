@@ -932,7 +932,7 @@ void cpp_generator::print_exceptional_execution_check(ostream &os,
 			name);
 	}
 
-	check_neg = is_isl_stat(return_type) || is_isl_bool(return_type);
+	check_neg = is_isl_neg_error(return_type);
 	check_null = is_isl_type(return_type);
 	if (!check_null && !check_neg)
 		return;
@@ -964,8 +964,7 @@ void cpp_generator::print_method_return(ostream &os, const isl_class &clazz,
 	QualType return_type = method->getReturnType();
 
 	if (is_isl_type(return_type) ||
-		    (checked &&
-		     (is_isl_bool(return_type) || is_isl_stat(return_type)))) {
+		    (checked && is_isl_neg_error(return_type))) {
 		osprintf(os, "  return manage(res);\n");
 	} else if (is_isl_stat(return_type)) {
 		osprintf(os, "  return;\n");
