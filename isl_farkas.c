@@ -141,30 +141,31 @@ static __isl_give isl_space *isl_space_coefficients(__isl_take isl_space *space)
 	return space;
 }
 
-/* Drop the given prefix from all named dimensions of type "type" in "dim".
+/* Drop the given prefix from all named dimensions of type "type" in "space".
  */
-static __isl_give isl_space *isl_space_unprefix(__isl_take isl_space *dim,
+static __isl_give isl_space *isl_space_unprefix(__isl_take isl_space *space,
 	enum isl_dim_type type, const char *prefix)
 {
 	int i;
 	unsigned n;
 	size_t prefix_len = strlen(prefix);
 
-	n = isl_space_dim(dim, type);
+	n = isl_space_dim(space, type);
 
 	for (i = 0; i < n; ++i) {
 		const char *name;
 
-		name = isl_space_get_dim_name(dim, type, i);
+		name = isl_space_get_dim_name(space, type, i);
 		if (!name)
 			continue;
 		if (strncmp(name, prefix, prefix_len))
 			continue;
 
-		dim = isl_space_set_dim_name(dim, type, i, name + prefix_len);
+		space = isl_space_set_dim_name(space,
+						type, i, name + prefix_len);
 	}
 
-	return dim;
+	return space;
 }
 
 /* Given a dimension specification of the space of coefficients, construct
