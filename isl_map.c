@@ -1104,9 +1104,9 @@ isl_bool isl_map_is_params(__isl_keep isl_map *map)
 	return isl_space_is_params(map->dim);
 }
 
-static struct isl_basic_map *basic_map_init(struct isl_ctx *ctx,
-		struct isl_basic_map *bmap, unsigned extra,
-		unsigned n_eq, unsigned n_ineq)
+static __isl_give isl_basic_map *basic_map_init(isl_ctx *ctx,
+	__isl_take isl_basic_map *bmap, unsigned extra,
+	unsigned n_eq, unsigned n_ineq)
 {
 	int i;
 	size_t row_size = 1 + isl_space_dim(bmap->dim, isl_dim_all) + extra;
