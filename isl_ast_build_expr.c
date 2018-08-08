@@ -1236,24 +1236,24 @@ static int is_stride_constraint(__isl_keep isl_aff *aff, int pos)
 
 /* Are all coefficients of "aff" (zero or) negative?
  */
-static int all_negative_coefficients(__isl_keep isl_aff *aff)
+static isl_bool all_negative_coefficients(__isl_keep isl_aff *aff)
 {
 	int i, n;
 
 	if (!aff)
-		return 0;
+		return isl_bool_error;
 
 	n = isl_aff_dim(aff, isl_dim_param);
 	for (i = 0; i < n; ++i)
 		if (isl_aff_coefficient_sgn(aff, isl_dim_param, i) > 0)
-			return 0;
+			return isl_bool_false;
 
 	n = isl_aff_dim(aff, isl_dim_in);
 	for (i = 0; i < n; ++i)
 		if (isl_aff_coefficient_sgn(aff, isl_dim_in, i) > 0)
-			return 0;
+			return isl_bool_false;
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Give an equality of the form
@@ -1278,6 +1278,7 @@ static int all_negative_coefficients(__isl_keep isl_aff *aff)
 static __isl_give isl_ast_expr *extract_stride_constraint(
 	__isl_take isl_aff *aff, int pos, __isl_keep isl_ast_build *build)
 {
+	isl_bool all_neg;
 	isl_ctx *ctx;
 	isl_val *c;
 	isl_ast_expr *expr, *cst;
@@ -1290,7 +1291,10 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
 	c = isl_aff_get_coefficient_val(aff, isl_dim_div, pos);
 	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, pos, 0);
 
-	if (all_negative_coefficients(aff))
+	all_neg = all_negative_coefficients(aff);
+	if (all_neg < 0)
+		aff = isl_aff_free(aff);
+	else if (all_neg)
 		aff = isl_aff_neg(aff);
 
 	cst = isl_ast_expr_from_val(isl_val_abs(c));
