@@ -181,19 +181,20 @@ static __isl_give isl_space *isl_space_unprefix(__isl_take isl_space *space,
  *
  * and drop the "c_" prefix from the dimension names.
  */
-static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *dim)
+static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *space)
 {
 	unsigned nparam;
 
-	dim = isl_space_unwrap(dim);
-	dim = isl_space_drop_dims(dim, isl_dim_in, 0, 1);
-	dim = isl_space_unprefix(dim, isl_dim_in, "c_");
-	dim = isl_space_unprefix(dim, isl_dim_out, "c_");
-	nparam = isl_space_dim(dim, isl_dim_in);
-	dim = isl_space_move_dims(dim, isl_dim_param, 0, isl_dim_in, 0, nparam);
-	dim = isl_space_range(dim);
+	space = isl_space_unwrap(space);
+	space = isl_space_drop_dims(space, isl_dim_in, 0, 1);
+	space = isl_space_unprefix(space, isl_dim_in, "c_");
+	space = isl_space_unprefix(space, isl_dim_out, "c_");
+	nparam = isl_space_dim(space, isl_dim_in);
+	space = isl_space_move_dims(space,
+				    isl_dim_param, 0, isl_dim_in, 0, nparam);
+	space = isl_space_range(space);
 
-	return dim;
+	return space;
 }
 
 /* Return the rational universe basic set in the given space.
