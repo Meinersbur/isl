@@ -76,11 +76,11 @@ void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
 	}
 }
 
-void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map, __isl_keep isl_space *dim,
-	enum isl_dim_type type, unsigned dst_pos)
+void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map,
+	__isl_keep isl_space *space, enum isl_dim_type type, unsigned dst_pos)
 {
-	isl_dim_map_dim_range(dim_map, dim, type,
-			      0, isl_space_dim(dim, type), dst_pos);
+	isl_dim_map_dim_range(dim_map, space, type,
+			      0, isl_space_dim(space, type), dst_pos);
 }
 
 void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
