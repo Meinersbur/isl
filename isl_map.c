@@ -3366,11 +3366,8 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 __isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *space, int n,
 	unsigned flags)
 {
-	if (!space)
-		return NULL;
-	if (isl_space_dim(space, isl_dim_in) != 0)
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"set cannot have input dimensions", goto error);
+	if (isl_space_check_is_set(space) < 0)
+		goto error;
 	return isl_map_alloc_space(space, n, flags);
 error:
 	isl_space_free(space);

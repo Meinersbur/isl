@@ -76,6 +76,21 @@ isl_bool isl_space_is_set(__isl_keep isl_space *space)
 	return isl_bool_true;
 }
 
+/* Check that "space" is a set space.
+ */
+isl_stat isl_space_check_is_set(__isl_keep isl_space *space)
+{
+	isl_bool is_set;
+
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_stat_error;
+	if (!is_set)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"space is not a set", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Is the given space that of a map?
  */
 isl_bool isl_space_is_map(__isl_keep isl_space *space)
