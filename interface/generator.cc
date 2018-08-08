@@ -354,9 +354,9 @@ bool generator::is_isl_neg_error(QualType type)
 	return is_isl_bool(type) || is_isl_stat(type);
 }
 
-/* Is "type" the type isl_bool?
+/* Is "type" the primitive type with the given name?
  */
-bool generator::is_isl_bool(QualType type)
+static bool is_isl_primitive(QualType type, const char *name)
 {
 	string s;
 
@@ -364,20 +364,21 @@ bool generator::is_isl_bool(QualType type)
 		return false;
 
 	s = type.getAsString();
-	return s == "isl_bool";
+	return s == name;
+}
+
+/* Is "type" the type isl_bool?
+ */
+bool generator::is_isl_bool(QualType type)
+{
+	return is_isl_primitive(type, "isl_bool");
 }
 
 /* Is "type" the type isl_stat?
  */
 bool generator::is_isl_stat(QualType type)
 {
-	string s;
-
-	if (type->isPointerType())
-		return false;
-
-	s = type.getAsString();
-	return s == "isl_stat";
+	return is_isl_primitive(type, "isl_stat");
 }
 
 
