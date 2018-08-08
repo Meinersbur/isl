@@ -116,29 +116,29 @@ error:
  *
  * and prefix each dimension name with "c_".
  */
-static __isl_give isl_space *isl_space_coefficients(__isl_take isl_space *dim)
+static __isl_give isl_space *isl_space_coefficients(__isl_take isl_space *space)
 {
 	isl_space *dim_param;
 	unsigned nvar;
 	unsigned nparam;
 
-	nvar = isl_space_dim(dim, isl_dim_set);
-	nparam = isl_space_dim(dim, isl_dim_param);
-	dim_param = isl_space_copy(dim);
+	nvar = isl_space_dim(space, isl_dim_set);
+	nparam = isl_space_dim(space, isl_dim_param);
+	dim_param = isl_space_copy(space);
 	dim_param = isl_space_drop_dims(dim_param, isl_dim_set, 0, nvar);
 	dim_param = isl_space_move_dims(dim_param, isl_dim_set, 0,
 				 isl_dim_param, 0, nparam);
 	dim_param = isl_space_prefix(dim_param, "c_");
 	dim_param = isl_space_insert_dims(dim_param, isl_dim_set, 0, 1);
 	dim_param = isl_space_set_dim_name(dim_param, isl_dim_set, 0, "c_cst");
-	dim = isl_space_drop_dims(dim, isl_dim_param, 0, nparam);
-	dim = isl_space_prefix(dim, "c_");
-	dim = isl_space_join(isl_space_from_domain(dim_param),
-			   isl_space_from_range(dim));
-	dim = isl_space_wrap(dim);
-	dim = isl_space_set_tuple_name(dim, isl_dim_set, "coefficients");
+	space = isl_space_drop_dims(space, isl_dim_param, 0, nparam);
+	space = isl_space_prefix(space, "c_");
+	space = isl_space_join(isl_space_from_domain(dim_param),
+			   isl_space_from_range(space));
+	space = isl_space_wrap(space);
+	space = isl_space_set_tuple_name(space, isl_dim_set, "coefficients");
 
-	return dim;
+	return space;
 }
 
 /* Drop the given prefix from all named dimensions of type "type" in "dim".
