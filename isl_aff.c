@@ -8836,7 +8836,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_multi_aff(
 {
 	isl_space *space1, *space2;
 	isl_multi_union_pw_aff *res;
-	int equal;
+	isl_bool equal;
 	int i, n_out;
 
 	mupa = isl_multi_union_pw_aff_align_params(mupa,
