@@ -3494,7 +3494,7 @@ static __isl_give isl_schedule_node *gist_leave(
 		for (i = n - 1; i >= 0; --i) {
 			isl_schedule_tree *child;
 			isl_union_set *filter;
-			int empty;
+			isl_bool empty;
 
 			child = isl_schedule_tree_get_child(tree, i);
 			filter = isl_schedule_tree_filter_get_filter(child);
