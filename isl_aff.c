@@ -199,9 +199,8 @@ __isl_give isl_aff *isl_aff_var_on_domain(__isl_take isl_local_space *ls,
 	if (isl_space_is_map(space))
 		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"expecting (parameter) set space", goto error);
-	if (pos >= isl_local_space_dim(ls, type))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"position out of bounds", goto error);
+	if (isl_local_space_check_range(ls, type, pos, 1) < 0)
+		goto error;
 
 	isl_space_free(space);
 	aff = isl_aff_alloc(ls);
@@ -689,9 +688,8 @@ __isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(ctx, isl_error_invalid,
-			"position out of bounds", return NULL);
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		return NULL;
 
 	if (isl_aff_is_nan(aff))
 		return isl_val_nan(ctx);
@@ -719,9 +717,8 @@ int isl_aff_coefficient_sgn(__isl_keep isl_aff *aff, enum isl_dim_type type,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(ctx, isl_error_invalid,
-			"position out of bounds", return 0);
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		return 0;
 
 	pos += isl_local_space_offset(aff->ls, type);
 	return isl_int_sgn(aff->v->el[1 + pos]);
@@ -980,9 +977,8 @@ __isl_give isl_aff *isl_aff_set_coefficient(__isl_take isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"position out of bounds", return isl_aff_free(aff));
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		return isl_aff_free(aff);
 
 	if (isl_aff_is_nan(aff))
 		return aff;
@@ -1018,9 +1014,8 @@ __isl_give isl_aff *isl_aff_set_coefficient_si(__isl_take isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos < 0 || pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"position out of bounds", return isl_aff_free(aff));
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		return isl_aff_free(aff);
 
 	if (isl_aff_is_nan(aff))
 		return aff;
@@ -1059,9 +1054,8 @@ __isl_give isl_aff *isl_aff_set_coefficient_val(__isl_take isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"position out of bounds", goto error);
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		return isl_aff_free(aff);
 
 	if (isl_aff_is_nan(aff)) {
 		isl_val_free(v);
@@ -1125,9 +1119,8 @@ __isl_give isl_aff *isl_aff_add_coefficient(__isl_take isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"position out of bounds", return isl_aff_free(aff));
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		return isl_aff_free(aff);
 
 	if (isl_aff_is_nan(aff))
 		return aff;
@@ -1168,9 +1161,8 @@ __isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	if (pos >= isl_local_space_dim(aff->ls, type))
-		isl_die(aff->v->ctx, isl_error_invalid,
-			"position out of bounds", goto error);
+	if (isl_local_space_check_range(aff->ls, type, pos, 1) < 0)
+		goto error;
 
 	if (isl_aff_is_nan(aff)) {
 		isl_val_free(v);
@@ -2429,9 +2421,8 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 		return aff;
 
 	ctx = isl_aff_get_ctx(aff);
-	if (first + n > isl_local_space_dim(aff->ls, type))
-		isl_die(ctx, isl_error_invalid, "range out of bounds",
-			return isl_aff_free(aff));
+	if (isl_local_space_check_range(aff->ls, type, first, n) < 0)
+		return isl_aff_free(aff);
 
 	aff = isl_aff_cow(aff);
 	if (!aff)
@@ -2548,9 +2539,8 @@ __isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
 		return aff;
 
 	ctx = isl_aff_get_ctx(aff);
-	if (first > isl_local_space_dim(aff->ls, type))
-		isl_die(ctx, isl_error_invalid, "position out of bounds",
-			return isl_aff_free(aff));
+	if (isl_local_space_check_range(aff->ls, type, first, 0) < 0)
+		return isl_aff_free(aff);
 
 	aff = isl_aff_cow(aff);
 	if (!aff)
@@ -2619,9 +2609,8 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 	if (src_type == isl_dim_in)
 		src_type = isl_dim_set;
 
-	if (src_pos + n > isl_local_space_dim(aff->ls, src_type))
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"range out of bounds", return isl_aff_free(aff));
+	if (isl_local_space_check_range(aff->ls, src_type, src_pos, n) < 0)
+		return isl_aff_free(aff);
 	if (dst_type == src_type)
 		isl_die(isl_aff_get_ctx(aff), isl_error_unsupported,
 			"moving dims within the same type not supported",
