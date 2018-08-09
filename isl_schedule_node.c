@@ -1004,10 +1004,10 @@ isl_bool isl_schedule_node_has_next_sibling(__isl_keep isl_schedule_node *node)
 
 	n = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
 	tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors, n - 1);
-	if (!tree)
-		return isl_bool_error;
-	n_child = isl_schedule_tree_list_n_schedule_tree(tree->children);
+	n_child = isl_schedule_tree_n_children(tree);
 	isl_schedule_tree_free(tree);
+	if (n_child < 0)
+		return isl_bool_error;
 
 	return node->child_pos[n - 1] + 1 < n_child;
 }
