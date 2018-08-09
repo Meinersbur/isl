@@ -4414,7 +4414,7 @@ static __isl_give isl_schedule_node *isl_schedule_node_order_before_or_after(
 	isl_union_set *node_domain, *node_filter = NULL, *parent_filter;
 	isl_schedule_node *node2;
 	isl_schedule_tree *tree1, *tree2;
-	int empty1, empty2;
+	isl_bool empty1, empty2;
 	int in_seq;
 
 	if (!node || !filter)
