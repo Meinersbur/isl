@@ -1720,16 +1720,16 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	isl_union_map *umap;
 
 	if (!tree)
-		return NULL;
+		return isl_union_map_free(outer);
 
 	ctx = isl_schedule_tree_get_ctx(tree);
 	if (!tree->children)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return NULL);
+			"missing children", return isl_union_map_free(outer));
 	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return NULL);
+			"missing children", return isl_union_map_free(outer));
 
 	separate = n > 1 && (tree->type == isl_schedule_node_sequence ||
 			    isl_options_get_schedule_separate_components(ctx));
