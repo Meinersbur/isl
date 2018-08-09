@@ -1879,10 +1879,9 @@ static __isl_give isl_union_set *initial_domain_from_children(
 	isl_space *space;
 	isl_union_set *domain;
 
-	if (!tree->children)
-		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return NULL);
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		return NULL;
 	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
 			"missing children", return NULL);
