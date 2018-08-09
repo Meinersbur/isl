@@ -3327,14 +3327,14 @@ static __isl_give isl_schedule_node *gist_enter_extension(
  * this test since the current domain elements are incomparable
  * to the domain elements in the original context.
  */
-static int gist_done(__isl_keep isl_schedule_node *node,
+static isl_bool gist_done(__isl_keep isl_schedule_node *node,
 	struct isl_node_gist_data *data)
 {
 	isl_union_set *filter, *outer;
-	int subset;
+	isl_bool subset;
 
 	if (data->n_expansion != 0)
-		return 0;
+		return isl_bool_false;
 
 	filter = isl_schedule_node_filter_get_filter(node);
 	outer = isl_union_set_list_get_union_set(data->filters, 0);
@@ -3381,7 +3381,7 @@ static __isl_give isl_schedule_node *gist_enter(
 
 	do {
 		isl_union_set *filter, *inner;
-		int done, empty;
+		isl_bool done, empty;
 		int n;
 
 		switch (isl_schedule_node_get_type(node)) {
