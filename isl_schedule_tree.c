@@ -2796,7 +2796,10 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 	}
 	p = isl_printer_yaml_next(p);
 
-	if (!tree->children) {
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		return isl_printer_free(p);
+	if (n == 0) {
 		if (n_ancestor > 0 && block) {
 			isl_schedule_tree *leaf;
 
@@ -2818,7 +2821,6 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 		p = isl_printer_yaml_next(p);
 	}
 
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	for (i = 0; i < n; ++i) {
 		isl_schedule_tree *t;
 
