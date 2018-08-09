@@ -771,14 +771,14 @@ __isl_give isl_schedule_tree *isl_schedule_tree_drop_child(
 	int n;
 
 	tree = isl_schedule_tree_cow(tree);
-	if (!tree)
-		return NULL;
 
-	if (!isl_schedule_tree_has_children(tree))
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		return isl_schedule_tree_free(tree);
+	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"tree does not have any explicit children",
 			return isl_schedule_tree_free(tree));
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	if (pos < 0 || pos >= n)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"position out of bounds",
