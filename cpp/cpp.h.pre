@@ -10,11 +10,12 @@
 
 /* ISL_USE_EXCEPTIONS should be defined to 1 if exceptions are available.
  * gcc and clang define __cpp_exceptions; MSVC and xlC define _CPPUNWIND.
+ * Older versions of gcc (e.g., 4.9) only define __EXCEPTIONS.
  * If exceptions are not available, any error condition will result
  * in an abort.
  */
 #ifndef ISL_USE_EXCEPTIONS
-#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND) || defined(__EXCEPTIONS)
 #define ISL_USE_EXCEPTIONS	1
 #else
 #define ISL_USE_EXCEPTIONS	0
