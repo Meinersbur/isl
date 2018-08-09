@@ -487,6 +487,7 @@ EXTRA_DIST = \
 	set_from_map.c \
 	set_list_from_map_list_inl.c \
 	isl_tab_lexopt_templ.c \
+	isl_test_list_templ.c \
 	uset_to_umap.c \
 	uset_from_umap.c \
 	isl_union_macro.h \
