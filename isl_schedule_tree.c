@@ -490,14 +490,11 @@ __isl_give isl_schedule_tree *isl_schedule_tree_update_anchored(
 	int i, n;
 	int anchored;
 
-	if (!tree)
-		return NULL;
-
 	anchored = isl_schedule_tree_is_anchored(tree);
-	if (anchored < 0)
+	n = isl_schedule_tree_n_children(tree);
+	if (anchored < 0 || n < 0)
 		return isl_schedule_tree_free(tree);
 
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	for (i = 0; !anchored && i < n; ++i) {
 		isl_schedule_tree *child;
 
