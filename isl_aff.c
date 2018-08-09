@@ -8781,7 +8781,7 @@ __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_aff(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_aff *aff)
 {
 	isl_space *space1, *space2;
-	int equal;
+	isl_bool equal;
 
 	mupa = isl_multi_union_pw_aff_align_params(mupa,
 						isl_aff_get_space(aff));
