@@ -230,7 +230,8 @@ static bool is_exported(Decl *decl)
 		N.find("apply_multi_aff") == std::string::npos &&
 		N.find("free") == std::string::npos &&
 		N.find("delete") == std::string::npos &&
-		N.find("print") == std::string::npos);
+		N.find("print") == std::string::npos &&
+		N.find("2exp") == std::string::npos);
 	}
 	return has_annotation(decl, "isl_export");
 }
