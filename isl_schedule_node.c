@@ -3988,17 +3988,17 @@ __isl_give isl_union_pw_multi_aff *isl_schedule_node_get_subtree_contraction(
 /* Do the nearest "n" ancestors of "node" have the types given in "types"
  * (starting at the parent of "node")?
  */
-static int has_ancestors(__isl_keep isl_schedule_node *node,
+static isl_bool has_ancestors(__isl_keep isl_schedule_node *node,
 	int n, enum isl_schedule_node_type *types)
 {
 	int i, n_ancestor;
 
 	if (!node)
-		return -1;
+		return isl_bool_error;
 
 	n_ancestor = isl_schedule_tree_list_n_schedule_tree(node->ancestors);
 	if (n_ancestor < n)
-		return 0;
+		return isl_bool_false;
 
 	for (i = 0; i < n; ++i) {
 		isl_schedule_tree *tree;
@@ -4007,14 +4007,14 @@ static int has_ancestors(__isl_keep isl_schedule_node *node,
 		tree = isl_schedule_tree_list_get_schedule_tree(node->ancestors,
 							    n_ancestor - 1 - i);
 		if (!tree)
-			return -1;
+			return isl_bool_error;
 		correct_type = isl_schedule_tree_get_type(tree) == types[i];
 		isl_schedule_tree_free(tree);
 		if (!correct_type)
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Given a node "node" that appears in an extension (i.e., it is the child
@@ -4143,7 +4143,7 @@ static __isl_give isl_schedule_node *insert_extension(
 		  isl_schedule_node_extension };
 	isl_union_set *domain;
 	isl_union_set *filter;
-	int in_ext;
+	isl_bool in_ext;
 
 	in_ext = has_ancestors(node, 3, ancestors);
 	if (in_ext < 0)
@@ -4416,7 +4416,7 @@ static __isl_give isl_schedule_node *isl_schedule_node_order_before_or_after(
 	isl_schedule_node *node2;
 	isl_schedule_tree *tree1, *tree2;
 	isl_bool empty1, empty2;
-	int in_seq;
+	isl_bool in_seq;
 
 	if (!node || !filter)
 		goto error;
