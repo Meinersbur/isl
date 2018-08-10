@@ -600,10 +600,6 @@ __isl_give isl_constraint *isl_constraint_set_coefficient(
 			"position out of bounds",
 			return isl_constraint_free(constraint));
 
-	constraint = isl_constraint_cow(constraint);
-	if (!constraint)
-		return NULL;
-
 	constraint->v = isl_vec_cow(constraint->v);
 	if (!constraint->v)
 		return isl_constraint_free(constraint);
