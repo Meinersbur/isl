@@ -4858,7 +4858,7 @@ static __isl_give isl_basic_map *isl_basic_map_preimage_vars(
 	__isl_take isl_basic_map *bmap, unsigned pos, __isl_take isl_mat *T)
 {
 	int i;
-	unsigned n, total;
+	unsigned n;
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap || !T)
@@ -4869,10 +4869,8 @@ static __isl_give isl_basic_map *isl_basic_map_preimage_vars(
 		isl_die(isl_mat_get_ctx(T), isl_error_invalid,
 			"expecting square matrix", goto error);
 
-	total = isl_basic_map_dim(bmap, isl_dim_all);
-	if (pos + n > total || pos + n < pos)
-		isl_die(isl_mat_get_ctx(T), isl_error_invalid,
-			"invalid range", goto error);
+	if (isl_basic_map_check_range(bmap, isl_dim_all, pos, n) < 0)
+		goto error;
 
 	for (i = 0; i < bmap->n_eq; ++i)
 		if (preimage(bmap->eq[i] + 1 + pos, T) < 0)
