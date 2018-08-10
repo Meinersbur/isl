@@ -1219,27 +1219,37 @@ struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 	return bmap;
 }
 
-static void dup_constraints(
-		struct isl_basic_map *dst, struct isl_basic_map *src)
+static __isl_give isl_basic_map *dup_constraints(__isl_take isl_basic_map *dst,
+	__isl_keep isl_basic_map *src)
 {
 	int i;
 	unsigned total = isl_basic_map_total_dim(src);
 
+	if (!dst)
+		return NULL;
+
 	for (i = 0; i < src->n_eq; ++i) {
 		int j = isl_basic_map_alloc_equality(dst);
+		if (j < 0)
+			return isl_basic_map_free(dst);
 		isl_seq_cpy(dst->eq[j], src->eq[i], 1+total);
 	}
 
 	for (i = 0; i < src->n_ineq; ++i) {
 		int j = isl_basic_map_alloc_inequality(dst);
+		if (j < 0)
+			return isl_basic_map_free(dst);
 		isl_seq_cpy(dst->ineq[j], src->ineq[i], 1+total);
 	}
 
 	for (i = 0; i < src->n_div; ++i) {
 		int j = isl_basic_map_alloc_div(dst);
+		if (j < 0)
+			return isl_basic_map_free(dst);
 		isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
 	}
 	ISL_F_SET(dst, ISL_BASIC_SET_FINAL);
+	return dst;
 }
 
 __isl_give isl_basic_map *isl_basic_map_dup(__isl_keep isl_basic_map *bmap)
@@ -1250,9 +1260,9 @@ __isl_give isl_basic_map *isl_basic_map_dup(__isl_keep isl_basic_map *bmap)
 		return NULL;
 	dup = isl_basic_map_alloc_space(isl_space_copy(bmap->dim),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	dup = dup_constraints(dup, bmap);
 	if (!dup)
 		return NULL;
-	dup_constraints(dup, bmap);
 	dup->flags = bmap->flags;
 	dup->sample = isl_vec_copy(bmap->sample);
 	return dup;
