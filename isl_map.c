@@ -11993,7 +11993,7 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 	enum isl_dim_type c4, enum isl_dim_type c5)
 {
 	enum isl_dim_type c[5] = { c1, c2, c3, c4, c5 };
-	isl_basic_map *bmap;
+	isl_basic_map *bmap = NULL;
 	unsigned total;
 	unsigned extra;
 	int i, j, k, l;
@@ -12062,6 +12062,7 @@ error:
 	isl_space_free(dim);
 	isl_mat_free(eq);
 	isl_mat_free(ineq);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
