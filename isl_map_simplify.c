@@ -5019,7 +5019,7 @@ __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs(
 /* Does "bmap" satisfy any equality that involves more than 2 variables
  * and/or has coefficients different from -1 and 1?
  */
-static int has_multiple_var_equality(__isl_keep isl_basic_map *bmap)
+static isl_bool has_multiple_var_equality(__isl_keep isl_basic_map *bmap)
 {
 	int i;
 	unsigned total;
@@ -5034,7 +5034,7 @@ static int has_multiple_var_equality(__isl_keep isl_basic_map *bmap)
 			continue;
 		if (!isl_int_is_one(bmap->eq[i][1 + j]) &&
 		    !isl_int_is_negone(bmap->eq[i][1 + j]))
-			return 1;
+			return isl_bool_true;
 
 		j += 1;
 		k = isl_seq_first_non_zero(bmap->eq[i] + 1 + j, total - j);
@@ -5043,15 +5043,15 @@ static int has_multiple_var_equality(__isl_keep isl_basic_map *bmap)
 		j += k;
 		if (!isl_int_is_one(bmap->eq[i][1 + j]) &&
 		    !isl_int_is_negone(bmap->eq[i][1 + j]))
-			return 1;
+			return isl_bool_true;
 
 		j += 1;
 		k = isl_seq_first_non_zero(bmap->eq[i] + 1 + j, total - j);
 		if (k >= 0)
-			return 1;
+			return isl_bool_true;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Remove any common factor g from the constraint coefficients in "v".
@@ -5112,6 +5112,7 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	__isl_take isl_basic_map *bmap)
 {
 	unsigned total;
+	isl_bool multi;
 	isl_ctx *ctx;
 	isl_vec *v;
 	isl_mat *eq, *T, *T2;
@@ -5126,7 +5127,10 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 		return bmap;
 	if (bmap->n_eq == 0)
 		return bmap;
-	if (!has_multiple_var_equality(bmap))
+	multi = has_multiple_var_equality(bmap);
+	if (multi < 0)
+		return isl_basic_map_free(bmap);
+	if (!multi)
 		return bmap;
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
