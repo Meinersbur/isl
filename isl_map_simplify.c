@@ -4409,7 +4409,7 @@ static isl_bool is_parallel_except(__isl_keep isl_basic_map *bmap, int i, int j,
 /* Are inequality constraints "i" and "j" of "bmap" opposite to each other,
  * apart from the constant term and the coefficient at position "pos"?
  */
-static int is_opposite_except(__isl_keep isl_basic_map *bmap, int i, int j,
+static isl_bool is_opposite_except(__isl_keep isl_basic_map *bmap, int i, int j,
 	int pos)
 {
 	unsigned total;
@@ -4599,7 +4599,7 @@ static int lower_bound_is_cst(__isl_keep isl_basic_map *bmap, int div, int ineq)
 
 	o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	for (i = 0; i < bmap->n_ineq && (lower < 0 || upper < 0); ++i) {
-		isl_bool par;
+		isl_bool par, opp;
 
 		if (i == ineq)
 			continue;
@@ -4614,10 +4614,13 @@ static int lower_bound_is_cst(__isl_keep isl_basic_map *bmap, int div, int ineq)
 			lower = i;
 			continue;
 		}
-		if (upper < 0 &&
-		    is_opposite_except(bmap, ineq, i, o_div + div)) {
+		opp = isl_bool_false;
+		if (upper < 0)
+			opp = is_opposite_except(bmap, ineq, i, o_div + div);
+		if (opp < 0)
+			return -1;
+		if (opp)
 			upper = i;
-		}
 	}
 
 	if (lower < 0 || upper < 0)
