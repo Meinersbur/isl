@@ -1654,9 +1654,8 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 	if (n == 0)
 		return bmap;
 
-	if (first + n > isl_basic_map_dim(bmap, type) || first + n < first)
-		isl_die(bmap->ctx, isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
+		return isl_basic_map_free(bmap);
 
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL)) {
 		first += isl_basic_map_offset(bmap, type) - 1;
@@ -1669,9 +1668,6 @@ __isl_give isl_basic_map *isl_basic_map_eliminate(
 	bmap = isl_basic_map_insert_dims(bmap, type, first, n);
 	bmap = isl_basic_map_reset_space(bmap, space);
 	return bmap;
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 __isl_give isl_basic_set *isl_basic_set_eliminate(
