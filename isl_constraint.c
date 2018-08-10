@@ -1253,6 +1253,7 @@ error:
 __isl_give isl_aff *isl_constraint_get_bound(
 	__isl_keep isl_constraint *constraint, enum isl_dim_type type, int pos)
 {
+	isl_space *space;
 	isl_aff *aff;
 	isl_ctx *ctx;
 
@@ -1262,9 +1263,9 @@ __isl_give isl_aff *isl_constraint_get_bound(
 	if (pos >= isl_constraint_dim(constraint, type))
 		isl_die(ctx, isl_error_invalid,
 			"index out of bounds", return NULL);
-	if (isl_constraint_dim(constraint, isl_dim_in) != 0)
-		isl_die(ctx, isl_error_invalid,
-			"not a set constraint", return NULL);
+	space = isl_constraint_peek_space(constraint);
+	if (isl_space_check_is_set(space) < 0)
+		return NULL;
 
 	pos += offset(constraint, type);
 	if (isl_int_is_zero(constraint->v->el[pos]))
