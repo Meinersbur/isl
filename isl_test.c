@@ -2264,6 +2264,33 @@ static int test_coalesce_special3(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state.
+ * In particular, when isl_set_coalesce detects equality constraints,
+ * it does not immediately perform Gaussian elimination on them,
+ * but then it needs to ensure that it is performed at some point.
+ * The input set has implicit equality constraints in the first disjunct.
+ * It is constructed as an intersection, because otherwise
+ * those equality constraints would already be detected during parsing.
+ */
+static isl_stat test_coalesce_special4(isl_ctx *ctx)
+{
+	isl_set *set1, *set2;
+
+	set1 = isl_set_read_from_str(ctx, "{ [a, b] : b <= 0 or a <= 1 }");
+	set2 = isl_set_read_from_str(ctx, "{ [a, b] : -1 <= -a < b }");
+	set1 = isl_set_intersect(set1, set2);
+	isl_set_free(isl_set_coalesce(isl_set_copy(set1)));
+	set1 = isl_set_coalesce(set1);
+	isl_set_free(set1);
+
+	if (!set1)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2286,6 +2313,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 	if (test_coalesce_special2(ctx) < 0)
 		return -1;
 	if (test_coalesce_special3(ctx) < 0)
+		return -1;
+	if (test_coalesce_special4(ctx) < 0)
 		return -1;
 
 	return 0;
