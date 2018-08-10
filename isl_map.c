@@ -1697,7 +1697,7 @@ int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 /* Check that there are "n" dimensions of type "type" starting at "first"
  * in "bmap".
  */
-static isl_stat isl_basic_map_check_range(__isl_keep isl_basic_map *bmap,
+isl_stat isl_basic_map_check_range(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	unsigned dim;
