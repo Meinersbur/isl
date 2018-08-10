@@ -13511,9 +13511,8 @@ __isl_give isl_basic_map *isl_basic_map_transform_dims(
 	if (trans->n_row != trans->n_col)
 		isl_die(trans->ctx, isl_error_invalid,
 			"expecting square transformation matrix", goto error);
-	if (first + trans->n_row > isl_basic_map_dim(bmap, type))
-		isl_die(trans->ctx, isl_error_invalid,
-			"oversized transformation matrix", goto error);
+	if (isl_basic_map_check_range(bmap, type, first, trans->n_row) < 0)
+		goto error;
 
 	pos = isl_basic_map_offset(bmap, type) + first;
 
