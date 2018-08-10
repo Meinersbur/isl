@@ -7467,7 +7467,7 @@ static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 	struct isl_basic_set *bset;
 	struct isl_set *set;
 	struct isl_map *map;
-	isl_space *dim;
+	isl_space *space;
 	isl_local_space *ls;
 	unsigned	 nparam;
 	unsigned	 n_in;
@@ -7487,9 +7487,9 @@ static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
-	dim = isl_space_set_alloc(bmap->ctx,
+	space = isl_space_set_alloc(bmap->ctx,
 				    nparam + n_in + n_out + n_known, 0);
-	if (!dim)
+	if (!space)
 		goto error;
 
 	ls = isl_basic_map_get_local_space(bmap);
@@ -7501,7 +7501,7 @@ static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 		bmap->n_div -= n_known;
 		bmap->extra -= n_known;
 	}
-	bmap = isl_basic_map_reset_space(bmap, dim);
+	bmap = isl_basic_map_reset_space(bmap, space);
 	bset = bset_from_bmap(bmap);
 
 	set = parameter_compute_divs(bset);
