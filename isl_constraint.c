@@ -240,13 +240,15 @@ static isl_stat collect_constraint(__isl_take isl_constraint *constraint,
 	void *user)
 {
 	isl_constraint_list **list = user;
+	isl_bool is_div;
 
-	if (isl_constraint_is_div_constraint(constraint))
+	is_div = isl_constraint_is_div_constraint(constraint);
+	if (is_div < 0 || is_div)
 		isl_constraint_free(constraint);
 	else
 		*list = isl_constraint_list_add(*list, constraint);
 
-	return isl_stat_ok;
+	return is_div < 0 ? isl_stat_error : isl_stat_ok;
 }
 
 /* Return a list of constraints that, when combined, are equivalent
@@ -650,15 +652,15 @@ isl_bool isl_constraint_is_equality(struct isl_constraint *constraint)
 	return constraint->eq;
 }
 
-int isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
+isl_bool isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
 {
 	int i;
 	int n_div;
 
 	if (!constraint)
-		return -1;
+		return isl_bool_error;
 	if (isl_constraint_is_equality(constraint))
-		return 0;
+		return isl_bool_false;
 	n_div = isl_constraint_dim(constraint, isl_dim_div);
 	for (i = 0; i < n_div; ++i) {
 		isl_bool is_div;
@@ -668,7 +670,7 @@ int isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
 			return is_div;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Is "constraint" an equality that corresponds to integer division "div"?
