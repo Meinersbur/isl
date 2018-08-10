@@ -11618,7 +11618,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 	res = isl_basic_map_finalize(res);
 	return res;
 error:
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	isl_basic_map_free(bmap);
 	isl_space_free(space);
 	return NULL;
@@ -11654,10 +11654,10 @@ __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	map = isl_map_unmark_normalized(map);
 
 	isl_reordering_free(r);
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	return map;
 error:
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	isl_map_free(map);
 	isl_reordering_free(r);
 	return NULL;
@@ -11742,7 +11742,7 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 				    isl_reordering_get_space(exp),
 				    isl_dim_map_extend(dim_map, bmap));
 		isl_reordering_free(exp);
-		free(dim_map);
+		isl_dim_map_free(dim_map);
 	}
 
 	isl_space_free(model);

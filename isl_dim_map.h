@@ -10,6 +10,7 @@ struct isl_dim_map;
 typedef struct isl_dim_map isl_dim_map;
 
 __isl_give isl_dim_map *isl_dim_map_alloc(isl_ctx *ctx, unsigned len);
+__isl_null isl_dim_map *isl_dim_map_free(__isl_take isl_dim_map *dim_map);
 void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
 	unsigned dst_pos, int dst_stride, unsigned src_pos, int src_stride,
 	unsigned n, int sign);
