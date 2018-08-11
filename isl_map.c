@@ -4475,7 +4475,8 @@ error:
 	return NULL;
 }
 
-static struct isl_basic_map *add_divs(struct isl_basic_map *bmap, unsigned n)
+static __isl_give isl_basic_map *add_divs(__isl_take isl_basic_map *bmap,
+	unsigned n)
 {
 	int i, j;
 
