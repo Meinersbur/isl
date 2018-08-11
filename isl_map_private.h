@@ -253,7 +253,8 @@ __isl_give isl_basic_map *isl_basic_map_add_ineq(__isl_take isl_basic_map *bmap,
 __isl_give isl_basic_set *isl_basic_set_tighten_outward(
 	__isl_take isl_basic_set *bset, __isl_keep isl_vec *vec);
 
-int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos);
+__isl_give isl_basic_map *isl_inequality_negate(__isl_take isl_basic_map *bmap,
+	unsigned pos);
 
 __isl_give isl_basic_set *isl_basic_set_cow(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_cow(__isl_take isl_basic_map *bmap);

@@ -3318,18 +3318,22 @@ void isl_basic_map_print_internal(struct isl_basic_map *bmap,
 	dump(bmap, out, indent);
 }
 
-int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
+__isl_give isl_basic_map *isl_inequality_negate(__isl_take isl_basic_map *bmap,
+	unsigned pos)
 {
 	unsigned total;
+
 	if (!bmap)
-		return -1;
+		return NULL;
 	total = isl_basic_map_total_dim(bmap);
-	isl_assert(bmap->ctx, pos < bmap->n_ineq, return -1);
+	if (pos >= bmap->n_ineq)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"invalid position", return isl_basic_map_free(bmap));
 	isl_seq_neg(bmap->ineq[pos], bmap->ineq[pos], 1 + total);
 	isl_int_sub_ui(bmap->ineq[pos][0], bmap->ineq[pos][0], 1);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
-	return 0;
+	return bmap;
 }
 
 __isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *space, int n,

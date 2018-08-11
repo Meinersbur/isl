@@ -2392,8 +2392,7 @@ static __isl_give isl_basic_set *uset_gist_full(__isl_take isl_basic_set *bset,
 		if (tab->con[n_eq + r].is_redundant)
 			continue;
 		test = isl_basic_set_dup(combined);
-		if (isl_inequality_negate(test, r) < 0)
-			test = isl_basic_set_free(test);
+		test = isl_inequality_negate(test, r);
 		test = isl_basic_set_update_from_tab(test, tab);
 		is_empty = isl_basic_set_is_empty(test);
 		isl_basic_set_free(test);
