@@ -1970,11 +1970,8 @@ static __isl_give isl_basic_map *isl_basic_map_swap_vars(
 	int i;
 	struct isl_blk blk;
 
-	if (!bmap)
+	if (isl_basic_map_check_range(bmap, isl_dim_all, pos - 1, n1 + n2) < 0)
 		goto error;
-
-	isl_assert(bmap->ctx,
-		pos + n1 + n2 <= 1 + isl_basic_map_total_dim(bmap), goto error);
 
 	if (n1 == 0 || n2 == 0)
 		return bmap;
