@@ -6,6 +6,10 @@
  * Written by Sven Verdoolaege.
  */
 
+#include <stdio.h>
+#include <map>
+#include <string>
+
 #include "cpp.h"
 #include "cpp_conversion.h"
 
