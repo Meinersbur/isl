@@ -8231,17 +8231,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *space)
-{
-	unsigned dim;
-
-	if (!space)
-		return NULL;
-
-	dim = space->n_out;
-	return isl_basic_map_equal(space, dim);
-}
-
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
 {
 	unsigned n_in, n_out;
@@ -8254,7 +8243,7 @@ __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
 		isl_die(space->ctx, isl_error_invalid,
 			"number of input and output dimensions needs to be "
 			"the same", goto error);
-	return basic_map_identity(space);
+	return isl_basic_map_equal(space, n_in);
 error:
 	isl_space_free(space);
 	return NULL;
