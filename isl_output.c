@@ -466,23 +466,24 @@ static __isl_give isl_printer *print_omega_parameters(
  * If the next constraint is a div constraint, then it is ignored
  * since div constraints are not printed.
  */
-static int next_is_opposite(__isl_keep isl_basic_map *bmap, int i, int last)
+static isl_bool next_is_opposite(__isl_keep isl_basic_map *bmap, int i,
+	int last)
 {
 	unsigned total = isl_basic_map_total_dim(bmap);
 	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
 	if (i + 1 >= bmap->n_ineq)
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_last_non_zero(bmap->ineq[i + 1], 1 + total) != last)
-		return 0;
+		return isl_bool_false;
 	if (last >= o_div) {
 		isl_bool is_div;
 		is_div = isl_basic_map_is_div_constraint(bmap,
 					    bmap->ineq[i + 1], last - o_div);
 		if (is_div < 0)
-			return -1;
+			return isl_bool_error;
 		if (is_div)
-			return 0;
+			return isl_bool_false;
 	}
 	return isl_int_abs_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]) &&
 		!isl_int_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]);
@@ -775,6 +776,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		first = 0;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_bool combine;
 		int l = isl_seq_last_non_zero(bmap->ineq[i], 1 + total);
 		int strict;
 		int s;
@@ -801,7 +803,10 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
 		if (strict)
 			isl_int_set_si(c->el[0], 0);
-		if (!dump && next_is_opposite(bmap, i, l)) {
+		combine = dump ? isl_bool_false : next_is_opposite(bmap, i, l);
+		if (combine < 0)
+			goto error;
+		if (combine) {
 			op = constraint_op(-s, strict, latex);
 			p = print_half_constraint(p, space, div, c->el, l,
 						op, latex);
