@@ -2059,7 +2059,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 }
 
 static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_basic_set *bset, isl_int *c);
+	__isl_keep isl_space *space, __isl_keep isl_basic_set *bset,
+	isl_int *c);
 
 static __isl_give isl_printer *print_name_c(__isl_take isl_printer *p,
 	__isl_keep isl_space *dim,
@@ -2137,10 +2138,10 @@ static __isl_give isl_printer *print_partial_affine_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_basic_set *bset, isl_int *c)
+	__isl_keep isl_space *space, __isl_keep isl_basic_set *bset, isl_int *c)
 {
 	unsigned len = 1 + isl_basic_set_total_dim(bset);
-	return print_partial_affine_c(p, dim, bset, c, len);
+	return print_partial_affine_c(p, space, bset, c, len);
 }
 
 /* We skip the constraint if it is implied by the div expression.
