@@ -1211,7 +1211,7 @@ error:
  * after computing the integer divisions, is smaller than the number
  * of basic maps in the input map.
  */
-static int incemental_on_entire_domain(__isl_keep isl_space *dim,
+static int incremental_on_entire_domain(__isl_keep isl_space *dim,
 	__isl_keep isl_map *map,
 	isl_set **dom, isl_set **ran, int *left, int *right,
 	__isl_give isl_map **res)
@@ -1324,7 +1324,7 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *dim,
 	if (!ran || !dom || !left || !right)
 		goto error;
 
-	if (incemental_on_entire_domain(dim, map, dom, ran, left, right, &res) < 0)
+	if (incremental_on_entire_domain(dim, map, dom, ran, left, right, &res) < 0)
 		goto error;
 
 	for (i = 0; !res && i < map->n; ++i) {
