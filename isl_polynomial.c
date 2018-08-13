@@ -2760,7 +2760,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_project_domain_on_params(
 {
 	isl_space *space;
 	unsigned n;
-	int involves;
+	isl_bool involves;
 
 	n = isl_qpolynomial_dim(qp, isl_dim_in);
 	involves = isl_qpolynomial_involves_dims(qp, isl_dim_in, 0, n);
