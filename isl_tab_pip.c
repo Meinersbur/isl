@@ -2112,19 +2112,24 @@ error:
 	return -1;
 }
 
+/* Return the position of the integer division that is equal to div/denom
+ * if there is one.  Otherwise, return a position beyond the integer divisions.
+ */
 static int find_div(struct isl_tab *tab, isl_int *div, isl_int denom)
 {
 	int i;
 	unsigned total = isl_basic_map_total_dim(tab->bmap);
+	unsigned n_div;
 
-	for (i = 0; i < tab->bmap->n_div; ++i) {
+	n_div = isl_basic_map_dim(tab->bmap, isl_dim_div);
+	for (i = 0; i < n_div; ++i) {
 		if (isl_int_ne(tab->bmap->div[i][0], denom))
 			continue;
 		if (!isl_seq_eq(tab->bmap->div[i] + 1, div, 1 + total))
 			continue;
 		return i;
 	}
-	return -1;
+	return n_div;
 }
 
 /* Return the index of a div that corresponds to "div".
@@ -2135,12 +2140,16 @@ static int get_div(struct isl_tab *tab, struct isl_context *context,
 {
 	int d;
 	struct isl_tab *context_tab = context->op->peek_tab(context);
+	unsigned n_div;
 
 	if (!context_tab)
 		return -1;
 
+	n_div = isl_basic_map_dim(context_tab->bmap, isl_dim_div);
 	d = find_div(context_tab, div->el + 1, div->el[0]);
-	if (d != -1)
+	if (d < 0)
+		return -1;
+	if (d < n_div)
 		return d;
 
 	return add_div(tab, context, div);
