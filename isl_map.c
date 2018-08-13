@@ -12924,16 +12924,20 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 		k = isl_basic_map_alloc_equality(res);
 		if (k < 0)
 			goto error;
-		isl_seq_preimage(res->eq[k], bmap->eq[i], ma, n_before,
-				n_after, n_div_ma, n_div_bmap, f, c1, c2, g, 0);
+		if (isl_seq_preimage(res->eq[k], bmap->eq[i], ma, n_before,
+				    n_after, n_div_ma, n_div_bmap,
+				    f, c1, c2, g, 0) < 0)
+			goto error;
 	}
 
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		k = isl_basic_map_alloc_inequality(res);
 		if (k < 0)
 			goto error;
-		isl_seq_preimage(res->ineq[k], bmap->ineq[i], ma, n_before,
-				n_after, n_div_ma, n_div_bmap, f, c1, c2, g, 0);
+		if (isl_seq_preimage(res->ineq[k], bmap->ineq[i], ma, n_before,
+				    n_after, n_div_ma, n_div_bmap,
+				    f, c1, c2, g, 0) < 0)
+			goto error;
 	}
 
 	for (i = 0; i < bmap->n_div; ++i) {
@@ -12941,9 +12945,10 @@ __isl_give isl_basic_map *isl_basic_map_preimage_multi_aff(
 			isl_int_set_si(res->div[n_div_ma + i][0], 0);
 			continue;
 		}
-		isl_seq_preimage(res->div[n_div_ma + i], bmap->div[i], ma,
+		if (isl_seq_preimage(res->div[n_div_ma + i], bmap->div[i], ma,
 				    n_before, n_after, n_div_ma, n_div_bmap,
-				    f, c1, c2, g, 1);
+				    f, c1, c2, g, 1) < 0)
+			goto error;
 	}
 
 	if (strides)

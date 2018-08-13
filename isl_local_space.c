@@ -1501,8 +1501,10 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 			isl_int_set_si(res->div->row[n_div_ma + i][0], 0);
 			continue;
 		}
-		isl_seq_preimage(res->div->row[n_div_ma + i], ls->div->row[i],
-				ma, 0, 0, n_div_ma, n_div_ls, f, c1, c2, g, 1);
+		if (isl_seq_preimage(res->div->row[n_div_ma + i],
+			    ls->div->row[i],
+			    ma, 0, 0, n_div_ma, n_div_ls, f, c1, c2, g, 1) < 0)
+			res = isl_local_space_free(res);
 		res = normalize_div(res, n_div_ma + i);
 		if (!res)
 			break;

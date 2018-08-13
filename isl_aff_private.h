@@ -157,7 +157,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out(
 	__isl_take isl_pw_multi_aff *pma,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
-void isl_seq_preimage(isl_int *dst, isl_int *src,
+isl_stat isl_seq_preimage(isl_int *dst, isl_int *src,
 	__isl_keep isl_multi_aff *ma, int n_before, int n_after,
 	int n_div_ma, int n_div_bmap,
 	isl_int f, isl_int c1, isl_int c2, isl_int g, int has_denom);
