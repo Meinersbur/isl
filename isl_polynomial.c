@@ -2541,6 +2541,11 @@ static int set_active(__isl_keep isl_qpolynomial *qp, int *active)
 	return up_set_active(qp->upoly, active, d);
 }
 
+#undef TYPE
+#define TYPE	isl_qpolynomial
+static
+#include "check_type_range_templ.c"
+
 isl_bool isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
@@ -2553,9 +2558,8 @@ isl_bool isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	if (n == 0)
 		return isl_bool_false;
 
-	isl_assert(qp->dim->ctx,
-		    first + n <= isl_qpolynomial_dim(qp, type),
-		    return isl_bool_error);
+	if (isl_qpolynomial_check_range(qp, type, first, n) < 0)
+		return isl_bool_error;
 	isl_assert(qp->dim->ctx, type == isl_dim_param ||
 				 type == isl_dim_in, return isl_bool_error);
 
@@ -2729,6 +2733,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"cannot drop output/set dimension",
 			goto error);
+	if (isl_qpolynomial_check_range(qp, type, first, n) < 0)
+		return isl_qpolynomial_free(qp);
 	type = domain_type(type);
 	if (n == 0 && !isl_space_is_named_or_nested(qp->dim, type))
 		return qp;
@@ -2737,8 +2743,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 	if (!qp)
 		return NULL;
 
-	isl_assert(qp->dim->ctx, first + n <= isl_space_dim(qp->dim, type),
-			goto error);
 	isl_assert(qp->dim->ctx, type == isl_dim_param ||
 				 type == isl_dim_set, goto error);
 
@@ -3144,6 +3148,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 		isl_die(qp->div->ctx, isl_error_invalid,
 			"cannot insert output/set dimensions",
 			goto error);
+	if (isl_qpolynomial_check_range(qp, type, first, 0) < 0)
+		return isl_qpolynomial_free(qp);
 	type = domain_type(type);
 	if (n == 0 && !isl_space_is_named_or_nested(qp->dim, type))
 		return qp;
@@ -3151,9 +3157,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		return NULL;
-
-	isl_assert(qp->div->ctx, first <= isl_space_dim(qp->dim, type),
-		    goto error);
 
 	g_pos = pos(qp->dim, type) + first;
 
@@ -3255,6 +3258,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"cannot move output/set dimension",
 			goto error);
+	if (isl_qpolynomial_check_range(qp, src_type, src_pos, n) < 0)
+		return isl_qpolynomial_free(qp);
 	if (dst_type == isl_dim_in)
 		dst_type = isl_dim_set;
 	if (src_type == isl_dim_in)
@@ -3268,9 +3273,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	qp = isl_qpolynomial_cow(qp);
 	if (!qp)
 		return NULL;
-
-	isl_assert(qp->dim->ctx, src_pos + n <= isl_space_dim(qp->dim, src_type),
-		goto error);
 
 	g_dst_pos = pos(qp->dim, dst_type) + dst_pos;
 	g_src_pos = pos(qp->dim, src_type) + src_pos;
@@ -3409,14 +3411,13 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"cannot substitute output/set dimension",
 			goto error);
+	if (isl_qpolynomial_check_range(qp, type, first, n) < 0)
+		return isl_qpolynomial_free(qp);
 	type = domain_type(type);
 
 	for (i = 0; i < n; ++i)
 		if (!subs[i])
 			goto error;
-
-	isl_assert(qp->dim->ctx, first + n <= isl_space_dim(qp->dim, type),
-			goto error);
 
 	for (i = 0; i < n; ++i)
 		isl_assert(qp->dim->ctx, isl_space_is_equal(qp->dim, subs[i]->dim),
@@ -3591,10 +3592,9 @@ __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 		isl_die(qp->div->ctx, isl_error_invalid,
 			"output/set dimension does not have a coefficient",
 			return NULL);
+	if (isl_qpolynomial_check_range(qp, type, t_pos, 1) < 0)
+		return NULL;
 	type = domain_type(type);
-
-	isl_assert(qp->div->ctx, t_pos < isl_space_dim(qp->dim, type),
-			return NULL);
 
 	g_pos = pos(qp->dim, type) + t_pos;
 	up = isl_upoly_coeff(qp->upoly, g_pos, deg);
