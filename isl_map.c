@@ -9356,9 +9356,8 @@ __isl_give isl_val *isl_basic_map_plain_get_val_if_fixed(
 isl_bool isl_map_plain_is_fixed(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned pos, isl_int *val)
 {
-	if (pos >= isl_map_dim(map, type))
-		isl_die(isl_map_get_ctx(map), isl_error_invalid,
-			"position out of bounds", return isl_bool_error);
+	if (isl_map_check_range(map, type, pos, 1) < 0)
+		return isl_bool_error;
 	return isl_map_plain_has_fixed_var(map,
 		map_offset(map, type) - 1 + pos, val);
 }
