@@ -5202,7 +5202,7 @@ static void update_outer_levels(struct isl_lexmin_data *data, int level)
 /* Initialize "local" to refer to region "region" and
  * to initiate processing at this level.
  */
-static void init_local_region(struct isl_local_region *local, int region,
+static isl_stat init_local_region(struct isl_local_region *local, int region,
 	struct isl_lexmin_data *data)
 {
 	local->n = isl_mat_rows(data->region[region].trivial);
@@ -5210,6 +5210,8 @@ static void init_local_region(struct isl_local_region *local, int region,
 	local->side = 0;
 	local->update = 0;
 	local->n_zero = 0;
+
+	return isl_stat_ok;
 }
 
 /* What to do next after entering a level of the backtracking procedure.
@@ -5292,7 +5294,8 @@ static enum isl_next enter_level(int level, int init,
 			isl_die(isl_vec_get_ctx(data->v), isl_error_internal,
 				"nesting level too deep",
 				return isl_next_error);
-		init_local_region(local, r, data);
+		if (init_local_region(local, r, data) < 0)
+			return isl_next_error;
 		if (isl_tab_extend_cons(data->tab,
 				    2 * local->n + 2 * data->n_op) < 0)
 			return isl_next_error;
