@@ -964,15 +964,15 @@ error:
 /* Check whether qc has any elements of length at least one
  * with domain and/or range outside of dom and ran.
  */
-static int has_spurious_elements(__isl_keep isl_map *qc,
+static isl_bool has_spurious_elements(__isl_keep isl_map *qc,
 	__isl_keep isl_set *dom, __isl_keep isl_set *ran)
 {
 	isl_set *s;
-	int subset;
+	isl_bool subset;
 	unsigned d;
 
 	if (!qc || !dom || !ran)
-		return -1;
+		return isl_bool_error;
 
 	d = isl_map_dim(qc, isl_dim_in);
 
@@ -988,17 +988,17 @@ static int has_spurious_elements(__isl_keep isl_map *qc,
 		goto error;
 	if (!subset) {
 		isl_map_free(qc);
-		return 1;
+		return isl_bool_true;
 	}
 
 	s = isl_map_range(qc);
 	subset = isl_set_is_subset(s, ran);
 	isl_set_free(s);
 
-	return subset < 0 ? -1 : !subset;
+	return isl_bool_not(subset);
 error:
 	isl_map_free(qc);
-	return -1;
+	return isl_bool_error;
 }
 
 #define LEFT	2
@@ -1237,7 +1237,8 @@ static int incremental_on_entire_domain(__isl_keep isl_space *space,
 
 	for (i = 0; i < map->n; ++i) {
 		isl_map *qc;
-		int exact_i, spurious;
+		int exact_i;
+		isl_bool spurious;
 		int j;
 		dom[i] = isl_set_from_basic_set(isl_basic_map_domain(
 					isl_basic_map_copy(map->p[i])));
@@ -1333,7 +1334,8 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
 
 	for (i = 0; !res && i < map->n; ++i) {
 		isl_map *qc;
-		int exact_i, spurious, comp;
+		int exact_i, comp;
+		isl_bool spurious;
 		if (!dom[i])
 			dom[i] = isl_set_from_basic_set(
 					isl_basic_map_domain(
