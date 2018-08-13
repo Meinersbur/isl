@@ -232,18 +232,18 @@ error:
 /* Is the row pointed to by "f" linearly independent of the "n" first
  * rows in "facets"?
  */
-static int is_independent(__isl_keep isl_mat *facets, int n, isl_int *f)
+static isl_bool is_independent(__isl_keep isl_mat *facets, int n, isl_int *f)
 {
 	int rank;
 
 	if (isl_seq_first_non_zero(f, facets->n_col) < 0)
-		return 0;
+		return isl_bool_false;
 
 	isl_seq_cpy(facets->row[n], f, facets->n_col);
 	facets->n_row = n + 1;
 	rank = isl_mat_rank(facets);
 	if (rank < 0)
-		return -1;
+		return isl_bool_error;
 
 	return rank == n + 1;
 }
@@ -268,7 +268,7 @@ static int can_select(__isl_keep isl_basic_set *bset, int level,
 	int *selection)
 {
 	int i;
-	int indep;
+	isl_bool indep;
 	unsigned ovar;
 	struct isl_tab_undo *snap;
 
