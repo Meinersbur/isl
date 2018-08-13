@@ -1522,8 +1522,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 {
 	isl_ctx *ctx;
 	isl_set *dom;
-	isl_space *map_dim;
-	isl_space *pwf_dim;
+	isl_space *map_space;
+	isl_space *pwf_space;
 	unsigned n_in;
 	isl_bool ok;
 
@@ -1531,11 +1531,11 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 	if (!ctx)
 		goto error;
 
-	map_dim = isl_map_get_space(map);
-	pwf_dim = isl_pw_qpolynomial_fold_get_space(pwf);
-	ok = join_compatible(map_dim, pwf_dim);
-	isl_space_free(map_dim);
-	isl_space_free(pwf_dim);
+	map_space = isl_map_get_space(map);
+	pwf_space = isl_pw_qpolynomial_fold_get_space(pwf);
+	ok = join_compatible(map_space, pwf_space);
+	isl_space_free(map_space);
+	isl_space_free(pwf_space);
 	if (ok < 0)
 		goto error;
 	if (!ok)
