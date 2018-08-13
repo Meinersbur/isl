@@ -1212,7 +1212,7 @@ error:
  * after computing the integer divisions, is smaller than the number
  * of basic maps in the input map.
  */
-static int incremental_on_entire_domain(__isl_keep isl_space *space,
+static isl_bool incremental_on_entire_domain(__isl_keep isl_space *space,
 	__isl_keep isl_map *map,
 	isl_set **dom, isl_set **ran, int *left, int *right,
 	__isl_give isl_map **res)
@@ -1227,10 +1227,10 @@ static int incremental_on_entire_domain(__isl_keep isl_space *space,
 			  isl_map_range(isl_map_copy(map)));
 	C = isl_set_from_basic_set(isl_set_simple_hull(C));
 	if (!C)
-		return -1;
+		return isl_bool_error;
 	if (C->n != 1) {
 		isl_set_free(C);
-		return 0;
+		return isl_bool_false;
 	}
 
 	d = isl_map_dim(map, isl_dim_in);
@@ -1286,7 +1286,7 @@ static int incremental_on_entire_domain(__isl_keep isl_space *space,
 	return *res != NULL;
 error:
 	isl_set_free(C);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Try and compute the transitive closure of "map" as
