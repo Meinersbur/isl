@@ -38,10 +38,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
 			"cannot move divs",
 			return FN(MULTI(BASE),free)(multi));
-	if (src_pos + n > isl_space_dim(multi->space, src_type))
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"range out of bounds",
-			return FN(MULTI(BASE),free)(multi));
+	if (FN(MULTI(BASE),check_range)(multi, src_type, src_pos, n) < 0)
+		return FN(MULTI(BASE),free)(multi);
 	if (dst_type == src_type)
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_unsupported,
 			"moving dims within the same type not supported",
