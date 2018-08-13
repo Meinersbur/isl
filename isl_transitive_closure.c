@@ -1476,7 +1476,7 @@ error:
 /* Replace each entry in the n by n grid of maps by the cross product
  * with the relation { [i] -> [i + 1] }.
  */
-static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
+static isl_stat add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 {
 	int i, j, k;
 	isl_space *space;
@@ -1485,7 +1485,7 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 	unsigned nparam;
 
 	if (!map)
-		return -1;
+		return isl_stat_error;
 
 	space = isl_map_get_space(map);
 	nparam = isl_space_dim(space, isl_dim_param);
@@ -1499,7 +1499,7 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 	k = isl_basic_map_alloc_equality(bstep);
 	if (k < 0) {
 		isl_basic_map_free(bstep);
-		return -1;
+		return isl_stat_error;
 	}
 	isl_seq_clr(bstep->eq[k], 1 + isl_basic_map_total_dim(bstep));
 	isl_int_set_si(bstep->eq[k][0], 1);
@@ -1515,7 +1515,7 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 
 	isl_map_free(step);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* The core of the Floyd-Warshall algorithm.
