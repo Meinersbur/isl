@@ -288,7 +288,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
 	__isl_keep isl_qpolynomial_fold *fold);
-void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold);
+__isl_null isl_qpolynomial_fold *isl_qpolynomial_fold_free(
+	__isl_take isl_qpolynomial_fold *fold);
 
 int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
 isl_bool isl_qpolynomial_fold_is_nan(__isl_keep isl_qpolynomial_fold *fold);

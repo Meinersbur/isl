@@ -775,19 +775,22 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_cow(
 	return isl_qpolynomial_fold_dup(fold);
 }
 
-void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold)
+__isl_null isl_qpolynomial_fold *isl_qpolynomial_fold_free(
+	__isl_take isl_qpolynomial_fold *fold)
 {
 	int i;
 
 	if (!fold)
-		return;
+		return NULL;
 	if (--fold->ref > 0)
-		return;
+		return NULL;
 
 	for (i = 0; i < fold->n; ++i)
 		isl_qpolynomial_free(fold->qp[i]);
 	isl_space_free(fold->dim);
 	free(fold);
+
+	return NULL;
 }
 
 int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold)

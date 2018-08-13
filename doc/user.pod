@@ -2772,7 +2772,8 @@ the following functions.
 	__isl_give isl_qpolynomial_fold *
 	isl_qpolynomial_fold_copy(
 		__isl_keep isl_qpolynomial_fold *fold);
-	void isl_qpolynomial_fold_free(
+	__isl_null isl_qpolynomial_fold *
+	isl_qpolynomial_fold_free(
 		__isl_take isl_qpolynomial_fold *fold);
 
 To iterate over all quasipolynomials in a reduction, use
