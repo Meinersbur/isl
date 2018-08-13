@@ -2883,7 +2883,7 @@ static __isl_give isl_union_map *increment(__isl_take isl_space *dim)
 	k = isl_basic_map_alloc_equality(bmap);
 	if (k < 0)
 		goto error;
-	isl_seq_clr(bmap->eq[k], isl_basic_map_total_dim(bmap));
+	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
 	isl_int_set_si(bmap->eq[k][0], 1);
 	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
 	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
