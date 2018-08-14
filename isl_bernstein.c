@@ -340,7 +340,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	__isl_take isl_qpolynomial *poly, struct bernstein_data *data, int *tight)
 {
 	unsigned nvar;
-	isl_space *dim;
+	isl_space *space;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_vertices *vertices;
 	int covers;
@@ -369,12 +369,13 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
 	}
 
-	dim = isl_basic_set_get_space(bset);
-	dim = isl_space_params(dim);
-	dim = isl_space_from_domain(dim);
-	dim = isl_space_add_dims(dim, isl_dim_set, 1);
-	data->pwf = isl_pw_qpolynomial_fold_zero(isl_space_copy(dim), data->type);
-	data->pwf_tight = isl_pw_qpolynomial_fold_zero(dim, data->type);
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_params(space);
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_set, 1);
+	data->pwf = isl_pw_qpolynomial_fold_zero(isl_space_copy(space),
+						data->type);
+	data->pwf_tight = isl_pw_qpolynomial_fold_zero(space, data->type);
 	data->poly = isl_qpolynomial_homogenize(isl_qpolynomial_copy(poly));
 	vertices = isl_basic_set_compute_vertices(bset);
 	if (isl_vertices_foreach_disjoint_cell(vertices,
