@@ -57,7 +57,7 @@ static int vertex_is_integral(__isl_keep isl_basic_set *vertex)
 }
 
 static __isl_give isl_qpolynomial *vertex_coordinate(
-	__isl_keep isl_basic_set *vertex, int i, __isl_take isl_space *dim)
+	__isl_keep isl_basic_set *vertex, int i, __isl_take isl_space *space)
 {
 	unsigned nvar;
 	unsigned nparam;
@@ -79,12 +79,12 @@ static __isl_give isl_qpolynomial *vertex_coordinate(
 	else
 		isl_int_neg(denom, denom);
 
-	v = isl_qpolynomial_from_affine(dim, vertex->eq[r], denom);
+	v = isl_qpolynomial_from_affine(space, vertex->eq[r], denom);
 	isl_int_clear(denom);
 
 	return v;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_int_clear(denom);
 	return NULL;
 }
