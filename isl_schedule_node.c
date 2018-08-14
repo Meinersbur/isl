@@ -2763,7 +2763,7 @@ struct isl_schedule_group_data {
 static int locally_covered_by_domain(__isl_keep isl_union_set *domain,
 	struct isl_schedule_group_data *data)
 {
-	int is_subset;
+	isl_bool is_subset;
 	isl_union_set *test;
 
 	test = isl_union_set_copy(domain);
