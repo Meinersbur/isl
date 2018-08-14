@@ -2760,7 +2760,7 @@ struct isl_schedule_group_data {
 
 /* Is domain covered by data->domain within data->domain_universe?
  */
-static int locally_covered_by_domain(__isl_keep isl_union_set *domain,
+static isl_bool locally_covered_by_domain(__isl_keep isl_union_set *domain,
 	struct isl_schedule_group_data *data)
 {
 	isl_bool is_subset;
@@ -2794,7 +2794,7 @@ static __isl_give isl_schedule_tree *group_band(
 	isl_union_set *domain;
 	isl_multi_aff *ma;
 	isl_multi_union_pw_aff *mupa, *partial;
-	int is_covered;
+	isl_bool is_covered;
 	int depth, n;
 	isl_bool has_id;
 
@@ -3034,7 +3034,7 @@ static __isl_give isl_schedule_tree *group_ancestor(
 {
 	struct isl_schedule_group_data *data = user;
 	isl_union_set *domain;
-	int is_covered;
+	isl_bool is_covered;
 
 	if (!tree || !pos)
 		return isl_schedule_tree_free(tree);
