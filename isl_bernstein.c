@@ -111,7 +111,7 @@ static int is_tight(int *k, int n, int d, isl_cell *cell)
 	return 0;
 }
 
-static void add_fold(__isl_take isl_qpolynomial *b, __isl_keep isl_set *dom,
+static isl_stat add_fold(__isl_take isl_qpolynomial *b, __isl_keep isl_set *dom,
 	int *k, int n, int d, struct bernstein_data *data)
 {
 	isl_qpolynomial_fold *fold;
@@ -124,6 +124,7 @@ static void add_fold(__isl_take isl_qpolynomial *b, __isl_keep isl_set *dom,
 	else
 		data->fold = isl_qpolynomial_fold_fold_on_domain(dom,
 							data->fold, fold);
+	return isl_stat_ok;
 }
 
 /* Extract the coefficients of the Bernstein base polynomials and store
@@ -188,7 +189,8 @@ static isl_stat extract_coefficients(isl_qpolynomial *poly,
 					multinom->el[i]);
 				b = isl_qpolynomial_mul(b, f);
 				k[n - 1] = left[n - 2];
-				add_fold(b, dom, k, n, d, data);
+				if (add_fold(b, dom, k, n, d, data) < 0)
+					goto error;
 				--i;
 				continue;
 			}
