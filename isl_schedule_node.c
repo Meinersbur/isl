@@ -2861,7 +2861,7 @@ static __isl_give isl_schedule_tree *group_context(
 	isl_space *space;
 	isl_union_set *domain;
 	int n1, n2;
-	int involves;
+	isl_bool involves;
 
 	if (isl_schedule_node_get_tree_depth(pos) == 1)
 		return tree;
