@@ -952,7 +952,7 @@ isl_bool isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node)
 int isl_schedule_node_get_child_position(__isl_keep isl_schedule_node *node)
 {
 	int n;
-	int has_parent;
+	isl_bool has_parent;
 
 	if (!node)
 		return -1;
