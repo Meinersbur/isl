@@ -355,16 +355,16 @@ static isl_stat propagate_on_bound_pair(__isl_take isl_constraint *lower,
 
 	if (data->monotonicity) {
 		isl_qpolynomial *sub;
-		isl_space *dim = isl_qpolynomial_get_domain_space(data->poly);
+		isl_space *space = isl_qpolynomial_get_domain_space(data->poly);
 		if (data->monotonicity * data->sign > 0) {
 			if (data->tight)
 				data->tight = bound_is_integer(upper, nvar);
-			sub = bound2poly(upper, dim, nvar, 1);
+			sub = bound2poly(upper, space, nvar, 1);
 			isl_constraint_free(lower);
 		} else {
 			if (data->tight)
 				data->tight = bound_is_integer(lower, nvar);
-			sub = bound2poly(lower, dim, nvar, -1);
+			sub = bound2poly(lower, space, nvar, -1);
 			isl_constraint_free(upper);
 		}
 		poly = isl_qpolynomial_copy(data->poly);
@@ -373,14 +373,14 @@ static isl_stat propagate_on_bound_pair(__isl_take isl_constraint *lower,
 	} else {
 		isl_qpolynomial *l, *u;
 		isl_qpolynomial *pos, *neg;
-		isl_space *dim = isl_qpolynomial_get_domain_space(data->poly);
+		isl_space *space = isl_qpolynomial_get_domain_space(data->poly);
 		unsigned nparam = isl_basic_set_dim(bset, isl_dim_param);
 		int sign = data->sign * data->signs[nparam + nvar];
 
 		data->tight = 0;
 
-		u = bound2poly(upper, isl_space_copy(dim), nvar, 1);
-		l = bound2poly(lower, dim, nvar, -1);
+		u = bound2poly(upper, isl_space_copy(space), nvar, 1);
+		l = bound2poly(lower, space, nvar, -1);
 
 		pos = isl_qpolynomial_terms_of_sign(data->poly, data->signs, sign);
 		neg = isl_qpolynomial_terms_of_sign(data->poly, data->signs, -sign);
