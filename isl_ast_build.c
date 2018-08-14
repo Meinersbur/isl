@@ -562,7 +562,7 @@ static void isl_ast_build_reset_schedule_map(__isl_keep isl_ast_build *build)
  * if code has been generated for the entire schedule and if none
  * of the loops have been eliminated.
  */
-__isl_give int isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
+int isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
 {
 	int dim;
 
