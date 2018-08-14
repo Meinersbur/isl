@@ -157,8 +157,8 @@ error:
 	return -1;
 }
 
-static struct isl_basic_set *isl_basic_set_add_equality(
-	struct isl_basic_set *bset, isl_int *c)
+static __isl_give isl_basic_set *isl_basic_set_add_equality(
+	__isl_take isl_basic_set *bset, isl_int *c)
 {
 	int i;
 	unsigned dim;
