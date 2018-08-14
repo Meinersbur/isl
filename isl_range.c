@@ -95,7 +95,7 @@ static int monotonicity(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_qpolynomial *poly, struct range_data *data)
 {
 	isl_ctx *ctx;
-	isl_space *dim;
+	isl_space *space;
 	isl_qpolynomial *sub = NULL;
 	isl_qpolynomial *diff = NULL;
 	int result = 0;
@@ -103,13 +103,14 @@ static int monotonicity(__isl_keep isl_basic_set *bset,
 	unsigned nvar;
 
 	ctx = isl_qpolynomial_get_ctx(poly);
-	dim = isl_qpolynomial_get_domain_space(poly);
+	space = isl_qpolynomial_get_domain_space(poly);
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 
-	sub = isl_qpolynomial_var_on_domain(isl_space_copy(dim), isl_dim_set, nvar - 1);
+	sub = isl_qpolynomial_var_on_domain(isl_space_copy(space),
+						isl_dim_set, nvar - 1);
 	sub = isl_qpolynomial_add(sub,
-		isl_qpolynomial_rat_cst_on_domain(dim, ctx->one, ctx->one));
+		isl_qpolynomial_rat_cst_on_domain(space, ctx->one, ctx->one));
 
 	diff = isl_qpolynomial_substitute(isl_qpolynomial_copy(poly),
 			isl_dim_in, nvar - 1, 1, &sub);
