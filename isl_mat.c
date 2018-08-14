@@ -423,26 +423,26 @@ __isl_give isl_mat *isl_mat_identity(isl_ctx *ctx, unsigned n_row)
 
 /* Is "mat" a (possibly scaled) identity matrix?
  */
-int isl_mat_is_scaled_identity(__isl_keep isl_mat *mat)
+isl_bool isl_mat_is_scaled_identity(__isl_keep isl_mat *mat)
 {
 	int i;
 
 	if (!mat)
-		return -1;
+		return isl_bool_error;
 	if (mat->n_row != mat->n_col)
-		return 0;
+		return isl_bool_false;
 
 	for (i = 0; i < mat->n_row; ++i) {
 		if (isl_seq_first_non_zero(mat->row[i], i) != -1)
-			return 0;
+			return isl_bool_false;
 		if (isl_int_ne(mat->row[0][0], mat->row[i][i]))
-			return 0;
+			return isl_bool_false;
 		if (isl_seq_first_non_zero(mat->row[i] + i + 1,
 					    mat->n_col - (i + 1)) != -1)
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 __isl_give isl_vec *isl_mat_vec_product(__isl_take isl_mat *mat,

@@ -105,7 +105,7 @@ __isl_null isl_morph *isl_morph_free(__isl_take isl_morph *morph)
  */
 static int identity_on_parameters(__isl_keep isl_morph *morph)
 {
-	int is_identity;
+	isl_bool is_identity;
 	unsigned nparam;
 	isl_mat *sub;
 
