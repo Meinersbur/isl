@@ -31,7 +31,7 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 {
 	struct range_data data_m;
 	unsigned nparam;
-	isl_space *dim;
+	isl_space *space;
 	isl_val *opt;
 	int r;
 	enum isl_fold type;
@@ -46,16 +46,16 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	poly = isl_qpolynomial_move_dims(poly, isl_dim_in, 0,
 					isl_dim_param, 0, nparam);
 
-	dim = isl_qpolynomial_get_space(poly);
-	dim = isl_space_params(dim);
-	dim = isl_space_from_domain(dim);
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
+	space = isl_qpolynomial_get_space(poly);
+	space = isl_space_params(space);
+	space = isl_space_from_domain(space);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
 
 	data_m.test_monotonicity = 0;
 	data_m.signs = signs;
 	data_m.sign = -sign;
 	type = data_m.sign < 0 ? isl_fold_min : isl_fold_max;
-	data_m.pwf = isl_pw_qpolynomial_fold_zero(dim, type);
+	data_m.pwf = isl_pw_qpolynomial_fold_zero(space, type);
 	data_m.tight = 0;
 	data_m.pwf_tight = NULL;
 
