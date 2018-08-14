@@ -3115,7 +3115,7 @@ __isl_give isl_schedule_node *isl_schedule_node_group(
 	isl_union_set *domain;
 	isl_union_pw_multi_aff *contraction;
 	isl_union_map *expansion;
-	int disjoint;
+	isl_bool disjoint;
 
 	if (!node || !group_id)
 		goto error;
