@@ -262,11 +262,8 @@ __isl_give isl_factorizer *isl_basic_set_factorizer(
 	struct isl_factor_groups g = { 0 };
 	isl_factorizer *f;
 
-	if (!bset)
+	if (isl_basic_set_check_no_locals(bset) < 0)
 		return NULL;
-
-	isl_assert(bset->ctx, isl_basic_set_dim(bset, isl_dim_div) == 0,
-		return NULL);
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	if (nvar <= 1)

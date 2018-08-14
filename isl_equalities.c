@@ -671,9 +671,9 @@ static __isl_give isl_basic_set *compress_variables(
 		*T = NULL;
 	if (T2)
 		*T2 = NULL;
-	if (isl_basic_set_check_no_params(bset) < 0)
+	if (isl_basic_set_check_no_params(bset) < 0 ||
+	    isl_basic_set_check_no_locals(bset) < 0)
 		return isl_basic_set_free(bset);
-	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_n_dim(bset);
 	isl_assert(bset->ctx, bset->n_eq <= dim, goto error);
 	if (bset->n_eq == 0)

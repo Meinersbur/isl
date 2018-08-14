@@ -467,6 +467,7 @@ __isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
 	__isl_give isl_basic_map *(*fn)(__isl_take isl_basic_map *bmap));
 
 isl_stat isl_basic_set_check_no_params(__isl_keep isl_basic_set *bset);
+isl_stat isl_basic_set_check_no_locals(__isl_keep isl_basic_set *bset);
 
 isl_stat isl_basic_set_check_range(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);

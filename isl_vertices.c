@@ -396,8 +396,8 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	if (bset->n_eq != 0)
 		return lower_dim_vertices(bset);
 
-	isl_assert(bset->ctx, isl_basic_set_dim(bset, isl_dim_div) == 0,
-		return NULL);
+	if (isl_basic_set_check_no_locals(bset) < 0)
+		return NULL;
 
 	if (isl_basic_set_dim(bset, isl_dim_set) == 0)
 		return vertices_0D(bset);

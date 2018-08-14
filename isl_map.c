@@ -1399,6 +1399,19 @@ isl_stat isl_basic_set_check_no_params(__isl_keep isl_basic_set *bset)
 	return isl_stat_ok;
 }
 
+/* Check that "bset" does not involve any local variables.
+ */
+isl_stat isl_basic_set_check_no_locals(__isl_keep isl_basic_set *bset)
+{
+	if (!bset)
+		return isl_stat_error;
+	if (isl_basic_set_dim(bset, isl_dim_div) != 0)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"basic set should not have any local variables",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Check that "map" has only named parameters, reporting an error
  * if it does not.
  */
@@ -5359,8 +5372,8 @@ __isl_give isl_basic_map *isl_basic_map_overlying_set(
 	if (!bset || !like)
 		goto error;
 	ctx = bset->ctx;
-	isl_assert(ctx, bset->n_div == 0, goto error);
-	if (isl_basic_set_check_no_params(bset) < 0)
+	if (isl_basic_set_check_no_params(bset) < 0 ||
+	    isl_basic_set_check_no_locals(bset) < 0)
 		goto error;
 	isl_assert(ctx, bset->dim->n_out == isl_basic_map_total_dim(like),
 			goto error);

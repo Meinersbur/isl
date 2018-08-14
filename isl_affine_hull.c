@@ -303,9 +303,8 @@ __isl_give isl_basic_set *isl_basic_set_recession_cone(
 	int i;
 
 	bset = isl_basic_set_cow(bset);
-	if (!bset)
-		return NULL;
-	isl_assert(bset->ctx, bset->n_div == 0, goto error);
+	if (isl_basic_set_check_no_locals(bset) < 0)
+		return isl_basic_set_free(bset);
 
 	for (i = 0; i < bset->n_eq; ++i)
 		isl_int_set_si(bset->eq[i][0], 0);
@@ -315,9 +314,6 @@ __isl_give isl_basic_set *isl_basic_set_recession_cone(
 
 	ISL_F_CLR(bset, ISL_BASIC_SET_NO_IMPLICIT);
 	return isl_basic_set_implicit_equalities(bset);
-error:
-	isl_basic_set_free(bset);
-	return NULL;
 }
 
 /* Move "sample" to a point that is one up (or down) from the original
