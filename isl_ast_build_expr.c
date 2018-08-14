@@ -1571,7 +1571,12 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 __isl_give isl_ast_expr *isl_ast_build_expr_from_set(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set)
 {
-	if (isl_ast_build_need_schedule_map(build)) {
+	isl_bool needs_map;
+
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0) {
+		set = isl_set_free(set);
+	} else if (needs_map) {
 		isl_multi_aff *ma;
 		ma = isl_ast_build_get_schedule_map_multi_aff(build);
 		set = isl_set_preimage_multi_aff(set, ma);
@@ -2207,8 +2212,12 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
 	__isl_keep isl_ast_build *build, __isl_take isl_pw_aff *pa)
 {
 	isl_ast_expr *expr;
+	isl_bool needs_map;
 
-	if (isl_ast_build_need_schedule_map(build)) {
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0) {
+		pa = isl_pw_aff_free(pa);
+	} else if (needs_map) {
 		isl_multi_aff *ma;
 		ma = isl_ast_build_get_schedule_map_multi_aff(build);
 		pa = isl_pw_aff_pullback_multi_aff(pa, ma);
@@ -2378,6 +2387,7 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
 	__isl_take isl_multi_pw_aff *mpa)
 {
 	isl_bool is_domain;
+	isl_bool needs_map;
 	isl_ast_expr *expr;
 	isl_space *space_build, *space_mpa;
 
@@ -2393,7 +2403,10 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
 		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
 			"spaces don't match", goto error);
 
-	if (isl_ast_build_need_schedule_map(build)) {
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0)
+		goto error;
+	if (needs_map) {
 		isl_multi_aff *ma;
 		ma = isl_ast_build_get_schedule_map_multi_aff(build);
 		mpa = isl_multi_pw_aff_pullback_multi_aff(mpa, ma);
