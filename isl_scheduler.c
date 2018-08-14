@@ -1002,7 +1002,7 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 	struct isl_sched_node *node;
 
 	if (!set)
-		return isl_stat_error;
+		goto error;
 
 	ctx = isl_set_get_ctx(set);
 	nparam = isl_set_dim(set, isl_dim_param);
@@ -1032,6 +1032,12 @@ static isl_stat add_node(struct isl_sched_graph *graph,
 		return isl_stat_error;
 
 	return isl_stat_ok;
+error:
+	isl_set_free(set);
+	isl_set_free(hull);
+	isl_multi_aff_free(compress);
+	isl_multi_aff_free(decompress);
+	return isl_stat_error;
 }
 
 /* Construct an identifier for node "node", which will represent "set".
