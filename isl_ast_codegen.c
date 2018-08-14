@@ -4468,7 +4468,8 @@ static int after_in_sequence(__isl_keep isl_union_map *umap,
 {
 	int i, j, n;
 	isl_union_map *umap_i;
-	int empty, after = 0;
+	isl_bool empty;
+	int after = 0;
 
 	n = isl_schedule_node_n_children(node);
 	for (i = 1; i < n; ++i) {
