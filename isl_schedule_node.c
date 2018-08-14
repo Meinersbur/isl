@@ -2930,7 +2930,7 @@ static __isl_give isl_schedule_tree *group_domain(
 	struct isl_schedule_group_data *data)
 {
 	isl_union_set *domain;
-	int is_subset;
+	isl_bool is_subset;
 
 	domain = isl_schedule_tree_domain_get_domain(tree);
 	is_subset = isl_union_set_is_subset(data->domain, domain);
