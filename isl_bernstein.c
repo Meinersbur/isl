@@ -345,7 +345,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	isl_space *space;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_vertices *vertices;
-	int covers;
+	isl_bool covers;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	if (nvar == 0) {

@@ -1181,7 +1181,7 @@ error:
 /* Check whether for each quasi-polynomial in "fold2" there is
  * a quasi-polynomial in "fold1" that dominates it on "set".
  */
-static int qpolynomial_fold_covers_on_domain(__isl_keep isl_set *set,
+static isl_bool qpolynomial_fold_covers_on_domain(__isl_keep isl_set *set,
 	__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2)
 {
@@ -1189,7 +1189,7 @@ static int qpolynomial_fold_covers_on_domain(__isl_keep isl_set *set,
 	int covers;
 
 	if (!set || !fold1 || !fold2)
-		return -1;
+		return isl_bool_error;
 
 	covers = fold1->type == isl_fold_max ? 1 : -1;
 
@@ -1207,17 +1207,18 @@ static int qpolynomial_fold_covers_on_domain(__isl_keep isl_set *set,
 				break;
 		}
 		if (j >= fold1->n)
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Check whether "pwf1" dominated "pwf2", i.e., the domain of "pwf1" contains
  * that of "pwf2" and on each cell, the corresponding fold from pwf1 dominates
  * that of pwf2.
  */
-int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
+isl_bool isl_pw_qpolynomial_fold_covers(
+	__isl_keep isl_pw_qpolynomial_fold *pwf1,
 	__isl_keep isl_pw_qpolynomial_fold *pwf2)
 {
 	int i, j;
@@ -1225,12 +1226,12 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 	isl_bool is_subset;
 
 	if (!pwf1 || !pwf2)
-		return -1;
+		return isl_bool_error;
 
 	if (pwf2->n == 0)
-		return 1;
+		return isl_bool_true;
 	if (pwf1->n == 0)
-		return 0;
+		return isl_bool_false;
 
 	dom1 = isl_pw_qpolynomial_fold_domain(isl_pw_qpolynomial_fold_copy(pwf1));
 	dom2 = isl_pw_qpolynomial_fold_domain(isl_pw_qpolynomial_fold_copy(pwf2));
@@ -1245,7 +1246,7 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 		for (j = 0; j < pwf1->n; ++j) {
 			isl_bool is_empty;
 			isl_set *common;
-			int covers;
+			isl_bool covers;
 
 			common = isl_set_intersect(isl_set_copy(pwf1->p[j].set),
 						   isl_set_copy(pwf2->p[i].set));
@@ -1253,7 +1254,7 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 			if (is_empty < 0 || is_empty) {
 				isl_set_free(common);
 				if (is_empty < 0)
-					return -1;
+					return isl_bool_error;
 				continue;
 			}
 			covers = qpolynomial_fold_covers_on_domain(common,
@@ -1264,7 +1265,7 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 		}
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
