@@ -115,7 +115,7 @@ static void delete_row(struct isl_basic_set *bset, unsigned row)
  *		A[i][col] = B[i][col] = a * old(B[i][col])
  */
 static void construct_column(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
+	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	int r;
