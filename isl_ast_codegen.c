@@ -4528,7 +4528,7 @@ error:
 static int after_in_tree(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
-	int empty;
+	isl_bool empty;
 	enum isl_schedule_node_type type;
 
 	empty = isl_union_map_is_empty(umap);
