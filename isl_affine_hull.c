@@ -476,7 +476,8 @@ static __isl_give isl_basic_set *initialize_hull(__isl_keep isl_basic_set *bset,
  * we check if there is any point on a hyperplane parallel to the
  * corresponding hyperplane shifted by at least one (in either direction).
  */
-static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset)
+static __isl_give isl_basic_set *uset_affine_hull_bounded(
+	__isl_take isl_basic_set *bset)
 {
 	struct isl_vec *sample = NULL;
 	struct isl_basic_set *hull;
