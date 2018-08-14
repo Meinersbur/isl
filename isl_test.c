@@ -1258,7 +1258,7 @@ int test_affine_hull(struct isl_ctx *ctx)
 	isl_set *set;
 	isl_basic_set *bset, *bset2;
 	int n;
-	int subset;
+	isl_bool subset;
 
 	test_affine_hull_case(ctx, "affine2");
 	test_affine_hull_case(ctx, "affine");
