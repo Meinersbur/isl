@@ -1135,7 +1135,8 @@ static __isl_give isl_vec *basic_set_sample(__isl_take isl_basic_set *bset,
 		return empty_sample(bset);
 
 	dim = isl_basic_set_n_dim(bset);
-	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	if (isl_basic_set_check_no_params(bset) < 0)
+		goto error;
 	isl_assert(ctx, bset->n_div == 0, goto error);
 
 	if (bset->sample && bset->sample->size == 1 + dim) {

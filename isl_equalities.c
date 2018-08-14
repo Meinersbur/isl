@@ -671,9 +671,8 @@ static __isl_give isl_basic_set *compress_variables(
 		*T = NULL;
 	if (T2)
 		*T2 = NULL;
-	if (!bset)
-		goto error;
-	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	if (isl_basic_set_check_no_params(bset) < 0)
+		return isl_basic_set_free(bset);
 	isl_assert(bset->ctx, bset->n_div == 0, goto error);
 	dim = isl_basic_set_n_dim(bset);
 	isl_assert(bset->ctx, bset->n_eq <= dim, goto error);
@@ -710,18 +709,13 @@ struct isl_basic_set *isl_basic_set_remove_equalities(
 		*T = NULL;
 	if (T2)
 		*T2 = NULL;
-	if (!bset)
-		return NULL;
-	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	if (isl_basic_set_check_no_params(bset) < 0)
+		return isl_basic_set_free(bset);
 	bset = isl_basic_set_gauss(bset, NULL);
 	if (ISL_F_ISSET(bset, ISL_BASIC_SET_EMPTY))
 		return return_with_identity(bset, T, T2);
 	bset = compress_variables(bset, T, T2);
 	return bset;
-error:
-	isl_basic_set_free(bset);
-	*T = NULL;
-	return NULL;
 }
 
 /* Check if dimension dim belongs to a residue class

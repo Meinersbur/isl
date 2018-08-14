@@ -1360,10 +1360,9 @@ __isl_give isl_basic_set *isl_basic_set_preimage(
 
 	ctx = bset->ctx;
 	bset = isl_basic_set_cow(bset);
-	if (!bset)
+	if (isl_basic_set_check_no_params(bset) < 0)
 		goto error;
 
-	isl_assert(ctx, bset->dim->nparam == 0, goto error);
 	isl_assert(ctx, 1+bset->dim->n_out == mat->n_row, goto error);
 	isl_assert(ctx, mat->n_col > 0, goto error);
 
