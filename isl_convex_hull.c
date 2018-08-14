@@ -1988,7 +1988,7 @@ static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,
  * Equalities are added as two inequalities.
  * The value in the hash table is a pointer to the (in)equality of "bset".
  */
-static int hash_basic_set(struct isl_hash_table *table,
+static isl_stat hash_basic_set(struct isl_hash_table *table,
 	__isl_keep isl_basic_set *bset)
 {
 	int i, j;
@@ -1998,14 +1998,14 @@ static int hash_basic_set(struct isl_hash_table *table,
 		for (j = 0; j < 2; ++j) {
 			isl_seq_neg(bset->eq[i], bset->eq[i], 1 + dim);
 			if (hash_ineq(bset->ctx, table, bset->eq[i], dim) < 0)
-				return -1;
+				return isl_stat_error;
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i) {
 		if (hash_ineq(bset->ctx, table, bset->ineq[i], dim) < 0)
-			return -1;
+			return isl_stat_error;
 	}
-	return 0;
+	return isl_stat_ok;
 }
 
 static struct sh_data *sh_data_alloc(__isl_keep isl_set *set, unsigned n_ineq)
