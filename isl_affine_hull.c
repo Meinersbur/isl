@@ -151,7 +151,7 @@ static void construct_column(
  *	A[i][col] = B[i][col] = old(A[t][col]*B[i][col]-A[i][col]*B[t][col])
  */
 static int transform_column(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
+	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	int i, t;
