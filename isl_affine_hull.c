@@ -192,8 +192,8 @@ static int transform_column(
  * except that the echelon form we use starts from the last column
  * and that we are dealing with integer coefficients.
  */
-static struct isl_basic_set *affine_hull(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *affine_hull(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	unsigned total;
 	int col;
