@@ -114,7 +114,7 @@ static void delete_row(struct isl_basic_set *bset, unsigned row)
  * so that
  *		A[i][col] = B[i][col] = a * old(B[i][col])
  */
-static void construct_column(
+static isl_stat construct_column(
 	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
@@ -139,6 +139,8 @@ static void construct_column(
 	isl_int_clear(a);
 	isl_int_clear(b);
 	delete_row(bset1, row);
+
+	return isl_stat_ok;
 }
 
 /* Make first row entries in column col of bset1 identical to
@@ -214,9 +216,11 @@ static __isl_give isl_basic_set *affine_hull(
 			set_common_multiple(bset1, bset2, row, col);
 			++row;
 		} else if (!is_zero1 && is_zero2) {
-			construct_column(bset1, bset2, row, col);
+			if (construct_column(bset1, bset2, row, col) < 0)
+				goto error;
 		} else if (is_zero1 && !is_zero2) {
-			construct_column(bset2, bset1, row, col);
+			if (construct_column(bset2, bset1, row, col) < 0)
+				goto error;
 		} else {
 			if (transform_column(bset1, bset2, row, col))
 				--row;
