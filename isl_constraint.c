@@ -1139,15 +1139,17 @@ isl_stat isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
 	isl_basic_set *context = NULL;
 	unsigned abs_pos;
 	int n_lower, n_upper;
+	int off;
 
 	if (isl_basic_set_check_range(bset, type, pos, 1) < 0)
 		return isl_stat_error;
 	isl_assert(bset->ctx, type == isl_dim_param || type == isl_dim_set,
 		return isl_stat_error);
 
-	abs_pos = pos;
-	if (type == isl_dim_set)
-		abs_pos += isl_basic_set_dim(bset, isl_dim_param);
+	off = isl_basic_set_var_offset(bset, type);
+	if (off < 0)
+		return isl_stat_error;
+	abs_pos = off + pos;
 
 	for (i = 0; i < bset->n_eq; ++i) {
 		if (isl_int_is_zero(bset->eq[i][1 + abs_pos]))
