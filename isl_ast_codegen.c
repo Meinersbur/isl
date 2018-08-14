@@ -4231,18 +4231,18 @@ static isl_stat extract_domain(__isl_take isl_map *map, void *user)
 	return isl_stat_ok;
 }
 
-static int after_in_tree(__isl_keep isl_union_map *umap,
+static isl_bool after_in_tree(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node);
 
 /* Is any domain element of "umap" scheduled after any of
  * the corresponding image elements by the tree rooted at
  * the child of "node"?
  */
-static int after_in_child(__isl_keep isl_union_map *umap,
+static isl_bool after_in_child(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	isl_schedule_node *child;
-	int after;
+	isl_bool after;
 
 	child = isl_schedule_node_get_child(node, 0);
 	after = after_in_tree(umap, child);
@@ -4263,7 +4263,7 @@ static int after_in_child(__isl_keep isl_union_map *umap,
  * If there are no such pairs then the map passed to after_in_child
  * will be empty causing it to return 0.
  */
-static int after_in_band(__isl_keep isl_union_map *umap,
+static isl_bool after_in_band(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	isl_multi_union_pw_aff *mupa;
@@ -4271,7 +4271,7 @@ static int after_in_band(__isl_keep isl_union_map *umap,
 	isl_union_set *domain, *range;
 	isl_space *space;
 	isl_bool empty;
-	int after;
+	isl_bool after;
 
 	if (isl_schedule_node_band_n_member(node) == 0)
 		return after_in_child(umap, node);
@@ -4289,7 +4289,7 @@ static int after_in_band(__isl_keep isl_union_map *umap,
 
 	if (empty < 0 || !empty) {
 		isl_union_map_free(partial);
-		return empty < 0 ? -1 : 1;
+		return isl_bool_not(empty);
 	}
 
 	universe = isl_union_map_universe(isl_union_map_copy(umap));
@@ -4315,13 +4315,13 @@ static int after_in_band(__isl_keep isl_union_map *umap,
  * to the range of the prefix schedule for both domain and
  * range of "umap".
  */
-static int after_in_context(__isl_keep isl_union_map *umap,
+static isl_bool after_in_context(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	isl_union_map *prefix, *universe, *umap1, *umap2;
 	isl_union_set *domain, *range;
 	isl_set *context;
-	int after;
+	isl_bool after;
 
 	umap = isl_union_map_copy(umap);
 	context = isl_schedule_node_context_get_context(node);
@@ -4351,11 +4351,11 @@ static int after_in_context(__isl_keep isl_union_map *umap,
  * We apply the expansion to domain and range of "umap" and
  * continue with its child.
  */
-static int after_in_expansion(__isl_keep isl_union_map *umap,
+static isl_bool after_in_expansion(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	isl_union_map *expansion;
-	int after;
+	isl_bool after;
 
 	expansion = isl_schedule_node_expansion_get_expansion(node);
 	umap = isl_union_map_copy(umap);
@@ -4374,13 +4374,13 @@ static int after_in_expansion(__isl_keep isl_union_map *umap,
  * the extension node "node"?
  *
  * Since the extension node may add statement instances before or
- * after the pairs of statement instances in "umap", we return 1
+ * after the pairs of statement instances in "umap", we return isl_bool_true
  * to ensure that these pairs are not broken up.
  */
-static int after_in_extension(__isl_keep isl_union_map *umap,
+static isl_bool after_in_extension(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
-	return 1;
+	return isl_bool_true;
 }
 
 /* Is any domain element of "umap" scheduled after any of
@@ -4390,11 +4390,11 @@ static int after_in_extension(__isl_keep isl_union_map *umap,
  * We intersect domain and range of "umap" with the filter and
  * continue with its child.
  */
-static int after_in_filter(__isl_keep isl_union_map *umap,
+static isl_bool after_in_filter(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	isl_union_set *filter;
-	int after;
+	isl_bool after;
 
 	umap = isl_union_map_copy(umap);
 	filter = isl_schedule_node_filter_get_filter(node);
@@ -4418,7 +4418,7 @@ static int after_in_filter(__isl_keep isl_union_map *umap,
  * are contained in different children, then the condition
  * does not hold.
  */
-static int after_in_set(__isl_keep isl_union_map *umap,
+static isl_bool after_in_set(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	int i, n;
@@ -4426,7 +4426,7 @@ static int after_in_set(__isl_keep isl_union_map *umap,
 	n = isl_schedule_node_n_children(node);
 	for (i = 0; i < n; ++i) {
 		isl_schedule_node *child;
-		int after;
+		isl_bool after;
 
 		child = isl_schedule_node_get_child(node, i);
 		after = after_in_tree(umap, child);
@@ -4436,7 +4436,7 @@ static int after_in_set(__isl_keep isl_union_map *umap,
 			return after;
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Return the filter of child "i" of "node".
@@ -4463,13 +4463,13 @@ static __isl_give isl_union_set *child_filter(
  * if the condition holds within a given child in the sequence.
  * The later part of the condition is checked by after_in_set.
  */
-static int after_in_sequence(__isl_keep isl_union_map *umap,
+static isl_bool after_in_sequence(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	int i, j, n;
 	isl_union_map *umap_i;
 	isl_bool empty;
-	int after = 0;
+	isl_bool after = isl_bool_false;
 
 	n = isl_schedule_node_n_children(node);
 	for (i = 1; i < n; ++i) {
@@ -4500,7 +4500,7 @@ static int after_in_sequence(__isl_keep isl_union_map *umap,
 			if (empty < 0)
 				goto error;
 			if (!empty)
-				after = 1;
+				after = isl_bool_true;
 			if (after)
 				break;
 		}
@@ -4516,7 +4516,7 @@ static int after_in_sequence(__isl_keep isl_union_map *umap,
 	return after_in_set(umap, node);
 error:
 	isl_union_map_free(umap_i);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Is any domain element of "umap" scheduled after any of
@@ -4525,7 +4525,7 @@ error:
  * If "umap" is empty, then clearly there is no such element.
  * Otherwise, consider the different types of nodes separately.
  */
-static int after_in_tree(__isl_keep isl_union_map *umap,
+static isl_bool after_in_tree(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
 	isl_bool empty;
@@ -4533,23 +4533,24 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 
 	empty = isl_union_map_is_empty(umap);
 	if (empty < 0)
-		return -1;
+		return isl_bool_error;
 	if (empty)
-		return 0;
+		return isl_bool_false;
 	if (!node)
-		return -1;
+		return isl_bool_error;
 
 	type = isl_schedule_node_get_type(node);
 	switch (type) {
 	case isl_schedule_node_error:
-		return -1;
+		return isl_bool_error;
 	case isl_schedule_node_leaf:
-		return 0;
+		return isl_bool_false;
 	case isl_schedule_node_band:
 		return after_in_band(umap, node);
 	case isl_schedule_node_domain:
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_internal,
-			"unexpected internal domain node", return -1);
+			"unexpected internal domain node",
+			return isl_bool_error);
 	case isl_schedule_node_context:
 		return after_in_context(umap, node);
 	case isl_schedule_node_expansion:
@@ -4567,7 +4568,7 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
 		return after_in_sequence(umap, node);
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Is any domain element of "map1" scheduled after any domain
@@ -4583,21 +4584,21 @@ static int after_in_tree(__isl_keep isl_union_map *umap,
  * together and then check if the subtree underneath the current
  * band node determines their relative order.
  */
-static int after_in_subtree(__isl_keep isl_ast_build *build,
+static isl_bool after_in_subtree(__isl_keep isl_ast_build *build,
 	__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 {
 	isl_schedule_node *node;
 	isl_map *map;
 	isl_union_map *umap;
-	int after;
+	isl_bool after;
 
 	node = isl_ast_build_get_schedule_node(build);
 	if (!node)
-		return -1;
+		return isl_bool_error;
 	node = isl_schedule_node_child(node, 0);
 	if (isl_schedule_node_get_type(node) == isl_schedule_node_leaf) {
 		isl_schedule_node_free(node);
-		return 0;
+		return isl_bool_false;
 	}
 	map = isl_map_copy(map2);
 	map = isl_map_apply_domain(map, isl_map_copy(map1));
@@ -4659,7 +4660,7 @@ static isl_bool any_scheduled_after(int i, int j, void *user)
 	}
 
 	if (isl_ast_build_has_schedule_node(data->build)) {
-		int after;
+		isl_bool after;
 
 		after = after_in_subtree(data->build, data->domain[i].map,
 					    data->domain[j].map);
