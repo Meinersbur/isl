@@ -4268,7 +4268,7 @@ static __isl_give isl_schedule_node *extension_from_domain(
 	isl_union_set *domain;
 	isl_union_map *ext;
 	int depth;
-	int anchored;
+	isl_bool anchored;
 	isl_space *space;
 	isl_schedule_node *res;
 	isl_schedule_tree *tree;
