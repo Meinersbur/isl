@@ -2795,7 +2795,8 @@ static __isl_give isl_schedule_tree *group_band(
 	isl_multi_aff *ma;
 	isl_multi_union_pw_aff *mupa, *partial;
 	int is_covered;
-	int depth, n, has_id;
+	int depth, n;
+	isl_bool has_id;
 
 	domain = isl_schedule_node_get_domain(pos);
 	is_covered = locally_covered_by_domain(domain, data);
