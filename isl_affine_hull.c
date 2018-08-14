@@ -152,7 +152,7 @@ static isl_stat construct_column(
  * so that
  *	A[i][col] = B[i][col] = old(A[t][col]*B[i][col]-A[i][col]*B[t][col])
  */
-static int transform_column(
+static isl_bool transform_column(
 	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
@@ -164,7 +164,7 @@ static int transform_column(
 		if (isl_int_ne(bset1->eq[t][col], bset2->eq[t][col]))
 			break;
 	if (t < 0)
-		return 0;
+		return isl_bool_false;
 
 	total = 1 + isl_basic_set_n_dim(bset1);
 	isl_int_init(a);
@@ -186,7 +186,7 @@ static int transform_column(
 	isl_int_clear(g);
 	delete_row(bset1, t);
 	delete_row(bset2, t);
-	return 1;
+	return isl_bool_true;
 }
 
 /* The implementation is based on Section 5.2 of Michael Karr,
@@ -222,7 +222,12 @@ static __isl_give isl_basic_set *affine_hull(
 			if (construct_column(bset2, bset1, row, col) < 0)
 				goto error;
 		} else {
-			if (transform_column(bset1, bset2, row, col))
+			isl_bool transform;
+
+			transform = transform_column(bset1, bset2, row, col);
+			if (transform < 0)
+				goto error;
+			if (transform)
 				--row;
 		}
 	}
