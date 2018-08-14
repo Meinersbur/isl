@@ -1698,6 +1698,16 @@ int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 #define TYPE	isl_basic_map
 #include "check_type_range_templ.c"
 
+/* Check that there are "n" dimensions of type "type" starting at "first"
+ * in "bset".
+ */
+isl_stat isl_basic_set_check_range(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_basic_map_check_range(bset_to_bmap(bset),
+					type, first, n);
+}
+
 /* Insert an extra integer division, prescribed by "div", to "bmap"
  * at (integer division) position "pos".
  *
@@ -10769,8 +10779,8 @@ isl_stat isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 {
 	if (!bset || !signs)
 		return isl_stat_error;
-	isl_assert(bset->ctx, first + n <= isl_basic_set_dim(bset, type),
-		return isl_stat_error);
+	if (isl_basic_set_check_range(bset, type, first, n) < 0)
+		return isl_stat_error;
 
 	first += pos(bset->dim, type) - 1;
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);
