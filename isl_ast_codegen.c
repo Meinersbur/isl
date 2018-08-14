@@ -4270,7 +4270,7 @@ static int after_in_band(__isl_keep isl_union_map *umap,
 	isl_union_map *partial, *test, *gt, *universe, *umap1, *umap2;
 	isl_union_set *domain, *range;
 	isl_space *space;
-	int empty;
+	isl_bool empty;
 	int after;
 
 	if (isl_schedule_node_band_n_member(node) == 0)
