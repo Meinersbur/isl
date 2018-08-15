@@ -1180,7 +1180,7 @@ __isl_give isl_space *isl_ast_build_get_space(__isl_keep isl_ast_build *build,
 	if (!isl_ast_build_need_schedule_map(build))
 		return space;
 
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	space = isl_space_drop_dims(space, isl_dim_set,
 				    build->depth, dim - build->depth);
 	for (i = build->depth - 1; i >= 0; --i) {
