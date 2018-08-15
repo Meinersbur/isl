@@ -571,19 +571,30 @@ __isl_give isl_union_set *isl_schedule_band_get_ast_build_options(
 	return options;
 }
 
+/* Internal data structure for not().
+ */
+struct isl_not_data {
+	isl_bool (*is)(__isl_keep isl_set *set);
+};
+
+/* Does "set" not satisfy data->is()?
+ */
+static isl_bool not(__isl_keep isl_set *set, void *user)
+{
+	struct isl_not_data *data = user;
+
+	return isl_bool_not(data->is(set));
+}
+
 /* Does "uset" contain any set that satisfies "is"?
- * "is" is assumed to set its integer argument to isl_bool_true
- * if it is satisfied.
+ * In other words, is it not the case that all of them do not satisfy "is"?
  */
 static isl_bool has_any(__isl_keep isl_union_set *uset,
-	isl_stat (*is)(__isl_take isl_set *set, void *user))
+	isl_bool (*is)(__isl_keep isl_set *set))
 {
-	isl_bool found = isl_bool_false;
+	struct isl_not_data data = { is };
 
-	if (isl_union_set_foreach_set(uset, is, &found) < 0 && !found)
-		return isl_bool_error;
-
-	return found;
+	return isl_bool_not(isl_union_set_every_set(uset, &not, &data));
 }
 
 /* Does "set" live in a space of the form
@@ -591,22 +602,17 @@ static isl_bool has_any(__isl_keep isl_union_set *uset,
  *	isolate[[...] -> [...]]
  *
  * ?
- *
- * If so, set *found and abort the search.
  */
-static isl_stat is_isolate(__isl_take isl_set *set, void *user)
+static isl_bool is_isolate(__isl_keep isl_set *set)
 {
-	isl_bool *found = user;
-
 	if (isl_set_has_tuple_name(set)) {
 		const char *name;
 		name = isl_set_get_tuple_name(set);
 		if (isl_set_is_wrapping(set) && !strcmp(name, "isolate"))
-			*found = isl_bool_true;
+			return isl_bool_true;
 	}
-	isl_set_free(set);
 
-	return *found ? isl_stat_error : isl_stat_ok;
+	return isl_bool_false;
 }
 
 /* Does "options" include an option of the ofrm
@@ -622,10 +628,8 @@ static isl_bool has_isolate_option(__isl_keep isl_union_set *options)
 
 /* Does "set" encode a loop AST generation option?
  */
-static isl_stat is_loop_type_option(__isl_take isl_set *set, void *user)
+static isl_bool is_loop_type_option(__isl_keep isl_set *set)
 {
-	isl_bool *found = user;
-
 	if (isl_set_dim(set, isl_dim_set) == 1 &&
 	    isl_set_has_tuple_name(set)) {
 		const char *name;
@@ -635,13 +639,11 @@ static isl_stat is_loop_type_option(__isl_take isl_set *set, void *user)
 		    type <= isl_ast_loop_separate; ++type) {
 			if (strcmp(name, option_str[type]))
 				continue;
-			*found = isl_bool_true;
-			break;
+			return isl_bool_true;
 		}
 	}
-	isl_set_free(set);
 
-	return *found ? isl_stat_error : isl_stat_ok;
+	return isl_bool_false;
 }
 
 /* Does "set" encode a loop AST generation option for the isolated part?
@@ -651,22 +653,19 @@ static isl_stat is_loop_type_option(__isl_take isl_set *set, void *user)
  *
  * with t equal to "atomic", "unroll" or "separate"?
  */
-static isl_stat is_isolate_loop_type_option(__isl_take isl_set *set, void *user)
+static isl_bool is_isolate_loop_type_option(__isl_keep isl_set *set)
 {
-	isl_bool *found = user;
 	const char *name;
 	enum isl_ast_loop_type type;
 	isl_map *map;
 
-	if (!isl_set_is_wrapping(set)) {
-		isl_set_free(set);
-		return isl_stat_ok;
-	}
-	map = isl_set_unwrap(set);
+	if (!isl_set_is_wrapping(set))
+		return isl_bool_false;
+	map = isl_set_unwrap(isl_set_copy(set));
 	if (!isl_map_has_tuple_name(map, isl_dim_in) ||
 	    !isl_map_has_tuple_name(map, isl_dim_out)) {
 		isl_map_free(map);
-		return isl_stat_ok;
+		return isl_bool_false;
 	}
 	name = isl_map_get_tuple_name(map, isl_dim_in);
 	if (!strcmp(name, "isolate")) {
@@ -675,13 +674,13 @@ static isl_stat is_isolate_loop_type_option(__isl_take isl_set *set, void *user)
 		    type <= isl_ast_loop_separate; ++type) {
 			if (strcmp(name, option_str[type]))
 				continue;
-			*found = isl_bool_true;
-			break;
+			isl_map_free(map);
+			return isl_bool_true;
 		}
 	}
 	isl_map_free(map);
 
-	return *found ? isl_stat_error : isl_stat_ok;
+	return isl_bool_false;
 }
 
 /* Does "options" encode any loop AST generation options
