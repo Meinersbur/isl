@@ -364,7 +364,7 @@ __isl_give isl_ast_build *isl_ast_build_set_iterators(
 	if (!build)
 		goto error;
 
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	n_it = isl_id_list_n_id(build->iterators);
 	if (n_it < dim)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_internal,
