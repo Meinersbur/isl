@@ -2983,7 +2983,7 @@ __isl_give isl_basic_set *isl_set_unshifted_simple_hull_from_set_list(
 
 /* Given a set "set", return parametric bounds on the dimension "dim".
  */
-static struct isl_basic_set *set_bounds(struct isl_set *set, int dim)
+static __isl_give isl_basic_set *set_bounds(__isl_keep isl_set *set, int dim)
 {
 	unsigned set_dim = isl_set_dim(set, isl_dim_set);
 	set = isl_set_copy(set);
