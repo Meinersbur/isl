@@ -2333,7 +2333,7 @@ static int check_exactness_omega(__isl_keep isl_map *map,
 {
 	isl_set *delta;
 	int i;
-	int is_empty, is_exact;
+	isl_bool is_empty, is_exact;
 	unsigned d;
 	isl_map *test;
 
