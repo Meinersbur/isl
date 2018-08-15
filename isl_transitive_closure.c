@@ -707,7 +707,7 @@ error:
 static int is_acyclic(__isl_take isl_map *path)
 {
 	int i;
-	int acyclic;
+	isl_bool acyclic;
 	unsigned dim;
 	struct isl_set *delta;
 
