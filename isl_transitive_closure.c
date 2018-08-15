@@ -2331,7 +2331,7 @@ static __isl_give isl_map *box_closure_with_identity(__isl_take isl_map *map,
  *
  *	app \subset (map \cup (map \circ app))
  */
-static int check_exactness_omega(__isl_keep isl_map *map,
+static isl_bool check_exactness_omega(__isl_keep isl_map *map,
 	__isl_keep isl_map *app)
 {
 	isl_set *delta;
@@ -2346,10 +2346,8 @@ static int check_exactness_omega(__isl_keep isl_map *map,
 		delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
 	is_empty = isl_set_is_empty(delta);
 	isl_set_free(delta);
-	if (is_empty < 0)
-		return -1;
-	if (!is_empty)
-		return 0;
+	if (is_empty < 0 || !is_empty)
+		return is_empty;
 
 	test = isl_map_apply_range(isl_map_copy(app), isl_map_copy(map));
 	test = isl_map_union(test, isl_map_copy(map));
@@ -2459,8 +2457,14 @@ static __isl_give isl_map *box_closure_with_check(__isl_take isl_map *map,
 	isl_map *app;
 
 	app = box_closure(isl_map_copy(map));
-	if (exact)
-		*exact = check_exactness_omega(map, app);
+	if (exact) {
+		isl_bool is_exact = check_exactness_omega(map, app);
+
+		if (is_exact < 0)
+			app = isl_map_free(app);
+		else
+			*exact = is_exact;
+	}
 
 	isl_map_free(map);
 	return app;
@@ -2488,7 +2492,7 @@ static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
 	int *exact)
 {
 	int i, j;
-	int exact_i;
+	isl_bool exact_i;
 	isl_map *app;
 
 	if (!map)
@@ -2519,7 +2523,7 @@ static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
 
 		app = isl_map_union(tc, transitive_closure_omega(app, NULL));
 		exact_i = check_exactness_omega(map, app);
-		if (exact_i == 1) {
+		if (exact_i == isl_bool_true) {
 			if (exact)
 				*exact = exact_i;
 			isl_map_free(map);
