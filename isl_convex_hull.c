@@ -113,7 +113,7 @@ __isl_give isl_set *isl_set_remove_redundancies(__isl_take isl_set *set)
  * constraint c and if so, set the constant term such that the
  * resulting constraint is a bounding constraint for the set.
  */
-static int uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
+static isl_bool uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
 {
 	int first;
 	int j;
@@ -154,7 +154,7 @@ static int uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
 error:
 	isl_int_clear(opt);
 	isl_int_clear(opt_denom);
-	return -1;
+	return isl_bool_error;
 }
 
 static __isl_give isl_set *isl_set_add_basic_set_equality(
@@ -388,7 +388,7 @@ static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 	struct isl_basic_set *face = NULL;
 	int i;
 	unsigned dim = isl_set_n_dim(set);
-	int is_bound;
+	isl_bool is_bound;
 	isl_mat *bounds = NULL;
 
 	isl_assert(set->ctx, set->n > 0, goto error);
