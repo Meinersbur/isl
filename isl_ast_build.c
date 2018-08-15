@@ -569,7 +569,7 @@ int isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
 	if (!build)
 		return -1;
 
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	return build->depth != dim || any_eliminated(build);
 }
 
