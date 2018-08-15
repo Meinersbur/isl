@@ -3083,7 +3083,7 @@ static __isl_give isl_basic_set_list *compute_domains(
 	isl_space *space;
 	int n_param;
 	enum isl_ast_loop_type type;
-	int empty;
+	isl_bool empty;
 
 	if (!executed)
 		return NULL;
