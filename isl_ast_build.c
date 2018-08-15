@@ -1829,7 +1829,7 @@ __isl_give isl_ast_build *isl_ast_build_product(
 	build->outer_pos = build->depth;
 
 	ctx = isl_ast_build_get_ctx(build);
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	dim += isl_space_dim(space, isl_dim_set);
 	n_it = isl_id_list_n_id(build->iterators);
 	if (n_it < dim) {
