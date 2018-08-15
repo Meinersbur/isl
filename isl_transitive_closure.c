@@ -705,7 +705,7 @@ error:
  * does not contain any element with positive last coordinate (positive length)
  * and zero remaining coordinates (cycle).
  */
-static int is_acyclic(__isl_take isl_map *path)
+static isl_bool is_acyclic(__isl_take isl_map *path)
 {
 	int i;
 	isl_bool acyclic;
