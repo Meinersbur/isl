@@ -607,7 +607,7 @@ __isl_give isl_multi_aff *isl_ast_build_get_schedule_map_multi_aff(
 	ma = isl_multi_aff_identity(space);
 	if (isl_ast_build_need_schedule_map(build)) {
 		int i;
-		int dim = isl_set_dim(build->domain, isl_dim_set);
+		int dim = isl_ast_build_dim(build, isl_dim_set);
 		ma = isl_multi_aff_drop_dims(ma, isl_dim_out,
 					build->depth, dim - build->depth);
 		for (i = build->depth - 1; i >= 0; --i)
