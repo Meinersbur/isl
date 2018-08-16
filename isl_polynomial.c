@@ -4001,17 +4001,17 @@ error:
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
 	int i;
 	int extra;
 	unsigned total;
 
-	if (!qp || !dim)
+	if (!qp || !space)
 		goto error;
 
-	if (isl_space_is_equal(qp->dim, dim)) {
-		isl_space_free(dim);
+	if (isl_space_is_equal(qp->dim, space)) {
+		isl_space_free(space);
 		return qp;
 	}
 
@@ -4019,7 +4019,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 	if (!qp)
 		goto error;
 
-	extra = isl_space_dim(dim, isl_dim_set) -
+	extra = isl_space_dim(space, isl_dim_set) -
 			isl_space_dim(qp->dim, isl_dim_set);
 	total = isl_space_dim(qp->dim, isl_dim_all);
 	if (qp->div->n_row) {
@@ -4042,11 +4042,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 		isl_seq_clr(qp->div->row[i] + 2 + total, extra);
 
 	isl_space_free(qp->dim);
-	qp->dim = dim;
+	qp->dim = space;
 
 	return qp;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_qpolynomial_free(qp);
 	return NULL;
 }

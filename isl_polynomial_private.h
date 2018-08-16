@@ -228,7 +228,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_morph_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_morph *morph);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
-	__isl_take isl_space *dim);
+	__isl_take isl_space *space);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim);
 
