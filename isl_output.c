@@ -446,15 +446,15 @@ __isl_give isl_printer *isl_print_space(__isl_keep isl_space *space,
 	return p;
 }
 
-static __isl_give isl_printer *print_omega_parameters(__isl_keep isl_space *dim,
-	__isl_take isl_printer *p)
+static __isl_give isl_printer *print_omega_parameters(
+	__isl_keep isl_space *space, __isl_take isl_printer *p)
 {
-	if (isl_space_dim(dim, isl_dim_param) == 0)
+	if (isl_space_dim(space, isl_dim_param) == 0)
 		return p;
 
 	p = isl_printer_start_line(p);
 	p = isl_printer_print_str(p, "symbolic ");
-	p = print_var_list(p, dim, isl_dim_param);
+	p = print_var_list(p, space, isl_dim_param);
 	p = isl_printer_print_str(p, ";");
 	p = isl_printer_end_line(p);
 	return p;
