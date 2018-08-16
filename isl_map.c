@@ -416,15 +416,15 @@ __isl_give isl_mat *isl_basic_map_get_divs(__isl_keep isl_basic_map *bmap)
 	int i;
 	isl_ctx *ctx;
 	isl_mat *div;
-	unsigned total;
+	int v_div;
 	unsigned cols;
 
-	if (!bmap)
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
 		return NULL;
 
 	ctx = isl_basic_map_get_ctx(bmap);
-	total = isl_space_dim(bmap->dim, isl_dim_all);
-	cols = 1 + 1 + total + bmap->n_div;
+	cols = 1 + 1 + v_div + bmap->n_div;
 	div = isl_mat_alloc(ctx, bmap->n_div, cols);
 	if (!div)
 		return NULL;
