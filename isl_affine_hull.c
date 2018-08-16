@@ -1085,7 +1085,7 @@ static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
 	isl_bool known;
 	int n_known;
 	int n, n_col;
-	int v_div;
+	isl_size v_div;
 	isl_ctx *ctx;
 	isl_mat *A, *B, *M;
 

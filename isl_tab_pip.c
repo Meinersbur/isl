@@ -4317,7 +4317,7 @@ static int find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
-	int b_v_div, d_v_div;
+	isl_size b_v_div, d_v_div;
 	isl_size n_div;
 
 	b_v_div = isl_basic_map_var_offset(bmap, isl_dim_div);

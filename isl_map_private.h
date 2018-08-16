@@ -178,9 +178,9 @@ __isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
 __isl_give isl_map *isl_map_reset_equal_dim_space(__isl_take isl_map *map,
 	__isl_take isl_space *space);
 
-int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
+isl_size isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type);
-int isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
+isl_size isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type);
 unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
 					enum isl_dim_type type);

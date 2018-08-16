@@ -1302,7 +1302,7 @@ static __isl_give isl_basic_map *drop_aff(__isl_take isl_basic_map *bmap,
 	__isl_keep isl_basic_map *aff)
 {
 	int i, j;
-	int v_div;
+	isl_size v_div;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0 || !aff)

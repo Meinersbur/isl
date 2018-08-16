@@ -114,14 +114,14 @@ isl_size isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 /* Return the position of the variables of the given type
  * within the sequence of variables of "bmap".
  */
-int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
+isl_size isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type)
 {
 	isl_space *space;
 
 	space = isl_basic_map_peek_space(bmap);
 	if (!space)
-		return -1;
+		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -131,14 +131,14 @@ int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
 	case isl_dim_cst:
 	default:
 		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"invalid dimension type", return -1);
+			"invalid dimension type", return isl_size_error);
 	}
 }
 
 /* Return the position of the variables of the given type
  * within the sequence of variables of "bset".
  */
-int isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
+isl_size isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type)
 {
 	return isl_basic_map_var_offset(bset_to_bmap(bset), type);
@@ -386,7 +386,7 @@ __isl_give isl_mat *isl_basic_map_get_divs(__isl_keep isl_basic_map *bmap)
 	int i;
 	isl_ctx *ctx;
 	isl_mat *div;
-	int v_div;
+	isl_size v_div;
 	unsigned cols;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -2144,7 +2144,7 @@ __isl_give isl_basic_map *isl_basic_map_swap_div(__isl_take isl_basic_map *bmap,
 	int a, int b)
 {
 	int i;
-	int off;
+	isl_size off;
 
 	off = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (off < 0)
@@ -2420,7 +2420,7 @@ __isl_give isl_set *isl_set_eliminate_dims(__isl_take isl_set *set,
 __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	__isl_take isl_basic_map *bmap)
 {
-	int v_div;
+	isl_size v_div;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0)
@@ -2665,7 +2665,7 @@ static __isl_give isl_basic_map *insert_bounds_on_div(
 	int i;
 	int check_lb, check_ub;
 	isl_int v;
-	int v_div;
+	isl_size v_div;
 
 	if (!bmap)
 		return NULL;
@@ -5185,7 +5185,7 @@ static __isl_give isl_basic_map *add_upper_div_constraint(
 	__isl_take isl_basic_map *bmap, unsigned div)
 {
 	int i;
-	int v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	isl_size v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	isl_size n_div;
 	unsigned pos;
 
@@ -5210,7 +5210,7 @@ static __isl_give isl_basic_map *add_lower_div_constraint(
 	__isl_take isl_basic_map *bmap, unsigned div)
 {
 	int i;
-	int v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	isl_size v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	isl_size n_div;
 	unsigned pos;
 
@@ -8801,7 +8801,7 @@ __isl_give isl_basic_map *isl_basic_map_order_divs(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
-	int off;
+	isl_size off;
 
 	off = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (off < 0)
@@ -8943,7 +8943,7 @@ static int find_div(__isl_keep isl_basic_map *dst,
 {
 	int i;
 	isl_size n_div;
-	int v_div;
+	isl_size v_div;
 
 	v_div = isl_basic_map_var_offset(src, isl_dim_div);
 	n_div = isl_basic_map_dim(dst, isl_dim_div);
@@ -8971,7 +8971,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	int i;
 	isl_bool known;
 	int extended;
-	int v_div;
+	isl_size v_div;
 	isl_size dst_n_div;
 
 	if (!dst || !src)

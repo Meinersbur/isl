@@ -1158,7 +1158,7 @@ isl_stat isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
 	isl_basic_set *context = NULL;
 	unsigned abs_pos;
 	int n_lower, n_upper;
-	int off;
+	isl_size off;
 
 	if (isl_basic_set_check_range(bset, type, pos, 1) < 0)
 		return isl_stat_error;

@@ -297,7 +297,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 	unsigned pos, isl_int *eq, int keep_divs, int *progress)
 {
 	isl_size total;
-	int v_div;
+	isl_size v_div;
 	int k;
 	int last_div;
 
@@ -360,7 +360,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
 	isl_int *eq, unsigned div, int keep_divs)
 {
-	int v_div;
+	isl_size v_div;
 	unsigned pos;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -382,7 +382,7 @@ static isl_bool ok_to_eliminate_div(__isl_keep isl_basic_map *bmap, isl_int *eq,
 {
 	int k;
 	int last_div;
-	int v_div;
+	isl_size v_div;
 	unsigned pos;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -779,7 +779,7 @@ static __isl_give isl_basic_map *remove_duplicate_divs(
 	int k, l, h;
 	int bits;
 	struct isl_blk eq;
-	int v_div;
+	isl_size v_div;
 	unsigned total;
 	struct isl_ctx *ctx;
 
@@ -854,7 +854,7 @@ out:
 static int n_pure_div_eq(struct isl_basic_map *bmap)
 {
 	int i, j;
-	int v_div;
+	isl_size v_div;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0)
@@ -922,7 +922,7 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 	int *progress)
 {
 	int i, j, k;
-	int v_div;
+	isl_size v_div;
 	int div_eq;
 	struct isl_mat *B;
 	struct isl_vec *d;
@@ -1500,7 +1500,7 @@ static __isl_give isl_basic_map *remove_redundant_divs(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
-	int v_div;
+	isl_size v_div;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0)
@@ -3995,7 +3995,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 {
 	int i, j;
 	unsigned n_div;
-	int v_div;
+	isl_size v_div;
 	int coalesce;
 	isl_bool opp;
 
@@ -4372,7 +4372,7 @@ static __isl_give isl_basic_map *coalesce_divs(__isl_take isl_basic_map *bmap,
 {
 	isl_ctx *ctx;
 	isl_int m;
-	int v_div;
+	isl_size v_div;
 	unsigned total;
 	int i;
 
@@ -4430,7 +4430,7 @@ static __isl_give isl_basic_map *coalesce_or_drop_more_redundant_divs(
 	__isl_take isl_basic_map *bmap, int *pairs, int n)
 {
 	int i, l, u;
-	int v_div;
+	isl_size v_div;
 	isl_size n_div;
 
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -4819,7 +4819,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 	__isl_take isl_basic_map *bmap)
 {
 	int i, j;
-	int off;
+	isl_size off;
 	int *pairs = NULL;
 	int n = 0;
 	int n_ineq;
