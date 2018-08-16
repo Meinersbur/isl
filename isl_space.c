@@ -190,32 +190,32 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_space *set_id(__isl_take isl_space *dim,
+static __isl_give isl_space *set_id(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
-	dim = isl_space_cow(dim);
+	space = isl_space_cow(space);
 
-	if (!dim)
+	if (!space)
 		goto error;
 
-	pos = global_pos(dim, type, pos);
-	if (pos == isl_space_dim(dim, isl_dim_all))
+	pos = global_pos(space, type, pos);
+	if (pos == isl_space_dim(space, isl_dim_all))
 		goto error;
 
-	if (pos >= dim->n_id) {
+	if (pos >= space->n_id) {
 		if (!id)
-			return dim;
-		dim = extend_ids(dim);
-		if (!dim)
+			return space;
+		space = extend_ids(space);
+		if (!space)
 			goto error;
 	}
 
-	dim->ids[pos] = id;
+	space->ids[pos] = id;
 
-	return dim;
+	return space;
 error:
 	isl_id_free(id);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
