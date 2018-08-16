@@ -355,8 +355,13 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
 	isl_int *eq, unsigned div, int keep_divs)
 {
-	unsigned pos = isl_space_dim(bmap->dim, isl_dim_all) + div;
+	int v_div;
+	unsigned pos;
 
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
+	pos = v_div + div;
 	bmap = eliminate_var_using_equality(bmap, pos, eq, keep_divs, NULL);
 
 	bmap = isl_basic_map_drop_div(bmap, div);
