@@ -8993,7 +8993,9 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			"some src divs are unknown",
 			return isl_basic_map_free(dst));
 
-	src = isl_basic_map_order_divs(src);
+	src = isl_basic_map_order_divs(isl_basic_map_copy(src));
+	if (!src)
+		return isl_basic_map_free(dst);
 
 	extended = 0;
 	total = isl_space_dim(src->dim, isl_dim_all);
@@ -9004,7 +9006,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				int extra = src->n_div - i;
 				dst = isl_basic_map_cow(dst);
 				if (!dst)
-					return NULL;
+					goto error;
 				dst = isl_basic_map_extend_space(dst,
 						isl_space_copy(dst->dim),
 						extra, 0, 2 * extra);
@@ -9012,16 +9014,21 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			}
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
-				return isl_basic_map_free(dst);
+				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
 			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
 			if (isl_basic_map_add_div_constraints(dst, j) < 0)
-				return isl_basic_map_free(dst);
+				goto error;
 		}
 		if (j != i)
 			isl_basic_map_swap_div(dst, i, j);
 	}
+	isl_basic_map_free(src);
 	return dst;
+error:
+	isl_basic_map_free(src);
+	isl_basic_map_free(dst);
+	return NULL;
 }
 
 __isl_give isl_map *isl_map_align_divs_internal(__isl_take isl_map *map)
