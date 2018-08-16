@@ -455,7 +455,7 @@ static __isl_give isl_basic_map *eliminate_divs_ineq(
 		return NULL;
 
 	ctx = bmap->ctx;
-	off = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	off = isl_basic_map_offset(bmap, isl_dim_div);
 
 	for (d = bmap->n_div - 1; d >= 0 ; --d) {
 		for (i = 0; i < bmap->n_eq; ++i)
