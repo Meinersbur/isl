@@ -914,17 +914,17 @@ error:
  * the final coordinates.
  */
 static __isl_give isl_map *construct_projected_component(
-	__isl_take isl_space *dim,
+	__isl_take isl_space *space,
 	__isl_keep isl_map *map, int *exact, int project)
 {
 	isl_map *app;
 	unsigned d;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	d = isl_space_dim(dim, isl_dim_in);
+	d = isl_space_dim(space, isl_dim_in);
 
-	app = construct_component(dim, map, exact, project);
+	app = construct_component(space, map, exact, project);
 	if (project) {
 		app = isl_map_project_out(app, isl_dim_in, d - 1, 1);
 		app = isl_map_project_out(app, isl_dim_out, d - 1, 1);
