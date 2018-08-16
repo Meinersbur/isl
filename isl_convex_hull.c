@@ -1596,7 +1596,7 @@ static __isl_give isl_basic_set *common_constraints(
 	if (isl_hash_table_init(hull->ctx, table, min_constraints))
 		goto error;
 
-	total = isl_space_dim(set->dim, isl_dim_all);
+	total = isl_set_dim(set, isl_dim_all);
 	for (i = 0; i < set->p[best]->n_ineq; ++i) {
 		constraints[i].c = isl_mat_sub_alloc6(hull->ctx,
 			set->p[best]->ineq + i, 0, 1, 0, 1 + total);
