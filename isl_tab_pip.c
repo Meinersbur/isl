@@ -4275,8 +4275,8 @@ error:
  * If so, return its position within the divs.
  * If not, return -1.
  */
-static int find_context_div(struct isl_basic_map *bmap,
-	struct isl_basic_set *dom, unsigned div)
+static int find_context_div(__isl_keep isl_basic_map *bmap,
+	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
 	unsigned b_dim = isl_space_dim(bmap->dim, isl_dim_all);
