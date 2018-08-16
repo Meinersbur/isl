@@ -437,10 +437,20 @@ isl_ctx *isl_qpolynomial_get_ctx(__isl_keep isl_qpolynomial *qp)
 	return qp ? qp->dim->ctx : NULL;
 }
 
+/* Return the domain space of "qp".
+ */
+static __isl_keep isl_space *isl_qpolynomial_peek_domain_space(
+	__isl_keep isl_qpolynomial *qp)
+{
+	return qp ? qp->dim : NULL;
+}
+
+/* Return a copy of the domain space of "qp".
+ */
 __isl_give isl_space *isl_qpolynomial_get_domain_space(
 	__isl_keep isl_qpolynomial *qp)
 {
-	return qp ? isl_space_copy(qp->dim) : NULL;
+	return isl_space_copy(isl_qpolynomial_peek_domain_space(qp));
 }
 
 /* Return a copy of the local space on which "qp" is defined.
