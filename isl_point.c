@@ -264,6 +264,11 @@ static unsigned isl_point_dim(__isl_keep isl_point *pnt, enum isl_dim_type type)
 	return pnt ? isl_space_dim(pnt->dim, type) : 0;
 }
 
+#undef TYPE
+#define TYPE	isl_point
+static
+#include "check_type_range_templ.c"
+
 /* Return the value of coordinate "pos" of type "type" of "pnt".
  */
 __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
@@ -279,9 +284,8 @@ __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
 	if (isl_point_is_void(pnt))
 		isl_die(ctx, isl_error_invalid,
 			"void point does not have coordinates", return NULL);
-	if (pos < 0 || pos >= isl_point_dim(pnt, type))
-		isl_die(ctx, isl_error_invalid,
-			"position out of bounds", return NULL);
+	if (isl_point_check_range(pnt, type, pos, 1) < 0)
+		return NULL;
 
 	if (type == isl_dim_set)
 		pos += isl_point_dim(pnt, isl_dim_param);
@@ -301,9 +305,8 @@ __isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
 	if (isl_point_is_void(pnt))
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"void point does not have coordinates", goto error);
-	if (pos < 0 || pos >= isl_point_dim(pnt, type))
-		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
-			"position out of bounds", goto error);
+	if (isl_point_check_range(pnt, type, pos, 1) < 0)
+		goto error;
 	if (!isl_val_is_rat(v))
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"expecting rational value", goto error);
