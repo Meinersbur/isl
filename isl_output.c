@@ -164,7 +164,7 @@ static __isl_give isl_printer *isl_set_print_polylib(__isl_keep isl_set *set,
 	return isl_map_print_polylib(set_to_map(set), p, ext);
 }
 
-static int count_same_name(__isl_keep isl_space *dim,
+static int count_same_name(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos, const char *name)
 {
 	enum isl_dim_type t;
@@ -172,9 +172,9 @@ static int count_same_name(__isl_keep isl_space *dim,
 	int count = 0;
 
 	for (t = isl_dim_param; t <= type && t <= isl_dim_out; ++t) {
-		s = t == type ? pos : isl_space_dim(dim, t);
+		s = t == type ? pos : isl_space_dim(space, t);
 		for (p = 0; p < s; ++p) {
-			const char *n = isl_space_get_dim_name(dim, t, p);
+			const char *n = isl_space_get_dim_name(space, t, p);
 			if (n && !strcmp(n, name))
 				count++;
 		}
