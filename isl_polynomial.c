@@ -517,25 +517,42 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 	return isl_qpolynomial_domain_dim(qp, type);
 }
 
-/* Return the offset of the first coefficient of type "type" in
- * the domain of "qp".
+/* Return the offset of the first variable of type "type" within
+ * the variables of the domain of "qp".
  */
-unsigned isl_qpolynomial_domain_offset(__isl_keep isl_qpolynomial *qp,
+static int isl_qpolynomial_domain_var_offset(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type)
 {
 	isl_space *space;
 
 	space = isl_qpolynomial_peek_domain_space(qp);
 	if (!space)
-		return 0;
+		return -1;
+
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_set:	return isl_space_offset(space, type);
+	case isl_dim_div:	return isl_space_dim(space, isl_dim_all);
+	case isl_dim_cst:
+	default:
+		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
+			"invalid dimension type", return -1);
+	}
+}
+
+/* Return the offset of the first coefficient of type "type" in
+ * the domain of "qp".
+ */
+unsigned isl_qpolynomial_domain_offset(__isl_keep isl_qpolynomial *qp,
+	enum isl_dim_type type)
+{
 	switch (type) {
 	case isl_dim_cst:
 		return 0;
 	case isl_dim_param:
 	case isl_dim_set:
-		return 1 + isl_space_offset(space, type);
 	case isl_dim_div:
-		return 1 + isl_space_dim(space, isl_dim_all);
+		return 1 + isl_qpolynomial_domain_var_offset(qp, type);
 	default:
 		return 0;
 	}
