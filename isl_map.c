@@ -121,23 +121,42 @@ unsigned isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 	return set ? n(set->dim, type) : 0;
 }
 
-unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
-					enum isl_dim_type type)
+/* Return the position of the variables of the given type
+ * within the sequence of variables of "bmap".
+ */
+int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type)
 {
 	isl_space *space;
 
 	space = isl_basic_map_peek_space(bmap);
 	if (!space)
-		return 0;
+		return -1;
 
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:	return isl_space_offset(space, type);
+	case isl_dim_div:	return isl_space_dim(space, isl_dim_all);
+	case isl_dim_cst:
+	default:
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"invalid dimension type", return -1);
+	}
+}
+
+/* Return the position of the coefficients of the variables of the given type
+ * within the sequence of coefficients of "bmap".
+ */
+unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type)
+{
 	switch (type) {
 	case isl_dim_cst:	return 0;
 	case isl_dim_param:
 	case isl_dim_in:
 	case isl_dim_out:
-		return 1 + isl_space_offset(space, type);
-	case isl_dim_div:
-		return 1 + isl_space_dim(space, isl_dim_all);
+	case isl_dim_div:	return 1 + isl_basic_map_var_offset(bmap, type);
 	default:		return 0;
 	}
 }
