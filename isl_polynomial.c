@@ -2558,16 +2558,16 @@ error:
 	return NULL;
 }
 
-static int poly_set_active(__isl_keep isl_poly *poly, int *active, int d)
+static isl_stat poly_set_active(__isl_keep isl_poly *poly, int *active, int d)
 {
 	isl_poly_rec *rec;
 	int i;
 
 	if (!poly)
-		return -1;
+		return isl_stat_error;
 
 	if (isl_poly_is_cst(poly))
-		return 0;
+		return isl_stat_ok;
 
 	if (poly->var < d)
 		active[poly->var] = 1;
@@ -2575,18 +2575,18 @@ static int poly_set_active(__isl_keep isl_poly *poly, int *active, int d)
 	rec = isl_poly_as_rec(poly);
 	for (i = 0; i < rec->n; ++i)
 		if (poly_set_active(rec->p[i], active, d) < 0)
-			return -1;
+			return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
-static int set_active(__isl_keep isl_qpolynomial *qp, int *active)
+static isl_stat set_active(__isl_keep isl_qpolynomial *qp, int *active)
 {
 	int i, j;
 	int d = isl_space_dim(qp->dim, isl_dim_all);
 
 	if (!qp || !active)
-		return -1;
+		return isl_stat_error;
 
 	for (i = 0; i < d; ++i)
 		for (j = 0; j < qp->div->n_row; ++j) {
