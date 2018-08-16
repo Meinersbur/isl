@@ -159,34 +159,34 @@ static unsigned global_pos(__isl_keep isl_space *space,
 
 /* Extend length of ids array to the total number of dimensions.
  */
-static __isl_give isl_space *extend_ids(__isl_take isl_space *dim)
+static __isl_give isl_space *extend_ids(__isl_take isl_space *space)
 {
 	isl_id **ids;
 	int i;
 
-	if (isl_space_dim(dim, isl_dim_all) <= dim->n_id)
-		return dim;
+	if (isl_space_dim(space, isl_dim_all) <= space->n_id)
+		return space;
 
-	if (!dim->ids) {
-		dim->ids = isl_calloc_array(dim->ctx,
-				isl_id *, isl_space_dim(dim, isl_dim_all));
-		if (!dim->ids)
+	if (!space->ids) {
+		space->ids = isl_calloc_array(space->ctx,
+				isl_id *, isl_space_dim(space, isl_dim_all));
+		if (!space->ids)
 			goto error;
 	} else {
-		ids = isl_realloc_array(dim->ctx, dim->ids,
-				isl_id *, isl_space_dim(dim, isl_dim_all));
+		ids = isl_realloc_array(space->ctx, space->ids,
+				isl_id *, isl_space_dim(space, isl_dim_all));
 		if (!ids)
 			goto error;
-		dim->ids = ids;
-		for (i = dim->n_id; i < isl_space_dim(dim, isl_dim_all); ++i)
-			dim->ids[i] = NULL;
+		space->ids = ids;
+		for (i = space->n_id; i < isl_space_dim(space, isl_dim_all); ++i)
+			space->ids[i] = NULL;
 	}
 
-	dim->n_id = isl_space_dim(dim, isl_dim_all);
+	space->n_id = isl_space_dim(space, isl_dim_all);
 
-	return dim;
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
