@@ -844,15 +844,17 @@ out:
 static int n_pure_div_eq(struct isl_basic_map *bmap)
 {
 	int i, j;
-	unsigned total;
+	int v_div;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return -1;
 	for (i = 0, j = bmap->n_div-1; i < bmap->n_eq; ++i) {
-		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + total + j]))
+		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + v_div + j]))
 			--j;
 		if (j < 0)
 			break;
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total, j) != -1)
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + v_div, j) != -1)
 			return 0;
 	}
 	return i;
@@ -935,6 +937,8 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 
 	total = isl_space_dim(bmap->dim, isl_dim_all);
 	div_eq = n_pure_div_eq(bmap);
+	if (div_eq < 0)
+		return isl_basic_map_free(bmap);
 	if (div_eq == 0)
 		return bmap;
 
