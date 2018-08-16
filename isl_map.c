@@ -2666,7 +2666,7 @@ static __isl_give isl_basic_map *insert_bounds_on_div(
 	int i;
 	int check_lb, check_ub;
 	isl_int v;
-	unsigned total;
+	int v_div;
 
 	if (!bmap)
 		return NULL;
@@ -2674,12 +2674,14 @@ static __isl_give isl_basic_map *insert_bounds_on_div(
 	if (isl_int_is_zero(bmap->div[div][0]))
 		return bmap;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
 
 	check_lb = 0;
 	check_ub = 0;
 	for (i = 0; (!check_lb || !check_ub) && i < bmap->n_ineq; ++i) {
-		int s = isl_int_sgn(bmap->ineq[i][1 + total + div]);
+		int s = isl_int_sgn(bmap->ineq[i][1 + v_div + div]);
 		if (s > 0)
 			check_ub = 1;
 		if (s < 0)
@@ -2692,10 +2694,10 @@ static __isl_give isl_basic_map *insert_bounds_on_div(
 	isl_int_init(v);
 
 	for (i = 0; bmap && i < bmap->n_ineq; ++i) {
-		if (!isl_int_is_zero(bmap->ineq[i][1 + total + div]))
+		if (!isl_int_is_zero(bmap->ineq[i][1 + v_div + div]))
 			continue;
 
-		bmap = insert_bounds_on_div_from_ineq(bmap, div, i, total, v,
+		bmap = insert_bounds_on_div_from_ineq(bmap, div, i, v_div, v,
 							check_lb, check_ub);
 	}
 
