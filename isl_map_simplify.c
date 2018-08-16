@@ -912,7 +912,7 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 	int *progress)
 {
 	int i, j, k;
-	int total;
+	int v_div;
 	int div_eq;
 	struct isl_mat *B;
 	struct isl_vec *d;
@@ -935,16 +935,16 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 	if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS))
 		return bmap;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	div_eq = n_pure_div_eq(bmap);
-	if (div_eq < 0)
+	if (v_div < 0 || div_eq < 0)
 		return isl_basic_map_free(bmap);
 	if (div_eq == 0)
 		return bmap;
 
 	if (div_eq < bmap->n_eq) {
 		B = isl_mat_sub_alloc6(bmap->ctx, bmap->eq, div_eq,
-					bmap->n_eq - div_eq, 0, 1 + total);
+					bmap->n_eq - div_eq, 0, 1 + v_div);
 		C = isl_mat_variable_compression(B, &C2);
 		if (!C || !C2)
 			goto error;
@@ -960,11 +960,11 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 	if (!d)
 		goto error;
 	for (i = 0, j = bmap->n_div-1; i < div_eq; ++i) {
-		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + total + j]))
+		while (j >= 0 && isl_int_is_zero(bmap->eq[i][1 + v_div + j]))
 			--j;
-		isl_int_set(d->block.data[i], bmap->eq[i][1 + total + j]);
+		isl_int_set(d->block.data[i], bmap->eq[i][1 + v_div + j]);
 	}
-	B = isl_mat_sub_alloc6(bmap->ctx, bmap->eq, 0, div_eq, 0, 1 + total);
+	B = isl_mat_sub_alloc6(bmap->ctx, bmap->eq, 0, div_eq, 0, 1 + v_div);
 
 	if (C) {
 		B = isl_mat_product(B, C);
@@ -995,7 +995,7 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 	dropped = 0;
 	for (j = bmap->n_div - 1; j >= 0; --j) {
 		for (i = 0; i < bmap->n_eq; ++i)
-			if (!isl_int_is_zero(bmap->eq[i][1 + total + j]))
+			if (!isl_int_is_zero(bmap->eq[i][1 + v_div + j]))
 				break;
 		if (i < bmap->n_eq) {
 			bmap = isl_basic_map_drop_div(bmap, j);
@@ -1021,11 +1021,11 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 		if (isl_int_is_one(T->row[i][i]))
 			continue;
 		k = isl_basic_map_alloc_div(bmap);
-		pos[i] = 1 + total + k;
-		isl_seq_clr(bmap->div[k] + 1, 1 + total + bmap->n_div);
+		pos[i] = 1 + v_div + k;
+		isl_seq_clr(bmap->div[k] + 1, 1 + v_div + bmap->n_div);
 		isl_int_set(bmap->div[k][0], T->row[i][i]);
 		if (C2)
-			isl_seq_cpy(bmap->div[k] + 1, C2->row[i], 1 + total);
+			isl_seq_cpy(bmap->div[k] + 1, C2->row[i], 1 + v_div);
 		else
 			isl_int_set_si(bmap->div[k][1 + i], 1);
 		for (j = 0; j < i; ++j) {
@@ -1033,13 +1033,13 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 				continue;
 			if (pos[j] < T->n_row && C2)
 				isl_seq_submul(bmap->div[k] + 1, T->row[i][j],
-						C2->row[pos[j]], 1 + total);
+						C2->row[pos[j]], 1 + v_div);
 			else
 				isl_int_neg(bmap->div[k][1 + pos[j]],
 								T->row[i][j]);
 		}
 		j = isl_basic_map_alloc_equality(bmap);
-		isl_seq_neg(bmap->eq[j], bmap->div[k]+1, 1+total+bmap->n_div);
+		isl_seq_neg(bmap->eq[j], bmap->div[k]+1, 1+v_div+bmap->n_div);
 		isl_int_set(bmap->eq[j][pos[i]], bmap->div[k][0]);
 	}
 	free(pos);
