@@ -377,10 +377,15 @@ static isl_bool ok_to_eliminate_div(__isl_keep isl_basic_map *bmap, isl_int *eq,
 {
 	int k;
 	int last_div;
-	unsigned space_total = isl_space_dim(bmap->dim, isl_dim_all);
-	unsigned pos = space_total + div;
+	int v_div;
+	unsigned pos;
 
-	last_div = isl_seq_last_non_zero(eq + 1 + space_total, bmap->n_div);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_bool_error;
+	pos = v_div + div;
+
+	last_div = isl_seq_last_non_zero(eq + 1 + v_div, bmap->n_div);
 	if (last_div < 0 || last_div <= div)
 		return isl_bool_true;
 
