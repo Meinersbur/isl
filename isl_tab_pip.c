@@ -4288,27 +4288,28 @@ static int find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
-	unsigned b_dim, d_dim, n_div;
+	int b_v_div, d_v_div;
+	unsigned n_div;
 
-	if (!bmap || !dom)
+	b_v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	d_v_div = isl_basic_set_var_offset(dom, isl_dim_div);
+	if (b_v_div < 0 || d_v_div < 0)
 		return -1;
-
-	b_dim = isl_space_dim(bmap->dim, isl_dim_all);
-	d_dim = isl_space_dim(dom->dim, isl_dim_all);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
 	if (isl_int_is_zero(dom->div[div][0]))
 		return n_div;
-	if (isl_seq_first_non_zero(dom->div[div] + 2 + d_dim, dom->n_div) != -1)
+	if (isl_seq_first_non_zero(dom->div[div] + 2 + d_v_div,
+				    dom->n_div) != -1)
 		return n_div;
 
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
-		if (isl_seq_first_non_zero(bmap->div[i] + 2 + d_dim,
-					   (b_dim - d_dim) + n_div) != -1)
+		if (isl_seq_first_non_zero(bmap->div[i] + 2 + d_v_div,
+					   (b_v_div - d_v_div) + n_div) != -1)
 			continue;
-		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_dim))
+		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_v_div))
 			return i;
 	}
 	return n_div;
