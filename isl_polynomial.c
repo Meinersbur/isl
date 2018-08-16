@@ -3724,31 +3724,31 @@ error:
 	return NULL;
 }
 
-__isl_give isl_term *isl_term_alloc(__isl_take isl_space *dim,
+__isl_give isl_term *isl_term_alloc(__isl_take isl_space *space,
 	__isl_take isl_mat *div)
 {
 	isl_term *term;
 	int n;
 
-	if (!dim || !div)
+	if (!space || !div)
 		goto error;
 
-	n = isl_space_dim(dim, isl_dim_all) + div->n_row;
+	n = isl_space_dim(space, isl_dim_all) + div->n_row;
 
-	term = isl_calloc(dim->ctx, struct isl_term,
+	term = isl_calloc(space->ctx, struct isl_term,
 			sizeof(struct isl_term) + (n - 1) * sizeof(int));
 	if (!term)
 		goto error;
 
 	term->ref = 1;
-	term->dim = dim;
+	term->dim = space;
 	term->div = div;
 	isl_int_init(term->n);
 	isl_int_init(term->d);
 	
 	return term;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(div);
 	return NULL;
 }
