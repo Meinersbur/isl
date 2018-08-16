@@ -217,12 +217,12 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 	return p;
 }
 
-static enum isl_dim_type pos2type(__isl_keep isl_space *dim, unsigned *pos)
+static enum isl_dim_type pos2type(__isl_keep isl_space *space, unsigned *pos)
 {
 	enum isl_dim_type type;
-	unsigned n_in = isl_space_dim(dim, isl_dim_in);
-	unsigned n_out = isl_space_dim(dim, isl_dim_out);
-	unsigned nparam = isl_space_dim(dim, isl_dim_param);
+	unsigned n_in = isl_space_dim(space, isl_dim_in);
+	unsigned n_out = isl_space_dim(space, isl_dim_out);
+	unsigned nparam = isl_space_dim(space, isl_dim_param);
 
 	if (*pos < 1 + nparam) {
 		type = isl_dim_param;
