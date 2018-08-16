@@ -1144,10 +1144,15 @@ static __isl_give isl_basic_map *basic_map_init(isl_ctx *ctx,
 	unsigned n_eq, unsigned n_ineq)
 {
 	int i;
-	size_t row_size = 1 + isl_space_dim(bmap->dim, isl_dim_all) + extra;
+	isl_space *space = isl_basic_map_peek_space(bmap);
+	unsigned n_var = isl_space_dim(space, isl_dim_all);
+	size_t row_size = 1 + n_var + extra;
 
 	bmap->ctx = ctx;
 	isl_ctx_ref(ctx);
+
+	if (!space)
+		return isl_basic_map_free(bmap);
 
 	bmap->block = isl_blk_alloc(ctx, (n_ineq + n_eq) * row_size);
 	if (isl_blk_is_error(bmap->block))
