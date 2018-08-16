@@ -146,6 +146,15 @@ int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
 	}
 }
 
+/* Return the position of the variables of the given type
+ * within the sequence of variables of "bset".
+ */
+int isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type)
+{
+	return isl_basic_map_var_offset(bset_to_bmap(bset), type);
+}
+
 /* Return the position of the coefficients of the variables of the given type
  * within the sequence of coefficients of "bmap".
  */
