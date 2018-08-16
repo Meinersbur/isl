@@ -4305,18 +4305,18 @@ struct isl_split_periods_data {
  *	f - m v >= 0
  *	-f + m v + (m - 1) >= 0
  */
-static __isl_give isl_set *set_div_slice(__isl_take isl_space *dim,
+static __isl_give isl_set *set_div_slice(__isl_take isl_space *space,
 	__isl_keep isl_qpolynomial *qp, int div, isl_int v)
 {
 	int total;
 	isl_basic_set *bset = NULL;
 	int k;
 
-	if (!dim || !qp)
+	if (!space || !qp)
 		goto error;
 
-	total = isl_space_dim(dim, isl_dim_all);
-	bset = isl_basic_set_alloc_space(isl_space_copy(dim), 0, 0, 2);
+	total = isl_space_dim(space, isl_dim_all);
+	bset = isl_basic_set_alloc_space(isl_space_copy(space), 0, 0, 2);
 
 	k = isl_basic_set_alloc_inequality(bset);
 	if (k < 0)
@@ -4332,11 +4332,11 @@ static __isl_give isl_set *set_div_slice(__isl_take isl_space *dim,
 	isl_int_add(bset->ineq[k][0], bset->ineq[k][0], qp->div->row[div][0]);
 	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return isl_set_from_basic_set(bset);
 error:
 	isl_basic_set_free(bset);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
