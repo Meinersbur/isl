@@ -769,7 +769,7 @@ static __isl_give isl_basic_map *remove_duplicate_divs(
 	int k, l, h;
 	int bits;
 	struct isl_blk eq;
-	unsigned total_var;
+	int v_div;
 	unsigned total;
 	struct isl_ctx *ctx;
 
@@ -777,8 +777,10 @@ static __isl_give isl_basic_map *remove_duplicate_divs(
 	if (!bmap || bmap->n_div <= 1)
 		return bmap;
 
-	total_var = isl_space_dim(bmap->dim, isl_dim_all);
-	total = total_var + bmap->n_div;
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
+	total = v_div + bmap->n_div;
 
 	ctx = bmap->ctx;
 	for (k = bmap->n_div - 1; k >= 0; --k)
@@ -823,13 +825,13 @@ static __isl_give isl_basic_map *remove_duplicate_divs(
 		if (!elim_for[l])
 			continue;
 		k = elim_for[l] - 1;
-		isl_int_set_si(eq.data[1+total_var+k], -1);
-		isl_int_set_si(eq.data[1+total_var+l], 1);
+		isl_int_set_si(eq.data[1 + v_div + k], -1);
+		isl_int_set_si(eq.data[1 + v_div + l], 1);
 		bmap = eliminate_div(bmap, eq.data, l, 1);
 		if (!bmap)
 			break;
-		isl_int_set_si(eq.data[1+total_var+k], 0);
-		isl_int_set_si(eq.data[1+total_var+l], 0);
+		isl_int_set_si(eq.data[1 + v_div + k], 0);
+		isl_int_set_si(eq.data[1 + v_div + l], 0);
 	}
 
 	isl_blk_free(ctx, eq);
