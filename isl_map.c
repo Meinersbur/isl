@@ -8966,7 +8966,8 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	__isl_take isl_basic_map *dst, __isl_keep isl_basic_map *src)
 {
 	int i;
-	int known, extended;
+	isl_bool known;
+	int extended;
 	unsigned total;
 
 	if (!dst || !src)
