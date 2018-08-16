@@ -523,16 +523,19 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 unsigned isl_qpolynomial_domain_offset(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type)
 {
-	if (!qp)
+	isl_space *space;
+
+	space = isl_qpolynomial_peek_domain_space(qp);
+	if (!space)
 		return 0;
 	switch (type) {
 	case isl_dim_cst:
 		return 0;
 	case isl_dim_param:
 	case isl_dim_set:
-		return 1 + isl_space_offset(qp->dim, type);
+		return 1 + isl_space_offset(space, type);
 	case isl_dim_div:
-		return 1 + isl_space_dim(qp->dim, isl_dim_all);
+		return 1 + isl_space_dim(space, isl_dim_all);
 	default:
 		return 0;
 	}
