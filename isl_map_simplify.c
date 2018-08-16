@@ -292,13 +292,15 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 	unsigned pos, isl_int *eq, int keep_divs, int *progress)
 {
 	unsigned total;
-	unsigned space_total;
+	int v_div;
 	int k;
 	int last_div;
 
 	total = isl_basic_map_total_dim(bmap);
-	space_total = isl_space_dim(bmap->dim, isl_dim_all);
-	last_div = isl_seq_last_non_zero(eq + 1 + space_total, bmap->n_div);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
+	last_div = isl_seq_last_non_zero(eq + 1 + v_div, bmap->n_div);
 	for (k = 0; k < bmap->n_eq; ++k) {
 		if (bmap->eq[k] == eq)
 			continue;
