@@ -2098,11 +2098,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(
 __isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
 	__isl_take isl_space *domain, enum isl_dim_type type, unsigned pos)
 {
-	if (!domain)
-		return NULL;
-
-	isl_assert(domain->ctx,
-		isl_space_dim(domain, isl_dim_in) == 0, goto error);
+	if (isl_space_check_is_set(domain ) < 0)
+		goto error;
 	isl_assert(domain->ctx, pos < isl_space_dim(domain, type), goto error);
 
 	if (type == isl_dim_set)
