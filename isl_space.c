@@ -219,18 +219,18 @@ error:
 	return NULL;
 }
 
-static __isl_keep isl_id *get_id(__isl_keep isl_space *dim,
+static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	pos = global_pos(dim, type, pos);
-	if (pos == isl_space_dim(dim, isl_dim_all))
+	pos = global_pos(space, type, pos);
+	if (pos == isl_space_dim(space, isl_dim_all))
 		return NULL;
-	if (pos >= dim->n_id)
+	if (pos >= space->n_id)
 		return NULL;
-	return dim->ids[pos];
+	return space->ids[pos];
 }
 
 static unsigned offset(__isl_keep isl_space *dim, enum isl_dim_type type)
