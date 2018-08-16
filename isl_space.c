@@ -133,28 +133,28 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
 	return space;
 }
 
-static unsigned global_pos(__isl_keep isl_space *dim,
+static unsigned global_pos(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	struct isl_ctx *ctx = dim->ctx;
+	struct isl_ctx *ctx = space->ctx;
 
 	switch (type) {
 	case isl_dim_param:
-		isl_assert(ctx, pos < dim->nparam,
-			    return isl_space_dim(dim, isl_dim_all));
+		isl_assert(ctx, pos < space->nparam,
+			    return isl_space_dim(space, isl_dim_all));
 		return pos;
 	case isl_dim_in:
-		isl_assert(ctx, pos < dim->n_in,
-			    return isl_space_dim(dim, isl_dim_all));
-		return pos + dim->nparam;
+		isl_assert(ctx, pos < space->n_in,
+			    return isl_space_dim(space, isl_dim_all));
+		return pos + space->nparam;
 	case isl_dim_out:
-		isl_assert(ctx, pos < dim->n_out,
-			    return isl_space_dim(dim, isl_dim_all));
-		return pos + dim->nparam + dim->n_in;
+		isl_assert(ctx, pos < space->n_out,
+			    return isl_space_dim(space, isl_dim_all));
+		return pos + space->nparam + space->n_in;
 	default:
-		isl_assert(ctx, 0, return isl_space_dim(dim, isl_dim_all));
+		isl_assert(ctx, 0, return isl_space_dim(space, isl_dim_all));
 	}
-	return isl_space_dim(dim, isl_dim_all);
+	return isl_space_dim(space, isl_dim_all);
 }
 
 /* Extend length of ids array to the total number of dimensions.
