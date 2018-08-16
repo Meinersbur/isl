@@ -8828,7 +8828,8 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	int i;
 	isl_bool known;
 	int extended;
-	unsigned total, dst_n_div;
+	int v_div;
+	unsigned dst_n_div;
 
 	if (!dst || !src)
 		return isl_basic_map_free(dst);
@@ -8844,12 +8845,15 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			"some src divs are unknown",
 			return isl_basic_map_free(dst));
 
+	v_div = isl_basic_map_var_offset(src, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(dst);
+
 	src = isl_basic_map_order_divs(isl_basic_map_copy(src));
 	if (!src)
 		return isl_basic_map_free(dst);
 
 	extended = 0;
-	total = isl_space_dim(src->dim, isl_dim_all);
 	dst_n_div = isl_basic_map_dim(dst, isl_dim_div);
 	for (i = 0; i < src->n_div; ++i) {
 		int j = find_div(dst, src, i);
@@ -8869,8 +8873,8 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
 				goto error;
-			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
-			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
+			isl_seq_cpy(dst->div[j], src->div[i], 1+1+v_div+i);
+			isl_seq_clr(dst->div[j]+1+1+v_div+i, dst->n_div - i);
 			dst_n_div++;
 			dst = isl_basic_map_add_div_constraints(dst, j);
 			if (!dst)
