@@ -3895,7 +3895,7 @@ static int is_zero_or_one(isl_int v)
  * If so, we return b so that "a + m b" can be replaced by
  * a single div "c = a + m b".
  */
-static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
+static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	unsigned div, unsigned l, unsigned u)
 {
 	int i, j;
