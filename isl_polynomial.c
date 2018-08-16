@@ -1127,36 +1127,36 @@ __isl_give struct isl_upoly *isl_upoly_pow(__isl_take struct isl_upoly *up,
 	return res;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *space,
 	unsigned n_div, __isl_take struct isl_upoly *up)
 {
 	struct isl_qpolynomial *qp = NULL;
 	unsigned total;
 
-	if (!dim || !up)
+	if (!space || !up)
 		goto error;
 
-	if (!isl_space_is_set(dim))
-		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"domain of polynomial should be a set", goto error);
 
-	total = isl_space_dim(dim, isl_dim_all);
+	total = isl_space_dim(space, isl_dim_all);
 
-	qp = isl_calloc_type(dim->ctx, struct isl_qpolynomial);
+	qp = isl_calloc_type(space->ctx, struct isl_qpolynomial);
 	if (!qp)
 		goto error;
 
 	qp->ref = 1;
-	qp->div = isl_mat_alloc(dim->ctx, n_div, 1 + 1 + total + n_div);
+	qp->div = isl_mat_alloc(space->ctx, n_div, 1 + 1 + total + n_div);
 	if (!qp->div)
 		goto error;
 
-	qp->dim = dim;
+	qp->dim = space;
 	qp->upoly = up;
 
 	return qp;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_upoly_free(up);
 	isl_qpolynomial_free(qp);
 	return NULL;
