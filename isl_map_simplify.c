@@ -3948,17 +3948,20 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	unsigned div, unsigned l, unsigned u)
 {
 	int i, j;
-	unsigned dim, n_div;
+	unsigned n_div;
+	int v_div;
 	int coalesce;
 	isl_bool opp;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (n_div <= 1)
 		return n_div;
-	dim = isl_space_dim(bmap->dim, isl_dim_all);
-	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim, div) != -1)
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return -1;
+	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + v_div, div) != -1)
 		return n_div;
-	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + dim + div + 1,
+	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + v_div + div + 1,
 				   n_div - div - 1) != -1)
 		return n_div;
 	opp = is_opposite(bmap, l, u);
@@ -3968,7 +3971,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
-		if (!isl_int_is_zero(bmap->div[i][1 + 1 + dim + div]))
+		if (!isl_int_is_zero(bmap->div[i][1 + 1 + v_div + div]))
 			return n_div;
 	}
 
@@ -3991,7 +3994,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 		for (j = 0; j < n_div; ++j) {
 			if (isl_int_is_zero(bmap->div[j][0]))
 				continue;
-			if (!isl_int_is_zero(bmap->div[j][1 + 1 + dim + i]))
+			if (!isl_int_is_zero(bmap->div[j][1 + 1 + v_div + i]))
 				break;
 		}
 		if (j < n_div)
@@ -4000,20 +4003,20 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 			int valid;
 			if (j == l || j == u)
 				continue;
-			if (isl_int_is_zero(bmap->ineq[j][1 + dim + div])) {
-				if (is_zero_or_one(bmap->ineq[j][1 + dim + i]))
+			if (isl_int_is_zero(bmap->ineq[j][1 + v_div + div])) {
+				if (is_zero_or_one(bmap->ineq[j][1 + v_div + i]))
 					continue;
 				break;
 			}
-			if (isl_int_is_zero(bmap->ineq[j][1 + dim + i]))
+			if (isl_int_is_zero(bmap->ineq[j][1 + v_div + i]))
 				break;
-			isl_int_mul(bmap->ineq[j][1 + dim + div],
-				    bmap->ineq[j][1 + dim + div],
+			isl_int_mul(bmap->ineq[j][1 + v_div + div],
+				    bmap->ineq[j][1 + v_div + div],
 				    bmap->ineq[l][0]);
-			valid = isl_int_eq(bmap->ineq[j][1 + dim + div],
-					   bmap->ineq[j][1 + dim + i]);
-			isl_int_divexact(bmap->ineq[j][1 + dim + div],
-					 bmap->ineq[j][1 + dim + div],
+			valid = isl_int_eq(bmap->ineq[j][1 + v_div + div],
+					   bmap->ineq[j][1 + v_div + i]);
+			isl_int_divexact(bmap->ineq[j][1 + v_div + div],
+					 bmap->ineq[j][1 + v_div + div],
 					 bmap->ineq[l][0]);
 			if (!valid)
 				break;
