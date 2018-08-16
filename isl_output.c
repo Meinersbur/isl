@@ -217,28 +217,28 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 	return p;
 }
 
-static enum isl_dim_type pos2type(__isl_keep isl_space *space, unsigned *pos)
+static isl_stat pos2type(__isl_keep isl_space *space,
+	enum isl_dim_type *type, unsigned *pos)
 {
-	enum isl_dim_type type;
 	unsigned n_in = isl_space_dim(space, isl_dim_in);
 	unsigned n_out = isl_space_dim(space, isl_dim_out);
 	unsigned nparam = isl_space_dim(space, isl_dim_param);
 
 	if (*pos < 1 + nparam) {
-		type = isl_dim_param;
+		*type = isl_dim_param;
 		*pos -= 1;
 	} else if (*pos < 1 + nparam + n_in) {
-		type = isl_dim_in;
+		*type = isl_dim_in;
 		*pos -= 1 + nparam;
 	} else if (*pos < 1 + nparam + n_in + n_out) {
-		type = isl_dim_out;
+		*type = isl_dim_out;
 		*pos -= 1 + nparam + n_in;
 	} else {
-		type = isl_dim_div;
+		*type = isl_dim_div;
 		*pos -= 1 + nparam + n_in + n_out;
 	}
 
-	return type;
+	return isl_stat_ok;
 }
 
 /* Can the div expression of the integer division at position "row" of "div"
@@ -274,7 +274,8 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
 
-	type = pos2type(space, &pos);
+	if (pos2type(space, &type, &pos) < 0)
+		return isl_printer_free(p);
 	print_div_def = type == isl_dim_div && can_print_div_expr(p, div, pos);
 
 	if (isl_int_is_one(c))
@@ -613,7 +614,8 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 	n_div = isl_mat_rows(div);
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
-	type = pos2type(space, &pos);
+	if (pos2type(space, &type, &pos) < 0)
+		return -1;
 	if (type != isl_dim_div)
 		return n_div;
 	can_print = can_print_div_expr(p, div, pos);
@@ -2679,7 +2681,8 @@ static __isl_give isl_printer *print_ls_term_c(__isl_take isl_printer *p,
 		p = isl_printer_print_isl_int(p, c);
 		p = isl_printer_print_str(p, "*");
 	}
-	type = pos2type(ls->dim, &pos);
+	if (pos2type(ls->dim, &type, &pos) < 0)
+		return isl_printer_free(p);
 	p = print_ls_name_c(p, ls, type, pos);
 	return p;
 }
