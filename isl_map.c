@@ -104,7 +104,7 @@ unsigned isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 	return set ? n(set->dim, type) : 0;
 }
 
-unsigned isl_basic_map_offset(struct isl_basic_map *bmap,
+unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
 					enum isl_dim_type type)
 {
 	isl_space *space;
