@@ -4181,7 +4181,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 		goto error;
 
 	extra = isl_space_dim(space, isl_dim_set) -
-			isl_space_dim(qp->dim, isl_dim_set);
+			isl_qpolynomial_domain_dim(qp, isl_dim_set);
 	total = isl_space_dim(qp->dim, isl_dim_all);
 	if (qp->div->n_row) {
 		int *exp;
