@@ -2857,6 +2857,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	int offset;
+
 	if (!qp)
 		return NULL;
 	if (type == isl_dim_out)
@@ -2880,8 +2882,10 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 	if (!qp->dim)
 		goto error;
 
-	if (type == isl_dim_set)
-		first += isl_space_dim(qp->dim, isl_dim_param);
+	offset = isl_qpolynomial_domain_var_offset(qp, type);
+	if (offset < 0)
+		goto error;
+	first += offset;
 
 	qp->div = isl_mat_drop_cols(qp->div, 2 + first, n);
 	if (!qp->div)
