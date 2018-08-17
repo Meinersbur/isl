@@ -8176,7 +8176,8 @@ Vertices can be inspected and destroyed using the following functions.
 		__isl_keep isl_vertex *vertex);
 	__isl_give isl_multi_aff *isl_vertex_get_expr(
 		__isl_keep isl_vertex *vertex);
-	void isl_vertex_free(__isl_take isl_vertex *vertex);
+	__isl_null isl_vertex *isl_vertex_free(
+		__isl_take isl_vertex *vertex);
 
 C<isl_vertex_get_expr> returns a multiple quasi-affine expression
 describing the vertex in terms of the parameters,

@@ -1040,12 +1040,14 @@ error:
 	return NULL;
 }
 
-void isl_vertex_free(__isl_take isl_vertex *vertex)
+__isl_null isl_vertex *isl_vertex_free(__isl_take isl_vertex *vertex)
 {
 	if (!vertex)
-		return;
+		return NULL;
 	isl_vertices_free(vertex->vertices);
 	free(vertex);
+
+	return NULL;
 }
 
 isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell)

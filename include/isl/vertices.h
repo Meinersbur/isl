@@ -21,7 +21,7 @@ isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex);
 int isl_vertex_get_id(__isl_keep isl_vertex *vertex);
 __isl_give isl_basic_set *isl_vertex_get_domain(__isl_keep isl_vertex *vertex);
 __isl_give isl_multi_aff *isl_vertex_get_expr(__isl_keep isl_vertex *vertex);
-void isl_vertex_free(__isl_take isl_vertex *vertex);
+__isl_null isl_vertex *isl_vertex_free(__isl_take isl_vertex *vertex);
 
 __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	__isl_keep isl_basic_set *bset);
