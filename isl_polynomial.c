@@ -2351,7 +2351,7 @@ static __isl_give isl_qpolynomial *substitute_div(
 	__isl_take isl_qpolynomial *qp, int div, __isl_take isl_poly *s)
 {
 	int i;
-	int total;
+	int div_pos;
 	int *reordering;
 	isl_ctx *ctx;
 
@@ -2362,21 +2362,23 @@ static __isl_give isl_qpolynomial *substitute_div(
 	if (!qp)
 		goto error;
 
-	total = isl_space_dim(qp->dim, isl_dim_all);
-	qp->poly = isl_poly_subs(qp->poly, total + div, 1, &s);
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
+		goto error;
+	qp->poly = isl_poly_subs(qp->poly, div_pos + div, 1, &s);
 	if (!qp->poly)
 		goto error;
 
 	ctx = isl_qpolynomial_get_ctx(qp);
-	reordering = isl_alloc_array(ctx, int, total + qp->div->n_row);
+	reordering = isl_alloc_array(ctx, int, div_pos + qp->div->n_row);
 	if (!reordering)
 		goto error;
-	for (i = 0; i < total + div; ++i)
+	for (i = 0; i < div_pos + div; ++i)
 		reordering[i] = i;
-	for (i = total + div + 1; i < total + qp->div->n_row; ++i)
+	for (i = div_pos + div + 1; i < div_pos + qp->div->n_row; ++i)
 		reordering[i] = i - 1;
 	qp->div = isl_mat_drop_rows(qp->div, div, 1);
-	qp->div = isl_mat_drop_cols(qp->div, 2 + total + div, 1);
+	qp->div = isl_mat_drop_cols(qp->div, 2 + div_pos + div, 1);
 	qp->poly = reorder(qp->poly, reordering);
 	free(reordering);
 
