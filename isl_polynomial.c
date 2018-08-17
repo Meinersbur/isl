@@ -4000,13 +4000,14 @@ static __isl_keep isl_space *isl_term_peek_space(__isl_keep isl_term *term)
 /* Return the offset of the first variable of type "type" within
  * the variables of "term".
  */
-static int isl_term_offset(__isl_keep isl_term *term, enum isl_dim_type type)
+static isl_size isl_term_offset(__isl_keep isl_term *term,
+	enum isl_dim_type type)
 {
 	isl_space *space;
 
 	space = isl_term_peek_space(term);
 	if (!space)
-		return -1;
+		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -4014,7 +4015,7 @@ static int isl_term_offset(__isl_keep isl_term *term, enum isl_dim_type type)
 	case isl_dim_div:	return isl_space_dim(space, isl_dim_all);
 	default:
 		isl_die(isl_term_get_ctx(term), isl_error_invalid,
-			"invalid dimension type", return -1);
+			"invalid dimension type", return isl_size_error);
 	}
 }
 
@@ -4049,7 +4050,7 @@ static
 isl_size isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos)
 {
-	int offset;
+	isl_size offset;
 
 	if (isl_term_check_range(term, type, pos, 1) < 0)
 		return isl_size_error;
