@@ -8134,7 +8134,7 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 	isl_union_map *schedule;
 	isl_union_set *uset;
 	isl_set *set;
-	int empty;
+	isl_bool empty;
 	char name[] = "d0";
 
 	ctx = isl_ast_build_get_ctx(build);
