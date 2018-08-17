@@ -90,12 +90,13 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 	SM(SM)
 {
 	set<FunctionDecl *>::iterator in;
+	set<RecordDecl *>::iterator it;
+
 	for (in = functions.begin(); in != functions.end(); ++in) {
 		FunctionDecl *decl = *in;
 		functions_by_name[decl->getName()] = decl;
 	}
 
-	set<RecordDecl *>::iterator it;
 	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
 		RecordDecl *decl = *it;
 		string name = decl->getName();
