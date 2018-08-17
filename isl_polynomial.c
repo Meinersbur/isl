@@ -4526,24 +4526,23 @@ static isl_stat set_div(__isl_take isl_set *set,
 	struct isl_split_periods_data *data)
 {
 	int i;
-	int total;
+	int div_pos;
 	isl_set *slice;
 	isl_poly *cst;
 
 	slice = set_div_slice(isl_set_get_space(set), qp, div, v);
 	set = isl_set_intersect(set, slice);
 
-	if (!qp)
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
 		goto error;
 
-	total = isl_space_dim(qp->dim, isl_dim_all);
-
 	for (i = div + 1; i < qp->div->n_row; ++i) {
-		if (isl_int_is_zero(qp->div->row[i][2 + total + div]))
+		if (isl_int_is_zero(qp->div->row[i][2 + div_pos + div]))
 			continue;
 		isl_int_addmul(qp->div->row[i][1],
-				qp->div->row[i][2 + total + div], v);
-		isl_int_set_si(qp->div->row[i][2 + total + div], 0);
+				qp->div->row[i][2 + div_pos + div], v);
+		isl_int_set_si(qp->div->row[i][2 + div_pos + div], 0);
 	}
 
 	cst = isl_poly_rat_cst(qp->dim->ctx, v, qp->dim->ctx->one);
