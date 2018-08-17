@@ -2400,24 +2400,24 @@ static __isl_give isl_qpolynomial *substitute_non_divs(
 	__isl_take isl_qpolynomial *qp)
 {
 	int i, j;
-	int total;
+	int div_pos;
 	isl_poly *s;
 
-	if (!qp)
-		return NULL;
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
+		return isl_qpolynomial_free(qp);
 
-	total = isl_space_dim(qp->dim, isl_dim_all);
 	for (i = 0; qp && i < qp->div->n_row; ++i) {
 		if (!isl_int_is_one(qp->div->row[i][0]))
 			continue;
 		for (j = i + 1; j < qp->div->n_row; ++j) {
-			if (isl_int_is_zero(qp->div->row[j][2 + total + i]))
+			if (isl_int_is_zero(qp->div->row[j][2 + div_pos + i]))
 				continue;
 			isl_seq_combine(qp->div->row[j] + 1,
 				qp->div->ctx->one, qp->div->row[j] + 1,
-				qp->div->row[j][2 + total + i],
-				qp->div->row[i] + 1, 1 + total + i);
-			isl_int_set_si(qp->div->row[j][2 + total + i], 0);
+				qp->div->row[j][2 + div_pos + i],
+				qp->div->row[i] + 1, 1 + div_pos + i);
+			isl_int_set_si(qp->div->row[j][2 + div_pos + i], 0);
 			normalize_div(qp, j);
 		}
 		s = isl_poly_from_affine(qp->dim->ctx, qp->div->row[i] + 1,
