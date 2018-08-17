@@ -2719,7 +2719,7 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 	__isl_take isl_qpolynomial *qp)
 {
 	int i, j;
-	int d;
+	int div_pos;
 	int len;
 	int skip;
 	int *active = NULL;
@@ -2733,7 +2733,9 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 	if (qp->div->n_row == 0)
 		return qp;
 
-	d = isl_space_dim(qp->dim, isl_dim_all);
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
+		return isl_qpolynomial_free(qp);
 	len = qp->div->n_col - 2;
 	ctx = isl_qpolynomial_get_ctx(qp);
 	active = isl_calloc_array(ctx, int, len);
@@ -2744,14 +2746,14 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 		goto error;
 
 	for (i = qp->div->n_row - 1; i >= 0; --i) {
-		if (!active[d + i]) {
+		if (!active[div_pos + i]) {
 			redundant = 1;
 			continue;
 		}
 		for (j = 0; j < i; ++j) {
-			if (isl_int_is_zero(qp->div->row[i][2 + d + j]))
+			if (isl_int_is_zero(qp->div->row[i][2 + div_pos + j]))
 				continue;
-			active[d + j] = 1;
+			active[div_pos + j] = 1;
 			break;
 		}
 	}
@@ -2765,19 +2767,19 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 	if (!reordering)
 		goto error;
 
-	for (i = 0; i < d; ++i)
+	for (i = 0; i < div_pos; ++i)
 		reordering[i] = i;
 
 	skip = 0;
 	n_div = qp->div->n_row;
 	for (i = 0; i < n_div; ++i) {
-		if (!active[d + i]) {
+		if (!active[div_pos + i]) {
 			qp->div = isl_mat_drop_rows(qp->div, i - skip, 1);
 			qp->div = isl_mat_drop_cols(qp->div,
-						    2 + d + i - skip, 1);
+						    2 + div_pos + i - skip, 1);
 			skip++;
 		}
-		reordering[d + i] = d + i - skip;
+		reordering[div_pos + i] = div_pos + i - skip;
 	}
 
 	qp->poly = reorder(qp->poly, reordering);
