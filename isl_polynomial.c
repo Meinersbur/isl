@@ -4592,7 +4592,7 @@ static isl_stat split_periods(__isl_take isl_set *set,
 	isl_pw_qpolynomial *pwqp;
 	struct isl_split_periods_data *data;
 	isl_int min, max;
-	int total;
+	int div_pos;
 	isl_stat r = isl_stat_ok;
 
 	data = (struct isl_split_periods_data *)user;
@@ -4606,13 +4606,16 @@ static isl_stat split_periods(__isl_take isl_set *set,
 		return isl_stat_ok;
 	}
 
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
+		goto error;
+
 	isl_int_init(min);
 	isl_int_init(max);
-	total = isl_space_dim(qp->dim, isl_dim_all);
 	for (i = 0; i < qp->div->n_row; ++i) {
 		enum isl_lp_result lp_res;
 
-		if (isl_seq_first_non_zero(qp->div->row[i] + 2 + total,
+		if (isl_seq_first_non_zero(qp->div->row[i] + 2 + div_pos,
 						qp->div->n_row) != -1)
 			continue;
 
