@@ -2677,6 +2677,7 @@ isl_bool isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	int i;
 	int *active = NULL;
 	isl_bool involves = isl_bool_false;
+	int offset;
 
 	if (!qp)
 		return isl_bool_error;
@@ -2693,8 +2694,10 @@ isl_bool isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	if (set_active(qp, active) < 0)
 		goto error;
 
-	if (type == isl_dim_in)
-		first += isl_space_dim(qp->dim, isl_dim_param);
+	offset = isl_qpolynomial_domain_var_offset(qp, domain_type(type));
+	if (offset < 0)
+		goto error;
+	first += offset;
 	for (i = 0; i < n; ++i)
 		if (active[first + i]) {
 			involves = isl_bool_true;
