@@ -9383,7 +9383,8 @@ A lower-level interface is provided by the following functions.
 		void *user);
 	__isl_give isl_map *isl_flow_get_no_source(
 		__isl_keep isl_flow *deps, int must);
-	void isl_flow_free(__isl_take isl_flow *deps);
+	__isl_null isl_flow *isl_flow_free(
+		__isl_take isl_flow *deps);
 
 The function C<isl_access_info_compute_flow> performs the actual
 dependence analysis.  The other functions are used to construct

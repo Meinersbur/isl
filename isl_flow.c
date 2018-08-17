@@ -519,12 +519,12 @@ __isl_give isl_map *isl_flow_get_no_source(__isl_keep isl_flow *deps, int must)
 		return isl_set_unwrap(isl_set_copy(deps->may_no_source));
 }
 
-void isl_flow_free(__isl_take isl_flow *deps)
+__isl_null isl_flow *isl_flow_free(__isl_take isl_flow *deps)
 {
 	int i;
 
 	if (!deps)
-		return;
+		return NULL;
 	isl_set_free(deps->must_no_source);
 	isl_set_free(deps->may_no_source);
 	if (deps->dep) {
@@ -533,6 +533,8 @@ void isl_flow_free(__isl_take isl_flow *deps)
 		free(deps->dep);
 	}
 	free(deps);
+
+	return NULL;
 }
 
 isl_ctx *isl_flow_get_ctx(__isl_keep isl_flow *deps)
