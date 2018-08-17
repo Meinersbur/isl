@@ -4134,7 +4134,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_from_term(__isl_take isl_term *term)
 	if (!term)
 		return NULL;
 
-	n = isl_space_dim(term->dim, isl_dim_all) + term->div->n_row;
+	n = isl_term_dim(term, isl_dim_all);
 
 	poly = isl_poly_rat_cst(term->dim->ctx, term->n, term->d);
 	for (i = 0; i < n; ++i) {
