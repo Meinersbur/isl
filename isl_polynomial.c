@@ -481,6 +481,16 @@ unsigned isl_qpolynomial_domain_dim(__isl_keep isl_qpolynomial *qp,
 	return isl_space_dim(qp->dim, type);
 }
 
+/* Given the type of a dimension of an isl_qpolynomial,
+ * return the type of the corresponding dimension in its domain.
+ * This function is only called for "type" equal to isl_dim_in or
+ * isl_dim_param.
+ */
+static enum isl_dim_type domain_type(enum isl_dim_type type)
+{
+	return type == isl_dim_in ? isl_dim_set : type;
+}
+
 /* Externally, an isl_qpolynomial has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */
@@ -491,8 +501,7 @@ unsigned isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 		return 0;
 	if (type == isl_dim_out)
 		return 1;
-	if (type == isl_dim_in)
-		type = isl_dim_set;
+	type = domain_type(type);
 	return isl_qpolynomial_domain_dim(qp, type);
 }
 
@@ -2710,8 +2719,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
 		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
 			"cannot set name of output/set dimension",
 			return isl_qpolynomial_free(qp));
-	if (type == isl_dim_in)
-		type = isl_dim_set;
+	type = domain_type(type);
 	qp->dim = isl_space_set_dim_name(qp->dim, type, pos, s);
 	if (!qp->dim)
 		goto error;
@@ -2731,8 +2739,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"cannot drop output/set dimension",
 			goto error);
-	if (type == isl_dim_in)
-		type = isl_dim_set;
+	type = domain_type(type);
 	if (n == 0 && !isl_space_is_named_or_nested(qp->dim, type))
 		return qp;
 
@@ -3147,8 +3154,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_insert_dims(
 		isl_die(qp->div->ctx, isl_error_invalid,
 			"cannot insert output/set dimensions",
 			goto error);
-	if (type == isl_dim_in)
-		type = isl_dim_set;
+	type = domain_type(type);
 	if (n == 0 && !isl_space_is_named_or_nested(qp->dim, type))
 		return qp;
 
@@ -3413,8 +3419,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"cannot substitute output/set dimension",
 			goto error);
-	if (type == isl_dim_in)
-		type = isl_dim_set;
+	type = domain_type(type);
 
 	for (i = 0; i < n; ++i)
 		if (!subs[i])
@@ -3596,8 +3601,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 		isl_die(qp->div->ctx, isl_error_invalid,
 			"output/set dimension does not have a coefficient",
 			return NULL);
-	if (type == isl_dim_in)
-		type = isl_dim_set;
+	type = domain_type(type);
 
 	isl_assert(qp->div->ctx, t_pos < isl_space_dim(qp->dim, type),
 			return NULL);
