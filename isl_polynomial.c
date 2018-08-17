@@ -3951,6 +3951,34 @@ unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type)
 	}
 }
 
+/* Return the space of "term".
+ */
+static __isl_keep isl_space *isl_term_peek_space(__isl_keep isl_term *term)
+{
+	return term ? term->dim : NULL;
+}
+
+/* Return the offset of the first variable of type "type" within
+ * the variables of "term".
+ */
+static int isl_term_offset(__isl_keep isl_term *term, enum isl_dim_type type)
+{
+	isl_space *space;
+
+	space = isl_term_peek_space(term);
+	if (!space)
+		return -1;
+
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_set:	return isl_space_offset(space, type);
+	case isl_dim_div:	return isl_space_dim(space, isl_dim_all);
+	default:
+		isl_die(isl_term_get_ctx(term), isl_error_invalid,
+			"invalid dimension type", return -1);
+	}
+}
+
 isl_ctx *isl_term_get_ctx(__isl_keep isl_term *term)
 {
 	return term ? term->dim->ctx : NULL;
@@ -3982,15 +4010,15 @@ static
 int isl_term_get_exp(__isl_keep isl_term *term,
 	enum isl_dim_type type, unsigned pos)
 {
+	int offset;
+
 	if (isl_term_check_range(term, type, pos, 1) < 0)
 		return -1;
+	offset = isl_term_offset(term, type);
+	if (offset < 0)
+		return -1;
 
-	if (type >= isl_dim_set)
-		pos += isl_space_dim(term->dim, isl_dim_param);
-	if (type >= isl_dim_div)
-		pos += isl_space_dim(term->dim, isl_dim_set);
-
-	return term->pow[pos];
+	return term->pow[offset + pos];
 }
 
 __isl_give isl_aff *isl_term_get_div(__isl_keep isl_term *term, unsigned pos)
