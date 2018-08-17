@@ -2743,7 +2743,8 @@ these functions
 		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_aff *isl_term_get_div(
 		__isl_keep isl_term *term, unsigned pos);
-	void isl_term_free(__isl_take isl_term *term);
+	__isl_null isl_term *isl_term_free(
+		__isl_take isl_term *term);
 
 Each term is a product of parameters, set variables and
 integer divisions.  The function C<isl_term_get_exp>

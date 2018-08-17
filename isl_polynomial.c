@@ -3797,19 +3797,21 @@ __isl_give isl_term *isl_term_cow(__isl_take isl_term *term)
 	return isl_term_dup(term);
 }
 
-void isl_term_free(__isl_take isl_term *term)
+__isl_null isl_term *isl_term_free(__isl_take isl_term *term)
 {
 	if (!term)
-		return;
+		return NULL;
 
 	if (--term->ref > 0)
-		return;
+		return NULL;
 
 	isl_space_free(term->dim);
 	isl_mat_free(term->div);
 	isl_int_clear(term->n);
 	isl_int_clear(term->d);
 	free(term);
+
+	return NULL;
 }
 
 unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type)
