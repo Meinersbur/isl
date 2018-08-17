@@ -2644,7 +2644,7 @@ static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 	__isl_keep isl_schedule_band *band)
 {
 	isl_union_set *options;
-	int empty;
+	isl_bool empty;
 	isl_bool coincident;
 
 	p = isl_printer_print_str(p, "schedule");
