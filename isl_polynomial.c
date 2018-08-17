@@ -1470,14 +1470,16 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 	struct isl_div_sort_info *array = NULL;
 	int *pos = NULL, *at = NULL;
 	int *reordering = NULL;
-	unsigned div_pos;
+	int div_pos;
 
 	if (!qp)
 		return NULL;
 	if (qp->div->n_row <= 1)
 		return qp;
 
-	div_pos = isl_space_dim(qp->dim, isl_dim_all);
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
+		return isl_qpolynomial_free(qp);
 
 	array = isl_alloc_array(qp->div->ctx, struct isl_div_sort_info,
 				qp->div->n_row);
