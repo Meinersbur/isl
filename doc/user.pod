@@ -8188,7 +8188,8 @@ Chambers can be inspected and destroyed using the following functions.
 
 	__isl_give isl_basic_set *isl_cell_get_domain(
 		__isl_keep isl_cell *cell);
-	void isl_cell_free(__isl_take isl_cell *cell);
+	__isl_null isl_cell *isl_cell_free(
+		__isl_take isl_cell *cell);
 
 =head1 Polyhedral Compilation Library
 

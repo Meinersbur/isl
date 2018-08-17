@@ -35,7 +35,7 @@ isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell);
 __isl_give isl_basic_set *isl_cell_get_domain(__isl_keep isl_cell *cell);
 isl_stat isl_cell_foreach_vertex(__isl_keep isl_cell *cell,
 	isl_stat (*fn)(__isl_take isl_vertex *vertex, void *user), void *user);
-void isl_cell_free(__isl_take isl_cell *cell);
+__isl_null isl_cell *isl_cell_free(__isl_take isl_cell *cell);
 
 isl_stat isl_vertices_foreach_cell(__isl_keep isl_vertices *vertices,
 	isl_stat (*fn)(__isl_take isl_cell *cell, void *user), void *user);

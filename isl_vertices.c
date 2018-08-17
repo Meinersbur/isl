@@ -1090,15 +1090,17 @@ error:
 	return NULL;
 }
 
-void isl_cell_free(__isl_take isl_cell *cell)
+__isl_null isl_cell *isl_cell_free(__isl_take isl_cell *cell)
 {
 	if (!cell)
-		return;
+		return NULL;
 
 	isl_vertices_free(cell->vertices);
 	free(cell->ids);
 	isl_basic_set_free(cell->dom);
 	free(cell);
+
+	return NULL;
 }
 
 /* Create a tableau of the cone obtained by first homogenizing the given
