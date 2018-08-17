@@ -314,7 +314,7 @@ struct isl_schedule_node_get_filter_prefix_data {
 	isl_multi_union_pw_aff *prefix;
 };
 
-static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
+static isl_stat collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
 	int n, struct isl_schedule_node_get_filter_prefix_data *data);
 
 /* Update the filter and prefix information in "data" based on the first "n"
@@ -325,7 +325,8 @@ static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
  * Then we map the results to the expanded space and combined them
  * with the results already in "data".
  */
-static int collect_filter_prefix_expansion(__isl_take isl_schedule_tree *tree,
+static isl_stat collect_filter_prefix_expansion(
+	__isl_take isl_schedule_tree *tree,
 	__isl_keep isl_schedule_tree_list *list, int n,
 	struct isl_schedule_node_get_filter_prefix_data *data)
 {
@@ -378,7 +379,7 @@ static int collect_filter_prefix_expansion(__isl_take isl_schedule_tree *tree,
 	isl_union_map_free(exp);
 	isl_schedule_tree_free(tree);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Update the filter information in "data" based on the first "n"
@@ -389,7 +390,8 @@ static int collect_filter_prefix_expansion(__isl_take isl_schedule_tree *tree,
  * add it to the universe range of the extension (intersected
  * with the already collected filter, if any).
  */
-static int collect_universe_domain_extension(__isl_take isl_schedule_tree *tree,
+static isl_stat collect_universe_domain_extension(
+	__isl_take isl_schedule_tree *tree,
 	__isl_keep isl_schedule_tree_list *list, int n,
 	struct isl_schedule_node_get_filter_prefix_data *data)
 {
@@ -419,7 +421,7 @@ static int collect_universe_domain_extension(__isl_take isl_schedule_tree *tree,
 
 	isl_schedule_tree_free(tree);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Update "data" based on the tree node "tree" in case "data" has
@@ -437,7 +439,7 @@ static int collect_universe_domain_extension(__isl_take isl_schedule_tree *tree,
  * to the universe of the schedule domain and replace the zero-dimensional
  * data->prefix by the band schedule (if data->collect_prefix is set).
  */
-static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
+static isl_stat collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 	struct isl_schedule_node_get_filter_prefix_data *data)
 {
 	enum isl_schedule_node_type type;
@@ -447,20 +449,20 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 	type = isl_schedule_tree_get_type(tree);
 	switch (type) {
 	case isl_schedule_node_error:
-		return -1;
+		return isl_stat_error;
 	case isl_schedule_node_expansion:
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"should be handled by caller", return -1);
+			"should be handled by caller", return isl_stat_error);
 	case isl_schedule_node_extension:
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
-			"cannot handle extension nodes", return -1);
+			"cannot handle extension nodes", return isl_stat_error);
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
 	case isl_schedule_node_sequence:
 	case isl_schedule_node_set:
-		return 0;
+		return isl_stat_ok;
 	case isl_schedule_node_domain:
 		filter = isl_schedule_tree_domain_get_domain(tree);
 		if (data->universe_domain)
@@ -469,7 +471,7 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 		break;
 	case isl_schedule_node_band:
 		if (isl_schedule_tree_band_n_member(tree) == 0)
-			return 0;
+			return isl_stat_ok;
 		mupa = isl_schedule_tree_band_get_partial_schedule(tree);
 		if (data->collect_prefix) {
 			isl_multi_union_pw_aff_free(data->prefix);
@@ -490,11 +492,11 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
 	}
 
 	if ((data->collect_prefix && !data->prefix) || !data->filter)
-		return -1;
+		return isl_stat_error;
 
 	data->initialized = 1;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Update "data" based on the tree node "tree" in case "data" has
@@ -511,7 +513,7 @@ static int collect_filter_prefix_init(__isl_keep isl_schedule_tree *tree,
  * If "tree" is an extension, then we make sure that we are not collecting
  * information on any extended domain elements.
  */
-static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
+static isl_stat collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	struct isl_schedule_node_get_filter_prefix_data *data)
 {
 	enum isl_schedule_node_type type;
@@ -523,10 +525,10 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	type = isl_schedule_tree_get_type(tree);
 	switch (type) {
 	case isl_schedule_node_error:
-		return -1;
+		return isl_stat_error;
 	case isl_schedule_node_expansion:
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"should be handled by caller", return -1);
+			"should be handled by caller", return isl_stat_error);
 	case isl_schedule_node_extension:
 		extension = isl_schedule_tree_extension_get_extension(tree);
 		extension = isl_union_map_intersect_range(extension,
@@ -534,11 +536,11 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 		empty = isl_union_map_is_empty(extension);
 		isl_union_map_free(extension);
 		if (empty < 0)
-			return -1;
+			return isl_stat_error;
 		if (empty)
 			break;
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
-			"cannot handle extension nodes", return -1);
+			"cannot handle extension nodes", return isl_stat_error);
 	case isl_schedule_node_context:
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_guard:
@@ -561,7 +563,7 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 		data->prefix = isl_multi_union_pw_aff_flat_range_product(mupa,
 								data->prefix);
 		if (!data->prefix)
-			return -1;
+			return isl_stat_error;
 		break;
 	case isl_schedule_node_filter:
 		filter = isl_schedule_tree_filter_get_filter(tree);
@@ -569,11 +571,11 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 			filter = isl_union_set_universe(filter);
 		data->filter = isl_union_set_intersect(data->filter, filter);
 		if (!data->filter)
-			return -1;
+			return isl_stat_error;
 		break;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Collect filter and/or prefix information from the first "n"
@@ -602,22 +604,22 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
  * On successful return, data->initialized will be set since the outermost
  * ancestor is a domain node, which always results in an initialization.
  */
-static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
+static isl_stat collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
 	int n, struct isl_schedule_node_get_filter_prefix_data *data)
 {
 	int i;
 
 	if (!list)
-		return -1;
+		return isl_stat_error;
 
 	for (i = n - 1; i >= 0; --i) {
 		isl_schedule_tree *tree;
 		enum isl_schedule_node_type type;
-		int r;
+		isl_stat r;
 
 		tree = isl_schedule_tree_list_get_schedule_tree(list, i);
 		if (!tree)
-			return -1;
+			return isl_stat_error;
 		type = isl_schedule_tree_get_type(tree);
 		if (type == isl_schedule_node_expansion)
 			return collect_filter_prefix_expansion(tree, list, i,
@@ -632,10 +634,10 @@ static int collect_filter_prefix(__isl_keep isl_schedule_tree_list *list,
 			r = collect_filter_prefix_update(tree, data);
 		isl_schedule_tree_free(tree);
 		if (r < 0)
-			return -1;
+			return isl_stat_error;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Return the concatenation of the partial schedules of all outer band
