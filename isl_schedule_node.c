@@ -518,7 +518,7 @@ static int collect_filter_prefix_update(__isl_keep isl_schedule_tree *tree,
 	isl_multi_union_pw_aff *mupa;
 	isl_union_set *filter;
 	isl_union_map *extension;
-	int empty;
+	isl_bool empty;
 
 	type = isl_schedule_tree_get_type(tree);
 	switch (type) {
