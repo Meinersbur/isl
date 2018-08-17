@@ -533,14 +533,14 @@ isl_size isl_qpolynomial_dim(__isl_keep isl_qpolynomial *qp,
 /* Return the offset of the first variable of type "type" within
  * the variables of the domain of "qp".
  */
-static int isl_qpolynomial_domain_var_offset(__isl_keep isl_qpolynomial *qp,
-	enum isl_dim_type type)
+static isl_size isl_qpolynomial_domain_var_offset(
+	__isl_keep isl_qpolynomial *qp, enum isl_dim_type type)
 {
 	isl_space *space;
 
 	space = isl_qpolynomial_peek_domain_space(qp);
 	if (!space)
-		return -1;
+		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -549,7 +549,7 @@ static int isl_qpolynomial_domain_var_offset(__isl_keep isl_qpolynomial *qp,
 	case isl_dim_cst:
 	default:
 		isl_die(isl_qpolynomial_get_ctx(qp), isl_error_invalid,
-			"invalid dimension type", return -1);
+			"invalid dimension type", return isl_size_error);
 	}
 }
 
@@ -1482,7 +1482,7 @@ static __isl_give isl_qpolynomial *sort_divs(__isl_take isl_qpolynomial *qp)
 	struct isl_div_sort_info *array = NULL;
 	int *pos = NULL, *at = NULL;
 	int *reordering = NULL;
-	int div_pos;
+	isl_size div_pos;
 
 	if (!qp)
 		return NULL;
@@ -2363,7 +2363,7 @@ static __isl_give isl_qpolynomial *substitute_div(
 	__isl_take isl_qpolynomial *qp, int div, __isl_take isl_poly *s)
 {
 	int i;
-	int div_pos;
+	isl_size div_pos;
 	int *reordering;
 	isl_ctx *ctx;
 
@@ -2412,7 +2412,7 @@ static __isl_give isl_qpolynomial *substitute_non_divs(
 	__isl_take isl_qpolynomial *qp)
 {
 	int i, j;
-	int div_pos;
+	isl_size div_pos;
 	isl_poly *s;
 
 	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
@@ -2695,7 +2695,7 @@ isl_bool isl_qpolynomial_involves_dims(__isl_keep isl_qpolynomial *qp,
 	int i;
 	int *active = NULL;
 	isl_bool involves = isl_bool_false;
-	int offset;
+	isl_size offset;
 	isl_size d;
 	isl_space *space;
 
@@ -2742,7 +2742,7 @@ static __isl_give isl_qpolynomial *remove_redundant_divs(
 	__isl_take isl_qpolynomial *qp)
 {
 	int i, j;
-	int div_pos;
+	isl_size div_pos;
 	int len;
 	int skip;
 	int *active = NULL;
@@ -2880,7 +2880,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_drop_dims(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	int offset;
+	isl_size offset;
 
 	if (!qp)
 		return NULL;
@@ -4563,7 +4563,7 @@ static isl_stat set_div(__isl_take isl_set *set,
 	struct isl_split_periods_data *data)
 {
 	int i;
-	int div_pos;
+	isl_size div_pos;
 	isl_set *slice;
 	isl_poly *cst;
 
@@ -4629,7 +4629,7 @@ static isl_stat split_periods(__isl_take isl_set *set,
 	isl_pw_qpolynomial *pwqp;
 	struct isl_split_periods_data *data;
 	isl_int min, max;
-	int div_pos;
+	isl_size div_pos;
 	isl_stat r = isl_stat_ok;
 
 	data = (struct isl_split_periods_data *)user;
@@ -4962,7 +4962,7 @@ static __isl_give isl_qpolynomial *make_divs_pos(__isl_take isl_qpolynomial *qp,
 	int *signs)
 {
 	int i, j;
-	int div_pos;
+	isl_size div_pos;
 	isl_vec *v = NULL;
 	isl_poly *s;
 
