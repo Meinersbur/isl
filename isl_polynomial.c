@@ -2109,12 +2109,12 @@ __isl_give isl_vec *isl_qpolynomial_extract_affine(
 	if (!qp)
 		return NULL;
 
-	d = isl_space_dim(qp->dim, isl_dim_all);
-	aff = isl_vec_alloc(qp->div->ctx, 2 + d + qp->div->n_row);
+	d = isl_qpolynomial_domain_dim(qp, isl_dim_all);
+	aff = isl_vec_alloc(qp->div->ctx, 2 + d);
 	if (!aff)
 		return NULL;
 
-	isl_seq_clr(aff->el + 1, 1 + d + qp->div->n_row);
+	isl_seq_clr(aff->el + 1, 1 + d);
 	isl_int_set_si(aff->el[0], 1);
 
 	if (isl_poly_update_affine(qp->poly, aff) < 0)
