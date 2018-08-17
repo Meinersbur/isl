@@ -2949,7 +2949,7 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_substitute_equalities_lifted(
 	if (!qp->div)
 		goto error;
 
-	total = 1 + isl_space_dim(eq->dim, isl_dim_all);
+	total = isl_basic_set_offset(eq, isl_dim_div);
 	n_div = eq->n_div;
 	isl_int_init(denom);
 	for (i = 0; i < eq->n_eq; ++i) {
