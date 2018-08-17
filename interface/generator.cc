@@ -89,8 +89,6 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions) :
 	SM(SM)
 {
-	map<string, isl_class>::iterator ci;
-
 	set<FunctionDecl *>::iterator in;
 	for (in = functions.begin(); in != functions.end(); ++in) {
 		FunctionDecl *decl = *in;
