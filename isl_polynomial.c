@@ -4919,18 +4919,18 @@ static __isl_give isl_qpolynomial *make_divs_pos(__isl_take isl_qpolynomial *qp,
 	int *signs)
 {
 	int i, j;
-	int total;
+	int div_pos;
 	isl_vec *v = NULL;
 	isl_poly *s;
 
 	qp = isl_qpolynomial_cow(qp);
-	if (!qp)
-		return NULL;
+	div_pos = isl_qpolynomial_domain_var_offset(qp, isl_dim_div);
+	if (div_pos < 0)
+		return isl_qpolynomial_free(qp);
 	qp->div = isl_mat_cow(qp->div);
 	if (!qp->div)
 		goto error;
 
-	total = isl_space_dim(qp->dim, isl_dim_all);
 	v = isl_vec_alloc(qp->div->ctx, qp->div->n_col - 1);
 
 	for (i = 0; i < qp->div->n_row; ++i) {
@@ -4943,7 +4943,7 @@ static __isl_give isl_qpolynomial *make_divs_pos(__isl_take isl_qpolynomial *qp,
 			isl_int_sub_ui(v->el[0], v->el[0], 1);
 			isl_int_submul(row[1], row[0], v->el[0]);
 		}
-		for (j = 0; j < total; ++j) {
+		for (j = 0; j < div_pos; ++j) {
 			if (isl_int_sgn(row[2 + j]) * signs[j] >= 0)
 				continue;
 			if (signs[j] < 0)
@@ -4953,24 +4953,25 @@ static __isl_give isl_qpolynomial *make_divs_pos(__isl_take isl_qpolynomial *qp,
 			isl_int_submul(row[2 + j], row[0], v->el[1 + j]);
 		}
 		for (j = 0; j < i; ++j) {
-			if (isl_int_sgn(row[2 + total + j]) >= 0)
+			if (isl_int_sgn(row[2 + div_pos + j]) >= 0)
 				continue;
-			isl_int_fdiv_q(v->el[1 + total + j],
-					row[2 + total + j], row[0]);
-			isl_int_submul(row[2 + total + j],
-					row[0], v->el[1 + total + j]);
+			isl_int_fdiv_q(v->el[1 + div_pos + j],
+					row[2 + div_pos + j], row[0]);
+			isl_int_submul(row[2 + div_pos + j],
+					row[0], v->el[1 + div_pos + j]);
 		}
 		for (j = i + 1; j < qp->div->n_row; ++j) {
-			if (isl_int_is_zero(qp->div->row[j][2 + total + i]))
+			if (isl_int_is_zero(qp->div->row[j][2 + div_pos + i]))
 				continue;
 			isl_seq_combine(qp->div->row[j] + 1,
 				qp->div->ctx->one, qp->div->row[j] + 1,
-				qp->div->row[j][2 + total + i], v->el, v->size);
+				qp->div->row[j][2 + div_pos + i], v->el,
+				v->size);
 		}
-		isl_int_set_si(v->el[1 + total + i], 1);
+		isl_int_set_si(v->el[1 + div_pos + i], 1);
 		s = isl_poly_from_affine(qp->dim->ctx, v->el,
 					qp->div->ctx->one, v->size);
-		qp->poly = isl_poly_subs(qp->poly, total + i, 1, &s);
+		qp->poly = isl_poly_subs(qp->poly, div_pos + i, 1, &s);
 		isl_poly_free(s);
 		if (!qp->poly)
 			goto error;
