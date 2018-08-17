@@ -2353,6 +2353,7 @@ static __isl_give isl_qpolynomial *substitute_div(
 	int i;
 	int total;
 	int *reordering;
+	isl_ctx *ctx;
 
 	if (!qp || !s)
 		goto error;
@@ -2366,7 +2367,8 @@ static __isl_give isl_qpolynomial *substitute_div(
 	if (!qp->poly)
 		goto error;
 
-	reordering = isl_alloc_array(qp->dim->ctx, int, total + qp->div->n_row);
+	ctx = isl_qpolynomial_get_ctx(qp);
+	reordering = isl_alloc_array(ctx, int, total + qp->div->n_row);
 	if (!reordering)
 		goto error;
 	for (i = 0; i < total + div; ++i)
