@@ -1980,7 +1980,7 @@ __isl_give isl_schedule_node *isl_schedule_node_band_sink(
 	enum isl_schedule_node_type type;
 	isl_schedule_tree *tree, *child;
 	isl_union_pw_multi_aff *contraction;
-	int anchored;
+	isl_bool anchored;
 
 	if (!node)
 		return NULL;
