@@ -5757,18 +5757,23 @@ static __isl_give isl_pw_multi_aff *basic_map_partial_lexopt_base_pw_multi_aff(
  * In particular, check if the last input variable appears in any
  * of the expressions in "maff".
  */
-static int need_substitution(__isl_keep isl_multi_aff *maff)
+static isl_bool need_substitution(__isl_keep isl_multi_aff *maff)
 {
 	int i;
 	unsigned pos;
 
 	pos = isl_multi_aff_dim(maff, isl_dim_in) - 1;
 
-	for (i = 0; i < maff->n; ++i)
-		if (isl_aff_involves_dims(maff->u.p[i], isl_dim_in, pos, 1))
-			return 1;
+	for (i = 0; i < maff->n; ++i) {
+		isl_bool involves;
 
-	return 0;
+		involves = isl_aff_involves_dims(maff->u.p[i],
+						isl_dim_in, pos, 1);
+		if (involves < 0 || involves)
+			return involves;
+	}
+
+	return isl_bool_false;
 }
 
 /* Given a set of upper bounds on the last "input" variable m,
@@ -5867,14 +5872,18 @@ static __isl_give isl_pw_multi_aff *split_domain_pma(
 	res = isl_pw_multi_aff_empty(space);
 
 	for (i = 0; i < opt->n; ++i) {
+		isl_bool subs;
 		isl_pw_multi_aff *pma;
 
 		pma = isl_pw_multi_aff_alloc(isl_set_copy(opt->p[i].set),
 					 isl_multi_aff_copy(opt->p[i].maff));
-		if (need_substitution(opt->p[i].maff))
+		subs = need_substitution(opt->p[i].maff);
+		if (subs < 0) {
+			pma = isl_pw_multi_aff_free(pma);
+		} else if (subs) {
 			pma = isl_pw_multi_aff_substitute(pma,
 					isl_dim_in, n_in - 1, min_expr_pa);
-		else {
+		} else {
 			isl_bool split;
 			split = need_split_set(opt->p[i].set, cst);
 			if (split < 0)

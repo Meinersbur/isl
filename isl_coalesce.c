@@ -343,9 +343,14 @@ static void clear_coalesce_info(int n, struct isl_coalesce_info *info)
 /* Drop the basic map represented by "info".
  * That is, clear the memory associated to the entry and
  * mark it as having been removed.
+ * Gaussian elimination needs to be performed on the basic map
+ * before it gets freed because it may have been put
+ * in an inconsistent state in isl_map_coalesce while it may
+ * be shared with other maps.
  */
 static void drop(struct isl_coalesce_info *info)
 {
+	info->bmap = isl_basic_map_gauss(info->bmap, NULL);
 	info->bmap = isl_basic_map_free(info->bmap);
 	isl_tab_free(info->tab);
 	info->tab = NULL;
@@ -3863,7 +3868,7 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
  * in the basic maps.  We don't call isl_basic_map_gauss, though,
  * as that may affect the number of constraints.
  * This means that we have to call isl_basic_map_gauss at the end
- * of the computation (in update_basic_maps) to ensure that
+ * of the computation (in update_basic_maps and in drop) to ensure that
  * the basic maps are not left in an unexpected state.
  * For each basic map, we also compute the hash of the apparent affine hull
  * for use in coalesce.

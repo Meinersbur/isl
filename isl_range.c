@@ -159,7 +159,7 @@ static __isl_give isl_qpolynomial *bound2poly(__isl_take isl_constraint *bound,
 	return isl_qpolynomial_from_constraint(bound, isl_dim_set, pos);
 }
 
-static int bound_is_integer(__isl_take isl_constraint *bound, unsigned pos)
+static int bound_is_integer(__isl_keep isl_constraint *bound, unsigned pos)
 {
 	isl_int c;
 	int is_int;

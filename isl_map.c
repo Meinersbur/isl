@@ -1219,27 +1219,37 @@ struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 	return bmap;
 }
 
-static void dup_constraints(
-		struct isl_basic_map *dst, struct isl_basic_map *src)
+static __isl_give isl_basic_map *dup_constraints(__isl_take isl_basic_map *dst,
+	__isl_keep isl_basic_map *src)
 {
 	int i;
 	unsigned total = isl_basic_map_total_dim(src);
 
+	if (!dst)
+		return NULL;
+
 	for (i = 0; i < src->n_eq; ++i) {
 		int j = isl_basic_map_alloc_equality(dst);
+		if (j < 0)
+			return isl_basic_map_free(dst);
 		isl_seq_cpy(dst->eq[j], src->eq[i], 1+total);
 	}
 
 	for (i = 0; i < src->n_ineq; ++i) {
 		int j = isl_basic_map_alloc_inequality(dst);
+		if (j < 0)
+			return isl_basic_map_free(dst);
 		isl_seq_cpy(dst->ineq[j], src->ineq[i], 1+total);
 	}
 
 	for (i = 0; i < src->n_div; ++i) {
 		int j = isl_basic_map_alloc_div(dst);
+		if (j < 0)
+			return isl_basic_map_free(dst);
 		isl_seq_cpy(dst->div[j], src->div[i], 1+1+total);
 	}
 	ISL_F_SET(dst, ISL_BASIC_SET_FINAL);
+	return dst;
 }
 
 __isl_give isl_basic_map *isl_basic_map_dup(__isl_keep isl_basic_map *bmap)
@@ -1250,9 +1260,9 @@ __isl_give isl_basic_map *isl_basic_map_dup(__isl_keep isl_basic_map *bmap)
 		return NULL;
 	dup = isl_basic_map_alloc_space(isl_space_copy(bmap->dim),
 			bmap->n_div, bmap->n_eq, bmap->n_ineq);
+	dup = dup_constraints(dup, bmap);
 	if (!dup)
 		return NULL;
-	dup_constraints(dup, bmap);
 	dup->flags = bmap->flags;
 	dup->sample = isl_vec_copy(bmap->sample);
 	return dup;
@@ -8994,7 +9004,9 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			"some src divs are unknown",
 			return isl_basic_map_free(dst));
 
-	src = isl_basic_map_order_divs(src);
+	src = isl_basic_map_order_divs(isl_basic_map_copy(src));
+	if (!src)
+		return isl_basic_map_free(dst);
 
 	extended = 0;
 	total = isl_space_dim(src->dim, isl_dim_all);
@@ -9005,7 +9017,7 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				int extra = src->n_div - i;
 				dst = isl_basic_map_cow(dst);
 				if (!dst)
-					return NULL;
+					goto error;
 				dst = isl_basic_map_extend_space(dst,
 						isl_space_copy(dst->dim),
 						extra, 0, 2 * extra);
@@ -9013,16 +9025,21 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			}
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
-				return isl_basic_map_free(dst);
+				goto error;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+total+i);
 			isl_seq_clr(dst->div[j]+1+1+total+i, dst->n_div - i);
 			if (isl_basic_map_add_div_constraints(dst, j) < 0)
-				return isl_basic_map_free(dst);
+				goto error;
 		}
 		if (j != i)
 			isl_basic_map_swap_div(dst, i, j);
 	}
+	isl_basic_map_free(src);
 	return dst;
+error:
+	isl_basic_map_free(src);
+	isl_basic_map_free(dst);
+	return NULL;
 }
 
 __isl_give isl_map *isl_map_align_divs_internal(__isl_take isl_map *map)
@@ -11989,7 +12006,7 @@ __isl_give isl_basic_map *isl_basic_map_from_constraint_matrices(
 	enum isl_dim_type c4, enum isl_dim_type c5)
 {
 	enum isl_dim_type c[5] = { c1, c2, c3, c4, c5 };
-	isl_basic_map *bmap;
+	isl_basic_map *bmap = NULL;
 	unsigned total;
 	unsigned extra;
 	int i, j, k, l;
@@ -12058,6 +12075,7 @@ error:
 	isl_space_free(dim);
 	isl_mat_free(eq);
 	isl_mat_free(ineq);
+	isl_basic_map_free(bmap);
 	return NULL;
 }
 
