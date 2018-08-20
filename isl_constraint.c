@@ -385,7 +385,7 @@ __isl_give isl_local_space *isl_constraint_get_local_space(
 	return constraint ? isl_local_space_copy(constraint->ls) : NULL;
 }
 
-int isl_constraint_dim(struct isl_constraint *constraint,
+int isl_constraint_dim(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type)
 {
 	if (!constraint)
