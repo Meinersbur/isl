@@ -483,14 +483,18 @@ __isl_give isl_space *isl_qpolynomial_get_space(__isl_keep isl_qpolynomial *qp)
 unsigned isl_qpolynomial_domain_dim(__isl_keep isl_qpolynomial *qp,
 	enum isl_dim_type type)
 {
-	if (!qp)
+	isl_space *space;
+
+	space = isl_qpolynomial_peek_domain_space(qp);
+
+	if (!space)
 		return 0;
 	if (type == isl_dim_div)
 		return qp->div->n_row;
 	if (type == isl_dim_all)
-		return isl_space_dim(qp->dim, isl_dim_all) +
+		return isl_space_dim(space, isl_dim_all) +
 				    isl_qpolynomial_domain_dim(qp, isl_dim_div);
-	return isl_space_dim(qp->dim, type);
+	return isl_space_dim(space, type);
 }
 
 /* Given the type of a dimension of an isl_qpolynomial,
