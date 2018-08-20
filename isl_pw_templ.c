@@ -1399,7 +1399,7 @@ error:
 
 unsigned FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
 {
-	return pw ? isl_space_dim(pw->dim, type) : 0;
+	return isl_space_dim(FN(PW,peek_space)(pw), type);
 }
 
 __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
