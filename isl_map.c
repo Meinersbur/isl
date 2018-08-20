@@ -7458,7 +7458,7 @@ error:
  * is reset to that of the input, including the existentially quantified
  * variables for which we already had an explicit representation.
  */
-static struct isl_map *compute_divs(struct isl_basic_map *bmap)
+static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 {
 	struct isl_basic_set *bset;
 	struct isl_set *set;
