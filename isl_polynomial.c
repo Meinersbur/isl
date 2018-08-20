@@ -3489,7 +3489,7 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 	isl_stat (*fn)(__isl_take isl_basic_set *bset,
 		  __isl_take isl_qpolynomial *poly, void *user), void *user)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_mat *div;
 	isl_qpolynomial *poly;
 
@@ -3500,9 +3500,9 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 			  user);
 
 	div = isl_mat_copy(qp->div);
-	dim = isl_space_copy(qp->dim);
-	dim = isl_space_add_dims(dim, isl_dim_set, qp->div->n_row);
-	poly = isl_qpolynomial_alloc(dim, 0, isl_upoly_copy(qp->upoly));
+	space = isl_space_copy(qp->dim);
+	space = isl_space_add_dims(space, isl_dim_set, qp->div->n_row);
+	poly = isl_qpolynomial_alloc(space, 0, isl_upoly_copy(qp->upoly));
 	bset = isl_basic_set_copy(bset);
 	bset = isl_basic_set_add_dims(bset, isl_dim_set, qp->div->n_row);
 	bset = add_div_constraints(bset, div);
