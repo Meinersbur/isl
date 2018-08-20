@@ -1595,7 +1595,14 @@ int isl_basic_set_drop_inequality(struct isl_basic_set *bset, unsigned pos)
 __isl_give isl_basic_map *isl_basic_map_add_eq(__isl_take isl_basic_map *bmap,
 	isl_int *eq)
 {
+	isl_bool empty;
 	int k;
+
+	empty = isl_basic_map_plain_is_empty(bmap);
+	if (empty < 0)
+		return isl_basic_map_free(bmap);
+	if (empty)
+		return bmap;
 
 	bmap = isl_basic_map_cow(bmap);
 	bmap = isl_basic_map_extend_constraints(bmap, 1, 0);
