@@ -5715,7 +5715,7 @@ __isl_give isl_set *isl_map_params(__isl_take isl_map *map)
 	return map;
 }
 
-struct isl_basic_set *isl_basic_map_domain(struct isl_basic_map *bmap)
+__isl_give isl_basic_set *isl_basic_map_domain(__isl_take isl_basic_map *bmap)
 {
 	isl_space *space;
 	unsigned n_out;
