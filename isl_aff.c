@@ -2362,6 +2362,11 @@ int isl_aff_is_empty(__isl_keep isl_aff *aff)
 	return 0;
 }
 
+#undef TYPE
+#define TYPE	isl_aff
+static
+#include "check_type_range_templ.c"
+
 /* Check whether the given affine expression has non-zero coefficient
  * for any dimension in the given range or if any of these dimensions
  * appear with non-zero coefficients in any of the integer divisions
@@ -2371,7 +2376,6 @@ isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	isl_ctx *ctx;
 	int *active = NULL;
 	isl_bool involves = isl_bool_false;
 
@@ -2379,11 +2383,8 @@ isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 		return isl_bool_error;
 	if (n == 0)
 		return isl_bool_false;
-
-	ctx = isl_aff_get_ctx(aff);
-	if (first + n > isl_aff_dim(aff, type))
-		isl_die(ctx, isl_error_invalid,
-			"range out of bounds", return isl_bool_error);
+	if (isl_aff_check_range(aff, type, first, n) < 0)
+		return isl_bool_error;
 
 	active = isl_local_space_get_active(aff->ls, aff->v->el + 2);
 	if (!active)
