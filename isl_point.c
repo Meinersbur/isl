@@ -261,7 +261,7 @@ error:
  */
 static unsigned isl_point_dim(__isl_keep isl_point *pnt, enum isl_dim_type type)
 {
-	return pnt ? isl_space_dim(pnt->dim, type) : 0;
+	return isl_space_dim(isl_point_peek_space(pnt), type);
 }
 
 /* Return the position of the coordinates of the given type
