@@ -3660,8 +3660,7 @@ static __isl_give isl_map *map_intersect_internal(__isl_take isl_map *map1,
 		return map1;
 	}
 
-	if (isl_space_dim(map2->dim, isl_dim_all) !=
-				isl_space_dim(map2->dim, isl_dim_param))
+	if (isl_map_dim(map2, isl_dim_all) != isl_map_dim(map2, isl_dim_param))
 		isl_assert(map1->ctx,
 			    isl_space_is_equal(map1->dim, map2->dim), goto error);
 
