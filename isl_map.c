@@ -5256,10 +5256,11 @@ int isl_basic_set_add_div_constraints_var(__isl_keep isl_basic_set *bset,
 int isl_basic_map_add_div_constraints(__isl_keep isl_basic_map *bmap,
 	unsigned div)
 {
-	unsigned total = isl_basic_map_total_dim(bmap);
-	unsigned div_pos = total - bmap->n_div + div;
+	int v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 
-	return isl_basic_map_add_div_constraints_var(bmap, div_pos,
+	if (v_div < 0)
+		return -1;
+	return isl_basic_map_add_div_constraints_var(bmap, v_div + div,
 							bmap->div[div]);
 }
 
