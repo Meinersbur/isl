@@ -2654,11 +2654,14 @@ static isl_stat poly_set_active(__isl_keep isl_poly *poly, int *active, int d)
 static isl_stat set_active(__isl_keep isl_qpolynomial *qp, int *active)
 {
 	int i, j;
-	int d = isl_space_dim(qp->dim, isl_dim_all);
+	int d;
+	isl_space *space;
 
-	if (!qp || !active)
+	space = isl_qpolynomial_peek_domain_space(qp);
+	if (!space || !active)
 		return isl_stat_error;
 
+	d = isl_space_dim(space, isl_dim_all);
 	for (i = 0; i < d; ++i)
 		for (j = 0; j < qp->div->n_row; ++j) {
 			if (isl_int_is_zero(qp->div->row[j][2 + i]))
