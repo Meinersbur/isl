@@ -6176,8 +6176,8 @@ __isl_null isl_map *isl_map_free(__isl_take isl_map *map)
 	return NULL;
 }
 
-static struct isl_basic_map *isl_basic_map_fix_pos_si(
-	struct isl_basic_map *bmap, unsigned pos, int value)
+static __isl_give isl_basic_map *isl_basic_map_fix_pos_si(
+	__isl_take isl_basic_map *bmap, unsigned pos, int value)
 {
 	int j;
 
