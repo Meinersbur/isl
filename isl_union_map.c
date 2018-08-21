@@ -3737,6 +3737,16 @@ __isl_give isl_union_set *isl_union_set_project_out(
 	return isl_union_map_project_out(uset, type, first, n);
 }
 
+/* Project out all parameters from "uset" by existentially quantifying
+ * over them.
+ */
+__isl_give isl_union_set *isl_union_set_project_out_all_params(
+	__isl_take isl_union_set *uset)
+{
+	return uset_from_umap(
+		    isl_union_map_project_out_all_params(uset_to_umap(uset)));
+}
+
 /* Internal data structure for isl_union_map_involves_dims.
  * "first" and "n" are the arguments for the isl_map_involves_dims calls.
  */
