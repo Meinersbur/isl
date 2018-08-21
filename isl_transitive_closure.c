@@ -2032,8 +2032,8 @@ error:
  */
 __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
 {
-	isl_space *target_dim;
-	isl_space *dim;
+	isl_space *target_space;
+	isl_space *space;
 	isl_map *diff;
 	unsigned d;
 	unsigned param;
@@ -2054,23 +2054,23 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
 		return map;
 	}
 
-	target_dim = isl_map_get_space(map);
-	target_dim = isl_space_from_range(isl_space_wrap(target_dim));
-	target_dim = isl_space_add_dims(target_dim, isl_dim_in, 1);
-	target_dim = isl_space_set_dim_name(target_dim, isl_dim_in, 0, "k");
+	target_space = isl_map_get_space(map);
+	target_space = isl_space_from_range(isl_space_wrap(target_space));
+	target_space = isl_space_add_dims(target_space, isl_dim_in, 1);
+	target_space = isl_space_set_dim_name(target_space, isl_dim_in, 0, "k");
 
 	map = map_power(map, exact, 0);
 
 	map = isl_map_add_dims(map, isl_dim_param, 1);
-	dim = isl_map_get_space(map);
-	diff = equate_parameter_to_length(dim, param);
+	space = isl_map_get_space(map);
+	diff = equate_parameter_to_length(space, param);
 	map = isl_map_intersect(map, diff);
 	map = isl_map_project_out(map, isl_dim_in, d, 1);
 	map = isl_map_project_out(map, isl_dim_out, d, 1);
 	map = isl_map_from_range(isl_map_wrap(map));
 	map = isl_map_move_dims(map, isl_dim_in, 0, isl_dim_param, param, 1);
 
-	map = isl_map_reset_space(map, target_dim);
+	map = isl_map_reset_space(map, target_space);
 
 	return map;
 }
