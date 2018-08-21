@@ -156,7 +156,7 @@ __isl_null MULTI(BASE) *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
 {
-	return multi ? isl_space_dim(multi->space, type) : 0;
+	return isl_space_dim(FN(MULTI(BASE),peek_space)(multi), type);
 }
 
 /* Return the position of the first dimension of "type" with id "id".
