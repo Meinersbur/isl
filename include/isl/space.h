@@ -166,7 +166,7 @@ __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *space);
 __isl_give char *isl_space_to_str(__isl_keep isl_space *space);
 __isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
 	__isl_keep isl_space *space);
-void isl_space_dump(__isl_keep isl_space *dim);
+void isl_space_dump(__isl_keep isl_space *space);
 
 #if defined(__cplusplus)
 }
