@@ -2087,7 +2087,7 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
 __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 	int *exact)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_map *diff;
 	unsigned d;
 	unsigned param;
@@ -2112,8 +2112,8 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 	map = map_power(map, exact, 0);
 
 	map = isl_map_add_dims(map, isl_dim_param, 1);
-	dim = isl_map_get_space(map);
-	diff = equate_parameter_to_length(dim, param);
+	space = isl_map_get_space(map);
+	diff = equate_parameter_to_length(space, param);
 	map = isl_map_intersect(map, diff);
 	map = isl_map_project_out(map, isl_dim_in, 0, d + 1);
 	map = isl_map_project_out(map, isl_dim_out, d, 1);
