@@ -1885,30 +1885,31 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_underlying(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div)
 {
 	int i;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (n_div == 0 &&
-	    dim->nparam == 0 && dim->n_in == 0 && dim->n_id == 0)
-		return isl_space_reset(isl_space_reset(dim, isl_dim_in), isl_dim_out);
-	dim = isl_space_cow(dim);
-	if (!dim)
+	    space->nparam == 0 && space->n_in == 0 && space->n_id == 0)
+		return isl_space_reset(isl_space_reset(space, isl_dim_in),
+					isl_dim_out);
+	space = isl_space_cow(space);
+	if (!space)
 		return NULL;
-	dim->n_out += dim->nparam + dim->n_in + n_div;
-	dim->nparam = 0;
-	dim->n_in = 0;
+	space->n_out += space->nparam + space->n_in + n_div;
+	space->nparam = 0;
+	space->n_in = 0;
 
-	for (i = 0; i < dim->n_id; ++i)
-		isl_id_free(get_id(dim, isl_dim_out, i));
-	dim->n_id = 0;
-	dim = isl_space_reset(dim, isl_dim_in);
-	dim = isl_space_reset(dim, isl_dim_out);
+	for (i = 0; i < space->n_id; ++i)
+		isl_id_free(get_id(space, isl_dim_out, i));
+	space->n_id = 0;
+	space = isl_space_reset(space, isl_dim_in);
+	space = isl_space_reset(space, isl_dim_out);
 
-	return dim;
+	return space;
 }
 
 /* Are the two spaces the same, including positions and names of parameters?
