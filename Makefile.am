@@ -59,7 +59,7 @@ MP_INCLUDE_H = include/isl/val_gmp.h
 endif
 
 AM_CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/ @MP_CPPFLAGS@
-AM_CFLAGS = @WARNING_FLAGS@
+AM_CFLAGS = @WARNING_FLAGS@ @MP_CFLAGS@
 
 libisl_la_SOURCES = \
 	$(MP_SRC) \
