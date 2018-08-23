@@ -209,34 +209,34 @@ isl_bool isl_poly_is_nan(__isl_keep isl_poly *poly)
 	return isl_int_is_zero(cst->n) && isl_int_is_zero(cst->d);
 }
 
-int isl_poly_is_infty(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_infty(__isl_keep isl_poly *poly)
 {
 	isl_poly_cst *cst;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 	if (!isl_poly_is_cst(poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	return isl_int_is_pos(cst->n) && isl_int_is_zero(cst->d);
 }
 
-int isl_poly_is_neginfty(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_neginfty(__isl_keep isl_poly *poly)
 {
 	isl_poly_cst *cst;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 	if (!isl_poly_is_cst(poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	return isl_int_is_neg(cst->n) && isl_int_is_zero(cst->d);
 }
@@ -783,7 +783,14 @@ __isl_give isl_poly *isl_poly_sum(__isl_take isl_poly *poly1,
 
 	if (poly2->var < poly1->var) {
 		isl_poly_rec *rec;
-		if (isl_poly_is_infty(poly2) || isl_poly_is_neginfty(poly2)) {
+		isl_bool is_infty;
+
+		is_infty = isl_poly_is_infty(poly2);
+		if (is_infty >= 0 && !is_infty)
+			is_infty = isl_poly_is_neginfty(poly2);
+		if (is_infty < 0)
+			goto error;
+		if (is_infty) {
 			isl_poly_free(poly1);
 			return poly2;
 		}
@@ -1130,7 +1137,14 @@ __isl_give isl_poly *isl_poly_mul(__isl_take isl_poly *poly1,
 	if (poly2->var < poly1->var) {
 		int i;
 		isl_poly_rec *rec;
-		if (isl_poly_is_infty(poly2) || isl_poly_is_neginfty(poly2)) {
+		isl_bool is_infty;
+
+		is_infty = isl_poly_is_infty(poly2);
+		if (is_infty >= 0 && !is_infty)
+			is_infty = isl_poly_is_neginfty(poly2);
+		if (is_infty < 0)
+			goto error;
+		if (is_infty) {
 			isl_ctx *ctx = poly1->ctx;
 			isl_poly_free(poly1);
 			isl_poly_free(poly2);
@@ -3923,14 +3937,16 @@ __isl_give isl_term *isl_poly_foreach_term(__isl_keep isl_poly *poly,
 		return term;
 
 	is_bad = isl_poly_is_nan(poly);
+	if (is_bad >= 0 && !is_bad)
+		is_bad = isl_poly_is_infty(poly);
+	if (is_bad >= 0 && !is_bad)
+		is_bad = isl_poly_is_neginfty(poly);
 	if (is_bad < 0)
 		return isl_term_free(term);
 	if (is_bad)
 		isl_die(isl_term_get_ctx(term), isl_error_invalid,
-			"cannot handle NaN polynomial",
+			"cannot handle NaN/infty polynomial",
 			return isl_term_free(term));
-	isl_assert(poly->ctx, !isl_poly_is_infty(poly), goto error);
-	isl_assert(poly->ctx, !isl_poly_is_neginfty(poly), goto error);
 
 	if (isl_poly_is_cst(poly)) {
 		isl_poly_cst *cst;
