@@ -1689,9 +1689,17 @@ static int poly_rec_n_non_zero(__isl_keep isl_poly_rec *rec)
 	int i;
 	int n;
 
-	for (i = 0, n = 0; i < rec->n; ++i)
-		if (!isl_poly_is_zero(rec->p[i]))
+	if (!rec)
+		return -1;
+
+	for (i = 0, n = 0; i < rec->n; ++i) {
+		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
+
+		if (is_zero < 0)
+			return -1;
+		if (!is_zero)
 			++n;
+	}
 
 	return n;
 }
@@ -1777,14 +1785,18 @@ static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 		return poly_print_cst(poly, p, 1);
 
 	rec = isl_poly_as_rec(poly);
-	if (!rec)
-		goto error;
 	n = poly_rec_n_non_zero(rec);
+	if (n < 0)
+		return isl_printer_free(p);
 	print_parens = n > 1;
 	if (print_parens)
 		p = isl_printer_print_str(p, "(");
 	for (i = 0, first = 1; i < rec->n; ++i) {
-		if (isl_poly_is_zero(rec->p[i]))
+		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
+
+		if (is_zero < 0)
+			return isl_printer_free(p);
+		if (is_zero)
 			continue;
 		if (isl_poly_is_negone(rec->p[i])) {
 			if (!i)

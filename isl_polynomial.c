@@ -161,18 +161,18 @@ isl_bool isl_poly_is_equal(__isl_keep isl_poly *poly1,
 	return isl_bool_true;
 }
 
-int isl_poly_is_zero(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_zero(__isl_keep isl_poly *poly)
 {
 	isl_poly_cst *cst;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 	if (!isl_poly_is_cst(poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	return isl_int_is_zero(cst->n) && isl_int_is_pos(cst->d);
 }
@@ -740,6 +740,7 @@ __isl_give isl_poly *isl_poly_sum(__isl_take isl_poly *poly1,
 	__isl_take isl_poly *poly2)
 {
 	int i;
+	isl_bool is_zero;
 	isl_poly_rec *rec1, *rec2;
 
 	if (!poly1 || !poly2)
@@ -755,12 +756,18 @@ __isl_give isl_poly *isl_poly_sum(__isl_take isl_poly *poly1,
 		return poly2;
 	}
 
-	if (isl_poly_is_zero(poly1)) {
+	is_zero = isl_poly_is_zero(poly1);
+	if (is_zero < 0)
+		goto error;
+	if (is_zero) {
 		isl_poly_free(poly1);
 		return poly2;
 	}
 
-	if (isl_poly_is_zero(poly2)) {
+	is_zero = isl_poly_is_zero(poly2);
+	if (is_zero < 0)
+		goto error;
+	if (is_zero) {
 		isl_poly_free(poly2);
 		return poly1;
 	}
@@ -801,11 +808,18 @@ __isl_give isl_poly *isl_poly_sum(__isl_take isl_poly *poly1,
 		goto error;
 
 	for (i = rec2->n - 1; i >= 0; --i) {
+		isl_bool is_zero;
+
 		rec1->p[i] = isl_poly_sum(rec1->p[i],
 					    isl_poly_copy(rec2->p[i]));
 		if (!rec1->p[i])
 			goto error;
-		if (i == rec1->n - 1 && isl_poly_is_zero(rec1->p[i])) {
+		if (i != rec1->n - 1)
+			continue;
+		is_zero = isl_poly_is_zero(rec1->p[i]);
+		if (is_zero < 0)
+			goto error;
+		if (is_zero) {
 			isl_poly_free(rec1->p[i]);
 			rec1->n--;
 		}
@@ -869,9 +883,13 @@ error:
 __isl_give isl_poly *isl_poly_cst_mul_isl_int(__isl_take isl_poly *poly,
 	isl_int v)
 {
+	isl_bool is_zero;
 	isl_poly_cst *cst;
 
-	if (isl_poly_is_zero(poly))
+	is_zero = isl_poly_is_zero(poly);
+	if (is_zero < 0)
+		return isl_poly_free(poly);
+	if (is_zero)
 		return poly;
 
 	poly = isl_poly_cow(poly);
@@ -918,9 +936,13 @@ error:
 static __isl_give isl_poly *isl_poly_cst_scale_val(__isl_take isl_poly *poly,
 	__isl_keep isl_val *v)
 {
+	isl_bool is_zero;
 	isl_poly_cst *cst;
 
-	if (isl_poly_is_zero(poly))
+	is_zero = isl_poly_is_zero(poly);
+	if (is_zero < 0)
+		return isl_poly_free(poly);
+	if (is_zero)
 		return poly;
 
 	poly = isl_poly_cow(poly);
@@ -1049,6 +1071,8 @@ error:
 __isl_give isl_poly *isl_poly_mul(__isl_take isl_poly *poly1,
 	__isl_take isl_poly *poly2)
 {
+	isl_bool is_zero;
+
 	if (!poly1 || !poly2)
 		goto error;
 
@@ -1062,12 +1086,18 @@ __isl_give isl_poly *isl_poly_mul(__isl_take isl_poly *poly1,
 		return poly2;
 	}
 
-	if (isl_poly_is_zero(poly1)) {
+	is_zero = isl_poly_is_zero(poly1);
+	if (is_zero < 0)
+		goto error;
+	if (is_zero) {
 		isl_poly_free(poly2);
 		return poly1;
 	}
 
-	if (isl_poly_is_zero(poly2)) {
+	is_zero = isl_poly_is_zero(poly2);
+	if (is_zero < 0)
+		goto error;
+	if (is_zero) {
 		isl_poly_free(poly1);
 		return poly2;
 	}
@@ -3478,11 +3508,13 @@ int isl_poly_degree(__isl_keep isl_poly *poly, int first, int last)
 {
 	int deg = -1;
 	int i;
+	isl_bool is_zero;
 	isl_poly_rec *rec;
 
-	if (!poly)
+	is_zero = isl_poly_is_zero(poly);
+	if (is_zero < 0)
 		return -2;
-	if (isl_poly_is_zero(poly))
+	if (is_zero)
 		return -1;
 	if (isl_poly_is_cst(poly) || poly->var < first)
 		return 0;
@@ -3494,7 +3526,10 @@ int isl_poly_degree(__isl_keep isl_poly *poly, int first, int last)
 	for (i = 0; i < rec->n; ++i) {
 		int d;
 
-		if (isl_poly_is_zero(rec->p[i]))
+		is_zero = isl_poly_is_zero(rec->p[i]);
+		if (is_zero < 0)
+			return -2;
+		if (is_zero)
 			continue;
 		d = isl_poly_degree(rec->p[i], first, last);
 		if (poly->var < last)
@@ -3615,11 +3650,13 @@ __isl_give isl_poly *isl_poly_homogenize(__isl_take isl_poly *poly, int deg,
 	int target, int first, int last)
 {
 	int i;
+	isl_bool is_zero;
 	isl_poly_rec *rec;
 
-	if (!poly)
-		return NULL;
-	if (isl_poly_is_zero(poly))
+	is_zero = isl_poly_is_zero(poly);
+	if (is_zero < 0)
+		return isl_poly_free(poly);
+	if (is_zero)
 		return poly;
 	if (deg == target)
 		return poly;
@@ -3641,7 +3678,10 @@ __isl_give isl_poly *isl_poly_homogenize(__isl_take isl_poly *poly, int deg,
 		goto error;
 
 	for (i = 0; i < rec->n; ++i) {
-		if (isl_poly_is_zero(rec->p[i]))
+		is_zero = isl_poly_is_zero(rec->p[i]);
+		if (is_zero < 0)
+			return isl_poly_free(poly);
+		if (is_zero)
 			continue;
 		rec->p[i] = isl_poly_homogenize(rec->p[i],
 				poly->var < last ? deg + i : i, target,
@@ -3860,12 +3900,14 @@ __isl_give isl_term *isl_poly_foreach_term(__isl_keep isl_poly *poly,
 	__isl_take isl_term *term, void *user)
 {
 	int i;
+	isl_bool is_zero;
 	isl_poly_rec *rec;
 
-	if (!poly || !term)
+	is_zero = isl_poly_is_zero(poly);
+	if (is_zero < 0 || !term)
 		goto error;
 
-	if (isl_poly_is_zero(poly))
+	if (is_zero)
 		return term;
 
 	isl_assert(poly->ctx, !isl_poly_is_nan(poly), goto error);
