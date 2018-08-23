@@ -331,7 +331,7 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 {
 	int d;
 	int i;
-	int is;
+	isl_bool is;
 	isl_poly_rec *rec;
 	isl_vec *v;
 	isl_int l;

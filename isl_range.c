@@ -408,19 +408,21 @@ static isl_stat propagate_on_bound_pair(__isl_take isl_constraint *lower,
 static isl_stat propagate_on_domain(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, struct range_data *data)
 {
+	isl_bool is_cst;
 	isl_ctx *ctx;
 	isl_qpolynomial *save_poly = data->poly;
 	int save_monotonicity = data->monotonicity;
 	unsigned d;
 
-	if (!bset || !poly)
+	is_cst = isl_qpolynomial_is_cst(poly, NULL, NULL);
+	if (!bset || is_cst < 0)
 		goto error;
 
 	ctx = isl_basic_set_get_ctx(bset);
 	d = isl_basic_set_dim(bset, isl_dim_set);
 	isl_assert(ctx, d >= 1, goto error);
 
-	if (isl_qpolynomial_is_cst(poly, NULL, NULL)) {
+	if (is_cst) {
 		bset = isl_basic_set_project_out(bset, isl_dim_set, 0, d);
 		poly = isl_qpolynomial_drop_dims(poly, isl_dim_in, 0, d);
 		return add_guarded_poly(bset, poly, data);

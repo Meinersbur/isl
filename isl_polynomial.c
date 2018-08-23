@@ -1887,27 +1887,27 @@ __isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(
 	return qp;
 }
 
-int isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
+isl_bool isl_qpolynomial_is_cst(__isl_keep isl_qpolynomial *qp,
 	isl_int *n, isl_int *d)
 {
 	isl_poly_cst *cst;
 
 	if (!qp)
-		return -1;
+		return isl_bool_error;
 
 	if (!isl_poly_is_cst(qp->poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(qp->poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	if (n)
 		isl_int_set(*n, cst->n);
 	if (d)
 		isl_int_set(*d, cst->d);
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Return the constant term of "poly".
@@ -1945,42 +1945,42 @@ __isl_give isl_val *isl_qpolynomial_get_constant_val(
 	return isl_poly_get_constant_val(qp->poly);
 }
 
-int isl_poly_is_affine(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_affine(__isl_keep isl_poly *poly)
 {
 	int is_cst;
 	isl_poly_rec *rec;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 
 	if (poly->var < 0)
-		return 1;
+		return isl_bool_true;
 
 	rec = isl_poly_as_rec(poly);
 	if (!rec)
-		return -1;
+		return isl_bool_error;
 
 	if (rec->n > 2)
-		return 0;
+		return isl_bool_false;
 
-	isl_assert(poly->ctx, rec->n > 1, return -1);
+	isl_assert(poly->ctx, rec->n > 1, return isl_bool_error);
 
 	is_cst = isl_poly_is_cst(rec->p[1]);
 	if (is_cst < 0)
-		return -1;
+		return isl_bool_error;
 	if (!is_cst)
-		return 0;
+		return isl_bool_false;
 
 	return isl_poly_is_affine(rec->p[0]);
 }
 
-int isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp)
+isl_bool isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp)
 {
 	if (!qp)
-		return -1;
+		return isl_bool_error;
 
 	if (qp->div->n_row > 0)
-		return 0;
+		return isl_bool_false;
 
 	return isl_poly_is_affine(qp->poly);
 }
@@ -4958,12 +4958,16 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	isl_space *dim;
 	isl_vec *aff = NULL;
 	isl_basic_map *bmap = NULL;
+	isl_bool is_affine;
 	unsigned pos;
 	unsigned n_div;
 
 	if (!qp)
 		return NULL;
-	if (!isl_poly_is_affine(qp->poly))
+	is_affine = isl_poly_is_affine(qp->poly);
+	if (is_affine < 0)
+		goto error;
+	if (!is_affine)
 		isl_die(qp->dim->ctx, isl_error_invalid,
 			"input quasi-polynomial not affine", goto error);
 	aff = isl_qpolynomial_extract_affine(qp);
