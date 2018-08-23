@@ -1776,12 +1776,14 @@ static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 	__isl_take isl_printer *p)
 {
 	int i, n, first, print_parens;
+	isl_bool is_cst;
 	isl_poly_rec *rec;
 
-	if (!p || !poly || !space || !div)
+	is_cst = isl_poly_is_cst(poly);
+	if (!p || is_cst < 0 || !space || !div)
 		goto error;
 
-	if (isl_poly_is_cst(poly))
+	if (is_cst)
 		return poly_print_cst(poly, p, 1);
 
 	rec = isl_poly_as_rec(poly);
@@ -1795,6 +1797,7 @@ static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
 		isl_bool is_one = isl_poly_is_one(rec->p[i]);
 		isl_bool is_negone = isl_poly_is_negone(rec->p[i]);
+		isl_bool is_cst = isl_poly_is_cst(rec->p[i]);
 
 		if (is_zero < 0 || is_one < 0 || is_negone < 0)
 			return isl_printer_free(p);
@@ -1807,7 +1810,7 @@ static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 				p = isl_printer_print_str(p, "-");
 			else
 				p = isl_printer_print_str(p, " - ");
-		} else if (isl_poly_is_cst(rec->p[i]) && !is_one)
+		} else if (is_cst && !is_one)
 			p = poly_print_cst(rec->p[i], p, first);
 		else {
 			if (!first)

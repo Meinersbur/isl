@@ -129,7 +129,7 @@ __isl_null isl_poly *isl_poly_free(__isl_take isl_poly *poly);
 __isl_give struct isl_poly *isl_poly_mul(__isl_take struct isl_poly *poly1,
 	__isl_take struct isl_poly *poly2);
 
-int isl_poly_is_cst(__isl_keep isl_poly *poly);
+isl_bool isl_poly_is_cst(__isl_keep isl_poly *poly);
 isl_bool isl_poly_is_zero(__isl_keep isl_poly *poly);
 isl_bool isl_poly_is_one(__isl_keep isl_poly *poly);
 isl_bool isl_poly_is_negone(__isl_keep isl_poly *poly);
