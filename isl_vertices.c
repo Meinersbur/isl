@@ -263,7 +263,7 @@ static isl_bool is_independent(__isl_keep isl_mat *facets, int n, isl_int *f)
  * deselected constraints turning into equalities, then the corresponding
  * vertices have already been generated, so the constraint cannot be selected.
  */
-static int can_select(__isl_keep isl_basic_set *bset, int level,
+static isl_bool can_select(__isl_keep isl_basic_set *bset, int level,
 	struct isl_tab *tab, __isl_keep isl_mat *facets, int selected,
 	int *selection)
 {
@@ -273,24 +273,22 @@ static int can_select(__isl_keep isl_basic_set *bset, int level,
 	struct isl_tab_undo *snap;
 
 	if (isl_tab_is_redundant(tab, level))
-		return 0;
+		return isl_bool_false;
 
 	ovar = isl_space_offset(bset->dim, isl_dim_set);
 
 	indep = is_independent(facets, selected, bset->ineq[level] + 1 + ovar);
-	if (indep < 0)
-		return -1;
-	if (!indep)
-		return 0;
+	if (indep < 0 || !indep)
+		return indep;
 
 	snap = isl_tab_snap(tab);
 	if (isl_tab_select_facet(tab, level) < 0)
-		return -1;
+		return isl_bool_error;
 
 	if (tab->empty) {
 		if (isl_tab_rollback(tab, snap) < 0)
-			return -1;
-		return 0;
+			return isl_bool_error;
+		return isl_bool_false;
 	}
 
 	for (i = 0; i < level; ++i) {
@@ -306,15 +304,15 @@ static int can_select(__isl_keep isl_basic_set *bset, int level,
 		else
 			sgn = isl_tab_sign_of_max(tab, i);
 		if (sgn < -1)
-			return -1;
+			return isl_bool_error;
 		if (sgn <= 0) {
 			if (isl_tab_rollback(tab, snap) < 0)
-				return -1;
-			return 0;
+				return isl_bool_error;
+			return isl_bool_false;
 		}
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Compute the parametric vertices and the chamber decomposition
@@ -439,7 +437,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 			continue;
 		}
 		if (init) {
-			int ok;
+			isl_bool ok;
 			snap[level] = isl_tab_snap(tab);
 			ok = can_select(bset, level, tab, facets, selected,
 					selection);
