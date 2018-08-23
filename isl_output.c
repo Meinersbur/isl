@@ -1730,19 +1730,19 @@ error:
 	return NULL;
 }
 
-static int poly_rec_n_non_zero(__isl_keep isl_poly_rec *rec)
+static isl_size poly_rec_n_non_zero(__isl_keep isl_poly_rec *rec)
 {
 	int i;
 	int n;
 
 	if (!rec)
-		return -1;
+		return isl_size_error;
 
 	for (i = 0, n = 0; i < rec->n; ++i) {
 		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
 
 		if (is_zero < 0)
-			return -1;
+			return isl_size_error;
 		if (!is_zero)
 			++n;
 	}
@@ -1823,7 +1823,8 @@ static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
 	__isl_take isl_printer *p)
 {
-	int i, n, first, print_parens;
+	int i, first, print_parens;
+	isl_size n;
 	isl_bool is_cst;
 	isl_poly_rec *rec;
 
