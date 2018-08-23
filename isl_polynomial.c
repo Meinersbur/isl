@@ -2486,24 +2486,19 @@ __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
-	if (!domain || !val)
-		goto error;
-
-	qp = isl_qpolynomial_alloc(isl_space_copy(domain), 0,
-					isl_upoly_zero(domain->ctx));
-	if (!qp)
+	qp = isl_qpolynomial_zero_on_domain(domain);
+	if (!qp || !val)
 		goto error;
 
 	cst = isl_upoly_as_cst(qp->upoly);
 	isl_int_set(cst->n, val->n);
 	isl_int_set(cst->d, val->d);
 
-	isl_space_free(domain);
 	isl_val_free(val);
 	return qp;
 error:
-	isl_space_free(domain);
 	isl_val_free(val);
+	isl_qpolynomial_free(qp);
 	return NULL;
 }
 
