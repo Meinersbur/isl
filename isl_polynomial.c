@@ -2467,10 +2467,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
-	if (!domain)
-		return NULL;
-
-	qp = isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
+	qp = isl_qpolynomial_zero_on_domain(domain);
 	if (!qp)
 		return NULL;
 
