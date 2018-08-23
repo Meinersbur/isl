@@ -193,18 +193,18 @@ int isl_poly_sgn(__isl_keep isl_poly *poly)
 	return isl_int_sgn(cst->n);
 }
 
-int isl_poly_is_nan(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_nan(__isl_keep isl_poly *poly)
 {
 	isl_poly_cst *cst;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 	if (!isl_poly_is_cst(poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	return isl_int_is_zero(cst->n) && isl_int_is_zero(cst->d);
 }
@@ -740,18 +740,24 @@ __isl_give isl_poly *isl_poly_sum(__isl_take isl_poly *poly1,
 	__isl_take isl_poly *poly2)
 {
 	int i;
-	isl_bool is_zero;
+	isl_bool is_zero, is_nan;
 	isl_poly_rec *rec1, *rec2;
 
 	if (!poly1 || !poly2)
 		goto error;
 
-	if (isl_poly_is_nan(poly1)) {
+	is_nan = isl_poly_is_nan(poly1);
+	if (is_nan < 0)
+		goto error;
+	if (is_nan) {
 		isl_poly_free(poly2);
 		return poly1;
 	}
 
-	if (isl_poly_is_nan(poly2)) {
+	is_nan = isl_poly_is_nan(poly2);
+	if (is_nan < 0)
+		goto error;
+	if (is_nan) {
 		isl_poly_free(poly1);
 		return poly2;
 	}
@@ -1071,17 +1077,23 @@ error:
 __isl_give isl_poly *isl_poly_mul(__isl_take isl_poly *poly1,
 	__isl_take isl_poly *poly2)
 {
-	isl_bool is_zero;
+	isl_bool is_zero, is_nan;
 
 	if (!poly1 || !poly2)
 		goto error;
 
-	if (isl_poly_is_nan(poly1)) {
+	is_nan = isl_poly_is_nan(poly1);
+	if (is_nan < 0)
+		goto error;
+	if (is_nan) {
 		isl_poly_free(poly2);
 		return poly1;
 	}
 
-	if (isl_poly_is_nan(poly2)) {
+	is_nan = isl_poly_is_nan(poly2);
+	if (is_nan < 0)
+		goto error;
+	if (is_nan) {
 		isl_poly_free(poly1);
 		return poly2;
 	}
@@ -3900,7 +3912,7 @@ __isl_give isl_term *isl_poly_foreach_term(__isl_keep isl_poly *poly,
 	__isl_take isl_term *term, void *user)
 {
 	int i;
-	isl_bool is_zero;
+	isl_bool is_zero, is_bad;
 	isl_poly_rec *rec;
 
 	is_zero = isl_poly_is_zero(poly);
@@ -3910,7 +3922,13 @@ __isl_give isl_term *isl_poly_foreach_term(__isl_keep isl_poly *poly,
 	if (is_zero)
 		return term;
 
-	isl_assert(poly->ctx, !isl_poly_is_nan(poly), goto error);
+	is_bad = isl_poly_is_nan(poly);
+	if (is_bad < 0)
+		return isl_term_free(term);
+	if (is_bad)
+		isl_die(isl_term_get_ctx(term), isl_error_invalid,
+			"cannot handle NaN polynomial",
+			return isl_term_free(term));
 	isl_assert(poly->ctx, !isl_poly_is_infty(poly), goto error);
 	isl_assert(poly->ctx, !isl_poly_is_neginfty(poly), goto error);
 
