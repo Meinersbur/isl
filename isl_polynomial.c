@@ -241,34 +241,34 @@ isl_bool isl_poly_is_neginfty(__isl_keep isl_poly *poly)
 	return isl_int_is_neg(cst->n) && isl_int_is_zero(cst->d);
 }
 
-int isl_poly_is_one(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_one(__isl_keep isl_poly *poly)
 {
 	isl_poly_cst *cst;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 	if (!isl_poly_is_cst(poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	return isl_int_eq(cst->n, cst->d) && isl_int_is_pos(cst->d);
 }
 
-int isl_poly_is_negone(__isl_keep isl_poly *poly)
+isl_bool isl_poly_is_negone(__isl_keep isl_poly *poly)
 {
 	isl_poly_cst *cst;
 
 	if (!poly)
-		return -1;
+		return isl_bool_error;
 	if (!isl_poly_is_cst(poly))
-		return 0;
+		return isl_bool_false;
 
 	cst = isl_poly_as_cst(poly);
 	if (!cst)
-		return -1;
+		return isl_bool_error;
 
 	return isl_int_is_negone(cst->n) && isl_int_is_one(cst->d);
 }
@@ -1084,7 +1084,7 @@ error:
 __isl_give isl_poly *isl_poly_mul(__isl_take isl_poly *poly1,
 	__isl_take isl_poly *poly2)
 {
-	isl_bool is_zero, is_nan;
+	isl_bool is_zero, is_nan, is_one;
 
 	if (!poly1 || !poly2)
 		goto error;
@@ -1121,12 +1121,18 @@ __isl_give isl_poly *isl_poly_mul(__isl_take isl_poly *poly1,
 		return poly2;
 	}
 
-	if (isl_poly_is_one(poly1)) {
+	is_one = isl_poly_is_one(poly1);
+	if (is_one < 0)
+		goto error;
+	if (is_one) {
 		isl_poly_free(poly1);
 		return poly2;
 	}
 
-	if (isl_poly_is_one(poly2)) {
+	is_one = isl_poly_is_one(poly2);
+	if (is_one < 0)
+		goto error;
+	if (is_one) {
 		isl_poly_free(poly2);
 		return poly1;
 	}

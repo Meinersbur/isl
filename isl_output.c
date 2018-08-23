@@ -1793,32 +1793,32 @@ static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 		p = isl_printer_print_str(p, "(");
 	for (i = 0, first = 1; i < rec->n; ++i) {
 		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
+		isl_bool is_one = isl_poly_is_one(rec->p[i]);
+		isl_bool is_negone = isl_poly_is_negone(rec->p[i]);
 
-		if (is_zero < 0)
+		if (is_zero < 0 || is_one < 0 || is_negone < 0)
 			return isl_printer_free(p);
 		if (is_zero)
 			continue;
-		if (isl_poly_is_negone(rec->p[i])) {
+		if (is_negone) {
 			if (!i)
 				p = isl_printer_print_str(p, "-1");
 			else if (first)
 				p = isl_printer_print_str(p, "-");
 			else
 				p = isl_printer_print_str(p, " - ");
-		} else if (isl_poly_is_cst(rec->p[i]) &&
-				!isl_poly_is_one(rec->p[i]))
+		} else if (isl_poly_is_cst(rec->p[i]) && !is_one)
 			p = poly_print_cst(rec->p[i], p, first);
 		else {
 			if (!first)
 				p = isl_printer_print_str(p, " + ");
-			if (i == 0 || !isl_poly_is_one(rec->p[i]))
+			if (i == 0 || !is_one)
 				p = poly_print(rec->p[i], space, div, p);
 		}
 		first = 0;
 		if (i == 0)
 			continue;
-		if (!isl_poly_is_one(rec->p[i]) &&
-		    !isl_poly_is_negone(rec->p[i]))
+		if (!is_one && !is_negone)
 			p = isl_printer_print_str(p, " * ");
 		p = print_pow(p, space, div, rec->poly.var, i);
 	}
