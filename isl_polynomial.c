@@ -2060,7 +2060,7 @@ isl_bool isl_qpolynomial_plain_is_equal(__isl_keep isl_qpolynomial *qp1,
 	return isl_poly_is_equal(qp1->poly, qp2->poly);
 }
 
-static void poly_update_den(__isl_keep isl_poly *poly, isl_int *d)
+static isl_stat poly_update_den(__isl_keep isl_poly *poly, isl_int *d)
 {
 	int i;
 	isl_poly_rec *rec;
@@ -2069,17 +2069,19 @@ static void poly_update_den(__isl_keep isl_poly *poly, isl_int *d)
 		isl_poly_cst *cst;
 		cst = isl_poly_as_cst(poly);
 		if (!cst)
-			return;
+			return isl_stat_error;
 		isl_int_lcm(*d, *d, cst->d);
-		return;
+		return isl_stat_ok;
 	}
 
 	rec = isl_poly_as_rec(poly);
 	if (!rec)
-		return;
+		return isl_stat_error;
 
 	for (i = 0; i < rec->n; ++i)
 		poly_update_den(rec->p[i], d);
+
+	return isl_stat_ok;
 }
 
 __isl_give isl_val *isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp)
@@ -2091,7 +2093,8 @@ __isl_give isl_val *isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp)
 	d = isl_val_one(isl_qpolynomial_get_ctx(qp));
 	if (!d)
 		return NULL;
-	poly_update_den(qp->poly, &d->n);
+	if (poly_update_den(qp->poly, &d->n) < 0)
+		return isl_val_free(d);
 	return d;
 }
 
