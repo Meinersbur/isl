@@ -8431,7 +8431,7 @@ isl_bool isl_set_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 isl_bool isl_basic_map_is_subset(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
-	int is_subset;
+	isl_bool is_subset;
 	struct isl_map *map1;
 	struct isl_map *map2;
 
