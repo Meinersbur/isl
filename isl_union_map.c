@@ -2298,7 +2298,7 @@ static isl_stat is_subset_entry(void **entry, void *user)
 			return isl_stat_error;
 		if (empty)
 			return isl_stat_ok;
-		data->is_subset = 0;
+		data->is_subset = isl_bool_false;
 		return isl_stat_error;
 	}
 
