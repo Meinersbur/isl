@@ -3755,9 +3755,7 @@ static isl_bool map_excludes(__isl_keep isl_map *map, void *user)
 
 	involves = isl_map_involves_dims(map,
 					isl_dim_param, data->first, data->n);
-	if (involves < 0)
-		return isl_bool_error;
-	return !involves;
+	return isl_bool_not(involves);
 }
 
 /* Does "umap" involve any of the n parameters starting at first?
