@@ -2375,9 +2375,7 @@ isl_bool isl_union_map_is_strict_subset(__isl_keep isl_union_map *umap1,
 	if (is_subset != isl_bool_true)
 		return is_subset;
 	is_subset = isl_union_map_is_subset(umap2, umap1);
-	if (is_subset == isl_bool_error)
-		return is_subset;
-	return !is_subset;
+	return isl_bool_not(is_subset);
 }
 
 isl_bool isl_union_set_is_strict_subset(__isl_keep isl_union_set *uset1,
