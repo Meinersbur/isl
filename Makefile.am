@@ -85,7 +85,7 @@ endif
 
 includes = -I. -I$(srcdir) -I$(srcdir)/include -Iinclude/
 AM_CPPFLAGS = $(includes) @MP_CPPFLAGS@
-AM_CFLAGS = @WARNING_FLAGS@
+AM_CFLAGS = @WARNING_FLAGS@ @MP_CFLAGS@
 
 libisl_la_SOURCES = \
 	$(MP_SRC) \
