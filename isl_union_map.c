@@ -3778,10 +3778,7 @@ isl_bool isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
 
 	excludes = union_map_forall_user(umap, &map_excludes, &data);
 
-	if (excludes < 0)
-		return isl_bool_error;
-
-	return !excludes;
+	return isl_bool_not(excludes);
 }
 
 /* Internal data structure for isl_union_map_reset_range_space.
