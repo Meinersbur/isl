@@ -8516,9 +8516,7 @@ isl_bool isl_basic_map_is_strict_subset(
 	if (is_subset != isl_bool_true)
 		return is_subset;
 	is_subset = isl_basic_map_is_subset(bmap2, bmap1);
-	if (is_subset == isl_bool_error)
-		return is_subset;
-	return !is_subset;
+	return isl_bool_not(is_subset);
 }
 
 isl_bool isl_map_is_strict_subset(__isl_keep isl_map *map1,
