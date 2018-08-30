@@ -2510,14 +2510,11 @@ __isl_give isl_space *isl_space_range_curry(__isl_take isl_space *space)
 }
 
 /* Can we apply isl_space_uncurry to "space"?
- * That is, does it have a nested relation in its range?
+ * That is, does it have a map space with a nested relation in its range?
  */
 isl_bool isl_space_can_uncurry(__isl_keep isl_space *space)
 {
-	if (!space)
-		return isl_bool_error;
-
-	return !!space->nested[1];
+	return isl_space_range_is_wrapping(space);
 }
 
 /* Given a space A -> (B -> C), return the corresponding space
