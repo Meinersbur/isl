@@ -2139,6 +2139,8 @@ uint32_t isl_space_get_domain_hash(__isl_keep isl_space *space)
 	return hash;
 }
 
+/* Is "space" the space of a set wrapping a map space?
+ */
 isl_bool isl_space_is_wrapping(__isl_keep isl_space *space)
 {
 	if (!space)
