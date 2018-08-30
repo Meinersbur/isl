@@ -2435,14 +2435,11 @@ error:
 }
 
 /* Can we apply isl_space_curry to "space"?
- * That is, does it have a nested relation in its domain?
+ * That is, does is it have a map space with a nested relation in its domain?
  */
 isl_bool isl_space_can_curry(__isl_keep isl_space *space)
 {
-	if (!space)
-		return isl_bool_error;
-
-	return !!space->nested[0];
+	return isl_space_domain_is_wrapping(space);
 }
 
 /* Given a space (A -> B) -> C, return the corresponding space
