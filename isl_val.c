@@ -1354,7 +1354,7 @@ isl_bool isl_val_le(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
 	if (!v1 || !v2)
 		return isl_bool_error;
 	if (isl_val_is_int(v1) && isl_val_is_int(v2))
-		return isl_int_le(v1->n, v2->n);
+		return isl_bool_ok(isl_int_le(v1->n, v2->n));
 	if (isl_val_is_nan(v1) || isl_val_is_nan(v2))
 		return isl_bool_false;
 	if (isl_val_eq(v1, v2))
@@ -1371,7 +1371,7 @@ isl_bool isl_val_le(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
 	isl_int_init(t);
 	isl_int_mul(t, v1->n, v2->d);
 	isl_int_submul(t, v2->n, v1->d);
-	le = isl_int_is_nonpos(t);
+	le = isl_bool_ok(isl_int_is_nonpos(t));
 	isl_int_clear(t);
 
 	return le;
