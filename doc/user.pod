@@ -626,7 +626,7 @@ C<isl_bool_error> (a negative integer value), indicating that something
 went wrong.  The following function can be used to negate an C<isl_bool>,
 where the negation of C<isl_bool_error> is C<isl_bool_error> again.
 
-	#include <isl/val.h>
+	#include <isl/ctx.h>
 	isl_bool isl_bool_not(isl_bool b);
 
 The C<isl_stat> type has two possible values:
