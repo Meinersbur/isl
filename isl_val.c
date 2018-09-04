@@ -1424,7 +1424,8 @@ isl_bool isl_val_eq(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
 	if (isl_val_is_nan(v1) || isl_val_is_nan(v2))
 		return isl_bool_false;
 
-	return isl_int_eq(v1->n, v2->n) && isl_int_eq(v1->d, v2->d);
+	return isl_bool_ok(isl_int_eq(v1->n, v2->n) &&
+			   isl_int_eq(v1->d, v2->d));
 }
 
 /* Is "v1" equal to "v2" in absolute value?
