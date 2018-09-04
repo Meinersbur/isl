@@ -1329,7 +1329,7 @@ isl_bool isl_val_gt_si(__isl_keep isl_val *v, long i)
 	if (!v)
 		return isl_bool_error;
 	if (isl_val_is_int(v))
-		return isl_int_cmp_si(v->n, i) > 0;
+		return isl_bool_ok(isl_int_cmp_si(v->n, i) > 0);
 	if (isl_val_is_nan(v))
 		return isl_bool_false;
 	if (isl_val_is_infty(v))
@@ -1338,7 +1338,7 @@ isl_bool isl_val_gt_si(__isl_keep isl_val *v, long i)
 		return isl_bool_false;
 
 	vi = isl_val_int_from_si(isl_val_get_ctx(v), i);
-	res = isl_val_gt(v, vi);
+	res = isl_bool_ok(isl_val_gt(v, vi));
 	isl_val_free(vi);
 
 	return res;
