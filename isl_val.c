@@ -1261,7 +1261,7 @@ isl_bool isl_val_is_nonpos(__isl_keep isl_val *v)
 	if (isl_val_is_nan(v))
 		return isl_bool_false;
 
-	return isl_int_is_nonpos(v->n);
+	return isl_bool_ok(isl_int_is_nonpos(v->n));
 }
 
 /* Return the sign of "v".
