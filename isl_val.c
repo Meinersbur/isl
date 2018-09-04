@@ -969,7 +969,7 @@ isl_bool isl_val_is_divisible_by(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
 		isl_die(isl_val_get_ctx(v1), isl_error_invalid,
 			"expecting two integers", return isl_bool_error);
 
-	return isl_int_is_divisible_by(v1->n, v2->n);
+	return isl_bool_ok(isl_int_is_divisible_by(v1->n, v2->n));
 }
 
 /* Given two integer values "v1" and "v2", return the residue of "v1"
