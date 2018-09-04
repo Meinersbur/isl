@@ -2602,6 +2602,35 @@ static int test_closure(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the actual result of a boolean operation is equal
+ * to the expected result.
+ */
+static isl_stat check_bool(isl_ctx *ctx, isl_bool actual, isl_bool expected)
+{
+	if (actual != expected)
+		isl_die(ctx, isl_error_unknown,
+			"incorrect boolean operation", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Test operations on isl_bool values.
+ *
+ * This tests:
+ *
+ * 	isl_bool_not
+ */
+static int test_isl_bool(isl_ctx *ctx)
+{
+	if (check_bool(ctx, isl_bool_not(isl_bool_true), isl_bool_false) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_not(isl_bool_false), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_not(isl_bool_error), isl_bool_error) < 0)
+		return -1;
+
+	return 0;
+}
+
 static int test_lex(struct isl_ctx *ctx)
 {
 	isl_space *dim;
@@ -9274,6 +9303,7 @@ struct {
 	{ "map application", &test_application },
 	{ "convex hull", &test_convex_hull },
 	{ "transitive closure", &test_closure },
+	{ "isl_bool", &test_isl_bool},
 };
 
 int main(int argc, char **argv)
