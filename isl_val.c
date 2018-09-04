@@ -1205,7 +1205,7 @@ isl_bool isl_val_is_one(__isl_keep isl_val *v)
 	if (isl_val_is_nan(v))
 		return isl_bool_false;
 
-	return isl_int_eq(v->n, v->d);
+	return isl_bool_ok(isl_int_eq(v->n, v->d));
 }
 
 /* Does "v" represent the integer negative one?
