@@ -1142,7 +1142,7 @@ isl_bool isl_val_is_int(__isl_keep isl_val *v)
 	if (!v)
 		return isl_bool_error;
 
-	return isl_int_is_one(v->d);
+	return isl_bool_ok(isl_int_is_one(v->d));
 }
 
 /* Does "v" represent a rational value?
