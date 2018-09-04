@@ -1225,7 +1225,7 @@ isl_bool isl_val_is_pos(__isl_keep isl_val *v)
 	if (!v)
 		return isl_bool_error;
 
-	return isl_int_is_pos(v->n);
+	return isl_bool_ok(isl_int_is_pos(v->n));
 }
 
 /* Is "v" (strictly) negative?
