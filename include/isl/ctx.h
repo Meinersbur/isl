@@ -91,6 +91,7 @@ typedef enum {
 	isl_bool_true = 1
 } isl_bool;
 isl_bool isl_bool_not(isl_bool b);
+isl_bool isl_bool_ok(int b);
 struct isl_ctx;
 typedef struct isl_ctx isl_ctx;
 

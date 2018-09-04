@@ -2618,6 +2618,7 @@ static isl_stat check_bool(isl_ctx *ctx, isl_bool actual, isl_bool expected)
  * This tests:
  *
  * 	isl_bool_not
+ * 	isl_bool_ok
  */
 static int test_isl_bool(isl_ctx *ctx)
 {
@@ -2626,6 +2627,16 @@ static int test_isl_bool(isl_ctx *ctx)
 	if (check_bool(ctx, isl_bool_not(isl_bool_false), isl_bool_true) < 0)
 		return -1;
 	if (check_bool(ctx, isl_bool_not(isl_bool_error), isl_bool_error) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(0), isl_bool_false) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(1), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(-1), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(2), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(-2), isl_bool_true) < 0)
 		return -1;
 
 	return 0;
