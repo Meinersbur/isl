@@ -491,9 +491,11 @@ void python_generator::print_class_header(const isl_class &clazz,
 /* Tell ctypes about the return type of "fd".
  * In particular, if "fd" returns a pointer to an isl object,
  * then tell ctypes it returns a "c_void_p".
- * Similarly, if "fd" returns an isl_bool,
- * then tell ctypes it returns a "c_bool".
  * If "fd" returns a char *, then simply tell ctypes.
+ *
+ * Nothing needs to be done for functions returning
+ * isl_bool or isl_stat since they are represented by an int and
+ * ctypes assumes that a function returns int by default.
  */
 void python_generator::print_restype(FunctionDecl *fd)
 {
@@ -501,8 +503,6 @@ void python_generator::print_restype(FunctionDecl *fd)
 	QualType type = fd->getReturnType();
 	if (is_isl_type(type))
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
-	else if (is_isl_bool(type))
-		printf("isl.%s.restype = c_bool\n", fullname.c_str());
 	else if (is_string(type))
 		printf("isl.%s.restype = POINTER(c_char)\n", fullname.c_str());
 }
