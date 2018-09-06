@@ -30,6 +30,9 @@ private:
   friend boolean manage(isl_bool val);
   boolean(isl_bool val): val(val) {}
 public:
+  static boolean error() {
+    return boolean(isl_bool_error);
+  }
   boolean()
       : val(isl_bool_error) {}
   ~boolean() {
