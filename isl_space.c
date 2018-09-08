@@ -2191,7 +2191,7 @@ isl_bool isl_space_range_is_wrapping(__isl_keep isl_space *space)
 	if (isl_space_is_set(space))
 		return isl_bool_false;
 
-	return space->nested[1] != NULL;
+	return isl_bool_ok(space->nested[1] != NULL);
 }
 
 /* Is "space" a product of two spaces?
