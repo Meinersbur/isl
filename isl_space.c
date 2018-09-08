@@ -556,7 +556,7 @@ isl_bool isl_space_has_dim_id(__isl_keep isl_space *space,
 {
 	if (!space)
 		return isl_bool_error;
-	return get_id(space, type, pos) != NULL;
+	return isl_bool_ok(get_id(space, type, pos) != NULL);
 }
 
 __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
