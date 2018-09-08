@@ -645,7 +645,7 @@ isl_bool isl_space_has_dim_name(__isl_keep isl_space *space,
 	if (!space)
 		return isl_bool_error;
 	id = get_id(space, type, pos);
-	return id && id->name;
+	return isl_bool_ok(id && id->name);
 }
 
 __isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,
