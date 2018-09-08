@@ -210,7 +210,7 @@ isl_bool isl_poly_is_nan(__isl_keep isl_poly *poly)
 	if (!cst)
 		return isl_bool_error;
 
-	return isl_int_is_zero(cst->n) && isl_int_is_zero(cst->d);
+	return isl_bool_ok(isl_int_is_zero(cst->n) && isl_int_is_zero(cst->d));
 }
 
 isl_bool isl_poly_is_infty(__isl_keep isl_poly *poly)
