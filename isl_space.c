@@ -2178,7 +2178,7 @@ isl_bool isl_space_domain_is_wrapping(__isl_keep isl_space *space)
 	if (isl_space_is_set(space))
 		return isl_bool_false;
 
-	return space->nested[0] != NULL;
+	return isl_bool_ok(space->nested[0] != NULL);
 }
 
 /* Is "space" the space of a map where the range is a wrapped map space?
