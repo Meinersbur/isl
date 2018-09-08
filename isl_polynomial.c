@@ -274,7 +274,7 @@ isl_bool isl_poly_is_negone(__isl_keep isl_poly *poly)
 	if (!cst)
 		return isl_bool_error;
 
-	return isl_int_is_negone(cst->n) && isl_int_is_one(cst->d);
+	return isl_bool_ok(isl_int_is_negone(cst->n) && isl_int_is_one(cst->d));
 }
 
 __isl_give isl_poly_cst *isl_poly_cst_alloc(isl_ctx *ctx)
