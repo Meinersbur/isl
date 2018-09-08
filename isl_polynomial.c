@@ -178,7 +178,7 @@ isl_bool isl_poly_is_zero(__isl_keep isl_poly *poly)
 	if (!cst)
 		return isl_bool_error;
 
-	return isl_int_is_zero(cst->n) && isl_int_is_pos(cst->d);
+	return isl_bool_ok(isl_int_is_zero(cst->n) && isl_int_is_pos(cst->d));
 }
 
 int isl_poly_sgn(__isl_keep isl_poly *poly)
