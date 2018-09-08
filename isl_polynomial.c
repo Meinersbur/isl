@@ -48,7 +48,7 @@ isl_bool isl_poly_is_cst(__isl_keep isl_poly *poly)
 	if (!poly)
 		return isl_bool_error;
 
-	return poly->var < 0;
+	return isl_bool_ok(poly->var < 0);
 }
 
 __isl_keep isl_poly_cst *isl_poly_as_cst(__isl_keep isl_poly *poly)
