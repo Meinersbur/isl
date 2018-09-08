@@ -601,7 +601,7 @@ isl_bool isl_aff_is_nan(__isl_keep isl_aff *aff)
 	if (!aff)
 		return isl_bool_error;
 
-	return isl_seq_first_non_zero(aff->v->el, 2) < 0;
+	return isl_bool_ok(isl_seq_first_non_zero(aff->v->el, 2) < 0);
 }
 
 /* Are "aff1" and "aff2" obviously equal?
