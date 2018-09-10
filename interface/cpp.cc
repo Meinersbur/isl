@@ -767,7 +767,7 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 		return;
 	}
 
-	if (!load_from_this_ptr && !is_callback(type))
+	if (!load_from_this_ptr)
 		osprintf(os, "%s.", name_str);
 
 	if (keeps(param)) {
