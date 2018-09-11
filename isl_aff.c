@@ -3303,10 +3303,13 @@ error:
 
 isl_bool isl_aff_is_cst(__isl_keep isl_aff *aff)
 {
+	int pos;
+
 	if (!aff)
 		return isl_bool_error;
 
-	return isl_seq_first_non_zero(aff->v->el + 2, aff->v->size - 2) == -1;
+	pos = isl_seq_first_non_zero(aff->v->el + 2, aff->v->size - 2);
+	return isl_bool_ok(pos == -1);
 }
 
 /* Check whether pwaff is a piecewise constant.
