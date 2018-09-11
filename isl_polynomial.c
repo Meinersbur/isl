@@ -249,6 +249,7 @@ isl_bool isl_poly_is_one(__isl_keep isl_poly *poly)
 {
 	isl_bool is_cst;
 	isl_poly_cst *cst;
+	int r;
 
 	is_cst = isl_poly_is_cst(poly);
 	if (is_cst < 0 || !is_cst)
@@ -258,7 +259,8 @@ isl_bool isl_poly_is_one(__isl_keep isl_poly *poly)
 	if (!cst)
 		return isl_bool_error;
 
-	return isl_int_eq(cst->n, cst->d) && isl_int_is_pos(cst->d);
+	r = isl_int_eq(cst->n, cst->d) && isl_int_is_pos(cst->d);
+	return isl_bool_ok(r);
 }
 
 isl_bool isl_poly_is_negone(__isl_keep isl_poly *poly)
