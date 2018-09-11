@@ -586,12 +586,15 @@ error:
  */
 isl_bool isl_aff_plain_is_zero(__isl_keep isl_aff *aff)
 {
+	int pos;
+
 	if (!aff)
 		return isl_bool_error;
 
 	if (isl_int_is_zero(aff->v->el[0]))
 		return isl_bool_false;
-	return isl_seq_first_non_zero(aff->v->el + 1, aff->v->size - 1) < 0;
+	pos = isl_seq_first_non_zero(aff->v->el + 1, aff->v->size - 1);
+	return isl_bool_ok(pos < 0);
 }
 
 /* Does "aff" represent NaN?
