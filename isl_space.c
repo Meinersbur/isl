@@ -95,10 +95,13 @@ isl_stat isl_space_check_is_set(__isl_keep isl_space *space)
  */
 isl_bool isl_space_is_map(__isl_keep isl_space *space)
 {
+	int r;
+
 	if (!space)
 		return isl_bool_error;
-	return space->tuple_id[0] != &isl_id_none &&
-		space->tuple_id[1] != &isl_id_none;
+	r = space->tuple_id[0] != &isl_id_none &&
+	    space->tuple_id[1] != &isl_id_none;
+	return isl_bool_ok(r);
 }
 
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
