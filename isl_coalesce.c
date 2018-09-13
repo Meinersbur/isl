@@ -340,20 +340,27 @@ static void clear_coalesce_info(int n, struct isl_coalesce_info *info)
 	free(info);
 }
 
-/* Drop the basic map represented by "info".
- * That is, clear the memory associated to the entry and
- * mark it as having been removed.
+/* Clear the memory associated to"info".
  * Gaussian elimination needs to be performed on the basic map
  * before it gets freed because it may have been put
  * in an inconsistent state in isl_map_coalesce while it may
  * be shared with other maps.
  */
-static void drop(struct isl_coalesce_info *info)
+static void clear(struct isl_coalesce_info *info)
 {
 	info->bmap = isl_basic_map_gauss(info->bmap, NULL);
 	info->bmap = isl_basic_map_free(info->bmap);
 	isl_tab_free(info->tab);
 	info->tab = NULL;
+}
+
+/* Drop the basic map represented by "info".
+ * That is, clear the memory associated to the entry and
+ * mark it as having been removed.
+ */
+static void drop(struct isl_coalesce_info *info)
+{
+	clear(info);
 	info->removed = 1;
 }
 
@@ -557,9 +564,8 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 		return isl_change_none;
 	}
 
-	isl_basic_map_free(info[i].bmap);
+	clear(&info[i]);
 	info[i].bmap = fused;
-	isl_tab_free(info[i].tab);
 	info[i].tab = fused_tab;
 	drop(&info[j]);
 
@@ -3868,7 +3874,7 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
  * in the basic maps.  We don't call isl_basic_map_gauss, though,
  * as that may affect the number of constraints.
  * This means that we have to call isl_basic_map_gauss at the end
- * of the computation (in update_basic_maps and in drop) to ensure that
+ * of the computation (in update_basic_maps and in clear) to ensure that
  * the basic maps are not left in an unexpected state.
  * For each basic map, we also compute the hash of the apparent affine hull
  * for use in coalesce.

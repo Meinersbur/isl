@@ -2264,7 +2264,8 @@ static int test_coalesce_special3(isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that calling isl_set_coalesce does not leave other sets
+/* Check that calling isl_set_coalesce on the intersection of
+ * the sets described by "s1" and "s2" does not leave other sets
  * that may share some information with the input to isl_set_coalesce
  * in an inconsistent state.
  * In particular, when isl_set_coalesce detects equality constraints,
@@ -2274,12 +2275,13 @@ static int test_coalesce_special3(isl_ctx *ctx)
  * It is constructed as an intersection, because otherwise
  * those equality constraints would already be detected during parsing.
  */
-static isl_stat test_coalesce_special4(isl_ctx *ctx)
+static isl_stat test_coalesce_intersection(isl_ctx *ctx,
+	const char *s1, const char *s2)
 {
 	isl_set *set1, *set2;
 
-	set1 = isl_set_read_from_str(ctx, "{ [a, b] : b <= 0 or a <= 1 }");
-	set2 = isl_set_read_from_str(ctx, "{ [a, b] : -1 <= -a < b }");
+	set1 = isl_set_read_from_str(ctx, s1);
+	set2 = isl_set_read_from_str(ctx, s2);
 	set1 = isl_set_intersect(set1, set2);
 	isl_set_free(isl_set_coalesce(isl_set_copy(set1)));
 	set1 = isl_set_coalesce(set1);
@@ -2289,6 +2291,34 @@ static isl_stat test_coalesce_special4(isl_ctx *ctx)
 		return isl_stat_error;
 
 	return isl_stat_ok;
+}
+
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state, for the case where one disjunct
+ * is a subset of the other.
+ */
+static isl_stat test_coalesce_special4(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "{ [a, b] : b <= 0 or a <= 1 }";
+	s2 = "{ [a, b] : -1 <= -a < b }";
+	return test_coalesce_intersection(ctx, s1, s2);
+}
+
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state, for the case where two disjuncts
+ * can be fused.
+ */
+static isl_stat test_coalesce_special5(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "{ [a, b, c] : b <= 0 }";
+	s2 = "{ [a, b, c] : -1 <= -a < b and (c >= 0 or c < 0) }";
+	return test_coalesce_intersection(ctx, s1, s2);
 }
 
 /* Test the functionality of isl_set_coalesce.
@@ -2315,6 +2345,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 	if (test_coalesce_special3(ctx) < 0)
 		return -1;
 	if (test_coalesce_special4(ctx) < 0)
+		return -1;
+	if (test_coalesce_special5(ctx) < 0)
 		return -1;
 
 	return 0;
