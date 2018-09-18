@@ -1113,8 +1113,7 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 	}
 
 	id = construct_compressed_id(set, &graph->node[graph->n]);
-	morph = isl_basic_set_variable_compression_with_id(hull,
-							    isl_dim_set, id);
+	morph = isl_basic_set_variable_compression_with_id(hull, id);
 	isl_id_free(id);
 	nvar = isl_morph_ran_dim(morph, isl_dim_set);
 	if (nvar < 0)

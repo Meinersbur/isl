@@ -311,6 +311,20 @@ __isl_give isl_morph *isl_morph_ran_params(__isl_take isl_morph *morph)
 	return NULL;
 }
 
+/* Replace the identifier of the tuple of the range of the morph by "id".
+ */
+static __isl_give isl_morph *isl_morph_set_ran_tuple_id(
+	__isl_take isl_morph *morph, isl_id *id)
+{
+	morph = isl_morph_cow(morph);
+	if (!morph)
+		return NULL;
+	morph->ran = isl_basic_set_set_tuple_id(morph->ran, id);
+	if (!morph->ran)
+		return isl_morph_free(morph);
+	return morph;
+}
+
 void isl_morph_print_internal(__isl_take isl_morph *morph, FILE *out)
 {
 	if (!morph)
@@ -395,8 +409,7 @@ error:
 }
 
 /* Given a basic set, exploit the equalities in the basic set to construct
- * a morphism that maps the basic set to a lower-dimensional space
- * with identifier "id".
+ * a morphism that maps the basic set to a lower-dimensional space.
  * Specifically, the morphism reduces the number of dimensions of type "type".
  *
  * We first select the equalities of interest, that is those that involve
@@ -420,9 +433,8 @@ error:
  * Both matrices are extended to map the full original space to the full
  * compressed space.
  */
-__isl_give isl_morph *isl_basic_set_variable_compression_with_id(
-	__isl_keep isl_basic_set *bset, enum isl_dim_type type,
-	__isl_keep isl_id *id)
+__isl_give isl_morph *isl_basic_set_variable_compression(
+	__isl_keep isl_basic_set *bset, enum isl_dim_type type)
 {
 	unsigned otype;
 	isl_size ntype;
@@ -476,7 +488,6 @@ __isl_give isl_morph *isl_basic_set_variable_compression_with_id(
 	space = isl_space_copy(bset->dim);
 	space = isl_space_drop_dims(space, type, 0, ntype);
 	space = isl_space_add_dims(space, type, ntype - n_eq);
-	space = isl_space_set_tuple_id(space, isl_dim_set, isl_id_copy(id));
 	ran = isl_basic_set_universe(space);
 	dom = copy_equalities(bset, f_eq, n_eq);
 
@@ -484,14 +495,18 @@ __isl_give isl_morph *isl_basic_set_variable_compression_with_id(
 }
 
 /* Given a basic set, exploit the equalities in the basic set to construct
- * a morphism that maps the basic set to a lower-dimensional space.
- * Specifically, the morphism reduces the number of dimensions of type "type".
+ * a morphism that maps the basic set to a lower-dimensional space
+ * with identifier "id".
+ * Specifically, the morphism reduces the number of set dimensions.
  */
-__isl_give isl_morph *isl_basic_set_variable_compression(
-	__isl_keep isl_basic_set *bset, enum isl_dim_type type)
+__isl_give isl_morph *isl_basic_set_variable_compression_with_id(
+	__isl_keep isl_basic_set *bset, __isl_keep isl_id *id)
 {
-	return isl_basic_set_variable_compression_with_id(bset, type,
-							&isl_id_none);
+	isl_morph *morph;
+
+	morph = isl_basic_set_variable_compression(bset, isl_dim_set);
+	morph = isl_morph_set_ran_tuple_id(morph, isl_id_copy(id));
+	return morph;
 }
 
 /* Construct a parameter compression for "bset".
