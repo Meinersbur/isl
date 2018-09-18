@@ -668,7 +668,7 @@ isl_bool isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
 		equal = isl_set_is_equal(tree1->guard, tree2->guard);
 		break;
 	case isl_schedule_node_mark:
-		equal = tree1->mark == tree2->mark;
+		equal = isl_bool_ok(tree1->mark == tree2->mark);
 		break;
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_sequence:
