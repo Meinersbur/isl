@@ -1618,7 +1618,7 @@ static isl_bool domain_less(__isl_keep isl_schedule_tree *tree)
 	switch (type) {
 	case isl_schedule_node_band:
 		n = isl_schedule_tree_band_n_member(tree);
-		return n < 0 ? isl_bool_error : n == 0;
+		return n < 0 ? isl_bool_error : isl_bool_ok(n == 0);
 	case isl_schedule_node_context:
 	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
