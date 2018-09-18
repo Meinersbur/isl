@@ -269,6 +269,8 @@ error:
  * in the domain space of "local"
  * to one that also includes values for the local variables.
  * All local variables are required to have an explicit representation.
+ * If there are no local variables, then the point is not required
+ * to be integral.
  */
 __isl_give isl_vec *isl_local_extend_point_vec(__isl_keep isl_local *local,
 	__isl_take isl_vec *v)
@@ -293,10 +295,12 @@ __isl_give isl_vec *isl_local_extend_point_vec(__isl_keep isl_local *local,
 	if (size != 1 + dim)
 		isl_die(isl_local_get_ctx(local), isl_error_invalid,
 			"incorrect size", return isl_vec_free(v));
+	if (n_div == 0)
+		return v;
 	if (!isl_int_is_one(v->el[0]))
 		isl_die(isl_local_get_ctx(local), isl_error_invalid,
 			"expecting integer point", return isl_vec_free(v));
-	if (n_div != 0) {
+	{
 		int i;
 		v = isl_vec_add_els(v, n_div);
 		if (!v)

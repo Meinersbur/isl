@@ -200,7 +200,7 @@ __isl_give isl_basic_set *isl_basic_set_from_multi_aff(
 {
 	if (check_input_is_set(isl_multi_aff_peek_space(ma)) < 0)
 		ma = isl_multi_aff_free(ma);
-	return bset_from_bmap(isl_basic_map_from_multi_aff(ma));
+	return bset_from_bmap(basic_map_from_multi_aff(ma));
 }
 
 /* Construct a map mapping the domain of the multi-affine expression

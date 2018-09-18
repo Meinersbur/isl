@@ -2270,7 +2270,8 @@ static int test_coalesce_special3(isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that calling isl_set_coalesce does not leave other sets
+/* Check that calling isl_set_coalesce on the intersection of
+ * the sets described by "s1" and "s2" does not leave other sets
  * that may share some information with the input to isl_set_coalesce
  * in an inconsistent state.
  * In particular, when isl_set_coalesce detects equality constraints,
@@ -2280,12 +2281,13 @@ static int test_coalesce_special3(isl_ctx *ctx)
  * It is constructed as an intersection, because otherwise
  * those equality constraints would already be detected during parsing.
  */
-static isl_stat test_coalesce_special4(isl_ctx *ctx)
+static isl_stat test_coalesce_intersection(isl_ctx *ctx,
+	const char *s1, const char *s2)
 {
 	isl_set *set1, *set2;
 
-	set1 = isl_set_read_from_str(ctx, "{ [a, b] : b <= 0 or a <= 1 }");
-	set2 = isl_set_read_from_str(ctx, "{ [a, b] : -1 <= -a < b }");
+	set1 = isl_set_read_from_str(ctx, s1);
+	set2 = isl_set_read_from_str(ctx, s2);
 	set1 = isl_set_intersect(set1, set2);
 	isl_set_free(isl_set_coalesce(isl_set_copy(set1)));
 	set1 = isl_set_coalesce(set1);
@@ -2295,6 +2297,34 @@ static isl_stat test_coalesce_special4(isl_ctx *ctx)
 		return isl_stat_error;
 
 	return isl_stat_ok;
+}
+
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state, for the case where one disjunct
+ * is a subset of the other.
+ */
+static isl_stat test_coalesce_special4(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "{ [a, b] : b <= 0 or a <= 1 }";
+	s2 = "{ [a, b] : -1 <= -a < b }";
+	return test_coalesce_intersection(ctx, s1, s2);
+}
+
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state, for the case where two disjuncts
+ * can be fused.
+ */
+static isl_stat test_coalesce_special5(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "{ [a, b, c] : b <= 0 }";
+	s2 = "{ [a, b, c] : -1 <= -a < b and (c >= 0 or c < 0) }";
+	return test_coalesce_intersection(ctx, s1, s2);
 }
 
 /* Test the functionality of isl_set_coalesce.
@@ -2321,6 +2351,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 	if (test_coalesce_special3(ctx) < 0)
 		return -1;
 	if (test_coalesce_special4(ctx) < 0)
+		return -1;
+	if (test_coalesce_special5(ctx) < 0)
 		return -1;
 
 	return 0;
@@ -7005,6 +7037,27 @@ static int test_eval_2(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that a polynomial (without local variables) can be evaluated
+ * in a rational point.
+ */
+static isl_stat test_eval_3(isl_ctx *ctx)
+{
+	isl_pw_qpolynomial *pwqp;
+	isl_point *pnt;
+	isl_val *v;
+	isl_stat r;
+
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, "{ [x] -> x^2 }");
+	pnt = isl_point_zero(isl_pw_qpolynomial_get_domain_space(pwqp));
+	v = isl_val_read_from_str(ctx, "1/2");
+	pnt = isl_point_set_coordinate_val(pnt, isl_dim_set, 0, v);
+	v = isl_pw_qpolynomial_eval(pwqp, pnt);
+	r = val_check_equal(v, "1/4");
+	isl_val_free(v);
+
+	return r;
+}
+
 /* Inputs for isl_pw_aff_eval test.
  * "f" is the affine function.
  * "p" is the point where the function should be evaluated.
@@ -7072,6 +7125,8 @@ static int test_eval(isl_ctx *ctx)
 	if (test_eval_1(ctx) < 0)
 		return -1;
 	if (test_eval_2(ctx) < 0)
+		return -1;
+	if (test_eval_3(ctx) < 0)
 		return -1;
 	if (test_eval_aff(ctx) < 0)
 		return -1;
@@ -7557,6 +7612,30 @@ static int test_list(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check the conversion from an isl_multi_aff to an isl_basic_set.
+ */
+static isl_stat test_ma_conversion(isl_ctx *ctx)
+{
+	const char *str;
+	isl_bool equal;
+	isl_multi_aff *ma;
+	isl_basic_set *bset1, *bset2;
+
+	str = "[N] -> { A[0, N + 1] }";
+	ma = isl_multi_aff_read_from_str(ctx, str);
+	bset1 = isl_basic_set_read_from_str(ctx, str);
+	bset2 = isl_basic_set_from_multi_aff(ma);
+	equal = isl_basic_set_is_equal(bset1, bset2);
+	isl_basic_set_free(bset1);
+	isl_basic_set_free(bset2);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown, "bad conversion",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
 const char *set_conversion_tests[] = {
 	"[N] -> { [i] : N - 1 <= 2 i <= N }",
 	"[N] -> { [i] : exists a : i = 4 a and N - 1 <= i <= N }",
@@ -7729,6 +7808,8 @@ static int test_union_map_mupa_conversion(isl_ctx *ctx)
 
 static int test_conversion(isl_ctx *ctx)
 {
+	if (test_ma_conversion(ctx) < 0)
+		return -1;
 	if (test_set_conversion(ctx) < 0)
 		return -1;
 	if (test_map_conversion(ctx) < 0)
