@@ -274,7 +274,7 @@ isl_bool isl_schedule_band_get_permutable(__isl_keep isl_schedule_band *band)
 {
 	if (!band)
 		return isl_bool_error;
-	return band->permutable;
+	return isl_bool_ok(band->permutable);
 }
 
 /* Mark the schedule band permutable or not according to "permutable"?
