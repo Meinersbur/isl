@@ -7125,6 +7125,27 @@ static int test_eval_2(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that a polynomial (without local variables) can be evaluated
+ * in a rational point.
+ */
+static isl_stat test_eval_3(isl_ctx *ctx)
+{
+	isl_pw_qpolynomial *pwqp;
+	isl_point *pnt;
+	isl_val *v;
+	isl_stat r;
+
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, "{ [x] -> x^2 }");
+	pnt = isl_point_zero(isl_pw_qpolynomial_get_domain_space(pwqp));
+	v = isl_val_read_from_str(ctx, "1/2");
+	pnt = isl_point_set_coordinate_val(pnt, isl_dim_set, 0, v);
+	v = isl_pw_qpolynomial_eval(pwqp, pnt);
+	r = val_check_equal(v, "1/4");
+	isl_val_free(v);
+
+	return r;
+}
+
 /* Inputs for isl_pw_aff_eval test.
  * "f" is the affine function.
  * "p" is the point where the function should be evaluated.
@@ -7192,6 +7213,8 @@ static int test_eval(isl_ctx *ctx)
 	if (test_eval_1(ctx) < 0)
 		return -1;
 	if (test_eval_2(ctx) < 0)
+		return -1;
+	if (test_eval_3(ctx) < 0)
 		return -1;
 	if (test_eval_aff(ctx) < 0)
 		return -1;
