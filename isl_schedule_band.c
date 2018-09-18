@@ -241,7 +241,7 @@ isl_bool isl_schedule_band_member_get_coincident(
 		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
 			"invalid member position", return isl_bool_error);
 
-	return band->coincident[pos];
+	return isl_bool_ok(band->coincident[pos]);
 }
 
 /* Mark the given scheduling dimension as being coincident or not
