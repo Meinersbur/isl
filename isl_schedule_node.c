@@ -975,7 +975,7 @@ isl_bool isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node)
 	depth = isl_schedule_node_get_tree_depth(node);
 	if (depth < 0)
 		return isl_bool_error;
-	return depth != 0;
+	return isl_bool_ok(depth != 0);
 }
 
 /* Return the position of "node" among the children of its parent.
