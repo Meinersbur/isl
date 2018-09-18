@@ -1058,7 +1058,7 @@ isl_bool isl_schedule_node_has_children(__isl_keep isl_schedule_node *node)
 {
 	if (!node)
 		return isl_bool_error;
-	return !isl_schedule_tree_is_leaf(node->tree);
+	return isl_bool_ok(!isl_schedule_tree_is_leaf(node->tree));
 }
 
 /* Return the number of children of "node"?
