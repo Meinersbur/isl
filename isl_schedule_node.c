@@ -1045,7 +1045,7 @@ isl_bool isl_schedule_node_has_next_sibling(__isl_keep isl_schedule_node *node)
 	if (n_child < 0)
 		return isl_bool_error;
 
-	return node->child_pos[n - 1] + 1 < n_child;
+	return isl_bool_ok(node->child_pos[n - 1] + 1 < n_child);
 }
 
 /* Does "node" have any children?
