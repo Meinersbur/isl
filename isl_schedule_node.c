@@ -1018,7 +1018,7 @@ isl_bool isl_schedule_node_has_previous_sibling(
 	if (n < 0)
 		return isl_bool_error;
 
-	return node->child_pos[n - 1] > 0;
+	return isl_bool_ok(node->child_pos[n - 1] > 0);
 }
 
 /* Does the parent (if any) of "node" have any children with a greater child
