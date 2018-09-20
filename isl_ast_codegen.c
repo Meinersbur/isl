@@ -4740,7 +4740,7 @@ static isl_bool any_scheduled_after(int i, int j, void *user)
 			return after;
 	}
 
-	return data->group_coscheduled;
+	return isl_bool_ok(data->group_coscheduled);
 }
 
 /* Look for independent components at the current depth and generate code
