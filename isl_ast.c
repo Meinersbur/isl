@@ -1237,7 +1237,7 @@ isl_bool isl_ast_node_if_has_else(
 	if (node->type != isl_ast_node_if)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not an if node", return isl_bool_error);
-	return node->u.i.else_node != NULL;
+	return isl_bool_ok(node->u.i.else_node != NULL);
 }
 
 __isl_give isl_ast_node *isl_ast_node_if_get_else(
