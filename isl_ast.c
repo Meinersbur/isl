@@ -345,7 +345,7 @@ isl_bool isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 	case isl_ast_expr_int:
 		return isl_val_eq(expr1->u.v, expr2->u.v);
 	case isl_ast_expr_id:
-		return expr1->u.id == expr2->u.id;
+		return isl_bool_ok(expr1->u.id == expr2->u.id);
 	case isl_ast_expr_op:
 		if (expr1->u.op.op != expr2->u.op.op)
 			return isl_bool_false;
