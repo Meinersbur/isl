@@ -1130,7 +1130,7 @@ isl_bool isl_ast_node_for_is_degenerate(__isl_keep isl_ast_node *node)
 	if (node->type != isl_ast_node_for)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not a for node", return isl_bool_error);
-	return node->u.f.degenerate;
+	return isl_bool_ok(node->u.f.degenerate);
 }
 
 __isl_give isl_ast_expr *isl_ast_node_for_get_iterator(
