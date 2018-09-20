@@ -443,7 +443,7 @@ isl_bool isl_constraint_is_lower_bound(__isl_keep isl_constraint *constraint,
 		return isl_bool_error;
 
 	pos += isl_local_space_offset(constraint->ls, type);
-	return isl_int_is_pos(constraint->v->el[pos]);
+	return isl_bool_ok(isl_int_is_pos(constraint->v->el[pos]));
 }
 
 /* Does the given constraint represent an upper bound on the given
