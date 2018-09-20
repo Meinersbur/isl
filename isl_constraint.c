@@ -659,7 +659,7 @@ isl_bool isl_constraint_is_equality(struct isl_constraint *constraint)
 {
 	if (!constraint)
 		return isl_bool_error;
-	return constraint->eq;
+	return isl_bool_ok(constraint->eq);
 }
 
 isl_bool isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
