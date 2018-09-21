@@ -501,6 +501,7 @@ static __isl_give isl_printer *print_omega_parameters(
 static isl_bool next_is_opposite(__isl_keep isl_basic_map *bmap, int i,
 	int last)
 {
+	int r;
 	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
 	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
@@ -519,8 +520,9 @@ static isl_bool next_is_opposite(__isl_keep isl_basic_map *bmap, int i,
 		if (is_div)
 			return isl_bool_false;
 	}
-	return isl_int_abs_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]) &&
-		!isl_int_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]);
+	r = isl_int_abs_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]) &&
+	    !isl_int_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]);
+	return isl_bool_ok(r);
 }
 
 /* Return a string representation of the operator used when
