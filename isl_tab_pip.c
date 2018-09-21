@@ -4640,7 +4640,7 @@ static isl_bool parallel_constraints(__isl_keep isl_basic_map *bmap,
 	isl_hash_table_free(ctx, table);
 	free(occurrences);
 
-	return i < bmap->n_ineq;
+	return isl_bool_ok(i < bmap->n_ineq);
 error:
 	isl_hash_table_free(ctx, table);
 	free(occurrences);
