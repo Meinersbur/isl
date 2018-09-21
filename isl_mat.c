@@ -2099,5 +2099,5 @@ isl_bool isl_mat_has_linearly_independent_rows(__isl_keep isl_mat *mat1,
 	isl_mat_free(mat);
 	if (r < 0)
 		return isl_bool_error;
-	return r == r1 + r2;
+	return isl_bool_ok(r == r1 + r2);
 }
