@@ -2073,7 +2073,7 @@ static isl_bool context_tab_insert_div(struct isl_tab *tab, int pos,
 	if (!tab->samples)
 		return isl_bool_error;
 
-	return nonneg;
+	return isl_bool_ok(nonneg);
 }
 
 /* Add a div specified by "div" to both the main tableau and
