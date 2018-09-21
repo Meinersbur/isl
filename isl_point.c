@@ -141,7 +141,7 @@ isl_bool isl_point_is_void(__isl_keep isl_point *pnt)
 	if (!pnt)
 		return isl_bool_error;
 
-	return pnt->vec->size == 0;
+	return isl_bool_ok(pnt->vec->size == 0);
 }
 
 /* Return the space of "pnt".
