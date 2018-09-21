@@ -345,7 +345,7 @@ isl_bool isl_vec_is_equal(__isl_keep isl_vec *vec1, __isl_keep isl_vec *vec2)
 	if (vec1->size != vec2->size)
 		return isl_bool_false;
 
-	return isl_seq_eq(vec1->el, vec2->el, vec1->size);
+	return isl_bool_ok(isl_seq_eq(vec1->el, vec2->el, vec1->size));
 }
 
 __isl_give isl_printer *isl_printer_print_vec(__isl_take isl_printer *printer,
