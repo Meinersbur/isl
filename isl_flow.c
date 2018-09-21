@@ -3014,7 +3014,7 @@ static isl_bool coscheduled_node(void *first, void *second)
 	isl_schedule_node *node1 = first;
 	isl_schedule_node *node2 = second;
 
-	return node1 == node2;
+	return isl_bool_ok(node1 == node2);
 }
 
 /* Add the scheduled sources from "data" that access
