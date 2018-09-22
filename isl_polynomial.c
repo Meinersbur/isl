@@ -140,12 +140,14 @@ isl_bool isl_poly_is_equal(__isl_keep isl_poly *poly1,
 		return isl_bool_false;
 	if (is_cst1) {
 		isl_poly_cst *cst1, *cst2;
+		int r;
 		cst1 = isl_poly_as_cst(poly1);
 		cst2 = isl_poly_as_cst(poly2);
 		if (!cst1 || !cst2)
 			return isl_bool_error;
-		return isl_int_eq(cst1->n, cst2->n) &&
-		       isl_int_eq(cst1->d, cst2->d);
+		r = isl_int_eq(cst1->n, cst2->n) &&
+		    isl_int_eq(cst1->d, cst2->d);
+		return isl_bool_ok(r);
 	}
 
 	rec1 = isl_poly_as_rec(poly1);
