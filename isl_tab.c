@@ -3586,7 +3586,7 @@ isl_bool isl_tab_need_undo(struct isl_tab *tab)
 	if (!tab)
 		return isl_bool_error;
 
-	return tab->need_undo;
+	return isl_bool_ok(tab->need_undo);
 }
 
 /* Remove all tracking of undo information from "tab", invalidating
