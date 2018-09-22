@@ -105,7 +105,7 @@ isl_bool isl_local_div_is_marked_unknown(__isl_keep isl_local *local, int pos)
 
 	if (isl_local_check_pos(local, pos) < 0)
 		return isl_bool_error;
-	return isl_int_is_zero(mat->row[pos][0]);
+	return isl_bool_ok(isl_int_is_zero(mat->row[pos][0]));
 }
 
 /* Given local variables "local",
