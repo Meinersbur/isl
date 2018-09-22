@@ -2116,7 +2116,7 @@ static int add_zero_row(struct isl_tab *tab)
  * one more element in the constraint array are available in the tableau.
  * If tab->bmap is set, then two rows are needed instead of one.
  */
-int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
+isl_stat isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 {
 	struct isl_tab_undo *snap = NULL;
 	struct isl_tab_var *var;
@@ -2126,8 +2126,8 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	isl_int cst;
 
 	if (!tab)
-		return -1;
-	isl_assert(tab->mat->ctx, !tab->M, return -1);
+		return isl_stat_error;
+	isl_assert(tab->mat->ctx, !tab->M, return isl_stat_error);
 
 	if (tab->need_undo)
 		snap = isl_tab_snap(tab);
@@ -2143,7 +2143,7 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 		isl_int_clear(cst);
 	}
 	if (r < 0)
-		return -1;
+		return isl_stat_error;
 
 	var = &tab->con[r];
 	row = var->index;
@@ -2156,16 +2156,16 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	if (tab->bmap) {
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			return -1;
+			return isl_stat_error;
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		tab->bmap = isl_basic_map_add_ineq(tab->bmap, eq);
 		isl_seq_neg(eq, eq, 1 + tab->n_var);
 		if (isl_tab_push(tab, isl_tab_undo_bmap_ineq) < 0)
-			return -1;
+			return isl_stat_error;
 		if (!tab->bmap)
-			return -1;
+			return isl_stat_error;
 		if (add_zero_row(tab) < 0)
-			return -1;
+			return isl_stat_error;
 	}
 
 	sgn = isl_int_sgn(tab->mat->row[row][1]);
@@ -2180,22 +2180,22 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
 	if (sgn < 0) {
 		sgn = sign_of_max(tab, var);
 		if (sgn < -1)
-			return -1;
+			return isl_stat_error;
 		if (sgn < 0) {
 			if (isl_tab_mark_empty(tab) < 0)
-				return -1;
-			return 0;
+				return isl_stat_error;
+			return isl_stat_ok;
 		}
 	}
 
 	var->is_nonneg = 1;
 	if (to_col(tab, var) < 0)
-		return -1;
+		return isl_stat_error;
 	var->is_nonneg = 0;
 	if (isl_tab_kill_col(tab, var->index) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Construct and return an inequality that expresses an upper bound

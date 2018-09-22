@@ -208,7 +208,7 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
 	unsigned flags) WARN_UNUSED;
 
 isl_stat isl_tab_add_ineq(struct isl_tab *tab, isl_int *ineq) WARN_UNUSED;
-int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
+isl_stat isl_tab_add_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 int isl_tab_add_valid_eq(struct isl_tab *tab, isl_int *eq) WARN_UNUSED;
 
 int isl_tab_freeze_constraint(struct isl_tab *tab, int con) WARN_UNUSED;
