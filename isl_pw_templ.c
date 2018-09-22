@@ -266,7 +266,7 @@ isl_bool FN(PW,IS_ZERO)(__isl_keep PW *pw)
 	if (!pw)
 		return isl_bool_error;
 
-	return pw->n == 0;
+	return isl_bool_ok(pw->n == 0);
 }
 
 #ifndef NO_REALIGN
