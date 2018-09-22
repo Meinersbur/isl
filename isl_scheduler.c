@@ -6463,7 +6463,7 @@ static isl_bool ok_to_merge_coincident(struct isl_clustering *c,
 
 	n_coincident = get_n_coincident(merge_graph);
 
-	return n_coincident >= max_coincident;
+	return isl_bool_ok(n_coincident >= max_coincident);
 }
 
 /* Return the transformation on "node" expressed by the current (and only)
