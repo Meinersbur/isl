@@ -1387,7 +1387,7 @@ isl_bool isl_local_space_is_div_equality(__isl_keep isl_local_space *ls,
 	if (linear < 0 || !linear)
 		return linear;
 
-	return sign < 0;
+	return isl_bool_ok(sign < 0);
 }
 
 /*
