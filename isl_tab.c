@@ -3907,12 +3907,12 @@ static isl_stat perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 /* Return the tableau to the state it was in when the snapshot "snap"
  * was taken.
  */
-int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
+isl_stat isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 {
 	struct isl_tab_undo *undo, *next;
 
 	if (!tab)
-		return -1;
+		return isl_stat_error;
 
 	tab->in_undo = 1;
 	for (undo = tab->top; undo && undo != &tab->bottom; undo = next) {
@@ -3923,15 +3923,15 @@ int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 			tab->top = undo;
 			free_undo(tab);
 			tab->in_undo = 0;
-			return -1;
+			return isl_stat_error;
 		}
 		free_undo_record(undo);
 	}
 	tab->in_undo = 0;
 	tab->top = undo;
 	if (!undo)
-		return -1;
-	return 0;
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 /* The given row "row" represents an inequality violated by all

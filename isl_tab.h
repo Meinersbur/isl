@@ -237,7 +237,7 @@ enum isl_ineq_type {
 enum isl_ineq_type isl_tab_ineq_type(struct isl_tab *tab, isl_int *ineq);
 
 struct isl_tab_undo *isl_tab_snap(struct isl_tab *tab);
-int isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap) WARN_UNUSED;
+isl_stat isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap) WARN_UNUSED;
 isl_bool isl_tab_need_undo(struct isl_tab *tab);
 void isl_tab_clear_undo(struct isl_tab *tab);
 
