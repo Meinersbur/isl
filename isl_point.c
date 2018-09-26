@@ -300,6 +300,7 @@ __isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"expecting rational value", goto error);
 
+	pos += isl_space_offset(isl_point_peek_space(pnt), type);
 	if (isl_int_eq(pnt->vec->el[1 + pos], v->n) &&
 	    isl_int_eq(pnt->vec->el[0], v->d)) {
 		isl_val_free(v);
