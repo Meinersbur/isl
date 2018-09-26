@@ -651,6 +651,7 @@ static __isl_give isl_printer *print_coordinate(__isl_take isl_printer *p,
 {
 	isl_point *pnt = data->user;
 
+	pos += isl_space_offset(data->space, data->type);
 	p = isl_printer_print_isl_int(p, pnt->vec->el[1 + pos]);
 	if (!isl_int_is_one(pnt->vec->el[0])) {
 		p = isl_printer_print_str(p, "/");
