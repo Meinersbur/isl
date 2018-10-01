@@ -255,6 +255,7 @@ __isl_give isl_basic_set *isl_basic_set_tighten_outward(
 
 int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos);
 
+isl_bool isl_basic_map_has_single_reference(__isl_keep isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_set_cow(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_cow(__isl_take isl_basic_map *bmap);
 __isl_give isl_set *isl_set_cow(__isl_take isl_set *set);

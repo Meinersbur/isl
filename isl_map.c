@@ -50,6 +50,10 @@
 #include <set_to_map.c>
 #include <set_from_map.c>
 
+#undef TYPE
+#define TYPE	isl_basic_map
+#include "has_single_reference_templ.c"
+
 static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	switch (type) {
