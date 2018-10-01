@@ -2750,6 +2750,18 @@ static isl_stat cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 	return isl_stat_ok;
 }
 
+/* Check that "con" is a valid constraint position for "tab".
+ */
+static isl_stat isl_tab_check_con(struct isl_tab *tab, int con)
+{
+	if (!tab)
+		return isl_stat_error;
+	if (con < 0 || con >= tab->n_con)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"position out of bounds", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Given a tableau "tab" and an inequality constraint "con" of the tableau,
  * relax the inequality by one.  That is, the inequality r >= 0 is replaced
  * by r' = r + 1 >= 0.
@@ -3313,11 +3325,8 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
  */
 int isl_tab_is_redundant(struct isl_tab *tab, int con)
 {
-	if (!tab)
+	if (isl_tab_check_con(tab, con) < 0)
 		return -1;
-	if (con < 0 || con >= tab->n_con)
-		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
-			"position out of bounds", return -1);
 	if (tab->con[con].is_zero)
 		return 0;
 	if (tab->con[con].is_redundant)
