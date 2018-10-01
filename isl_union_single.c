@@ -177,16 +177,6 @@ static isl_stat FN(UNION,foreach_inplace)(__isl_keep UNION *u,
 	return isl_hash_table_foreach(ctx, &u->table, fn, user);
 }
 
-/* Does "u" have a single reference?
- * That is, can we change "u" inplace?
- */
-static isl_bool FN(UNION,has_single_reference)(__isl_keep UNION *u)
-{
-	if (!u)
-		return isl_bool_error;
-	return u->ref == 1;
-}
-
 static isl_stat FN(UNION,free_u_entry)(void **entry, void *user)
 {
 	PART *part = *entry;

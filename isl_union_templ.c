@@ -10,6 +10,11 @@
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
+#undef TYPE
+#define TYPE	UNION
+static
+#include "has_single_reference_templ.c"
+
 __isl_give UNION *FN(UNION,cow)(__isl_take UNION *u);
 
 isl_ctx *FN(UNION,get_ctx)(__isl_keep UNION *u)
