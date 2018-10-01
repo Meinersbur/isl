@@ -340,7 +340,7 @@ static void clear_coalesce_info(int n, struct isl_coalesce_info *info)
 	free(info);
 }
 
-/* Clear the memory associated to"info".
+/* Clear the memory associated to "info".
  * Gaussian elimination needs to be performed on the basic map
  * before it gets freed because it may have been put
  * in an inconsistent state in isl_map_coalesce while it may
