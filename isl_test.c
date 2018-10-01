@@ -2321,6 +2321,20 @@ static isl_stat test_coalesce_special5(isl_ctx *ctx)
 	return test_coalesce_intersection(ctx, s1, s2);
 }
 
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state, for the case where two disjuncts
+ * can be fused and where both disjuncts have implicit equality constraints.
+ */
+static isl_stat test_coalesce_special6(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "{ [a, b, c] : c <= 0 }";
+	s2 = "{ [a, b, c] : 0 <= a <= b <= c or (0 <= b <= c and a > 0) }";
+	return test_coalesce_intersection(ctx, s1, s2);
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2348,6 +2362,9 @@ static int test_coalesce(struct isl_ctx *ctx)
 		return -1;
 	if (test_coalesce_special5(ctx) < 0)
 		return -1;
+	if (test_coalesce_special6(ctx) < 0)
+		return -1;
+
 
 	return 0;
 }

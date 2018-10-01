@@ -288,6 +288,10 @@ __isl_give isl_basic_set *isl_basic_set_sort_divs(
 __isl_give isl_basic_map *isl_basic_map_sort_divs(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_sort_divs(__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_basic_map_gauss5(__isl_take isl_basic_map *bmap,
+	int *progress,
+	isl_stat (*swap)(unsigned a, unsigned b, void *user),
+	isl_stat (*drop)(unsigned n, void *user), void *user);
 __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 	int *progress);
 __isl_give isl_basic_set *isl_basic_set_gauss(

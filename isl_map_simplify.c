@@ -541,16 +541,39 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
 	return bmap;
 }
 
-__isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
-	int *progress)
+/* Perform fangcheng (Gaussian elimination) on the equality
+ * constraints of "bmap".
+ * That is, put them into row-echelon form, starting from the last column
+ * backward and use them to eliminate the corresponding coefficients
+ * from all constraints.
+ *
+ * If "progress" is not NULL, then it gets set if the elimination
+ * result in any changes.
+ * The elimination process may result in some equality constraints
+ * getting interchanged or removed.
+ * If "swap" or "drop" are not NULL, then they get called when
+ * two equality constraints get interchanged or
+ * when a number of final equality constraints get removed.
+ * As a special case, if the input turns out to be empty,
+ * then drop gets called with the number of removed equality
+ * constraints set to the total number of equality constraints.
+ * If "swap" or "drop" are not NULL, then the local variables (if any)
+ * are assumed to be in a valid order.
+ */
+__isl_give isl_basic_map *isl_basic_map_gauss5(__isl_take isl_basic_map *bmap,
+	int *progress,
+	isl_stat (*swap)(unsigned a, unsigned b, void *user),
+	isl_stat (*drop)(unsigned n, void *user), void *user)
 {
 	int k;
 	int done;
 	int last_var;
 	unsigned total_var;
 	unsigned total;
+	unsigned n_drop;
 
-	bmap = isl_basic_map_order_divs(bmap);
+	if (!swap && !drop)
+		bmap = isl_basic_map_order_divs(bmap);
 
 	if (!bmap)
 		return NULL;
@@ -569,8 +592,11 @@ __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 		}
 		if (last_var < 0)
 			break;
-		if (k != done)
+		if (k != done) {
 			swap_equality(bmap, k, done);
+			if (swap && swap(k, done, user) < 0)
+				return isl_basic_map_free(bmap);
+		}
 		if (isl_int_is_neg(bmap->eq[done][1+last_var]))
 			isl_seq_neg(bmap->eq[done], bmap->eq[done], 1+total);
 
@@ -588,10 +614,21 @@ __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 	for (k = done; k < bmap->n_eq; ++k) {
 		if (isl_int_is_zero(bmap->eq[k][0]))
 			continue;
+		if (drop && drop(bmap->n_eq, user) < 0)
+			return isl_basic_map_free(bmap);
 		return isl_basic_map_set_to_empty(bmap);
 	}
-	isl_basic_map_free_equality(bmap, bmap->n_eq-done);
+	n_drop = bmap->n_eq - done;
+	isl_basic_map_free_equality(bmap, n_drop);
+	if (drop && drop(n_drop, user) < 0)
+		return isl_basic_map_free(bmap);
 	return bmap;
+}
+
+__isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
+	int *progress)
+{
+	return isl_basic_map_gauss5(bmap, progress, NULL, NULL, NULL);
 }
 
 __isl_give isl_basic_set *isl_basic_set_gauss(

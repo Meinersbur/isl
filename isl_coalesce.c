@@ -341,14 +341,9 @@ static void clear_coalesce_info(int n, struct isl_coalesce_info *info)
 }
 
 /* Clear the memory associated to "info".
- * Gaussian elimination needs to be performed on the basic map
- * before it gets freed because it may have been put
- * in an inconsistent state in isl_map_coalesce while it may
- * be shared with other maps.
  */
 static void clear(struct isl_coalesce_info *info)
 {
-	info->bmap = isl_basic_map_gauss(info->bmap, NULL);
 	info->bmap = isl_basic_map_free(info->bmap);
 	isl_tab_free(info->tab);
 	info->tab = NULL;
@@ -3866,16 +3861,22 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
  *
  * We factor out any (hidden) common factor from the constraint
  * coefficients to improve the detection of adjacent constraints.
+ * Note that this function does not call isl_basic_map_gauss,
+ * but it does make sure that only a single copy of the basic map
+ * is affected.  This means that isl_basic_map_gauss may have
+ * to be called at the end of the computation (in update_basic_maps)
+ * on this single copy to ensure that
+ * the basic maps are not left in an unexpected state.
  *
  * Since we are constructing the tableaus of the basic maps anyway,
  * we exploit them to detect implicit equalities and redundant constraints.
  * This also helps the coalescing as it can ignore the redundant constraints.
  * In order to avoid confusion, we make all implicit equalities explicit
- * in the basic maps.  We don't call isl_basic_map_gauss, though,
- * as that may affect the number of constraints.
- * This means that we have to call isl_basic_map_gauss at the end
- * of the computation (in update_basic_maps and in clear) to ensure that
- * the basic maps are not left in an unexpected state.
+ * in the basic maps.  If the basic map only has a single reference
+ * (this happens in particular if it was modified by
+ * isl_basic_map_reduce_coefficients), then isl_basic_map_gauss
+ * does not get called on the result.  The call to
+ * isl_basic_map_gauss in update_basic_maps resolves this as well.
  * For each basic map, we also compute the hash of the apparent affine hull
  * for use in coalesce.
  */
