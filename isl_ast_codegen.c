@@ -682,7 +682,7 @@ static __isl_give isl_pw_aff_list *upper_bounds(
  * If the list contains exactly one element, then the returned isl_ast_expr
  * simply computes that affine expression.
  * If the list contains more than one element, then we sort it
- * using a fairly abitrary but hopefully reasonably stable order.
+ * using a fairly arbitrary but hopefully reasonably stable order.
  */
 static __isl_give isl_ast_expr *reduce_list(enum isl_ast_op_type type,
 	__isl_keep isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
@@ -2383,7 +2383,7 @@ static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
 	return isl_equality_from_aff(aff);
 }
 
-/* Update *user to the number of integer divsions in the first element
+/* Update *user to the number of integer divisions in the first element
  * of "ma", if it is larger than the current value.
  */
 static isl_stat update_n_div(__isl_take isl_set *set,
