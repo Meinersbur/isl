@@ -2159,6 +2159,9 @@ struct {
 		"(c = 3 + a and 4 * floor((-1 + a)/4) = -1 + a and "
 		    "a > 0 and a <= 5) }" },
 	{ 1, "{ [1, 0, 0]; [a, b, c] : -1 <= -a < b <= 0 and 2c > b }" },
+	{ 0, "{ [j, a, l] : a mod 2 = 0 and j <= 29 and a >= 2 and "
+			"2a <= -5 + j and 32j + 2a + 2 <= 4l < 33j; "
+		"[j, 0, l] : 4 <= j <= 29 and -3 + 33j <= 4l <= 33j }" },
 };
 
 /* A specialized coalescing test case that would result

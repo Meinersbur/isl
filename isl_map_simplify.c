@@ -5118,6 +5118,11 @@ static __isl_give isl_vec *normalize_constraint(__isl_take isl_vec *v,
  * which checks for such pairs of inequalities as well as eliminate_divs_eq
  * and isl_basic_map_gauss if such a pair was found.
  *
+ * Tightening may also result in some other constraints becoming
+ * (rationally) redundant with respect to the tightened constraint
+ * (in combination with other constraints).  The basic map may
+ * therefore no longer be assumed to have no redundant constraints.
+ *
  * Note that this function may leave the result in an inconsistent state.
  * In particular, the constraints may not be gaussed.
  * Unfortunately, isl_map_coalesce actually depends on this inconsistent state
@@ -5187,6 +5192,7 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	if (tightened) {
 		int progress = 0;
 
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 		bmap = isl_basic_map_detect_inequality_pairs(bmap, &progress);
 		if (progress) {
 			bmap = eliminate_divs_eq(bmap, &progress);
