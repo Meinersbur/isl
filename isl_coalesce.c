@@ -3647,7 +3647,7 @@ error:
  * extra equalities to a purely affine expression.
  * If these tests succeed, then we try to coalesce the two basic maps
  * by introducing extra dimensions in "j" corresponding to
- * the extra integer divsisions "i" fixed to the corresponding
+ * the extra integer divisions "i" fixed to the corresponding
  * purely affine expression.
  */
 static enum isl_change check_coalesce_into_eq(int i, int j,
