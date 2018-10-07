@@ -2757,6 +2757,18 @@ static isl_stat cut_to_hyperplane(struct isl_tab *tab, struct isl_tab_var *var)
 	return isl_stat_ok;
 }
 
+/* Check that "con" is a valid constraint position for "tab".
+ */
+static isl_stat isl_tab_check_con(struct isl_tab *tab, int con)
+{
+	if (!tab)
+		return isl_stat_error;
+	if (con < 0 || con >= tab->n_con)
+		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
+			"position out of bounds", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Given a tableau "tab" and an inequality constraint "con" of the tableau,
  * relax the inequality by one.  That is, the inequality r >= 0 is replaced
  * by r' = r + 1 >= 0.
@@ -3044,6 +3056,30 @@ static int update_con_after_move(struct isl_tab *tab, int i, int old)
 	return 0;
 }
 
+/* Interchange constraints "con1" and "con2" in "tab".
+ * In particular, interchange the contents of these entries in tab->con.
+ * Since tab->col_var and tab->row_var point back into this array,
+ * they need to be updated accordingly.
+ */
+isl_stat isl_tab_swap_constraints(struct isl_tab *tab, int con1, int con2)
+{
+	struct isl_tab_var var;
+
+	if (isl_tab_check_con(tab, con1) < 0 ||
+	    isl_tab_check_con(tab, con2) < 0)
+		return isl_stat_error;
+
+	var = tab->con[con1];
+	tab->con[con1] = tab->con[con2];
+	if (update_con_after_move(tab, con1, con2) < 0)
+		return isl_stat_error;
+	tab->con[con2] = var;
+	if (update_con_after_move(tab, con2, con1) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Rotate the "n" constraints starting at "first" to the right,
  * putting the last constraint in the position of the first constraint.
  */
@@ -3067,6 +3103,77 @@ static int rotate_constraints(struct isl_tab *tab, int first, int n)
 		return -1;
 
 	return 0;
+}
+
+/* Drop the "n" entries starting at position "first" in tab->con, moving all
+ * subsequent entries down.
+ * Since some of the entries of tab->row_var and tab->col_var contain
+ * indices into this array, they have to be updated accordingly.
+ */
+static isl_stat con_drop_entries(struct isl_tab *tab,
+	unsigned first, unsigned n)
+{
+	int i;
+
+	if (first + n > tab->n_con || first + n < first)
+		isl_die(isl_tab_get_ctx(tab), isl_error_internal,
+			"invalid range", return isl_stat_error);
+
+	tab->n_con -= n;
+
+	for (i = first; i < tab->n_con; ++i) {
+		tab->con[i] = tab->con[i + n];
+		if (update_con_after_move(tab, i, i + n) < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* isl_basic_map_gauss5 callback that gets called when
+ * two (equality) constraints "a" and "b" get interchanged
+ * in the basic map.  Perform the same interchange in "tab".
+ */
+static isl_stat swap_eq(unsigned a, unsigned b, void *user)
+{
+	struct isl_tab *tab = user;
+
+	return isl_tab_swap_constraints(tab, a, b);
+}
+
+/* isl_basic_map_gauss5 callback that gets called when
+ * the final "n" equality constraints get removed.
+ * As a special case, if "n" is equal to the total number
+ * of equality constraints, then this means the basic map
+ * turned out to be empty.
+ * Drop the same number of equality constraints from "tab" or
+ * mark it empty in the special case.
+ */
+static isl_stat drop_eq(unsigned n, void *user)
+{
+	struct isl_tab *tab = user;
+
+	if (tab->n_eq == n)
+		return isl_tab_mark_empty(tab);
+
+	tab->n_eq -= n;
+	return con_drop_entries(tab, tab->n_eq, n);
+}
+
+/* If "bmap" has more than a single reference, then call
+ * isl_basic_map_gauss on it, updating "tab" accordingly.
+ */
+static __isl_give isl_basic_map *gauss_if_shared(__isl_take isl_basic_map *bmap,
+	struct isl_tab *tab)
+{
+	isl_bool single;
+
+	single = isl_basic_map_has_single_reference(bmap);
+	if (single < 0)
+		return isl_basic_map_free(bmap);
+	if (single)
+		return bmap;
+	return isl_basic_map_gauss5(bmap, NULL, &swap_eq, &drop_eq, tab);
 }
 
 /* Make the equalities that are implicit in "bmap" but that have been
@@ -3095,20 +3202,25 @@ static int rotate_constraints(struct isl_tab *tab, int first, int n)
  * If "tab" contains any constraints that are not in "bmap" then they
  * appear after those in "bmap" and they should be left untouched.
  *
- * Note that this function leaves "bmap" in a temporary state
- * as it does not call isl_basic_map_gauss.  Calling this function
- * is the responsibility of the caller.
+ * Note that this function only calls isl_basic_map_gauss
+ * (in case some equality constraints got detected)
+ * if "bmap" has more than one reference.
+ * If it only has a single reference, then it is left in a temporary state,
+ * because the caller may require this state.
+ * Calling isl_basic_map_gauss is then the responsibility of the caller.
  */
 __isl_give isl_basic_map *isl_tab_make_equalities_explicit(struct isl_tab *tab,
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
+	unsigned n_eq;
 
 	if (!tab || !bmap)
 		return isl_basic_map_free(bmap);
 	if (tab->empty)
 		return bmap;
 
+	n_eq = tab->n_eq;
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		if (!isl_tab_is_equality(tab, bmap->n_eq + i))
 			continue;
@@ -3120,6 +3232,9 @@ __isl_give isl_basic_map *isl_tab_make_equalities_explicit(struct isl_tab *tab,
 			return isl_basic_map_free(bmap);
 		tab->n_eq++;
 	}
+
+	if (n_eq != tab->n_eq)
+		bmap = gauss_if_shared(bmap, tab);
 
 	return bmap;
 }
@@ -3320,11 +3435,8 @@ enum isl_lp_result isl_tab_min(struct isl_tab *tab,
  */
 int isl_tab_is_redundant(struct isl_tab *tab, int con)
 {
-	if (!tab)
+	if (isl_tab_check_con(tab, con) < 0)
 		return -1;
-	if (con < 0 || con >= tab->n_con)
-		isl_die(isl_tab_get_ctx(tab), isl_error_invalid,
-			"position out of bounds", return -1);
 	if (tab->con[con].is_zero)
 		return 0;
 	if (tab->con[con].is_redundant)

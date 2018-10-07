@@ -61,6 +61,10 @@ static __isl_keep const isl_basic_map *const_bset_to_bmap(
 	return (const isl_basic_map *) bset;
 }
 
+#undef TYPE
+#define TYPE	isl_basic_map
+#include "has_single_reference_templ.c"
+
 static unsigned pos(__isl_keep isl_space *dim, enum isl_dim_type type)
 {
 	switch (type) {

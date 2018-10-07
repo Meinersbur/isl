@@ -444,6 +444,7 @@ EXTRA_DIST = \
 	bset_from_bmap.c \
 	check_type_range_templ.c \
 	extract_key.c \
+	has_single_reference_templ.c \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \

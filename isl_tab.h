@@ -334,4 +334,6 @@ int isl_tab_add_div(struct isl_tab *tab, __isl_keep isl_vec *div);
 
 int isl_tab_shift_var(struct isl_tab *tab, int pos, isl_int shift) WARN_UNUSED;
 
+isl_stat isl_tab_swap_constraints(struct isl_tab *tab, int con1, int con2);
+
 #endif

@@ -2165,6 +2165,9 @@ struct {
 		"(c = 3 + a and 4 * floor((-1 + a)/4) = -1 + a and "
 		    "a > 0 and a <= 5) }" },
 	{ 1, "{ [1, 0, 0]; [a, b, c] : -1 <= -a < b <= 0 and 2c > b }" },
+	{ 0, "{ [j, a, l] : a mod 2 = 0 and j <= 29 and a >= 2 and "
+			"2a <= -5 + j and 32j + 2a + 2 <= 4l < 33j; "
+		"[j, 0, l] : 4 <= j <= 29 and -3 + 33j <= 4l <= 33j }" },
 };
 
 /* A specialized coalescing test case that would result
@@ -2327,6 +2330,20 @@ static isl_stat test_coalesce_special5(isl_ctx *ctx)
 	return test_coalesce_intersection(ctx, s1, s2);
 }
 
+/* Check that calling isl_set_coalesce does not leave other sets
+ * that may share some information with the input to isl_set_coalesce
+ * in an inconsistent state, for the case where two disjuncts
+ * can be fused and where both disjuncts have implicit equality constraints.
+ */
+static isl_stat test_coalesce_special6(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "{ [a, b, c] : c <= 0 }";
+	s2 = "{ [a, b, c] : 0 <= a <= b <= c or (0 <= b <= c and a > 0) }";
+	return test_coalesce_intersection(ctx, s1, s2);
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2354,6 +2371,9 @@ static int test_coalesce(struct isl_ctx *ctx)
 		return -1;
 	if (test_coalesce_special5(ctx) < 0)
 		return -1;
+	if (test_coalesce_special6(ctx) < 0)
+		return -1;
+
 
 	return 0;
 }
