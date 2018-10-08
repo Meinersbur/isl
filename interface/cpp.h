@@ -27,7 +27,6 @@ public:
 
 	virtual void generate();
 private:
-	void print_file(ostream &os, std::string filename);
 	void print_forward_declarations(ostream &os);
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
