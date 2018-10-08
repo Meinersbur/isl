@@ -8508,7 +8508,7 @@ static int test_ast_expr(isl_ctx *ctx)
 	build = isl_ast_build_alloc(ctx);
 	expr = isl_ast_build_expr_from_pw_aff(build, pa);
 	is_min = isl_ast_expr_get_type(expr) == isl_ast_expr_op &&
-		 isl_ast_expr_get_op_type(expr) == isl_ast_op_min;
+		 isl_ast_expr_get_op_type(expr) == isl_ast_expr_op_min;
 	isl_ast_build_free(build);
 	isl_ast_expr_free(expr);
 

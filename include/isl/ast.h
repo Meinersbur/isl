@@ -71,8 +71,10 @@ __isl_export
 __isl_give isl_id *isl_ast_expr_id_get_id(__isl_keep isl_ast_expr *expr);
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr);
 
-enum isl_ast_op_type isl_ast_expr_op_get_type(__isl_keep isl_ast_expr *expr);
-enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr);
+enum isl_ast_expr_op_type isl_ast_expr_op_get_type(
+	__isl_keep isl_ast_expr *expr);
+enum isl_ast_expr_op_type isl_ast_expr_get_op_type(
+	__isl_keep isl_ast_expr *expr);
 __isl_export
 isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr);
 isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
@@ -171,15 +173,24 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 isl_stat isl_options_set_ast_print_macro_once(isl_ctx *ctx, int val);
 int isl_options_get_ast_print_macro_once(isl_ctx *ctx);
 
+isl_stat isl_ast_expr_foreach_ast_expr_op_type(__isl_keep isl_ast_expr *expr,
+	isl_stat (*fn)(enum isl_ast_expr_op_type type, void *user), void *user);
 isl_stat isl_ast_expr_foreach_ast_op_type(__isl_keep isl_ast_expr *expr,
-	isl_stat (*fn)(enum isl_ast_op_type type, void *user), void *user);
+	isl_stat (*fn)(enum isl_ast_expr_op_type type, void *user), void *user);
+isl_stat isl_ast_node_foreach_ast_expr_op_type(__isl_keep isl_ast_node *node,
+	isl_stat (*fn)(enum isl_ast_expr_op_type type, void *user), void *user);
 isl_stat isl_ast_node_foreach_ast_op_type(__isl_keep isl_ast_node *node,
-	isl_stat (*fn)(enum isl_ast_op_type type, void *user), void *user);
-__isl_give isl_printer *isl_ast_op_type_set_print_name(
-	__isl_take isl_printer *p, enum isl_ast_op_type type,
+	isl_stat (*fn)(enum isl_ast_expr_op_type type, void *user), void *user);
+__isl_give isl_printer *isl_ast_expr_op_type_set_print_name(
+	__isl_take isl_printer *p, enum isl_ast_expr_op_type type,
 	__isl_keep const char *name);
+__isl_give isl_printer *isl_ast_op_type_set_print_name(
+	__isl_take isl_printer *p, enum isl_ast_expr_op_type type,
+	__isl_keep const char *name);
+__isl_give isl_printer *isl_ast_expr_op_type_print_macro(
+	enum isl_ast_expr_op_type type, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_op_type_print_macro(
-	enum isl_ast_op_type type, __isl_take isl_printer *p);
+	enum isl_ast_expr_op_type type, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_expr_print_macros(
 	__isl_keep isl_ast_expr *expr, __isl_take isl_printer *p);
 __isl_give isl_printer *isl_ast_node_print_macros(
