@@ -367,7 +367,8 @@ isl_class *generator::method2class(FunctionDecl *fd)
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {
 		size_t len = ci->first.length();
-		if (len > best.length() && name.substr(0, len) == ci->first)
+		if (len > best.length() && name.substr(0, len) == ci->first &&
+		    name[len] == '_')
 			best = ci->first;
 	}
 
