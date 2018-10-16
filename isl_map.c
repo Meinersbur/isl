@@ -6800,6 +6800,183 @@ __isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
 	return set_from_map(isl_map_upper_bound_val(map, type, pos, value));
 }
 
+#undef BASE
+#define BASE	val
+#include "isl_map_bound_templ.c"
+
+/* Apply "map_bound" to "set" with the corresponding value in "bound"
+ * for each set dimension, by treating the set as a map.
+ */
+static __isl_give isl_set *set_bound_multi_val(__isl_take isl_set *set,
+	__isl_take isl_multi_val *bound,
+	__isl_give isl_map *map_bound(__isl_take isl_map *map,
+		unsigned pos, __isl_take isl_val *value))
+{
+	isl_map *map;
+
+	map = set_to_map(set);
+	return set_from_map(map_bound_multi_val(map, bound, map_bound));
+}
+
+#undef BASE
+#define BASE	pw_aff
+#include "isl_map_bound_templ.c"
+
+/* Apply "map_bound" to "set" with the corresponding value in "bound"
+ * for each set dimension, by converting the set and the bound
+ * to objects living in a map space.
+ */
+static __isl_give isl_set *set_bound_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *bound,
+	__isl_give isl_map *set_bound(__isl_take isl_map *map,
+		unsigned pos, __isl_take TYPE *value))
+{
+	isl_map *map;
+
+	map = isl_map_from_range(set);
+	bound = isl_multi_pw_aff_from_range(bound);
+	map = map_bound_multi_pw_aff(map, bound, set_bound);
+	return isl_map_range(map);
+}
+
+/* Wrapper around isl_map_lower_bound_val for use in map_bound_multi_val,
+ * setting a bound on the given output dimension.
+ */
+static __isl_give isl_map *map_lower_bound_val(__isl_take isl_map *map,
+	unsigned pos, __isl_take isl_val *v)
+{
+	return isl_map_lower_bound_val(map, isl_dim_out, pos, v);
+}
+
+/* Force the values of the set dimensions of "set"
+ * to be no smaller than the corresponding values in "lower".
+ */
+__isl_give isl_set *isl_set_lower_bound_multi_val(__isl_take isl_set *set,
+	__isl_take isl_multi_val *lower)
+{
+	return set_bound_multi_val(set, lower, &map_lower_bound_val);
+}
+
+/* Force the values of the output dimensions of "map"
+ * to be no smaller than the corresponding values in "lower".
+ */
+__isl_give isl_map *isl_map_lower_bound_multi_val(__isl_take isl_map *map,
+	__isl_take isl_multi_val *lower)
+{
+	return map_bound_multi_val(map, lower, &map_lower_bound_val);
+}
+
+/* Wrapper around isl_map_upper_bound_val for use in map_bound_multi_val,
+ * setting a bound on the given output dimension.
+ */
+static __isl_give isl_map *map_upper_bound_val(__isl_take isl_map *map,
+	unsigned pos, __isl_take isl_val *v)
+{
+	return isl_map_upper_bound_val(map, isl_dim_out, pos, v);
+}
+
+/* Force the values of the set dimensions of "set"
+ * to be no greater than the corresponding values in "upper".
+ */
+__isl_give isl_set *isl_set_upper_bound_multi_val(__isl_take isl_set *set,
+	__isl_take isl_multi_val *upper)
+{
+	return set_bound_multi_val(set, upper, &map_upper_bound_val);
+}
+
+/* Force the values of the set dimensions of "set"
+ * to be no greater than the corresponding values in "upper".
+ */
+__isl_give isl_map *isl_map_upper_bound_multi_val(__isl_take isl_map *map,
+	__isl_take isl_multi_val *upper)
+{
+	return map_bound_multi_val(map, upper, &map_upper_bound_val);
+}
+
+/* Force the symbolic constant expression "bound"
+ * to satisfy the relation "order" with respect to
+ * the output variable at position "pos" of "map".
+ *
+ * Create an affine expression representing the output variable
+ * in terms of the range and
+ * compare it using "order" to "bound" (defined on the domain).
+ * The result is a relation between elements in domain and range that
+ * can be intersected with "map".
+ */
+static __isl_give isl_map *map_bound_pw_aff(__isl_take isl_map *map,
+	unsigned pos, __isl_take isl_pw_aff *bound,
+	__isl_give isl_map *(*order)(__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2))
+{
+	isl_space *space;
+	isl_local_space *ls;
+	isl_pw_aff *var;
+
+	space = isl_space_range(isl_map_get_space(map));
+	ls = isl_local_space_from_space(space);
+	var = isl_pw_aff_var_on_domain(ls, isl_dim_set, pos);
+	map = isl_map_intersect(map, order(bound, var));
+	return map;
+}
+
+/* Force the values of the output variable at position "pos" of "map"
+ * to be no smaller than the symbolic constant expression "lower".
+ */
+static __isl_give isl_map *map_lower_bound_pw_aff(__isl_take isl_map *map,
+	unsigned pos, __isl_take isl_pw_aff *lower)
+{
+	return map_bound_pw_aff(map, pos, lower, &isl_pw_aff_le_map);
+}
+
+/* Force the values of the output variable at position "pos" of "map"
+ * to be no greater than the symbolic constant expression "upper".
+ */
+static __isl_give isl_map *map_upper_bound_pw_aff(__isl_take isl_map *map,
+	unsigned pos, __isl_take isl_pw_aff *upper)
+{
+	return map_bound_pw_aff(map, pos, upper, &isl_pw_aff_ge_map);
+}
+
+/* Force the values of the set dimensions of "set"
+ * to be no smaller than the corresponding constant symbolic expressions
+ * in "lower".
+ */
+__isl_give isl_set *isl_set_lower_bound_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *lower)
+{
+	return set_bound_multi_pw_aff(set, lower, &map_lower_bound_pw_aff);
+}
+
+/* Force the values of the set dimensions of "set"
+ * to be no greater than the corresponding constant symbolic expressions
+ * in "upper".
+ */
+__isl_give isl_set *isl_set_upper_bound_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *upper)
+{
+	return set_bound_multi_pw_aff(set, upper, &map_upper_bound_pw_aff);
+}
+
+/* Force the values of the output dimensions of "map"
+ * to be no smaller than the corresponding constant symbolic expressions
+ * in "lower".
+ */
+__isl_give isl_map *isl_map_lower_bound_multi_pw_aff(__isl_take isl_map *map,
+	__isl_take isl_multi_pw_aff *lower)
+{
+	return map_bound_multi_pw_aff(map, lower, &map_lower_bound_pw_aff);
+}
+
+/* Force the values of the output dimensions of "map"
+ * to be no greater than the corresponding constant symbolic expressions
+ * in "upper".
+ */
+__isl_give isl_map *isl_map_upper_bound_multi_pw_aff(__isl_take isl_map *map,
+	__isl_take isl_multi_pw_aff *upper)
+{
+	return map_bound_multi_pw_aff(map, upper, &map_upper_bound_pw_aff);
+}
+
 /* Bound the given variable of "bset" from below (or above is "upper"
  * is set) to "value".
  */
