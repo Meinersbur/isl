@@ -215,7 +215,9 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),restore_check_space)(
 	return FN(MULTI(BASE),restore)(multi, pos, el);
 }
 
-__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
+/* Replace the base expression at position "pos" in "multi" with "el".
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_at)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
 	isl_space *multi_space = NULL;
@@ -246,6 +248,14 @@ error:
 	isl_space_free(multi_space);
 	isl_space_free(el_space);
 	return NULL;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
+	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
+{
+	return FN(MULTI(BASE),set_at)(multi, pos, el);
 }
 
 /* Reset the space of "multi".  This function is called from isl_pw_templ.c

@@ -3110,26 +3110,45 @@ Similarly for the other pairs of functions.
 The base expression can be replaced using the following functions.
 
 	#include <isl/id.h>
+	__isl_give isl_multi_id *isl_multi_id_set_at(
+		__isl_take isl_multi_id *mi, int pos,
+		__isl_take isl_id *id);
 	__isl_give isl_multi_id *isl_multi_id_set_id(
 		__isl_take isl_multi_id *mi, int pos,
 		__isl_take isl_id *id);
 
 	#include <isl/val.h>
+	__isl_give isl_multi_val *isl_multi_val_set_at(
+		__isl_take isl_multi_val *mv, int pos,
+		__isl_take isl_val *val);
 	__isl_give isl_multi_val *isl_multi_val_set_val(
 		__isl_take isl_multi_val *mv, int pos,
 		__isl_take isl_val *val);
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *isl_multi_aff_set_at(
+		__isl_take isl_multi_aff *ma, int pos,
+		__isl_take isl_aff *aff);
 	__isl_give isl_multi_aff *isl_multi_aff_set_aff(
 		__isl_take isl_multi_aff *multi, int pos,
 		__isl_take isl_aff *aff);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_at(
+		__isl_take isl_multi_pw_aff *mpa, int pos,
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_pw_aff(
 		__isl_take isl_multi_pw_aff *mpa, int pos,
 		__isl_take isl_pw_aff *pa);
 	__isl_give isl_multi_union_pw_aff *
+	isl_multi_union_pw_aff_set_at(
+		__isl_take isl_multi_union_pw_aff *mupa, int pos,
+		__isl_take isl_union_pw_aff *upa);
+	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_set_union_pw_aff(
 		__isl_take isl_multi_union_pw_aff *mupa, int pos,
 		__isl_take isl_union_pw_aff *upa);
+
+C<isl_multi_id_set_id> is an alternative name for C<isl_multi_id_set_at>.
+Similarly for the other pairs of functions.
 
 As a convenience, a sequence of base expressions that have
 their domains in a given space can be extracted from a sequence
