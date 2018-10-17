@@ -731,6 +731,14 @@ error:
 	return NULL;
 }
 
+/* This function performs the same operation as isl_map_from_union_map,
+ * but is considered as a function on an isl_union_map when exported.
+ */
+__isl_give isl_map *isl_union_map_as_map(__isl_take isl_union_map *umap)
+{
+	return isl_map_from_union_map(umap);
+}
+
 __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
 {
 	return isl_map_from_union_map(uset);
