@@ -156,8 +156,9 @@ isl_size FN(MULTI(BASE),size)(__isl_keep MULTI(BASE) *multi)
 static
 #include "check_type_range_templ.c"
 
-__isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
-	int pos)
+/* Return a copy of the base expression at position "pos" in "multi".
+ */
+__isl_give EL *FN(MULTI(BASE),get_at)(__isl_keep MULTI(BASE) *multi, int pos)
 {
 	isl_ctx *ctx;
 
@@ -165,6 +166,14 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 		return NULL;
 	ctx = FN(MULTI(BASE),get_ctx)(multi);
 	return FN(EL,copy)(multi->u.p[pos]);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
+	int pos)
+{
+	return FN(MULTI(BASE),get_at)(multi, pos);
 }
 
 /* Set the element at position "pos" of "multi" to "el",

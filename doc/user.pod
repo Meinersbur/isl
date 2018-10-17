@@ -3077,23 +3077,37 @@ The base expression at a given position of a multiple
 expression can be extracted using the following functions.
 
 	#include <isl/id.h>
+	__isl_give isl_id *isl_multi_id_get_at(
+		__isl_keep isl_multi_id *mi, int pos);
 	__isl_give isl_id *isl_multi_id_get_id(
 		__isl_keep isl_multi_id *mi, int pos);
 
 	#include <isl/val.h>
+	__isl_give isl_val *isl_multi_val_get_at(
+		__isl_keep isl_multi_val *mv, int pos);
 	__isl_give isl_val *isl_multi_val_get_val(
 		__isl_keep isl_multi_val *mv, int pos);
 
 	#include <isl/aff.h>
+	__isl_give isl_aff *isl_multi_aff_get_at(
+		__isl_keep isl_multi_aff *ma, int pos);
 	__isl_give isl_aff *isl_multi_aff_get_aff(
 		__isl_keep isl_multi_aff *multi, int pos);
+	__isl_give isl_pw_aff *isl_multi_pw_aff_get_at(
+		__isl_keep isl_multi_pw_aff *mpa, int pos);
 	__isl_give isl_pw_aff *isl_multi_pw_aff_get_pw_aff(
 		__isl_keep isl_multi_pw_aff *mpa, int pos);
+	__isl_give isl_union_pw_aff *
+	isl_multi_union_pw_aff_get_at(
+		__isl_keep isl_multi_union_pw_aff *mupa, int pos);
 	__isl_give isl_union_pw_aff *
 	isl_multi_union_pw_aff_get_union_pw_aff(
 		__isl_keep isl_multi_union_pw_aff *mupa, int pos);
 
-It can be replaced using the following functions.
+C<isl_multi_id_get_id> is an alternative name for C<isl_multi_id_get_at>.
+Similarly for the other pairs of functions.
+
+The base expression can be replaced using the following functions.
 
 	#include <isl/id.h>
 	__isl_give isl_multi_id *isl_multi_id_set_id(
