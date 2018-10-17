@@ -4198,6 +4198,15 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
 	return isl_pw_multi_aff_from_multi_aff(ma);
 }
 
+/* This function performs the same operation as isl_pw_multi_aff_from_multi_aff,
+ * but is considered as a function on an isl_multi_aff when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_multi_aff_to_pw_multi_aff(
+	__isl_take isl_multi_aff *ma)
+{
+	return isl_pw_multi_aff_from_multi_aff(ma);
+}
+
 /* Create a piecewise multi-affine expression in the given space that maps each
  * input dimension to the corresponding output dimension.
  */

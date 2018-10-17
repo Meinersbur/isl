@@ -580,6 +580,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
 	__isl_take isl_space *space, enum isl_dim_type type,
 	unsigned first, unsigned n);
+__isl_export
+__isl_give isl_pw_multi_aff *isl_multi_aff_to_pw_multi_aff(
+	__isl_take isl_multi_aff *ma);
 __isl_constructor
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
