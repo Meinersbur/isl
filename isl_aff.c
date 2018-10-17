@@ -5459,6 +5459,14 @@ error:
 	return NULL;
 }
 
+/* This function performs the same operation as isl_pw_multi_aff_from_map,
+ * but is considered as a function on an isl_map when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_map_as_pw_multi_aff(__isl_take isl_map *map)
+{
+	return isl_pw_multi_aff_from_map(map);
+}
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(__isl_take isl_set *set)
 {
 	return isl_pw_multi_aff_from_map(set);
