@@ -523,6 +523,14 @@ __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map)
 	return umap;
 }
 
+/* This function performs the same operation as isl_union_map_from_map,
+ * but is considered as a function on an isl_map when exported.
+ */
+__isl_give isl_union_map *isl_map_to_union_map(__isl_take isl_map *map)
+{
+	return isl_union_map_from_map(map);
+}
+
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set)
 {
 	return isl_union_map_from_map(set_to_map(set));
