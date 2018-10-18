@@ -228,6 +228,14 @@ __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *ma)
 	return isl_map_from_multi_aff_internal(ma);
 }
 
+/* This function performs the same operation as isl_map_from_multi_aff,
+ * but is considered as a function on an isl_multi_aff when exported.
+ */
+__isl_give isl_map *isl_multi_aff_as_map(__isl_take isl_multi_aff *ma)
+{
+	return isl_map_from_multi_aff(ma);
+}
+
 /* Construct a set mapping the parameter domain the multi-affine expression
  * to its space, with each dimension in the space equated to the
  * corresponding affine expression.

@@ -744,6 +744,8 @@ __isl_give isl_basic_map *isl_basic_map_from_aff_list(
 	__isl_take isl_space *domain_space, __isl_take isl_aff_list *list);
 
 __isl_give isl_map *isl_map_from_aff(__isl_take isl_aff *aff);
+__isl_export
+__isl_give isl_map *isl_multi_aff_as_map(__isl_take isl_multi_aff *ma);
 __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff);
 
 __isl_give isl_pw_aff *isl_map_dim_min(__isl_take isl_map *map, int pos);
