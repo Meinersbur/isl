@@ -501,6 +501,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(
 isl_ctx *isl_pw_multi_aff_get_ctx(__isl_keep isl_pw_multi_aff *pma);
 __isl_give isl_space *isl_pw_multi_aff_get_domain_space(
 	__isl_keep isl_pw_multi_aff *pma);
+__isl_export
 __isl_give isl_space *isl_pw_multi_aff_get_space(
 	__isl_keep isl_pw_multi_aff *pma);
 isl_bool isl_pw_multi_aff_has_tuple_name(__isl_keep isl_pw_multi_aff *pma,
@@ -674,6 +675,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add_pw_multi_aff(
 
 isl_ctx *isl_union_pw_multi_aff_get_ctx(
 	__isl_keep isl_union_pw_multi_aff *upma);
+__isl_export
 __isl_give isl_space *isl_union_pw_multi_aff_get_space(
 	__isl_keep isl_union_pw_multi_aff *upma);
 __isl_give isl_pw_multi_aff_list *isl_union_pw_multi_aff_get_pw_multi_aff_list(
@@ -857,6 +859,7 @@ __isl_null isl_union_pw_aff *isl_union_pw_aff_free(
 	__isl_take isl_union_pw_aff *upa);
 
 isl_ctx *isl_union_pw_aff_get_ctx(__isl_keep isl_union_pw_aff *upa);
+__isl_export
 __isl_give isl_space *isl_union_pw_aff_get_space(
 	__isl_keep isl_union_pw_aff *upa);
 __isl_give isl_pw_aff_list *isl_union_pw_aff_get_pw_aff_list(

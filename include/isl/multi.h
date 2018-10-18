@@ -15,6 +15,7 @@ isl_size isl_multi_##BASE##_dim(__isl_keep isl_multi_##BASE *multi,	\
 	enum isl_dim_type type);					\
 isl_ctx *isl_multi_##BASE##_get_ctx(					\
 	__isl_keep isl_multi_##BASE *multi);				\
+__isl_export								\
 __isl_give isl_space *isl_multi_##BASE##_get_space(			\
 	__isl_keep isl_multi_##BASE *multi);				\
 __isl_give isl_space *isl_multi_##BASE##_get_domain_space(		\

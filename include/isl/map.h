@@ -39,6 +39,7 @@ isl_size isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
 isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map);
 __isl_give isl_space *isl_basic_map_get_space(__isl_keep isl_basic_map *bmap);
+__isl_export
 __isl_give isl_space *isl_map_get_space(__isl_keep isl_map *map);
 
 __isl_give isl_aff *isl_basic_map_get_div(__isl_keep isl_basic_map *bmap,

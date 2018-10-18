@@ -30,6 +30,7 @@ __isl_give isl_union_map *isl_union_map_copy(__isl_keep isl_union_map *umap);
 __isl_null isl_union_map *isl_union_map_free(__isl_take isl_union_map *umap);
 
 isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap);
+__isl_export
 __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_reset_user(
