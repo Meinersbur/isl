@@ -544,3 +544,13 @@ error:
 	isl_union_map_free(umap);
 	return NULL;
 }
+
+/* This function performs the same operation as
+ * isl_union_map_from_union_pw_multi_aff,
+ * but is considered as a function on an isl_union_pw_multi_aff when exported.
+ */
+__isl_give isl_union_map *isl_union_pw_multi_aff_as_union_map(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	return isl_union_map_from_union_pw_multi_aff(upma);
+}
