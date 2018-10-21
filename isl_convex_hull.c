@@ -1578,7 +1578,25 @@ static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	return isl_int_eq(c->c->row[0][0], con[0]);
 }
 
+/* Are the constraints of "bset" known to be facets?
+ * If there are any equality constraints, then they are not.
+ * If there may be redundant constraints, then those
+ * redundant constraints are not facets.
+ */
+static isl_bool has_facets(__isl_keep isl_basic_set *bset)
+{
+	int n_eq;
+
+	n_eq = isl_basic_set_n_equality(bset);
+	if (n_eq < 0)
+		return isl_bool_error;
+	if (n_eq != 0)
+		return isl_bool_false;
+	return ISL_F_ISSET(bset, ISL_BASIC_SET_NO_REDUNDANT);
+}
+
 /* Check for inequality constraints of a basic set without equalities
+ * or redundant constraints
  * such that the same or more stringent copies of the constraint appear
  * in all of the basic sets.  Such constraints are necessarily facet
  * constraints of the convex hull.
@@ -1600,15 +1618,22 @@ static __isl_give isl_basic_set *common_constraints(
 
 	*is_hull = 0;
 
-	for (i = 0; i < set->n; ++i)
-		if (set->p[i]->n_eq == 0)
+	for (i = 0; i < set->n; ++i) {
+		isl_bool facets = has_facets(set->p[i]);
+		if (facets < 0)
+			return isl_basic_set_free(hull);
+		if (facets)
 			break;
+	}
 	if (i >= set->n)
 		return hull;
 	min_constraints = set->p[i]->n_ineq;
 	best = i;
 	for (i = best + 1; i < set->n; ++i) {
-		if (set->p[i]->n_eq != 0)
+		isl_bool facets = has_facets(set->p[i]);
+		if (facets < 0)
+			return isl_basic_set_free(hull);
+		if (!facets)
 			continue;
 		if (set->p[i]->n_ineq >= min_constraints)
 			continue;

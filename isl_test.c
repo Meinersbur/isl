@@ -1466,6 +1466,11 @@ struct {
 	{ "{ [x, y, z] : 0 <= x, y, z <= 10; [x, y, 0] : x >= 0 and y > 0; "
 	    "[x, y, 0] : x >= 0 and y < 0 }",
 	    "{ [x, y, z] : x >= 0 and 0 <= z <= 10 }" },
+	{ "{ [a, b, c] : a <= 1 and -a < b <= 1 and 0 <= c <= 2 - a - b and "
+			    "c <= a; "
+	    "[0, 2, 0]; [3, 1, 0] }",
+	    "{ [a, b, c] : b > -a and 2b >= -1 + a and 0 <= c <= a and "
+			    "5c <= 6 - a - 3b }" },
 };
 
 static int test_convex_hull_algo(isl_ctx *ctx, int convex)
