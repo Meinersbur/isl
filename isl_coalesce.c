@@ -1082,6 +1082,7 @@ static enum isl_change extend(int i, int j, int n, int *relax,
 	for (l = 0; l < n; ++l)
 		isl_int_add_ui(info[i].bmap->ineq[relax[l]][0],
 				info[i].bmap->ineq[relax[l]][0], 1);
+	ISL_F_CLR(info[i].bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_FINAL);
 	drop(&info[j]);
 	info[i].modified = 1;
