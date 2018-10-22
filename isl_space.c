@@ -803,6 +803,24 @@ isl_bool isl_space_has_equal_tuples(__isl_keep isl_space *space1,
 					space2, isl_dim_out);
 }
 
+/* Check that the two spaces are the same,
+ * apart from positions and names of parameters.
+ */
+isl_stat isl_space_check_equal_tuples(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	isl_bool is_equal;
+
+	is_equal = isl_space_has_equal_tuples(space1, space2);
+	if (is_equal < 0)
+		return isl_stat_error;
+	if (!is_equal)
+		isl_die(isl_space_get_ctx(space1), isl_error_invalid,
+			"incompatible spaces", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Check if the tuple of type "type1" of "space1" is the same as
  * the tuple of type "type2" of "space2".
  *
