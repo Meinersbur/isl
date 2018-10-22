@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2013-2014 Ecole Normale Superieure
+ * Copyright 2018      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -10,6 +11,7 @@
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <stdlib.h>
@@ -1978,6 +1980,83 @@ __isl_give isl_space *isl_space_add_named_tuple_id_ui(
 {
 	space = isl_space_add_unnamed_tuple_ui(space, dim);
 	space = isl_space_set_tuple_id(space, isl_dim_out, tuple_id);
+	return space;
+}
+
+/* Check that the identifiers in "tuple" do not appear as parameters
+ * in "space".
+ */
+static isl_stat check_fresh_params(__isl_keep isl_space *space,
+	__isl_keep isl_multi_id *tuple)
+{
+	int i;
+	isl_size n;
+
+	n = isl_multi_id_size(tuple);
+	if (n < 0)
+		return isl_stat_error;
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+		int pos;
+
+		id = isl_multi_id_get_at(tuple, i);
+		if (!id)
+			return isl_stat_error;
+		pos = isl_space_find_dim_by_id(space, isl_dim_param, id);
+		isl_id_free(id);
+		if (pos >= 0)
+			isl_die(isl_space_get_ctx(space), isl_error_invalid,
+				"parameters not unique", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
+/* Add the identifiers in "tuple" as parameters of "space"
+ * that are known to be fresh.
+ */
+static __isl_give isl_space *add_bind_params(__isl_take isl_space *space,
+	__isl_keep isl_multi_id *tuple)
+{
+	int i;
+	isl_size first, n;
+
+	first = isl_space_dim(space, isl_dim_param);
+	n = isl_multi_id_size(tuple);
+	if (first < 0 || n < 0)
+		return isl_space_free(space);
+	space = isl_space_add_dims(space, isl_dim_param, n);
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+
+		id = isl_multi_id_get_at(tuple, i);
+		space = isl_space_set_dim_id(space,
+						isl_dim_param, first + i, id);
+	}
+
+	return space;
+}
+
+/* Internal function that removes the set tuple of "space",
+ * which is assumed to correspond to the range space of "tuple", and
+ * adds the identifiers in "tuple" as fresh parameters.
+ * In other words, the set dimensions of "space" are reinterpreted
+ * as parameters, but stay in the same global positions.
+ */
+__isl_give isl_space *isl_space_bind_set(__isl_take isl_space *space,
+	__isl_keep isl_multi_id *tuple)
+{
+	isl_space *tuple_space;
+
+	if (isl_space_check_is_set(space) < 0)
+		return isl_space_free(space);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	if (isl_space_check_equal_tuples(tuple_space, space) < 0)
+		return isl_space_free(space);
+	if (check_fresh_params(space, tuple) < 0)
+		return isl_space_free(space);
+	space = isl_space_params(space);
+	space = add_bind_params(space, tuple);
 	return space;
 }
 

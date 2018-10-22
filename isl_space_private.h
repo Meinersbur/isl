@@ -66,6 +66,8 @@ __isl_give isl_space *isl_space_lift(__isl_take isl_space *space,
 
 __isl_give isl_space *isl_space_extend_domain_with_range(
 	__isl_take isl_space *domain, __isl_take isl_space *model);
+__isl_give isl_space *isl_space_bind_set(__isl_take isl_space *space,
+	__isl_keep isl_multi_id *tuple);
 __isl_give isl_space *isl_space_unbind_params_insert_domain(
 	__isl_take isl_space *space, __isl_keep isl_multi_id *tuple);
 
