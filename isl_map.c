@@ -5,6 +5,7 @@
  * Copyright 2014      INRIA Rocquencourt
  * Copyright 2016      INRIA Paris
  * Copyright 2016      Sven Verdoolaege
+ * Copyright 2018      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -17,13 +18,14 @@
  * B.P. 105 - 78153 Le Chesnay, France
  * and Centre de Recherche Inria de Paris, 2 rue Simone Iff - Voie DQ12,
  * CS 42112, 75589 Paris Cedex 12, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <string.h>
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
 #include <isl_blk.h>
-#include <isl/id.h>
+#include <isl_id_private.h>
 #include <isl/constraint.h>
 #include "isl_space_private.h"
 #include "isl_equalities.h"
@@ -11997,6 +11999,65 @@ __isl_give isl_basic_set *isl_basic_set_drop_unused_params(
 {
 	return bset_from_bmap(isl_basic_map_drop_unused_params(
 							bset_to_bmap(bset)));
+}
+
+/* Given a tuple of identifiers "tuple" in a space that corresponds
+ * to that of "set", if any of those identifiers appear as parameters
+ * in "set", then equate those parameters with the corresponding
+ * set dimensions and project out the parameters.
+ * The result therefore has no such parameters.
+ */
+static __isl_give isl_set *equate_params(__isl_take isl_set *set,
+	__isl_keep isl_multi_id *tuple)
+{
+	int i;
+	isl_size n;
+	isl_space *set_space, *tuple_space;
+
+	set_space = isl_set_peek_space(set);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	if (isl_space_check_equal_tuples(tuple_space, set_space) < 0)
+		return isl_set_free(set);
+	n = isl_multi_id_size(tuple);
+	if (n < 0)
+		return isl_set_free(set);
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+		int pos;
+
+		id = isl_multi_id_get_at(tuple, i);
+		if (!id)
+			return isl_set_free(set);
+		pos = isl_set_find_dim_by_id(set, isl_dim_param, id);
+		isl_id_free(id);
+		if (pos < 0)
+			continue;
+		set = isl_set_equate(set, isl_dim_param, pos, isl_dim_set, i);
+		set = isl_set_project_out(set, isl_dim_param, pos, 1);
+	}
+	return set;
+}
+
+/* Bind the set dimensions of "set" to parameters with identifiers
+ * specified by "tuple", living in the same space as "set".
+ *
+ * If no parameters with these identifiers appear in "set" already,
+ * then the set dimensions are simply reinterpreted as parameters.
+ * Otherwise, the parameters are first equated to the corresponding
+ * set dimensions.
+ */
+__isl_give isl_set *isl_set_bind(__isl_take isl_set *set,
+	__isl_take isl_multi_id *tuple)
+{
+	isl_space *space;
+
+	set = equate_params(set, tuple);
+	space = isl_set_get_space(set);
+	space = isl_space_bind_set(space, tuple);
+	isl_multi_id_free(tuple);
+	set = isl_set_reset_space(set, space);
+
+	return set;
 }
 
 /* Insert a domain corresponding to "tuple"

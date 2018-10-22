@@ -4738,6 +4738,22 @@ earlier dimensions before those that involve later dimensions.
 	__isl_give isl_union_map *isl_union_map_reverse(
 		__isl_take isl_union_map *umap);
 
+=item * Tuple binding
+
+The following function binds
+a tuple to a sequence of parameter identifiers, equating
+the tuple dimensions to the parameters with those identifiers and
+subsequently projecting out the tuple.
+If the original object did not reference any such parameters,
+then this means that the tuple dimensions are reinterpreted
+as parameters.
+The space of C<tuple> needs to match that of the bound tuple.
+
+	#include <isl/set.h>
+	__isl_give isl_set *isl_set_bind(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_id *tuple);
+
 =item * Projection
 
 	#include <isl/space.h>

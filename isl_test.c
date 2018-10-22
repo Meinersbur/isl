@@ -6357,6 +6357,66 @@ int test_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_set_bind tests.
+ * "set" is the input set.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *set;
+	const char *tuple;
+	const char *res;
+} bind_set_tests[] = {
+	{ "{ A[M, N] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ A[M, N] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "{ B[N, M] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ B[N, M] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M] -> { C[N] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ C[N] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M] -> { D[x, N] : x mod 2 = 0 and N mod 8 = 3 and M >= 0 }",
+	  "{ D[M, N] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 and M >= 0 }" },
+};
+
+/* Perform basic isl_set_bind tests.
+ */
+static isl_stat test_bind_set(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_set_tests); ++i) {
+		const char *str;
+		isl_set *set;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		set = isl_set_read_from_str(ctx, bind_set_tests[i].set);
+		str = bind_set_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		set = isl_set_bind(set, tuple);
+		r = set_check_equal(set, bind_set_tests[i].res);
+		isl_set_free(set);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Perform tests that reinterpret dimensions as parameters.
+ */
+static int test_bind(isl_ctx *ctx)
+{
+	if (test_bind_set(ctx) < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Inputs for isl_set_unbind_params tests.
  * "set" is the input parameter domain.
  * "tuple" is the tuple of the constructed set.
@@ -9591,6 +9651,7 @@ struct {
 	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 	{ "lift", &test_lift },
+	{ "bind parameters", &test_bind },
 	{ "unbind parameters", &test_unbind },
 	{ "bound", &test_bound },
 	{ "get lists", &test_get_list },
