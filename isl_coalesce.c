@@ -177,6 +177,8 @@ static int all(int *con, unsigned len, int status)
  * "bmap" is the basic map itself (or NULL if "removed" is set)
  * "tab" is the corresponding tableau (or NULL if "removed" is set)
  * "hull_hash" identifies the affine space in which "bmap" lives.
+ * "modified" is set if this basic map may not be identical
+ * to any of the basic maps in the input.
  * "removed" is set if this basic map has been removed from the map
  * "simplify" is set if this basic map may have some unknown integer
  * divisions that were not present in the input basic maps.  The basic
@@ -194,6 +196,7 @@ struct isl_coalesce_info {
 	isl_basic_map *bmap;
 	struct isl_tab *tab;
 	uint32_t hull_hash;
+	int modified;
 	int removed;
 	int simplify;
 	int *eq;
@@ -570,6 +573,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	clear(&info[i]);
 	info[i].bmap = fused;
 	info[i].tab = fused_tab;
+	info[i].modified = 1;
 	drop(&info[j]);
 
 	return isl_change_fuse;
@@ -1092,8 +1096,10 @@ static enum isl_change extend(int i, int j, int n, int *relax,
 	for (l = 0; l < n; ++l)
 		isl_int_add_ui(info[i].bmap->ineq[relax[l]][0],
 				info[i].bmap->ineq[relax[l]][0], 1);
+	ISL_F_CLR(info[i].bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_FINAL);
 	drop(&info[j]);
+	info[i].modified = 1;
 	if (j < i)
 		exchange(&info[i], &info[j]);
 	return isl_change_fuse;
@@ -3882,6 +3888,10 @@ static int coalesce(isl_ctx *ctx, int n, struct isl_coalesce_info *info)
  * isl_basic_map_gauss, we need to do it now.
  * Also call isl_basic_map_simplify if we may have lost the definition
  * of one or more integer divisions.
+ * If a basic map is still equal to the one from which the corresponding "info"
+ * entry was created, then redundant constraint and
+ * implicit equality constraint detection have been performed
+ * on the corresponding tableau and the basic map can be marked as such.
  */
 static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
 	int n, struct isl_coalesce_info *info)
@@ -3908,8 +3918,10 @@ static __isl_give isl_map *update_basic_maps(__isl_take isl_map *map,
 		info[i].bmap = isl_basic_map_finalize(info[i].bmap);
 		if (!info[i].bmap)
 			return isl_map_free(map);
-		ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_NO_IMPLICIT);
-		ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+		if (!info[i].modified) {
+			ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_NO_IMPLICIT);
+			ISL_F_SET(info[i].bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+		}
 		isl_basic_map_free(map->p[i]);
 		map->p[i] = info[i].bmap;
 		info[i].bmap = NULL;

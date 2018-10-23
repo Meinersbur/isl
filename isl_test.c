@@ -120,28 +120,31 @@ static int test_parse_multi_val(isl_ctx *ctx, const char *str)
 	return mv ? 0 : -1;
 }
 
-/* Check that printing "mpa" and parsing the output results
- * in the same expression.
- */
-static isl_stat check_reparse_mpa(isl_ctx *ctx,
-	__isl_take isl_multi_pw_aff *mpa)
-{
-	char *str;
-	isl_bool equal;
-	isl_multi_pw_aff *mpa2;
+#undef BASE
+#define BASE multi_pw_aff
 
-	str = isl_multi_pw_aff_to_str(mpa);
-	mpa2 = isl_multi_pw_aff_read_from_str(ctx, str);
-	free(str);
-	equal = isl_multi_pw_aff_plain_is_equal(mpa, mpa2);
-	isl_multi_pw_aff_free(mpa);
-	isl_multi_pw_aff_free(mpa2);
-	if (equal < 0)
+#include "check_reparse_templ.c"
+
+#undef BASE
+#define BASE pw_multi_aff
+
+#include "check_reparse_templ.c"
+
+/* Test parsing of piecewise multi affine expressions by printing
+ * the expressions and checking that parsing the output results
+ * in the same expression.
+ * Do this for an expression converted from a map with an output
+ * dimension name that is equal to an automatically generated name.
+ */
+static isl_stat test_parse_pma(isl_ctx *ctx)
+{
+	isl_map *map;
+	isl_pw_multi_aff *pma;
+
+	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
+	pma = isl_pw_multi_aff_from_map(map);
+	if (check_reparse_pw_multi_aff(ctx, pma) < 0)
 		return isl_stat_error;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown,
-			"parsed function not equal to original",
-			return isl_stat_error);
 
 	return isl_stat_ok;
 }
@@ -166,7 +169,9 @@ const char *parse_multi_mpa_tests[] = {
 /* Test parsing of multi piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
- * Do this for a couple of manually constructed expressions and
+ * Do this for a couple of manually constructed expressions,
+ * an expression converted from a map with an output dimension name
+ * that is equal to an automatically generated name, and
  * a set of expressions parsed from strings.
  */
 static int test_parse_mpa(isl_ctx *ctx)
@@ -174,13 +179,15 @@ static int test_parse_mpa(isl_ctx *ctx)
 	int i;
 	isl_space *space;
 	isl_set *dom;
+	isl_map *map;
+	isl_pw_multi_aff *pma;
 	isl_multi_pw_aff *mpa;
 	isl_stat r;
 
 	space = isl_space_set_alloc(ctx, 0, 0);
 	space = isl_space_set_tuple_name(space, isl_dim_set, "A");
 	mpa = isl_multi_pw_aff_zero(space);
-	r = check_reparse_mpa(ctx, mpa);
+	r = check_reparse_multi_pw_aff(ctx, mpa);
 	if (r < 0)
 		return -1;
 
@@ -191,8 +198,14 @@ static int test_parse_mpa(isl_ctx *ctx)
 	dom = isl_set_lower_bound_si(dom, isl_dim_param, 0, 5);
 	mpa = isl_multi_pw_aff_zero(space);
 	mpa = isl_multi_pw_aff_intersect_domain(mpa, dom);
-	r = check_reparse_mpa(ctx, mpa);
+	r = check_reparse_multi_pw_aff(ctx, mpa);
 	if (r < 0)
+		return -1;
+
+	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
+	pma = isl_pw_multi_aff_from_map(map);
+	mpa = isl_multi_pw_aff_from_pw_multi_aff(pma);
+	if (check_reparse_multi_pw_aff(ctx, mpa) < 0)
 		return -1;
 
 	for (i = 0; i < ARRAY_SIZE(parse_multi_mpa_tests); ++i) {
@@ -200,7 +213,7 @@ static int test_parse_mpa(isl_ctx *ctx)
 
 		str = parse_multi_mpa_tests[i];
 		mpa = isl_multi_pw_aff_read_from_str(ctx, str);
-		r = check_reparse_mpa(ctx, mpa);
+		r = check_reparse_multi_pw_aff(ctx, mpa);
 		if (r < 0)
 			return -1;
 	}
@@ -208,31 +221,11 @@ static int test_parse_mpa(isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that printing "mupa" and parsing the output results
- * in the same expression.
- */
-static isl_stat check_reparse_mupa(isl_ctx *ctx,
-	__isl_take isl_multi_union_pw_aff *mupa)
-{
-	char *str;
-	isl_bool equal;
-	isl_multi_union_pw_aff *mupa2;
 
-	str = isl_multi_union_pw_aff_to_str(mupa);
-	mupa2 = isl_multi_union_pw_aff_read_from_str(ctx, str);
-	free(str);
-	equal = isl_multi_union_pw_aff_plain_is_equal(mupa, mupa2);
-	isl_multi_union_pw_aff_free(mupa);
-	isl_multi_union_pw_aff_free(mupa2);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown,
-			"parsed function not equal to original",
-			return isl_stat_error);
+#undef BASE
+#define BASE multi_union_pw_aff
 
-	return isl_stat_ok;
-}
+#include "check_reparse_templ.c"
 
 /* String descriptions of multi union piecewise affine expressions
  * that are used for testing printing and parsing.
@@ -270,7 +263,7 @@ static int test_parse_mupa(isl_ctx *ctx)
 	space = isl_space_set_alloc(ctx, 0, 0);
 	space = isl_space_set_tuple_name(space, isl_dim_set, "A");
 	mupa = isl_multi_union_pw_aff_zero(space);
-	r = check_reparse_mupa(ctx, mupa);
+	r = check_reparse_multi_union_pw_aff(ctx, mupa);
 	if (r < 0)
 		return -1;
 
@@ -285,7 +278,7 @@ static int test_parse_mupa(isl_ctx *ctx)
 	space = isl_space_set_tuple_name(space, isl_dim_set, "B");
 	mupa = isl_multi_union_pw_aff_zero(space);
 	mupa = isl_multi_union_pw_aff_intersect_domain(mupa, uset);
-	r = check_reparse_mupa(ctx, mupa);
+	r = check_reparse_multi_union_pw_aff(ctx, mupa);
 	if (r < 0)
 		return -1;
 
@@ -294,7 +287,7 @@ static int test_parse_mupa(isl_ctx *ctx)
 
 		str = parse_multi_mupa_tests[i];
 		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
-		r = check_reparse_mupa(ctx, mupa);
+		r = check_reparse_multi_union_pw_aff(ctx, mupa);
 		if (r < 0)
 			return -1;
 	}
@@ -402,6 +395,8 @@ int test_parse(struct isl_ctx *ctx)
 	if (test_parse_multi_val(ctx, "{ A[4, infty, NaN, -1/2, 2/3] }") < 0)
 		return -1;
 	if (test_parse_multi(ctx) < 0)
+		return -1;
+	if (test_parse_pma(ctx) < 0)
 		return -1;
 
 	str = "{ [i] -> [-i] }";
@@ -1468,6 +1463,11 @@ struct {
 	{ "{ [x, y, z] : 0 <= x, y, z <= 10; [x, y, 0] : x >= 0 and y > 0; "
 	    "[x, y, 0] : x >= 0 and y < 0 }",
 	    "{ [x, y, z] : x >= 0 and 0 <= z <= 10 }" },
+	{ "{ [a, b, c] : a <= 1 and -a < b <= 1 and 0 <= c <= 2 - a - b and "
+			    "c <= a; "
+	    "[0, 2, 0]; [3, 1, 0] }",
+	    "{ [a, b, c] : b > -a and 2b >= -1 + a and 0 <= c <= a and "
+			    "5c <= 6 - a - 3b }" },
 };
 
 static int test_convex_hull_algo(isl_ctx *ctx, int convex)
