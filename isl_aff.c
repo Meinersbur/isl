@@ -2932,6 +2932,40 @@ __isl_give isl_basic_set *isl_aff_bind_id(__isl_take isl_aff *aff,
 	return isl_aff_eq_basic_set(aff, aff_id);
 }
 
+/* Wrapper around isl_aff_bind_id for use as pw_aff_locus callback.
+ * "rational" should not be set.
+ */
+static __isl_give isl_basic_set *aff_bind_id(__isl_take isl_aff *aff,
+	int rational, void *user)
+{
+	isl_id *id = user;
+
+	if (!aff)
+		return NULL;
+	if (rational)
+		isl_die(isl_aff_get_ctx(aff), isl_error_unsupported,
+			"rational binding not supported", goto error);
+	return isl_aff_bind_id(aff, isl_id_copy(id));
+error:
+	isl_aff_free(aff);
+	return NULL;
+}
+
+/* Bind the piecewise affine function "pa" to the parameter "id",
+ * returning the elements in the domain where the expression
+ * is equal to the parameter.
+ */
+__isl_give isl_set *isl_pw_aff_bind_id(__isl_take isl_pw_aff *pa,
+	__isl_take isl_id *id)
+{
+	isl_set *bound;
+
+	bound = pw_aff_locus(pa, &aff_bind_id, 0, id);
+	isl_id_free(id);
+
+	return bound;
+}
+
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is greater than (or equal) to pwaff2.
  *

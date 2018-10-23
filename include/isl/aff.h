@@ -401,6 +401,10 @@ __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 __isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
 
+__isl_overload
+__isl_give isl_set *isl_pw_aff_bind_id(__isl_take isl_pw_aff *pa,
+	__isl_take isl_id *id);
+
 __isl_constructor
 __isl_give isl_pw_aff *isl_pw_aff_read_from_str(isl_ctx *ctx, const char *str);
 __isl_give char *isl_pw_aff_to_str(__isl_keep isl_pw_aff *pa);

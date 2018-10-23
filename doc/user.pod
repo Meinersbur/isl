@@ -4758,8 +4758,11 @@ The space of C<tuple> needs to match that of the bound tuple.
 	__isl_give isl_basic_set *isl_aff_bind_id(
 		__isl_take isl_aff *aff,
 		__isl_take isl_id *id);
+	__isl_give isl_set *isl_pw_aff_bind_id(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_id *id);
 
-In the case of C<isl_aff_bind_id>, the parameter
+In the case of C<isl_aff_bind_id> and C<isl_pw_aff_bind_id>, the parameter
 is bound to the function value and the result lives
 in the domain of the input function.
 
