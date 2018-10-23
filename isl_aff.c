@@ -7989,6 +7989,48 @@ __isl_give isl_union_set *isl_union_pw_aff_zero_union_set(
 	return zero;
 }
 
+/* Internal data structure for isl_union_pw_aff_bind_id,
+ * storing the parameter that needs to be bound and
+ * the accumulated results.
+ */
+struct isl_bind_id_data {
+	isl_id *id;
+	isl_union_set *bound;
+};
+
+/* Bind the piecewise affine function "pa" to the parameter data->id,
+ * adding the resulting elements in the domain where the expression
+ * is equal to the parameter to data->bound.
+ */
+static isl_stat bind_id(__isl_take isl_pw_aff *pa, void *user)
+{
+	struct isl_bind_id_data *data = user;
+	isl_set *bound;
+
+	bound = isl_pw_aff_bind_id(pa, isl_id_copy(data->id));
+	data->bound = isl_union_set_add_set(data->bound, bound);
+
+	return data->bound ? isl_stat_ok : isl_stat_error;
+}
+
+/* Bind the union piecewise affine function "upa" to the parameter "id",
+ * returning the elements in the domain where the expression
+ * is equal to the parameter.
+ */
+__isl_give isl_union_set *isl_union_pw_aff_bind_id(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_id *id)
+{
+	struct isl_bind_id_data data = { id };
+
+	data.bound = isl_union_set_empty(isl_union_pw_aff_get_space(upa));
+	if (isl_union_pw_aff_foreach_pw_aff(upa, &bind_id, &data) < 0)
+		data.bound = isl_union_set_free(data.bound);
+
+	isl_union_pw_aff_free(upa);
+	isl_id_free(id);
+	return data.bound;
+}
+
 /* Internal data structure for isl_union_pw_aff_pullback_union_pw_multi_aff.
  * upma is the function that is plugged in.
  * pa is the current part of the function in which upma is plugged in.
