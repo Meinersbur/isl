@@ -2937,21 +2937,26 @@ __isl_give isl_printer *isl_printer_print_union_pw_aff(
  *
  * If the current dimension is an output dimension, then print
  * the corresponding expression.  Otherwise, print the name of the dimension.
+ * Make sure to use the domain space for printing names as
+ * that is the space that will be used for printing constraints (if any).
  */
 static __isl_give isl_printer *print_dim_ma(__isl_take isl_printer *p,
 	struct isl_print_space_data *data, unsigned pos)
 {
 	isl_multi_aff *ma = data->user;
+	isl_space *space;
 
+	space = isl_multi_aff_get_domain_space(ma);
 	if (data->type == isl_dim_out) {
-		isl_space *space;
-
-		space = isl_multi_aff_get_domain_space(ma);
 		p = print_aff_body(p, space, ma->u.p[pos]);
-		isl_space_free(space);
 	} else {
-		p = print_name(data->space, p, data->type, pos, data->latex);
+		enum isl_dim_type type = data->type;
+
+		if (type == isl_dim_in)
+			type = isl_dim_set;
+		p = print_name(space, p, type, pos, data->latex);
 	}
+	isl_space_free(space);
 
 	return p;
 }

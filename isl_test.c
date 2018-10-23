@@ -125,6 +125,30 @@ static int test_parse_multi_val(isl_ctx *ctx, const char *str)
 
 #include "check_reparse_templ.c"
 
+#undef BASE
+#define BASE pw_multi_aff
+
+#include "check_reparse_templ.c"
+
+/* Test parsing of piecewise multi affine expressions by printing
+ * the expressions and checking that parsing the output results
+ * in the same expression.
+ * Do this for an expression converted from a map with an output
+ * dimension name that is equal to an automatically generated name.
+ */
+static isl_stat test_parse_pma(isl_ctx *ctx)
+{
+	isl_map *map;
+	isl_pw_multi_aff *pma;
+
+	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
+	pma = isl_pw_multi_aff_from_map(map);
+	if (check_reparse_pw_multi_aff(ctx, pma) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* String descriptions of multi piecewise affine expressions
  * that are used for testing printing and parsing.
  */
@@ -361,6 +385,8 @@ int test_parse(struct isl_ctx *ctx)
 	if (test_parse_multi_val(ctx, "{ A[4, infty, NaN, -1/2, 2/3] }") < 0)
 		return -1;
 	if (test_parse_multi(ctx) < 0)
+		return -1;
+	if (test_parse_pma(ctx) < 0)
 		return -1;
 
 	str = "{ [i] -> [-i] }";
