@@ -480,6 +480,10 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 	__isl_take isl_multi_aff *ma2);
 
+__isl_export
+__isl_give isl_basic_set *isl_multi_aff_bind(__isl_take isl_multi_aff *ma,
+	__isl_take isl_multi_id *tuple);
+
 __isl_give char *isl_multi_aff_to_str(__isl_keep isl_multi_aff *ma);
 __isl_give isl_printer *isl_printer_print_multi_aff(__isl_take isl_printer *p,
 	__isl_keep isl_multi_aff *maff);
@@ -889,6 +893,10 @@ __isl_give isl_map *isl_multi_pw_aff_lex_lt_map(
 __isl_give isl_map *isl_multi_pw_aff_lex_gt_map(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
 
+__isl_export
+__isl_give isl_set *isl_multi_pw_aff_bind(__isl_take isl_multi_pw_aff *mpa,
+	__isl_take isl_multi_id *tuple);
+
 __isl_constructor
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_read_from_str(isl_ctx *ctx,
 	const char *str);
@@ -1111,6 +1119,10 @@ __isl_give isl_union_map *isl_union_map_from_multi_union_pw_aff(
 
 __isl_give isl_union_set *isl_multi_union_pw_aff_zero_union_set(
 	__isl_take isl_multi_union_pw_aff *mupa);
+__isl_export
+__isl_give isl_union_set *isl_multi_union_pw_aff_bind(
+	__isl_take isl_multi_union_pw_aff *mupa,
+	__isl_take isl_multi_id *tuple);
 
 __isl_give isl_multi_pw_aff *isl_multi_union_pw_aff_extract_multi_pw_aff(
 	__isl_keep isl_multi_union_pw_aff *mupa, __isl_take isl_space *space);

@@ -462,6 +462,7 @@ EXTRA_DIST = \
 	isl_map_lexopt_templ.c \
 	isl_maybe_map.h \
 	isl_multi_macro.h \
+	isl_multi_bind_templ.c \
 	isl_multi_explicit_domain.c \
 	isl_multi_pw_aff_explicit_domain.c \
 	isl_multi_union_pw_aff_explicit_domain.c \

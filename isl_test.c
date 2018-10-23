@@ -3051,6 +3051,39 @@ static isl_stat set_check_equal(__isl_keep isl_set *set, const char *str)
 	return isl_stat_ok;
 }
 
+/* Is "uset" equal to the union set described by "str"?
+ */
+static isl_bool uset_is_equal(__isl_keep isl_union_set *uset, const char *str)
+{
+	isl_union_set *uset2;
+	isl_bool equal;
+
+	if (!uset)
+		return isl_bool_error;
+
+	uset2 = isl_union_set_read_from_str(isl_union_set_get_ctx(uset), str);
+	equal = isl_union_set_is_equal(uset, uset2);
+	isl_union_set_free(uset2);
+
+	return equal;
+}
+
+/* Check that "uset" is equal to the union set described by "str".
+ */
+static isl_stat uset_check_equal(__isl_keep isl_union_set *uset,
+	const char *str)
+{
+	isl_bool equal;
+
+	equal = uset_is_equal(uset, str);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_union_set_get_ctx(uset), isl_error_unknown,
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 static int test_dep(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -6494,6 +6527,55 @@ static isl_stat test_bind_pa(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_multi_union_pw_aff_bind tests.
+ * "mupa" is the input expression.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *mupa;
+	const char *tuple;
+	const char *res;
+} bind_mupa_tests[] = {
+	{ "A[{ [4] }, { [5] }]",
+	  "{ A[M, N] }",
+	  "[M = 4, N = 5] -> { : }" },
+	{ "A[{ B[x] -> [floor(x/2)] }, { B[y] -> [y + 5] }]",
+	  "{ A[M, N] }",
+	  "[M, N] -> { B[x] : M = floor(x/2) and N = x + 5 }" },
+	{ "[M] -> A[{ [4] }, { [M + 1] }]",
+	  "{ A[M, N] }",
+	  "[M = 4, N = 5] -> { : }" },
+};
+
+/* Perform basic isl_multi_union_pw_aff_bind tests.
+ */
+static isl_stat test_bind_mupa(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_mupa_tests); ++i) {
+		const char *str;
+		isl_multi_union_pw_aff *mupa;
+		isl_union_set *res;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		str = bind_mupa_tests[i].mupa;
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
+		str = bind_mupa_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		res = isl_multi_union_pw_aff_bind(mupa, tuple);
+		r = uset_check_equal(res, bind_mupa_tests[i].res);
+		isl_union_set_free(res);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform tests that reinterpret dimensions as parameters.
  */
 static int test_bind(isl_ctx *ctx)
@@ -6503,6 +6585,8 @@ static int test_bind(isl_ctx *ctx)
 	if (test_bind_aff(ctx) < 0)
 		return -1;
 	if (test_bind_pa(ctx) < 0)
+		return -1;
+	if (test_bind_mupa(ctx) < 0)
 		return -1;
 
 	return 0;

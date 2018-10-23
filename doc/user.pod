@@ -4761,13 +4761,25 @@ The space of C<tuple> needs to match that of the bound tuple.
 	__isl_give isl_set *isl_pw_aff_bind_id(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_id *id);
+	__isl_give isl_basic_set *isl_multi_aff_bind(
+		__isl_take isl_multi_aff *ma,
+		__isl_take isl_multi_id *tuple);
+	__isl_give isl_set *isl_multi_pw_aff_bind(
+		__isl_take isl_multi_pw_aff *mpa,
+		__isl_take isl_multi_id *tuple);
 	__isl_give isl_union_set *isl_union_pw_aff_bind_id(
 		__isl_take isl_union_pw_aff *upa,
 		__isl_take isl_id *id);
+	__isl_give isl_union_set *
+	isl_multi_union_pw_aff_bind(
+		__isl_take isl_multi_union_pw_aff *mupa,
+		__isl_take isl_multi_id *tuple);
 
-In the case of C<isl_aff_bind_id>, C<isl_pw_aff_bind_id> and
-C<isl_union_pw_aff_bind_id>, the parameter
-is bound to the function value and the result lives
+In the case of C<isl_aff_bind_id>, C<isl_pw_aff_bind_id>,
+C<isl_multi_aff_bind>, C<isl_multi_pw_aff_bind>,
+C<isl_union_pw_aff_bind_id> and
+C<isl_multi_union_pw_aff_bind>, the parameters
+are bound to the function values and the result lives
 in the domain of the input function.
 
 =item * Projection

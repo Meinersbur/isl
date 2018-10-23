@@ -24,7 +24,7 @@
 #include <isl_local_space_private.h>
 #include <isl_vec_private.h>
 #include <isl_mat_private.h>
-#include <isl/id.h>
+#include <isl_id_private.h>
 #include <isl/constraint.h>
 #include <isl_seq.h>
 #include <isl/set.h>
@@ -3900,6 +3900,23 @@ error:
 	return isl_stat_error;
 }
 
+/* Return the shared (universe) domain of the elements of "ma".
+ *
+ * Since an isl_multi_aff (and an isl_aff) is always total,
+ * the domain is always the universe set in its domain space.
+ * This is a helper function for use in the generic isl_multi_*_bind.
+ */
+static __isl_give isl_basic_set *isl_multi_aff_domain(
+	__isl_take isl_multi_aff *ma)
+{
+	isl_space *space;
+
+	space = isl_multi_aff_get_space(ma);
+	isl_multi_aff_free(ma);
+
+	return isl_basic_set_universe(isl_space_domain(space));
+}
+
 #undef BASE
 #define BASE aff
 
@@ -3923,6 +3940,10 @@ error:
 #undef DOMBASE
 #define DOMBASE set
 #include <isl_multi_gist.c>
+
+#undef DOMBASE
+#define DOMBASE basic_set
+#include <isl_multi_bind_templ.c>
 
 /* Construct an isl_multi_aff living in "space" that corresponds
  * to the affine transformation matrix "mat".
@@ -6308,6 +6329,7 @@ error:
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_bind_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_domain_templ.c>
 #include <isl_multi_dim_id_templ.c>
@@ -8130,6 +8152,7 @@ error:
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_bind_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_floor.c>
