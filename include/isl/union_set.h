@@ -27,6 +27,7 @@ __isl_give isl_space *isl_union_set_get_space(__isl_keep isl_union_set *uset);
 __isl_give isl_union_set *isl_union_set_reset_user(
 	__isl_take isl_union_set *uset);
 
+__isl_export
 __isl_give isl_union_set *isl_union_set_universe(
 	__isl_take isl_union_set *uset);
 __isl_give isl_set *isl_union_set_params(__isl_take isl_union_set *uset);
