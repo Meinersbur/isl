@@ -169,7 +169,9 @@ const char *parse_multi_mpa_tests[] = {
 /* Test parsing of multi piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
- * Do this for a couple of manually constructed expressions and
+ * Do this for a couple of manually constructed expressions,
+ * an expression converted from a map with an output dimension name
+ * that is equal to an automatically generated name, and
  * a set of expressions parsed from strings.
  */
 static int test_parse_mpa(isl_ctx *ctx)
@@ -177,6 +179,8 @@ static int test_parse_mpa(isl_ctx *ctx)
 	int i;
 	isl_space *space;
 	isl_set *dom;
+	isl_map *map;
+	isl_pw_multi_aff *pma;
 	isl_multi_pw_aff *mpa;
 	isl_stat r;
 
@@ -196,6 +200,12 @@ static int test_parse_mpa(isl_ctx *ctx)
 	mpa = isl_multi_pw_aff_intersect_domain(mpa, dom);
 	r = check_reparse_multi_pw_aff(ctx, mpa);
 	if (r < 0)
+		return -1;
+
+	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
+	pma = isl_pw_multi_aff_from_map(map);
+	mpa = isl_multi_pw_aff_from_pw_multi_aff(pma);
+	if (check_reparse_multi_pw_aff(ctx, mpa) < 0)
 		return -1;
 
 	for (i = 0; i < ARRAY_SIZE(parse_multi_mpa_tests); ++i) {
