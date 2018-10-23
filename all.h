@@ -11,3 +11,4 @@
 #include <isl/schedule.h>
 #include <isl/schedule_node.h>
 #include <isl/ast_build.h>
+#include <isl/fixed_box.h>
