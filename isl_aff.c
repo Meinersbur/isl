@@ -8712,6 +8712,17 @@ error:
 	return NULL;
 }
 
+/* This function performs the same operation as
+ * isl_multi_union_pw_aff_from_union_pw_multi_aff,
+ * but is considered as a function on an isl_union_pw_multi_aff when exported.
+ */
+__isl_give isl_multi_union_pw_aff *
+isl_union_pw_multi_aff_as_multi_union_pw_aff(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	return isl_multi_union_pw_aff_from_union_pw_multi_aff(upma);
+}
+
 /* Try and create an isl_multi_union_pw_aff that is equivalent
  * to the given isl_union_map.
  * The isl_union_map is required to be single-valued in each space.
