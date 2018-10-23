@@ -2159,7 +2159,7 @@ __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
  * If "aff" is NaN, then it is not positive.
  */
 static __isl_give isl_basic_set *aff_pos_basic_set(__isl_take isl_aff *aff,
-	int rational)
+	int rational, void *user)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -2196,7 +2196,7 @@ error:
  * If "aff" is NaN, then it is not non-negative (it's not negative either).
  */
 static __isl_give isl_basic_set *aff_nonneg_basic_set(
-	__isl_take isl_aff *aff, int rational)
+	__isl_take isl_aff *aff, int rational, void *user)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -2223,7 +2223,7 @@ static __isl_give isl_basic_set *aff_nonneg_basic_set(
  */
 __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 {
-	return aff_nonneg_basic_set(aff, 0);
+	return aff_nonneg_basic_set(aff, 0, NULL);
 }
 
 /* Return a basic set containing those elements in the domain space
@@ -2251,7 +2251,7 @@ __isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff)
  * If "aff" is NaN, then it is not zero.
  */
 static __isl_give isl_basic_set *aff_zero_basic_set(__isl_take isl_aff *aff,
-	int rational)
+	int rational, void *user)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -2278,7 +2278,7 @@ static __isl_give isl_basic_set *aff_zero_basic_set(__isl_take isl_aff *aff,
  */
 __isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
 {
-	return aff_zero_basic_set(aff, 0);
+	return aff_zero_basic_set(aff, 0, NULL);
 }
 
 /* Return a basic set containing those elements in the shared space
@@ -2845,8 +2845,9 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
  * NaN does not satisfy any property.
  */
 static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
-	__isl_give isl_basic_set *(*fn)(__isl_take isl_aff *aff, int rational),
-	int complement)
+	__isl_give isl_basic_set *(*fn)(__isl_take isl_aff *aff, int rational,
+		void *user),
+	int complement, void *user)
 {
 	int i;
 	isl_set *set;
@@ -2865,7 +2866,7 @@ static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
 			continue;
 
 		rational = isl_set_has_rational(pwaff->p[i].set);
-		bset = fn(isl_aff_copy(pwaff->p[i].aff), rational);
+		bset = fn(isl_aff_copy(pwaff->p[i].aff), rational, user);
 		locus = isl_set_from_basic_set(bset);
 		set_i = isl_set_copy(pwaff->p[i].set);
 		if (complement)
@@ -2885,7 +2886,7 @@ static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
  */
 __isl_give isl_set *isl_pw_aff_pos_set(__isl_take isl_pw_aff *pa)
 {
-	return pw_aff_locus(pa, &aff_pos_basic_set, 0);
+	return pw_aff_locus(pa, &aff_pos_basic_set, 0, NULL);
 }
 
 /* Return a set containing those elements in the domain
@@ -2893,7 +2894,7 @@ __isl_give isl_set *isl_pw_aff_pos_set(__isl_take isl_pw_aff *pa)
  */
 __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_locus(pwaff, &aff_nonneg_basic_set, 0);
+	return pw_aff_locus(pwaff, &aff_nonneg_basic_set, 0, NULL);
 }
 
 /* Return a set containing those elements in the domain
@@ -2901,7 +2902,7 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_locus(pwaff, &aff_zero_basic_set, 0);
+	return pw_aff_locus(pwaff, &aff_zero_basic_set, 0, NULL);
 }
 
 /* Return a set containing those elements in the domain
@@ -2909,7 +2910,7 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_locus(pwaff, &aff_zero_basic_set, 1);
+	return pw_aff_locus(pwaff, &aff_zero_basic_set, 1, NULL);
 }
 
 /* Bind the affine function "aff" to the parameter "id",
