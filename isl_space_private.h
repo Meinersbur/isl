@@ -39,6 +39,8 @@ isl_bool isl_space_is_domain_internal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 isl_bool isl_space_is_range_internal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
+isl_stat isl_space_check_domain_wrapped_domain_tuples(
+	__isl_keep isl_space *space1, __isl_keep isl_space *space2);
 
 unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type);
 

@@ -2256,6 +2256,24 @@ isl_stat isl_space_check_domain_tuples(__isl_keep isl_space *space1,
 	return isl_stat_ok;
 }
 
+/* Check that the tuples of "space1" correspond to those
+ * of the domain of the wrapped relation in the domain of "space2".
+ * That is, check that "space1" is equal to this domain,
+ * ignoring parameters.
+ */
+isl_stat isl_space_check_domain_wrapped_domain_tuples(
+	__isl_keep isl_space *space1, __isl_keep isl_space *space2)
+{
+	isl_space *domain;
+	isl_stat r;
+
+	domain = isl_space_unwrap(isl_space_domain(isl_space_copy(space2)));
+	r = isl_space_check_domain_tuples(space1, domain);
+	isl_space_free(domain);
+
+	return r;
+}
+
 /* Is space1 equal to the domain of space2?
  *
  * In the internal version we also allow space2 to be the space of a set,
