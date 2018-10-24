@@ -2098,6 +2098,31 @@ __isl_give isl_space *isl_space_bind_map_domain(__isl_take isl_space *space,
 	return space;
 }
 
+/* Internal function that, given a space of the form [A -> B] -> C and
+ * a tuple of identifiers in A, returns a space B -> C with
+ * the identifiers in "tuple" added as fresh parameters.
+ * In other words, the domain dimensions of the wrapped relation
+ * in the domain of "space" are reinterpreted
+ * as parameters, but stay in the same global positions.
+ */
+__isl_give isl_space *isl_space_bind_domain_wrapped_domain(
+	__isl_take isl_space *space, __isl_keep isl_multi_id *tuple)
+{
+	isl_space *tuple_space;
+
+	if (isl_space_check_is_map(space) < 0)
+		return isl_space_free(space);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	if (isl_space_check_domain_wrapped_domain_tuples(tuple_space,
+							space) < 0)
+		  return isl_space_free(space);
+	if (check_fresh_params(space, tuple) < 0)
+		return isl_space_free(space);
+	space = isl_space_domain_factor_range(space);
+	space = add_bind_params(space, tuple);
+	return space;
+}
+
 /* Insert a domain tuple in "space" corresponding to the set space "domain".
  * In particular, if "space" is a parameter space, then the result
  * is the set space "domain" combined with the parameters of "space".
