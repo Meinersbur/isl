@@ -6592,6 +6592,63 @@ static isl_stat test_bind_pma_domain(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_pw_multi_aff_bind_domain_wrapped_domain tests.
+ * "pma" is the input expression.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+struct {
+	const char *pma;
+	const char *tuple;
+	const char *res;
+} bind_pma_domain_wrapped_tests[] = {
+	{ "{ [A[M, N] -> B[]] -> [M + floor(N/2)] }",
+	  "{ A[M, N] }",
+	  "[M, N] -> { B[] -> [M + floor(N/2)] }" },
+	{ "{ [B[N, M] -> D[]] -> [M + floor(N/2)] }",
+	  "{ B[N, M] }",
+	  "[N, M] -> { D[] -> [M + floor(N/2)] }" },
+	{ "[M] -> { [C[N] -> B[x]] -> [x + M + floor(N/2)] }",
+	  "{ C[N] }",
+	  "[M, N] -> { B[x] -> [x + M + floor(N/2)] }" },
+	{ "[M] -> { [C[x, N] -> B[]] -> [x + floor(N/2)] }",
+	  "{ C[M, N] }",
+	  "[M, N] -> { B[] -> [M + floor(N/2)] }" },
+	{ "[M] -> { [C[x, N] -> B[]] -> [M + floor(N/2)] }",
+	  "{ C[M, N] }",
+	  "[M, N] -> { B[] -> [M + floor(N/2)] }" },
+	{ "[A, M] -> { [C[N, x] -> B[]] -> [x + floor(N/2)] }",
+	  "{ C[N, M] }",
+	  "[A, N, M] -> { B[] -> [M + floor(N/2)] }" },
+};
+
+/* Perform basic isl_pw_multi_aff_bind_domain_wrapped_domain tests.
+ */
+static isl_stat test_bind_pma_domain_wrapped(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_pma_domain_wrapped_tests); ++i) {
+		const char *str;
+		isl_pw_multi_aff *pma;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		str = bind_pma_domain_wrapped_tests[i].pma;
+		pma = isl_pw_multi_aff_read_from_str(ctx, str);
+		str = bind_pma_domain_wrapped_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		pma = isl_pw_multi_aff_bind_domain_wrapped_domain(pma, tuple);
+		str = bind_pma_domain_wrapped_tests[i].res;
+		r = pw_multi_aff_check_plain_equal(pma, str);
+		isl_pw_multi_aff_free(pma);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Inputs for isl_aff_bind_id tests.
  * "aff" is the input expression.
  * "id" is the binding id.
@@ -6737,6 +6794,8 @@ static int test_bind(isl_ctx *ctx)
 	if (test_bind_map_domain(ctx) < 0)
 		return -1;
 	if (test_bind_pma_domain(ctx) < 0)
+		return -1;
+	if (test_bind_pma_domain_wrapped(ctx) < 0)
 		return -1;
 	if (test_bind_aff(ctx) < 0)
 		return -1;

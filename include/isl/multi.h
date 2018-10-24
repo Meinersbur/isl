@@ -178,6 +178,11 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_splice(			\
 __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_bind_domain(		\
 	__isl_take isl_multi_##BASE *multi,				\
+	__isl_take isl_multi_id *tuple);				\
+__isl_export								\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_bind_domain_wrapped_domain(				\
+	__isl_take isl_multi_##BASE *multi,				\
 	__isl_take isl_multi_id *tuple);
 
 #define ISL_DECLARE_MULTI_PARAM(BASE)					\

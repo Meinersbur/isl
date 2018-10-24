@@ -118,3 +118,51 @@ __isl_give TYPE *FN(TYPE,bind_domain)(__isl_take TYPE *obj,
 
 	return obj;
 }
+
+/* Given a tuple of identifiers "tuple" in a space that corresponds
+ * to the domain of the wrapped relation in the domain of "obj",
+ * if any of those identifiers appear as parameters
+ * in "obj", then equate those parameters with the corresponding
+ * input dimensions and project out the parameters.
+ * The result therefore has no such parameters.
+ */
+static __isl_give TYPE *FN(TYPE,equate_domain_wrapped_domain_params)(
+	__isl_take TYPE *obj, __isl_keep isl_multi_id *tuple)
+{
+	isl_stat r;
+	isl_space *obj_space, *tuple_space;
+
+	obj_space = FN(TYPE,get_space)(obj);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	r = isl_space_check_domain_wrapped_domain_tuples(tuple_space,
+							obj_space);
+	isl_space_free(obj_space);
+	if (r < 0)
+		return FN(TYPE,free)(obj);
+
+	return FN(TYPE,equate_initial_params)(obj, tuple);
+}
+
+/* Given a function living in a space of the form [A -> B] -> C and
+ * a tuple of identifiers in A, bind the domain dimensions of the relation
+ * wrapped in the domain of "obj" with identifiers specified by "tuple",
+ * returning a function in the space B -> C.
+ *
+ * If no parameters with these identifiers appear in "obj" already,
+ * then the domain dimensions are simply reinterpreted as parameters.
+ * Otherwise, the parameters are first equated to the corresponding
+ * domain dimensions.
+ */
+__isl_give TYPE *FN(TYPE,bind_domain_wrapped_domain)(__isl_take TYPE *obj,
+	__isl_take isl_multi_id *tuple)
+{
+	isl_space *space;
+
+	obj = FN(TYPE,equate_domain_wrapped_domain_params)(obj, tuple);
+	space = FN(TYPE,get_space)(obj);
+	space = isl_space_bind_domain_wrapped_domain(space, tuple);
+	isl_multi_id_free(tuple);
+	obj = FN(TYPE,reset_space)(obj, space);
+
+	return obj;
+}
