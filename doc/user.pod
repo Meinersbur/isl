@@ -2040,6 +2040,8 @@ using the following functions.
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_union_map *isl_union_map_from_basic_map(
 		__isl_take isl_basic_map *bmap);
+	__isl_give isl_union_set *isl_set_to_union_set(
+		__isl_take isl_set *set);
 	__isl_give isl_union_set *isl_union_set_from_set(
 		__isl_take isl_set *set);
 	__isl_give isl_union_map *isl_map_to_union_map(
@@ -2049,6 +2051,7 @@ using the following functions.
 
 C<isl_map_to_union_map> and C<isl_union_map_from_map> perform
 the same operation.
+Similarly for C<isl_set_to_union_set> and C<isl_union_set_from_set>.
 
 The inverse conversions below can only be used if the input
 union set or relation is known to contain elements in exactly one

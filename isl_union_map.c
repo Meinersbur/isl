@@ -536,6 +536,14 @@ __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set)
 	return isl_union_map_from_map(set_to_map(set));
 }
 
+/* This function performs the same operation as isl_union_set_from_set,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_union_set *isl_set_to_union_set(__isl_take isl_set *set)
+{
+	return isl_union_set_from_set(set);
+}
+
 __isl_give isl_union_map *isl_union_map_from_basic_map(
 	__isl_take isl_basic_map *bmap)
 {

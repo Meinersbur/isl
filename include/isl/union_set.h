@@ -14,6 +14,8 @@ isl_size isl_union_set_dim(__isl_keep isl_union_set *uset,
 __isl_constructor
 __isl_give isl_union_set *isl_union_set_from_basic_set(
 	__isl_take isl_basic_set *bset);
+__isl_export
+__isl_give isl_union_set *isl_set_to_union_set(__isl_take isl_set *set);
 __isl_constructor
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set);
 __isl_overload
