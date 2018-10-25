@@ -7676,7 +7676,7 @@ __isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 /* Return a multi affine expression that is equal to "mv" on domain
  * space "space".
  */
-__isl_give isl_multi_aff *isl_multi_aff_multi_val_on_space(
+__isl_give isl_multi_aff *isl_multi_aff_multi_val_on_domain_space(
 	__isl_take isl_space *space, __isl_take isl_multi_val *mv)
 {
 	int i;
@@ -7711,6 +7711,14 @@ error:
 	isl_space_free(space);
 	isl_multi_val_free(mv);
 	return NULL;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_multi_aff *isl_multi_aff_multi_val_on_space(
+	__isl_take isl_space *space, __isl_take isl_multi_val *mv)
+{
+	return isl_multi_aff_multi_val_on_domain_space(space, mv);
 }
 
 /* Return a piecewise multi-affine expression
