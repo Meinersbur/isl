@@ -9718,6 +9718,36 @@ __isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
 	return isl_map_plain_get_val_if_fixed(set, type, pos);
 }
 
+/* Return a sequence of values in the same space as "set"
+ * that are equal to the corresponding set dimensions of "set"
+ * for those set dimensions that obviously lie on a hyperplane
+ * where the dimension has a fixed value.
+ * The other elements are set to NaN.
+ */
+__isl_give isl_multi_val *isl_set_get_plain_multi_val_if_fixed(
+	__isl_keep isl_set *set)
+{
+	int i;
+	isl_size n;
+	isl_space *space;
+	isl_multi_val *mv;
+
+	space = isl_space_drop_all_params(isl_set_get_space(set));
+	mv = isl_multi_val_alloc(space);
+	n = isl_multi_val_size(mv);
+	if (n < 0)
+		return isl_multi_val_free(mv);
+
+	for (i = 0; i < n; ++i) {
+		isl_val *v;
+
+		v = isl_set_plain_get_val_if_fixed(set, isl_dim_set, i);
+		mv = isl_multi_val_set_val(mv, i, v);
+	}
+
+	return mv;
+}
+
 /* Check if dimension dim has fixed value and if so and if val is not NULL,
  * then return this fixed value in *val.
  */
