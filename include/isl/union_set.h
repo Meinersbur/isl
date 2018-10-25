@@ -142,6 +142,8 @@ __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 	__isl_take isl_space *space);
 __isl_export
 isl_bool isl_union_set_isa_set(__isl_keep isl_union_set *uset);
+__isl_export
+__isl_give isl_set *isl_union_set_as_set(__isl_take isl_union_set *uset);
 __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset);
 __isl_export
 isl_stat isl_union_set_foreach_point(__isl_keep isl_union_set *uset,

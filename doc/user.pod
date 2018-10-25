@@ -2047,6 +2047,8 @@ space.
 	#include <isl/union_set.h>
 	isl_bool isl_union_set_isa_set(
 		__isl_keep isl_union_set *uset);
+	__isl_give isl_set *isl_union_set_as_set(
+		__isl_take isl_union_set *uset);
 	__isl_give isl_set *isl_set_from_union_set(
 		__isl_take isl_union_set *uset);
 
@@ -2060,6 +2062,7 @@ space.
 
 C<isl_union_map_as_map> and C<isl_map_from_union_map> perform
 the same operation.
+Similarly for C<isl_union_set_as_set> and C<isl_set_from_union_set>.
 
 Sets and relations can be copied and freed again using the following
 functions.

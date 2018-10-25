@@ -744,6 +744,14 @@ __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
 	return isl_map_from_union_map(uset);
 }
 
+/* This function performs the same operation as isl_set_from_union_set,
+ * but is considered as a function on an isl_union_set when exported.
+ */
+__isl_give isl_set *isl_union_set_as_set(__isl_take isl_union_set *uset)
+{
+	return isl_set_from_union_set(uset);
+}
+
 /* Extract the map in "umap" that lives in the given space (ignoring
  * parameters).
  */
