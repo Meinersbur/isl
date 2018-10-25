@@ -598,6 +598,19 @@ __isl_give isl_set_list *isl_union_set_get_set_list(
 		isl_union_map_get_map_list(uset_to_umap(uset)));
 }
 
+/* Can "umap" be converted to an isl_map?
+ * That is, does it contain elements in exactly one space?
+ */
+isl_bool isl_union_map_isa_map(__isl_keep isl_union_map *umap)
+{
+	isl_size n;
+
+	n = isl_union_map_n_map(umap);
+	if (n < 0)
+		return isl_bool_error;
+	return isl_bool_ok(n == 1);
+}
+
 static isl_stat copy_map(void **entry, void *user)
 {
 	isl_map *map = *entry;
@@ -610,13 +623,15 @@ static isl_stat copy_map(void **entry, void *user)
 
 __isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap)
 {
+	isl_bool is_map;
 	isl_ctx *ctx;
 	isl_map *map = NULL;
 
-	if (!umap)
-		return NULL;
+	is_map = isl_union_map_isa_map(umap);
+	if (is_map < 0)
+		goto error;
 	ctx = isl_union_map_get_ctx(umap);
-	if (umap->table.n != 1)
+	if (!is_map)
 		isl_die(ctx, isl_error_invalid,
 			"union map needs to contain elements in exactly "
 			"one space", goto error);
