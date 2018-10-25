@@ -2023,10 +2023,15 @@ than the first C<n> dimensions in the range.
 A basic set or relation can be converted to a set or relation
 using the following functions.
 
+	__isl_give isl_set *isl_basic_set_to_set(
+		__isl_take isl_basic_set *bset);
 	__isl_give isl_set *isl_set_from_basic_set(
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_map *isl_map_from_basic_map(
 		__isl_take isl_basic_map *bmap);
+
+C<isl_basic_set_to_set> and C<isl_set_from_basic_set> perform
+the same operation.
 
 Sets and relations can be converted to union sets and relations
 using the following functions.

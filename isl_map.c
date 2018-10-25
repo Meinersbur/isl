@@ -3423,6 +3423,14 @@ __isl_give isl_set *isl_set_from_basic_set(__isl_take isl_basic_set *bset)
 	return isl_map_from_basic_map(bset);
 }
 
+/* This function performs the same operation as isl_set_from_basic_set,
+ * but is considered as a function on an isl_basic_set when exported.
+ */
+__isl_give isl_set *isl_basic_set_to_set(__isl_take isl_basic_set *bset)
+{
+	return isl_set_from_basic_set(bset);
+}
+
 __isl_give isl_map *isl_map_from_basic_map(__isl_take isl_basic_map *bmap)
 {
 	struct isl_map *map;
