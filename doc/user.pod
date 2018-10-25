@@ -2007,6 +2007,9 @@ The inverse conversions below can only be used if the input
 union set or relation is known to contain elements in exactly one
 space.
 
+	#include <isl/union_set.h>
+	isl_bool isl_union_set_isa_set(
+		__isl_keep isl_union_set *uset);
 	__isl_give isl_set *isl_set_from_union_set(
 		__isl_take isl_union_set *uset);
 
