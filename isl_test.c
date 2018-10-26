@@ -6407,11 +6407,56 @@ static isl_stat test_bind_set(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_aff_bind_id tests.
+ * "aff" is the input expression.
+ * "id" is the binding id.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *aff;
+	const char *id;
+	const char *res;
+} bind_aff_tests[] = {
+	{ "{ [4] }", "M", "[M = 4] -> { : }" },
+	{ "{ B[x] -> [floor(x/2)] }", "M", "[M] -> { B[x] : M = floor(x/2) }" },
+	{ "[M] -> { [4] }", "M", "[M = 4] -> { : }" },
+	{ "[M] -> { [floor(M/2)] }", "M", "[M] -> { : floor(M/2) = M }" },
+	{ "{ [NaN] }", "M", "{ : false }" },
+	{ "{ A[x] -> [NaN] }", "M", "{ A[x] : false }" },
+};
+
+/* Perform basic isl_aff_bind_id tests.
+ */
+static isl_stat test_bind_aff(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_aff_tests); ++i) {
+		isl_aff *aff;
+		isl_set *res;
+		isl_id *id;
+		isl_stat r;
+
+		aff = isl_aff_read_from_str(ctx, bind_aff_tests[i].aff);
+		id = isl_id_read_from_str(ctx, bind_aff_tests[i].id);
+		res = isl_set_from_basic_set(isl_aff_bind_id(aff, id));
+		r = set_check_equal(res, bind_aff_tests[i].res);
+		isl_set_free(res);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform tests that reinterpret dimensions as parameters.
  */
 static int test_bind(isl_ctx *ctx)
 {
 	if (test_bind_set(ctx) < 0)
+		return -1;
+	if (test_bind_aff(ctx) < 0)
 		return -1;
 
 	return 0;

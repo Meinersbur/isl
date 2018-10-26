@@ -4754,6 +4754,15 @@ The space of C<tuple> needs to match that of the bound tuple.
 		__isl_take isl_set *set,
 		__isl_take isl_multi_id *tuple);
 
+	#include <isl/aff.h>
+	__isl_give isl_basic_set *isl_aff_bind_id(
+		__isl_take isl_aff *aff,
+		__isl_take isl_id *id);
+
+In the case of C<isl_aff_bind_id>, the parameter
+is bound to the function value and the result lives
+in the domain of the input function.
+
 =item * Projection
 
 	#include <isl/space.h>

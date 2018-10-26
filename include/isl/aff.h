@@ -4,6 +4,7 @@
 #include <isl/stdint.h>
 #include <isl/local_space.h>
 #include <isl/printer.h>
+#include <isl/id_type.h>
 #include <isl/set_type.h>
 #include <isl/aff_type.h>
 #include <isl/list.h>
@@ -182,6 +183,10 @@ __isl_give isl_basic_set *isl_aff_gt_basic_set(__isl_take isl_aff *aff1,
 __isl_export
 __isl_give isl_set *isl_aff_gt_set(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2);
+
+__isl_overload
+__isl_give isl_basic_set *isl_aff_bind_id(__isl_take isl_aff *aff,
+	__isl_take isl_id *id);
 
 __isl_constructor
 __isl_give isl_aff *isl_aff_read_from_str(isl_ctx *ctx, const char *str);
