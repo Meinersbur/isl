@@ -384,6 +384,14 @@ __isl_give isl_map *isl_map_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 	return isl_map_from_pw_multi_aff_internal(pma);
 }
 
+/* This function performs the same operation as isl_map_from_pw_multi_aff,
+ * but is considered as a function on an isl_pw_multi_aff when exported.
+ */
+__isl_give isl_map *isl_pw_multi_aff_as_map(__isl_take isl_pw_multi_aff *pma)
+{
+	return isl_map_from_pw_multi_aff(pma);
+}
+
 __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 {
 	if (check_input_is_set(isl_pw_multi_aff_peek_space(pma)) < 0)
