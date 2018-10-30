@@ -137,6 +137,7 @@ __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
 
+__isl_export
 __isl_give isl_val *isl_aff_eval(__isl_take isl_aff *aff,
 	__isl_take isl_point *pnt);
 
@@ -335,6 +336,7 @@ __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 __isl_give isl_pw_aff *isl_pw_aff_gist_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
 
+__isl_export
 __isl_give isl_val *isl_pw_aff_eval(__isl_take isl_pw_aff *pa,
 	__isl_take isl_point *pnt);
 
