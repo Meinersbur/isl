@@ -1000,7 +1000,8 @@ error:
 
 /* Create a user node evaluating "expr".
  */
-__isl_give isl_ast_node *isl_ast_node_alloc_user(__isl_take isl_ast_expr *expr)
+__isl_give isl_ast_node *isl_ast_node_user_from_expr(
+	__isl_take isl_ast_expr *expr)
 {
 	isl_ctx *ctx;
 	isl_ast_node *node;
@@ -1019,6 +1020,13 @@ __isl_give isl_ast_node *isl_ast_node_alloc_user(__isl_take isl_ast_expr *expr)
 error:
 	isl_ast_expr_free(expr);
 	return NULL;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_ast_node *isl_ast_node_alloc_user(__isl_take isl_ast_expr *expr)
+{
+	return isl_ast_node_user_from_expr(expr);
 }
 
 /* Create a block node with the given children.

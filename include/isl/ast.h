@@ -103,6 +103,9 @@ __isl_give char *isl_ast_expr_to_str(__isl_keep isl_ast_expr *expr);
 __isl_export
 __isl_give char *isl_ast_expr_to_C_str(__isl_keep isl_ast_expr *expr);
 
+__isl_constructor
+__isl_give isl_ast_node *isl_ast_node_user_from_expr(
+	__isl_take isl_ast_expr *expr);
 __isl_give isl_ast_node *isl_ast_node_alloc_user(__isl_take isl_ast_expr *expr);
 __isl_give isl_ast_node *isl_ast_node_copy(__isl_keep isl_ast_node *node);
 __isl_null isl_ast_node *isl_ast_node_free(__isl_take isl_ast_node *node);

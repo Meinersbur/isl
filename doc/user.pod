@@ -12834,8 +12834,13 @@ AST generation or a
 user defined node created using the following function.
 
 	#include <isl/ast.h>
+	__isl_give isl_ast_node *isl_ast_node_user_from_expr(
+		__isl_take isl_ast_expr *expr);
 	__isl_give isl_ast_node *isl_ast_node_alloc_user(
 		__isl_take isl_ast_expr *expr);
+
+C<isl_ast_node_alloc_user> is an alternative name for
+C<isl_ast_node_user_from_expr>.
 
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_build *
