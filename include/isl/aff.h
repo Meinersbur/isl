@@ -734,6 +734,7 @@ isl_stat isl_union_pw_multi_aff_foreach_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma,
 	isl_stat (*fn)(__isl_take isl_pw_multi_aff *pma, void *user),
 	void *user);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_extract_pw_multi_aff(
 	__isl_keep isl_union_pw_multi_aff *upma, __isl_take isl_space *space);
 
