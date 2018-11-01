@@ -1869,6 +1869,8 @@ struct {
 	{ 1, "{ [x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }" },
 	{ 1, "{ [x,y] : 0 <= x <= 10 and 0 >= y >= -1 and x+y >= 0; [0,1] }" },
 	{ 1, "{ [x,y] : (0 <= x,y <= 4) or (2 <= x,y <= 5 and x + y <= 9) }" },
+	{ 1, "{ [x, y, z] : 0 <= x,y,z <= 100 and 0 < z <= 2 + 2x + 2y; "
+		"[x, y, 0] : x,y <= 100 and y <= 9 + 11x and x <= 9 + 11y }" },
 };
 
 /* Test the functionality of isl_set_coalesce with the bounded wrapping
