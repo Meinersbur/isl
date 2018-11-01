@@ -1445,6 +1445,32 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 	return isl_set_from_basic_set(bset);
 }
 
+/* Does "info" have any cut constraints that are redundant?
+ */
+static isl_bool has_redundant_cuts(struct isl_coalesce_info *info)
+{
+	int l;
+	int n_eq, n_ineq;
+
+	n_eq = isl_basic_map_n_equality(info->bmap);
+	n_ineq = isl_basic_map_n_inequality(info->bmap);
+	if (n_eq < 0 || n_ineq < 0)
+		return isl_bool_error;
+	for (l = 0; l < n_ineq; ++l) {
+		int red;
+
+		if (info->ineq[l] != STATUS_CUT)
+			continue;
+		red = isl_tab_is_redundant(info->tab, n_eq + l);
+		if (red < 0)
+			return isl_bool_error;
+		if (red)
+			return isl_bool_true;
+	}
+
+	return isl_bool_false;
+}
+
 /* Wrap the constraints of info->bmap that bound the facet defined
  * by inequality "k" around (the opposite of) this inequality to
  * include "set".  "bound" may be used to store the negated inequality.
@@ -1452,11 +1478,18 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
  * of info->bmap, we check them in check_wraps.
  * If any of the wrapped constraints turn out to be invalid, then
  * check_wraps will reset wrap->n_row to zero.
+ *
+ * If any of the cut constraints of info->bmap turn out
+ * to be redundant with respect to other constraints
+ * then these will neither be wrapped nor added directly to the result.
+ * The result may therefore not be correct.
+ * Skip wrapping and reset wrap->mat->n_row to zero in this case.
  */
 static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 	struct isl_coalesce_info *info, int k, isl_int *bound,
 	__isl_keep isl_set *set)
 {
+	isl_bool nowrap;
 	struct isl_tab_undo *snap;
 	int n;
 	unsigned total = isl_basic_map_total_dim(info->bmap);
@@ -1467,15 +1500,22 @@ static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 		return isl_stat_error;
 	if (isl_tab_detect_redundant(info->tab) < 0)
 		return isl_stat_error;
-
-	isl_seq_neg(bound, info->bmap->ineq[k], 1 + total);
+	nowrap = has_redundant_cuts(info);
+	if (nowrap < 0)
+		return isl_stat_error;
 
 	n = wraps->mat->n_row;
-	if (add_wraps(wraps, info, bound, set) < 0)
-		return isl_stat_error;
+	if (!nowrap) {
+		isl_seq_neg(bound, info->bmap->ineq[k], 1 + total);
+
+		if (add_wraps(wraps, info, bound, set) < 0)
+			return isl_stat_error;
+	}
 
 	if (isl_tab_rollback(info->tab, snap) < 0)
 		return isl_stat_error;
+	if (nowrap)
+		return wraps_mark_failed(wraps);
 	if (check_wraps(wraps->mat, n, info->tab) < 0)
 		return isl_stat_error;
 
