@@ -1268,6 +1268,14 @@ static void wraps_free(struct isl_wraps *wraps)
 		isl_int_clear(wraps->max);
 }
 
+/* Mark the wrapping as failed by resetting wraps->mat->n_row to zero.
+ */
+static isl_stat wraps_mark_failed(struct isl_wraps *wraps)
+{
+	wraps->mat->n_row = 0;
+	return isl_stat_ok;
+}
+
 /* Is the wrapping constraint in row "row" allowed?
  *
  * If wraps->bound is set, we check that none of the coefficients
@@ -1383,8 +1391,7 @@ static isl_stat add_wraps(struct isl_wraps *wraps,
 	wraps->mat->n_row = w;
 	return isl_stat_ok;
 unbounded:
-	wraps->mat->n_row = 0;
-	return isl_stat_ok;
+	return wraps_mark_failed(wraps);
 }
 
 /* Check if the constraints in "wraps" from "first" until the last
