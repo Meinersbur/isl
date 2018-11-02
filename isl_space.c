@@ -106,6 +106,21 @@ isl_bool isl_space_is_map(__isl_keep isl_space *space)
 	return isl_bool_ok(r);
 }
 
+/* Check that "space" is the space of a map.
+ */
+static isl_stat isl_space_check_is_map(__isl_keep isl_space *space)
+{
+	isl_bool is_space;
+
+	is_space = isl_space_is_map(space);
+	if (is_space < 0)
+		return isl_stat_error;
+	if (!is_space)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"expecting map space", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim)
 {
@@ -2056,6 +2071,29 @@ __isl_give isl_space *isl_space_bind_set(__isl_take isl_space *space,
 	if (check_fresh_params(space, tuple) < 0)
 		return isl_space_free(space);
 	space = isl_space_params(space);
+	space = add_bind_params(space, tuple);
+	return space;
+}
+
+/* Internal function that removes the domain tuple of the map space "space",
+ * which is assumed to correspond to the range space of "tuple", and
+ * adds the identifiers in "tuple" as fresh parameters.
+ * In other words, the domain dimensions of "space" are reinterpreted
+ * as parameters, but stay in the same global positions.
+ */
+__isl_give isl_space *isl_space_bind_map_domain(__isl_take isl_space *space,
+	__isl_keep isl_multi_id *tuple)
+{
+	isl_space *tuple_space;
+
+	if (isl_space_check_is_map(space) < 0)
+		return isl_space_free(space);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	if (isl_space_check_domain_tuples(tuple_space, space) < 0)
+		return isl_space_free(space);
+	if (check_fresh_params(space, tuple) < 0)
+		return isl_space_free(space);
+	space = isl_space_range(space);
 	space = add_bind_params(space, tuple);
 	return space;
 }
