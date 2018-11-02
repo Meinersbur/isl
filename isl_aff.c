@@ -2725,6 +2725,7 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+#include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_eval.c>
 #include <isl_pw_hash.c>
 #include <isl_pw_union_opt.c>
@@ -3924,6 +3925,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_bind_domain_templ.c>
 #include <isl_multi_cmp.c>
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_dims.c>
@@ -4355,6 +4357,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+#include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_union_opt.c>
 
 #undef NO_SUB
@@ -6330,6 +6333,7 @@ error:
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_bind_templ.c>
+#include <isl_multi_bind_domain_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_domain_templ.c>
 #include <isl_multi_dim_id_templ.c>

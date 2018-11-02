@@ -174,6 +174,12 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_splice(			\
 	__isl_take isl_multi_##BASE *multi1, unsigned in_pos,		\
 	unsigned out_pos, __isl_take isl_multi_##BASE *multi2);
 
+#define ISL_DECLARE_MULTI_BIND_DOMAIN(BASE)				\
+__isl_export								\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_bind_domain(		\
+	__isl_take isl_multi_##BASE *multi,				\
+	__isl_take isl_multi_id *tuple);
+
 #define ISL_DECLARE_MULTI_PARAM(BASE)					\
 __isl_overload								\
 isl_bool isl_multi_##BASE##_involves_param_id(				\
