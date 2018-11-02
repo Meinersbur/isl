@@ -1092,7 +1092,7 @@ void isl_multi_union_pw_aff_dump(__isl_keep isl_multi_union_pw_aff *mupa);
 
 ISL_DECLARE_EXPORTED_LIST_FN(aff)
 ISL_DECLARE_EXPORTED_LIST_FN(pw_aff)
-ISL_DECLARE_LIST_FN(pw_multi_aff)
+ISL_DECLARE_EXPORTED_LIST_FN(pw_multi_aff)
 ISL_DECLARE_EXPORTED_LIST_FN(union_pw_aff)
 ISL_DECLARE_LIST_FN(union_pw_multi_aff)
 
