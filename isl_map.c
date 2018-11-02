@@ -12060,6 +12060,66 @@ __isl_give isl_set *isl_set_bind(__isl_take isl_set *set,
 	return set;
 }
 
+/* Given a tuple of identifiers "tuple" in a space that corresponds
+ * to the domain of "map", if any of those identifiers appear as parameters
+ * in "map", then equate those parameters with the corresponding
+ * input dimensions and project out the parameters.
+ * The result therefore has no such parameters.
+ */
+static __isl_give isl_map *map_equate_params(__isl_take isl_map *map,
+	__isl_keep isl_multi_id *tuple)
+{
+	int i;
+	isl_size n;
+	isl_space *map_space, *tuple_space;
+
+	map_space = isl_map_peek_space(map);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	if (isl_space_check_domain_tuples(tuple_space, map_space) < 0)
+		return isl_map_free(map);
+	n = isl_multi_id_size(tuple);
+	if (n < 0)
+		return isl_map_free(map);
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+		int pos;
+
+		id = isl_multi_id_get_at(tuple, i);
+		if (!id)
+			return isl_map_free(map);
+		pos = isl_map_find_dim_by_id(map, isl_dim_param, id);
+		isl_id_free(id);
+		if (pos < 0)
+			continue;
+		map = isl_map_equate(map, isl_dim_param, pos, isl_dim_in, i);
+		map = isl_map_project_out(map, isl_dim_param, pos, 1);
+	}
+	return map;
+}
+
+/* Bind the input dimensions of "map" to parameters with identifiers
+ * specified by "tuple", living in the domain space of "map".
+ *
+ * If no parameters with these identifiers appear in "map" already,
+ * then the input dimensions are simply reinterpreted as parameters.
+ * Otherwise, the parameters are first equated to the corresponding
+ * input dimensions.
+ */
+__isl_give isl_set *isl_map_bind_domain(__isl_take isl_map *map,
+	__isl_take isl_multi_id *tuple)
+{
+	isl_space *space;
+	isl_set *set;
+
+	map = map_equate_params(map, tuple);
+	space = isl_map_get_space(map);
+	space = isl_space_bind_map_domain(space, tuple);
+	isl_multi_id_free(tuple);
+	set = set_from_map(isl_map_reset_space(map, space));
+
+	return set;
+}
+
 /* Insert a domain corresponding to "tuple"
  * into the nullary or unary relation "set".
  * The result has an extra initial tuple and is therefore
