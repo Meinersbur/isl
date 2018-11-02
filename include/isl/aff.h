@@ -901,6 +901,7 @@ isl_ctx *isl_union_pw_multi_aff_get_ctx(
 __isl_export
 __isl_give isl_space *isl_union_pw_multi_aff_get_space(
 	__isl_keep isl_union_pw_multi_aff *upma);
+__isl_export
 __isl_give isl_pw_multi_aff_list *isl_union_pw_multi_aff_get_pw_multi_aff_list(
 	__isl_keep isl_union_pw_multi_aff *upma);
 
