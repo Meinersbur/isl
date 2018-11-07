@@ -1158,7 +1158,7 @@ void cpp_generator::print_get_ctx_impl(ostream &os, const isl_class &clazz)
 	std::string ns = isl_namespace();
 
 	osprintf(os, "%sctx %s::get_ctx() const {\n", ns.c_str(), cppname);
-	osprintf(os, "  return ctx(%s_get_ctx(ptr));\n", name);
+	osprintf(os, "  return %sctx(%s_get_ctx(ptr));\n", ns.c_str(), name);
 	osprintf(os, "}\n");
 }
 
