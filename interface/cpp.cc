@@ -2245,6 +2245,13 @@ string cpp_generator::isl_bool2cpp()
 	return checked ? "boolean" : "bool";
 }
 
+/* Return the namespace of the generated C++ bindings.
+ */
+string cpp_generator::isl_namespace()
+{
+	return checked ? "isl::checked::" : "isl::";
+}
+
 /* Translate QualType "type" to its C++ name counterpart.
  *
  * An isl_bool return type is translated into "bool",
@@ -2257,7 +2264,8 @@ string cpp_generator::isl_bool2cpp()
 string cpp_generator::type2cpp(QualType type)
 {
 	if (is_isl_type(type))
-		return type2cpp(type->getPointeeType().getAsString());
+		return isl_namespace() +
+				type2cpp(type->getPointeeType().getAsString());
 
 	if (is_isl_bool(type))
 		return isl_bool2cpp();
