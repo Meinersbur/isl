@@ -514,7 +514,9 @@ void cpp_generator::print_downcast_decl(ostream &os, const isl_class &clazz)
  */
 void cpp_generator::print_get_ctx_decl(ostream &os)
 {
-	osprintf(os, "  inline ctx get_ctx() const;\n");
+	std::string ns = isl_namespace();
+
+	osprintf(os, "  inline %sctx get_ctx() const;\n", ns.c_str());
 }
 
 /* Add a space to the return type "type" if needed,
@@ -1153,8 +1155,9 @@ void cpp_generator::print_get_ctx_impl(ostream &os, const isl_class &clazz)
 	const char *name = clazz.name.c_str();
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
+	std::string ns = isl_namespace();
 
-	osprintf(os, "ctx %s::get_ctx() const {\n", cppname);
+	osprintf(os, "%sctx %s::get_ctx() const {\n", ns.c_str(), cppname);
 	osprintf(os, "  return ctx(%s_get_ctx(ptr));\n", name);
 	osprintf(os, "}\n");
 }
