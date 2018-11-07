@@ -252,7 +252,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	print_destructor_decl(os, clazz);
 	print_ptr_decl(os, clazz);
 	print_downcast_decl(os, clazz);
-	print_get_ctx_decl(os);
+	print_ctx_decl(os);
 	osprintf(os, "\n");
 	print_persistent_callbacks_decl(os, clazz);
 	print_methods_decl(os, clazz);
@@ -510,13 +510,13 @@ void cpp_generator::print_downcast_decl(ostream &os, const isl_class &clazz)
 	osprintf(os, "  template <class T> inline T as() const;\n");
 }
 
-/* Print the declaration of the get_ctx method.
+/* Print the declaration of the ctx method.
  */
-void cpp_generator::print_get_ctx_decl(ostream &os)
+void cpp_generator::print_ctx_decl(ostream &os)
 {
 	std::string ns = isl_namespace();
 
-	osprintf(os, "  inline %sctx get_ctx() const;\n", ns.c_str());
+	osprintf(os, "  inline %sctx ctx() const;\n", ns.c_str());
 }
 
 /* Add a space to the return type "type" if needed,
@@ -735,7 +735,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	if (print_downcast_impl(os, clazz))
 		osprintf(os, "\n");
-	print_get_ctx_impl(os, clazz);
+	print_ctx_impl(os, clazz);
 	osprintf(os, "\n");
 	print_persistent_callbacks_impl(os, clazz);
 	print_methods_impl(os, clazz);
@@ -780,7 +780,7 @@ void cpp_generator::print_invalid(ostream &os, int indent, const char *msg,
 {
 	if (checked)
 		osprintf(os, indent,
-			"isl_die(get_ctx().get(), isl_error_invalid, "
+			"isl_die(ctx().get(), isl_error_invalid, "
 			"\"%s\", %s);\n", msg, checked_code);
 	else
 		print_throw_invalid(os, indent, msg);
@@ -1148,16 +1148,16 @@ bool cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 	return true;
 }
 
-/* Print the implementation of the get_ctx method.
+/* Print the implementation of the ctx method.
  */
-void cpp_generator::print_get_ctx_impl(ostream &os, const isl_class &clazz)
+void cpp_generator::print_ctx_impl(ostream &os, const isl_class &clazz)
 {
 	const char *name = clazz.name.c_str();
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 	std::string ns = isl_namespace();
 
-	osprintf(os, "%sctx %s::get_ctx() const {\n", ns.c_str(), cppname);
+	osprintf(os, "%sctx %s::ctx() const {\n", ns.c_str(), cppname);
 	osprintf(os, "  return %sctx(%s_get_ctx(ptr));\n", ns.c_str(), name);
 	osprintf(os, "}\n");
 }
@@ -1427,7 +1427,7 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
 	if (checked)
 		return;
 	if (kind == function_kind_member_method) {
-		osprintf(os, "  auto saved_ctx = get_ctx();\n");
+		osprintf(os, "  auto saved_ctx = ctx();\n");
 		return;
 	}
 	if (is_isl_ctx(type)) {
@@ -1444,7 +1444,7 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
 
 		if (!is_isl_type(type))
 			continue;
-		osprintf(os, "  auto saved_ctx = %s.get_ctx();\n",
+		osprintf(os, "  auto saved_ctx = %s.ctx();\n",
 			param->getName().str().c_str());
 		return;
 	}

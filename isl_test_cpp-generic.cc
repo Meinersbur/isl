@@ -205,12 +205,12 @@ static void test_every_generic(isl::ctx ctx)
 	assert(IS_TRUE(us.every_set(is_non_empty)));
 
 	auto in_A = [] (isl::set s) {
-		return s.is_subset(isl::set(s.get_ctx(), "{ A[x] }"));
+		return s.is_subset(isl::set(s.ctx(), "{ A[x] }"));
 	};
 	assert(!IS_TRUE(us.every_set(in_A)));
 
 	auto not_in_A = [] (isl::set s) {
-		return !s.is_subset(isl::set(s.get_ctx(), "{ A[x] }"));
+		return !s.is_subset(isl::set(s.ctx(), "{ A[x] }"));
 	};
 	assert(!IS_TRUE(us.every_set(not_in_A)));
 }
@@ -300,7 +300,7 @@ static void test_ast_build_unroll(isl::schedule schedule)
 		count_ast++;
 		return node;
 	};
-	auto build = isl::ast_build(schedule.get_ctx());
+	auto build = isl::ast_build(schedule.ctx());
 	build = build.set_at_each_domain(inc_count_ast);
 	auto ast = build.node_from(schedule);
 	assert(count_ast == 30);
