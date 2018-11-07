@@ -742,13 +742,13 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 }
 
 /* Print code for throwing an exception corresponding to the last error
- * that occurred on "ctx".
- * This assumes that a valid isl::ctx is available in the "ctx" variable,
+ * that occurred on "saved_ctx".
+ * This assumes that a valid isl::ctx is available in the "saved_ctx" variable,
  * e.g., through a prior call to print_save_ctx.
  */
 static void print_throw_last_error(ostream &os)
 {
-	osprintf(os, "    exception::throw_last_error(ctx);\n");
+	osprintf(os, "    exception::throw_last_error(saved_ctx);\n");
 }
 
 /* Print code with the given indentation
@@ -849,7 +849,8 @@ void cpp_generator::print_check_ptr_start(ostream &os, const isl_class &clazz,
 		return;
 
 	print_check_ptr(os, ptr);
-	osprintf(os, "  auto ctx = %s_get_ctx(%s);\n", clazz.name.c_str(), ptr);
+	osprintf(os, "  auto saved_ctx = %s_get_ctx(%s);\n",
+		clazz.name.c_str(), ptr);
 	print_on_error_continue(os);
 }
 
@@ -1401,15 +1402,15 @@ void cpp_generator::print_argument_validity_check(ostream &os,
 }
 
 /* Print code for saving a copy of the isl::ctx available at the start
- * of the method "method" in a "ctx" variable, for use in exception handling.
+ * of the method "method" in a "saved_ctx" variable,
+ * for use in exception handling.
  * "kind" specifies what kind of method "method" is.
  *
  * If checked bindings are being generated,
- * then the "ctx" variable is not needed.
+ * then the "saved_ctx" variable is not needed.
  * If "method" is a member function, then obtain the isl_ctx from
  * the "this" object.
- * If the first argument of the method is an isl::ctx, then use that one,
- * assuming it is not already called "ctx".
+ * If the first argument of the method is an isl::ctx, then use that one.
  * Otherwise, save a copy of the isl::ctx associated to the first argument
  * of isl object type.
  */
@@ -1423,15 +1424,14 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
 	if (checked)
 		return;
 	if (kind == function_kind_member_method) {
-		osprintf(os, "  auto ctx = get_ctx();\n");
+		osprintf(os, "  auto saved_ctx = get_ctx();\n");
 		return;
 	}
 	if (is_isl_ctx(type)) {
 		const char *name;
 
 		name = param->getName().str().c_str();
-		if (strcmp(name, "ctx") != 0)
-			osprintf(os, "  auto ctx = %s;\n", name);
+		osprintf(os, "  auto saved_ctx = %s;\n", name);
 		return;
 	}
 	n = method->getNumParams();
@@ -1441,7 +1441,7 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
 
 		if (!is_isl_type(type))
 			continue;
-		osprintf(os, "  auto ctx = %s.get_ctx();\n",
+		osprintf(os, "  auto saved_ctx = %s.get_ctx();\n",
 			param->getName().str().c_str());
 		return;
 	}
@@ -1455,14 +1455,15 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
  *
  * If checked bindings are being generated,
  * then leave it to the user to decide what isl should do on error.
- * Otherwise, assume that a valid isl::ctx is available in the "ctx" variable,
+ * Otherwise, assume that a valid isl::ctx is available
+ * in the "saved_ctx" variable,
  * e.g., through a prior call to print_save_ctx.
  */
 void cpp_generator::print_on_error_continue(ostream &os)
 {
 	if (checked)
 		return;
-	osprintf(os, "  options_scoped_set_on_error saved_on_error(ctx, "
+	osprintf(os, "  options_scoped_set_on_error saved_on_error(saved_ctx, "
 		     "exception::on_error);\n");
 }
 
