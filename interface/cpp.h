@@ -119,6 +119,9 @@ private:
 	void print_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, const string &cname, int num_params,
 		bool is_declaration, function_kind kind);
+	void print_named_method_header(ostream &os, const isl_class &clazz,
+		FunctionDecl *method, string name, bool is_declaration,
+		function_kind kind);
 	void print_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, bool is_declaration, function_kind kind);
 	string generate_callback_args(QualType type, bool cpp);

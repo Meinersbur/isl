@@ -1862,7 +1862,27 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	osprintf(os, "\n");
 }
 
-/* Print the header for "method" in class "clazz" to "os".
+/* Print the header for a method called "name" in class "clazz"
+ * derived from "method" to "os".
+ *
+ * Print the header of a declaration if "is_declaration" is set, otherwise print
+ * the header of a method definition.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_named_method_header(ostream &os,
+	const isl_class &clazz, FunctionDecl *method, string name,
+	bool is_declaration, function_kind kind)
+{
+	int num_params = method->getNumParams();
+
+	name = rename_method(name);
+	print_method_header(os, clazz, method, name, num_params,
+			    is_declaration, kind);
+}
+
+/* Print the header for "method" in class "clazz" to "os"
+ * using its default name.
  *
  * Print the header of a declaration if "is_declaration" is set, otherwise print
  * the header of a method definition.
@@ -1872,12 +1892,10 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	FunctionDecl *method, bool is_declaration, function_kind kind)
 {
-	string cname = clazz.method_name(method);
-	int num_params = method->getNumParams();
+	string name = clazz.method_name(method);
 
-	cname = rename_method(cname);
-	print_method_header(os, clazz, method, cname, num_params,
-			    is_declaration, kind);
+	print_named_method_header(os, clazz, method, name, is_declaration,
+				  kind);
 }
 
 /* Generate the list of argument types for a callback function of
