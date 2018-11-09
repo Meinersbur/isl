@@ -59,6 +59,8 @@ private:
 	void print_methods_decl(ostream &os, const isl_class &clazz);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
 		const set<FunctionDecl *> &methods);
+	void print_named_method_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd, const string &name, function_kind kind);
 	void print_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
 	void print_set_enum_decl(ostream &os, const isl_class &clazz,

@@ -700,6 +700,17 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 	}
 }
 
+/* Print a declaration for a method called "name" in class "clazz"
+ * derived from "fd" to "os".
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_named_method_decl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd, const string &name, function_kind kind)
+{
+	print_named_method_header(os, clazz, fd, name, true, kind);
+}
+
 /* Print declarations for "method" in class "clazz" to "os".
  *
  * "kind" specifies the kind of method that should be generated.
@@ -707,7 +718,9 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
 	FunctionDecl *method, function_kind kind)
 {
-	print_method_header(os, clazz, method, true, kind);
+	string name = clazz.method_name(method);
+
+	print_named_method_decl(os, clazz, method, name, kind);
 }
 
 /* Print implementations for class "clazz" to "os".
