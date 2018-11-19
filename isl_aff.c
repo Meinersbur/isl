@@ -7476,6 +7476,23 @@ __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 	return isl_pw_aff_alloc(domain, aff);
 }
 
+/* Return a piecewise affine expression that is equal to the parameter
+ * with identifier "id" on "domain".
+ */
+__isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
+	__isl_take isl_set *domain, __isl_take isl_id *id)
+{
+	isl_space *space;
+	isl_aff *aff;
+
+	space = isl_set_get_space(domain);
+	space = isl_space_add_param_id(space, isl_id_copy(id));
+	domain = isl_set_align_params(domain, isl_space_copy(space));
+	aff = isl_aff_param_on_domain_space_id(space, id);
+
+	return isl_pw_aff_alloc(domain, aff);
+}
+
 /* Return a multi affine expression that is equal to "mv" on domain
  * space "space".
  */

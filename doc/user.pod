@@ -3324,6 +3324,9 @@ then create a piecewise expression over a given domain.
 	isl_pw_multi_aff_multi_val_on_domain(
 		__isl_take isl_set *domain,
 		__isl_take isl_multi_val *mv);
+	__isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
+		__isl_take isl_set *domain,
+		__isl_take isl_id *id);
 
 As a convenience, a piecewise multiple expression can
 also be created from a piecewise expression.
