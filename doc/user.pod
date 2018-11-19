@@ -10024,12 +10024,26 @@ exactly once.
 	#include <isl/ast.h>
 	__isl_give isl_ast_expr *isl_ast_node_if_get_cond(
 		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_node *isl_ast_node_if_get_then_node(
+		__isl_keep isl_ast_node *node);
 	__isl_give isl_ast_node *isl_ast_node_if_get_then(
+		__isl_keep isl_ast_node *node);
+	isl_bool isl_ast_node_if_has_else_node(
 		__isl_keep isl_ast_node *node);
 	isl_bool isl_ast_node_if_has_else(
 		__isl_keep isl_ast_node *node);
+	__isl_give isl_ast_node *isl_ast_node_if_get_else_node(
+		__isl_keep isl_ast_node *node);
 	__isl_give isl_ast_node *isl_ast_node_if_get_else(
 		__isl_keep isl_ast_node *node);
+
+C<isl_ast_node_if_get_then>,
+C<isl_ast_node_if_has_else> and
+C<isl_ast_node_if_get_else>
+are alternative names for
+C<isl_ast_node_if_get_then_node>,
+C<isl_ast_node_if_has_else_node> and
+C<isl_ast_node_if_get_else_node>, respectively.
 
 	__isl_give isl_ast_node_list *
 	isl_ast_node_block_get_children(
