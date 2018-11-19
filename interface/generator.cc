@@ -43,13 +43,6 @@
 #include "extract_interface.h"
 #include "generator.h"
 
-/* Compare the prefix of "s" to "prefix" up to the length of "prefix".
- */
-static int prefixcmp(const char *s, const char *prefix)
-{
-	return strncmp(s, prefix, strlen(prefix));
-}
-
 const char *isl_class::set_callback_prefix = "set_";
 
 /* Should "method" be considered to be a static method?
