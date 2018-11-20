@@ -359,8 +359,9 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
  *
  * "kind" specifies the kind of method that should be generated.
  */
-void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, function_kind kind)
+template <>
+void cpp_generator::print_method<cpp_generator::decl>(ostream &os,
+	const isl_class &clazz, FunctionDecl *method, function_kind kind)
 {
 	string name = clazz.method_name(method);
 
@@ -388,7 +389,7 @@ void cpp_generator::print_constructors_decl(ostream &os,
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
 		FunctionDecl *cons = *in;
 
-		print_method_decl(os, clazz, cons, function_kind_constructor);
+		print_method<decl>(os, clazz, cons, function_kind_constructor);
 	}
 }
 
@@ -644,7 +645,7 @@ void cpp_generator::print_persistent_callbacks_decl(ostream &os,
 
 	osprintf(os, "public:\n");
 	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		print_method_decl(os, clazz, *in, function_kind_member_method);
+		print_method<decl>(os, clazz, *in, function_kind_member_method);
 }
 
 /* Print declarations for methods in class "clazz" to "os".
@@ -724,7 +725,7 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 
 	for (it = methods.begin(); it != methods.end(); ++it) {
 		function_kind kind = get_method_kind(clazz, *it);
-		print_method_decl(os, clazz, *it, kind);
+		print_method<decl>(os, clazz, *it, kind);
 		if (clazz.is_get_method(*it))
 			print_get_method_decl(os, clazz, *it);
 	}
@@ -1039,8 +1040,9 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
  * During the function call, isl is made not to print any error message
  * because the error message is included in the exception.
  */
-void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, function_kind kind)
+template<>
+void cpp_generator::print_method<cpp_generator::impl>(ostream &os,
+	const isl_class &clazz, FunctionDecl *method, function_kind kind)
 {
 	string methodname = method->getName();
 	int num_params = method->getNumParams();
@@ -1097,7 +1099,7 @@ void cpp_generator::print_constructors_impl(ostream &os,
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
 		FunctionDecl *cons = *in;
 
-		print_method_impl(os, clazz, cons, function_kind_constructor);
+		print_method<impl>(os, clazz, cons, function_kind_constructor);
 	}
 }
 
@@ -1428,7 +1430,7 @@ void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
 	for (it = methods.begin(); it != methods.end(); ++it) {
 		function_kind kind;
 		kind = get_method_kind(clazz, *it);
-		print_method_impl(os, clazz, *it, kind);
+		print_method<impl>(os, clazz, *it, kind);
 		if (clazz.is_get_method(*it))
 			print_get_method_impl(os, clazz, *it);
 	}

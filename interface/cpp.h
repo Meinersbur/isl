@@ -24,6 +24,10 @@ public:
 		function_kind_member_method,
 		function_kind_constructor,
 	};
+	enum method_part {
+		decl,
+		impl,
+	};
 
 	virtual void generate();
 private:
@@ -61,7 +65,8 @@ private:
 		const set<FunctionDecl *> &methods);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name, function_kind kind);
-	void print_method_decl(ostream &os, const isl_class &clazz,
+	template <enum method_part>
+	void print_method(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
 	void print_set_enum_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name);
@@ -106,8 +111,6 @@ private:
 		FunctionDecl *method, function_kind kind);
 	void print_method_return(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
-	void print_method_impl(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, function_kind kind);
 	void print_set_enum_impl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &enum_name,
 		const string &method_name);
