@@ -248,7 +248,7 @@ def construct_schedule_tree():
 	node = node.insert_partial_schedule(f_B)
 	node = node.ancestor(2)
 
-	return node.get_schedule()
+	return node.schedule()
 
 # Test basic schedule tree functionality.
 #
@@ -260,7 +260,7 @@ def construct_schedule_tree():
 #
 def test_schedule_tree():
 	schedule = construct_schedule_tree()
-	root = schedule.get_root()
+	root = schedule.root()
 
 	assert(type(root) == isl.schedule_node_domain)
 
@@ -309,11 +309,11 @@ def test_schedule_tree():
 		caught = True
 	assert(caught)
 
-	domain = root.get_domain()
+	domain = root.domain()
 	filters = [isl.union_set("{}")]
 	def collect_filters(node):
 		if type(node) == isl.schedule_node_filter:
-			filters[0] = filters[0].union(node.get_filter())
+			filters[0] = filters[0].union(node.filter())
 		return True
 	root.every_descendant(collect_filters)
 	assert(domain.is_equal(filters[0]))
@@ -325,13 +325,13 @@ def test_schedule_tree():
 # by the AST generator.
 #
 def test_ast_build_unroll(schedule):
-	root = schedule.get_root()
+	root = schedule.root()
 	def mark_unroll(node):
 		if type(node) == isl.schedule_node_band:
 			node = node.member_set_ast_loop_unroll(0)
 		return node
 	root = root.map_descendant_bottom_up(mark_unroll)
-	schedule = root.get_schedule()
+	schedule = root.schedule()
 
 	count_ast = [0]
 	def inc_count_ast(node, build):
@@ -406,7 +406,7 @@ def test_ast_build_expr():
 
 	op = build.expr_from(pa)
 	assert(type(op) == isl.ast_expr_op_add)
-	assert(op.get_n_arg() == 2)
+	assert(op.n_arg() == 2)
 
 # Test the isl Python interface
 #
