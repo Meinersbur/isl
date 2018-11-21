@@ -50,6 +50,17 @@ static string type2python(string name)
 	return name.substr(4);
 }
 
+/* Print the arguments of a method with "n_arg" arguments, starting at "first".
+ */
+void python_generator::print_method_arguments(int first, int n_arg)
+{
+	for (int i = first; i < n_arg; ++i) {
+		if (i > first)
+			printf(", ");
+		printf("arg%d", i);
+	}
+}
+
 /* Print the header of the method "name" with "n_arg" arguments.
  * If "is_static" is set, then mark the python method as static.
  *
@@ -69,11 +80,7 @@ void python_generator::print_method_header(bool is_static, const string &name,
 		s = "convert_from";
 
 	printf("    def %s(", s);
-	for (int i = 0; i < n_arg; ++i) {
-		if (i)
-			printf(", ");
-		printf("arg%d", i);
-	}
+	print_method_arguments(0, n_arg);
 	printf("):\n");
 }
 

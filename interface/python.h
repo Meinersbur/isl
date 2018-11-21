@@ -19,6 +19,7 @@ public:
 
 private:
 	void print(const isl_class &clazz);
+	void print_method_arguments(int first, int n_arg);
 	void print_method_header(bool is_static, const string &name, int n_arg);
 	void print_class_header(const isl_class &clazz, const string &name,
 		const vector<string> &super);
