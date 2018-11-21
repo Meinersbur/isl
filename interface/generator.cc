@@ -56,7 +56,7 @@ const char *isl_class::set_callback_prefix = "set_";
  * That is, is the first argument something other than
  * an instance of the class?
  */
-bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
+bool isl_class::is_static(FunctionDecl *method) const
 {
 	ParmVarDecl *param;
 	QualType type;
@@ -66,9 +66,18 @@ bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
 
 	param = method->getParamDecl(0);
 	type = param->getOriginalType();
-	if (!is_isl_type(type))
+	if (!generator::is_isl_type(type))
 		return true;
-	return extract_type(type) != clazz.name;
+	return generator::extract_type(type) != name;
+}
+
+/* Should "method" be considered to be a static method?
+ * That is, is the first argument something other than
+ * an instance of the class?
+ */
+bool generator::is_static(const isl_class &clazz, FunctionDecl *method)
+{
+	return clazz.is_static(method);
 }
 
 /* Does "fd" modify an object of "clazz"?
