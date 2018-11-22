@@ -1445,37 +1445,6 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 	return isl_set_from_basic_set(bset);
 }
 
-/* Check if any of the constraints that cut the other disjunct
- * are actually redundant in their own disjunct.
- * If so, mark them as such so that they can be ignored.
- */
-static isl_stat detect_redundant_cuts(struct isl_coalesce_info *info)
-{
-	int l;
-	int n_eq, n_ineq;
-
-	if (isl_tab_detect_redundant(info->tab) < 0)
-		return isl_stat_error;
-
-	n_eq = isl_basic_map_n_equality(info->bmap);
-	n_ineq = isl_basic_map_n_inequality(info->bmap);
-	if (n_eq < 0 || n_ineq < 0)
-		return isl_stat_error;
-	for (l = 0; l < n_ineq; ++l) {
-		int red;
-
-		if (info->ineq[l] != STATUS_CUT)
-			continue;
-		red = isl_tab_is_redundant(info->tab, n_eq + l);
-		if (red < 0)
-			return isl_stat_error;
-		if (red)
-			info->ineq[l] = STATUS_REDUNDANT;
-	}
-
-	return isl_stat_ok;
-}
-
 /* Does "info" have both cut constraints that are redundant
  * in the current info->tab and cut constraints that are non-redundant
  * in the current info->tab?
@@ -1532,9 +1501,7 @@ static isl_bool has_non_validated_redundant_cuts(struct isl_coalesce_info *info)
  * with respect to those same constraints in the adjacent
  * hyperplane (the one containing "set").  Otherwise,
  * it would have been detected as a redundant constraint
- * of info->bmap itself.  (If info does not correspond to one
- * of the original disjuncts, then its redundant constraints are
- * detected first.)
+ * of info->bmap itself.
  * If these other constraints are valid, then this means
  * that the supposed cut constraint is also valid,
  * but was simply not detected as such.
@@ -1554,8 +1521,6 @@ static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 
 	snap = isl_tab_snap(info->tab);
 
-	if (info->modified && detect_redundant_cuts(info) < 0)
-		return isl_stat_error;
 	if (isl_tab_mark_rational(info->tab) < 0)
 		return isl_stat_error;
 	if (isl_tab_select_facet(info->tab, info->bmap->n_eq + k) < 0)

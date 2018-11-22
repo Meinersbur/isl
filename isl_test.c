@@ -2340,43 +2340,6 @@ static isl_stat test_coalesce_special6(isl_ctx *ctx)
 	return test_coalesce_intersection(ctx, s1, s2);
 }
 
-/* Check that when wrapping in a disjunct adjacent to a facet,
- * redundant constraints that cut the disjunct
- * do not get added to the result because they are (also) redundant
- * to the facet (and assumed not to be redundant as such).
- * This could happen in an earlier version of isl, but
- * only under very specific circumstances since
- * the redundant constraint would need to appear during the coalescing and
- * it would have to be detected as the redundant constraint
- * (rather than some other constraint with respect to which
- * it may be mutually redundant).
- * The following code would tickle this behavior in the earlier version.
- */
-static isl_stat test_coalesce_special7(isl_ctx *ctx)
-{
-	isl_bool equal;
-	const char *s1, *s2;
-	isl_set *set1, *set2;
-
-	s1 = "{ [a, b, c] : (c > 0 and c < a) or (c = a and a > 0 and b > a) }";
-	s2 = "{ [a, b, c] : a <= 1 or (a = 2 and b >= 2) or (3 <= a <= b) }";
-	set1 = isl_set_read_from_str(ctx, s1);
-	set2 = isl_set_read_from_str(ctx, s2);
-	set1 = isl_set_intersect(set1, set2);
-	set2 = isl_set_coalesce(isl_set_copy(set1));
-	equal = isl_set_is_equal(set1, set2);
-	isl_set_free(set1);
-	isl_set_free(set2);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown,
-			"coalesced set not equal to input",
-			return isl_stat_error);
-
-	return isl_stat_ok;
-}
-
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2406,8 +2369,7 @@ static int test_coalesce(struct isl_ctx *ctx)
 		return -1;
 	if (test_coalesce_special6(ctx) < 0)
 		return -1;
-	if (test_coalesce_special7(ctx) < 0)
-		return -1;
+
 
 	return 0;
 }
