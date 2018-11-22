@@ -1445,48 +1445,6 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 	return isl_set_from_basic_set(bset);
 }
 
-/* Does "info" have both cut constraints that are redundant
- * in the current info->tab and cut constraints that are non-redundant
- * in the current info->tab?
- * If there are only redundant cut constraints, then mark them as valid
- * to ensure they get preserved.
- */
-static isl_bool has_non_validated_redundant_cuts(struct isl_coalesce_info *info)
-{
-	int l;
-	int n_eq, n_ineq;
-	int any_redundant_cut = 0;
-	int any_non_redundant_cut = 0;
-
-	n_eq = isl_basic_map_n_equality(info->bmap);
-	n_ineq = isl_basic_map_n_inequality(info->bmap);
-	if (n_eq < 0 || n_ineq < 0)
-		return isl_bool_error;
-	for (l = 0; l < n_ineq; ++l) {
-		int red;
-
-		if (info->ineq[l] != STATUS_CUT)
-			continue;
-		red = isl_tab_is_redundant(info->tab, n_eq + l);
-		if (red < 0)
-			return isl_bool_error;
-		if (red)
-			any_redundant_cut = 1;
-		else
-			any_non_redundant_cut = 1;
-	}
-	if (!any_redundant_cut)
-		return isl_bool_false;
-	if (any_non_redundant_cut)
-		return isl_bool_true;
-	for (l = 0; l < n_ineq; ++l) {
-		if (info->ineq[l] == STATUS_CUT)
-			info->ineq[l] = STATUS_VALID;
-	}
-
-	return isl_bool_false;
-}
-
 /* Wrap the constraints of info->bmap that bound the facet defined
  * by inequality "k" around (the opposite of) this inequality to
  * include "set".  "bound" may be used to store the negated inequality.
@@ -1494,55 +1452,30 @@ static isl_bool has_non_validated_redundant_cuts(struct isl_coalesce_info *info)
  * of info->bmap, we check them in check_wraps.
  * If any of the wrapped constraints turn out to be invalid, then
  * check_wraps will reset wrap->n_row to zero.
- *
- * If any of the cut constraints of info->bmap turns out
- * to be (rationally) redundant with respect to other constraints
- * in the facet, then this means it is also redundant
- * with respect to those same constraints in the adjacent
- * hyperplane (the one containing "set").  Otherwise,
- * it would have been detected as a redundant constraint
- * of info->bmap itself.
- * If these other constraints are valid, then this means
- * that the supposed cut constraint is also valid,
- * but was simply not detected as such.
- * Mark the supposed cut constraint as valid as well to ensure
- * it gets preserved in the fused result, if any.
- * If the redundant cut constraint cannot be (easily) determined
- * to be valid, then skip wrapping and reset wrap->mat->n_row to zero.
  */
 static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 	struct isl_coalesce_info *info, int k, isl_int *bound,
 	__isl_keep isl_set *set)
 {
-	isl_bool nowrap;
 	struct isl_tab_undo *snap;
 	int n;
 	unsigned total = isl_basic_map_total_dim(info->bmap);
 
 	snap = isl_tab_snap(info->tab);
 
-	if (isl_tab_mark_rational(info->tab) < 0)
-		return isl_stat_error;
 	if (isl_tab_select_facet(info->tab, info->bmap->n_eq + k) < 0)
 		return isl_stat_error;
 	if (isl_tab_detect_redundant(info->tab) < 0)
 		return isl_stat_error;
-	nowrap = has_non_validated_redundant_cuts(info);
-	if (nowrap < 0)
-		return isl_stat_error;
+
+	isl_seq_neg(bound, info->bmap->ineq[k], 1 + total);
 
 	n = wraps->mat->n_row;
-	if (!nowrap) {
-		isl_seq_neg(bound, info->bmap->ineq[k], 1 + total);
-
-		if (add_wraps(wraps, info, bound, set) < 0)
-			return isl_stat_error;
-	}
+	if (add_wraps(wraps, info, bound, set) < 0)
+		return isl_stat_error;
 
 	if (isl_tab_rollback(info->tab, snap) < 0)
 		return isl_stat_error;
-	if (nowrap)
-		return wraps_mark_failed(wraps);
 	if (check_wraps(wraps->mat, n, info->tab) < 0)
 		return isl_stat_error;
 
