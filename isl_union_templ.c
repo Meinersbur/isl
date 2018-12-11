@@ -97,14 +97,15 @@ error:
 }
 
 #ifdef HAS_TYPE
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *dim, enum isl_fold type)
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space,
+	enum isl_fold type)
 {
-	return FN(UNION,alloc)(dim, type, 16);
+	return FN(UNION,alloc)(space, type, 16);
 }
 #else
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *dim)
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space)
 {
-	return FN(UNION,alloc)(dim, 16);
+	return FN(UNION,alloc)(space, 16);
 }
 #endif
 
