@@ -66,11 +66,17 @@ int FN(UNION,find_dim_by_name)(__isl_keep UNION *u, enum isl_dim_type type,
 }
 
 #ifdef HAS_TYPE
-static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space,
-	enum isl_fold type, int size)
+#define OPT_TYPE_PARAM		, enum isl_fold type
+#define OPT_TYPE_ARG(loc)	, loc type
+#define OPT_SET_TYPE(loc,val)	loc type = (val);
 #else
-static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space, int size)
+#define OPT_TYPE_PARAM
+#define OPT_TYPE_ARG(loc)
+#define OPT_SET_TYPE(loc,val)
 #endif
+
+static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space
+	OPT_TYPE_PARAM, int size)
 {
 	UNION *u;
 
@@ -83,9 +89,7 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space, int size)
 		goto error;
 
 	u->ref = 1;
-#ifdef HAS_TYPE
-	u->type = type;
-#endif
+	OPT_SET_TYPE(u->, type);
 	u->space = space;
 	if (isl_hash_table_init(space->ctx, &u->table, size) < 0)
 		return FN(UNION,free)(u);
@@ -96,18 +100,10 @@ error:
 	return NULL;
 }
 
-#ifdef HAS_TYPE
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space,
-	enum isl_fold type)
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
 {
-	return FN(UNION,alloc)(space, type, 16);
+	return FN(UNION,alloc)(space OPT_TYPE_ARG(), 16);
 }
-#else
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space)
-{
-	return FN(UNION,alloc)(space, 16);
-}
-#endif
 
 __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)
 {
@@ -134,11 +130,7 @@ __isl_give PART *FN(FN(UNION,extract),BASE)(__isl_keep UNION *u,
 	if (!entry)
 		goto error;
 	if (entry == isl_hash_table_entry_none)
-#ifdef HAS_TYPE
-		return FN(PART,ZERO)(space, u->type);
-#else
-		return FN(PART,ZERO)(space);
-#endif
+		return FN(PART,ZERO)(space OPT_TYPE_ARG(u->));
 	isl_space_free(space);
 	return FN(PART,copy)(entry->data);
 error:
@@ -218,8 +210,7 @@ __isl_give UNION *FN(FN(UNION,add),BASE)(__isl_take UNION *u,
 	return FN(UNION,add_part_generic)(u, part, 1);
 }
 
-#ifdef HAS_TYPE
-/* Allocate a UNION with the same type and the same size as "u" and
+/* Allocate a UNION with the same type (if any) and the same size as "u" and
  * with space "space".
  */
 static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
@@ -227,25 +218,11 @@ static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
 {
 	if (!u)
 		goto error;
-	return FN(UNION,alloc)(space, u->type, u->table.n);
+	return FN(UNION,alloc)(space OPT_TYPE_ARG(u->), u->table.n);
 error:
 	isl_space_free(space);
 	return NULL;
 }
-#else
-/* Allocate a UNION with the same size as "u" and with space "space".
- */
-static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
-	__isl_take isl_space *space)
-{
-	if (!u)
-		goto error;
-	return FN(UNION,alloc)(space, u->table.n);
-error:
-	isl_space_free(space);
-	return NULL;
-}
-#endif
 
 /* Allocate a UNION with the same space, the same type (if any) and
  * the same size as "u".
@@ -501,11 +478,7 @@ __isl_give UNION *FN(FN(UNION,from),BASE)(__isl_take PART *part)
 					isl_space_dim(space, isl_dim_in));
 	space = isl_space_drop_dims(space, isl_dim_out, 0,
 					isl_space_dim(space, isl_dim_out));
-#ifdef HAS_TYPE
-	u = FN(UNION,ZERO)(space, part->type);
-#else
-	u = FN(UNION,ZERO)(space);
-#endif
+	u = FN(UNION,ZERO)(space OPT_TYPE_ARG(part->));
 	u = FN(FN(UNION,add),BASE)(u, part);
 
 	return u;
@@ -898,11 +871,7 @@ __isl_give UNION *FN(UNION,scale_val)(__isl_take UNION *u,
 	if (DEFAULT_IS_ZERO && u && isl_val_is_zero(v)) {
 		UNION *zero;
 		isl_space *space = FN(UNION,get_space)(u);
-#ifdef HAS_TYPE
-		zero = FN(UNION,ZERO)(space, u->type);
-#else
-		zero = FN(UNION,ZERO)(space);
-#endif
+		zero = FN(UNION,ZERO)(space OPT_TYPE_ARG(u->));
 		FN(UNION,free)(u);
 		isl_val_free(v);
 		return zero;
