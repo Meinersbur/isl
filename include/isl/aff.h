@@ -702,6 +702,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 void isl_pw_multi_aff_dump(__isl_keep isl_pw_multi_aff *pma);
 
 
+__isl_overload
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_empty_ctx(
 	isl_ctx *ctx);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_empty_space(
