@@ -3472,10 +3472,16 @@ An empty union expression can be created using the following functions.
 
 	#include <isl/aff.h>
 	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_empty_ctx(
+		isl_ctx *ctx);
+	__isl_give isl_union_pw_aff *
 	isl_union_pw_aff_empty_space(
 		__isl_take isl_space *space);
 	__isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
 		__isl_take isl_space *space);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_empty_ctx(
+		isl_ctx *ctx);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_empty_space(
 		__isl_take isl_space *space);
@@ -3484,6 +3490,9 @@ An empty union expression can be created using the following functions.
 		__isl_take isl_space *space);
 
 	#include <isl/polynomial.h>
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_zero_ctx(
+		isl_ctx *ctx);
 	__isl_give isl_union_pw_qpolynomial *
 	isl_union_pw_qpolynomial_zero_space(
 		__isl_take isl_space *space);

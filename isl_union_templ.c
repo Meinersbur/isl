@@ -100,6 +100,16 @@ error:
 	return NULL;
 }
 
+/* Create an empty/zero union without specifying any parameters.
+ */
+__isl_give UNION *FN(FN(UNION,ZERO),ctx)(isl_ctx *ctx OPT_TYPE_PARAM)
+{
+	isl_space *space;
+
+	space = isl_space_unit(ctx);
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
+}
+
 __isl_give UNION *FN(FN(UNION,ZERO),space)(__isl_take isl_space *space
 	OPT_TYPE_PARAM)
 {
