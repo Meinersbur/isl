@@ -100,9 +100,17 @@ error:
 	return NULL;
 }
 
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
+__isl_give UNION *FN(FN(UNION,ZERO),space)(__isl_take isl_space *space
+	OPT_TYPE_PARAM)
 {
 	return FN(UNION,alloc)(space OPT_TYPE_ARG(), 16);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
+{
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
 }
 
 __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)

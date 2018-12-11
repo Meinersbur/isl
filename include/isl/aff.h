@@ -702,6 +702,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 void isl_pw_multi_aff_dump(__isl_keep isl_pw_multi_aff *pma);
 
 
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_empty_space(
+	__isl_take isl_space *space);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_empty(
 	__isl_take isl_space *space);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_aff(
@@ -946,6 +948,8 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_drop_dims(
 __isl_give isl_union_pw_aff *isl_union_pw_aff_reset_user(
 	__isl_take isl_union_pw_aff *upa);
 
+__isl_give isl_union_pw_aff *isl_union_pw_aff_empty_space(
+	__isl_take isl_space *space);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
 	__isl_take isl_space *space);
 __isl_constructor

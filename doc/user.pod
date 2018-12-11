@@ -3471,7 +3471,13 @@ but the domains of these expressions need to be disjoint.
 An empty union expression can be created using the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_empty_space(
+		__isl_take isl_space *space);
 	__isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
+		__isl_take isl_space *space);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_empty_space(
 		__isl_take isl_space *space);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_empty(
@@ -3479,8 +3485,15 @@ An empty union expression can be created using the following functions.
 
 	#include <isl/polynomial.h>
 	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_zero_space(
+		__isl_take isl_space *space);
+	__isl_give isl_union_pw_qpolynomial *
 	isl_union_pw_qpolynomial_zero(
 		__isl_take isl_space *space);
+
+C<isl_union_pw_aff_empty> is an alternative name for
+C<isl_union_pw_aff_empty_space>.
+Similarly for the other pairs of functions.
 
 A union expression containing a single base expression
 can be created using the following functions.
