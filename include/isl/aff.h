@@ -646,6 +646,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_empty(__isl_take isl_space *space)
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_domain(
 	__isl_take isl_set *set);
 
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_multi_val_on_domain(
 	__isl_take isl_set *domain, __isl_take isl_multi_val *mv);
 
