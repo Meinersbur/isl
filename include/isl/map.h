@@ -265,6 +265,10 @@ __isl_give isl_pw_multi_aff *isl_map_lexmin_pw_multi_aff(
 __isl_export
 __isl_give isl_pw_multi_aff *isl_map_lexmax_pw_multi_aff(
 	__isl_take isl_map *map);
+__isl_export
+__isl_give isl_multi_pw_aff *isl_map_min_multi_pw_aff(__isl_take isl_map *map);
+__isl_export
+__isl_give isl_multi_pw_aff *isl_map_max_multi_pw_aff(__isl_take isl_map *map);
 
 void isl_basic_map_print_internal(__isl_keep isl_basic_map *bmap,
 	FILE *out, int indent);

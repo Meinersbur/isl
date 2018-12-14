@@ -6410,6 +6410,50 @@ isl_bool isl_multi_pw_aff_has_non_trivial_domain(
 	return isl_bool_not(isl_set_plain_is_universe(mpa->u.dom));
 }
 
+#undef BASE
+#define BASE	set
+
+#include "isl_opt_mpa_templ.c"
+
+/* Compute the minima of the set dimensions as a function of the
+ * parameters, but independently of the other set dimensions.
+ */
+__isl_give isl_multi_pw_aff *isl_set_min_multi_pw_aff(__isl_take isl_set *set)
+{
+	return set_opt_mpa(set, &isl_set_dim_min);
+}
+
+/* Compute the maxima of the set dimensions as a function of the
+ * parameters, but independently of the other set dimensions.
+ */
+__isl_give isl_multi_pw_aff *isl_set_max_multi_pw_aff(__isl_take isl_set *set)
+{
+	return set_opt_mpa(set, &isl_set_dim_max);
+}
+
+#undef BASE
+#define BASE	map
+
+#include "isl_opt_mpa_templ.c"
+
+/* Compute the minima of the output dimensions as a function of the
+ * parameters and input dimensions, but independently of
+ * the other output dimensions.
+ */
+__isl_give isl_multi_pw_aff *isl_map_min_multi_pw_aff(__isl_take isl_map *map)
+{
+	return map_opt_mpa(map, &isl_map_dim_min);
+}
+
+/* Compute the maxima of the output dimensions as a function of the
+ * parameters and input dimensions, but independently of
+ * the other output dimensions.
+ */
+__isl_give isl_multi_pw_aff *isl_map_max_multi_pw_aff(__isl_take isl_map *map)
+{
+	return map_opt_mpa(map, &isl_map_dim_max);
+}
+
 /* Scale the elements of "pma" by the corresponding elements of "mv".
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(

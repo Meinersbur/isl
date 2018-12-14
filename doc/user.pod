@@ -6160,8 +6160,20 @@ NaN if the input is empty.
 		__isl_take isl_map *map, int pos);
 	__isl_give isl_pw_aff *isl_map_dim_max(
 		__isl_take isl_map *map, int pos);
+	__isl_give isl_multi_pw_aff *
+	isl_set_min_multi_pw_aff(
+		__isl_take isl_set *set);
+	__isl_give isl_multi_pw_aff *
+	isl_set_max_multi_pw_aff(
+		__isl_take isl_set *set);
+	__isl_give isl_multi_pw_aff *
+	isl_map_min_multi_pw_aff(
+		__isl_take isl_map *map);
+	__isl_give isl_multi_pw_aff *
+	isl_map_max_multi_pw_aff(
+		__isl_take isl_map *map);
 
-Compute the minimum or maximum of the given set or output dimension
+Compute the minimum or maximum of the (given) set or output dimension(s)
 as a function of the parameters (and input dimensions), but independently
 of the other set or output dimensions.
 For lexicographic optimization, see L<"Lexicographic Optimization">.
