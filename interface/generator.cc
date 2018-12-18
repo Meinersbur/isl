@@ -192,7 +192,7 @@ static void add_set_enum(isl_class *c, const string &prefix, EnumDecl *decl,
 		if (val < 0)
 			continue;
 		method_name = prefix + name.substr(4);
-		c->set_enums[fd].emplace_back(set_enum(val, name, method_name));
+		c->set_enums[fd].push_back(set_enum(val, name, method_name));
 	}
 }
 
