@@ -3044,6 +3044,16 @@ __isl_give isl_map *isl_pw_aff_eq_map(__isl_take isl_pw_aff *pa1,
 }
 
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function value of "pa1" is less than or equal to
+ * the function value of "pa2".
+ */
+__isl_give isl_map *isl_pw_aff_le_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return isl_pw_aff_order_map(pa1, pa2, &isl_pw_aff_le_set);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
  * where the function value of "pa1" is less than the function value of "pa2".
  */
 __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
