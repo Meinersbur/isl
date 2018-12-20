@@ -422,6 +422,8 @@ __isl_give isl_map *isl_pw_aff_le_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
 __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
+__isl_give isl_map *isl_pw_aff_ge_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2);
 __isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2);
 
