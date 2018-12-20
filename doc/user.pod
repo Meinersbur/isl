@@ -3649,8 +3649,14 @@ The reverse conversion is exact.
 	isl_pw_multi_aff_from_multi_pw_aff(
 		__isl_take isl_multi_pw_aff *mpa);
 	__isl_give isl_multi_pw_aff *
+	isl_pw_multi_aff_to_multi_pw_aff(
+		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_from_pw_multi_aff(
 		__isl_take isl_pw_multi_aff *pma);
+
+C<isl_pw_multi_aff_to_multi_pw_aff> and
+C<isl_multi_pw_aff_from_pw_multi_aff> perform the same operation.
 
 =head3 Union Expressions
 

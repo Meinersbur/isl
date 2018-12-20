@@ -6864,6 +6864,16 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
 	return mpa;
 }
 
+/* This function performs the same operation as
+ * isl_multi_pw_aff_from_pw_multi_aff,
+ * but is considered as a function on an isl_pw_multi_aff when exported.
+ */
+__isl_give isl_multi_pw_aff *isl_pw_multi_aff_to_multi_pw_aff(
+	__isl_take isl_pw_multi_aff *pma)
+{
+	return isl_multi_pw_aff_from_pw_multi_aff(pma);
+}
+
 /* Do "pa1" and "pa2" represent the same function?
  *
  * We first check if they are obviously equal.
