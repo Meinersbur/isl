@@ -7,6 +7,9 @@ using namespace clang;
  *
  * "checked" is set if C++ bindings should be generated
  * that rely on the user to check for error conditions.
+ *
+ * "conversions" maps the target type of automatic conversion
+ * to the second input argument of the conversion function.
  */
 class cpp_generator : public generator {
 protected:
@@ -61,16 +64,22 @@ private:
 	void print_persistent_callbacks_decl(ostream &os,
 		const isl_class &clazz);
 	void print_methods_decl(ostream &os, const isl_class &clazz);
+	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	template <enum method_part>
 	void print_method_variants(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
 		const set<FunctionDecl *> &methods);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd, const string &name, function_kind kind);
+		FunctionDecl *fd, const string &name, function_kind kind,
+		const std::vector<bool> &convert = {});
 	template <enum method_part>
 	void print_method(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
+	template <enum method_part>
+	void print_method(ostream &os, const isl_class &clazz,
+		FunctionDecl *method, function_kind kind,
+		const std::vector<bool> &convert);
 	void print_set_enum_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name);
 	void print_set_enums_decl(ostream &os, const isl_class &clazz,
@@ -127,12 +136,15 @@ private:
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
 		bool load_from_this_ptr);
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
+	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
+		const std::vector<bool> &convert);
 	void print_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, const string &cname, int num_params,
-		bool is_declaration, function_kind kind);
+		bool is_declaration, function_kind kind,
+		const std::vector<bool> &convert = {});
 	void print_named_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, string name, bool is_declaration,
-		function_kind kind);
+		function_kind kind, const std::vector<bool> &convert = {});
 	void print_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, bool is_declaration, function_kind kind);
 	string generate_callback_args(QualType type, bool cpp);
@@ -157,4 +169,10 @@ private:
 public:
 	static string type2cpp(const isl_class &clazz);
 	static string type2cpp(string type_string);
+private:
+	static const std::set<std::string> automatic_conversion_functions;
+	std::map<const Type *, ParmVarDecl *> conversions;
+	void extract_automatic_conversion(FunctionDecl *fd);
+	void extract_class_automatic_conversions(const isl_class &clazz);
+	void extract_automatic_conversions();
 };
