@@ -71,13 +71,13 @@ struct isl_class {
 	bool is_static(FunctionDecl *method) const;
 	/* Is this class a subclass based on a type function? */
 	bool is_type_subclass() const { return name != subclass_name; }
-	/* Return name of "fd" without type suffix, if any. */
-	static string name_without_type_suffix(FunctionDecl *fd);
+	/* Return name of "fd" without type suffixes, if any. */
+	static string name_without_type_suffixes(FunctionDecl *fd);
 	/* Extract the method name corresponding to "fd"
 	 * (including "get" method prefix if any).
 	 */
 	string base_method_name(FunctionDecl *fd) const {
-		string m_name = name_without_type_suffix(fd);
+		string m_name = name_without_type_suffixes(fd);
 		return m_name.substr(subclass_name.length() + 1);
 	}
 	/* The prefix of a "get" method. */

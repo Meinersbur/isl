@@ -333,7 +333,7 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		} else if (sets_persistent_callback(c, method)) {
 			c->persistent_callbacks.insert(method);
 		} else {
-			string fullname = c->name_without_type_suffix(method);
+			string fullname = c->name_without_type_suffixes(method);
 			c->methods[fullname].insert(method);
 		}
 	}
@@ -718,25 +718,32 @@ static std::string drop_suffix(const std::string &s, const std::string &suffix)
 		return s;
 }
 
-/* If "method" is overloaded, then return its name with the suffix
- * corresponding to the type of the final argument removed.
+/* If "method" is overloaded, then return its name with the suffixes
+ * corresponding to the types of the final arguments removed.
  * Otherwise, simply return the name of the function.
+ * Start from the final argument and keep removing suffixes
+ * matching arguments, independently of whether previously considered
+ * arguments matched.
  */
-string isl_class::name_without_type_suffix(FunctionDecl *method)
+string isl_class::name_without_type_suffixes(FunctionDecl *method)
 {
 	int num_params;
-	ParmVarDecl *param;
-	string name, type;
+	string name;
 
 	name = method->getName();
 	if (!generator::is_overload(method))
 		return name;
 
 	num_params = method->getNumParams();
-	param = method->getParamDecl(num_params - 1);
-	type = type_suffix(param);
+	for (int i = num_params - 1; i >= 0; --i) {
+		ParmVarDecl *param;
+		string type;
 
-	name = drop_suffix(name, type);
+		param = method->getParamDecl(i);
+		type = type_suffix(param);
+
+		name = drop_suffix(name, type);
+	}
 
 	return name;
 }
