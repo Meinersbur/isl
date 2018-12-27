@@ -73,8 +73,6 @@ private:
 	void print_set_enums_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_set_enums_decl(ostream &os, const isl_class &clazz);
-	void print_get_method_decl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -117,7 +115,8 @@ private:
 	void print_set_enums_impl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_set_enums_impl(ostream &os, const isl_class &clazz);
-	void print_get_method_impl(ostream &os, const isl_class &clazz,
+	template <enum method_part>
+	void print_get_method(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);

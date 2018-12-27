@@ -703,7 +703,8 @@ void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz)
 /* Print a declaration for the "get" method "fd" in class "clazz",
  * using a name that includes the "get_" prefix, to "os".
  */
-void cpp_generator::print_get_method_decl(ostream &os,
+template<>
+void cpp_generator::print_get_method<cpp_generator::decl>(ostream &os,
 	const isl_class &clazz, FunctionDecl *fd)
 {
 	function_kind kind = function_kind_member_method;
@@ -727,7 +728,7 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 		function_kind kind = get_method_kind(clazz, *it);
 		print_method<decl>(os, clazz, *it, kind);
 		if (clazz.is_get_method(*it))
-			print_get_method_decl(os, clazz, *it);
+			print_get_method<decl>(os, clazz, *it);
 	}
 }
 
@@ -1393,8 +1394,9 @@ void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz)
  * returns its result.
  * Note that static methods are not considered to be "get" methods.
  */
-void cpp_generator::print_get_method_impl(ostream &os, const isl_class &clazz,
-	FunctionDecl *fd)
+template<>
+void cpp_generator::print_get_method<cpp_generator::impl>(ostream &os,
+	const isl_class &clazz, FunctionDecl *fd)
 {
 	string get_name = clazz.base_method_name(fd);
 	string name = clazz.method_name(fd);
@@ -1432,7 +1434,7 @@ void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
 		kind = get_method_kind(clazz, *it);
 		print_method<impl>(os, clazz, *it, kind);
 		if (clazz.is_get_method(*it))
-			print_get_method_impl(os, clazz, *it);
+			print_get_method<impl>(os, clazz, *it);
 	}
 }
 
