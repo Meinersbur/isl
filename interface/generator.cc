@@ -657,6 +657,14 @@ bool generator::is_long(QualType type)
 	return builtin && builtin->getKind() == BuiltinType::Long;
 }
 
+/* Is "type" that of "unsigned int"?
+ */
+static bool is_unsigned_int(QualType type)
+{
+	const BuiltinType *builtin = type->getAs<BuiltinType>();
+	return builtin && builtin->getKind() == BuiltinType::UInt;
+}
+
 /* Return the name of the type that "type" points to.
  * The input "type" is assumed to be a pointer type.
  */
@@ -680,6 +688,7 @@ const FunctionProtoType *generator::extract_prototype(QualType type)
  * If the type of "param" is an isl object type,
  * then the suffix is the name of the type with the "isl" prefix removed,
  * but keeping the "_".
+ * If the type is an unsigned integer, then the type suffix is "_ui".
  */
 static std::string type_suffix(ParmVarDecl *param)
 {
@@ -688,6 +697,8 @@ static std::string type_suffix(ParmVarDecl *param)
 	type = param->getOriginalType();
 	if (generator::is_isl_type(type))
 		return generator::extract_type(type).substr(3);
+	else if (is_unsigned_int(type))
+		return "_ui";
 	generator::die("Unsupported type suffix");
 }
 
