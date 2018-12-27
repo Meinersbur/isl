@@ -85,7 +85,7 @@ private:
 	void print_check_no_persistent_callback(ostream &os,
 		const isl_class &clazz, FunctionDecl *fd);
 	void print_ptr_impl(ostream &os, const isl_class &clazz);
-	bool print_downcast_impl(ostream &os, const isl_class &clazz);
+	void print_downcast_impl(ostream &os, const isl_class &clazz);
 	void print_ctx_impl(ostream &os, const isl_class &clazz);
 	void print_persistent_callbacks_impl(ostream &os,
 		const isl_class &clazz);
