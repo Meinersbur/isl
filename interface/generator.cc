@@ -675,6 +675,22 @@ const FunctionProtoType *generator::extract_prototype(QualType type)
 	return type->getPointeeType()->getAs<FunctionProtoType>();
 }
 
+/* Return the function name suffix for the type of "param".
+ *
+ * If the type of "param" is an isl object type,
+ * then the suffix is the name of the type with the "isl" prefix removed,
+ * but keeping the "_".
+ */
+static std::string type_suffix(ParmVarDecl *param)
+{
+	QualType type;
+
+	type = param->getOriginalType();
+	if (generator::is_isl_type(type))
+		return generator::extract_type(type).substr(3);
+	generator::die("Unsupported type suffix");
+}
+
 /* If "method" is overloaded, then return its name with the suffix
  * corresponding to the type of the final argument removed.
  * Otherwise, simply return the name of the function.
@@ -692,8 +708,7 @@ string isl_class::name_without_type_suffix(FunctionDecl *method)
 
 	num_params = method->getNumParams();
 	param = method->getParamDecl(num_params - 1);
-	type = generator::extract_type(param->getOriginalType());
-	type = type.substr(3);
+	type = type_suffix(param);
 	name_len = name.length();
 	type_len = type.length();
 
