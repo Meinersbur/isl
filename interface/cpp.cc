@@ -1878,6 +1878,7 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 
 	for (int i = first_param; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
+		std::string name = param->getName().str();
 		QualType type = param->getOriginalType();
 		string cpptype = type2cpp(type);
 
@@ -1886,10 +1887,9 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 
 		if (keeps(param) || is_string(type) || is_callback(type))
 			osprintf(os, "const %s &%s", cpptype.c_str(),
-				 param->getName().str().c_str());
+				 name.c_str());
 		else
-			osprintf(os, "%s %s", cpptype.c_str(),
-				 param->getName().str().c_str());
+			osprintf(os, "%s %s", cpptype.c_str(), name.c_str());
 
 		if (i != num_params - 1)
 			osprintf(os, ", ");
