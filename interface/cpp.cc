@@ -699,6 +699,18 @@ void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz)
 		print_set_enums_decl(os, clazz, it->first);
 }
 
+/* Print a declaration for the "get" method "fd" in class "clazz",
+ * using a name that includes the "get_" prefix, to "os".
+ */
+void cpp_generator::print_get_method_decl(ostream &os,
+	const isl_class &clazz, FunctionDecl *fd)
+{
+	function_kind kind = function_kind_member_method;
+	string base = clazz.base_method_name(fd);
+
+	print_named_method_decl(os, clazz, fd, base, kind);
+}
+
 /* Print declarations for methods "methods" in class "clazz" to "os".
  *
  * For methods that are identified as "get" methods, also
@@ -713,10 +725,8 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 	for (it = methods.begin(); it != methods.end(); ++it) {
 		function_kind kind = get_method_kind(clazz, *it);
 		print_method_decl(os, clazz, *it, kind);
-		if (clazz.is_get_method(*it)) {
-			string base = clazz.base_method_name(*it);
-			print_named_method_decl(os, clazz, *it, base, kind);
-		}
+		if (clazz.is_get_method(*it))
+			print_get_method_decl(os, clazz, *it);
 	}
 }
 

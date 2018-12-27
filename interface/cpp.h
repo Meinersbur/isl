@@ -68,6 +68,8 @@ private:
 	void print_set_enums_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_set_enums_decl(ostream &os, const isl_class &clazz);
+	void print_get_method_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
