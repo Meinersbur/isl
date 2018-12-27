@@ -105,6 +105,7 @@ static std::string to_string(long l)
  * the second argument of the conversion function to its function result.
  */
 const std::set<std::string> cpp_generator::automatic_conversion_functions = {
+	"isl_id_read_from_str",
 	"isl_val_int_from_si",
 };
 
