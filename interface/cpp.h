@@ -61,6 +61,9 @@ private:
 	void print_persistent_callbacks_decl(ostream &os,
 		const isl_class &clazz);
 	void print_methods_decl(ostream &os, const isl_class &clazz);
+	template <enum method_part>
+	void print_method_variants(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
 		const set<FunctionDecl *> &methods);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,

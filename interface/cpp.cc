@@ -713,23 +713,33 @@ void cpp_generator::print_get_method<cpp_generator::decl>(ostream &os,
 	print_named_method_decl(os, clazz, fd, base, kind);
 }
 
-/* Print declarations for methods "methods" in class "clazz" to "os".
+/* Print a declaration or definition for method "fd" in class "clazz"
+ * to "os".
  *
  * For methods that are identified as "get" methods, also
- * print a declaration for the method using a name that includes
- * the "get_" prefix.
+ * print a declaration or definition for the method
+ * using a name that includes the "get_" prefix.
+ */
+template <enum cpp_generator::method_part part>
+void cpp_generator::print_method_variants(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd)
+{
+	function_kind kind = get_method_kind(clazz, fd);
+
+	print_method<part>(os, clazz, fd, kind);
+	if (clazz.is_get_method(fd))
+		print_get_method<part>(os, clazz, fd);
+}
+
+/* Print declarations for methods "methods" in class "clazz" to "os".
  */
 void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 	const set<FunctionDecl *> &methods)
 {
 	set<FunctionDecl *>::const_iterator it;
 
-	for (it = methods.begin(); it != methods.end(); ++it) {
-		function_kind kind = get_method_kind(clazz, *it);
-		print_method<decl>(os, clazz, *it, kind);
-		if (clazz.is_get_method(*it))
-			print_get_method<decl>(os, clazz, *it);
-	}
+	for (it = methods.begin(); it != methods.end(); ++it)
+		print_method_variants<decl>(os, clazz, *it);
 }
 
 /* Print a declaration for a method called "name" in class "clazz"
@@ -1419,23 +1429,14 @@ void cpp_generator::print_get_method<cpp_generator::impl>(ostream &os,
 }
 
 /* Print definitions for methods "methods" in class "clazz" to "os".
- *
- * For methods that are identified as "get" methods, also
- * print a definition for the method using a name that includes
- * the "get_" prefix.
  */
 void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
 	const set<FunctionDecl *> &methods)
 {
 	set<FunctionDecl *>::const_iterator it;
 
-	for (it = methods.begin(); it != methods.end(); ++it) {
-		function_kind kind;
-		kind = get_method_kind(clazz, *it);
-		print_method<impl>(os, clazz, *it, kind);
-		if (clazz.is_get_method(*it))
-			print_get_method<impl>(os, clazz, *it);
-	}
+	for (it = methods.begin(); it != methods.end(); ++it)
+		print_method_variants<impl>(os, clazz, *it);
 }
 
 /* Print the use of "param" to "os".
