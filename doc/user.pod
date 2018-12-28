@@ -1920,13 +1920,20 @@ C<isl> has functions for creating some standard sets and relations.
 		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_empty(
 		__isl_take isl_space *space);
+	__isl_give isl_union_set *isl_union_set_empty_space(
+		__isl_take isl_space *space);
 	__isl_give isl_union_set *isl_union_set_empty(
+		__isl_take isl_space *space);
+	__isl_give isl_union_map *isl_union_map_empty_space(
 		__isl_take isl_space *space);
 	__isl_give isl_union_map *isl_union_map_empty(
 		__isl_take isl_space *space);
 
 For C<isl_union_set>s and C<isl_union_map>s, the space
 is only used to specify the parameters.
+C<isl_union_set_empty> is an alternative name for
+C<isl_union_set_empty_space>.
+Similarly for the other pair of functions.
 
 =item * Universe sets and relations
 
