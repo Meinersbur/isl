@@ -129,7 +129,7 @@ __isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *space)
 
 __isl_give isl_union_set *isl_union_set_empty(__isl_take isl_space *space)
 {
-	return isl_union_map_empty(space);
+	return uset_from_umap(isl_union_map_empty(space));
 }
 
 isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap)
