@@ -122,6 +122,13 @@ static __isl_give isl_union_map *isl_union_map_alloc(
 	return umap;
 }
 
+/* Create an empty union map without specifying any parameters.
+ */
+__isl_give isl_union_map *isl_union_map_empty_ctx(isl_ctx *ctx)
+{
+	return isl_union_map_empty_space(isl_space_unit(ctx));
+}
+
 __isl_give isl_union_map *isl_union_map_empty_space(__isl_take isl_space *space)
 {
 	return isl_union_map_alloc(space, 16);
@@ -132,6 +139,13 @@ __isl_give isl_union_map *isl_union_map_empty_space(__isl_take isl_space *space)
 __isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *space)
 {
 	return isl_union_map_empty_space(space);
+}
+
+/* Create an empty union set without specifying any parameters.
+ */
+__isl_give isl_union_set *isl_union_set_empty_ctx(isl_ctx *ctx)
+{
+	return uset_from_umap(isl_union_map_empty_ctx(ctx));
 }
 
 __isl_give isl_union_set *isl_union_set_empty_space(__isl_take isl_space *space)

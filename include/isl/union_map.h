@@ -25,6 +25,8 @@ __isl_give isl_union_map *isl_union_map_from_basic_map(
 	__isl_take isl_basic_map *bmap);
 __isl_constructor
 __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map);
+__isl_overload
+__isl_give isl_union_map *isl_union_map_empty_ctx(isl_ctx *ctx);
 __isl_give isl_union_map *isl_union_map_empty_space(
 	__isl_take isl_space *space);
 __isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *space);
