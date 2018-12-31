@@ -32,6 +32,7 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_copy(			\
 	__isl_keep isl_multi_##BASE *multi);				\
 __isl_null isl_multi_##BASE *isl_multi_##BASE##_free(			\
 	__isl_take isl_multi_##BASE *multi);				\
+__isl_export								\
 isl_bool isl_multi_##BASE##_plain_is_equal(				\
 	__isl_keep isl_multi_##BASE *multi1,				\
 	__isl_keep isl_multi_##BASE *multi2);				\
