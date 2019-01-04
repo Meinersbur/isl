@@ -3730,22 +3730,45 @@ can be created using the following functions.
 
 	#include <isl/aff.h>
 	__isl_give isl_union_pw_aff *
+	isl_pw_aff_to_union_pw_aff(
+		__isl_take isl_pw_aff *pa);
+	__isl_give isl_union_pw_aff *
 	isl_union_pw_aff_from_pw_aff(
 		__isl_take isl_pw_aff *pa);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_from_aff(
 		__isl_take isl_aff *aff);
 	__isl_give isl_union_pw_multi_aff *
+	isl_pw_multi_aff_to_union_pw_multi_aff(
+		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_from_pw_multi_aff(
 		__isl_take isl_pw_multi_aff *pma);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_union_pw_qpolynomial *
+	isl_pw_qpolynomial_to_union_pw_qpolynomial(
+		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_union_pw_qpolynomial *
 	isl_union_pw_qpolynomial_from_pw_qpolynomial(
 		__isl_take isl_pw_qpolynomial *pwqp);
 	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_to_union_pw_qpolynomial_fold(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_union_pw_qpolynomial_fold *
 	isl_union_pw_qpolynomial_fold_from_pw_qpolynomial_fold(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
+
+C<isl_pw_aff_to_union_pw_aff> and C<isl_union_pw_aff_from_pw_aff> perform
+the same operation.
+Similarly for C<isl_pw_multi_aff_to_union_pw_multi_aff> and
+C<isl_union_pw_multi_aff_from_pw_multi_aff>,
+for
+C<isl_pw_qpolynomial_to_union_pw_qpolynomial> and
+C<isl_union_pw_qpolynomial_from_pw_qpolynomial>, and
+for
+C<isl_pw_qpolynomial_fold_to_union_pw_qpolynomial_fold> and
+C<isl_union_pw_qpolynomial_fold_from_pw_qpolynomial_fold>.
 
 The inverse conversions below can only be used if the input
 expression is known to live in exactly one space.
