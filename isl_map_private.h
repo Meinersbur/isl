@@ -476,6 +476,8 @@ isl_stat isl_basic_set_check_no_locals(__isl_keep isl_basic_set *bset);
 
 isl_stat isl_basic_set_check_range(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type, unsigned first, unsigned n);
+isl_stat isl_set_check_range(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n);
 isl_stat isl_basic_map_check_range(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
 isl_stat isl_map_check_named_params(__isl_keep isl_map *map);

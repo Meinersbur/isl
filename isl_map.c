@@ -2308,7 +2308,7 @@ static
 /* Check that there are "n" dimensions of type "type" starting at "first"
  * in "set".
  */
-static isl_stat isl_set_check_range(__isl_keep isl_set *set,
+isl_stat isl_set_check_range(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	return isl_map_check_range(set_to_map(set), type, first, n);
