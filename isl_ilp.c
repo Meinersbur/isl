@@ -876,3 +876,29 @@ __isl_give isl_val *isl_basic_set_dim_max_val(__isl_take isl_basic_set *bset,
 {
 	return isl_basic_set_dim_opt_val(bset, 1, pos);
 }
+
+#undef BASE
+#define BASE	set
+#include "isl_ilp_opt_val_templ.c"
+
+/* Return the minimal value attained by the given set dimension,
+ * independently of the parameter values and of any other dimensions.
+ *
+ * Return negative infinity if the optimal value is unbounded and
+ * NaN if "set" is empty.
+ */
+__isl_give isl_val *isl_set_dim_min_val(__isl_take isl_set *set, int pos)
+{
+	return isl_set_dim_opt_val(set, 0, pos);
+}
+
+/* Return the maximal value attained by the given set dimension,
+ * independently of the parameter values and of any other dimensions.
+ *
+ * Return infinity if the optimal value is unbounded and
+ * NaN if "set" is empty.
+ */
+__isl_give isl_val *isl_set_dim_max_val(__isl_take isl_set *set, int pos)
+{
+	return isl_set_dim_opt_val(set, 1, pos);
+}

@@ -6143,11 +6143,15 @@ NaN if the problem is empty.
 	#include <isl/ilp.h>
 	__isl_give isl_val *isl_basic_set_dim_max_val(
 		__isl_take isl_basic_set *bset, int pos);
+	__isl_give isl_val *isl_set_dim_min_val(
+		__isl_take isl_set *set, int pos);
+	__isl_give isl_val *isl_set_dim_max_val(
+		__isl_take isl_set *set, int pos);
 
-Return the maximal value attained by the given set dimension,
+Return the minimal or maximal value attained by the given set dimension,
 independently of the parameter values and of any other dimensions.
 The result is C<NULL> in case of an error, the optimal value in case
-there is one, infinity if the problem is unbounded and
+there is one, (negative) infinity if the problem is unbounded and
 NaN if the input is empty.
 
 =item * Parametric optimization
