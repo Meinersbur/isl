@@ -2428,7 +2428,7 @@ static int test_closure(isl_ctx *ctx)
 {
 	const char *str;
 	isl_map *map, *map2;
-	int exact, equal;
+	isl_bool exact, equal;
 
 	/* COCOA example 1 */
 	map = isl_map_read_from_str(ctx,

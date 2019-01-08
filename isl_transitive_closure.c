@@ -115,10 +115,10 @@ error:
  * this coordinate to "map" and set the length of the path to
  * one.
  */
-static int check_power_exactness(__isl_take isl_map *map,
+static isl_bool check_power_exactness(__isl_take isl_map *map,
 	__isl_take isl_map *app)
 {
-	int exact;
+	isl_bool exact;
 	isl_map *app_1;
 	isl_map *app_2;
 
@@ -170,11 +170,11 @@ static int check_power_exactness(__isl_take isl_map *map,
  * the length of the part.  If we are only interested in the transitive
  * closure, then we can simply project out these coordinates first.
  */
-static int check_exactness(__isl_take isl_map *map, __isl_take isl_map *app,
-	int project)
+static isl_bool check_exactness(__isl_take isl_map *map,
+	__isl_take isl_map *app, int project)
 {
 	isl_map *test;
-	int exact;
+	isl_bool exact;
 	isl_size d;
 
 	if (!project)
@@ -880,13 +880,14 @@ static isl_bool isl_set_overlaps(__isl_keep isl_set *set1,
  *				\sum_i k_i >= 1 }
  */
 static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
-	__isl_keep isl_map *map, int *exact, int project)
+	__isl_keep isl_map *map, isl_bool *exact, int project)
 {
 	struct isl_set *domain = NULL;
 	struct isl_set *range = NULL;
 	struct isl_map *app = NULL;
 	struct isl_map *path = NULL;
 	isl_bool overlaps;
+	int check;
 
 	domain = isl_map_domain(isl_map_copy(map));
 	domain = isl_set_coalesce(domain);
@@ -910,11 +911,12 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 	app = isl_map_add_dims(app, isl_dim_in, 1);
 	app = isl_map_add_dims(app, isl_dim_out, 1);
 
+	check = exact && *exact == isl_bool_true;
 	path = construct_extended_path(isl_space_copy(dim), map,
-					exact && *exact ? &project : NULL);
+					check ? &project : NULL);
 	app = isl_map_intersect(app, path);
 
-	if (exact && *exact &&
+	if (check &&
 	    (*exact = check_exactness(isl_map_copy(map), isl_map_copy(app),
 				      project)) < 0)
 		goto error;
@@ -933,7 +935,7 @@ error:
  */
 static __isl_give isl_map *construct_projected_component(
 	__isl_take isl_space *space,
-	__isl_keep isl_map *map, int *exact, int project)
+	__isl_keep isl_map *map, isl_bool *exact, int project)
 {
 	isl_map *app;
 	unsigned d;
@@ -956,7 +958,8 @@ static __isl_give isl_map *construct_projected_component(
  * domain and range equal to "dom".
  */
 static __isl_give isl_map *q_closure(__isl_take isl_space *dim,
-	__isl_take isl_set *dom, __isl_keep isl_basic_map *bmap, int *exact)
+	__isl_take isl_set *dom, __isl_keep isl_basic_map *bmap,
+	isl_bool *exact)
 {
 	int project = 1;
 	isl_map *path;
@@ -1170,7 +1173,7 @@ static __isl_give isl_map *compose(__isl_keep isl_map *map, int i,
  */
 static __isl_give isl_map *compute_incremental(
 	__isl_take isl_space *space, __isl_keep isl_map *map,
-	int i, __isl_take isl_map *qc, int *left, int *right, int *exact)
+	int i, __isl_take isl_map *qc, int *left, int *right, isl_bool *exact)
 {
 	isl_map *map_i;
 	isl_map *tc;
@@ -1316,7 +1319,7 @@ error:
  * map or the simple hull of domain and range of map_i.
  */
 static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
-	__isl_keep isl_map *map, int *exact, int project)
+	__isl_keep isl_map *map, isl_bool *exact, int project)
 {
 	int i;
 	isl_set **dom = NULL;
@@ -1354,8 +1357,8 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
 
 	for (i = 0; !res && i < map->n; ++i) {
 		isl_map *qc;
-		int exact_i, comp;
-		isl_bool spurious;
+		int comp;
+		isl_bool exact_i, spurious;
 		if (!dom[i])
 			dom[i] = isl_set_from_basic_set(
 					isl_basic_map_domain(
@@ -1555,16 +1558,17 @@ static isl_stat add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
  * transitive closure to account for all indirect paths that stay
  * in the current vertex.
  */
-static void floyd_warshall_iterate(isl_map ***grid, int n, int *exact)
+static void floyd_warshall_iterate(isl_map ***grid, int n, isl_bool *exact)
 {
 	int r, p, q;
 
 	for (r = 0; r < n; ++r) {
-		int r_exact;
+		isl_bool r_exact;
+		int check = exact && *exact == isl_bool_true;
 		grid[r][r] = isl_map_transitive_closure(grid[r][r],
-				(exact && *exact) ? &r_exact : NULL);
-		if (exact && *exact && !r_exact)
-			*exact = 0;
+				check ? &r_exact : NULL);
+		if (check && !r_exact)
+			*exact = isl_bool_false;
 
 		for (p = 0; p < n; ++p)
 			for (q = 0; q < n; ++q) {
@@ -1607,7 +1611,7 @@ static void floyd_warshall_iterate(isl_map ***grid, int n, int *exact)
  */
 static __isl_give isl_map *floyd_warshall_with_groups(
 	__isl_take isl_space *space, __isl_keep isl_map *map,
-	int *exact, int project, int *group, int n)
+	isl_bool *exact, int project, int *group, int n)
 {
 	int i, j, k;
 	isl_map ***grid = NULL;
@@ -1746,7 +1750,7 @@ error:
  * non-linear path lengths quite quickly.
  */
 static __isl_give isl_map *floyd_warshall(__isl_take isl_space *space,
-	__isl_keep isl_map *map, int *exact, int project)
+	__isl_keep isl_map *map, isl_bool *exact, int project)
 {
 	int i;
 	isl_set **set = NULL;
@@ -1887,15 +1891,15 @@ error:
  * to allow for paths that do not go through one of the two arguments.
  */
 static __isl_give isl_map *construct_power_components(
-	__isl_take isl_space *space, __isl_keep isl_map *map, int *exact,
+	__isl_take isl_space *space, __isl_keep isl_map *map, isl_bool *exact,
 	int project)
 {
 	int i, n, c;
 	struct isl_map *path = NULL;
 	struct isl_tc_follows_data data;
 	struct isl_tarjan_graph *g = NULL;
-	int *orig_exact;
-	int local_exact;
+	isl_bool *orig_exact;
+	isl_bool local_exact;
 
 	if (!map)
 		goto error;
@@ -1996,7 +2000,7 @@ error:
  * image element(s).
  */
 static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
-	int *exact, int project)
+	isl_bool *exact, int project)
 {
 	struct isl_map *app = NULL;
 	isl_space *space = NULL;
@@ -2026,12 +2030,12 @@ static __isl_give isl_map *construct_power(__isl_keep isl_map *map,
  * encoded as the difference between an extra pair of final coordinates.
  */
 static __isl_give isl_map *map_power(__isl_take isl_map *map,
-	int *exact, int project)
+	isl_bool *exact, int project)
 {
 	struct isl_map *app = NULL;
 
 	if (exact)
-		*exact = 1;
+		*exact = isl_bool_true;
 
 	if (isl_map_check_equal_tuples(map) < 0)
 		return isl_map_free(map);
@@ -2051,7 +2055,7 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map,
  * and made positive.  The extra coordinates are subsequently projected out
  * and the parameter is turned into the domain of the result.
  */
-__isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
+__isl_give isl_map *isl_map_power(__isl_take isl_map *map, isl_bool *exact)
 {
 	isl_space *target_space;
 	isl_space *space;
@@ -2105,7 +2109,7 @@ __isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact)
  * of a parameter.
  */
 __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
-	int *exact)
+	isl_bool *exact)
 {
 	isl_space *space;
 	isl_map *diff;
@@ -2122,7 +2126,7 @@ __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
 
 	if (isl_map_plain_is_empty(map)) {
 		if (exact)
-			*exact = 1;
+			*exact = isl_bool_true;
 		map = isl_map_project_out(map, isl_dim_out, 0, d);
 		map = isl_map_add_dims(map, isl_dim_out, 1);
 		return map;
@@ -2470,7 +2474,7 @@ error:
 }
 
 static __isl_give isl_map *box_closure_with_check(__isl_take isl_map *map,
-	int *exact)
+	isl_bool *exact)
 {
 	isl_map *app;
 
@@ -2507,7 +2511,7 @@ static __isl_give isl_map *box_closure_with_check(__isl_take isl_map *map,
  * If not, we simply call box_closure on the whole map.
  */
 static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
-	int *exact)
+	isl_bool *exact)
 {
 	int i, j;
 	isl_bool exact_i;
@@ -2565,7 +2569,7 @@ error:
  * the length to a parameter.
  */
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
-	int *exact)
+	isl_bool *exact)
 {
 	isl_space *target_dim;
 	isl_bool closed;
@@ -2583,7 +2587,7 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 		goto error;
 	if (closed) {
 		if (exact)
-			*exact = 1;
+			*exact = isl_bool_true;
 		return map;
 	}
 
@@ -2636,7 +2640,7 @@ error:
  * compositions are performed on relations with compatible domains and ranges.
  */
 static __isl_give isl_union_map *union_floyd_warshall_on_list(isl_ctx *ctx,
-	__isl_keep isl_basic_map **list, int n, int *exact)
+	__isl_keep isl_basic_map **list, int n, isl_bool *exact)
 {
 	int i, j, k;
 	int n_group;
@@ -2716,7 +2720,7 @@ error:
  * and then perform the algorithm on this list.
  */
 static __isl_give isl_union_map *union_floyd_warshall(
-	__isl_take isl_union_map *umap, int *exact)
+	__isl_take isl_union_map *umap, isl_bool *exact)
 {
 	int i, n;
 	isl_ctx *ctx;
@@ -2763,7 +2767,7 @@ error:
  * operations are performed on union maps.
  */
 static __isl_give isl_union_map *union_components(
-	__isl_take isl_union_map *umap, int *exact)
+	__isl_take isl_union_map *umap, isl_bool *exact)
 {
 	int i;
 	int n;
@@ -2863,7 +2867,7 @@ error:
  * If the result is exact, then *exact is set to 1.
  */
 __isl_give isl_union_map *isl_union_map_transitive_closure(
-	__isl_take isl_union_map *umap, int *exact)
+	__isl_take isl_union_map *umap, isl_bool *exact)
 {
 	isl_bool closed;
 
@@ -2871,7 +2875,7 @@ __isl_give isl_union_map *isl_union_map_transitive_closure(
 		return NULL;
 
 	if (exact)
-		*exact = 1;
+		*exact = isl_bool_true;
 
 	umap = isl_union_map_compute_divs(umap);
 	umap = isl_union_map_coalesce(umap);
@@ -2889,7 +2893,7 @@ error:
 
 struct isl_union_power {
 	isl_union_map *pow;
-	int *exact;
+	isl_bool *exact;
 };
 
 static isl_stat power(__isl_take isl_map *map, void *user)
@@ -2921,7 +2925,7 @@ static __isl_give isl_union_map *deltas_map(__isl_take isl_space *dim)
  * If the result is exact, then *exact is set to 1.
  */
 __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
-	int *exact)
+	isl_bool *exact)
 {
 	isl_size n;
 	isl_union_map *inc;

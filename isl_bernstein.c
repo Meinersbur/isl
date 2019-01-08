@@ -433,7 +433,7 @@ error:
  */
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_recursive(
 	__isl_take isl_pw_qpolynomial *pwqp,
-	int n_group, int *len, struct bernstein_data *data, int *tight)
+	int n_group, int *len, struct bernstein_data *data, isl_bool *tight)
 {
 	int i;
 	isl_size nparam;
@@ -468,7 +468,8 @@ error:
 
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_factors(
 	__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, struct bernstein_data *data, int *tight)
+	__isl_take isl_qpolynomial *poly, struct bernstein_data *data,
+	isl_bool *tight)
 {
 	isl_factorizer *f;
 	isl_set *set;
@@ -553,7 +554,7 @@ isl_stat isl_qpolynomial_bound_on_domain_bernstein(
 	struct bernstein_data data;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_size nvar;
-	int tight = 0;
+	isl_bool tight = isl_bool_false;
 	int *tp = bound->check_tight ? &tight : NULL;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
