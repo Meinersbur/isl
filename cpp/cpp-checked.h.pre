@@ -95,7 +95,7 @@ private:
 	isl_stat val;
 
 	friend stat manage(isl_stat val);
-	constexpr stat(isl_stat val) : val(val) {}
+	stat(isl_stat val) : val(val) {}
 public:
 	static stat ok() {
 		return stat(isl_stat_ok);
