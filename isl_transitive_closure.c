@@ -2633,7 +2633,7 @@ error:
  * grid have domains and ranges of the same dimension and so
  * the standard algorithm can be used because the nested transitive
  * closures are only applied to diagonal elements and because all
- * compositions are peformed on relations with compatible domains and ranges.
+ * compositions are performed on relations with compatible domains and ranges.
  */
 static __isl_give isl_union_map *union_floyd_warshall_on_list(isl_ctx *ctx,
 	__isl_keep isl_basic_map **list, int n, int *exact)
