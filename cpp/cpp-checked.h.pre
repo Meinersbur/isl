@@ -24,9 +24,19 @@ namespace checked {
     abort();                                                 \
   } while (0)
 
+/* Class used to check that isl::checked::boolean,
+ * isl::checked::stat and isl::checked::size values are checked for errors.
+ */
+struct checker {
+	bool checked = false;
+	~checker() {
+		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+	}
+};
+
 class boolean {
 private:
-  mutable bool checked = false;
+  mutable std::shared_ptr<checker> check = std::make_shared<checker>();
   isl_bool val;
 
   friend boolean manage(isl_bool val);
@@ -37,9 +47,6 @@ public:
   }
   boolean()
       : val(isl_bool_error) {}
-  ~boolean() {
-    ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
-  }
 
   /* implicit */ boolean(bool val)
       : val(val ? isl_bool_true : isl_bool_false) {}
@@ -47,24 +54,30 @@ public:
   isl_bool release() {
     auto tmp = val;
     val = isl_bool_error;
-    checked = true;
+    check->checked = true;
     return tmp;
   }
 
-  bool is_error() const { checked = true; return val == isl_bool_error; }
-  bool is_false() const { checked = true; return val == isl_bool_false; }
-  bool is_true() const { checked = true; return val == isl_bool_true; }
+  bool is_error() const { check->checked = true; return val == isl_bool_error; }
+  bool is_false() const { check->checked = true; return val == isl_bool_false; }
+  bool is_true() const { check->checked = true; return val == isl_bool_true; }
 
   explicit operator bool() const {
-    ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked error state");
+    ISLPP_ASSERT(check->checked, "IMPLEMENTATION ERROR: Unchecked error state");
     ISLPP_ASSERT(!is_error(), "IMPLEMENTATION ERROR: Unhandled error state");
     return is_true();
   }
 
+  boolean negate() {
+    if (val == isl_bool_true)
+      val = isl_bool_false;
+    else if (val == isl_bool_false)
+      val = isl_bool_true;
+    return *this;
+  }
+
   boolean operator!() const {
-    if (is_error())
-      return *this;
-    return !is_true();
+    return boolean(*this).negate();
   }
 };
 
@@ -91,7 +104,7 @@ public:
  */
 class stat {
 private:
-	mutable bool checked = false;
+	mutable std::shared_ptr<checker> check = std::make_shared<checker>();
 	isl_stat val;
 
 	friend stat manage(isl_stat val);
@@ -104,21 +117,18 @@ public:
 		return stat(isl_stat_error);
 	}
 	stat() : val(isl_stat_error) {}
-	~stat() {
-		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
-	}
 
 	isl_stat release() {
-		checked = true;
+		check->checked = true;
 		return val;
 	}
 
 	bool is_error() const {
-		checked = true;
+		check->checked = true;
 		return val == isl_stat_error;
 	}
 	bool is_ok() const {
-		checked = true;
+		check->checked = true;
 		return val == isl_stat_ok;
 	}
 };
@@ -132,31 +142,28 @@ inline stat manage(isl_stat val)
  */
 class size {
 private:
-	mutable bool checked = false;
+	mutable std::shared_ptr<checker> check = std::make_shared<checker>();
 	isl_size val;
 
 	friend size manage(isl_size val);
 	size(isl_size val) : val(val) {}
 public:
 	size() : val(isl_size_error) {}
-	~size() {
-		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
-	}
 
 	isl_size release() {
 		auto tmp = val;
 		val = isl_size_error;
-		checked = true;
+		check->checked = true;
 		return tmp;
 	}
 
 	bool is_error() const {
-		checked = true;
+		check->checked = true;
 		return val == isl_size_error;
 	}
 
 	explicit operator unsigned() const {
-		ISLPP_ASSERT(checked,
+		ISLPP_ASSERT(check->checked,
 			    "IMPLEMENTATION ERROR: Unchecked error state");
 		ISLPP_ASSERT(!is_error(),
 			    "IMPLEMENTATION ERROR: Unhandled error state");
