@@ -20,10 +20,10 @@
 #include <isl_options_private.h>
 #include <isl_tarjan.h>
 
-int isl_map_is_transitively_closed(__isl_keep isl_map *map)
+isl_bool isl_map_is_transitively_closed(__isl_keep isl_map *map)
 {
 	isl_map *map2;
-	int closed;
+	isl_bool closed;
 
 	map2 = isl_map_apply_range(isl_map_copy(map), isl_map_copy(map));
 	closed = isl_map_is_subset(map2, map);
@@ -1943,7 +1943,7 @@ static __isl_give isl_map *construct_power_components(
 	}
 
 	if (c > 1 && data.check_closed && !*exact) {
-		int closed;
+		isl_bool closed;
 
 		closed = isl_map_is_transitively_closed(path);
 		if (closed < 0)
@@ -2568,7 +2568,7 @@ __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
 	int *exact)
 {
 	isl_space *target_dim;
-	int closed;
+	isl_bool closed;
 
 	if (!map)
 		goto error;
