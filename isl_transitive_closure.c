@@ -32,10 +32,10 @@ isl_bool isl_map_is_transitively_closed(__isl_keep isl_map *map)
 	return closed;
 }
 
-int isl_union_map_is_transitively_closed(__isl_keep isl_union_map *umap)
+isl_bool isl_union_map_is_transitively_closed(__isl_keep isl_union_map *umap)
 {
 	isl_union_map *umap2;
-	int closed;
+	isl_bool closed;
 
 	umap2 = isl_union_map_apply_range(isl_union_map_copy(umap),
 					  isl_union_map_copy(umap));
@@ -2825,7 +2825,7 @@ static __isl_give isl_union_map *union_components(
 	}
 
 	if (c > 1 && data.check_closed && !*exact) {
-		int closed;
+		isl_bool closed;
 
 		closed = isl_union_map_is_transitively_closed(path);
 		if (closed < 0)
@@ -2865,7 +2865,7 @@ error:
 __isl_give isl_union_map *isl_union_map_transitive_closure(
 	__isl_take isl_union_map *umap, int *exact)
 {
-	int closed;
+	isl_bool closed;
 
 	if (!umap)
 		return NULL;
