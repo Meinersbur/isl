@@ -8011,6 +8011,33 @@ in the two arguments.
 	isl_multi_union_pw_aff_add(
 		__isl_take isl_multi_union_pw_aff *mupa1,
 		__isl_take isl_multi_union_pw_aff *mupa2);
+	__isl_give isl_pw_aff *isl_pw_aff_add_constant_val(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_val *v);
+	__isl_give isl_multi_aff *
+	isl_multi_aff_add_constant_val(
+		__isl_take isl_multi_aff *pa,
+		__isl_take isl_val *v);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_add_constant_val(
+		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_val *v);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_add_constant_multi_val(
+		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_multi_val *mv);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_add_constant_val(
+		__isl_take isl_multi_pw_aff *mpa,
+		__isl_take isl_val *v);
+	__isl_give isl_multi_aff *
+	isl_multi_aff_add_constant_multi_val(
+		__isl_take isl_multi_aff *pa,
+		__isl_take isl_multi_val *mv);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_add_constant_multi_val(
+		__isl_take isl_multi_pw_aff *mpa,
+		__isl_take isl_multi_val *mv);
 	__isl_give isl_pw_aff *isl_pw_aff_min(
 		__isl_take isl_pw_aff *pwaff1,
 		__isl_take isl_pw_aff *pwaff2);
