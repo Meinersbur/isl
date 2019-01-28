@@ -693,12 +693,12 @@ string isl_class::name_without_type_suffix(FunctionDecl *method)
 	num_params = method->getNumParams();
 	param = method->getParamDecl(num_params - 1);
 	type = generator::extract_type(param->getOriginalType());
-	type = type.substr(4);
+	type = type.substr(3);
 	name_len = name.length();
 	type_len = type.length();
 
-	if (name_len > type_len && name.substr(name_len - type_len) == type)
-		name = name.substr(0, name_len - type_len - 1);
+	if (name_len >= type_len && name.substr(name_len - type_len) == type)
+		name = name.substr(0, name_len - type_len);
 
 	return name;
 }
