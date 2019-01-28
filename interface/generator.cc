@@ -702,6 +702,22 @@ static std::string type_suffix(ParmVarDecl *param)
 	generator::die("Unsupported type suffix");
 }
 
+/* If "suffix" is a suffix of "s", then return "s" with the suffix removed.
+ * Otherwise, simply return "s".
+ */
+static std::string drop_suffix(const std::string &s, const std::string &suffix)
+{
+	size_t len, suffix_len;
+
+	len = s.length();
+	suffix_len = suffix.length();
+
+	if (len >= suffix_len && s.substr(len - suffix_len) == suffix)
+		return s.substr(0, len - suffix_len);
+	else
+		return s;
+}
+
 /* If "method" is overloaded, then return its name with the suffix
  * corresponding to the type of the final argument removed.
  * Otherwise, simply return the name of the function.
@@ -711,7 +727,6 @@ string isl_class::name_without_type_suffix(FunctionDecl *method)
 	int num_params;
 	ParmVarDecl *param;
 	string name, type;
-	size_t name_len, type_len;
 
 	name = method->getName();
 	if (!generator::is_overload(method))
@@ -720,11 +735,8 @@ string isl_class::name_without_type_suffix(FunctionDecl *method)
 	num_params = method->getNumParams();
 	param = method->getParamDecl(num_params - 1);
 	type = type_suffix(param);
-	name_len = name.length();
-	type_len = type.length();
 
-	if (name_len >= type_len && name.substr(name_len - type_len) == type)
-		name = name.substr(0, name_len - type_len);
+	name = drop_suffix(name, type);
 
 	return name;
 }
