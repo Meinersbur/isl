@@ -997,6 +997,85 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 	osprintf(os, "}\n");
 }
 
+/* Print definition for "method" in class "clazz" to "os".
+ *
+ * "kind" specifies the kind of method that should be generated.
+ *
+ * This method distinguishes three kinds of methods: member methods, static
+ * methods, and constructors.
+ *
+ * Member methods call "method" by passing to the underlying isl function the
+ * isl object belonging to "this" as first argument and the remaining arguments
+ * as subsequent arguments.
+ *
+ * Static methods call "method" by passing all arguments to the underlying isl
+ * function, as no this-pointer is available. The result is a newly managed
+ * isl C++ object.
+ *
+ * Constructors create a new object from a given set of input parameters. They
+ * do not return a value, but instead update the pointer stored inside the
+ * newly created object.
+ *
+ * If the method has a callback argument, we reduce the number of parameters
+ * that are exposed by one to hide the user pointer from the interface. On
+ * the C++ side no user pointer is needed, as arguments can be forwarded
+ * as part of the std::function argument which specifies the callback function.
+ *
+ * Unless checked C++ bindings are being generated,
+ * the inputs of the method are first checked for being valid isl objects and
+ * a copy of the associated isl::ctx is saved (if needed).
+ * If any failure occurs, either during the check for the inputs or
+ * during the isl function call, an exception is thrown.
+ * During the function call, isl is made not to print any error message
+ * because the error message is included in the exception.
+ */
+void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
+	FunctionDecl *method, function_kind kind)
+{
+	string methodname = method->getName();
+	int num_params = method->getNumParams();
+
+	osprintf(os, "\n");
+	print_method_header(os, clazz, method, false, kind);
+	osprintf(os, "{\n");
+	print_argument_validity_check(os, method, kind);
+	print_save_ctx(os, method, kind);
+	print_on_error_continue(os);
+
+	for (int i = 0; i < num_params; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		if (is_callback(param->getType())) {
+			num_params -= 1;
+			print_callback_local(os, param);
+		}
+	}
+
+	osprintf(os, "  auto res = %s(", methodname.c_str());
+
+	for (int i = 0; i < num_params; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		bool load_from_this_ptr = false;
+
+		if (i == 0 && kind == function_kind_member_method)
+			load_from_this_ptr = true;
+
+		print_method_param_use(os, param, load_from_this_ptr);
+
+		if (i != num_params - 1)
+			osprintf(os, ", ");
+	}
+	osprintf(os, ");\n");
+
+	print_exceptional_execution_check(os, clazz, method, kind);
+	if (kind == function_kind_constructor) {
+		osprintf(os, "  ptr = res;\n");
+	} else {
+		print_method_return(os, clazz, method);
+	}
+
+	osprintf(os, "}\n");
+}
+
 /* Print implementations of constructors for class "clazz" to "os".
  */
 void cpp_generator::print_constructors_impl(ostream &os,
@@ -1715,85 +1794,6 @@ void cpp_generator::print_method_return(ostream &os, const isl_class &clazz,
 	} else {
 		osprintf(os, "  return res;\n");
 	}
-}
-
-/* Print definition for "method" in class "clazz" to "os".
- *
- * "kind" specifies the kind of method that should be generated.
- *
- * This method distinguishes three kinds of methods: member methods, static
- * methods, and constructors.
- *
- * Member methods call "method" by passing to the underlying isl function the
- * isl object belonging to "this" as first argument and the remaining arguments
- * as subsequent arguments.
- *
- * Static methods call "method" by passing all arguments to the underlying isl
- * function, as no this-pointer is available. The result is a newly managed
- * isl C++ object.
- *
- * Constructors create a new object from a given set of input parameters. They
- * do not return a value, but instead update the pointer stored inside the
- * newly created object.
- *
- * If the method has a callback argument, we reduce the number of parameters
- * that are exposed by one to hide the user pointer from the interface. On
- * the C++ side no user pointer is needed, as arguments can be forwarded
- * as part of the std::function argument which specifies the callback function.
- *
- * Unless checked C++ bindings are being generated,
- * the inputs of the method are first checked for being valid isl objects and
- * a copy of the associated isl::ctx is saved (if needed).
- * If any failure occurs, either during the check for the inputs or
- * during the isl function call, an exception is thrown.
- * During the function call, isl is made not to print any error message
- * because the error message is included in the exception.
- */
-void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, function_kind kind)
-{
-	string methodname = method->getName();
-	int num_params = method->getNumParams();
-
-	osprintf(os, "\n");
-	print_method_header(os, clazz, method, false, kind);
-	osprintf(os, "{\n");
-	print_argument_validity_check(os, method, kind);
-	print_save_ctx(os, method, kind);
-	print_on_error_continue(os);
-
-	for (int i = 0; i < num_params; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		if (is_callback(param->getType())) {
-			num_params -= 1;
-			print_callback_local(os, param);
-		}
-	}
-
-	osprintf(os, "  auto res = %s(", methodname.c_str());
-
-	for (int i = 0; i < num_params; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		bool load_from_this_ptr = false;
-
-		if (i == 0 && kind == function_kind_member_method)
-			load_from_this_ptr = true;
-
-		print_method_param_use(os, param, load_from_this_ptr);
-
-		if (i != num_params - 1)
-			osprintf(os, ", ");
-	}
-	osprintf(os, ");\n");
-
-	print_exceptional_execution_check(os, clazz, method, kind);
-	if (kind == function_kind_constructor) {
-		osprintf(os, "  ptr = res;\n");
-	} else {
-		print_method_return(os, clazz, method);
-	}
-
-	osprintf(os, "}\n");
 }
 
 /* Print the header for "method" in class "clazz", with name "cname" and
