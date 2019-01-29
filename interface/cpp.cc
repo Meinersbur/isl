@@ -1327,8 +1327,6 @@ void cpp_generator::print_get_method_impl(ostream &os, const isl_class &clazz,
 
 /* Print definitions for methods "methods" in class "clazz" to "os".
  *
- * "kind" specifies the kind of method that should be generated.
- *
  * For methods that are identified as "get" methods, also
  * print a definition for the method using a name that includes
  * the "get_" prefix.
