@@ -355,6 +355,18 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
 		 cppname, cppname);
 }
 
+/* Print declarations for "method" in class "clazz" to "os".
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
+	FunctionDecl *method, function_kind kind)
+{
+	string name = clazz.method_name(method);
+
+	print_named_method_decl(os, clazz, method, name, kind);
+}
+
 /* Print declarations for constructors for class "class" to "os".
  *
  * For each isl function that is marked as __isl_constructor,
@@ -717,18 +729,6 @@ void cpp_generator::print_named_method_decl(ostream &os, const isl_class &clazz,
 	FunctionDecl *fd, const string &name, function_kind kind)
 {
 	print_named_method_header(os, clazz, fd, name, true, kind);
-}
-
-/* Print declarations for "method" in class "clazz" to "os".
- *
- * "kind" specifies the kind of method that should be generated.
- */
-void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, function_kind kind)
-{
-	string name = clazz.method_name(method);
-
-	print_named_method_decl(os, clazz, method, name, kind);
 }
 
 /* Print implementations for class "clazz" to "os".
