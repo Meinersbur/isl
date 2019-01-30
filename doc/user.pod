@@ -3109,6 +3109,9 @@ It can be replaced using the following functions.
 	__isl_give isl_multi_aff *isl_multi_aff_set_aff(
 		__isl_take isl_multi_aff *multi, int pos,
 		__isl_take isl_aff *aff);
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_pw_aff(
+		__isl_take isl_multi_pw_aff *mpa, int pos,
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_set_union_pw_aff(
 		__isl_take isl_multi_union_pw_aff *mupa, int pos,
