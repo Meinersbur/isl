@@ -10,13 +10,13 @@ extern "C" {
 struct __isl_subclass(isl_multi_aff) __isl_subclass(isl_pw_aff) isl_aff;
 typedef struct isl_aff isl_aff;
 
-ISL_DECLARE_LIST(aff)
+ISL_DECLARE_LIST_TYPE(aff)
 
 struct __isl_subclass(isl_multi_pw_aff) __isl_subclass(isl_pw_multi_aff)
 	__isl_subclass(isl_union_pw_aff) isl_pw_aff;
 typedef struct isl_pw_aff isl_pw_aff;
 
-ISL_DECLARE_LIST(pw_aff)
+ISL_DECLARE_LIST_TYPE(pw_aff)
 
 struct __isl_subclass(isl_multi_union_pw_aff)
 	__isl_subclass(isl_union_pw_multi_aff) isl_union_pw_aff;

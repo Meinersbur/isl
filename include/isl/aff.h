@@ -1090,6 +1090,8 @@ __isl_give isl_printer *isl_printer_print_multi_union_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_multi_union_pw_aff *mupa);
 void isl_multi_union_pw_aff_dump(__isl_keep isl_multi_union_pw_aff *mupa);
 
+ISL_DECLARE_LIST_FN(aff)
+ISL_DECLARE_LIST_FN(pw_aff)
 ISL_DECLARE_LIST_FN(pw_multi_aff)
 ISL_DECLARE_LIST_FN(union_pw_aff)
 ISL_DECLARE_LIST_FN(union_pw_multi_aff)
