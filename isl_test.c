@@ -5015,6 +5015,43 @@ static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 	return 0;
 }
 
+/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
+ */
+static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
+	const char *str)
+{
+	isl_ctx *ctx;
+	isl_pw_multi_aff *pma2;
+	int equal;
+
+	if (!pma)
+		return -1;
+
+	ctx = isl_pw_multi_aff_get_ctx(pma);
+	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
+	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
+	isl_pw_multi_aff_free(pma2);
+
+	return equal;
+}
+
+/* Check that "pma" is obviously equal to the isl_pw_multi_aff
+ * represented by "str".
+ */
+static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
+	const char *str)
+{
+	int equal;
+
+	equal = pw_multi_aff_plain_is_equal(pma, str);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
+			"result not as expected", return -1);
+	return 0;
+}
+
 /* Is "upa" obviously equal to the isl_union_pw_aff represented by "str"?
  */
 static isl_bool union_pw_aff_plain_is_equal(__isl_keep isl_union_pw_aff *upa,
@@ -6880,43 +6917,6 @@ int test_dim_max(isl_ctx *ctx)
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
 
-	return 0;
-}
-
-/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
- */
-static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	isl_ctx *ctx;
-	isl_pw_multi_aff *pma2;
-	int equal;
-
-	if (!pma)
-		return -1;
-
-	ctx = isl_pw_multi_aff_get_ctx(pma);
-	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
-	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
-	isl_pw_multi_aff_free(pma2);
-
-	return equal;
-}
-
-/* Check that "pma" is obviously equal to the isl_pw_multi_aff
- * represented by "str".
- */
-static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	int equal;
-
-	equal = pw_multi_aff_plain_is_equal(pma, str);
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
-			"result not as expected", return -1);
 	return 0;
 }
 
