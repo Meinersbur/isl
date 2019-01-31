@@ -2084,7 +2084,7 @@ isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 }
 
 /* Do the tuples of "space1" correspond to those of the domain of "space2"?
- * That is, is "space1" eqaul to the domain of "space2", ignoring parameters.
+ * That is, is "space1" equal to the domain of "space2", ignoring parameters.
  *
  * "space2" is allowed to be a set space, in which case "space1"
  * should be a parameter space.
