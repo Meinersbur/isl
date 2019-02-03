@@ -3743,6 +3743,9 @@ can be created using the following functions.
 	__isl_give isl_union_pw_qpolynomial *
 	isl_union_pw_qpolynomial_from_pw_qpolynomial(
 		__isl_take isl_pw_qpolynomial *pwqp);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_from_pw_qpolynomial_fold(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
 
 The inverse conversions below can only be used if the input
 expression is known to live in exactly one space.
