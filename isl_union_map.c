@@ -724,9 +724,9 @@ error:
 }
 
 __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
-	return set_from_map(isl_union_map_extract_map(uset, dim));
+	return set_from_map(isl_union_map_extract_map(uset, space));
 }
 
 /* Check if umap contains a map in the given space.
