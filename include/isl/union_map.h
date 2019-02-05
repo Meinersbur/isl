@@ -247,6 +247,7 @@ __isl_give isl_union_map *isl_union_map_remove_map_if(
 	isl_bool (*fn)(__isl_keep isl_map *map, void *user), void *user);
 isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space);
+__isl_export
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	__isl_take isl_space *dim);
 __isl_export
