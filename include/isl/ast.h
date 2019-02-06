@@ -229,6 +229,9 @@ __isl_give isl_printer *isl_ast_node_if_print(__isl_keep isl_ast_node *node,
 __isl_export
 __isl_give char *isl_ast_node_to_C_str(__isl_keep isl_ast_node *node);
 
+ISL_DECLARE_LIST_FN(ast_expr)
+ISL_DECLARE_EXPORTED_LIST_FN(ast_node)
+
 #if defined(__cplusplus)
 }
 #endif
