@@ -1803,7 +1803,7 @@ __isl_give isl_printer *isl_ast_op_type_set_print_name(
  *
  * If there is a user-specified name in an isl_ast_expr_op_names note
  * associated to "p", then return that.
- * Otherwise, return the default name in op_str.
+ * Otherwise, return the default name in op_str_c.
  */
 static const char *get_op_str_c(__isl_keep isl_printer *p,
 	enum isl_ast_expr_op_type type)
