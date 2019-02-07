@@ -2588,10 +2588,10 @@ __isl_give isl_printer *isl_ast_node_list_print(
 	return p;
 }
 
-#define ISL_AST_MACRO_FLOORD	(1 << 0)
+#define ISL_AST_MACRO_FDIV_Q	(1 << 0)
 #define ISL_AST_MACRO_MIN	(1 << 1)
 #define ISL_AST_MACRO_MAX	(1 << 2)
-#define ISL_AST_MACRO_ALL	(ISL_AST_MACRO_FLOORD | \
+#define ISL_AST_MACRO_ALL	(ISL_AST_MACRO_FDIV_Q | \
 				 ISL_AST_MACRO_MIN | \
 				 ISL_AST_MACRO_MAX)
 
@@ -2613,7 +2613,7 @@ static int ast_expr_required_macros(__isl_keep isl_ast_expr *expr, int macros)
 	if (expr->u.op.op == isl_ast_expr_op_max)
 		macros |= ISL_AST_MACRO_MAX;
 	if (expr->u.op.op == isl_ast_expr_op_fdiv_q)
-		macros |= ISL_AST_MACRO_FLOORD;
+		macros |= ISL_AST_MACRO_FDIV_Q;
 
 	for (i = 0; i < expr->u.op.n_arg; ++i)
 		macros = ast_expr_required_macros(expr->u.op.args[i], macros);
@@ -2827,7 +2827,7 @@ static isl_stat foreach_ast_expr_op_type(int macros,
 		return isl_stat_error;
 	if (macros & ISL_AST_MACRO_MAX && fn(isl_ast_expr_op_max, user) < 0)
 		return isl_stat_error;
-	if (macros & ISL_AST_MACRO_FLOORD &&
+	if (macros & ISL_AST_MACRO_FDIV_Q &&
 	    fn(isl_ast_expr_op_fdiv_q, user) < 0)
 		return isl_stat_error;
 
