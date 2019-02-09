@@ -1291,6 +1291,9 @@ ISL_DECLARE_MULTI_DROP_DIMS(union_pw_aff)
 ISL_DECLARE_MULTI_DIM_ID(union_pw_aff)
 ISL_DECLARE_MULTI_TUPLE_ID(union_pw_aff)
 
+__isl_export
+__isl_give isl_multi_union_pw_aff *isl_multi_aff_to_multi_union_pw_aff(
+        __isl_take isl_multi_aff *ma);
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
 __isl_constructor

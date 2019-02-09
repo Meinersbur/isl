@@ -3125,8 +3125,14 @@ created from a multiple expression.
 	isl_multi_union_pw_aff_from_multi_aff(
 		__isl_take isl_multi_aff *ma);
 	__isl_give isl_multi_union_pw_aff *
+	isl_multi_aff_to_multi_union_pw_aff(
+		__isl_take isl_multi_aff *ma);
+	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_from_multi_pw_aff(
 		__isl_take isl_multi_pw_aff *mpa);
+
+C<isl_multi_aff_to_multi_union_pw_aff> and
+C<isl_multi_union_pw_aff_from_multi_aff> perform the same operation.
 
 A multiple quasi-affine expression can be created from
 a multiple value with a given domain space using the following
