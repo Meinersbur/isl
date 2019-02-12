@@ -76,7 +76,8 @@ static __isl_give isl_fixed_box *isl_fixed_box_init(
 	isl_multi_val *size;
 
 	offset = isl_multi_aff_zero(isl_space_copy(space));
-	size = isl_multi_val_zero(isl_space_range(space));
+	space = isl_space_drop_all_params(isl_space_range(space));
+	size = isl_multi_val_zero(space);
 	return isl_fixed_box_alloc(offset, size);
 }
 
