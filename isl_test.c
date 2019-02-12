@@ -3066,6 +3066,44 @@ static int test_lexmin(struct isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_pw_multi_aff_max_multi_val tests.
+ * "pma" is the input.
+ * "res" is the expected result.
+ */
+static struct {
+	const char *pma;
+	const char *res;
+} opt_pw_tests[] = {
+	{ "{ [-1] -> [-1]; [1] -> [1] }", "{ [1] }" },
+	{ "{ [a, b] -> [floor((b - 2*floor((-a)/4))/5)] : "
+	    "0 <= a, b <= 100 and b mod 2 = 0}", "{ [30] }" },
+	{ "[N] -> { [i,j] -> A[i, -i, i + j] : 0 <= i,j <= N <= 10 }",
+	  "{ A[10, 0, 20] }" },
+	{ "[N] -> {A[N, -N, 2N] : 0 <= N }", "{ A[infty, 0, infty] }" },
+};
+
+/* Perform basic isl_pw_multi_aff_max_multi_val tests.
+ */
+static isl_stat test_pw_max(struct isl_ctx *ctx)
+{
+	int i;
+	isl_pw_multi_aff *pma;
+	isl_multi_val *mv;
+	isl_stat r;
+
+	for (i = 0; i < ARRAY_SIZE(opt_pw_tests); ++i) {
+		pma = isl_pw_multi_aff_read_from_str(ctx, opt_pw_tests[i].pma);
+		mv = isl_pw_multi_aff_max_multi_val(pma);
+		r = multi_val_check_plain_equal(mv, opt_pw_tests[i].res);
+		isl_multi_val_free(mv);
+
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* A specialized isl_set_min_val test case that would return the wrong result
  * in earlier versions of isl.
  * The explicit call to isl_basic_set_union prevents the second basic set
@@ -3175,6 +3213,8 @@ static int test_min(struct isl_ctx *ctx)
 				"unexpected optimum", return -1);
 	}
 
+	if (test_pw_max(ctx) < 0)
+		return -1;
 	if (test_min_special(ctx) < 0)
 		return -1;
 	if (test_min_special2(ctx) < 0)

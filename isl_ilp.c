@@ -695,6 +695,14 @@ static __isl_give isl_val *isl_pw_aff_opt_val(__isl_take isl_pw_aff *pa,
 	return data.res;
 }
 
+#undef TYPE
+#define TYPE isl_pw_multi_aff
+#include "isl_ilp_opt_multi_val_templ.c"
+
+#undef TYPE
+#define TYPE isl_multi_pw_aff
+#include "isl_ilp_opt_multi_val_templ.c"
+
 /* Internal data structure for isl_union_pw_aff_opt_val.
  *
  * "max" is set if the maximum should be computed.
