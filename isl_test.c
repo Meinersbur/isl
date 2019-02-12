@@ -5052,107 +5052,17 @@ int test_injective(isl_ctx *ctx)
 	return 0;
 }
 
-static isl_bool aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
-{
-	isl_aff *aff2;
-	isl_bool equal;
+#undef BASE
+#define BASE	aff
+#include "isl_test_plain_equal_templ.c"
 
-	if (!aff)
-		return isl_bool_error;
+#undef BASE
+#define BASE	pw_multi_aff
+#include "isl_test_plain_equal_templ.c"
 
-	aff2 = isl_aff_read_from_str(isl_aff_get_ctx(aff), str);
-	equal = isl_aff_plain_is_equal(aff, aff2);
-	isl_aff_free(aff2);
-
-	return equal;
-}
-
-static isl_stat aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
-{
-	isl_bool equal;
-
-	equal = aff_plain_is_equal(aff, str);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(isl_aff_get_ctx(aff), isl_error_unknown,
-			"result not as expected", return isl_stat_error);
-	return isl_stat_ok;
-}
-
-/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
- */
-static isl_bool pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	isl_ctx *ctx;
-	isl_pw_multi_aff *pma2;
-	isl_bool equal;
-
-	if (!pma)
-		return isl_bool_error;
-
-	ctx = isl_pw_multi_aff_get_ctx(pma);
-	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
-	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
-	isl_pw_multi_aff_free(pma2);
-
-	return equal;
-}
-
-/* Check that "pma" is obviously equal to the isl_pw_multi_aff
- * represented by "str".
- */
-static isl_stat pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	isl_bool equal;
-
-	equal = pw_multi_aff_plain_is_equal(pma, str);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
-			"result not as expected", return isl_stat_error);
-	return isl_stat_ok;
-}
-
-/* Is "upa" obviously equal to the isl_union_pw_aff represented by "str"?
- */
-static isl_bool union_pw_aff_plain_is_equal(__isl_keep isl_union_pw_aff *upa,
-	const char *str)
-{
-	isl_ctx *ctx;
-	isl_union_pw_aff *upa2;
-	isl_bool equal;
-
-	if (!upa)
-		return isl_bool_error;
-
-	ctx = isl_union_pw_aff_get_ctx(upa);
-	upa2 = isl_union_pw_aff_read_from_str(ctx, str);
-	equal = isl_union_pw_aff_plain_is_equal(upa, upa2);
-	isl_union_pw_aff_free(upa2);
-
-	return equal;
-}
-
-/* Check that "upa" is obviously equal to the isl_union_pw_aff
- * represented by "str".
- */
-static isl_stat union_pw_aff_check_plain_equal(__isl_keep isl_union_pw_aff *upa,
-	const char *str)
-{
-	isl_bool equal;
-
-	equal = union_pw_aff_plain_is_equal(upa, str);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(isl_union_pw_aff_get_ctx(upa), isl_error_unknown,
-			"result not as expected", return isl_stat_error);
-	return isl_stat_ok;
-}
+#undef BASE
+#define BASE	union_pw_aff
+#include "isl_test_plain_equal_templ.c"
 
 /* Basic tests on isl_union_pw_aff.
  *

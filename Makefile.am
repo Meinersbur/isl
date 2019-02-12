@@ -540,6 +540,7 @@ EXTRA_DIST = \
 	set_list_from_map_list_inl.c \
 	isl_tab_lexopt_templ.c \
 	isl_test_list_templ.c \
+	isl_test_plain_equal_templ.c \
 	isl_type_check_equal_space_templ.c \
 	isl_type_has_equal_space_bin_templ.c \
 	isl_type_has_equal_space_templ.c \
