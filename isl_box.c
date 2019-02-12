@@ -156,6 +156,27 @@ static __isl_give isl_fixed_box *isl_fixed_box_invalidate(
 	return box;
 }
 
+/* Project the domain of the fixed box onto its parameter space.
+ * In particular, project out the domain of the offset.
+ */
+static __isl_give isl_fixed_box *isl_fixed_box_project_domain_on_params(
+	__isl_take isl_fixed_box *box)
+{
+	isl_bool valid;
+
+	valid = isl_fixed_box_is_valid(box);
+	if (valid < 0)
+		return isl_fixed_box_free(box);
+	if (!valid)
+		return box;
+
+	box->offset = isl_multi_aff_project_domain_on_params(box->offset);
+	if (!box->offset)
+		return isl_fixed_box_free(box);
+
+	return box;
+}
+
 /* Return the isl_ctx to which "box" belongs.
  */
 isl_ctx *isl_fixed_box_get_ctx(__isl_keep isl_fixed_box *box)
@@ -374,6 +395,29 @@ __isl_give isl_fixed_box *isl_map_get_range_simple_fixed_box_hull(
 			break;
 	}
 	isl_map_free(map);
+
+	return box;
+}
+
+/* Try and construct a fixed-size rectangular box with an offset
+ * in terms of the parameters of "set" that contains "set".
+ * If no such box can be constructed, then return an invalidated box,
+ * i.e., one where isl_fixed_box_is_valid returns false.
+ *
+ * Compute the box using isl_map_get_range_simple_fixed_box_hull
+ * by constructing a map from the set and
+ * project out the domain again from the result.
+ */
+__isl_give isl_fixed_box *isl_set_get_simple_fixed_box_hull(
+	__isl_keep isl_set *set)
+{
+	isl_map *map;
+	isl_fixed_box *box;
+
+	map = isl_map_from_range(isl_set_copy(set));
+	box = isl_map_get_range_simple_fixed_box_hull(map);
+	isl_map_free(map);
+	box = isl_fixed_box_project_domain_on_params(box);
 
 	return box;
 }

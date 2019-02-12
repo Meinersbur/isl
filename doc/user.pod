@@ -5832,18 +5832,26 @@ per space.
 
 =item * Box hull
 
+	#include <isl/set.h>
+	__isl_give isl_fixed_box *
+	isl_set_get_simple_fixed_box_hull(
+		__isl_keep isl_set *set)
+
 	#include <isl/map.h>
 	__isl_give isl_fixed_box *
 	isl_map_get_range_simple_fixed_box_hull(
 		__isl_keep isl_map *map);
 
-This function tries to approximate the range of the map by a box of fixed size.
+These functions try to approximate the set or
+the range of the map by a box of fixed size.
 The box is described in terms of an offset living in the same space as
-the input map and a size living in the range space.  For any element
+the input and a size living in the set or range space.  For any element
 in the input map, the range value is greater than or equal to
 the offset applied to the domain value and the difference with
 this offset is strictly smaller than the size.
-If no fixed-size approximation of the range can be found,
+The same holds for the elements of the input set, where
+the offset is a parametric constant value.
+If no fixed-size approximation can be found,
 an I<invalid> box is returned, i.e., one for which
 C<isl_fixed_box_is_valid> below returns false.
 

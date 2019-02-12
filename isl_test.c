@@ -657,6 +657,14 @@ static int test_dim(isl_ctx *ctx)
 	return 0;
 }
 
+#undef BASE
+#define BASE	multi_val
+#include "isl_test_plain_equal_templ.c"
+
+#undef BASE
+#define BASE	multi_aff
+#include "isl_test_plain_equal_templ.c"
+
 /* Check that "val" is equal to the value described by "str".
  * If "str" is "NaN", then check for a NaN value explicitly.
  */
@@ -1474,6 +1482,57 @@ static int test_simple_hull(struct isl_ctx *ctx)
 		return -1;
 	if (test_unshifted_simple_hull(ctx) < 0)
 		return -1;
+
+	return 0;
+}
+
+/* Inputs for isl_set_get_simple_fixed_box_hull tests.
+ * "set" is the input set.
+ * "offset" is the expected box offset.
+ * "size" is the expected box size.
+ */
+static struct {
+	const char *set;
+	const char *offset;
+	const char *size;
+} box_hull_tests[] = {
+	{ "{ S[x, y] : 0 <= x, y < 10 }", "{ S[0, 0] }", "{ S[10, 10] }" },
+	{ "[N] -> { S[x, y] : N <= x, y < N + 10 }",
+	  "[N] -> { S[N, N] }", "{ S[10, 10] }" },
+	{ "{ S[x, y] : 0 <= x + y, x - y < 10 }",
+	  "{ S[0, -4] }", "{ S[10, 9] }" },
+};
+
+/* Perform basic isl_set_get_simple_fixed_box_hull tests.
+ */
+static int test_box_hull(struct isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(box_hull_tests); ++i) {
+		const char *str;
+		isl_stat r;
+		isl_set *set;
+		isl_multi_aff *offset;
+		isl_multi_val *size;
+		isl_fixed_box *box;
+
+		set = isl_set_read_from_str(ctx, box_hull_tests[i].set);
+		box = isl_set_get_simple_fixed_box_hull(set);
+		offset = isl_fixed_box_get_offset(box);
+		size = isl_fixed_box_get_size(box);
+		str = box_hull_tests[i].offset;
+		r = multi_aff_check_plain_equal(offset, str);
+		str = box_hull_tests[i].size;
+		if (r >= 0)
+			r = multi_val_check_plain_equal(size, str);
+		isl_multi_aff_free(offset);
+		isl_multi_val_free(size);
+		isl_fixed_box_free(box);
+		isl_set_free(set);
+		if (r < 0)
+			return -1;
+	}
 
 	return 0;
 }
@@ -10258,6 +10317,7 @@ struct {
 	{ "recession cone", &test_recession_cone },
 	{ "affine hull", &test_affine_hull },
 	{ "simple_hull", &test_simple_hull },
+	{ "box hull", &test_box_hull },
 	{ "coalesce", &test_coalesce },
 	{ "factorize", &test_factorize },
 	{ "subset", &test_subset },
