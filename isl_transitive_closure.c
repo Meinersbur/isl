@@ -1258,7 +1258,7 @@ static isl_bool incremental_on_entire_domain(__isl_keep isl_space *space,
 
 	for (i = 0; i < map->n; ++i) {
 		isl_map *qc;
-		int exact_i;
+		isl_bool exact_i;
 		isl_bool spurious;
 		int j;
 		dom[i] = isl_set_from_basic_set(isl_basic_map_domain(
