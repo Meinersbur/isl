@@ -4293,11 +4293,13 @@ functions.
 
 To check whether a function involves any local variables,
 i.e., integer divisions,
-the following function can be used.
+the following functions can be used.
 
 	#include <isl/aff.h>
 	isl_bool isl_aff_involves_locals(
 		__isl_keep isl_aff *aff);
+	isl_bool isl_multi_aff_involves_locals(
+		__isl_keep isl_multi_aff *ma);
 
 To check whether the description of a set, relation or function depends
 on a parameter or one or more given dimensions,

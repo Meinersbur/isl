@@ -143,6 +143,11 @@ __isl_give isl_multi_##BASE *						\
 isl_multi_##BASE##_project_domain_on_params(				\
 	__isl_take isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_LOCALS(BASE)					\
+__isl_export								\
+isl_bool isl_multi_##BASE##_involves_locals(				\
+	__isl_keep isl_multi_##BASE *multi);
+
 #define ISL_DECLARE_MULTI_DIM_ID(BASE)					\
 int isl_multi_##BASE##_find_dim_by_name(				\
 	__isl_keep isl_multi_##BASE *multi,				\
