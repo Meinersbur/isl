@@ -265,6 +265,9 @@ isl_bool isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
 
 isl_bool isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 
+__isl_export
+__isl_give isl_pw_aff *isl_pw_aff_insert_domain(__isl_take isl_pw_aff *pa,
+	__isl_take isl_space *domain);
 __isl_give isl_pw_aff *isl_pw_aff_project_domain_on_params(
 	__isl_take isl_pw_aff *pa);
 
@@ -473,6 +476,7 @@ ISL_DECLARE_MULTI_ADD_CONSTANT(aff)
 ISL_DECLARE_MULTI_ZERO(aff)
 ISL_DECLARE_MULTI_NAN(aff)
 ISL_DECLARE_MULTI_DIMS(aff)
+ISL_DECLARE_MULTI_INSERT_DOMAIN(aff)
 ISL_DECLARE_MULTI_LOCALS(aff)
 ISL_DECLARE_MULTI_DIM_ID(aff)
 ISL_DECLARE_MULTI_TUPLE_ID(aff)
@@ -548,6 +552,7 @@ ISL_DECLARE_MULTI_ZERO(pw_aff)
 ISL_DECLARE_MULTI_NAN(pw_aff)
 ISL_DECLARE_MULTI_DIMS(pw_aff)
 ISL_DECLARE_MULTI_DIM_ID(pw_aff)
+ISL_DECLARE_MULTI_INSERT_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_TUPLE_ID(pw_aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_BIND_DOMAIN(pw_aff)
@@ -717,6 +722,9 @@ __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_subtract_domain(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 
+__isl_export
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_insert_domain(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_space *domain);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_domain_on_params(
 	__isl_take isl_pw_multi_aff *pma);
 

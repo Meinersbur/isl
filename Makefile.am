@@ -467,6 +467,7 @@ EXTRA_DIST = \
 	isl_domain_factor_templ.c \
 	extract_key.c \
 	has_single_reference_templ.c \
+	isl_insert_domain_templ.c \
 	isl_list_macro.h \
 	isl_list_templ.c \
 	isl_list_templ.h \
@@ -501,6 +502,7 @@ EXTRA_DIST = \
 	isl_multi_from_base_templ.c \
 	isl_multi_gist.c \
 	isl_multi_hash.c \
+	isl_multi_insert_domain_templ.c \
 	isl_multi_intersect.c \
 	isl_multi_identity_templ.c \
 	isl_multi_locals_templ.c \
@@ -531,6 +533,7 @@ EXTRA_DIST = \
 	isl_pw_eval.c \
 	isl_pw_hash.c \
 	isl_pw_insert_dims_templ.c \
+	isl_pw_insert_domain_templ.c \
 	isl_pw_lift_templ.c \
 	isl_pw_locals_templ.c \
 	isl_pw_morph_templ.c \

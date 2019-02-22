@@ -168,6 +168,12 @@ __isl_give isl_multi_##BASE *						\
 isl_multi_##BASE##_project_domain_on_params(				\
 	__isl_take isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_INSERT_DOMAIN(BASE)				\
+__isl_export								\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_insert_domain(__isl_take isl_multi_##BASE *multi,	\
+	__isl_take isl_space *domain);
+
 #define ISL_DECLARE_MULTI_LOCALS(BASE)					\
 __isl_export								\
 isl_bool isl_multi_##BASE##_involves_locals(				\

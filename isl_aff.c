@@ -2710,6 +2710,7 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #include <isl_pw_eval.c>
 #include <isl_pw_hash.c>
 #include <isl_pw_insert_dims_templ.c>
+#include <isl_pw_insert_domain_templ.c>
 #include <isl_pw_move_dims_templ.c>
 #include <isl_pw_neg_templ.c>
 #include <isl_pw_pullback_templ.c>
@@ -3800,6 +3801,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
 #include <isl_multi_identity_templ.c>
+#include <isl_multi_insert_domain_templ.c>
 #include <isl_multi_locals_templ.c>
 #include <isl_multi_move_dims_templ.c>
 #include <isl_multi_nan_templ.c>
@@ -4330,6 +4332,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_pw_add_constant_val_templ.c>
 #include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_insert_dims_templ.c>
+#include <isl_pw_insert_domain_templ.c>
 #include <isl_pw_locals_templ.c>
 #include <isl_pw_move_dims_templ.c>
 #include <isl_pw_neg_templ.c>
@@ -6372,6 +6375,7 @@ error:
 #include <isl_multi_hash.c>
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_align_set.c>
+#include <isl_multi_insert_domain_templ.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_min_max_templ.c>
 #include <isl_multi_move_dims_templ.c>
