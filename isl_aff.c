@@ -2456,6 +2456,18 @@ error:
 	return isl_bool_error;
 }
 
+/* Does "aff" involve any local variables, i.e., integer divisions?
+ */
+isl_bool isl_aff_involves_locals(__isl_keep isl_aff *aff)
+{
+	isl_size n;
+
+	n = isl_aff_dim(aff, isl_dim_div);
+	if (n < 0)
+		return isl_bool_error;
+	return isl_aff_involves_dims(aff, isl_dim_div, 0, n);
+}
+
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {

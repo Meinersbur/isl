@@ -4291,6 +4291,14 @@ functions.
 
 =item * Dependence
 
+To check whether a function involves any local variables,
+i.e., integer divisions,
+the following function can be used.
+
+	#include <isl/aff.h>
+	isl_bool isl_aff_involves_locals(
+		__isl_keep isl_aff *aff);
+
 To check whether the description of a set, relation or function depends
 on a parameter or one or more given dimensions,
 the following functions can be used.
