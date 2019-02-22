@@ -1091,6 +1091,8 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
 
+__isl_export
+__isl_give isl_set *isl_multi_pw_aff_as_set(__isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_set *isl_set_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_map *isl_map_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(

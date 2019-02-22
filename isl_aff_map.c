@@ -466,6 +466,14 @@ __isl_give isl_set *isl_set_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
 	return set_from_map(map_from_multi_pw_aff(mpa));
 }
 
+/* This function performs the same operation as isl_set_from_multi_pw_aff,
+ * but is considered as a function on an isl_multi_pw_aff when exported.
+ */
+__isl_give isl_set *isl_multi_pw_aff_as_set(__isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_set_from_multi_pw_aff(mpa);
+}
+
 /* Convert "pa" to an isl_map and add it to *umap.
  */
 static isl_stat map_from_pw_aff_entry(__isl_take isl_pw_aff *pa, void *user)
