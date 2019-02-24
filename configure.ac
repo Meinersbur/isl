@@ -42,9 +42,17 @@ AC_PROG_SED
 AM_PATH_PYTHON([2.5], [], [:])
 AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
 
+AC_CHECK_PROG(CYGPATH, cygpath, cygpath, [])
 AC_CHECK_PROG(PERL, perl, perl, [])
 AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex, [])
 AC_CHECK_PROG(POD2HTML, pod2html, pod2html, [])
+
+AC_SUBST(OS_SRCDIR)
+if test "$host_os" = "mingw32" -a -n "$CYGPATH"; then
+	OS_SRCDIR=`$CYGPATH -m "$srcdir"`
+else
+	OS_SRCDIR="$srcdir"
+fi
 
 AM_CONDITIONAL(GENERATE_DOC, test -n "$PERL" -a -n "$PDFLATEX" -a -n "$POD2HTML")
 
