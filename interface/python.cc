@@ -483,6 +483,33 @@ void python_generator::print_method(const isl_class &clazz,
 		print_get_method(clazz, method);
 }
 
+/* Print a test that checks whether the arguments passed
+ * to the Python method correspond to the arguments
+ * expected by "fd".
+ */
+static void print_argument_check(const isl_class &clazz, FunctionDecl *fd)
+{
+	int num_params = fd->getNumParams();
+	int first = generator::is_static(clazz, fd) ? 0 : 1;
+
+	printf("        if ");
+	for (int i = first; i < num_params; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		QualType type = param->getOriginalType();
+
+		if (i > first)
+			printf(" and ");
+		if (generator::is_isl_type(type)) {
+			string type_str;
+			type_str = generator::extract_type(type);
+			type_str = type2python(type_str);
+			printf("arg%d.__class__ is %s", i, type_str.c_str());
+		} else
+			printf("type(arg%d) == str", i);
+	}
+	printf(":\n");
+}
+
 /* Print part of an overloaded python method corresponding to the C function
  * "method".
  *
@@ -495,24 +522,8 @@ void python_generator::print_method_overload(const isl_class &clazz,
 {
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
-	int first;
 
-	first = is_static(clazz, method) ? 0 : 1;
-
-	printf("        if ");
-	for (int i = first; i < num_params; ++i) {
-		if (i > first)
-			printf(" and ");
-		ParmVarDecl *param = method->getParamDecl(i);
-		if (is_isl_type(param->getOriginalType())) {
-			string type;
-			type = extract_type(param->getOriginalType());
-			type = type2python(type);
-			printf("arg%d.__class__ is %s", i, type.c_str());
-		} else
-			printf("type(arg%d) == str", i);
-	}
-	printf(":\n");
+	print_argument_check(clazz, method);
 	printf("            res = isl.%s(", fullname.c_str());
 	print_arg_in_call(method, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
