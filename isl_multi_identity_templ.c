@@ -62,3 +62,12 @@ error:
 	isl_space_free(space);
 	return NULL;
 }
+
+/* Create a multi expression that maps elements in the given space
+ * to themselves.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),identity_on_domain_space)(
+	__isl_take isl_space *space)
+{
+	return FN(MULTI(BASE),identity)(isl_space_map_from_set(space));
+}

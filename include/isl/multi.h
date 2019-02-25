@@ -74,6 +74,10 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_range(		\
 
 #define ISL_DECLARE_MULTI_IDENTITY(BASE)				\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_identity(		\
+	__isl_take isl_space *space);					\
+__isl_overload								\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_identity_on_domain_space(				\
 	__isl_take isl_space *space);
 
 #define ISL_DECLARE_MULTI_CMP(BASE)					\

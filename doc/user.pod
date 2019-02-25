@@ -2903,10 +2903,19 @@ value of type C<isl_union_pw_aff>, the space passed
 to C<isl_multi_union_pw_aff_zero> needs to be zero-dimensional.
 
 An identity function can be created using the following
-functions.  The space needs to be that of a relation
+functions.
+For the first group of functions, the space needs to be that of a set.
+For the second group,
+the space needs to be that of a relation
 with the same number of input and output dimensions.
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *
+	isl_multi_aff_identity_on_domain_space(
+		__isl_take isl_space *space);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_identity_on_domain_space(
+		__isl_take isl_space *space);
 	__isl_give isl_multi_aff *isl_multi_aff_identity(
 		__isl_take isl_space *space);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
