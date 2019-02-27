@@ -4479,6 +4479,10 @@ error:
 	return NULL;
 }
 
+#undef TYPE
+#define TYPE	isl_map
+#include "isl_project_out_all_params_templ.c"
+
 /* Turn all the dimensions of type "type", except the "n" starting at "first"
  * into existentially quantified variables.
  */

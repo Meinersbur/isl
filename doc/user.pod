@@ -5044,6 +5044,8 @@ that projects the input set onto the given set dimensions.
 		enum isl_dim_type type, unsigned first, unsigned n);
 	__isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	__isl_give isl_map *isl_map_project_out_all_params(
+		__isl_take isl_map *map);
 	__isl_give isl_basic_set *isl_basic_map_domain(
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_basic_set *isl_basic_map_range(
