@@ -4557,6 +4557,14 @@ error:
 	return NULL;
 }
 
+/* Project out all parameters from "set" by existentially quantifying
+ * over them.
+ */
+__isl_give isl_set *isl_set_project_out_all_params(__isl_take isl_set *set)
+{
+	return set_from_map(isl_map_project_out_all_params(set_to_map(set)));
+}
+
 /* Return a map that projects the elements in "set" onto their
  * "n" set dimensions starting at "first".
  * "type" should be equal to isl_dim_set.
