@@ -1574,6 +1574,13 @@ __isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls)
 #include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
 
+/* Does "mv" consist of only zeros?
+ */
+isl_bool isl_multi_val_is_zero(__isl_keep isl_multi_val *mv)
+{
+	return isl_multi_val_every(mv, &isl_val_is_zero);
+}
+
 /* Apply "fn" to each of the elements of "mv" with as second argument "v".
  */
 static __isl_give isl_multi_val *isl_multi_val_fn_val(

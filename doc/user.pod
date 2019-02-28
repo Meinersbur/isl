@@ -4659,6 +4659,12 @@ Check whether the given expression is a constant.
 
 Check whether the given expression is equal to or involves NaN.
 
+	#include <isl/val.h>
+	isl_bool isl_multi_val_is_zero(
+		__isl_keep isl_multi_val *mv);
+
+Check whether the multiple value is zero.
+
 	#include <isl/aff.h>
 	isl_bool isl_aff_plain_is_zero(
 		__isl_keep isl_aff *aff);
