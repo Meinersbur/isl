@@ -2629,16 +2629,21 @@ Points can be copied or freed using
 	__isl_null isl_point *isl_point_free(
 		__isl_take isl_point *pnt);
 
-A singleton set can be created from a point using
+A singleton set can be created from a point using the following functions.
 
 	__isl_give isl_basic_set *isl_basic_set_from_point(
+		__isl_take isl_point *pnt);
+	__isl_give isl_set *isl_point_to_set(
 		__isl_take isl_point *pnt);
 	__isl_give isl_set *isl_set_from_point(
 		__isl_take isl_point *pnt);
 	__isl_give isl_union_set *isl_union_set_from_point(
 		__isl_take isl_point *pnt);
 
-and a box can be created from two opposite extremal points using
+C<isl_point_to_set> and C<isl_set_from_point> perform
+the same operation.
+
+A box can be created from two opposite extremal points using
 
 	__isl_give isl_basic_set *isl_basic_set_box_from_points(
 		__isl_take isl_point *pnt1,

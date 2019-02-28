@@ -522,6 +522,8 @@ __isl_give isl_val *isl_set_count_val(__isl_keep isl_set *set);
 
 __isl_constructor
 __isl_give isl_basic_set *isl_basic_set_from_point(__isl_take isl_point *pnt);
+__isl_export
+__isl_give isl_set *isl_point_to_set(__isl_take isl_point *pnt);
 __isl_constructor
 __isl_give isl_set *isl_set_from_point(__isl_take isl_point *pnt);
 __isl_give isl_basic_set *isl_basic_set_box_from_points(
