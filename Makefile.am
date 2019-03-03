@@ -38,6 +38,7 @@ endif
 TEST_EXTENSIONS = .py
 AM_TESTS_ENVIRONMENT = \
 	export PYTHONPATH=interface; \
+	export ISL_DYLD_LIBRARY_PATH=.libs; \
 	export LD_LIBRARY_PATH=.libs;
 PY_LOG_COMPILER = $(PYTHON)
 
