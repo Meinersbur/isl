@@ -6267,18 +6267,7 @@ error:
  */
 isl_bool isl_multi_pw_aff_is_cst(__isl_keep isl_multi_pw_aff *mpa)
 {
-	int i;
-
-	if (!mpa)
-		return isl_bool_error;
-
-	for (i = 0; i < mpa->n; ++i) {
-		isl_bool is_cst = isl_pw_aff_is_cst(mpa->u.p[i]);
-		if (is_cst < 0 || !is_cst)
-			return is_cst;
-	}
-
-	return isl_bool_true;
+	return isl_multi_pw_aff_every(mpa, &isl_pw_aff_is_cst);
 }
 
 /* Does "mpa" have a non-trivial explicit domain?
