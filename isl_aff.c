@@ -3867,8 +3867,6 @@ error:
 
 #undef BASE
 #define BASE aff
-#undef DOMBASE
-#define DOMBASE set
 
 #include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
@@ -3879,7 +3877,6 @@ error:
 #include <isl_multi_dims.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
-#include <isl_multi_gist.c>
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_move_dims_templ.c>
 #include <isl_multi_nan_templ.c>
@@ -3887,6 +3884,10 @@ error:
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
+
+#undef DOMBASE
+#define DOMBASE set
+#include <isl_multi_gist.c>
 
 /* Construct an isl_multi_aff living in "space" that corresponds
  * to the affine transformation matrix "mat".
