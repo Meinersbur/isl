@@ -1,3 +1,16 @@
+/*
+ * Copyright 2010      INRIA Saclay
+ * Copyright 2013      Ecole Normale Superieure
+ * Copyright 2015      Sven Verdoolaege
+ *
+ * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
+ * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
+ * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ */
+
 #include <isl_map_private.h>
 #include <isl_point_private.h>
 #include <isl/set.h>
