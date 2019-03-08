@@ -4526,6 +4526,33 @@ error:
 	return NULL;
 }
 
+/* If "set" involves any of the parameters with identifiers in "list",
+ * then turn them into existentially quantified variables.
+ */
+__isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
+	__isl_take isl_id_list *list)
+{
+	int i;
+	isl_size n;
+
+	n = isl_id_list_size(list);
+	if (n < 0)
+		goto error;
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+
+		id = isl_id_list_get_at(list, i);
+		set = isl_set_project_out_param_id(set, id);
+	}
+
+	isl_id_list_free(list);
+	return set;
+error:
+	isl_id_list_free(list);
+	isl_set_free(set);
+	return NULL;
+}
+
 /* Return a map that projects the elements in "set" onto their
  * "n" set dimensions starting at "first".
  * "type" should be equal to isl_dim_set.

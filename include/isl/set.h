@@ -350,6 +350,9 @@ __isl_give isl_basic_set *isl_basic_set_project_out(
 __isl_overload
 __isl_give isl_set *isl_set_project_out_param_id(__isl_take isl_set *set,
 	__isl_take isl_id *id);
+__isl_overload
+__isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
+	__isl_take isl_id_list *list);
 __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_map *isl_set_project_onto_map(__isl_take isl_set *set,
