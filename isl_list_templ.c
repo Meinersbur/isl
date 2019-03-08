@@ -645,16 +645,9 @@ error:
 	return NULL;
 }
 
-void FN(LIST(EL),dump)(__isl_keep LIST(EL) *list)
-{
-	isl_printer *printer;
+#undef BASE
+#define BASE LIST(EL_BASE)
 
-	if (!list)
-		return;
-
-	printer = isl_printer_to_file(FN(LIST(EL),get_ctx)(list), stderr);
-	printer = CAT(isl_printer_print_,LIST(EL_BASE))(printer, list);
-	printer = isl_printer_end_line(printer);
-
-	isl_printer_free(printer);
-}
+#define PRINT_DUMP_DEFAULT	0
+#include "print_templ.c"
+#undef PRINT_DUMP_DEFAULT
