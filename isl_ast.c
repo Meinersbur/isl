@@ -13,13 +13,13 @@
 #include <isl/val.h>
 #include <isl_ast_private.h>
 
-#undef BASE
-#define BASE ast_expr
+#undef EL_BASE
+#define EL_BASE ast_expr
 
 #include <isl_list_templ.c>
 
-#undef BASE
-#define BASE ast_node
+#undef EL_BASE
+#define EL_BASE ast_node
 
 #include <isl_list_templ.c>
 

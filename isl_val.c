@@ -11,8 +11,8 @@
 #include <isl_ctx_private.h>
 #include <isl_val_private.h>
 
-#undef BASE
-#define BASE val
+#undef EL_BASE
+#define EL_BASE val
 
 #include <isl_list_templ.c>
 

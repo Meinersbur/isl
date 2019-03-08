@@ -20,8 +20,8 @@
 #include <isl_vec_private.h>
 #include <isl_config.h>
 
-#undef BASE
-#define BASE pw_qpolynomial_fold
+#undef EL_BASE
+#define EL_BASE pw_qpolynomial_fold
 
 #include <isl_list_templ.c>
 

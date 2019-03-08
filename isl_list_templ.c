@@ -249,7 +249,7 @@ isl_size FN(LIST(EL),size)(__isl_keep LIST(EL) *list)
 
 /* This is an alternative name for the function above.
  */
-isl_size FN(FN(LIST(EL),n),BASE)(__isl_keep LIST(EL) *list)
+isl_size FN(FN(LIST(EL),n),EL_BASE)(__isl_keep LIST(EL) *list)
 {
 	return FN(LIST(EL),size)(list);
 }
@@ -272,14 +272,15 @@ __isl_give EL *FN(LIST(EL),get_at)(__isl_keep LIST(EL) *list, int index)
 
 /* This is an alternative name for the function above.
  */
-__isl_give EL *FN(FN(LIST(EL),get),BASE)(__isl_keep LIST(EL) *list, int index)
+__isl_give EL *FN(FN(LIST(EL),get),EL_BASE)(__isl_keep LIST(EL) *list,
+	int index)
 {
 	return FN(LIST(EL),get_at)(list, index);
 }
 
 /* Replace the element at position "index" in "list" by "el".
  */
-__isl_give LIST(EL) *FN(FN(LIST(EL),set),BASE)(__isl_take LIST(EL) *list,
+__isl_give LIST(EL) *FN(FN(LIST(EL),set),EL_BASE)(__isl_take LIST(EL) *list,
 	int index, __isl_take EL *el)
 {
 	if (!list || !el)
@@ -312,7 +313,7 @@ error:
  * to isl_list_*_restore_*.
  * The only exception is that isl_list_*_free can be called instead.
  */
-static __isl_give EL *FN(FN(LIST(EL),take),BASE)(__isl_keep LIST(EL) *list,
+static __isl_give EL *FN(FN(LIST(EL),take),EL_BASE)(__isl_keep LIST(EL) *list,
 	int index)
 {
 	EL *el;
@@ -320,7 +321,7 @@ static __isl_give EL *FN(FN(LIST(EL),take),BASE)(__isl_keep LIST(EL) *list,
 	if (FN(LIST(EL),check_index)(list, index) < 0)
 		return NULL;
 	if (list->ref != 1)
-		return FN(FN(LIST(EL),get),BASE)(list, index);
+		return FN(FN(LIST(EL),get),EL_BASE)(list, index);
 	el = list->p[index];
 	list->p[index] = NULL;
 	return el;
@@ -330,10 +331,10 @@ static __isl_give EL *FN(FN(LIST(EL),take),BASE)(__isl_keep LIST(EL) *list,
  * where the position may be empty due to a previous call
  * to isl_list_*_take_*.
  */
-static __isl_give LIST(EL) *FN(FN(LIST(EL),restore),BASE)(
+static __isl_give LIST(EL) *FN(FN(LIST(EL),restore),EL_BASE)(
 	__isl_take LIST(EL) *list, int index, __isl_take EL *el)
 {
-	return FN(FN(LIST(EL),set),BASE)(list, index, el);
+	return FN(FN(LIST(EL),set),EL_BASE)(list, index, el);
 }
 
 /* Swap the elements of "list" in positions "pos1" and "pos2".
@@ -345,10 +346,10 @@ __isl_give LIST(EL) *FN(LIST(EL),swap)(__isl_take LIST(EL) *list,
 
 	if (pos1 == pos2)
 		return list;
-	el1 = FN(FN(LIST(EL),take),BASE)(list, pos1);
-	el2 = FN(FN(LIST(EL),take),BASE)(list, pos2);
-	list = FN(FN(LIST(EL),restore),BASE)(list, pos1, el2);
-	list = FN(FN(LIST(EL),restore),BASE)(list, pos2, el1);
+	el1 = FN(FN(LIST(EL),take),EL_BASE)(list, pos1);
+	el2 = FN(FN(LIST(EL),take),EL_BASE)(list, pos2);
+	list = FN(FN(LIST(EL),restore),EL_BASE)(list, pos1, el2);
+	list = FN(FN(LIST(EL),restore),EL_BASE)(list, pos2, el1);
 	return list;
 }
 
@@ -396,11 +397,11 @@ __isl_give LIST(EL) *FN(LIST(EL),map)(__isl_keep LIST(EL) *list,
 
 	n = list->n;
 	for (i = 0; i < n; ++i) {
-		EL *el = FN(FN(LIST(EL),take),BASE)(list, i);
+		EL *el = FN(FN(LIST(EL),take),EL_BASE)(list, i);
 		if (!el)
 			return FN(LIST(EL),free)(list);
 		el = fn(el, user);
-		list = FN(FN(LIST(EL),restore),BASE)(list, i, el);
+		list = FN(FN(LIST(EL),restore),EL_BASE)(list, i, el);
 	}
 
 	return list;
@@ -557,7 +558,7 @@ isl_stat FN(LIST(EL),foreach_scc)(__isl_keep LIST(EL) *list,
 	return n > 0 ? isl_stat_error : isl_stat_ok;
 }
 
-__isl_give LIST(EL) *FN(FN(LIST(EL),from),BASE)(__isl_take EL *el)
+__isl_give LIST(EL) *FN(FN(LIST(EL),from),EL_BASE)(__isl_take EL *el)
 {
 	isl_ctx *ctx;
 	LIST(EL) *list;
@@ -624,7 +625,7 @@ error:
 	return NULL;
 }
 
-__isl_give isl_printer *CAT(isl_printer_print_,LIST(BASE))(
+__isl_give isl_printer *CAT(isl_printer_print_,LIST(EL_BASE))(
 	__isl_take isl_printer *p, __isl_keep LIST(EL) *list)
 {
 	int i;
@@ -635,7 +636,7 @@ __isl_give isl_printer *CAT(isl_printer_print_,LIST(BASE))(
 	for (i = 0; i < list->n; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ",");
-		p = CAT(isl_printer_print_,BASE)(p, list->p[i]);
+		p = CAT(isl_printer_print_,EL_BASE)(p, list->p[i]);
 	}
 	p = isl_printer_print_str(p, ")");
 	return p;
@@ -652,7 +653,7 @@ void FN(LIST(EL),dump)(__isl_keep LIST(EL) *list)
 		return;
 
 	printer = isl_printer_to_file(FN(LIST(EL),get_ctx)(list), stderr);
-	printer = CAT(isl_printer_print_,LIST(BASE))(printer, list);
+	printer = CAT(isl_printer_print_,LIST(EL_BASE))(printer, list);
 	printer = isl_printer_end_line(printer);
 
 	isl_printer_free(printer);
