@@ -160,7 +160,11 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_splice(			\
 #define ISL_DECLARE_MULTI_PARAM(BASE)					\
 __isl_overload								\
 isl_bool isl_multi_##BASE##_involves_param_id(				\
-	__isl_keep isl_multi_##BASE *multi, __isl_keep isl_id *id);
+	__isl_keep isl_multi_##BASE *multi, __isl_keep isl_id *id);	\
+__isl_overload								\
+isl_bool isl_multi_##BASE##_involves_param_id_list(			\
+	__isl_keep isl_multi_##BASE *multi,				\
+	__isl_keep isl_id_list *list);
 
 #if defined(__cplusplus)
 }

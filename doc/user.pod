@@ -4207,6 +4207,9 @@ the following functions can be used.
 	isl_bool isl_multi_pw_aff_involves_param_id(
 		__isl_keep isl_multi_pw_aff *mpa,
 		__isl_keep isl_id *id);
+	isl_bool isl_multi_pw_aff_involves_param_id_list(
+		__isl_keep isl_multi_pw_aff *mpa,
+		__isl_keep isl_id_list *list);
 
 	#include <isl/polynomial.h>
 	isl_bool isl_qpolynomial_involves_dims(
