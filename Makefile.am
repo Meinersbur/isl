@@ -32,6 +32,7 @@ if HAVE_CXX11
 endif
 if HAVE_PYTHON
   TESTS += isl_test_python.py
+  noinst_PYTHON = interface/isl.py
   isl_test_python.py: interface/isl.py libisl.la
 endif
 endif
@@ -528,12 +529,7 @@ EXTRA_DIST = \
 	isl_test_python.py \
 	test_inputs
 
-if HAVE_CLANG
-dist-hook: interface/isl.py
-	cp interface/isl.py $(distdir)/interface/
-else
 dist-hook:
-endif
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
 	(cd doc; make manual.pdf)
 	cp doc/manual.pdf $(distdir)/doc/
