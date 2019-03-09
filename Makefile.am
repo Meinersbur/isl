@@ -432,7 +432,11 @@ if HAVE_CLANG
 	include/isl/cpp-checked-conversion.h
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
-CLEANFILES = gitversion.h interface/isldlname.py  interface/isl.py \
+CLEANFILES = \
+	gitversion.h \
+	interface/isldlname.py \
+	interface/isl.py \
+	interface/isl.pyc \
 	$(CPP_INTERFACES)
 
 DISTCLEANFILES = \
