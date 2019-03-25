@@ -280,6 +280,7 @@ __isl_export
 __isl_give isl_set *isl_set_union(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+__isl_export
 __isl_give isl_set *isl_set_product(__isl_take isl_set *set1,
 	__isl_take isl_set *set2);
 __isl_give isl_basic_set *isl_basic_set_flat_product(
