@@ -1197,6 +1197,7 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 	#include <isl/set.h>
 	isl_size isl_basic_set_dim(__isl_keep isl_basic_set *bset,
 		enum isl_dim_type type);
+	isl_size isl_set_tuple_dim(__isl_keep isl_set *set);
 	isl_size isl_set_dim(__isl_keep isl_set *set,
 		enum isl_dim_type type);
 

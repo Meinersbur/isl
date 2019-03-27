@@ -117,6 +117,13 @@ isl_size isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 	return isl_map_dim(set_to_map(set), type);
 }
 
+/* Return the dimensionality of the (tuple of the) set.
+ */
+isl_size isl_set_tuple_dim(__isl_keep isl_set *set)
+{
+	return isl_set_dim(set, isl_dim_set);
+}
+
 /* Return the position of the variables of the given type
  * within the sequence of variables of "bmap".
  */
