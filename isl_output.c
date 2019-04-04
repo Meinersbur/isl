@@ -623,12 +623,12 @@ static __isl_give isl_printer *print_mod(__isl_take isl_printer *p,
 	return p;
 }
 
-/* Can the equality constraints "c" be printed as a modulo constraint?
- * In particular, is of the form
+/* Given an equality constraint with a non-zero coefficient "c"
+ * in position "pos", is this term of the form
  *
- *	f - a m floor(g/m) = 0,
+ *	a m floor(g/m),
  *
- * with c = -a m the coefficient at position "pos"?
+ * with c = a m?
  * Return the position of the corresponding integer division if so.
  * Return the number of integer divisions if not.
  * Return -1 on error.
