@@ -497,7 +497,9 @@ static __isl_give isl_printer *print_constraint(__isl_take isl_printer *p,
 
 	p = isl_printer_print_str(p, key_str[type]);
 	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_str(p, "\"");
 	p = isl_printer_print_union_map(p, sc->constraint[type]);
+	p = isl_printer_print_str(p, "\"");
 	p = isl_printer_yaml_next(p);
 
 	return p;
@@ -520,7 +522,9 @@ __isl_give isl_printer *isl_printer_print_schedule_constraints(
 	p = isl_printer_yaml_start_mapping(p);
 	p = isl_printer_print_str(p, key_str[isl_sc_key_domain]);
 	p = isl_printer_yaml_next(p);
+	p = isl_printer_print_str(p, "\"");
 	p = isl_printer_print_union_set(p, sc->domain);
+	p = isl_printer_print_str(p, "\"");
 	p = isl_printer_yaml_next(p);
 	universe = isl_set_plain_is_universe(sc->context);
 	if (universe < 0)
@@ -528,7 +532,9 @@ __isl_give isl_printer *isl_printer_print_schedule_constraints(
 	if (!universe) {
 		p = isl_printer_print_str(p, key_str[isl_sc_key_context]);
 		p = isl_printer_yaml_next(p);
+		p = isl_printer_print_str(p, "\"");
 		p = isl_printer_print_set(p, sc->context);
+		p = isl_printer_print_str(p, "\"");
 		p = isl_printer_yaml_next(p);
 	}
 	p = print_constraint(p, sc, isl_edge_validity);
