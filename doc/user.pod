@@ -5402,6 +5402,18 @@ The box can be copied and freed using the following functions.
 	__isl_null isl_fixed_box *isl_fixed_box_free(
 		__isl_take isl_fixed_box *box);
 
+A representation of the information contained in an object
+of type C<isl_fixed_box> can be obtained using
+
+	#include <isl/fixed_box.h>
+	__isl_give isl_printer *isl_printer_print_fixed_box(
+		__isl_take isl_printer *p,
+		__isl_keep isl_fixed_box *box);
+	__isl_give char *isl_fixed_box_to_str(
+		__isl_keep isl_fixed_box *box);
+
+C<isl_fixed_box_to_str> prints the information in flow format.
+
 =item * Other approximations
 
 	#include <isl/set.h>
