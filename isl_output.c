@@ -2589,23 +2589,34 @@ error:
 	return NULL;
 }
 
+/* Print the numerator of the affine expression "aff" to "p",
+ * with the variable names taken from "space".
+ */
+static __isl_give isl_printer *print_aff_num(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_aff *aff)
+{
+	isl_size total;
+
+	total = isl_aff_domain_dim(aff, isl_dim_all);
+	if (total < 0)
+		return isl_printer_free(p);
+	p = print_affine_of_len(space, aff->ls->div, p,
+				aff->v->el + 1, 1 + total);
+
+	return p;
+}
+
 /* Print the (potentially rational) affine expression "aff" to "p",
  * with the variable names taken from "space".
  */
 static __isl_give isl_printer *print_aff_body(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_aff *aff)
 {
-	isl_size total;
-
 	if (isl_aff_is_nan(aff))
 		return isl_printer_print_str(p, "NaN");
 
-	total = isl_aff_domain_dim(aff, isl_dim_all);
-	if (total < 0)
-		return isl_printer_free(p);
 	p = isl_printer_print_str(p, "(");
-	p = print_affine_of_len(space, aff->ls->div, p,
-				aff->v->el + 1, 1 + total);
+	p = print_aff_num(p, space, aff);
 	if (isl_int_is_one(aff->v->el[0]))
 		p = isl_printer_print_str(p, ")");
 	else {
