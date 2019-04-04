@@ -631,7 +631,7 @@ static __isl_give isl_printer *print_mod(__isl_take isl_printer *p,
  * with c = a m?
  * Return the position of the corresponding integer division if so.
  * Return the number of integer divisions if not.
- * Return -1 on error.
+ * Return isl_size_error on error.
  *
  * Modulo constraints are currently not printed in C format.
  * Other than that, "pos" needs to correspond to an integer division
@@ -652,7 +652,7 @@ static isl_size print_as_modulo_pos(__isl_keep isl_printer *p,
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
 	if (pos2type(space, &type, &pos) < 0)
-		return -1;
+		return isl_size_error;
 	if (type != isl_dim_div)
 		return n_div;
 	can_print = can_print_div_expr(p, div, pos);
