@@ -479,6 +479,18 @@ static char *key_str[] = {
 	[isl_sc_key_context] = "context",
 };
 
+#undef BASE
+#define BASE set
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE union_set
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE union_map
+#include "print_yaml_field_templ.c"
+
 /* Print a key, value pair for the edge of type "type" in "sc" to "p".
  *
  * If the edge relation is empty, then it is not printed since
@@ -495,12 +507,7 @@ static __isl_give isl_printer *print_constraint(__isl_take isl_printer *p,
 	if (empty)
 		return p;
 
-	p = isl_printer_print_str(p, key_str[type]);
-	p = isl_printer_yaml_next(p);
-	p = isl_printer_print_str(p, "\"");
-	p = isl_printer_print_union_map(p, sc->constraint[type]);
-	p = isl_printer_print_str(p, "\"");
-	p = isl_printer_yaml_next(p);
+	p = print_yaml_field_union_map(p, key_str[type], sc->constraint[type]);
 
 	return p;
 }
@@ -520,23 +527,14 @@ __isl_give isl_printer *isl_printer_print_schedule_constraints(
 		return isl_printer_free(p);
 
 	p = isl_printer_yaml_start_mapping(p);
-	p = isl_printer_print_str(p, key_str[isl_sc_key_domain]);
-	p = isl_printer_yaml_next(p);
-	p = isl_printer_print_str(p, "\"");
-	p = isl_printer_print_union_set(p, sc->domain);
-	p = isl_printer_print_str(p, "\"");
-	p = isl_printer_yaml_next(p);
+	p = print_yaml_field_union_set(p, key_str[isl_sc_key_domain],
+					sc->domain);
 	universe = isl_set_plain_is_universe(sc->context);
 	if (universe < 0)
 		return isl_printer_free(p);
-	if (!universe) {
-		p = isl_printer_print_str(p, key_str[isl_sc_key_context]);
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_set(p, sc->context);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_yaml_next(p);
-	}
+	if (!universe)
+		p = print_yaml_field_set(p, key_str[isl_sc_key_context],
+						sc->context);
 	p = print_constraint(p, sc, isl_edge_validity);
 	p = print_constraint(p, sc, isl_edge_proximity);
 	p = print_constraint(p, sc, isl_edge_coincidence);
