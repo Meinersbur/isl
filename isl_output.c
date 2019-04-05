@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2019      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -10,6 +11,7 @@
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <stdlib.h>
@@ -2589,10 +2591,52 @@ error:
 	return NULL;
 }
 
+/* Look for the last of the "n" integer divisions that is used in "aff" and
+ * that can be printed as a modulo and
+ * return the position of this integer division.
+ * Return "n" if no such integer division can be found.
+ * Return isl_size_error on error.
+ *
+ * In particular, look for an integer division that appears in "aff"
+ * with a coefficient that is a multiple of the denominator
+ * of the integer division.
+ * That is, check if the numerator of "aff" is of the form
+ *
+ *	f(...) + a m floor(g/m)
+ *
+ * and return the position of "floor(g/m)".
+ *
+ * Note that, unlike print_as_modulo_pos, no check needs to be made
+ * for whether the integer division can be printed, since it will
+ * need to be printed as an integer division anyway if it is not printed
+ * as a modulo.
+ */
+static isl_size last_modulo(__isl_keep isl_printer *p, __isl_keep isl_aff *aff,
+	unsigned n)
+{
+	isl_size o_div;
+	int i;
+
+	if (n == 0)
+		return n;
+	o_div = isl_aff_domain_offset(aff, isl_dim_div);
+	if (o_div < 0)
+		return isl_size_error;
+	for (i = n - 1; i >= 0; --i) {
+		if (isl_int_is_zero(aff->v->el[1 + o_div + i]))
+			continue;
+		if (isl_int_is_divisible_by(aff->v->el[1 + o_div + i],
+					    aff->ls->div->row[i][0]))
+			return i;
+	}
+
+	return n;
+}
+
 /* Print the numerator of the affine expression "aff" to "p",
  * with the variable names taken from "space".
  */
-static __isl_give isl_printer *print_aff_num(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_aff_num_base(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_aff *aff)
 {
 	isl_size total;
@@ -2604,6 +2648,123 @@ static __isl_give isl_printer *print_aff_num(__isl_take isl_printer *p,
 				aff->v->el + 1, 1 + total);
 
 	return p;
+}
+
+static __isl_give isl_printer *print_aff_num(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_aff *aff);
+
+/* Print the modulo term "c" * ("aff" mod "mod") to "p",
+ * with the variable names taken from "space".
+ * If "first" is set, then this is the first term of an expression.
+ */
+static __isl_give isl_printer *print_mod_term(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_aff *aff, int first,
+	__isl_take isl_val *c, __isl_keep isl_val *mod)
+{
+	isl_bool is_one, is_neg;
+
+	is_neg = isl_val_is_neg(c);
+	if (is_neg < 0)
+		p = isl_printer_free(p);
+	if (!first) {
+		if (is_neg)
+			c = isl_val_neg(c);
+		p = isl_printer_print_str(p, is_neg ? " - " : " + ");
+	}
+	is_one = isl_val_is_one(c);
+	if (is_one < 0)
+		p = isl_printer_free(p);
+	if (!is_one) {
+		p = isl_printer_print_val(p, c);
+		p = isl_printer_print_str(p, "*(");
+	}
+	p = isl_printer_print_str(p, "(");
+	p = print_aff_num(p, space, aff);
+	p = isl_printer_print_str(p, ")");
+	p = isl_printer_print_str(p, " mod ");
+	p = isl_printer_print_val(p, mod);
+	if (!is_one)
+		p = isl_printer_print_str(p, ")");
+
+	isl_val_free(c);
+
+	return p;
+}
+
+/* Print the numerator of the affine expression "aff" to "p",
+ * with the variable names taken from "space",
+ * given that the numerator of "aff" is of the form
+ *
+ *	f(...) + a m floor(g/m)
+ *
+ * with "floor(g/m)" the integer division at position "last".
+ *
+ * First replace "aff" by its numerator and rewrite it as
+ *
+ *	f(...) + a g - a (g mod m)
+ *
+ * Recursively write out (the numerator of) "f(...) + a g"
+ * (which may involve other modulo expressions) and
+ * then write out "- a (g mod m)".
+ */
+static __isl_give isl_printer *print_aff_num_mod(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_aff *aff, unsigned last)
+{
+	isl_bool is_zero;
+	isl_val *a, *m;
+	isl_aff *div, *term;
+
+	aff = isl_aff_copy(aff);
+	aff = isl_aff_scale_val(aff, isl_aff_get_denominator_val(aff));
+	a = isl_aff_get_coefficient_val(aff, isl_dim_div, last);
+	aff = isl_aff_set_coefficient_si(aff, isl_dim_div, last, 0);
+	div = isl_aff_get_div(aff, last);
+	m = isl_aff_get_denominator_val(div);
+	a = isl_val_div(a, isl_val_copy(m));
+	div = isl_aff_scale_val(div, isl_val_copy(m));
+	term = isl_aff_scale_val(isl_aff_copy(div), isl_val_copy(a));
+	aff = isl_aff_add(aff, term);
+
+	is_zero = isl_aff_plain_is_zero(aff);
+	if (is_zero < 0) {
+		p = isl_printer_free(p);
+	} else {
+		if (!is_zero)
+			p = print_aff_num(p, space, aff);
+		a = isl_val_neg(a);
+		p = print_mod_term(p, space, div, is_zero, isl_val_copy(a), m);
+	}
+
+	isl_val_free(a);
+	isl_val_free(m);
+	isl_aff_free(aff);
+	isl_aff_free(div);
+
+	return p;
+}
+
+/* Print the numerator of the affine expression "aff" to "p",
+ * with the variable names taken from "space",
+ * separating out any (obvious) modulo expressions.
+ *
+ * In particular, look for modulo expressions in "aff",
+ * separating them out if found and simply printing out "aff" otherwise.
+ */
+static __isl_give isl_printer *print_aff_num(__isl_take isl_printer *p,
+	__isl_keep isl_space *space, __isl_keep isl_aff *aff)
+{
+	isl_size n_div, mod;
+
+	n_div = isl_aff_dim(aff, isl_dim_div);
+	if (n_div < 0)
+		return isl_printer_free(p);
+	mod = last_modulo(p, aff, n_div);
+	if (mod < 0)
+		return isl_printer_free(p);
+	if (mod < n_div)
+		return print_aff_num_mod(p, space, aff, mod);
+	else
+		return print_aff_num_base(p, space, aff);
 }
 
 /* Print the (potentially rational) affine expression "aff" to "p",
