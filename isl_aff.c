@@ -357,6 +357,17 @@ isl_size isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 	return isl_aff_domain_dim(aff, type);
 }
 
+/* Return the offset of the first coefficient of type "type" in
+ * the domain of "aff".
+ */
+isl_size isl_aff_domain_offset(__isl_keep isl_aff *aff, enum isl_dim_type type)
+{
+	isl_local_space *ls;
+
+	ls = isl_aff_peek_domain_local_space(aff);
+	return isl_local_space_offset(ls, type);
+}
+
 /* Return the position of the dimension of the given type and name
  * in "aff".
  * Return -1 if no such dimension can be found.
@@ -1316,13 +1327,13 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 {
 	int pos;
-	int off;
+	isl_size off;
 	isl_size n;
 
 	n = isl_aff_domain_dim(aff, isl_dim_div);
-	if (n < 0)
+	off = isl_aff_domain_offset(aff, isl_dim_div);
+	if (n < 0 || off < 0)
 		return isl_aff_free(aff);
-	off = isl_local_space_offset(aff->ls, isl_dim_div);
 
 	pos = isl_seq_last_non_zero(aff->v->el + 1 + off, n) + 1;
 	if (pos == n)
@@ -1352,10 +1363,11 @@ static __isl_give isl_aff *plug_in_integral_divs(__isl_take isl_aff *aff)
 	isl_int v;
 	isl_vec *vec;
 	isl_local_space *ls;
-	unsigned pos;
+	isl_size off;
 
 	n = isl_aff_domain_dim(aff, isl_dim_div);
-	if (n < 0)
+	off = isl_aff_domain_offset(aff, isl_dim_div);
+	if (n < 0 || off < 0)
 		return isl_aff_free(aff);
 	len = aff->v->size;
 	for (i = 0; i < n; ++i) {
@@ -1371,8 +1383,7 @@ static __isl_give isl_aff *plug_in_integral_divs(__isl_take isl_aff *aff)
 
 		isl_int_init(v);
 
-		pos = isl_local_space_offset(aff->ls, isl_dim_div) + i;
-		isl_seq_substitute(vec->el, pos, aff->ls->div->row[i],
+		isl_seq_substitute(vec->el, off + i, aff->ls->div->row[i],
 					len, len, v);
 
 		isl_int_clear(v);
@@ -1413,12 +1424,12 @@ static __isl_give isl_aff *plug_in_unit_divs(__isl_take isl_aff *aff)
 {
 	int i, j;
 	isl_size n;
-	int off;
+	isl_size off;
 
 	n = isl_aff_domain_dim(aff, isl_dim_div);
-	if (n < 0)
+	off = isl_aff_domain_offset(aff, isl_dim_div);
+	if (n < 0 || off < 0)
 		return isl_aff_free(aff);
-	off = isl_local_space_offset(aff->ls, isl_dim_div);
 	for (i = 1; i < n; ++i) {
 		for (j = 0; j < i; ++j) {
 			if (!isl_int_is_one(aff->ls->div->row[i][1 + off + j]))
@@ -1441,9 +1452,12 @@ static __isl_give isl_aff *plug_in_unit_divs(__isl_take isl_aff *aff)
  */
 static __isl_give isl_aff *swap_div(__isl_take isl_aff *aff, int a, int b)
 {
-	unsigned off = isl_local_space_offset(aff->ls, isl_dim_div);
+	isl_size off = isl_aff_domain_offset(aff, isl_dim_div);
 	isl_local_space *ls;
 	isl_vec *v;
+
+	if (off < 0)
+		return isl_aff_free(aff);
 
 	ls = isl_local_space_copy(aff->ls);
 	ls = isl_local_space_swap_div(ls, a, b);
@@ -1472,7 +1486,10 @@ error:
  */
 static __isl_give isl_aff *merge_divs(__isl_take isl_aff *aff, int a, int b)
 {
-	unsigned off = isl_local_space_offset(aff->ls, isl_dim_div);
+	isl_size off = isl_aff_domain_offset(aff, isl_dim_div);
+
+	if (off < 0)
+		return isl_aff_free(aff);
 
 	if (isl_int_is_zero(aff->v->el[1 + off + b]))
 		return aff;
@@ -1730,17 +1747,17 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 {
 	isl_size old_n_div;
 	isl_size new_n_div;
-	int offset;
+	isl_size offset;
 
 	aff = isl_aff_cow(aff);
 
+	offset = isl_aff_domain_offset(aff, isl_dim_div);
 	old_n_div = isl_aff_domain_dim(aff, isl_dim_div);
 	new_n_div = isl_mat_rows(div);
-	if (old_n_div < 0 || new_n_div < 0)
+	if (offset < 0 || old_n_div < 0 || new_n_div < 0)
 		goto error;
-	offset = 1 + isl_local_space_offset(aff->ls, isl_dim_div);
 
-	aff->v = isl_vec_expand(aff->v, offset, old_n_div, exp, new_n_div);
+	aff->v = isl_vec_expand(aff->v, 1 + offset, old_n_div, exp, new_n_div);
 	aff->ls = isl_local_space_replace_divs(aff->ls, div);
 	if (!aff->v || !aff->ls)
 		return isl_aff_free(aff);
@@ -2625,6 +2642,7 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 {
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
+	isl_size src_off, dst_off;
 
 	if (!aff)
 		return NULL;
@@ -2653,11 +2671,13 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 			return isl_aff_free(aff));
 
 	aff = isl_aff_cow(aff);
-	if (!aff)
-		return NULL;
+	src_off = isl_aff_domain_offset(aff, src_type);
+	dst_off = isl_aff_domain_offset(aff, dst_type);
+	if (src_off < 0 || dst_off < 0)
+		return isl_aff_free(aff);
 
-	g_src_pos = 1 + isl_local_space_offset(aff->ls, src_type) + src_pos;
-	g_dst_pos = 1 + isl_local_space_offset(aff->ls, dst_type) + dst_pos;
+	g_src_pos = 1 + src_off + src_pos;
+	g_dst_pos = 1 + dst_off + dst_pos;
 	if (dst_type > src_type)
 		g_dst_pos -= n;
 
