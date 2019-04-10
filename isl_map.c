@@ -7964,12 +7964,12 @@ struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2)
 }
 
 /* Apply "fn" to pairs of elements from "map" and "set" and collect
- * the results.
+ * the results in a map living in "space".
  *
  * "map" and "set" are assumed to be compatible and non-NULL.
  */
 static __isl_give isl_map *map_intersect_set(__isl_take isl_map *map,
-	__isl_take isl_set *set,
+	__isl_take isl_space *space, __isl_take isl_set *set,
 	__isl_give isl_basic_map *fn(__isl_take isl_basic_map *bmap,
 		__isl_take isl_basic_set *bset))
 {
@@ -7979,15 +7979,14 @@ static __isl_give isl_map *map_intersect_set(__isl_take isl_map *map,
 
 	if (isl_set_plain_is_universe(set)) {
 		isl_set_free(set);
-		return map;
+		return isl_map_reset_equal_dim_space(map, space);
 	}
 
 	if (ISL_F_ISSET(map, ISL_MAP_DISJOINT) &&
 	    ISL_F_ISSET(set, ISL_MAP_DISJOINT))
 		ISL_FL_SET(flags, ISL_MAP_DISJOINT);
 
-	result = isl_map_alloc_space(isl_space_copy(map->dim),
-					map->n * set->n, flags);
+	result = isl_map_alloc_space(space, map->n * set->n, flags);
 	for (i = 0; result && i < map->n; ++i)
 		for (j = 0; j < set->n; ++j) {
 			result = isl_map_add_basic_map(result,
@@ -8006,6 +8005,7 @@ static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
 	__isl_take isl_set *set)
 {
 	isl_bool ok;
+	isl_space *space;
 
 	ok = isl_map_compatible_range(map, set);
 	if (ok < 0)
@@ -8014,7 +8014,9 @@ static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
 		isl_die(set->ctx, isl_error_invalid,
 			"incompatible spaces", goto error);
 
-	return map_intersect_set(map, set, &isl_basic_map_intersect_range);
+	space = isl_map_get_space(map);
+	return map_intersect_set(map, space, set,
+				&isl_basic_map_intersect_range);
 error:
 	isl_map_free(map);
 	isl_set_free(set);
@@ -8031,6 +8033,7 @@ static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
 	__isl_take isl_set *set)
 {
 	isl_bool ok;
+	isl_space *space;
 
 	ok = isl_map_compatible_domain(map, set);
 	if (ok < 0)
@@ -8039,7 +8042,9 @@ static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
 		isl_die(set->ctx, isl_error_invalid,
 			"incompatible spaces", goto error);
 
-	return map_intersect_set(map, set, &isl_basic_map_intersect_domain);
+	space = isl_map_get_space(map);
+	return map_intersect_set(map, space, set,
+				&isl_basic_map_intersect_domain);
 error:
 	isl_map_free(map);
 	isl_set_free(set);
