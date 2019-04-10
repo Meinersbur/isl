@@ -2,7 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2013-2014 Ecole Normale Superieure
- * Copyright 2018      Cerebras Systems
+ * Copyright 2018-2019 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -2863,6 +2863,45 @@ __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 error:
 	isl_space_free(dst);
 	return NULL;
+}
+
+/* Given two tuples ("dst_type" in "dst" and "src_type" in "src")
+ * of the same size, check if any of the dimensions in the "dst" tuple
+ * have no identifier, while the corresponding dimensions in "src"
+ * does have an identifier,
+ * If so, copy the identifier over to "dst".
+ */
+__isl_give isl_space *isl_space_copy_ids_if_unset(__isl_take isl_space *dst,
+	enum isl_dim_type dst_type, __isl_keep isl_space *src,
+	enum isl_dim_type src_type)
+{
+	int i;
+	isl_size n;
+
+	n = isl_space_dim(dst, dst_type);
+	if (n < 0)
+		return isl_space_free(dst);
+	for (i = 0; i < n; ++i) {
+		isl_bool set;
+		isl_id *id;
+
+		set = isl_space_has_dim_id(dst, dst_type, i);
+		if (set < 0)
+			return isl_space_free(dst);
+		if (set)
+			continue;
+
+		set = isl_space_has_dim_id(src, src_type, i);
+		if (set < 0)
+			return isl_space_free(dst);
+		if (!set)
+			continue;
+
+		id = isl_space_get_dim_id(src, src_type, i);
+		dst = isl_space_set_dim_id(dst, dst_type, i, id);
+	}
+
+	return dst;
 }
 
 /* Given a dimension specification "dim" of a set, create a dimension

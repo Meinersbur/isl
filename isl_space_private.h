@@ -70,6 +70,9 @@ isl_stat isl_space_check_range_is_wrapping(__isl_keep isl_space *space);
 
 __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 	__isl_keep isl_space *src);
+__isl_give isl_space *isl_space_copy_ids_if_unset(__isl_take isl_space *dst,
+	enum isl_dim_type dst_type, __isl_keep isl_space *src,
+	enum isl_dim_type src_type);
 
 __isl_give isl_space *isl_space_lift(__isl_take isl_space *space,
 	unsigned n_local);

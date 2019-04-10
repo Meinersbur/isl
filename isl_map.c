@@ -8029,6 +8029,12 @@ __isl_give isl_map *isl_map_intersect_range(__isl_take isl_map *map,
 	return isl_map_align_params_map_map_and(map, set, &map_intersect_range);
 }
 
+/* Intersect the domain of "map" with "set", assuming the parameters
+ * have been aligned.
+ *
+ * If the domain dimensions of "map" do not have any identifiers,
+ * then copy them over from "set".
+ */
 static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
 	__isl_take isl_set *set)
 {
@@ -8043,6 +8049,8 @@ static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
 			"incompatible spaces", goto error);
 
 	space = isl_map_get_space(map);
+	space = isl_space_copy_ids_if_unset(space, isl_dim_in,
+					isl_set_peek_space(set), isl_dim_set);
 	return map_intersect_set(map, space, set,
 				&isl_basic_map_intersect_domain);
 error:
