@@ -143,16 +143,30 @@ static const char *reparse_multi_pw_aff_tests[] = {
 #include "check_reparse_templ.c"
 #include "check_reparse_test_templ.c"
 
+/* String descriptions of piecewise multi affine expressions
+ * that are used for testing printing and parsing.
+ */
+static const char *reparse_pw_multi_aff_tests[] = {
+	"{ [x] -> [x] }",
+	"{ [x] -> [x % 4] }",
+	"{ [x] -> [x % 4] : x mod 3 = 1 }",
+	"{ [x, x] -> [x % 4] }",
+	"{ [x, x + 1] -> [x % 4] : x mod 3 = 1 }",
+	"{ [x, x mod 2] -> [x % 4] }",
+};
+
 #undef BASE
 #define BASE pw_multi_aff
 
 #include "check_reparse_templ.c"
+#include "check_reparse_test_templ.c"
 
 /* Test parsing of piecewise multi affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
  * Do this for an expression converted from a map with an output
- * dimension name that is equal to an automatically generated name.
+ * dimension name that is equal to an automatically generated name, and
+ * a set of expressions parsed from strings.
  */
 static isl_stat test_parse_pma(isl_ctx *ctx)
 {
@@ -162,6 +176,9 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
 	pma = isl_pw_multi_aff_from_map(map);
 	if (check_reparse_pw_multi_aff(ctx, pma) < 0)
+		return isl_stat_error;
+
+	if (check_reparse_pw_multi_aff_tests(ctx) < 0)
 		return isl_stat_error;
 
 	return isl_stat_ok;
