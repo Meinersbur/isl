@@ -3930,11 +3930,11 @@ isl_bool isl_basic_map_is_disjoint(__isl_keep isl_basic_map *bmap1,
 
 	intersect = isl_basic_map_plain_is_universe(bmap1);
 	if (intersect < 0 || intersect)
-		return intersect < 0 ? isl_bool_error : isl_bool_false;
+		return isl_bool_not(intersect);
 
 	intersect = isl_basic_map_plain_is_universe(bmap2);
 	if (intersect < 0 || intersect)
-		return intersect < 0 ? isl_bool_error : isl_bool_false;
+		return isl_bool_not(intersect);
 
 	test = isl_basic_map_intersect(isl_basic_map_copy(bmap1),
 		isl_basic_map_copy(bmap2));
