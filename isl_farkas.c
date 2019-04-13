@@ -222,7 +222,7 @@ static __isl_give isl_basic_set *rational_universe(__isl_take isl_space *space)
  * As explained above, we add an extra dimension to represent
  * the coefficient of the constant term when going from solutions
  * to coefficients (shift == 1) and we drop the extra dimension when going
- * in the opposite direction (shift == -1).  "dim" is the space in which
+ * in the opposite direction (shift == -1).  "space" is the space in which
  * the dual should be created.
  *
  * If "bset" is (obviously) empty, then the way this emptiness
