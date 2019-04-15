@@ -350,11 +350,17 @@ __isl_give isl_map *isl_map_flat_range_product(__isl_take isl_map *map1,
 isl_bool isl_map_domain_is_wrapping(__isl_keep isl_map *map);
 isl_bool isl_map_range_is_wrapping(__isl_keep isl_map *map);
 isl_bool isl_map_is_product(__isl_keep isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_factor_domain(__isl_take isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_factor_range(__isl_take isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_domain_factor_domain(__isl_take isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_domain_factor_range(__isl_take isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_range_factor_domain(__isl_take isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_range_factor_range(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,
