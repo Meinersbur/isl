@@ -9499,6 +9499,79 @@ error:
 	return NULL;
 }
 
+/* Data structure that specifies how isl_union_pw_multi_aff_un_op
+ * should modify the base expressions in the input.
+ *
+ * If "filter" is not NULL, then only the base expressions that satisfy "filter"
+ * are taken into account.
+ * "fn" is applied to each entry in the input.
+ */
+struct isl_union_pw_multi_aff_un_op_control {
+	isl_bool (*filter)(__isl_keep isl_pw_multi_aff *part);
+	__isl_give isl_pw_multi_aff *(*fn)(__isl_take isl_pw_multi_aff *pma);
+};
+
+/* Wrapper for isl_union_pw_multi_aff_un_op base functions (which do not take
+ * a second argument) for use as a isl_union_pw_multi_aff_transform
+ * base function (which does take a second argument).
+ * Simply call control->fn without the second argument.
+ */
+static __isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_un_op_drop_user(
+	__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_pw_multi_aff_un_op_control *control = user;
+
+	return control->fn(pma);
+}
+
+/* Construct an isl_union_pw_multi_aff that is obtained by
+ * modifying "upma" according to "control".
+ *
+ * isl_union_pw_multi_aff_transform performs essentially
+ * the same operation, but takes a callback function
+ * of a different form (with an extra argument).
+ * Call isl_union_pw_multi_aff_transform with a wrapper
+ * that removes this extra argument.
+ */
+static __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_un_op(
+	__isl_take isl_union_pw_multi_aff *upma,
+	struct isl_union_pw_multi_aff_un_op_control *control)
+{
+	struct isl_union_pw_multi_aff_transform_control t_control = {
+		.filter = control->filter,
+		.fn = &isl_union_pw_multi_aff_un_op_drop_user,
+		.fn_user = control,
+	};
+
+	return isl_union_pw_multi_aff_transform(upma, &t_control);
+}
+
+/* For each function in "upma" of the form A -> [B -> C],
+ * extract the function A -> B and collect the results.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_factor_domain(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	struct isl_union_pw_multi_aff_un_op_control control = {
+		.filter = &isl_pw_multi_aff_range_is_wrapping,
+		.fn = &isl_pw_multi_aff_range_factor_domain,
+	};
+	return isl_union_pw_multi_aff_un_op(upma, &control);
+}
+
+/* For each function in "upma" of the form A -> [B -> C],
+ * extract the function A -> C and collect the results.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_factor_range(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	struct isl_union_pw_multi_aff_un_op_control control = {
+		.filter = &isl_pw_multi_aff_range_is_wrapping,
+		.fn = &isl_pw_multi_aff_range_factor_range,
+	};
+	return isl_union_pw_multi_aff_un_op(upma, &control);
+}
+
 /* Evaluate the affine function "aff" in the void point "pnt".
  * In particular, return the value NaN.
  */

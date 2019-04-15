@@ -842,6 +842,12 @@ __isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
 	__isl_take isl_union_pw_multi_aff *upma1,
 	__isl_take isl_union_pw_multi_aff *upma2);
+__isl_export
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_factor_domain(
+	__isl_take isl_union_pw_multi_aff *upma);
+__isl_export
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_factor_range(
+	__isl_take isl_union_pw_multi_aff *upma);
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_intersect_params(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_set *set);
