@@ -5863,6 +5863,9 @@ range space.
 	isl_union_pw_multi_aff_from_union_set(
 		__isl_take isl_union_set *uset);
 	__isl_give isl_union_pw_multi_aff *
+	isl_union_map_as_union_pw_multi_aff(
+		__isl_take isl_union_map *umap);
+	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_from_union_map(
 		__isl_take isl_union_map *umap);
 
@@ -5872,6 +5875,8 @@ range space.
 
 C<isl_map_as_pw_multi_aff> and C<isl_pw_multi_aff_from_map> perform
 the same operation.
+Similarly for C<isl_union_map_as_union_pw_multi_aff> and
+C<isl_union_pw_multi_aff_from_union_map>.
 
 =item * Deltas
 

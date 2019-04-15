@@ -5529,6 +5529,16 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_map(
 	return upma;
 }
 
+/* This function performs the same operation as
+ * isl_union_pw_multi_aff_from_union_map,
+ * but is considered as a function on an isl_union_map when exported.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_map_as_union_pw_multi_aff(
+	__isl_take isl_union_map *umap)
+{
+	return isl_union_pw_multi_aff_from_union_map(umap);
+}
+
 /* Try and create an isl_union_pw_multi_aff that is equivalent
  * to the given isl_union_set.
  * The isl_union_set is required to be a singleton in each space.
