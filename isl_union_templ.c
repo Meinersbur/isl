@@ -250,25 +250,34 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
 	return FN(UNION,alloc_same_size_on_space)(u, FN(UNION,get_space)(u));
 }
 
+/* Data structure that specifies how isl_union_*_transform_space
+ * should modify the base expressions in the union expression.
+ *
+ * "fn" is applied to each entry in the input.
+ * "fn_user" is passed as the second argument to "fn".
+ */
+S(UNION,transform_control) {
+	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
+	void *fn_user;
+};
+
 /* Internal data structure for isl_union_*_transform_space.
- * "fn' is applied to each entry in the input.
+ * "control" specifies how the base expressions should be modified.
  * "res" collects the results.
  */
 S(UNION,transform_data)
 {
-	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
-	void *user;
-
+	S(UNION,transform_control) *control;
 	UNION *res;
 };
 
-/* Apply data->fn to "part" and add the result to data->res.
+/* Apply control->fn to "part" and add the result to data->res.
  */
 static isl_stat FN(UNION,transform_entry)(__isl_take PART *part, void *user)
 {
 	S(UNION,transform_data) *data = (S(UNION,transform_data) *)user;
 
-	part = data->fn(part, data->user);
+	part = data->control->fn(part, data->control->fn_user);
 	data->res = FN(FN(UNION,add),BASE)(data->res, part);
 	if (!data->res)
 		return isl_stat_error;
@@ -283,7 +292,8 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 	__isl_take isl_space *space,
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
-	S(UNION,transform_data) data = { fn, user };
+	S(UNION,transform_control) control = { .fn = fn, .fn_user = user };
+	S(UNION,transform_data) data = { &control };
 
 	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
 	if (FN(FN(UNION,foreach),BASE)(u,
@@ -302,13 +312,13 @@ static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
 	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), fn, user);
 }
 
-/* Apply data->fn to *part and store the result back into *part.
+/* Apply control->fn to *part and store the result back into *part.
  */
 static isl_stat FN(UNION,transform_inplace_entry)(void **part, void *user)
 {
 	S(UNION,transform_data) *data = (S(UNION,transform_data) *) user;
 
-	*part = data->fn(*part, data->user);
+	*part = data->control->fn(*part, data->control->fn_user);
 	if (!*part)
 		return isl_stat_error;
 	return isl_stat_ok;
@@ -324,13 +334,14 @@ static isl_stat FN(UNION,transform_inplace_entry)(void **part, void *user)
 static __isl_give UNION *FN(UNION,transform_inplace)(__isl_take UNION *u,
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
+	S(UNION,transform_control) control = { .fn = fn, .fn_user = user };
 	isl_bool single_ref;
 
 	single_ref = FN(UNION,has_single_reference)(u);
 	if (single_ref < 0)
 		return FN(UNION,free)(u);
 	if (single_ref) {
-		S(UNION,transform_data) data = { fn, user };
+		S(UNION,transform_data) data = { &control };
 		if (FN(UNION,foreach_inplace)(u,
 				&FN(UNION,transform_inplace_entry), &data) < 0)
 			return FN(UNION,free)(u);
