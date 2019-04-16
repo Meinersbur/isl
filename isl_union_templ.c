@@ -285,15 +285,13 @@ static isl_stat FN(UNION,transform_entry)(__isl_take PART *part, void *user)
 	return isl_stat_ok;
 }
 
-/* Return a UNION living in "space" that is obtained by applying "fn"
- * to each of the entries in "u".
+/* Return a UNION living in "space" that is obtained by modifying "u"
+ * according to "control".
  */
 static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
-	__isl_take isl_space *space,
-	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
+	__isl_take isl_space *space, S(UNION,transform_control) *control)
 {
-	S(UNION,transform_control) control = { .fn = fn, .fn_user = user };
-	S(UNION,transform_data) data = { &control };
+	S(UNION,transform_data) data = { control };
 
 	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
 	if (FN(FN(UNION,foreach),BASE)(u,
@@ -309,7 +307,9 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
-	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), fn, user);
+	S(UNION,transform_control) control = { .fn = fn, .fn_user = user };
+
+	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), &control);
 }
 
 /* Apply control->fn to *part and store the result back into *part.
@@ -405,13 +405,17 @@ static __isl_give PART *FN(UNION,align_entry)(__isl_take PART *part, void *user)
 static __isl_give UNION *FN(UNION,realign_domain)(__isl_take UNION *u,
 	__isl_take isl_reordering *r)
 {
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,align_entry),
+		.fn_user = r,
+	};
 	isl_space *space;
 
 	if (!u || !r)
 		goto error;
 
 	space = isl_reordering_get_space(r);
-	u = FN(UNION,transform_space)(u, space, &FN(UNION,align_entry), r);
+	u = FN(UNION,transform_space)(u, space, &control);
 	isl_reordering_free(r);
 	return u;
 error:
@@ -1092,6 +1096,10 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 {
 	isl_space *space;
 	S(UNION,drop_dims_data) data = { type, first, n };
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,drop_dims_entry),
+		.fn_user = &data,
+	};
 
 	if (!u)
 		return NULL;
@@ -1103,8 +1111,7 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_drop_dims(space, type, first, n);
-	return FN(UNION,transform_space)(u, space, &FN(UNION,drop_dims_entry),
-					&data);
+	return FN(UNION,transform_space)(u, space, &control);
 }
 
 /* Internal data structure for isl_union_*_set_dim_name.
@@ -1134,6 +1141,10 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	S(UNION,set_dim_name_data) data = { pos, s };
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,set_dim_name_entry),
+		.fn_user = &data,
+	};
 	isl_space *space;
 
 	if (!u)
@@ -1146,8 +1157,7 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_set_dim_name(space, type, pos, s);
-	return FN(UNION,transform_space)(u, space,
-					&FN(UNION,set_dim_name_entry), &data);
+	return FN(UNION,transform_space)(u, space, &control);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples
@@ -1164,12 +1174,14 @@ static __isl_give PART *FN(UNION,reset_user_entry)(__isl_take PART *part,
  */
 __isl_give UNION *FN(UNION,reset_user)(__isl_take UNION *u)
 {
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,reset_user_entry),
+	};
 	isl_space *space;
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_reset_user(space);
-	return FN(UNION,transform_space)(u, space, &FN(UNION,reset_user_entry),
-					NULL);
+	return FN(UNION,transform_space)(u, space, &control);
 }
 
 /* Add the base expression held by "entry" to "list".
