@@ -280,7 +280,7 @@ static isl_stat FN(UNION,transform_entry)(__isl_take PART *part, void *user)
  * to each of the entries in "u".
  */
 static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
-	isl_space *space,
+	__isl_take isl_space *space,
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
 	S(UNION,transform_data) data = { fn, user };
