@@ -4265,6 +4265,10 @@ is already known to be empty.
 	isl_bool isl_union_map_is_empty(
 		__isl_keep isl_union_map *umap);
 
+	#include <isl/aff.h>
+	isl_bool isl_union_pw_multi_aff_plain_is_empty(
+		__isl_keep isl_union_pw_multi_aff *upma);
+
 =item * Universality
 
 	isl_bool isl_basic_set_plain_is_universe(
