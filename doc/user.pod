@@ -12842,6 +12842,14 @@ user defined node created using the following function.
 C<isl_ast_node_alloc_user> is an alternative name for
 C<isl_ast_node_user_from_expr>.
 
+In some cases, a single user defined node is not enough,
+in which case the following function can be used
+to create a block node from multiple AST nodes.
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_node *isl_ast_node_block_from_children(
+		__isl_take isl_ast_node_list *list);
+
 	#include <isl/ast_build.h>
 	__isl_give isl_ast_build *
 	isl_ast_build_set_at_each_domain(

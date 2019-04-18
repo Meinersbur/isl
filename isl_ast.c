@@ -1031,7 +1031,7 @@ __isl_give isl_ast_node *isl_ast_node_alloc_user(__isl_take isl_ast_expr *expr)
 
 /* Create a block node with the given children.
  */
-__isl_give isl_ast_node *isl_ast_node_alloc_block(
+__isl_give isl_ast_node *isl_ast_node_block_from_children(
 	__isl_take isl_ast_node_list *list)
 {
 	isl_ast_node *node;
@@ -1051,6 +1051,14 @@ __isl_give isl_ast_node *isl_ast_node_alloc_block(
 error:
 	isl_ast_node_list_free(list);
 	return NULL;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_ast_node *isl_ast_node_alloc_block(
+	__isl_take isl_ast_node_list *list)
+{
+	return isl_ast_node_block_from_children(list);
 }
 
 /* Represent the given list of nodes as a single node, either by
