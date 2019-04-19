@@ -9049,6 +9049,8 @@ Here we take lists of C<isl_set>s as an example.
 Lists can be created, copied, modified and freed using the following functions.
 
 	#include <isl/set.h>
+	__isl_give isl_set_list *isl_set_to_list(
+		__isl_take isl_set *el);
 	__isl_give isl_set_list *isl_set_list_from_set(
 		__isl_take isl_set *el);
 	__isl_give isl_set_list *isl_set_list_alloc(
@@ -9093,7 +9095,8 @@ Lists can be created, copied, modified and freed using the following functions.
 C<isl_set_list_alloc> creates an empty list with an initial capacity
 for C<n> elements.  C<isl_set_list_insert> and C<isl_set_list_add>
 add elements to a list, increasing its capacity as needed.
-C<isl_set_list_from_set> creates a list with a single element.
+C<isl_set_to_list> creates a list with a single element.
+C<isl_set_list_from_set> performs the same operation.
 C<isl_set_list_clear> removes all elements from a list.
 C<isl_set_list_swap> swaps the elements at the specified locations.
 C<isl_set_list_reverse> reverses the elements in the list.
