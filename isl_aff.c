@@ -6495,6 +6495,11 @@ static __isl_give isl_pw_multi_aff *union_pw_multi_aff_scale_multi_val_entry(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_multi_val *mv)
 {
+	struct isl_union_pw_multi_aff_transform_control control = {
+		.fn = &union_pw_multi_aff_scale_multi_val_entry,
+		.fn_user = mv,
+	};
+
 	upma = isl_union_pw_multi_aff_align_params(upma,
 						isl_multi_val_get_space(mv));
 	mv = isl_multi_val_align_params(mv,
@@ -6502,8 +6507,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 	if (!upma || !mv)
 		goto error;
 
-	return isl_union_pw_multi_aff_transform(upma,
-		       &union_pw_multi_aff_scale_multi_val_entry, mv);
+	return isl_union_pw_multi_aff_transform(upma, &control);
 
 	isl_multi_val_free(mv);
 	return upma;

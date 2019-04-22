@@ -303,14 +303,12 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 }
 
 /* Return a UNION that lives in the same space as "u" and that is obtained
- * by applying "fn" to each of the entries in "u".
+ * by modifying "u" according to "control".
  */
 static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
-	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
+	S(UNION,transform_control) *control)
 {
-	S(UNION,transform_control) control = { .fn = fn, .fn_user = user };
-
-	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), &control);
+	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), control);
 }
 
 /* Apply control->fn to *part and store the result back into *part.
@@ -348,7 +346,7 @@ static __isl_give UNION *FN(UNION,transform_inplace)(__isl_take UNION *u,
 			return FN(UNION,free)(u);
 		return u;
 	}
-	return FN(UNION,transform)(u, fn, user);
+	return FN(UNION,transform)(u, &control);
 }
 
 /* An isl_union_*_transform callback for use in isl_union_*_dup
@@ -361,8 +359,10 @@ static __isl_give PART *FN(UNION,copy_part)(__isl_take PART *part, void *user)
 
 __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 {
+	S(UNION,transform_control) control = { .fn = &FN(UNION,copy_part) };
+
 	u = FN(UNION,copy)(u);
-	return FN(UNION,transform)(u, &FN(UNION,copy_part), NULL);
+	return FN(UNION,transform)(u, &control);
 }
 
 __isl_give UNION *FN(UNION,cow)(__isl_take UNION *u)
@@ -646,6 +646,10 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
 	S(UNION,any_set_data) data = { NULL, fn };
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,any_set_entry),
+		.fn_user = &data,
+	};
 
 	u = FN(UNION,align_params)(u, isl_set_get_space(set));
 	set = isl_set_align_params(set, FN(UNION,get_space)(u));
@@ -654,7 +658,7 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 		goto error;
 
 	data.set = set;
-	u = FN(UNION,transform)(u, &FN(UNION,any_set_entry), &data);
+	u = FN(UNION,transform)(u, &control);
 	isl_set_free(set);
 	return u;
 error:
@@ -790,7 +794,12 @@ static __isl_give PART *FN(UNION,subtract_domain_entry)(__isl_take PART *part,
 __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
-	u = FN(UNION,transform)(u, &FN(UNION,subtract_domain_entry), uset);
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,subtract_domain_entry),
+		.fn_user = uset,
+	};
+
+	u = FN(UNION,transform)(u, &control);
 	isl_union_set_free(uset);
 	return u;
 }
