@@ -273,10 +273,12 @@ S(UNION,transform_data)
 
 /* Apply control->fn to "part" and add the result to data->res.
  */
-static isl_stat FN(UNION,transform_entry)(__isl_take PART *part, void *user)
+static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 {
 	S(UNION,transform_data) *data = (S(UNION,transform_data) *)user;
+	PART *part = *entry;
 
+	part = FN(PART,copy)(part);
 	part = data->control->fn(part, data->control->fn_user);
 	data->res = FN(FN(UNION,add),BASE)(data->res, part);
 	if (!data->res)
@@ -294,8 +296,7 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 	S(UNION,transform_data) data = { control };
 
 	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
-	if (FN(FN(UNION,foreach),BASE)(u,
-					&FN(UNION,transform_entry), &data) < 0)
+	if (FN(UNION,foreach_inplace)(u, &FN(UNION,transform_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
 	FN(UNION,free)(u);
 	return data.res;
