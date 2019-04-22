@@ -250,13 +250,15 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
 	return FN(UNION,alloc_same_size_on_space)(u, FN(UNION,get_space)(u));
 }
 
-/* Data structure that specifies how isl_union_*_transform_space
+/* Data structure that specifies how isl_union_*_transform
  * should modify the base expressions in the union expression.
  *
+ * If "space" is not NULL, then a new union is created in this space.
  * "fn" is applied to each entry in the input.
  * "fn_user" is passed as the second argument to "fn".
  */
 S(UNION,transform_control) {
+	isl_space *space;
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
 	void *fn_user;
 };
@@ -287,14 +289,18 @@ static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 	return isl_stat_ok;
 }
 
-/* Return a UNION living in "space" that is obtained by modifying "u"
- * according to "control".
+/* Return a UNION that is obtained by modifying "u" according to "control".
  */
-static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
-	__isl_take isl_space *space, S(UNION,transform_control) *control)
+static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
+	S(UNION,transform_control) *control)
 {
 	S(UNION,transform_data) data = { control };
+	isl_space *space;
 
+	if (control->space)
+		space = isl_space_copy(control->space);
+	else
+		space = FN(UNION,get_space)(u);
 	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
 	if (FN(UNION,foreach_inplace)(u, &FN(UNION,transform_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
@@ -302,13 +308,18 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 	return data.res;
 }
 
-/* Return a UNION that lives in the same space as "u" and that is obtained
- * by modifying "u" according to "control".
+/* Return a UNION living in "space" that is otherwise obtained by modifying "u"
+ * according to "control".
  */
-static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
-	S(UNION,transform_control) *control)
+static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
+	__isl_take isl_space *space, S(UNION,transform_control) *control)
 {
-	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), control);
+	if (!space)
+		return FN(UNION,free)(u);
+	control->space = space;
+	u = FN(UNION,transform)(u, control);
+	isl_space_free(space);
+	return u;
 }
 
 /* Apply control->fn to *part and store the result back into *part.
