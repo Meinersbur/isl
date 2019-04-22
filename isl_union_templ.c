@@ -253,11 +253,16 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
 /* Data structure that specifies how isl_union_*_transform
  * should modify the base expressions in the union expression.
  *
+ * If "inplace" is set, then the base expression in the input union
+ * are modified in place.  This means that "fn" should not
+ * change the meaning of the union or that the union only
+ * has a single reference.
  * If "space" is not NULL, then a new union is created in this space.
  * "fn" is applied to each entry in the input.
  * "fn_user" is passed as the second argument to "fn".
  */
 S(UNION,transform_control) {
+	int inplace;
 	isl_space *space;
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
 	void *fn_user;
@@ -265,7 +270,7 @@ S(UNION,transform_control) {
 
 /* Internal data structure for isl_union_*_transform_space.
  * "control" specifies how the base expressions should be modified.
- * "res" collects the results.
+ * "res" collects the results (if control->inplace is not set).
  */
 S(UNION,transform_data)
 {
@@ -273,17 +278,22 @@ S(UNION,transform_data)
 	UNION *res;
 };
 
-/* Apply control->fn to "part" and add the result to data->res.
+/* Apply control->fn to "part" and add the result to data->res or
+ * place it back into the input union if control->inplace is set.
  */
 static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 {
 	S(UNION,transform_data) *data = (S(UNION,transform_data) *)user;
 	PART *part = *entry;
 
-	part = FN(PART,copy)(part);
+	if (!data->control->inplace)
+		part = FN(PART,copy)(part);
 	part = data->control->fn(part, data->control->fn_user);
-	data->res = FN(FN(UNION,add),BASE)(data->res, part);
-	if (!data->res)
+	if (data->control->inplace)
+		*entry = part;
+	else
+		data->res = FN(FN(UNION,add),BASE)(data->res, part);
+	if (!part || !data->res)
 		return isl_stat_error;
 
 	return isl_stat_ok;
@@ -297,14 +307,19 @@ static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
 	S(UNION,transform_data) data = { control };
 	isl_space *space;
 
-	if (control->space)
-		space = isl_space_copy(control->space);
-	else
-		space = FN(UNION,get_space)(u);
-	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
+	if (control->inplace) {
+		data.res = u;
+	} else {
+		if (control->space)
+			space = isl_space_copy(control->space);
+		else
+			space = FN(UNION,get_space)(u);
+		data.res = FN(UNION,alloc_same_size_on_space)(u, space);
+	}
 	if (FN(UNION,foreach_inplace)(u, &FN(UNION,transform_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
-	FN(UNION,free)(u);
+	if (!control->inplace)
+		FN(UNION,free)(u);
 	return data.res;
 }
 
@@ -320,18 +335,6 @@ static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
 	u = FN(UNION,transform)(u, control);
 	isl_space_free(space);
 	return u;
-}
-
-/* Apply control->fn to *part and store the result back into *part.
- */
-static isl_stat FN(UNION,transform_inplace_entry)(void **part, void *user)
-{
-	S(UNION,transform_data) *data = (S(UNION,transform_data) *) user;
-
-	*part = data->control->fn(*part, data->control->fn_user);
-	if (!*part)
-		return isl_stat_error;
-	return isl_stat_ok;
 }
 
 /* Update "u" by applying "fn" to each entry.
@@ -350,13 +353,8 @@ static __isl_give UNION *FN(UNION,transform_inplace)(__isl_take UNION *u,
 	single_ref = FN(UNION,has_single_reference)(u);
 	if (single_ref < 0)
 		return FN(UNION,free)(u);
-	if (single_ref) {
-		S(UNION,transform_data) data = { &control };
-		if (FN(UNION,foreach_inplace)(u,
-				&FN(UNION,transform_inplace_entry), &data) < 0)
-			return FN(UNION,free)(u);
-		return u;
-	}
+	if (single_ref)
+		control.inplace = 1;
 	return FN(UNION,transform)(u, &control);
 }
 
