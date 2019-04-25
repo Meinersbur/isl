@@ -1208,6 +1208,10 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 	#include <isl/map.h>
 	isl_size isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 		enum isl_dim_type type);
+	isl_size isl_map_domain_tuple_dim(
+		__isl_keep isl_map *map);
+	isl_size isl_map_range_tuple_dim(
+		__isl_keep isl_map *map);
 	isl_size isl_map_dim(__isl_keep isl_map *map,
 		enum isl_dim_type type);
 

@@ -112,6 +112,20 @@ isl_size isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type)
 	return isl_space_dim(isl_map_peek_space(map), type);
 }
 
+/* Return the dimensionality of the domain (tuple) of the map.
+ */
+isl_size isl_map_domain_tuple_dim(__isl_keep isl_map *map)
+{
+	return isl_map_dim(map, isl_dim_in);
+}
+
+/* Return the dimensionality of the range (tuple) of the map.
+ */
+isl_size isl_map_range_tuple_dim(__isl_keep isl_map *map)
+{
+	return isl_map_dim(map, isl_dim_out);
+}
+
 isl_size isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 {
 	return isl_map_dim(set_to_map(set), type);
