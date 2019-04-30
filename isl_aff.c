@@ -325,6 +325,14 @@ uint32_t isl_aff_get_hash(__isl_keep isl_aff *aff)
 	return hash;
 }
 
+/* Return the domain local space of "aff".
+ */
+static __isl_keep isl_local_space *isl_aff_peek_domain_local_space(
+	__isl_keep isl_aff *aff)
+{
+	return aff ? aff->ls : NULL;
+}
+
 /* Externally, an isl_aff has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */
@@ -378,10 +386,12 @@ __isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff)
 	return space;
 }
 
+/* Return a copy of the domain space of "aff".
+ */
 __isl_give isl_local_space *isl_aff_get_domain_local_space(
 	__isl_keep isl_aff *aff)
 {
-	return aff ? isl_local_space_copy(aff->ls) : NULL;
+	return isl_local_space_copy(isl_aff_peek_domain_local_space(aff));
 }
 
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
