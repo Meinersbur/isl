@@ -333,6 +333,16 @@ static __isl_keep isl_local_space *isl_aff_peek_domain_local_space(
 	return aff ? aff->ls : NULL;
 }
 
+/* Return the number of variables of the given type in the domain of "aff".
+ */
+isl_size isl_aff_domain_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
+{
+	isl_local_space *ls;
+
+	ls = isl_aff_peek_domain_local_space(aff);
+	return isl_local_space_dim(ls, type);
+}
+
 /* Externally, an isl_aff has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */
@@ -344,7 +354,7 @@ isl_size isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 		return 1;
 	if (type == isl_dim_in)
 		type = isl_dim_set;
-	return isl_local_space_dim(aff->ls, type);
+	return isl_aff_domain_dim(aff, type);
 }
 
 /* Return the position of the dimension of the given type and name
@@ -1309,10 +1319,7 @@ __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 	int off;
 	isl_size n;
 
-	if (!aff)
-		return NULL;
-
-	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	n = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_aff_free(aff);
 	off = isl_local_space_offset(aff->ls, isl_dim_div);
@@ -1347,10 +1354,7 @@ static __isl_give isl_aff *plug_in_integral_divs(__isl_take isl_aff *aff)
 	isl_local_space *ls;
 	unsigned pos;
 
-	if (!aff)
-		return NULL;
-
-	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	n = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_aff_free(aff);
 	len = aff->v->size;
@@ -1411,10 +1415,7 @@ static __isl_give isl_aff *plug_in_unit_divs(__isl_take isl_aff *aff)
 	isl_size n;
 	int off;
 
-	if (!aff)
-		return NULL;
-
-	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	n = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_aff_free(aff);
 	off = isl_local_space_offset(aff->ls, isl_dim_div);
@@ -1732,10 +1733,8 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 	int offset;
 
 	aff = isl_aff_cow(aff);
-	if (!aff || !div)
-		goto error;
 
-	old_n_div = isl_local_space_dim(aff->ls, isl_dim_div);
+	old_n_div = isl_aff_domain_dim(aff, isl_dim_div);
 	new_n_div = isl_mat_rows(div);
 	if (old_n_div < 0 || new_n_div < 0)
 		goto error;
@@ -2123,9 +2122,7 @@ __isl_give isl_aff *isl_aff_substitute_equalities(__isl_take isl_aff *aff,
 {
 	isl_size n_div;
 
-	if (!aff || !eq)
-		goto error;
-	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
+	n_div = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n_div < 0)
 		goto error;
 	if (n_div > 0)
@@ -5505,7 +5502,7 @@ __isl_give isl_aff *isl_aff_substitute(__isl_take isl_aff *aff,
 	if (!isl_space_is_equal(aff->ls->dim, subs->ls->dim))
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", return isl_aff_free(aff));
-	n_div = isl_local_space_dim(subs->ls, isl_dim_div);
+	n_div = isl_aff_domain_dim(subs, isl_dim_div);
 	if (n_div < 0)
 		return isl_aff_free(aff);
 	if (n_div != 0)
@@ -5881,8 +5878,8 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
 
-	src_n_div = isl_local_space_dim(src->ls, isl_dim_div);
-	dst_n_div = isl_local_space_dim(dst->ls, isl_dim_div);
+	src_n_div = isl_aff_domain_dim(src, isl_dim_div);
+	dst_n_div = isl_aff_domain_dim(dst, isl_dim_div);
 	if (src_n_div == 0)
 		return dst;
 	equal = isl_local_space_is_equal(src->ls, dst->ls);

@@ -2600,7 +2600,7 @@ static __isl_give isl_printer *print_aff_body(__isl_take isl_printer *p,
 	if (isl_aff_is_nan(aff))
 		return isl_printer_print_str(p, "NaN");
 
-	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	total = isl_aff_domain_dim(aff, isl_dim_all);
 	if (total < 0)
 		return isl_printer_free(p);
 	p = isl_printer_print_str(p, "(");
@@ -2784,7 +2784,7 @@ static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
 {
 	isl_size total;
 
-	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	total = isl_aff_domain_dim(aff, isl_dim_all);
 	if (total < 0)
 		return isl_printer_free(p);
 	if (!isl_int_is_one(aff->v->el[0]))
