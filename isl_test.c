@@ -123,7 +123,7 @@ static int test_parse_multi_val(isl_ctx *ctx, const char *str)
 /* String descriptions of multi piecewise affine expressions
  * that are used for testing printing and parsing.
  */
-const char *parse_multi_mpa_tests[] = {
+static const char *reparse_multi_pw_aff_tests[] = {
 	"{ A[x, y] -> [] : x + y >= 0 }",
 	"{ A[x, y] -> B[] : x + y >= 0 }",
 	"{ A[x, y] -> [x] : x + y >= 0 }",
@@ -141,6 +141,7 @@ const char *parse_multi_mpa_tests[] = {
 #define BASE multi_pw_aff
 
 #include "check_reparse_templ.c"
+#include "check_reparse_test_templ.c"
 
 #undef BASE
 #define BASE pw_multi_aff
@@ -176,7 +177,6 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
  */
 static int test_parse_mpa(isl_ctx *ctx)
 {
-	int i;
 	isl_space *space;
 	isl_set *dom;
 	isl_map *map;
@@ -208,15 +208,8 @@ static int test_parse_mpa(isl_ctx *ctx)
 	if (check_reparse_multi_pw_aff(ctx, mpa) < 0)
 		return -1;
 
-	for (i = 0; i < ARRAY_SIZE(parse_multi_mpa_tests); ++i) {
-		const char *str;
-
-		str = parse_multi_mpa_tests[i];
-		mpa = isl_multi_pw_aff_read_from_str(ctx, str);
-		r = check_reparse_multi_pw_aff(ctx, mpa);
-		if (r < 0)
-			return -1;
-	}
+	if (check_reparse_multi_pw_aff_tests(ctx) < 0)
+		return -1;
 
 	return 0;
 }
@@ -224,7 +217,7 @@ static int test_parse_mpa(isl_ctx *ctx)
 /* String descriptions of multi union piecewise affine expressions
  * that are used for testing printing and parsing.
  */
-const char *parse_multi_mupa_tests[] = {
+static const char *reparse_multi_union_pw_aff_tests[] = {
 	"[]",
 	"A[]",
 	"A[B[] -> C[]]",
@@ -243,6 +236,7 @@ const char *parse_multi_mupa_tests[] = {
 #define BASE multi_union_pw_aff
 
 #include "check_reparse_templ.c"
+#include "check_reparse_test_templ.c"
 
 /* Test parsing of multi union piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
@@ -252,7 +246,6 @@ const char *parse_multi_mupa_tests[] = {
  */
 static int test_parse_mupa(isl_ctx *ctx)
 {
-	int i;
 	isl_space *space;
 	isl_multi_union_pw_aff *mupa;
 	isl_set *dom;
@@ -281,15 +274,8 @@ static int test_parse_mupa(isl_ctx *ctx)
 	if (r < 0)
 		return -1;
 
-	for (i = 0; i < ARRAY_SIZE(parse_multi_mupa_tests); ++i) {
-		const char *str;
-
-		str = parse_multi_mupa_tests[i];
-		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
-		r = check_reparse_multi_union_pw_aff(ctx, mupa);
-		if (r < 0)
-			return -1;
-	}
+	if (check_reparse_multi_union_pw_aff_tests(ctx) < 0)
+		return -1;
 
 	return 0;
 }

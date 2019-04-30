@@ -458,6 +458,7 @@ EXTRA_DIST = \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
 	check_reparse_templ.c \
+	check_reparse_test_templ.c \
 	check_type_range_templ.c \
 	isl_domain_factor_templ.c \
 	extract_key.c \
