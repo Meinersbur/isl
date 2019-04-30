@@ -120,6 +120,23 @@ static int test_parse_multi_val(isl_ctx *ctx, const char *str)
 	return mv ? 0 : -1;
 }
 
+/* String descriptions of multi piecewise affine expressions
+ * that are used for testing printing and parsing.
+ */
+const char *parse_multi_mpa_tests[] = {
+	"{ A[x, y] -> [] : x + y >= 0 }",
+	"{ A[x, y] -> B[] : x + y >= 0 }",
+	"{ A[x, y] -> [x] : x + y >= 0 }",
+	"[N] -> { A[x, y] -> [x] : x + y <= N }",
+	"{ A[x, y] -> [x, y] : x + y >= 0 }",
+	"{ A[x, y] -> [(x : x >= 0), (y : y >= 0)] : x + y >= 0 }",
+	"[N] -> { [] : N >= 0 }",
+	"[N] -> { [] : N >= 0 }",
+	"[N] -> { [N] : N >= 0 }",
+	"[N] -> { [N, N + 1] : N >= 0 }",
+	"[N, M] -> { [(N : N >= 0), (M : M >= 0)] : N + M >= 0 }",
+};
+
 #undef BASE
 #define BASE multi_pw_aff
 
@@ -148,23 +165,6 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
 
 	return isl_stat_ok;
 }
-
-/* String descriptions of multi piecewise affine expressions
- * that are used for testing printing and parsing.
- */
-const char *parse_multi_mpa_tests[] = {
-	"{ A[x, y] -> [] : x + y >= 0 }",
-	"{ A[x, y] -> B[] : x + y >= 0 }",
-	"{ A[x, y] -> [x] : x + y >= 0 }",
-	"[N] -> { A[x, y] -> [x] : x + y <= N }",
-	"{ A[x, y] -> [x, y] : x + y >= 0 }",
-	"{ A[x, y] -> [(x : x >= 0), (y : y >= 0)] : x + y >= 0 }",
-	"[N] -> { [] : N >= 0 }",
-	"[N] -> { [] : N >= 0 }",
-	"[N] -> { [N] : N >= 0 }",
-	"[N] -> { [N, N + 1] : N >= 0 }",
-	"[N, M] -> { [(N : N >= 0), (M : M >= 0)] : N + M >= 0 }",
-};
 
 /* Test parsing of multi piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
