@@ -221,12 +221,6 @@ static int test_parse_mpa(isl_ctx *ctx)
 	return 0;
 }
 
-
-#undef BASE
-#define BASE multi_union_pw_aff
-
-#include "check_reparse_templ.c"
-
 /* String descriptions of multi union piecewise affine expressions
  * that are used for testing printing and parsing.
  */
@@ -244,6 +238,11 @@ const char *parse_multi_mupa_tests[] = {
 	"(A[{ S[x] -> [x + 1]; T[x] -> [x] }] : "
 		"{ S[x] : x > 0; T[y] : y >= 0 })",
 };
+
+#undef BASE
+#define BASE multi_union_pw_aff
+
+#include "check_reparse_templ.c"
 
 /* Test parsing of multi union piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
