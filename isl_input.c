@@ -1043,12 +1043,12 @@ static __isl_give isl_pw_aff *update_piecewise_affine_colon(
 	struct vars *v, int rational)
 {
 	isl_space *dom_space;
-	isl_set *dom;
+	isl_map *map;
 
 	dom_space = isl_pw_aff_get_domain_space(pa);
-	dom = isl_set_universe(dom_space);
-	dom = read_formula(s, v, dom, rational);
-	pa = isl_pw_aff_intersect_domain(pa, dom);
+	map = isl_map_universe(isl_space_from_domain(dom_space));
+	map = read_formula(s, v, map, rational);
+	pa = isl_pw_aff_intersect_domain(pa, isl_map_domain(map));
 
 	return pa;
 }
