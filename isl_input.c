@@ -969,6 +969,17 @@ static int next_is_tuple(__isl_keep isl_stream *s)
 	return is_tuple;
 }
 
+/* Is the next token one that necessarily forms the start of a condition?
+ */
+static int next_is_condition_start(__isl_keep isl_stream *s)
+{
+	return isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_NOT) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_MAP);
+}
+
 /* Is "pa" an expression in term of earlier dimensions?
  * The alternative is that the dimension is defined to be equal to itself,
  * meaning that it has a universe domain and an expression that depends
@@ -1714,11 +1725,7 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
 			goto error;
 
-	if (isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_NOT) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
+	if (next_is_condition_start(s)) {
 		map = read_formula(s, v, map, rational);
 		if (isl_stream_eat(s, ')'))
 			goto error;
