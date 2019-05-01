@@ -772,6 +772,23 @@ error:
 	return isl_stat_error;
 }
 
+/* Is the next token a comparison operator?
+ */
+static int next_is_comparator(__isl_keep isl_stream *s)
+{
+	int is_comp;
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+
+	is_comp = is_comparator(tok);
+	isl_stream_push_token(s, tok);
+
+	return is_comp;
+}
+
 /* Accept an affine expression that may involve ternary operators.
  * We first read an affine expression.
  * If it is not followed by a comparison operator, we simply return it.
@@ -784,9 +801,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
 	isl_space *space;
 	isl_map *cond;
 	isl_pw_aff *pwaff;
-	struct isl_token *tok;
 	int line = -1, col = -1;
-	int is_comp;
 
 	set_current_line_col(s, &line, &col);
 
@@ -795,14 +810,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
 		pwaff = isl_pw_aff_set_rational(pwaff);
 	if (!pwaff)
 		return NULL;
-
-	tok = isl_stream_next_token(s);
-	if (!tok)
-		return isl_pw_aff_free(pwaff);
-
-	is_comp = is_comparator(tok);
-	isl_stream_push_token(s, tok);
-	if (!is_comp)
+	if (!next_is_comparator(s))
 		return pwaff;
 
 	space = isl_pw_aff_get_domain_space(pwaff);
@@ -1634,12 +1642,9 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 		isl_pw_aff_list_free(list1);
 		list1 = list2;
 
-		tok = isl_stream_next_token(s);
-		if (!is_comparator(tok)) {
-			if (tok)
-				isl_stream_push_token(s, tok);
+		if (!next_is_comparator(s))
 			break;
-		}
+		tok = isl_stream_next_token(s);
 		type = tok->type;
 		isl_token_free(tok);
 	}
