@@ -8802,6 +8802,16 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_union_map(
 	return isl_multi_union_pw_aff_from_union_pw_multi_aff(upma);
 }
 
+/* This function performs the same operation as
+ * isl_multi_union_pw_aff_from_union_map,
+ * but is considered as a function on an isl_union_map when exported.
+ */
+__isl_give isl_multi_union_pw_aff *isl_union_map_as_multi_union_pw_aff(
+	__isl_take isl_union_map *umap)
+{
+	return isl_multi_union_pw_aff_from_union_map(umap);
+}
+
 /* Return a multiple union piecewise affine expression
  * that is equal to "mv" on "domain", assuming "domain" and "mv"
  * have been aligned.
