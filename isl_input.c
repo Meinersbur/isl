@@ -1064,11 +1064,54 @@ static __isl_give isl_pw_aff *identity_tuple_el_on_space(
 	return isl_pw_aff_from_aff(aff);
 }
 
+/* Construct a piecewise affine expression corresponding
+ * to the last variable in "v" that ranges between "pa" and "pa2".
+ *
+ * In particular, if D is the domain space of "pa" (and "pa2"),
+ * then construct the expression
+ *
+ *	D[..., i] -> i,
+ *
+ * construct the conditions
+ *
+ *	D[..., i] : i >= pa
+ *	D[..., i] : i <= pa2
+ *
+ * and return
+ *
+ *	D[..., i] -> i : pa <= i <= pa2
+ */
+static __isl_give isl_pw_aff *construct_range(__isl_take isl_pw_aff *pa,
+	__isl_take isl_pw_aff *pa2, struct vars *v)
+{
+	isl_set *range1, *range2;
+	isl_space *space;
+	isl_pw_aff *range_pa;
+
+	space = isl_pw_aff_get_domain_space(pa);
+	range_pa = identity_tuple_el_on_space(space, v);
+	range1 = isl_pw_aff_ge_set(isl_pw_aff_copy(range_pa), pa);
+	range2 = isl_pw_aff_le_set(isl_pw_aff_copy(range_pa), pa2);
+	range_pa = isl_pw_aff_intersect_domain(range_pa, range1);
+	range_pa = isl_pw_aff_intersect_domain(range_pa, range2);
+
+	return range_pa;
+}
+
+static int resolve_paren_expr(__isl_keep isl_stream *s,
+	struct vars *v, __isl_take isl_map *map, int rational);
+
 /* Given that the (piecewise) affine expression "pa"
  * has just been parsed, followed by a colon,
  * continue parsing as part of a piecewise affine expression.
  *
- * In particular, parse the conditions on "pa" and include them in the domain.
+ * In particular, check if the colon is followed by a condition.
+ * If so, parse the conditions(a) on "pa" and include them in the domain.
+ * Otherwise, if the colon is followed by another (piecewise) affine expression
+ * then consider the two expressions as endpoints of a range of values and
+ * return a piecewise affine expression that takes values in that range.
+ * Note that an affine expression followed by a comparison operator
+ * is considered to be part of a condition.
  */
 static __isl_give isl_pw_aff *update_piecewise_affine_colon(
 	__isl_take isl_pw_aff *pa, __isl_keep isl_stream *s,
@@ -1079,10 +1122,37 @@ static __isl_give isl_pw_aff *update_piecewise_affine_colon(
 
 	dom_space = isl_pw_aff_get_domain_space(pa);
 	map = isl_map_universe(isl_space_from_domain(dom_space));
+
+	if (isl_stream_next_token_is(s, '('))
+		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
+			goto error;
+	if (!next_is_condition_start(s)) {
+		int line = -1, col = -1;
+		isl_space *space;
+		isl_pw_aff *pa2;
+
+		set_current_line_col(s, &line, &col);
+		space = isl_space_wrap(isl_map_get_space(map));
+		pa2 = accept_affine(s, space, v);
+		if (rational)
+			pa2 = isl_pw_aff_set_rational(pa2);
+		if (!next_is_comparator(s)) {
+			isl_map_free(map);
+			pa2 = isl_pw_aff_domain_factor_domain(pa2);
+			return construct_range(pa, pa2, v);
+		}
+		if (push_aff(s, line, col, pa2) < 0)
+			goto error;
+	}
+
 	map = read_formula(s, v, map, rational);
 	pa = isl_pw_aff_intersect_domain(pa, isl_map_domain(map));
 
 	return pa;
+error:
+	isl_map_free(map);
+	isl_pw_aff_free(pa);
+	return NULL;
 }
 
 /* Accept a piecewise affine expression.
