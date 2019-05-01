@@ -1032,6 +1032,27 @@ static __isl_give isl_space *space_set_dim_name(__isl_take isl_space *space,
 	return space;
 }
 
+/* Given that the (piecewise) affine expression "pa"
+ * has just been parsed, followed by a colon,
+ * continue parsing as part of a piecewise affine expression.
+ *
+ * In particular, parse the conditions on "pa" and include them in the domain.
+ */
+static __isl_give isl_pw_aff *update_piecewise_affine_colon(
+	__isl_take isl_pw_aff *pa, __isl_keep isl_stream *s,
+	struct vars *v, int rational)
+{
+	isl_space *dom_space;
+	isl_set *dom;
+
+	dom_space = isl_pw_aff_get_domain_space(pa);
+	dom = isl_set_universe(dom_space);
+	dom = read_formula(s, v, dom, rational);
+	pa = isl_pw_aff_intersect_domain(pa, dom);
+
+	return pa;
+}
+
 /* Accept a piecewise affine expression.
  *
  * At the outer level, the piecewise affine expression may be of the form
@@ -1082,15 +1103,8 @@ static __isl_give isl_pw_aff *accept_piecewise_affine(__isl_keep isl_stream *s,
 			pa = accept_extended_affine(s, isl_space_copy(space),
 							v, rational);
 		}
-		if (isl_stream_eat_if_available(s, ':')) {
-			isl_space *dom_space;
-			isl_set *dom;
-
-			dom_space = isl_pw_aff_get_domain_space(pa);
-			dom = isl_set_universe(dom_space);
-			dom = read_formula(s, v, dom, rational);
-			pa = isl_pw_aff_intersect_domain(pa, dom);
-		}
+		if (isl_stream_eat_if_available(s, ':'))
+			pa = update_piecewise_affine_colon(pa, s, v, rational);
 
 		res = isl_pw_aff_union_add(res, pa);
 
