@@ -23,6 +23,7 @@
 #include <isl_space_private.h>
 #include <isl/union_set.h>
 #include <isl_maybe_map.h>
+#include <isl_id_private.h>
 
 #include <bset_from_bmap.c>
 #include <set_to_map.c>
@@ -4312,4 +4313,42 @@ __isl_give isl_union_map *isl_union_map_remove_map_if(
 		.fn_map = &map_id,
 	};
 	return un_op(umap, &control);
+}
+
+/* Does "map" have "space" as range (ignoring parameters)?
+ */
+static isl_bool has_range_space(__isl_keep isl_map *map, void *user)
+{
+	isl_space *space = user;
+
+	return isl_space_has_range_tuples(space, isl_map_peek_space(map));
+}
+
+/* Wrapper around isl_map_bind_range for use as a un_op callback.
+ */
+static __isl_give isl_map *bind_range(__isl_take isl_map *map, void *user)
+{
+	isl_multi_id *tuple = user;
+
+	return isl_map_bind_range(map, isl_multi_id_copy(tuple));
+}
+
+/* Bind the output dimensions of "umap" to parameters with identifiers
+ * specified by "tuple", living in the range space of "umap",
+ * for those maps that have a matching range space.
+ */
+__isl_give isl_union_set *isl_union_map_bind_range(
+	__isl_take isl_union_map *umap, __isl_take isl_multi_id *tuple)
+{
+	struct isl_un_op_control control = {
+		.filter = &has_range_space,
+		.filter_user = isl_multi_id_peek_space(tuple),
+		.fn_map2 = &bind_range,
+		.fn_map2_user = tuple,
+	};
+	isl_union_set *bound;
+
+	bound = uset_from_umap(un_op(umap, &control));
+	isl_multi_id_free(tuple);
+	return bound;
 }

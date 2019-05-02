@@ -6535,6 +6535,55 @@ static isl_stat test_bind_map_domain(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_union_map_bind_range tests.
+ * "map" is the input union map.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+struct {
+	const char *map;
+	const char *tuple;
+	const char *res;
+} bind_umap_range_tests[] = {
+	{ "{ B[N, M] -> A[M, N] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ A[M, N] }",
+	  "[M, N] -> { B[N, M] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "{ B[N, M] -> A[M, N] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ B[M, N] }",
+	  "{ }" },
+	{ "{ A[] -> B[]; C[] -> D[]; E[] -> B[] }",
+	  "{ B[] }",
+	  "{ A[]; E[] }" },
+};
+
+/* Perform basic isl_union_map_bind_range tests.
+ */
+static isl_stat test_bind_umap_range(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_umap_range_tests); ++i) {
+		const char *str;
+		isl_union_map *umap;
+		isl_union_set *uset;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		str = bind_umap_range_tests[i].map;
+		umap = isl_union_map_read_from_str(ctx, str);
+		str = bind_umap_range_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		uset = isl_union_map_bind_range(umap, tuple);
+		str = bind_umap_range_tests[i].res;
+		r = uset_check_equal(uset, str);
+		isl_union_set_free(uset);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Inputs for isl_pw_multi_aff_bind_domain tests.
  * "pma" is the input expression.
  * "tuple" is the binding tuple.
@@ -6792,6 +6841,8 @@ static int test_bind(isl_ctx *ctx)
 	if (test_bind_set(ctx) < 0)
 		return -1;
 	if (test_bind_map_domain(ctx) < 0)
+		return -1;
+	if (test_bind_umap_range(ctx) < 0)
 		return -1;
 	if (test_bind_pma_domain(ctx) < 0)
 		return -1;
