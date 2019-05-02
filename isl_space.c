@@ -2261,6 +2261,24 @@ isl_bool isl_space_has_domain_tuples(__isl_keep isl_space *space1,
 					space2, isl_dim_in);
 }
 
+/* Do the tuples of "space1" correspond to those of the range of "space2"?
+ * That is, is "space1" equal to the range of "space2", ignoring parameters.
+ *
+ * "space2" is allowed to be the space of a set,
+ * in which case it should be equal to "space1", ignoring parameters.
+ */
+isl_bool isl_space_has_range_tuples(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	isl_bool is_set;
+
+	is_set = isl_space_is_set(space1);
+	if (is_set < 0 || !is_set)
+		return is_set;
+	return isl_space_tuple_is_equal(space1, isl_dim_set,
+					space2, isl_dim_out);
+}
+
 /* Check that the tuples of "space1" correspond to those
  * of the domain of "space2".
  * That is, check that "space1" is equal to the domain of "space2",
@@ -2341,13 +2359,10 @@ isl_bool isl_space_is_range_internal(__isl_keep isl_space *space1,
 
 	if (!space1 || !space2)
 		return isl_bool_error;
-	if (!isl_space_is_set(space1))
-		return isl_bool_false;
 	equal_params = isl_space_has_equal_params(space1, space2);
 	if (equal_params < 0 || !equal_params)
 		return equal_params;
-	return isl_space_tuple_is_equal(space1, isl_dim_set,
-					space2, isl_dim_out);
+	return isl_space_has_range_tuples(space1, space2);
 }
 
 /* Is space1 equal to the range of space2?
