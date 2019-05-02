@@ -4758,6 +4758,9 @@ The space of C<tuple> needs to match that of the bound tuple.
 	__isl_give isl_set *isl_map_bind_domain(
 		__isl_take isl_map *map,
 		__isl_take isl_multi_id *tuple);
+	__isl_give isl_set *isl_map_bind_range(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_id *tuple);
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_bind_domain(
