@@ -1689,8 +1689,9 @@ __isl_give isl_union_map *isl_union_map_flat_range_product(
  * are taken into account.  "filter_user" is passed as the second argument
  * to "filter".  No filter can be set if "inplace" or
  * "total" is set.
- * "fn_map" specifies how the maps (selected by "filter")
- * should be transformed.
+ * Exactly one of "fn_map" or "fn_map2" should be set, specifying
+ * how the maps (selected by "filter") should be transformed.
+ * If "fn_map2" is set, then "fn_map2_user" is passed as the second argument.
  */
 struct isl_un_op_control {
 	int inplace;
@@ -1698,6 +1699,8 @@ struct isl_un_op_control {
 	isl_bool (*filter)(__isl_keep isl_map *map, void *user);
 	void *filter_user;
 	__isl_give isl_map *(*fn_map)(__isl_take isl_map *map);
+	__isl_give isl_map *(*fn_map2)(__isl_take isl_map *map, void *user);
+	void *fn_map2_user;
 };
 
 /* Data structure for wrapping the data for un_op_filter_drop_user.
@@ -1731,7 +1734,8 @@ struct isl_union_map_un_data {
  *
  * If control->filter is set, then check if this map satisfies the filter.
  * If so (or if control->filter is not set), modify the map
- * by calling control->fn_map and either add the result to data->res or
+ * by calling control->fn_map or control->fn_map2 and
+ * either add the result to data->res or
  * replace the original entry by the result (if control->inplace is set).
  */
 static isl_stat un_entry(void **entry, void *user)
@@ -1750,7 +1754,11 @@ static isl_stat un_entry(void **entry, void *user)
 			return isl_stat_ok;
 	}
 
-	map = control->fn_map(isl_map_copy(map));
+	map = isl_map_copy(map);
+	if (control->fn_map2 != NULL)
+		map = control->fn_map2(map, control->fn_map2_user);
+	else
+		map = control->fn_map(map);
 	if (!map)
 		return isl_stat_error;
 	if (control->inplace) {
@@ -1779,6 +1787,10 @@ static __isl_give isl_union_map *un_op(__isl_take isl_union_map *umap,
 
 	if (!umap)
 		return NULL;
+	if (!!control->fn_map == !!control->fn_map2)
+		isl_die(isl_union_map_get_ctx(umap), isl_error_internal,
+			"exactly one mapping function should be specified",
+			return isl_union_map_free(umap));
 	if ((control->inplace || control->total) && control->filter)
 		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
 			"inplace/total modification cannot be filtered",
