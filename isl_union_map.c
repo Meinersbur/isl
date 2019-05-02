@@ -1737,22 +1737,23 @@ struct isl_union_map_un_data {
 static isl_stat un_entry(void **entry, void *user)
 {
 	struct isl_union_map_un_data *data = user;
+	struct isl_un_op_control *control = data->control;
 	isl_map *map = *entry;
 
-	if (data->control->filter) {
+	if (control->filter) {
 		isl_bool ok;
 
-		ok = data->control->filter(map, data->control->filter_user);
+		ok = control->filter(map, control->filter_user);
 		if (ok < 0)
 			return isl_stat_error;
 		if (!ok)
 			return isl_stat_ok;
 	}
 
-	map = data->control->fn_map(isl_map_copy(map));
+	map = control->fn_map(isl_map_copy(map));
 	if (!map)
 		return isl_stat_error;
-	if (data->control->inplace) {
+	if (control->inplace) {
 		isl_map_free(*entry);
 		*entry = map;
 	} else {
