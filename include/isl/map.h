@@ -247,8 +247,10 @@ __isl_give isl_pw_multi_aff *isl_basic_map_partial_lexmax_pw_multi_aff(
 	__isl_give isl_set **empty);
 __isl_give isl_pw_multi_aff *isl_basic_map_lexmin_pw_multi_aff(
 	__isl_take isl_basic_map *bmap);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_map_lexmin_pw_multi_aff(
 	__isl_take isl_map *map);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_map_lexmax_pw_multi_aff(
 	__isl_take isl_map *map);
 
