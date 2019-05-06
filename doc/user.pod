@@ -3671,8 +3671,13 @@ position of a piecewise multiple expression can be extracted
 using the following function.
 
 	#include <isl/aff.h>
+	__isl_give isl_pw_aff *isl_pw_multi_aff_get_at(
+		__isl_keep isl_pw_multi_aff *pma, int pos);
 	__isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 		__isl_keep isl_pw_multi_aff *pma, int pos);
+
+C<isl_pw_multi_aff_get_pw_aff> is an alternative name for
+C<isl_pw_multi_aff_get_at>.
 
 These expressions can be replaced using the following function.
 

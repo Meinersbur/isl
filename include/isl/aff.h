@@ -609,6 +609,9 @@ isl_bool isl_pw_multi_aff_involves_param_id(__isl_keep isl_pw_multi_aff *pma,
 	__isl_keep isl_id *id);
 isl_bool isl_pw_multi_aff_involves_dims(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_export
+__isl_give isl_pw_aff *isl_pw_multi_aff_get_at(
+	__isl_keep isl_pw_multi_aff *pma, int pos);
 __isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 	__isl_keep isl_pw_multi_aff *pma, int pos);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(

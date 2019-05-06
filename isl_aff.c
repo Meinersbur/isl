@@ -6111,7 +6111,7 @@ static
 
 /* Extract an isl_pw_aff corresponding to output dimension "pos" of "pma".
  */
-__isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
+__isl_give isl_pw_aff *isl_pw_multi_aff_get_at(
 	__isl_keep isl_pw_multi_aff *pma, int pos)
 {
 	int i;
@@ -6139,6 +6139,14 @@ __isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 	}
 
 	return pa;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
+	__isl_keep isl_pw_multi_aff *pma, int pos)
+{
+	return isl_pw_multi_aff_get_at(pma, pos);
 }
 
 /* Return an isl_pw_multi_aff with the given "set" as domain and
