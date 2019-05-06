@@ -567,6 +567,8 @@ __isl_give isl_basic_set *isl_basic_set_from_constraint_matrices(
 __isl_give isl_basic_set *isl_basic_set_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
 
+__isl_export
+__isl_give isl_set *isl_multi_aff_as_set(__isl_take isl_multi_aff *ma);
 __isl_give isl_set *isl_set_from_multi_aff(__isl_take isl_multi_aff *ma);
 
 __isl_give isl_mat *isl_basic_set_reduced_basis(__isl_keep isl_basic_set *bset);

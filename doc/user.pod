@@ -2240,6 +2240,8 @@ involve any NaN.
 	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_from_multi_aff(
 		__isl_take isl_multi_aff *ma);
+	__isl_give isl_set *isl_multi_aff_as_set(
+		__isl_take isl_multi_aff *ma);
 	__isl_give isl_set *isl_set_from_multi_aff(
 		__isl_take isl_multi_aff *ma);
 
@@ -2293,9 +2295,10 @@ of zero affine expressions.
 The C<mupa> passed to C<isl_union_map_from_multi_union_pw_aff>
 is not allowed to be zero-dimensional.  The domain of the result
 is the shared domain of the union piecewise affine elements.
-C<isl_multi_aff_as_map> and C<isl_map_from_multi_aff> perform
+C<isl_multi_aff_as_set> and C<isl_set_from_multi_aff> perform
 the same operation.
-Similarly for C<isl_pw_multi_aff_as_map> and C<isl_map_from_pw_multi_aff>,
+Similarly for the pair C<isl_multi_aff_as_map> and C<isl_map_from_multi_aff>,
+for the pair C<isl_pw_multi_aff_as_map> and C<isl_map_from_pw_multi_aff>,
 the pair C<isl_multi_pw_aff_as_set> and C<isl_set_from_multi_pw_aff>,
 and
 C<isl_union_pw_multi_aff_as_union_map> and

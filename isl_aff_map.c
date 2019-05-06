@@ -247,6 +247,14 @@ __isl_give isl_set *isl_set_from_multi_aff(__isl_take isl_multi_aff *ma)
 	return isl_map_from_multi_aff_internal(ma);
 }
 
+/* This function performs the same operation as isl_set_from_multi_aff,
+ * but is considered as a function on an isl_multi_aff when exported.
+ */
+__isl_give isl_set *isl_multi_aff_as_set(__isl_take isl_multi_aff *ma)
+{
+	return isl_set_from_multi_aff(ma);
+}
+
 /* Construct a basic map mapping a domain in the given space to
  * to an n-dimensional range, with n the number of elements in the list,
  * where each coordinate in the range is prescribed by the
