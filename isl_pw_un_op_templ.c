@@ -23,17 +23,13 @@ static __isl_give PW *FN(PW,un_op)(__isl_take PW *pw,
 	n = FN(PW,n_piece)(pw);
 	if (n < 0)
 		return FN(PW,free)(pw);
-	if (n == 0)
-		return pw;
-
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
 
 	for (i = 0; i < n; ++i) {
-		pw->p[i].FIELD = fn(pw->p[i].FIELD);
-		if (!pw->p[i].FIELD)
-			return FN(PW,free)(pw);
+		EL *el;
+
+		el = FN(PW,take_base_at)(pw, i);
+		el = fn(el);
+		pw = FN(PW,restore_base_at)(pw, i, el);
 	}
 
 	return pw;
