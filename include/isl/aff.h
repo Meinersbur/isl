@@ -617,8 +617,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
+__isl_overload
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_val *v);
+__isl_overload
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_val *v);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
