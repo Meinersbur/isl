@@ -588,6 +588,7 @@ EXTRA_DIST = \
 	isl_pw_pullback_templ.c \
 	isl_pw_range_tuple_id_templ.c \
 	isl_pw_sub_templ.c \
+	isl_pw_un_op_templ.c \
 	isl_pw_union_opt.c \
 	read_in_string_templ.c \
 	set_to_map.c \

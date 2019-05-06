@@ -2806,6 +2806,7 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #define DEFAULT_IS_ZERO 0
 
 #include <isl_pw_templ.c>
+#include <isl_pw_un_op_templ.c>
 #include <isl_pw_add_constant_val_templ.c>
 #include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_eval.c>
@@ -3289,40 +3290,12 @@ __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
 
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff)
 {
-	int i;
-
-	pwaff = isl_pw_aff_cow(pwaff);
-	if (!pwaff)
-		return NULL;
-	if (pwaff->n == 0)
-		return pwaff;
-
-	for (i = 0; i < pwaff->n; ++i) {
-		pwaff->p[i].aff = isl_aff_floor(pwaff->p[i].aff);
-		if (!pwaff->p[i].aff)
-			return isl_pw_aff_free(pwaff);
-	}
-
-	return pwaff;
+	return isl_pw_aff_un_op(pwaff, &isl_aff_floor);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff)
 {
-	int i;
-
-	pwaff = isl_pw_aff_cow(pwaff);
-	if (!pwaff)
-		return NULL;
-	if (pwaff->n == 0)
-		return pwaff;
-
-	for (i = 0; i < pwaff->n; ++i) {
-		pwaff->p[i].aff = isl_aff_ceil(pwaff->p[i].aff);
-		if (!pwaff->p[i].aff)
-			return isl_pw_aff_free(pwaff);
-	}
-
-	return pwaff;
+	return isl_pw_aff_un_op(pwaff, &isl_aff_ceil);
 }
 
 /* Assuming that "cond1" and "cond2" are disjoint,
@@ -4513,6 +4486,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define DEFAULT_IS_ZERO 0
 
 #include <isl_pw_templ.c>
+#include <isl_pw_un_op_templ.c>
 #include <isl_pw_add_constant_multi_val_templ.c>
 #include <isl_pw_add_constant_val_templ.c>
 #include <isl_pw_bind_domain_templ.c>
