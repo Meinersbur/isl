@@ -278,6 +278,7 @@ isl_size isl_union_map_n_map(__isl_keep isl_union_map *umap);
 __isl_export
 isl_stat isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
 	isl_stat (*fn)(__isl_take isl_map *map, void *user), void *user);
+__isl_export
 __isl_give isl_map_list *isl_union_map_get_map_list(
 	__isl_keep isl_union_map *umap);
 __isl_export
