@@ -1051,6 +1051,19 @@ static __isl_give isl_space *space_set_dim_name(__isl_take isl_space *space,
 	return space;
 }
 
+/* Construct an isl_pw_aff defined on a "space" (with v->n variables)
+ * that is equal to the last of those variables.
+ */
+static __isl_give isl_pw_aff *identity_tuple_el_on_space(
+	__isl_take isl_space *space, struct vars *v)
+{
+	isl_aff *aff;
+
+	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, v->n - 1, 1);
+	return isl_pw_aff_from_aff(aff);
+}
+
 /* Given that the (piecewise) affine expression "pa"
  * has just been parsed, followed by a colon,
  * continue parsing as part of a piecewise affine expression.
@@ -1268,12 +1281,9 @@ error:
 static __isl_give isl_pw_aff *identity_tuple_el(struct vars *v)
 {
 	isl_space *space;
-	isl_aff *aff;
 
 	space = isl_space_set_alloc(v->ctx, 0, v->n);
-	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, v->n - 1, 1);
-	return isl_pw_aff_from_aff(aff);
+	return identity_tuple_el_on_space(space, v);
 }
 
 /* This function is called for each element in a tuple inside read_tuple.
