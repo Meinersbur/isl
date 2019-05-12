@@ -2794,6 +2794,17 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 		return isl_pw_aff_union_min(pwaff1, pwaff2);
 }
 
+/* Is the domain of "pa" a product?
+ */
+static isl_bool isl_pw_aff_domain_is_product(__isl_keep isl_pw_aff *pa)
+{
+	return isl_space_domain_is_wrapping(isl_pw_aff_peek_space(pa));
+}
+
+#undef TYPE
+#define TYPE	isl_pw_aff
+#include <isl_domain_factor_templ.c>
+
 /* Return a set containing those elements in the domain
  * of "pwaff" where it satisfies "fn" (if complement is 0) or
  * does not satisfy "fn" (if complement is 1).

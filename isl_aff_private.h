@@ -107,6 +107,9 @@ __isl_give isl_pw_aff *isl_pw_aff_reset_domain_space(
 __isl_give isl_pw_aff *isl_pw_aff_add_disjoint(
 	__isl_take isl_pw_aff *pwaff1, __isl_take isl_pw_aff *pwaff2);
 
+__isl_give isl_pw_aff *isl_pw_aff_domain_factor_domain(
+	__isl_take isl_pw_aff *pa);
+
 __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2, int max);
 
