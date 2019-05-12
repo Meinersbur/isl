@@ -2492,23 +2492,16 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
-/* Drop the "n" domain dimensions starting at "first" from "aff",
- * after checking that they do not appear in the affine expression.
+/* Is the domain of "aff" a product?
  */
-static __isl_give isl_aff *drop_domain(__isl_take isl_aff *aff, unsigned first,
-	unsigned n)
+static isl_bool isl_aff_domain_is_product(__isl_keep isl_aff *aff)
 {
-	isl_bool involves;
-
-	involves = isl_aff_involves_dims(aff, isl_dim_in, first, n);
-	if (involves < 0)
-		return isl_aff_free(aff);
-	if (involves)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-		    "affine expression involves some of the domain dimensions",
-		    return isl_aff_free(aff));
-	return isl_aff_drop_dims(aff, isl_dim_in, first, n);
+	return isl_space_is_product(isl_aff_peek_domain_space(aff));
 }
+
+#undef TYPE
+#define TYPE	isl_aff
+#include <isl_domain_factor_templ.c>
 
 /* Project the domain of the affine expression onto its parameter space.
  * The affine expression may not involve any of the domain dimensions.
@@ -2521,46 +2514,9 @@ __isl_give isl_aff *isl_aff_project_domain_on_params(__isl_take isl_aff *aff)
 	n = isl_aff_dim(aff, isl_dim_in);
 	if (n < 0)
 		return isl_aff_free(aff);
-	aff = drop_domain(aff, 0, n);
+	aff = isl_aff_drop_domain(aff, 0, n);
 	space = isl_aff_get_domain_space(aff);
 	space = isl_space_params(space);
-	aff = isl_aff_reset_domain_space(aff, space);
-	return aff;
-}
-
-/* Check that the domain of "aff" is a product.
- */
-static isl_stat check_domain_product(__isl_keep isl_aff *aff)
-{
-	isl_bool is_product;
-
-	is_product = isl_space_is_product(isl_aff_peek_domain_space(aff));
-	if (is_product < 0)
-		return isl_stat_error;
-	if (!is_product)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"domain is not a product", return isl_stat_error);
-	return isl_stat_ok;
-}
-
-/* Given an affine function with a domain of the form [A -> B] that
- * does not depend on B, return the same function on domain A.
- */
-__isl_give isl_aff *isl_aff_domain_factor_domain(__isl_take isl_aff *aff)
-{
-	isl_space *space;
-	isl_size n, n_in;
-
-	if (check_domain_product(aff) < 0)
-		return isl_aff_free(aff);
-	space = isl_aff_get_domain_space(aff);
-	n = isl_space_dim(space, isl_dim_set);
-	space = isl_space_factor_domain(space);
-	n_in = isl_space_dim(space, isl_dim_set);
-	if (n < 0 || n_in < 0)
-		aff = isl_aff_free(aff);
-	else
-		aff = drop_domain(aff, n_in, n - n_in);
 	aff = isl_aff_reset_domain_space(aff, space);
 	return aff;
 }
