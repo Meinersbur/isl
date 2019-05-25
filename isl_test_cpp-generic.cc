@@ -49,6 +49,7 @@ void test_pointer(isl::ctx ctx)
  *  - static constructor without a parameter
  *  - conversion construction (implicit)
  *  - conversion construction (explicit)
+ *  - construction of empty union set
  *
  *  The tests to construct from integers and strings cover functionality that
  *  is also tested in the parameter type tests, but here we verify that
@@ -77,6 +78,10 @@ void test_constructors(isl::ctx ctx)
 	assert(IS_TRUE(s.is_equal(result)));
 	isl::set s2(bs);
 	assert(IS_TRUE(s.unite(s2).is_equal(result)));
+
+	isl::union_set us(ctx, "{ A[1]; B[2, 3] }");
+	isl::union_set empty = isl::union_set::empty(ctx);
+	assert(IS_TRUE(us.is_equal(us.unite(empty))));
 }
 
 /* Test integer function parameters.

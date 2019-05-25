@@ -14,6 +14,7 @@ import isl
 #  - construction from an integer
 #  - static constructor without a parameter
 #  - conversion construction
+#  - construction of empty union set
 #
 #  The tests to construct from integers and strings cover functionality that
 #  is also tested in the parameter type tests, but here the presence of
@@ -33,6 +34,10 @@ def test_constructors():
 	result = isl.set("{ [1] }")
 	s = isl.set(bs)
 	assert(s.is_equal(result))
+
+	us = isl.union_set("{ A[1]; B[2, 3] }")
+	empty = isl.union_set.empty()
+	assert(us.is_equal(us.union(empty)))
 
 # Test integer function parameters for a particular integer value.
 #
