@@ -550,11 +550,11 @@ void python_generator::print_method_overload(const isl_class &clazz,
  * to each function in "methods".
  */
 void python_generator::print_method(const isl_class &clazz,
-	const string &fullname, const set<FunctionDecl *> &methods,
+	const string &fullname, const function_set &methods,
 	vector<string> super)
 {
 	string cname;
-	set<FunctionDecl *>::const_iterator it;
+	function_set::const_iterator it;
 	int num_params;
 	FunctionDecl *any_method;
 
@@ -901,8 +901,8 @@ void python_generator::print_copy_callbacks(const isl_class &clazz)
  */
 void python_generator::print_method_types(const isl_class &clazz)
 {
-	set<FunctionDecl *>::const_iterator in;
-	map<string, set<FunctionDecl *> >::const_iterator it;
+	function_set::const_iterator in;
+	map<string, function_set>::const_iterator it;
 	map<FunctionDecl *, vector<set_enum> >::const_iterator ie;
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
@@ -946,8 +946,8 @@ void python_generator::print_method_types(const isl_class &clazz)
 void python_generator::print(const isl_class &clazz)
 {
 	string p_name = type2python(clazz.subclass_name);
-	set<FunctionDecl *>::const_iterator in;
-	map<string, set<FunctionDecl *> >::const_iterator it;
+	function_set::const_iterator in;
+	map<string, function_set>::const_iterator it;
 	map<FunctionDecl *, vector<set_enum> >::const_iterator ie;
 	vector<string> super = find_superclasses(clazz.type);
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;

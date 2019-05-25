@@ -31,6 +31,19 @@ struct set_enum {
 		value(value), name(name), method_name(method_name) {}
 };
 
+/* Helper structure for sorting FunctionDecl pointers
+ * on the corresponding function names.
+ */
+struct function_name_less {
+	bool operator()(FunctionDecl *x, FunctionDecl *y) {
+		return x->getName() < y->getName();
+	}
+};
+
+/* Set of FunctionDecl pointers sorted on function name.
+ */
+typedef std::set<FunctionDecl *, function_name_less> function_set;
+
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
  * If this object describes a subclass of a C type, then
@@ -57,10 +70,10 @@ struct isl_class {
 	string superclass_name;
 	string subclass_name;
 	RecordDecl *type;
-	set<FunctionDecl *> constructors;
+	function_set constructors;
 	set<FunctionDecl *> persistent_callbacks;
 	map<FunctionDecl *, vector<set_enum> > set_enums;
-	map<string, set<FunctionDecl *> > methods;
+	map<string, function_set> methods;
 	map<int, string> type_subclasses;
 	FunctionDecl *fn_type;
 	FunctionDecl *fn_to_str;
