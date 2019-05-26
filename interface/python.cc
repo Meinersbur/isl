@@ -455,6 +455,47 @@ void python_generator::print_get_method(const isl_class &clazz,
 	printf(")\n");
 }
 
+/* Print a call to "method", along with the corresponding
+ * return statement, with the given indentation.
+ * "drop_ctx" is set if the first argument is an isl_ctx.
+ * "drop_user" is set if the last argument is a "user" argument
+ * corresponding to a callback argument.
+ *
+ * A "ctx" variable is first initialized as it may be needed
+ * in the first call to print_arg_in_call and in print_method_return.
+ *
+ * If the method has a callback function, then any exception
+ * thrown in the callback also need to be rethrown.
+ */
+void python_generator::print_method_call(int indent, const isl_class &clazz,
+	FunctionDecl *method, const char *fmt, int drop_ctx, int drop_user)
+{
+	string fullname = method->getName();
+	int num_params = method->getNumParams();
+
+	if (drop_ctx) {
+		print_indent(indent, "ctx = Context.getDefaultInstance()\n");
+	} else {
+		print_indent(indent, "ctx = ");
+		printf(fmt, 0);
+		printf(".ctx\n");
+	}
+	print_indent(indent, "res = isl.%s(", fullname.c_str());
+	for (int i = 0; i < num_params - drop_user; ++i) {
+		if (i > 0)
+			printf(", ");
+		print_arg_in_call(method, fmt, i, drop_ctx);
+	}
+	if (drop_user)
+		printf(", None");
+	printf(")\n");
+
+	if (drop_user)
+		print_rethrow(indent, "exc_info[0]");
+
+	print_method_return(indent, clazz, method, fmt);
+}
+
 /* Print a python method corresponding to the C function "method".
  * "super" contains the superclasses of the class to which the method belongs,
  * with the first element corresponding to the annotation that appears
@@ -482,7 +523,6 @@ void python_generator::print_get_method(const isl_class &clazz,
 void python_generator::print_method(const isl_class &clazz,
 	FunctionDecl *method, vector<string> super)
 {
-	string fullname = method->getName();
 	string cname = clazz.method_name(method);
 	int num_params = method->getNumParams();
 	int drop_user = 0;
@@ -507,24 +547,7 @@ void python_generator::print_method(const isl_class &clazz,
 			continue;
 		print_callback(param, i - drop_ctx);
 	}
-	if (drop_ctx)
-		printf("        ctx = Context.getDefaultInstance()\n");
-	else
-		printf("        ctx = arg0.ctx\n");
-	printf("        res = isl.%s(", fullname.c_str());
-	for (int i = 0; i < num_params - drop_user; ++i) {
-		if (i > 0)
-			printf(", ");
-		print_arg_in_call(method, fixed_arg_fmt, i, drop_ctx);
-	}
-	if (drop_user)
-		printf(", None");
-	printf(")\n");
-
-	if (drop_user)
-		print_rethrow(8, "exc_info[0]");
-
-	print_method_return(8, clazz, method, fixed_arg_fmt);
+	print_method_call(8, clazz, method, fixed_arg_fmt, drop_ctx, drop_user);
 
 	if (clazz.is_get_method(method))
 		print_get_method(clazz, method);
@@ -614,19 +637,8 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 void python_generator::print_method_overload(const isl_class &clazz,
 	FunctionDecl *method)
 {
-	string fullname = method->getName();
-	int num_params = method->getNumParams();
-
 	print_argument_checks(clazz, method, 0);
-	printf("            res = isl.%s(", fullname.c_str());
-	print_arg_in_call(method, var_arg_fmt, 0, 0);
-	for (int i = 1; i < num_params; ++i) {
-		printf(", ");
-		print_arg_in_call(method, var_arg_fmt, i, 0);
-	}
-	printf(")\n");
-	printf("            ctx = args[0].ctx\n");
-	print_method_return(12, clazz, method, var_arg_fmt);
+	print_method_call(12, clazz, method, var_arg_fmt, 0, 0);
 }
 
 /* Print a python method with a name derived from "fullname"

@@ -49,6 +49,9 @@ private:
 	void print_get_method(const isl_class &clazz, FunctionDecl *fd);
 	void print_method(const isl_class &clazz, FunctionDecl *method,
 		vector<string> super);
+	void print_method_call(int indent, const isl_class &clazz,
+		FunctionDecl *method, const char *fmt,
+		int drop_ctx, int drop_user);
 	void print_argument_checks(const isl_class &clazz, FunctionDecl *fd,
 		int drop_ctx);
 	void print_method_overload(const isl_class &clazz,
