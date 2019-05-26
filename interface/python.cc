@@ -281,7 +281,10 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
  * "skip" is the number of initial arguments of "fd" that are
  * skipped in the Python method.
  *
- * If the argument is a callback, then print a reference to
+ * If the (first) argument is an isl_ctx, then print "ctx",
+ * assuming that the caller has made the context available
+ * in a "ctx" variable.
+ * Otherwise, if the argument is a callback, then print a reference to
  * the callback wrapper "cb".
  * Otherwise, if the argument is marked as consuming a reference,
  * then pass a copy of the pointer stored in the corresponding
@@ -297,7 +300,9 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, const char *fmt,
 {
 	ParmVarDecl *param = fd->getParamDecl(arg);
 	QualType type = param->getOriginalType();
-	if (is_callback(type)) {
+	if (is_isl_ctx(type)) {
+		printf("ctx");
+	} else if (is_callback(type)) {
 		printf("cb");
 	} else if (takes(param)) {
 		print_copy(type);
@@ -507,12 +512,9 @@ void python_generator::print_method(const isl_class &clazz,
 	else
 		printf("        ctx = arg0.ctx\n");
 	printf("        res = isl.%s(", fullname.c_str());
-	if (drop_ctx)
-		printf("ctx");
-	else
-		print_arg_in_call(method, fixed_arg_fmt, 0, 0);
-	for (int i = 1; i < num_params - drop_user; ++i) {
-		printf(", ");
+	for (int i = 0; i < num_params - drop_user; ++i) {
+		if (i > 0)
+			printf(", ");
 		print_arg_in_call(method, fixed_arg_fmt, i, drop_ctx);
 	}
 	if (drop_user)
