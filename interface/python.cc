@@ -629,6 +629,7 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 
 /* Print part of an overloaded python method corresponding to the C function
  * "method".
+ * "drop_ctx" is set if the first argument of "method" is an isl_ctx.
  *
  * In particular, print code to test whether the arguments passed to
  * the python method correspond to the arguments expected by "method"
@@ -637,8 +638,10 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 void python_generator::print_method_overload(const isl_class &clazz,
 	FunctionDecl *method)
 {
-	print_argument_checks(clazz, method, 0);
-	print_method_call(12, clazz, method, var_arg_fmt, 0, 0);
+	int drop_ctx = first_arg_is_isl_ctx(method);
+
+	print_argument_checks(clazz, method, drop_ctx);
+	print_method_call(12, clazz, method, var_arg_fmt, drop_ctx, 0);
 }
 
 /* Print a python method with a name derived from "fullname"
