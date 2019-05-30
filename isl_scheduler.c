@@ -978,35 +978,24 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
 	return v;
 }
 
-/* Compute the size of the instance set "set" of "node", after compression,
- * as well as bounds on the corresponding coefficients, if needed.
+/* Compute the size of the compressed domain in each dimension and
+ * store the results in node->sizes.
+ * "uncompressed" is the original domain (without compression).
  *
- * The sizes are needed when the schedule_treat_coalescing option is set.
- * The bounds are needed when the schedule_treat_coalescing option or
- * the schedule_max_coefficient option is set.
- *
- * If the schedule_treat_coalescing option is not set, then at most
- * the bounds need to be set and this is done in set_max_coefficient.
- * Otherwise, compress the domain if needed, compute the size
- * in each direction and store the results in node->size.
+ * First compress the domain if needed and then compute the size
+ * in each direction.
  * If the domain is not convex, then the sizes are computed
  * on a convex superset in order to avoid picking up sizes
  * that are valid for the individual disjuncts, but not for
  * the domain as a whole.
- * Finally, set the bounds on the coefficients based on the sizes
- * and the schedule_max_coefficient option in compute_max_coefficient.
  */
-static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
-	__isl_take isl_set *set)
+static isl_stat compute_sizes(struct isl_sched_node *node,
+	__isl_keep isl_set *uncompressed)
 {
 	int j;
 	isl_size n;
 	isl_multi_val *mv;
-
-	if (!isl_options_get_schedule_treat_coalescing(ctx)) {
-		isl_set_free(set);
-		return set_max_coefficient(ctx, node);
-	}
+	isl_set *set = isl_set_copy(uncompressed);
 
 	if (node->compressed)
 		set = isl_set_preimage_pw_multi_aff(set,
@@ -1025,6 +1014,37 @@ static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
 	node->sizes = mv;
 	isl_set_free(set);
 	if (!node->sizes)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Compute the size of the instance set "set" of "node", after compression,
+ * as well as bounds on the corresponding coefficients, if needed.
+ *
+ * The sizes are needed when the schedule_treat_coalescing option is set.
+ * The bounds are needed when the schedule_treat_coalescing option or
+ * the schedule_max_coefficient option is set.
+ *
+ * If the schedule_treat_coalescing option is not set, then at most
+ * the bounds need to be set and this is done in set_max_coefficient.
+ * Otherwise, compute the size of the compressed domain
+ * in each direction and store the results in node->size.
+ * Finally, set the bounds on the coefficients based on the sizes
+ * and the schedule_max_coefficient option in compute_max_coefficient.
+ */
+static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
+	__isl_take isl_set *set)
+{
+	isl_stat r;
+
+	if (!isl_options_get_schedule_treat_coalescing(ctx)) {
+		isl_set_free(set);
+		return set_max_coefficient(ctx, node);
+	}
+
+	r = compute_sizes(node, set);
+	isl_set_free(set);
+	if (r < 0)
 		return isl_stat_error;
 	return compute_max_coefficient(ctx, node);
 }
