@@ -978,6 +978,103 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
 	return v;
 }
 
+/* Perform a compression on "node" where "hull" represents the constraints
+ * that were used to derive the compression, while "compress" and
+ * "decompress" map the original space to the compressed space and
+ * vice versa.
+ *
+ * If "node" was not compressed already, then simply store
+ * the compression information.
+ * Otherwise the "original" space is actually the result
+ * of a previous compression, which is then combined
+ * with the present compression.
+ *
+ * The dimensionality of the compressed domain is also adjusted.
+ * Other information, such as the sizes and the maximal coefficient values,
+ * has not been computed yet and therefore does not need to be adjusted.
+ */
+static isl_stat compress_node(struct isl_sched_node *node,
+	__isl_take isl_set *hull, __isl_take isl_multi_aff *compress,
+	__isl_take isl_pw_multi_aff *decompress)
+{
+	node->nvar = isl_multi_aff_dim(compress, isl_dim_out);
+	if (!node->compressed) {
+		node->compressed = 1;
+		node->hull = hull;
+		node->compress = compress;
+		node->decompress = decompress;
+	} else {
+		hull = isl_set_preimage_multi_aff(hull,
+					    isl_multi_aff_copy(node->compress));
+		node->hull = isl_set_intersect(node->hull, hull);
+		node->compress = isl_multi_aff_pullback_multi_aff(
+						compress, node->compress);
+		node->decompress = isl_pw_multi_aff_pullback_pw_multi_aff(
+						node->decompress, decompress);
+	}
+
+	if (!node->hull || !node->compress || !node->decompress)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Given that dimension "pos" in "set" has a fixed value
+ * in terms of the other dimensions, (further) compress "node"
+ * by projecting out this dimension.
+ * "set" may be the result of a previous compression.
+ * "uncompressed" is the original domain (without compression).
+ *
+ * The compression function simply projects out the dimension.
+ * The decompression function adds back the dimension
+ * in the right position as an expression of the other dimensions
+ * derived from "set".
+ * As in extract_node, the compressed space has an identifier
+ * that references "node" such that each compressed space is unique and
+ * such that the node can be recovered from the compressed space.
+ *
+ * The constraint removed through the compression is added to the "hull"
+ * such that only edges that relate to the original domains
+ * are taken into account.
+ * In particular, it is obtained by composing compression and decompression and
+ * taking the relation among the variables in the range.
+ */
+static isl_stat project_out_fixed(struct isl_sched_node *node,
+	__isl_keep isl_set *uncompressed, __isl_take isl_set *set, int pos)
+{
+	isl_id *id;
+	isl_space *space;
+	isl_set *domain;
+	isl_map *map;
+	isl_multi_aff *compress;
+	isl_pw_multi_aff *decompress, *pma;
+	isl_multi_pw_aff *mpa;
+	isl_set *hull;
+
+	map = isolate(isl_set_copy(set), pos);
+	pma = isl_pw_multi_aff_from_map(map);
+	domain = isl_pw_multi_aff_domain(isl_pw_multi_aff_copy(pma));
+	pma = isl_pw_multi_aff_gist(pma, domain);
+	space = isl_pw_multi_aff_get_domain_space(pma);
+	mpa = isl_multi_pw_aff_identity(isl_space_map_from_set(space));
+	mpa = isl_multi_pw_aff_range_splice(mpa, pos,
+				    isl_multi_pw_aff_from_pw_multi_aff(pma));
+	decompress = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+	space = isl_set_get_space(set);
+	compress = isl_multi_aff_project_out_map(space, isl_dim_set, pos, 1);
+	id = construct_compressed_id(uncompressed, node);
+	compress = isl_multi_aff_set_tuple_id(compress, isl_dim_out, id);
+	space = isl_space_reverse(isl_multi_aff_get_space(compress));
+	decompress = isl_pw_multi_aff_reset_space(decompress, space);
+	pma = isl_pw_multi_aff_pullback_multi_aff(
+	    isl_pw_multi_aff_copy(decompress), isl_multi_aff_copy(compress));
+	hull = isl_map_range(isl_map_from_pw_multi_aff(pma));
+
+	isl_set_free(set);
+
+	return compress_node(node, hull, compress, decompress);
+}
+
 /* Compute the size of the compressed domain in each dimension and
  * store the results in node->sizes.
  * "uncompressed" is the original domain (without compression).
@@ -988,6 +1085,11 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
  * on a convex superset in order to avoid picking up sizes
  * that are valid for the individual disjuncts, but not for
  * the domain as a whole.
+ *
+ * If any of the sizes turns out to be zero, then this means
+ * that this dimension has a fixed value in terms of
+ * the other dimensions.  Perform an (extra) compression
+ * to remove this dimensions.
  */
 static isl_stat compute_sizes(struct isl_sched_node *node,
 	__isl_keep isl_set *uncompressed)
@@ -1006,10 +1108,18 @@ static isl_stat compute_sizes(struct isl_sched_node *node,
 	if (n < 0)
 		mv = isl_multi_val_free(mv);
 	for (j = 0; j < n; ++j) {
+		isl_bool is_zero;
 		isl_val *v;
 
 		v = compute_size(isl_set_copy(set), j);
+		is_zero = isl_val_is_zero(v);
 		mv = isl_multi_val_set_val(mv, j, v);
+		if (is_zero >= 0 && is_zero) {
+			isl_multi_val_free(mv);
+			if (project_out_fixed(node, uncompressed, set, j) < 0)
+				return isl_stat_error;
+			return compute_sizes(node, uncompressed);
+		}
 	}
 	node->sizes = mv;
 	isl_set_free(set);
