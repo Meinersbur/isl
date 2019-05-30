@@ -891,6 +891,42 @@ error:
 	return isl_stat_error;
 }
 
+/* Construct an identifier for node "node", which will represent "set".
+ * The name of the identifier is either "compressed" or
+ * "compressed_<name>", with <name> the name of the space of "set".
+ * The user pointer of the identifier points to "node".
+ */
+static __isl_give isl_id *construct_compressed_id(__isl_keep isl_set *set,
+	struct isl_sched_node *node)
+{
+	isl_bool has_name;
+	isl_ctx *ctx;
+	isl_id *id;
+	isl_printer *p;
+	const char *name;
+	char *id_name;
+
+	has_name = isl_set_has_tuple_name(set);
+	if (has_name < 0)
+		return NULL;
+
+	ctx = isl_set_get_ctx(set);
+	if (!has_name)
+		return isl_id_alloc(ctx, "compressed", node);
+
+	p = isl_printer_to_str(ctx);
+	name = isl_set_get_tuple_name(set);
+	p = isl_printer_print_str(p, "compressed_");
+	p = isl_printer_print_str(p, name);
+	id_name = isl_printer_get_str(p);
+	isl_printer_free(p);
+
+	id = isl_id_alloc(ctx, id_name, node);
+	free(id_name);
+
+	return id;
+}
+
 /* Compute and return the size of "set" in dimension "dim".
  * The size is taken to be the difference in values for that variable
  * for fixed values of the other variables.
@@ -1042,42 +1078,6 @@ error:
 	isl_multi_aff_free(compress);
 	isl_pw_multi_aff_free(decompress);
 	return isl_stat_error;
-}
-
-/* Construct an identifier for node "node", which will represent "set".
- * The name of the identifier is either "compressed" or
- * "compressed_<name>", with <name> the name of the space of "set".
- * The user pointer of the identifier points to "node".
- */
-static __isl_give isl_id *construct_compressed_id(__isl_keep isl_set *set,
-	struct isl_sched_node *node)
-{
-	isl_bool has_name;
-	isl_ctx *ctx;
-	isl_id *id;
-	isl_printer *p;
-	const char *name;
-	char *id_name;
-
-	has_name = isl_set_has_tuple_name(set);
-	if (has_name < 0)
-		return NULL;
-
-	ctx = isl_set_get_ctx(set);
-	if (!has_name)
-		return isl_id_alloc(ctx, "compressed", node);
-
-	p = isl_printer_to_str(ctx);
-	name = isl_set_get_tuple_name(set);
-	p = isl_printer_print_str(p, "compressed_");
-	p = isl_printer_print_str(p, name);
-	id_name = isl_printer_get_str(p);
-	isl_printer_free(p);
-
-	id = isl_id_alloc(ctx, id_name, node);
-	free(id_name);
-
-	return id;
 }
 
 /* Add a new node to the graph representing the given set.
