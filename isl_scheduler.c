@@ -106,7 +106,7 @@ struct isl_sched_node {
 	int	compressed;
 	isl_set	*hull;
 	isl_multi_aff *compress;
-	isl_multi_aff *decompress;
+	isl_pw_multi_aff *decompress;
 	isl_mat *sched;
 	isl_map *sched_map;
 	int	 rank;
@@ -701,7 +701,7 @@ static void clear_node(struct isl_sched_graph *graph,
 	isl_space_free(node->space);
 	isl_set_free(node->hull);
 	isl_multi_aff_free(node->compress);
-	isl_multi_aff_free(node->decompress);
+	isl_pw_multi_aff_free(node->decompress);
 	isl_mat_free(node->sched);
 	isl_map_free(node->sched_map);
 	isl_mat_free(node->indep);
@@ -959,8 +959,8 @@ static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
 	}
 
 	if (node->compressed)
-		set = isl_set_preimage_multi_aff(set,
-					isl_multi_aff_copy(node->decompress));
+		set = isl_set_preimage_pw_multi_aff(set,
+				    isl_pw_multi_aff_copy(node->decompress));
 	set = isl_set_from_basic_set(isl_set_simple_hull(set));
 	mv = isl_multi_val_zero(isl_set_get_space(set));
 	n = isl_set_dim(set, isl_dim_set);
@@ -996,7 +996,7 @@ static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
 static isl_stat add_node(struct isl_sched_graph *graph,
 	__isl_take isl_set *set, int nvar, int compressed,
 	__isl_take isl_set *hull, __isl_take isl_multi_aff *compress,
-	__isl_take isl_multi_aff *decompress)
+	__isl_take isl_pw_multi_aff *decompress)
 {
 	isl_size nparam;
 	isl_ctx *ctx;
@@ -1040,7 +1040,7 @@ error:
 	isl_set_free(set);
 	isl_set_free(hull);
 	isl_multi_aff_free(compress);
-	isl_multi_aff_free(decompress);
+	isl_pw_multi_aff_free(decompress);
 	return isl_stat_error;
 }
 
@@ -1097,7 +1097,8 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 	isl_basic_set *hull;
 	isl_set *hull_set;
 	isl_morph *morph;
-	isl_multi_aff *compress, *decompress;
+	isl_multi_aff *compress, *decompress_ma;
+	isl_pw_multi_aff *decompress;
 	struct isl_sched_graph *graph = user;
 
 	hull = isl_set_affine_hull(isl_set_copy(set));
@@ -1120,7 +1121,8 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 		set = isl_set_free(set);
 	compress = isl_morph_get_var_multi_aff(morph);
 	morph = isl_morph_inverse(morph);
-	decompress = isl_morph_get_var_multi_aff(morph);
+	decompress_ma = isl_morph_get_var_multi_aff(morph);
+	decompress = isl_pw_multi_aff_from_multi_aff(decompress_ma);
 	isl_morph_free(morph);
 
 	hull_set = isl_set_from_basic_set(hull);
@@ -1574,7 +1576,7 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 		return isl_basic_set_copy(node->bounds);
 
 	if (node->compressed)
-		space = isl_multi_aff_get_domain_space(node->decompress);
+		space = isl_pw_multi_aff_get_domain_space(node->decompress);
 	else
 		space = isl_space_copy(node->space);
 	space = isl_space_drop_all_params(space);
@@ -1608,11 +1610,11 @@ static __isl_give isl_map *compress(__isl_take isl_map *map,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
 	if (src->compressed)
-		map = isl_map_preimage_domain_multi_aff(map,
-					isl_multi_aff_copy(src->decompress));
+		map = isl_map_preimage_domain_pw_multi_aff(map,
+					isl_pw_multi_aff_copy(src->decompress));
 	if (dst->compressed)
-		map = isl_map_preimage_range_multi_aff(map,
-					isl_multi_aff_copy(dst->decompress));
+		map = isl_map_preimage_range_pw_multi_aff(map,
+					isl_pw_multi_aff_copy(dst->decompress));
 	return map;
 }
 
@@ -3116,7 +3118,7 @@ static __isl_give isl_multi_aff *node_extract_partial_schedule_multi_aff(
 	if (nrow < 0)
 		return NULL;
 	if (node->compressed)
-		space = isl_multi_aff_get_domain_space(node->decompress);
+		space = isl_pw_multi_aff_get_domain_space(node->decompress);
 	else
 		space = isl_space_copy(node->space);
 	ls = isl_local_space_from_space(isl_space_copy(space));
@@ -3531,7 +3533,7 @@ static isl_stat copy_nodes(struct isl_sched_graph *dst,
 		dst->node[j].compress =
 			isl_multi_aff_copy(src->node[i].compress);
 		dst->node[j].decompress =
-			isl_multi_aff_copy(src->node[i].decompress);
+			isl_pw_multi_aff_copy(src->node[i].decompress);
 		dst->node[j].nvar = src->node[i].nvar;
 		dst->node[j].nparam = src->node[i].nparam;
 		dst->node[j].sched = isl_mat_copy(src->node[i].sched);
