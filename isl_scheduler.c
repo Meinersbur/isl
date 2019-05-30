@@ -927,6 +927,21 @@ static __isl_give isl_id *construct_compressed_id(__isl_keep isl_set *set,
 	return id;
 }
 
+/* Construct a map that isolates the variable in position "pos" in "set".
+ *
+ * That is, construct
+ *
+ *	[i_0, ..., i_pos-1, i_pos+1, ...] -> [i_pos]
+ */
+static __isl_give isl_map *isolate(__isl_take isl_set *set, int pos)
+{
+	isl_map *map;
+
+	map = isl_set_project_onto_map(set, isl_dim_set, pos, 1);
+	map = isl_map_project_out(map, isl_dim_in, pos, 1);
+	return map;
+}
+
 /* Compute and return the size of "set" in dimension "dim".
  * The size is taken to be the difference in values for that variable
  * for fixed values of the other variables.
@@ -950,8 +965,7 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
 	isl_aff *obj;
 	isl_val *v;
 
-	map = isl_set_project_onto_map(set, isl_dim_set, dim, 1);
-	map = isl_map_project_out(map, isl_dim_in, dim, 1);
+	map = isolate(set, dim);
 	map = isl_map_range_product(map, isl_map_copy(map));
 	map = isl_set_unwrap(isl_map_range(map));
 	set = isl_map_deltas(map);
