@@ -1600,6 +1600,22 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 	return bounds;
 }
 
+/* Compress the dependence relation "map", if needed, i.e.,
+ * when the source node "src" and/or the destination node "dst"
+ * has been compressed.
+ */
+static __isl_give isl_map *compress(__isl_take isl_map *map,
+	struct isl_sched_node *src, struct isl_sched_node *dst)
+{
+	if (src->compressed)
+		map = isl_map_preimage_domain_multi_aff(map,
+					isl_multi_aff_copy(src->decompress));
+	if (dst->compressed)
+		map = isl_map_preimage_range_multi_aff(map,
+					isl_multi_aff_copy(dst->decompress));
+	return map;
+}
+
 /* Drop some constraints from "delta" that could be exploited
  * to construct loop coalescing schedules.
  * In particular, drop those constraint that bound the difference
@@ -1681,12 +1697,7 @@ static __isl_give isl_basic_set *intra_coefficients(
 	}
 
 	key = isl_map_copy(map);
-	if (node->compressed) {
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-	}
+	map = compress(map, node, node);
 	delta = isl_map_deltas(map);
 	if (treat)
 		delta = drop_coalescing_constraints(delta, node);
@@ -1724,12 +1735,7 @@ static __isl_give isl_basic_set *inter_coefficients(
 	}
 
 	key = isl_map_copy(map);
-	if (edge->src->compressed)
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(edge->src->decompress));
-	if (edge->dst->compressed)
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(edge->dst->decompress));
+	map = compress(map, edge->src, edge->dst);
 	set = isl_map_wrap(isl_map_remove_divs(map));
 	coef = isl_set_coefficients(set);
 	graph->inter_hmap = isl_map_to_basic_set_set(graph->inter_hmap, key,
@@ -4682,12 +4688,7 @@ static __isl_give isl_union_map *add_intra(__isl_take isl_union_map *umap,
 		return umap;
 
 	map = isl_map_copy(edge->map);
-	if (node->compressed) {
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-	}
+	map = compress(map, node, node);
 	umap = isl_union_map_add_map(umap, map);
 	return umap;
 }
@@ -4706,12 +4707,7 @@ static __isl_give isl_union_map *add_inter(__isl_take isl_union_map *umap,
 		return umap;
 
 	map = isl_map_copy(edge->map);
-	if (edge->src->compressed)
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(edge->src->decompress));
-	if (edge->dst->compressed)
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(edge->dst->decompress));
+	map = compress(map, edge->src, edge->dst);
 	umap = isl_union_map_add_map(umap, map);
 	return umap;
 }
