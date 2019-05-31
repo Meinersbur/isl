@@ -115,6 +115,7 @@ isl_bool isl_union_set_is_subset(__isl_keep isl_union_set *uset1,
 __isl_export
 isl_bool isl_union_set_is_equal(__isl_keep isl_union_set *uset1,
 	__isl_keep isl_union_set *uset2);
+__isl_export
 isl_bool isl_union_set_is_disjoint(__isl_keep isl_union_set *uset1,
 	__isl_keep isl_union_set *uset2);
 __isl_export

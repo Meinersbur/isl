@@ -233,6 +233,7 @@ isl_bool isl_union_map_is_subset(__isl_keep isl_union_map *umap1,
 __isl_export
 isl_bool isl_union_map_is_equal(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
+__isl_export
 isl_bool isl_union_map_is_disjoint(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
 __isl_export
