@@ -150,6 +150,11 @@ static void test_preimage(isl::ctx ctx)
 	{ "{ A[i] -> B[i] }", "{ C[i] -> A[(i + floor(i/3))/2] }",
 	  "{ C[i] -> B[j] : 2j = i + floor(i/3) }" },
 	});
+
+	C(arg<isl::multi_aff>(&isl::union_map::preimage_range), {
+	{ "[M] -> { A[a] -> B[a] }", "[M] -> { C[] -> B[floor(M/2)] }",
+	  "[M] -> { A[floor(M/2)] -> C[] }" },
+	});
 }
 
 /* The list of tests to perform.
