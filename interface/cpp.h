@@ -7,9 +7,6 @@ using namespace clang;
  *
  * "checked" is set if C++ bindings should be generated
  * that rely on the user to check for error conditions.
- *
- * "conversions" maps the target type of automatic conversion
- * to the second input argument of the conversion function.
  */
 class cpp_generator : public generator {
 protected:
@@ -169,10 +166,4 @@ private:
 public:
 	static string type2cpp(const isl_class &clazz);
 	static string type2cpp(string type_string);
-private:
-	static const std::set<std::string> automatic_conversion_functions;
-	std::map<const Type *, ParmVarDecl *> conversions;
-	void extract_automatic_conversion(FunctionDecl *fd);
-	void extract_class_automatic_conversions(const isl_class &clazz);
-	void extract_automatic_conversions();
 };

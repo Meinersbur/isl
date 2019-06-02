@@ -119,6 +119,9 @@ struct isl_class {
 };
 
 /* Base class for interface generators.
+ *
+ * "conversions" maps the target type of automatic conversion
+ * to the second input argument of the conversion function.
  */
 class generator {
 protected:
@@ -142,6 +145,12 @@ protected:
 	isl_class *method2class(FunctionDecl *fd);
 	bool callback_takes_argument(ParmVarDecl *param, int pos);
 	FunctionDecl *find_by_name(const string &name, bool required);
+	std::map<const Type *, ParmVarDecl *> conversions;
+private:
+	static const std::set<std::string> automatic_conversion_functions;
+	void extract_automatic_conversion(FunctionDecl *fd);
+	void extract_class_automatic_conversions(const isl_class &clazz);
+	void extract_automatic_conversions();
 public:
 	static void die(const char *msg) __attribute__((noreturn));
 	static void die(string msg) __attribute__((noreturn));
