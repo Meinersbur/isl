@@ -311,9 +311,10 @@ static void print_rethrow(int indent, const char *exc_info)
  * is set and if it failed with an exception.  If so, the 'exc_info'
  * field contains the exception and is raised again.
  * The field is cleared because the callback and its data may get reused.
+ * "fmt" is the format for printing Python method arguments.
  */
 static void print_persistent_callback_failure_check(int indent,
-	const isl_class &clazz)
+	const isl_class &clazz, const char *fmt)
 {
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 	set<FunctionDecl *>::const_iterator in;
@@ -321,13 +322,17 @@ static void print_persistent_callback_failure_check(int indent,
 	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
 		string callback_name = clazz.persistent_callback_name(*in);
 
-		print_indent(indent, "if hasattr(arg0, '%s') and "
-			"arg0.%s['exc_info'] != None:\n",
-			callback_name.c_str(), callback_name.c_str());
-		print_indent(indent, "    exc_info = arg0.%s['exc_info'][0]\n",
-			callback_name.c_str());
-		print_indent(indent, "    arg0.%s['exc_info'][0] = None\n",
-			callback_name.c_str());
+		print_indent(indent, "if hasattr(");
+		printf(fmt, 0);
+		printf(", '%s') and ", callback_name.c_str());
+		printf(fmt, 0);
+		printf(".%s['exc_info'] != None:\n", callback_name.c_str());
+		print_indent(indent, "    exc_info = ");
+		printf(fmt, 0);
+		printf(".%s['exc_info'][0]\n", callback_name.c_str());
+		print_indent(indent, "    ");
+		printf(fmt, 0);
+		printf(".%s['exc_info'][0] = None\n", callback_name.c_str());
 		print_rethrow(indent + 4, "exc_info");
 	}
 }
@@ -363,7 +368,8 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
 	QualType return_type = method->getReturnType();
 
 	if (!is_static(clazz, method))
-		print_persistent_callback_failure_check(indent, clazz);
+		print_persistent_callback_failure_check(indent, clazz,
+							fixed_arg_fmt);
 
 	if (is_isl_type(return_type)) {
 		string type;
