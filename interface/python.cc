@@ -726,22 +726,7 @@ void python_generator::print_constructor(const isl_class &clazz,
 	int num_params = cons->getNumParams();
 	int drop_ctx = first_arg_is_isl_ctx(cons);
 
-	printf("        if len(args) == %d", num_params - drop_ctx);
-	for (int i = drop_ctx; i < num_params; ++i) {
-		ParmVarDecl *param = cons->getParamDecl(i);
-		QualType type = param->getOriginalType();
-		if (is_isl_type(type)) {
-			string s;
-			s = type2python(extract_type(type));
-			printf(" and args[%d].__class__ is %s",
-				i - drop_ctx, s.c_str());
-		} else if (type->isPointerType()) {
-			printf(" and type(args[%d]) == str", i - drop_ctx);
-		} else {
-			printf(" and type(args[%d]) == int", i - drop_ctx);
-		}
-	}
-	printf(":\n");
+	print_argument_checks(clazz, cons, drop_ctx);
 	printf("            self.ctx = Context.getDefaultInstance()\n");
 	printf("            self.ptr = isl.%s(", fullname.c_str());
 	if (drop_ctx)
