@@ -69,14 +69,14 @@ void python_generator::print_method_arguments(int first, int n_arg)
 	}
 }
 
-/* Print the header of the method "name" with "n_arg" arguments.
+/* Print the start of a definition for method "name"
+ * (without specifying the arguments).
  * If "is_static" is set, then mark the python method as static.
  *
  * If the method is called "from", then rename it to "convert_from"
  * because "from" is a python keyword.
  */
-void python_generator::print_method_header(bool is_static, const string &name,
-	int n_arg)
+static void print_method_def(bool is_static, const string &name)
 {
 	const char *s;
 
@@ -87,7 +87,17 @@ void python_generator::print_method_header(bool is_static, const string &name,
 	if (name == "from")
 		s = "convert_from";
 
-	printf("    def %s(", s);
+	printf("    def %s", s);
+}
+
+/* Print the header of the method "name" with "n_arg" arguments.
+ * If "is_static" is set, then mark the python method as static.
+ */
+void python_generator::print_method_header(bool is_static, const string &name,
+	int n_arg)
+{
+	print_method_def(is_static, name);
+	printf("(");
 	print_method_arguments(0, n_arg);
 	printf("):\n");
 }
