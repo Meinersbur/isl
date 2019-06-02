@@ -44,6 +44,10 @@
 #include "python.h"
 #include "generator.h"
 
+/* Argument format for Python methods with a fixed number of arguments.
+ */
+static const char *fixed_arg_fmt = "arg%d";
+
 /* Drop the "isl_" initial part of the type name "name".
  */
 static string type2python(string name)
@@ -251,6 +255,7 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 }
 
 /* Print the argument at position "arg" in call to "fd".
+ * "fmt" is the format for printing Python method arguments.
  * "skip" is the number of initial arguments of "fd" that are
  * skipped in the Python method.
  *
@@ -262,7 +267,8 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
  * Otherwise, if the argument is a pointer, then pass this pointer itself.
  * Otherwise, pass the argument directly.
  */
-void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
+void python_generator::print_arg_in_call(FunctionDecl *fd, const char *fmt,
+	int arg, int skip)
 {
 	ParmVarDecl *param = fd->getParamDecl(arg);
 	QualType type = param->getOriginalType();
@@ -270,11 +276,14 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 		printf("cb");
 	} else if (takes(param)) {
 		print_copy(type);
-		printf("(arg%d.ptr)", arg - skip);
+		printf("(");
+		printf(fmt, arg - skip);
+		printf(".ptr)");
 	} else if (type->isPointerType()) {
-		printf("arg%d.ptr", arg - skip);
+		printf(fmt, arg - skip);
+		printf(".ptr");
 	} else {
-		printf("arg%d", arg - skip);
+		printf(fmt, arg - skip);
 	}
 }
 
@@ -467,10 +476,10 @@ void python_generator::print_method(const isl_class &clazz,
 	if (drop_ctx)
 		printf("ctx");
 	else
-		print_arg_in_call(method, 0, 0);
+		print_arg_in_call(method, fixed_arg_fmt, 0, 0);
 	for (int i = 1; i < num_params - drop_user; ++i) {
 		printf(", ");
-		print_arg_in_call(method, i, drop_ctx);
+		print_arg_in_call(method, fixed_arg_fmt, i, drop_ctx);
 	}
 	if (drop_user)
 		printf(", None");
@@ -575,10 +584,10 @@ void python_generator::print_method_overload(const isl_class &clazz,
 
 	print_argument_checks(clazz, method);
 	printf("            res = isl.%s(", fullname.c_str());
-	print_arg_in_call(method, 0, 0);
+	print_arg_in_call(method, fixed_arg_fmt, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
 		printf(", ");
-		print_arg_in_call(method, i, 0);
+		print_arg_in_call(method, fixed_arg_fmt, i, 0);
 	}
 	printf(")\n");
 	printf("            ctx = arg0.ctx\n");
@@ -645,7 +654,7 @@ void python_generator::print_set_enum(const isl_class &clazz,
 	for (int i = 0; i < num_params - 1; ++i) {
 		if (i)
 			printf(", ");
-		print_arg_in_call(fd, i, 0);
+		print_arg_in_call(fd, fixed_arg_fmt, i, 0);
 	}
 	printf(", %d", value);
 	printf(")\n");

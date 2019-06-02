@@ -29,7 +29,8 @@ private:
 		bool first_is_ctx, int n, const vector<string> &super);
 	void print_copy(QualType type);
 	void print_callback(ParmVarDecl *param, int arg);
-	void print_arg_in_call(FunctionDecl *fd, int arg, int skip);
+	void print_arg_in_call(FunctionDecl *fd, const char *fmt, int arg,
+		int skip);
 	void print_argtypes(FunctionDecl *fd);
 	void print_method_return(int indent, const isl_class &clazz,
 		FunctionDecl *method);
