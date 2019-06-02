@@ -493,8 +493,11 @@ static void print_argument_check(QualType type, int i)
 		type_str = generator::extract_type(type);
 		type_str = type2python(type_str);
 		printf("arg%d.__class__ is %s", i, type_str.c_str());
-	} else
+	} else if (type->isPointerType()) {
 		printf("type(arg%d) == str", i);
+	} else {
+		printf("type(arg%d) == int", i);
+	}
 }
 
 /* Print a test that checks whether the arguments passed
