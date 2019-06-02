@@ -341,6 +341,7 @@ static void print_persistent_callback_failure_check(int indent,
  * to the C function "method" with the given indentation.
  * If the object on which the method was called
  * may have a persistent callback, then first check if any of those failed.
+ * "fmt" is the format for printing Python method arguments.
  *
  * If the method returns a new instance of the same object type and
  * if the class has any persistent callbacks, then the data
@@ -363,13 +364,12 @@ static void print_persistent_callback_failure_check(int indent,
  * In case of isl_size, the result is converted to a Python int.
  */
 void python_generator::print_method_return(int indent, const isl_class &clazz,
-	FunctionDecl *method)
+	FunctionDecl *method, const char *fmt)
 {
 	QualType return_type = method->getReturnType();
 
 	if (!is_static(clazz, method))
-		print_persistent_callback_failure_check(indent, clazz,
-							fixed_arg_fmt);
+		print_persistent_callback_failure_check(indent, clazz, fmt);
 
 	if (is_isl_type(return_type)) {
 		string type;
@@ -503,7 +503,7 @@ void python_generator::print_method(const isl_class &clazz,
 	if (drop_user)
 		print_rethrow(8, "exc_info[0]");
 
-	print_method_return(8, clazz, method);
+	print_method_return(8, clazz, method, fixed_arg_fmt);
 
 	if (clazz.is_get_method(method))
 		print_get_method(clazz, method);
@@ -606,7 +606,7 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	}
 	printf(")\n");
 	printf("            ctx = arg0.ctx\n");
-	print_method_return(12, clazz, method);
+	print_method_return(12, clazz, method, fixed_arg_fmt);
 }
 
 /* Print a python method with a name derived from "fullname"
@@ -673,7 +673,7 @@ void python_generator::print_set_enum(const isl_class &clazz,
 	}
 	printf(", %d", value);
 	printf(")\n");
-	print_method_return(8, clazz, fd);
+	print_method_return(8, clazz, fd, fixed_arg_fmt);
 }
 
 /* Print python methods corresponding to "fd", which sets an enum.

@@ -33,7 +33,7 @@ private:
 		int skip);
 	void print_argtypes(FunctionDecl *fd);
 	void print_method_return(int indent, const isl_class &clazz,
-		FunctionDecl *method);
+		FunctionDecl *method, const char *fmt);
 	void print_restype(FunctionDecl *fd);
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(const isl_class &clazz, FunctionDecl *method);
