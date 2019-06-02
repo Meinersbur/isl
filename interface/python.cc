@@ -548,6 +548,8 @@ static void print_argument_check(QualType type, int i)
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
  * expected by "fd".
+ * "drop_ctx" is set if the first argument of "fd" is an isl_ctx,
+ * which does not appear as an argument to the Python method.
  *
  * If an automatic conversion function is available for any
  * of the argument types, then also allow the argument
@@ -558,13 +560,13 @@ static void print_argument_check(QualType type, int i)
  * in order to be able to modify the entries.
  */
 void python_generator::print_argument_checks(const isl_class &clazz,
-	FunctionDecl *fd)
+	FunctionDecl *fd, int drop_ctx)
 {
 	int num_params = fd->getNumParams();
-	int first = generator::is_static(clazz, fd) ? 0 : 1;
+	int first = generator::is_static(clazz, fd) ? drop_ctx : 1;
 	std::vector<bool> convert(num_params);
 
-	printf("        if len(args) == %d", num_params);
+	printf("        if len(args) == %d", num_params - drop_ctx);
 	for (int i = first; i < num_params; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
@@ -572,14 +574,14 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 
 		printf(" and ");
 		if (conversions.count(ptr) == 0) {
-			print_argument_check(type, i);
+			print_argument_check(type, i - drop_ctx);
 		} else {
 			QualType type2 = conversions.at(ptr)->getOriginalType();
 			convert[i] = true;
 			printf("(");
-			print_argument_check(type, i);
+			print_argument_check(type, i - drop_ctx);
 			printf(" or ");
-			print_argument_check(type2, i);
+			print_argument_check(type2, i - drop_ctx);
 			printf(")");
 		}
 	}
@@ -595,7 +597,8 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 		if (!convert[i])
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
-		print_type_check(12, type, var_arg_fmt, i, false, "", "", -1);
+		print_type_check(12, type, var_arg_fmt,
+				i - drop_ctx, false, "", "", -1);
 	}
 }
 
@@ -612,7 +615,7 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
 
-	print_argument_checks(clazz, method);
+	print_argument_checks(clazz, method, 0);
 	printf("            res = isl.%s(", fullname.c_str());
 	print_arg_in_call(method, var_arg_fmt, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
