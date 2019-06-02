@@ -47,6 +47,9 @@
 /* Argument format for Python methods with a fixed number of arguments.
  */
 static const char *fixed_arg_fmt = "arg%d";
+/* Argument format for Python methods with a variable number of arguments.
+ */
+static const char *var_arg_fmt = "args[%d]";
 
 /* Drop the "isl_" initial part of the type name "name".
  */
@@ -264,6 +267,9 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
  * Otherwise, if the argument is marked as consuming a reference,
  * then pass a copy of the pointer stored in the corresponding
  * argument passed to the Python method.
+ * Otherwise, if the argument is a string, then the python string is first
+ * encoded as a byte sequence, using 'ascii' as encoding.  This assumes
+ * that all strings passed to isl can be converted to 'ascii'.
  * Otherwise, if the argument is a pointer, then pass this pointer itself.
  * Otherwise, pass the argument directly.
  */
@@ -279,6 +285,9 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, const char *fmt,
 		printf("(");
 		printf(fmt, arg - skip);
 		printf(".ptr)");
+	} else if (is_string(type)) {
+		printf(fmt, arg - skip);
+		printf(".encode('ascii')");
 	} else if (type->isPointerType()) {
 		printf(fmt, arg - skip);
 		printf(".ptr");
@@ -684,13 +693,6 @@ void python_generator::print_set_enum(const isl_class &clazz,
  * In particular, check if the actual arguments correspond to the
  * formal arguments of "cons" and if so call "cons" and put the
  * result in self.ptr and a reference to the default context in self.ctx.
- *
- * If the function consumes a reference, then we pass it a copy of
- * the actual argument.
- *
- * If the function takes a string argument, the python string is first
- * encoded as a byte sequence, using 'ascii' as encoding.  This assumes
- * that all strings passed to isl can be converted to 'ascii'.
  */
 void python_generator::print_constructor(const isl_class &clazz,
 	FunctionDecl *cons)
@@ -721,19 +723,9 @@ void python_generator::print_constructor(const isl_class &clazz,
 	if (drop_ctx)
 		printf("self.ctx");
 	for (int i = drop_ctx; i < num_params; ++i) {
-		ParmVarDecl *param = cons->getParamDecl(i);
-		QualType type = param->getOriginalType();
 		if (i)
 			printf(", ");
-		if (is_isl_type(type)) {
-			if (takes(param))
-				print_copy(param->getOriginalType());
-			printf("(args[%d].ptr)", i - drop_ctx);
-		} else if (is_string(type)) {
-			printf("args[%d].encode('ascii')", i - drop_ctx);
-		} else {
-			printf("args[%d]", i - drop_ctx);
-		}
+		print_arg_in_call(cons, var_arg_fmt, i, drop_ctx);
 	}
 	printf(")\n");
 	printf("            return\n");
