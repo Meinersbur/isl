@@ -221,6 +221,18 @@ def test_every():
 		caught = True
 	assert(caught)
 
+# Check basic construction of spaces.
+#
+def test_space():
+	unit = isl.space.unit()
+	set_space = unit.add_named_tuple("A", 3)
+	map_space = set_space.add_named_tuple("B", 2)
+
+	set = isl.set.universe(set_space)
+	map = isl.map.universe(map_space)
+	assert(set.is_equal(isl.set("{ A[*,*,*] }")))
+	assert(map.is_equal(isl.map("{ A[*,*,*] -> B[*,*] }")))
+
 # Construct a simple schedule tree with an outer sequence node and
 # a single-dimensional band node in each branch, with one of them
 # marked coincident.
@@ -416,6 +428,7 @@ def test_ast_build_expr():
 #  - Different return types
 #  - Foreach functions
 #  - Every functions
+#  - Spaces
 #  - Schedule trees
 #  - AST generation
 #  - AST expression generation
@@ -425,6 +438,7 @@ test_parameters()
 test_return()
 test_foreach()
 test_every()
+test_space()
 test_schedule_tree()
 test_ast_build()
 test_ast_build_expr()

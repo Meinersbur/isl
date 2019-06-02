@@ -215,6 +215,20 @@ static void test_every_generic(isl::ctx ctx)
 	assert(!IS_TRUE(us.every_set(not_in_A)));
 }
 
+/* Check basic construction of spaces.
+ */
+static void test_space(isl::ctx ctx)
+{
+	isl::space unit = isl::space::unit(ctx);
+	isl::space set_space = unit.add_named_tuple("A", 3);
+	isl::space map_space = set_space.add_named_tuple("B", 2);
+
+	isl::set set = isl::set::universe(set_space);
+	isl::map map = isl::map::universe(map_space);
+	assert(IS_TRUE(set.is_equal(isl::set(ctx, "{ A[*,*,*] }"))));
+	assert(IS_TRUE(map.is_equal(isl::map(ctx, "{ A[*,*,*] -> B[*,*] }"))));
+}
+
 /* Construct a simple schedule tree with an outer sequence node and
  * a single-dimensional band node in each branch, with one of them
  * marked coincident.
