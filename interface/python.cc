@@ -537,11 +537,11 @@ static void print_argument_check(QualType type, int i)
 		string type_str;
 		type_str = generator::extract_type(type);
 		type_str = type2python(type_str);
-		printf("arg%d.__class__ is %s", i, type_str.c_str());
+		printf("args[%d].__class__ is %s", i, type_str.c_str());
 	} else if (type->isPointerType()) {
-		printf("type(arg%d) == str", i);
+		printf("type(args[%d]) == str", i);
 	} else {
-		printf("type(arg%d) == int", i);
+		printf("type(args[%d]) == int", i);
 	}
 }
 
@@ -549,14 +549,13 @@ static void print_argument_check(QualType type, int i)
  * to the Python method correspond to the arguments
  * expected by "fd".
  *
- * If the Python method has no arguments, then print nothing.
- *
  * If an automatic conversion function is available for any
  * of the argument types, then also allow the argument
  * to be of the type as prescribed by the second input argument
  * of the conversion function.
  * The corresponding arguments are then converted to the expected types
- * if needed.
+ * if needed.  The argument tuple first needs to be converted to a list
+ * in order to be able to modify the entries.
  */
 void python_generator::print_argument_checks(const isl_class &clazz,
 	FunctionDecl *fd)
@@ -565,17 +564,13 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 	int first = generator::is_static(clazz, fd) ? 0 : 1;
 	std::vector<bool> convert(num_params);
 
-	if (first >= num_params)
-		return;
-
-	printf("        if ");
+	printf("        if len(args) == %d", num_params);
 	for (int i = first; i < num_params; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
 		const Type *ptr = type.getTypePtr();
 
-		if (i > first)
-			printf(" and ");
+		printf(" and ");
 		if (conversions.count(ptr) == 0) {
 			print_argument_check(type, i);
 		} else {
@@ -592,6 +587,7 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 
 	if (std::find(convert.begin(), convert.end(), true) == convert.end())
 		return;
+	print_indent(12, "args = list(args)\n");
 	for (int i = first; i < num_params; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		string type;
@@ -599,7 +595,7 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 		if (!convert[i])
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
-		print_type_check(12, type, fixed_arg_fmt, i, false, "", "", -1);
+		print_type_check(12, type, var_arg_fmt, i, false, "", "", -1);
 	}
 }
 
@@ -618,14 +614,14 @@ void python_generator::print_method_overload(const isl_class &clazz,
 
 	print_argument_checks(clazz, method);
 	printf("            res = isl.%s(", fullname.c_str());
-	print_arg_in_call(method, fixed_arg_fmt, 0, 0);
+	print_arg_in_call(method, var_arg_fmt, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
 		printf(", ");
-		print_arg_in_call(method, fixed_arg_fmt, i, 0);
+		print_arg_in_call(method, var_arg_fmt, i, 0);
 	}
 	printf(")\n");
-	printf("            ctx = arg0.ctx\n");
-	print_method_return(12, clazz, method, fixed_arg_fmt);
+	printf("            ctx = args[0].ctx\n");
+	print_method_return(12, clazz, method, var_arg_fmt);
 }
 
 /* Print a python method with a name derived from "fullname"
@@ -643,7 +639,6 @@ void python_generator::print_method(const isl_class &clazz,
 {
 	string cname;
 	function_set::const_iterator it;
-	int num_params;
 	FunctionDecl *any_method;
 
 	any_method = *methods.begin();
@@ -653,9 +648,9 @@ void python_generator::print_method(const isl_class &clazz,
 	}
 
 	cname = clazz.method_name(any_method);
-	num_params = any_method->getNumParams();
 
-	print_method_header(is_static(clazz, any_method), cname, num_params);
+	print_method_def(is_static(clazz, any_method), cname);
+	printf("(*args):\n");
 
 	for (it = methods.begin(); it != methods.end(); ++it)
 		print_method_overload(clazz, *it);
