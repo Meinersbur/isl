@@ -204,7 +204,7 @@ __isl_give isl_space *isl_pw_aff_get_space(__isl_keep isl_pw_aff *pwaff);
 
 __isl_constructor
 __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff);
-__isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_space *dim);
+__isl_give isl_pw_aff *isl_pw_aff_empty(__isl_take isl_space *space);
 __isl_give isl_pw_aff *isl_pw_aff_alloc(__isl_take isl_set *set,
 	__isl_take isl_aff *aff);
 __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(

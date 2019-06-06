@@ -19,18 +19,18 @@
 #include <isl_pw_macro.h>
 
 #ifdef HAS_TYPE
-__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *dim,
+__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *space,
 	enum isl_fold type, int n)
 #else
-__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *dim, int n)
+__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *space, int n)
 #endif
 {
 	isl_ctx *ctx;
 	struct PW *pw;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	ctx = isl_space_get_ctx(dim);
+	ctx = isl_space_get_ctx(space);
 	isl_assert(ctx, n >= 0, goto error);
 	pw = isl_alloc(ctx, struct PW,
 			sizeof(struct PW) + (n - 1) * sizeof(S(PW,piece)));
@@ -43,22 +43,22 @@ __isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *dim, int n)
 #endif
 	pw->size = n;
 	pw->n = 0;
-	pw->dim = dim;
+	pw->dim = space;
 	return pw;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
 #ifdef HAS_TYPE
-__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *dim, enum isl_fold type)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space, enum isl_fold type)
 {
-	return FN(PW,alloc_size)(dim, type, 0);
+	return FN(PW,alloc_size)(space, type, 0);
 }
 #else
-__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *dim)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space)
 {
-	return FN(PW,alloc_size)(dim, 0);
+	return FN(PW,alloc_size)(space, 0);
 }
 #endif
 
