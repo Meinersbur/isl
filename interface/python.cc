@@ -483,6 +483,20 @@ void python_generator::print_method(const isl_class &clazz,
 		print_get_method(clazz, method);
 }
 
+/* Print a condition that checks whether Python method argument "i"
+ * corresponds to the C function argument type "type".
+ */
+static void print_argument_check(QualType type, int i)
+{
+	if (generator::is_isl_type(type)) {
+		string type_str;
+		type_str = generator::extract_type(type);
+		type_str = type2python(type_str);
+		printf("arg%d.__class__ is %s", i, type_str.c_str());
+	} else
+		printf("type(arg%d) == str", i);
+}
+
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
  * expected by "fd".
@@ -504,13 +518,7 @@ static void print_argument_checks(const isl_class &clazz, FunctionDecl *fd)
 
 		if (i > first)
 			printf(" and ");
-		if (generator::is_isl_type(type)) {
-			string type_str;
-			type_str = generator::extract_type(type);
-			type_str = type2python(type_str);
-			printf("arg%d.__class__ is %s", i, type_str.c_str());
-		} else
-			printf("type(arg%d) == str", i);
+		print_argument_check(type, i);
 	}
 	printf(":\n");
 }
