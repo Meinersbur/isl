@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -506,12 +507,20 @@ static void print_argument_check(QualType type, int i)
  * expected by "fd".
  *
  * If the Python method has no arguments, then print nothing.
+ *
+ * If an automatic conversion function is available for any
+ * of the argument types, then also allow the argument
+ * to be of the type as prescribed by the second input argument
+ * of the conversion function.
+ * The corresponding arguments are then converted to the expected types
+ * if needed.
  */
 void python_generator::print_argument_checks(const isl_class &clazz,
 	FunctionDecl *fd)
 {
 	int num_params = fd->getNumParams();
 	int first = generator::is_static(clazz, fd) ? 0 : 1;
+	std::vector<bool> convert(num_params);
 
 	if (first >= num_params)
 		return;
@@ -520,12 +529,35 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 	for (int i = first; i < num_params; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
+		const Type *ptr = type.getTypePtr();
 
 		if (i > first)
 			printf(" and ");
-		print_argument_check(type, i);
+		if (conversions.count(ptr) == 0) {
+			print_argument_check(type, i);
+		} else {
+			QualType type2 = conversions.at(ptr)->getOriginalType();
+			convert[i] = true;
+			printf("(");
+			print_argument_check(type, i);
+			printf(" or ");
+			print_argument_check(type2, i);
+			printf(")");
+		}
 	}
 	printf(":\n");
+
+	if (std::find(convert.begin(), convert.end(), true) == convert.end())
+		return;
+	for (int i = first; i < num_params; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		string type;
+
+		if (!convert[i])
+			continue;
+		type = type2python(extract_type(param->getOriginalType()));
+		print_type_check(12, type, i, false, "", "", -1);
+	}
 }
 
 /* Print part of an overloaded python method corresponding to the C function
