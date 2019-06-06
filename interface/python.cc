@@ -654,6 +654,7 @@ void python_generator::print_method(const isl_class &clazz,
 
 	for (it = methods.begin(); it != methods.end(); ++it)
 		print_method_overload(clazz, *it);
+	printf("        raise Error\n");
 }
 
 /* Print a python method "name" corresponding to "fd" setting
