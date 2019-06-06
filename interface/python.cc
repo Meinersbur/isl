@@ -489,7 +489,7 @@ void python_generator::print_method(const isl_class &clazz,
  *
  * If the Python method has no arguments, then print nothing.
  */
-static void print_argument_check(const isl_class &clazz, FunctionDecl *fd)
+static void print_argument_checks(const isl_class &clazz, FunctionDecl *fd)
 {
 	int num_params = fd->getNumParams();
 	int first = generator::is_static(clazz, fd) ? 0 : 1;
@@ -528,7 +528,7 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
 
-	print_argument_check(clazz, method);
+	print_argument_checks(clazz, method);
 	printf("            res = isl.%s(", fullname.c_str());
 	print_arg_in_call(method, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
