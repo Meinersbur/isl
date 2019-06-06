@@ -18,12 +18,10 @@
 
 #include <isl_pw_macro.h>
 
-#ifdef HAS_TYPE
-__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *space,
-	enum isl_fold type, int n)
-#else
-__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *space, int n)
-#endif
+#include "opt_type.h"
+
+__isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *space
+	OPT_TYPE_PARAM, int n)
 {
 	isl_ctx *ctx;
 	struct PW *pw;
@@ -38,9 +36,7 @@ __isl_give PW *FN(PW,alloc_size)(__isl_take isl_space *space, int n)
 		goto error;
 
 	pw->ref = 1;
-#ifdef HAS_TYPE
-	pw->type = type;
-#endif
+	OPT_SET_TYPE(pw->, type);
 	pw->size = n;
 	pw->n = 0;
 	pw->dim = space;
@@ -50,17 +46,10 @@ error:
 	return NULL;
 }
 
-#ifdef HAS_TYPE
-__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space, enum isl_fold type)
+__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
 {
-	return FN(PW,alloc_size)(space, type, 0);
+	return FN(PW,alloc_size)(space OPT_TYPE_ARG(), 0);
 }
-#else
-__isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space)
-{
-	return FN(PW,alloc_size)(space, 0);
-}
-#endif
 
 __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	__isl_take isl_set *set, __isl_take EL *el)
@@ -78,11 +67,9 @@ __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
 	}
 
 	ctx = isl_set_get_ctx(set);
-#ifdef HAS_TYPE
-	if (pw->type != el->type)
+	if (!OPT_EQUAL_TYPES(pw->, el->))
 		isl_die(ctx, isl_error_invalid, "fold types don't match",
 			goto error);
-#endif
 	el_dim = FN(EL,get_space(el));
 	isl_assert(ctx, isl_space_is_equal(pw->dim, el_dim), goto error);
 	isl_assert(ctx, pw->n < pw->size, goto error);
@@ -136,23 +123,15 @@ static isl_stat FN(PW,check_compatible_domain)(__isl_keep EL *el,
 	return isl_stat_ok;
 }
 
-#ifdef HAS_TYPE
-__isl_give PW *FN(PW,alloc)(enum isl_fold type,
+__isl_give PW *FN(PW,alloc)(OPT_TYPE_PARAM_FIRST
 	__isl_take isl_set *set, __isl_take EL *el)
-#else
-__isl_give PW *FN(PW,alloc)(__isl_take isl_set *set, __isl_take EL *el)
-#endif
 {
 	PW *pw;
 
 	if (FN(PW,check_compatible_domain)(el, set) < 0)
 		goto error;
 
-#ifdef HAS_TYPE
-	pw = FN(PW,alloc_size)(FN(EL,get_space)(el), type, 1);
-#else
-	pw = FN(PW,alloc_size)(FN(EL,get_space)(el), 1);
-#endif
+	pw = FN(PW,alloc_size)(FN(EL,get_space)(el) OPT_TYPE_ARG(), 1);
 
 	return FN(PW,add_piece)(pw, set, el);
 error:
@@ -169,11 +148,8 @@ __isl_give PW *FN(PW,dup)(__isl_keep PW *pw)
 	if (!pw)
 		return NULL;
 
-#ifdef HAS_TYPE
-	dup = FN(PW,alloc_size)(isl_space_copy(pw->dim), pw->type, pw->n);
-#else
-	dup = FN(PW,alloc_size)(isl_space_copy(pw->dim), pw->n);
-#endif
+	dup = FN(PW,alloc_size)(isl_space_copy(pw->dim)
+				OPT_TYPE_ARG(pw->), pw->n);
 	if (!dup)
 		return NULL;
 
@@ -411,11 +387,9 @@ static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
 		goto error;
 
 	ctx = isl_space_get_ctx(pw1->dim);
-#ifdef HAS_TYPE
-	if (pw1->type != pw2->type)
+	if (!OPT_EQUAL_TYPES(pw1->, pw2->))
 		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
-#endif
 	isl_assert(ctx, isl_space_is_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,IS_ZERO)(pw1)) {
@@ -429,11 +403,8 @@ static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
 	}
 
 	n = (pw1->n + 1) * (pw2->n + 1);
-#ifdef HAS_TYPE
-	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), pw1->type, n);
-#else
-	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim), n);
-#endif
+	res = FN(PW,alloc_size)(isl_space_copy(pw1->dim)
+				OPT_TYPE_ARG(pw1->), n);
 
 	for (i = 0; i < pw1->n; ++i) {
 		set = isl_set_copy(pw1->p[i].set);
@@ -510,11 +481,7 @@ static __isl_give PW *FN(PW,grow)(__isl_take PW *pw, int n)
 		res->size = n;
 		return res;
 	}
-#ifdef HAS_TYPE
-	res = FN(PW,alloc_size)(isl_space_copy(pw->dim), pw->type, n);
-#else
-	res = FN(PW,alloc_size)(isl_space_copy(pw->dim), n);
-#endif
+	res = FN(PW,alloc_size)(isl_space_copy(pw->dim) OPT_TYPE_ARG(pw->), n);
 	if (!res)
 		return FN(PW,free)(pw);
 	for (i = 0; i < pw->n; ++i)
@@ -537,11 +504,9 @@ static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
 		return FN(PW,add_disjoint_aligned)(pw2, pw1);
 
 	ctx = isl_space_get_ctx(pw1->dim);
-#ifdef HAS_TYPE
-	if (pw1->type != pw2->type)
+	if (!OPT_EQUAL_TYPES(pw1->, pw2->))
 		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
-#endif
 	isl_assert(ctx, isl_space_is_equal(pw1->dim, pw2->dim), goto error);
 
 	if (FN(PW,IS_ZERO)(pw1)) {
@@ -599,11 +564,7 @@ static __isl_give PW *FN(PW,on_shared_domain_in)(__isl_take PW *pw1,
 		goto error;
 
 	n = pw1->n * pw2->n;
-#ifdef HAS_TYPE
-	res = FN(PW,alloc_size)(isl_space_copy(space), pw1->type, n);
-#else
-	res = FN(PW,alloc_size)(isl_space_copy(space), n);
-#endif
+	res = FN(PW,alloc_size)(isl_space_copy(space) OPT_TYPE_ARG(pw1->), n);
 
 	for (i = 0; i < pw1->n; ++i) {
 		for (j = 0; j < pw2->n; ++j) {
@@ -2022,11 +1983,7 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 	if (pw && DEFAULT_IS_ZERO && isl_int_is_zero(v)) {
 		PW *zero;
 		isl_space *dim = FN(PW,get_space)(pw);
-#ifdef HAS_TYPE
-		zero = FN(PW,ZERO)(dim, pw->type);
-#else
-		zero = FN(PW,ZERO)(dim);
-#endif
+		zero = FN(PW,ZERO)(dim OPT_TYPE_ARG(pw->));
 		FN(PW,free)(pw);
 		return zero;
 	}
@@ -2066,11 +2023,7 @@ __isl_give PW *FN(PW,scale_val)(__isl_take PW *pw, __isl_take isl_val *v)
 	if (pw && DEFAULT_IS_ZERO && isl_val_is_zero(v)) {
 		PW *zero;
 		isl_space *space = FN(PW,get_space)(pw);
-#ifdef HAS_TYPE
-		zero = FN(PW,ZERO)(space, pw->type);
-#else
-		zero = FN(PW,ZERO)(space);
-#endif
+		zero = FN(PW,ZERO)(space OPT_TYPE_ARG(pw->));
 		FN(PW,free)(pw);
 		isl_val_free(v);
 		return zero;
