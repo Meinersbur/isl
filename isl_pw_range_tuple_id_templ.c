@@ -8,6 +8,18 @@
  * Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
+/* Does the (range) tuple of "pw" have an identifier?
+ *
+ * Technically, the implementation should use isl_dim_set if "pw"
+ * lives in a set space and isl_dim_out if it lives in a map space.
+ * Internally, however, it can be assumed that isl_dim_set is equal
+ * to isl_dim_out.
+ */
+isl_bool FN(PW,has_range_tuple_id)(__isl_keep PW *pw)
+{
+	return FN(PW,has_tuple_id)(pw, isl_dim_out);
+}
+
 /* Return the identifier of the (range) tuple of "pw", assuming it has one.
  *
  * Technically, the implementation should use isl_dim_set if "pw"
