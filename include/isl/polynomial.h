@@ -352,6 +352,8 @@ void isl_qpolynomial_fold_print(__isl_keep isl_qpolynomial_fold *fold, FILE *out
 void isl_qpolynomial_fold_dump(__isl_keep isl_qpolynomial_fold *fold);
 
 isl_ctx *isl_pw_qpolynomial_fold_get_ctx(__isl_keep isl_pw_qpolynomial_fold *pwf);
+enum isl_fold isl_pw_qpolynomial_fold_get_type(
+	__isl_keep isl_pw_qpolynomial_fold *pwf);
 
 isl_bool isl_pw_qpolynomial_fold_involves_nan(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);

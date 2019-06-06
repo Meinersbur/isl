@@ -2876,6 +2876,8 @@ can be obtained using the following functions.
 	#include <isl/polynomial.h>
 	enum isl_fold isl_qpolynomial_fold_get_type(
 		__isl_keep isl_qpolynomial_fold *fold);
+	enum isl_fold isl_pw_qpolynomial_fold_get_type(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
 	enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 

@@ -1316,6 +1316,16 @@ enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fol
 	return fold->type;
 }
 
+/* Return the type of this piecewise quasipolynomial reduction.
+ */
+enum isl_fold isl_pw_qpolynomial_fold_get_type(
+	__isl_keep isl_pw_qpolynomial_fold *pwf)
+{
+	if (!pwf)
+		return isl_fold_error;
+	return pwf->type;
+}
+
 enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
 {
