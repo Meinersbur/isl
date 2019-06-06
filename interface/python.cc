@@ -96,7 +96,8 @@ static void print_indent(int indent, const char *format, ...)
 	va_end(args);
 }
 
-/* Print a check that the argument in position "pos" is of type "type".
+/* Print a check that the argument in position "pos" is of type "type"
+ * with the given indentation.
  * If this fails and if "upcast" is set, then convert the first
  * argument to "super" and call the method "name" on it, passing
  * the remaining of the "n" arguments.
@@ -105,17 +106,17 @@ static void print_indent(int indent, const char *format, ...)
  * If "upcast" is not set, then the "super", "name" and "n" arguments
  * to this function are ignored.
  */
-void python_generator::print_type_check(const string &type, int pos,
+void python_generator::print_type_check(int indent, const string &type, int pos,
 	bool upcast, const string &super, const string &name, int n)
 {
-	printf("        try:\n");
-	printf("            if not arg%d.__class__ is %s:\n",
+	print_indent(indent, "try:\n");
+	print_indent(indent, "    if not arg%d.__class__ is %s:\n",
 		pos, type.c_str());
-	printf("                arg%d = %s(arg%d)\n",
+	print_indent(indent, "        arg%d = %s(arg%d)\n",
 		pos, type.c_str(), pos);
-	printf("        except:\n");
+	print_indent(indent, "except:\n");
 	if (upcast) {
-		printf("            return %s(arg0).%s(",
+		print_indent(indent, "    return %s(arg0).%s(",
 			type2python(super).c_str(), name.c_str());
 		for (int i = 1; i < n; ++i) {
 			if (i != 1)
@@ -124,7 +125,7 @@ void python_generator::print_type_check(const string &type, int pos,
 		}
 		printf(")\n");
 	} else
-		printf("            raise\n");
+		print_indent(indent, "    raise\n");
 }
 
 /* For each of the "n" initial arguments of the function "method"
@@ -149,11 +150,11 @@ void python_generator::print_type_checks(const string &cname,
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
 		if (!first_is_ctx && i > 0 && super.size() > 0)
-			print_type_check(type, i - first_is_ctx, true, super[0],
-					cname, n);
+			print_type_check(8, type, i - first_is_ctx, true,
+					super[0], cname, n);
 		else
-			print_type_check(type, i - first_is_ctx, false, "",
-					cname, -1);
+			print_type_check(8, type, i - first_is_ctx, false,
+					"", cname, -1);
 	}
 }
 
@@ -861,7 +862,7 @@ void python_generator::print_representation(const isl_class &clazz,
 		return;
 
 	printf("    def __str__(arg0):\n");
-	print_type_check(python_name, 0, false, "", "", -1);
+	print_type_check(8, python_name, 0, false, "", "", -1);
 	printf("        ptr = isl.%s(arg0.ptr)\n",
 		string(clazz.fn_to_str->getName()).c_str());
 	printf("        res = cast(ptr, c_char_p).value.decode('ascii')\n");

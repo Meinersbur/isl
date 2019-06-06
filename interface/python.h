@@ -23,8 +23,8 @@ private:
 	void print_method_header(bool is_static, const string &name, int n_arg);
 	void print_class_header(const isl_class &clazz, const string &name,
 		const vector<string> &super);
-	void print_type_check(const string &type, int pos, bool upcast,
-		const string &super, const string &name, int n);
+	void print_type_check(int indent, const string &type, int pos,
+		bool upcast, const string &super, const string &name, int n);
 	void print_type_checks(const string &cname, FunctionDecl *method,
 		bool first_is_ctx, int n, const vector<string> &super);
 	void print_copy(QualType type);
