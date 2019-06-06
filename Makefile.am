@@ -505,6 +505,7 @@ EXTRA_DIST = \
 	isl_multi_splice_templ.c \
 	isl_multi_tuple_id_templ.c \
 	isl_multi_zero_templ.c \
+	opt_type.h \
 	print_templ.c \
 	print_templ_yaml.c \
 	print_yaml_field_templ.c \

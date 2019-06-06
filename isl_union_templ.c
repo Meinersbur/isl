@@ -65,15 +65,7 @@ int FN(UNION,find_dim_by_name)(__isl_keep UNION *u, enum isl_dim_type type,
 	return isl_space_find_dim_by_name(u->space, type, name);
 }
 
-#ifdef HAS_TYPE
-#define OPT_TYPE_PARAM		, enum isl_fold type
-#define OPT_TYPE_ARG(loc)	, loc type
-#define OPT_SET_TYPE(loc,val)	loc type = (val);
-#else
-#define OPT_TYPE_PARAM
-#define OPT_TYPE_ARG(loc)
-#define OPT_SET_TYPE(loc,val)
-#endif
+#include "opt_type.h"
 
 static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space
 	OPT_TYPE_PARAM, int size)
