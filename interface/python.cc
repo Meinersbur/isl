@@ -507,7 +507,8 @@ static void print_argument_check(QualType type, int i)
  *
  * If the Python method has no arguments, then print nothing.
  */
-static void print_argument_checks(const isl_class &clazz, FunctionDecl *fd)
+void python_generator::print_argument_checks(const isl_class &clazz,
+	FunctionDecl *fd)
 {
 	int num_params = fd->getNumParams();
 	int first = generator::is_static(clazz, fd) ? 0 : 1;
