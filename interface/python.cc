@@ -84,6 +84,18 @@ void python_generator::print_method_header(bool is_static, const string &name,
 	printf("):\n");
 }
 
+/* Print formatted output with the given indentation.
+ */
+static void print_indent(int indent, const char *format, ...)
+{
+	va_list args;
+
+	printf("%*s", indent, " ");
+	va_start(args, format);
+	vprintf(format, args);
+	va_end(args);
+}
+
 /* Print a check that the argument in position "pos" is of type "type".
  * If this fails and if "upcast" is set, then convert the first
  * argument to "super" and call the method "name" on it, passing
@@ -262,18 +274,6 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 	} else {
 		printf("arg%d", arg - skip);
 	}
-}
-
-/* Print formatted output with the given indentation.
- */
-static void print_indent(int indent, const char *format, ...)
-{
-	va_list args;
-
-	printf("%*s", indent, " ");
-	va_start(args, format);
-	vprintf(format, args);
-	va_end(args);
 }
 
 /* Generate code that raises the exception captured in "exc_info", if any,
