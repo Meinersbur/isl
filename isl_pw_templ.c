@@ -1992,6 +1992,27 @@ error:
 }
 #endif
 
+#ifdef HAS_TYPE
+/* Negate the type of "pw".
+ */
+static __isl_give PW *FN(PW,negate_type)(__isl_take PW *pw)
+{
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		return NULL;
+	pw->type = isl_fold_type_negate(pw->type);
+	return pw;
+}
+#else
+/* Negate the type of "pw".
+ * Since "pw" does not have a type, do nothing.
+ */
+static __isl_give PW *FN(PW,negate_type)(__isl_take PW *pw)
+{
+	return pw;
+}
+#endif
+
 __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 {
 	int i;
@@ -2010,15 +2031,13 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 		return zero;
 	}
 	pw = FN(PW,cow)(pw);
+	if (isl_int_is_neg(v))
+		pw = FN(PW,negate_type)(pw);
 	if (!pw)
 		return NULL;
 	if (pw->n == 0)
 		return pw;
 
-#ifdef HAS_TYPE
-	if (isl_int_is_neg(v))
-		pw->type = isl_fold_type_negate(pw->type);
-#endif
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].FIELD = FN(EL,scale)(pw->p[i].FIELD, v);
 		if (!pw->p[i].FIELD)
@@ -2061,13 +2080,11 @@ __isl_give PW *FN(PW,scale_val)(__isl_take PW *pw, __isl_take isl_val *v)
 		return pw;
 	}
 	pw = FN(PW,cow)(pw);
+	if (isl_val_is_neg(v))
+		pw = FN(PW,negate_type)(pw);
 	if (!pw)
 		goto error;
 
-#ifdef HAS_TYPE
-	if (isl_val_is_neg(v))
-		pw->type = isl_fold_type_negate(pw->type);
-#endif
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].FIELD = FN(EL,scale_val)(pw->p[i].FIELD,
 						    isl_val_copy(v));
@@ -2109,13 +2126,11 @@ __isl_give PW *FN(PW,scale_down_val)(__isl_take PW *pw, __isl_take isl_val *v)
 		return pw;
 	}
 	pw = FN(PW,cow)(pw);
+	if (isl_val_is_neg(v))
+		pw = FN(PW,negate_type)(pw);
 	if (!pw)
 		goto error;
 
-#ifdef HAS_TYPE
-	if (isl_val_is_neg(v))
-		pw->type = isl_fold_type_negate(pw->type);
-#endif
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].FIELD = FN(EL,scale_down_val)(pw->p[i].FIELD,
 						    isl_val_copy(v));
