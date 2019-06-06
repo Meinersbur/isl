@@ -199,6 +199,63 @@ __isl_null PW *FN(PW,free)(__isl_take PW *pw)
 	return NULL;
 }
 
+/* Create a piecewise expression with the given base expression on a universe
+ * domain.
+ */
+static __isl_give PW *FN(FN(FN(PW,from),BASE),type_base)(__isl_take EL *el
+	OPT_TYPE_PARAM)
+{
+	isl_set *dom = isl_set_universe(FN(EL,get_domain_space)(el));
+	return FN(PW,alloc)(OPT_TYPE_ARG_FIRST() dom, el);
+}
+
+/* Create a piecewise expression with the given base expression on a universe
+ * domain.
+ *
+ * If the default value of this piecewise type is zero and
+ * if "el" is effectively zero, then create an empty piecewise expression
+ * instead.
+ */
+static __isl_give PW *FN(FN(FN(PW,from),BASE),type)(__isl_take EL *el
+	OPT_TYPE_PARAM)
+{
+	isl_bool is_zero;
+	isl_space *space;
+
+	if (!DEFAULT_IS_ZERO)
+		return FN(FN(FN(PW,from),BASE),type_base)(el OPT_TYPE_ARG());
+	is_zero = FN(EL,EL_IS_ZERO)(el);
+	if (is_zero < 0)
+		goto error;
+	if (!is_zero)
+		return FN(FN(FN(PW,from),BASE),type_base)(el OPT_TYPE_ARG());
+	space = FN(EL,get_space)(el);
+	FN(EL,free)(el);
+	return FN(PW,ZERO)(space OPT_TYPE_ARG());
+error:
+	FN(EL,free)(el);
+	return NULL;
+}
+
+#ifdef HAS_TYPE
+/* Create a piecewise expression with the given base expression on a universe
+ * domain.
+ *
+ * Pass along the type as an extra argument for improved uniformity
+ * with piecewise types that do not have a fold type.
+ */
+__isl_give PW *FN(FN(PW,from),BASE)(__isl_take EL *el)
+{
+	enum isl_fold type = FN(EL,get_type)(el);
+	return FN(FN(FN(PW,from),BASE),type)(el, type);
+}
+#else
+__isl_give PW *FN(FN(PW,from),BASE)(__isl_take EL *el)
+{
+	return FN(FN(FN(PW,from),BASE),type)(el);
+}
+#endif
+
 const char *FN(PW,get_dim_name)(__isl_keep PW *pw, enum isl_dim_type type,
 	unsigned pos)
 {

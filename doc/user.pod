@@ -3277,6 +3277,9 @@ created using the following functions.
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_from_qpolynomial(
 		__isl_take isl_qpolynomial *qp);
+	__isl_give isl_pw_qpolynomial_fold *
+		isl_pw_qpolynomial_fold_from_qpolynomial_fold(
+		__isl_take isl_qpolynomial_fold *fold);
 
 A piecewise expression with a single specified cell can be
 created using the following functions.
