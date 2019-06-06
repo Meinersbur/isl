@@ -2405,12 +2405,12 @@ __isl_give isl_aff *isl_aff_add_on_domain(__isl_keep isl_set *dom,
 	return aff1;
 }
 
-int isl_aff_is_empty(__isl_keep isl_aff *aff)
+isl_bool isl_aff_is_empty(__isl_keep isl_aff *aff)
 {
 	if (!aff)
-		return -1;
+		return isl_bool_error;
 
-	return 0;
+	return isl_bool_false;
 }
 
 #undef TYPE
@@ -4249,12 +4249,12 @@ __isl_give isl_multi_aff *isl_multi_aff_add_on_domain(__isl_keep isl_set *dom,
 	return maff1;
 }
 
-int isl_multi_aff_is_empty(__isl_keep isl_multi_aff *maff)
+isl_bool isl_multi_aff_is_empty(__isl_keep isl_multi_aff *maff)
 {
 	if (!maff)
-		return -1;
+		return isl_bool_error;
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Return the set of domain elements where "ma1" is lexicographically
