@@ -2665,6 +2665,19 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Return a zero isl_aff in the given space.
+ *
+ * This is a helper function for isl_pw_*_as_* that ensures a uniform
+ * interface over all piecewise types.
+ */
+static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
+{
+	isl_local_space *ls;
+
+	ls = isl_local_space_from_space(isl_space_domain(space));
+	return isl_aff_zero_on_domain(ls);
+}
+
 #define isl_aff_involves_nan isl_aff_is_nan
 
 #undef PW
@@ -4298,6 +4311,8 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 {
 	return isl_multi_aff_order_set(ma1, ma2, &isl_map_lex_gt);
 }
+
+#define isl_multi_aff_zero_in_space	isl_multi_aff_zero
 
 #undef PW
 #define PW isl_pw_multi_aff

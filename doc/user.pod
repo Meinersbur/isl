@@ -3295,6 +3295,30 @@ created using the following functions.
 		isl_pw_qpolynomial_fold_from_qpolynomial_fold(
 		__isl_take isl_qpolynomial_fold *fold);
 
+The inverse conversions below can only be used if the input
+expression is known to be defined over a single universe domain.
+
+	#include <isl/aff.h>
+	isl_bool isl_pw_aff_isa_aff(__isl_keep isl_pw_aff *pa);
+	__isl_give isl_aff *isl_pw_aff_as_aff(
+		__isl_take isl_pw_aff *pa);
+	isl_bool isl_pw_multi_aff_isa_multi_aff(
+		__isl_keep isl_pw_multi_aff *pma);
+	__isl_give isl_multi_aff *isl_pw_multi_aff_as_multi_aff(
+		__isl_take isl_pw_multi_aff *pma);
+
+	#include <isl/polynomial.h>
+	isl_bool isl_pw_qpolynomial_isa_qpolynomial(
+		__isl_keep isl_pw_qpolynomial *pwqp);
+	__isl_give isl_qpolynomial *
+	isl_pw_qpolynomial_as_qpolynomial(
+		__isl_take isl_pw_qpolynomial *pwqp);
+	isl_bool isl_pw_qpolynomial_fold_isa_qpolynomial_fold(
+		__isl_keep isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_as_qpolynomial_fold(
+		__isl_take isl_pw_qpolynomial_fold *pwf);
+
 A piecewise expression with a single specified cell can be
 created using the following functions.
 

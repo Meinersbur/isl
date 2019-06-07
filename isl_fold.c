@@ -669,6 +669,17 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 	return isl_qpolynomial_fold_gist(fold, dom_context);
 }
 
+/* Return a zero (i.e., empty) isl_qpolynomial_fold in the given space.
+ *
+ * This is a helper function for isl_pw_*_as_* that ensures a uniform
+ * interface over all piecewise types.
+ */
+static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
+	__isl_take isl_space *space, enum isl_fold type)
+{
+	return isl_qpolynomial_fold_empty(type, isl_space_domain(space));
+}
+
 #define isl_qpolynomial_fold_involves_nan isl_qpolynomial_fold_is_nan
 
 #define HAS_TYPE

@@ -3064,6 +3064,17 @@ __isl_give isl_qpolynomial *isl_qpolynomial_gist_params(
 	return isl_qpolynomial_gist(qp, dom_context);
 }
 
+/* Return a zero isl_qpolynomial in the given space.
+ *
+ * This is a helper function for isl_pw_*_as_* that ensures a uniform
+ * interface over all piecewise types.
+ */
+static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
+	__isl_take isl_space *space)
+{
+	return isl_qpolynomial_zero_on_domain(isl_space_domain(space));
+}
+
 #define isl_qpolynomial_involves_nan isl_qpolynomial_is_nan
 
 #undef PW

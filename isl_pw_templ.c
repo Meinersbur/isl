@@ -1578,6 +1578,15 @@ static isl_stat FN(PW,check_pos)(__isl_keep PW *pw, int pos)
 	return isl_stat_ok;
 }
 
+/* Return the cell at position "pos" in "pw".
+ */
+static __isl_keep isl_set *FN(PW,peek_domain_at)(__isl_keep PW *pw, int pos)
+{
+	if (FN(PW,check_pos)(pw, pos) < 0)
+		return NULL;
+	return pw->p[pos].set;
+}
+
 /* Return a copy of the base expression associated to
  * the cell at position "pos" in "pw".
  */
@@ -1885,6 +1894,100 @@ isl_stat FN(PW,foreach_piece)(__isl_keep PW *pw,
 			return isl_stat_error;
 
 	return isl_stat_ok;
+}
+
+/* Is "pw" defined over a single universe domain?
+ *
+ * If the default value of this piecewise type is zero,
+ * then a "pw" with a zero number of cells is also accepted
+ * as it represents the default zero value.
+ */
+isl_bool FN(FN(PW,isa),BASE)(__isl_keep PW *pw)
+{
+	isl_size n;
+
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
+		return isl_bool_error;
+	if (DEFAULT_IS_ZERO && n == 0)
+		return isl_bool_true;
+	if (n != 1)
+		return isl_bool_false;
+	return isl_set_plain_is_universe(FN(PW,peek_domain_at)(pw, 0));
+}
+
+/* Return a zero base expression in the same space (and of the same type)
+ * as "pw".
+ */
+static __isl_give EL *FN(EL,zero_like_type)(__isl_take PW *pw OPT_TYPE_PARAM)
+{
+	isl_space *space;
+
+	space = FN(PW,get_space)(pw);
+	FN(PW,free)(pw);
+	return FN(EL,zero_in_space)(space OPT_TYPE_ARG());
+}
+
+#ifndef HAS_TYPE
+/* Return a zero base expression in the same space as "pw".
+ */
+static __isl_give EL *FN(EL,zero_like)(__isl_take PW *pw)
+{
+	return FN(EL,zero_like_type)(pw);
+}
+#else
+/* Return a zero base expression in the same space and of the same type
+ * as "pw".
+ *
+ * Pass along the type as an explicit argument for uniform handling
+ * in isl_*_zero_like_type.
+ */
+static __isl_give EL *FN(EL,zero_like)(__isl_take PW *pw)
+{
+	enum isl_fold type;
+
+	type = FN(PW,get_type)(pw);
+	if (type < 0)
+		goto error;
+	return FN(EL,zero_like_type)(pw, type);
+error:
+	FN(PW,free)(pw);
+	return NULL;
+}
+#endif
+
+/* Given that "pw" is defined over a single universe domain,
+ * return the base expression associated to this domain.
+ *
+ * If the number of cells is zero, then "pw" is of a piecewise type
+ * with a default zero value and effectively represents zero.
+ * In this case, create a zero base expression in the same space
+ * (and with the same type).
+ * Otherwise, simply extract the associated base expression.
+ */
+__isl_give EL *FN(FN(PW,as),BASE)(__isl_take PW *pw)
+{
+	isl_bool is_total;
+	isl_size n;
+	EL *el;
+
+	is_total = FN(FN(PW,isa),BASE)(pw);
+	if (is_total < 0)
+		goto error;
+	if (!is_total)
+		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
+			"expecting single total function", goto error);
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
+		goto error;
+	if (n == 0)
+		return FN(EL,zero_like)(pw);
+	el = FN(PW,take_base_at)(pw, 0);
+	FN(PW,free)(pw);
+	return el;
+error:
+	FN(PW,free)(pw);
+	return NULL;
 }
 
 #ifndef NO_LIFT
