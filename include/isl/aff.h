@@ -372,7 +372,9 @@ isl_size isl_pw_aff_n_piece(__isl_keep isl_pw_aff *pwaff);
 isl_stat isl_pw_aff_foreach_piece(__isl_keep isl_pw_aff *pwaff,
 	isl_stat (*fn)(__isl_take isl_set *set, __isl_take isl_aff *aff,
 		    void *user), void *user);
+__isl_export
 isl_bool isl_pw_aff_isa_aff(__isl_keep isl_pw_aff *pa);
+__isl_export
 __isl_give isl_aff *isl_pw_aff_as_aff(__isl_take isl_pw_aff *pa);
 
 __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff);
@@ -700,7 +702,9 @@ __isl_export
 isl_stat isl_pw_multi_aff_foreach_piece(__isl_keep isl_pw_multi_aff *pma,
 	isl_stat (*fn)(__isl_take isl_set *set, __isl_take isl_multi_aff *maff,
 		    void *user), void *user);
+__isl_export
 isl_bool isl_pw_multi_aff_isa_multi_aff(__isl_keep isl_pw_multi_aff *pma);
+__isl_export
 __isl_give isl_multi_aff *isl_pw_multi_aff_as_multi_aff(
 	__isl_take isl_pw_multi_aff *pma);
 
