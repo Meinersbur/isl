@@ -113,23 +113,31 @@ static void print_indent(int indent, const char *format, ...)
  * an exception.
  * If "upcast" is not set, then the "super", "name" and "n" arguments
  * to this function are ignored.
+ * "fmt" is the format for printing Python method arguments.
  */
-void python_generator::print_type_check(int indent, const string &type, int pos,
-	bool upcast, const string &super, const string &name, int n)
+void python_generator::print_type_check(int indent, const string &type,
+	const char *fmt, int pos, bool upcast, const string &super,
+	const string &name, int n)
 {
 	print_indent(indent, "try:\n");
-	print_indent(indent, "    if not arg%d.__class__ is %s:\n",
-		pos, type.c_str());
-	print_indent(indent, "        arg%d = %s(arg%d)\n",
-		pos, type.c_str(), pos);
+	print_indent(indent, "    if not ");
+	printf(fmt, pos);
+	printf(".__class__ is %s:\n", type.c_str());
+	print_indent(indent, "        ");
+	printf(fmt, pos);
+	printf(" = %s(", type.c_str());
+	printf(fmt, pos);
+	printf(")\n");
 	print_indent(indent, "except:\n");
 	if (upcast) {
-		print_indent(indent, "    return %s(arg0).%s(",
-			type2python(super).c_str(), name.c_str());
+		print_indent(indent, "    return %s(",
+			type2python(super).c_str());
+		printf(fmt, 0);
+		printf(").%s(", name.c_str());
 		for (int i = 1; i < n; ++i) {
 			if (i != 1)
 				printf(", ");
-			printf("arg%d", i);
+			printf(fmt, i);
 		}
 		printf(")\n");
 	} else
@@ -158,11 +166,12 @@ void python_generator::print_type_checks(const string &cname,
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
 		if (!first_is_ctx && i > 0 && super.size() > 0)
-			print_type_check(8, type, i - first_is_ctx, true,
+			print_type_check(8, type, fixed_arg_fmt,
+					i - first_is_ctx, true,
 					super[0], cname, n);
 		else
-			print_type_check(8, type, i - first_is_ctx, false,
-					"", cname, -1);
+			print_type_check(8, type, fixed_arg_fmt,
+					i - first_is_ctx, false, "", cname, -1);
 	}
 }
 
@@ -580,7 +589,7 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 		if (!convert[i])
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
-		print_type_check(12, type, i, false, "", "", -1);
+		print_type_check(12, type, fixed_arg_fmt, i, false, "", "", -1);
 	}
 }
 
@@ -902,7 +911,7 @@ void python_generator::print_representation(const isl_class &clazz,
 		return;
 
 	printf("    def __str__(arg0):\n");
-	print_type_check(8, python_name, 0, false, "", "", -1);
+	print_type_check(8, python_name, fixed_arg_fmt, 0, false, "", "", -1);
 	printf("        ptr = isl.%s(arg0.ptr)\n",
 		string(clazz.fn_to_str->getName()).c_str());
 	printf("        res = cast(ptr, c_char_p).value.decode('ascii')\n");
