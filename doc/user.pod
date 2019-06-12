@@ -2870,6 +2870,18 @@ the following functions.
 	isl_qpolynomial_fold_free(
 		__isl_take isl_qpolynomial_fold *fold);
 
+The type of a (union piecewise) reduction
+can be obtained using the following functions.
+
+	#include <isl/polynomial.h>
+	enum isl_fold isl_qpolynomial_fold_get_type(
+		__isl_keep isl_qpolynomial_fold *fold);
+	enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
+
+The type may be either C<isl_fold_min> or C<isl_fold_max>
+(or C<isl_fold_error> in case of error).
+
 To iterate over all quasipolynomials in a reduction, use
 
 	isl_stat isl_qpolynomial_fold_foreach_qpolynomial(
