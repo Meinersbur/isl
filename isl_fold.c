@@ -28,6 +28,8 @@
 enum isl_fold isl_fold_type_negate(enum isl_fold type)
 {
 	switch (type) {
+	case isl_fold_error:
+		return isl_fold_error;
 	case isl_fold_min:
 		return isl_fold_max;
 	case isl_fold_max:
@@ -1310,7 +1312,7 @@ error:
 enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fold)
 {
 	if (!fold)
-		return isl_fold_list;
+		return isl_fold_error;
 	return fold->type;
 }
 
@@ -1318,7 +1320,7 @@ enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
 {
 	if (!upwf)
-		return isl_fold_list;
+		return isl_fold_error;
 	return upwf->type;
 }
 
