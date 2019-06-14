@@ -39,3 +39,13 @@ __isl_give isl_map *FN(FN(isl_multi_pw_aff_lex,ORDER),map)(
 	return isl_multi_pw_aff_order_map(mpa1, mpa2,
 			&FN(FN(isl_multi_pw_aff_lex,ORDER),map_on_space));
 }
+
+/* Return the subset of "map" where the domain and the range
+ * have "mpa" values that lexicographically compare as "ORDER".
+ */
+__isl_give isl_map *FN(FN(isl_map_lex,ORDER),at_multi_pw_aff)(
+	__isl_take isl_map *map, __isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_map_order_at_multi_pw_aff(map, mpa,
+				&FN(FN(isl_multi_pw_aff_lex,ORDER),map));
+}

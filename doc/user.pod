@@ -7500,6 +7500,23 @@ C<isl_pw_aff> function to each pair of elements in the two lists.
 These functions return a map between domain elements of the arguments
 where the function values satisfy the given relation.
 
+	#include <isl/map.h>
+	__isl_give isl_map *isl_map_eq_at_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_map *isl_map_lex_lt_at_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_map *isl_map_lex_le_at_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_map *isl_map_lex_gt_at_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_map *isl_map_lex_ge_at_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *mpa);
+
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *
 	isl_union_map_eq_at_multi_union_pw_aff(

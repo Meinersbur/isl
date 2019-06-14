@@ -7153,6 +7153,27 @@ __isl_give isl_map *isl_multi_pw_aff_eq_map(__isl_take isl_multi_pw_aff *mpa1,
 					    &isl_multi_pw_aff_eq_map_on_space);
 }
 
+/* Intersect "map" with the result of applying "order"
+ * on two copies of "mpa".
+ */
+static __isl_give isl_map *isl_map_order_at_multi_pw_aff(
+	__isl_take isl_map *map, __isl_take isl_multi_pw_aff *mpa,
+	__isl_give isl_map *(*order)(__isl_take isl_multi_pw_aff *mpa1,
+		__isl_take isl_multi_pw_aff *mpa2))
+{
+	return isl_map_intersect(map, order(mpa, isl_multi_pw_aff_copy(mpa)));
+}
+
+/* Return the subset of "map" where the domain and the range
+ * have equal "mpa" values.
+ */
+__isl_give isl_map *isl_map_eq_at_multi_pw_aff(__isl_take isl_map *map,
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_map_order_at_multi_pw_aff(map, mpa,
+						&isl_multi_pw_aff_eq_map);
+}
+
 /* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
  * where the function values of "mpa1" lexicographically satisfies "base"
  * compared to that of "mpa2".  "space" is the space of the result.
