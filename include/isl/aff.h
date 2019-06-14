@@ -997,6 +997,8 @@ __isl_give char *isl_union_pw_multi_aff_to_str(
 uint32_t isl_multi_pw_aff_get_hash(__isl_keep isl_multi_pw_aff *mpa);
 
 __isl_constructor
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_aff(__isl_take isl_aff *aff);
+__isl_constructor
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);
 __isl_constructor

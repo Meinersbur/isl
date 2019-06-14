@@ -3068,11 +3068,14 @@ then this space also needs to be a set space.
 		__isl_take isl_union_pw_aff_list *list);
 
 As a convenience, a multiple piecewise expression can
-also be created from a multiple expression.
+also be created from a multiple expression,
+or even directly from a single base expression.
 Each piecewise expression in the result has a single
 universe cell.
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_aff(
+		__isl_take isl_aff *aff);
 	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_from_multi_aff(
 		__isl_take isl_multi_aff *ma);

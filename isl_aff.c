@@ -6643,6 +6643,14 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_pw_aff(
 	return pma;
 }
 
+/* Convenience function that constructs an isl_multi_pw_aff
+ * directly from an isl_aff.
+ */
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_aff(__isl_take isl_aff *aff)
+{
+	return isl_multi_pw_aff_from_pw_aff(isl_pw_aff_from_aff(aff));
+}
+
 /* Construct and return a multi piecewise affine expression
  * that is equal to the given multi affine expression.
  */
