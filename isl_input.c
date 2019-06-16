@@ -1685,6 +1685,7 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	struct isl_token *tok, *tok2;
+	int has_paren;
 	int line, col;
 	isl_pw_aff *pwaff;
 
@@ -1721,20 +1722,20 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 	if (!pwaff)
 		goto error;
 
+	has_paren = isl_stream_eat_if_available(s, ')');
+
 	tok2 = isl_token_new(s->ctx, line, col, 0);
 	if (!tok2)
 		goto error2;
 	tok2->type = ISL_TOKEN_AFF;
 	tok2->u.pwaff = pwaff;
+	isl_stream_push_token(s, tok2);
 
-	if (isl_stream_eat_if_available(s, ')')) {
-		isl_stream_push_token(s, tok2);
+	if (has_paren) {
 		isl_token_free(tok);
 		isl_map_free(map);
 		return 0;
 	}
-
-	isl_stream_push_token(s, tok2);
 
 	map = read_formula(s, v, map, rational);
 	if (isl_stream_eat(s, ')'))
