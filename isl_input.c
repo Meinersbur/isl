@@ -724,7 +724,7 @@ static __isl_give isl_pw_aff *accept_ternary(__isl_keep isl_stream *s,
 
 	space = isl_pw_aff_get_domain_space(pwaff1);
 	pwaff2 = accept_extended_affine(s, space, v, rational);
-	if (!pwaff1)
+	if (!pwaff2)
 		goto error;
 
 	pa_cond = isl_set_indicator_function(isl_map_wrap(cond));
