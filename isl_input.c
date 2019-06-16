@@ -1122,9 +1122,7 @@ static __isl_give isl_pw_aff *read_tuple_var_def(__isl_keep isl_stream *s,
 	space = isl_space_wrap(isl_space_alloc(s->ctx, 0, v->n, 0));
 
 	def = accept_piecewise_affine(s, space, v, rational);
-
-	space = isl_space_set_alloc(s->ctx, 0, v->n);
-	def = isl_pw_aff_reset_domain_space(def, space);
+	def = isl_pw_aff_domain_factor_domain(def);
 
 	return def;
 }
