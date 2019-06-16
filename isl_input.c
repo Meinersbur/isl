@@ -754,7 +754,7 @@ static void set_current_line_col(__isl_keep isl_stream *s, int *line, int *col)
 /* Push a token encapsulating "pa" onto "s", with the given
  * line and column.
  */
-static int push_aff(__isl_keep isl_stream *s, int line, int col,
+static isl_stat push_aff(__isl_keep isl_stream *s, int line, int col,
 	__isl_take isl_pw_aff *pa)
 {
 	struct isl_token *tok;
@@ -766,10 +766,10 @@ static int push_aff(__isl_keep isl_stream *s, int line, int col,
 	tok->u.pwaff = pa;
 	isl_stream_push_token(s, tok);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_pw_aff_free(pa);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Accept an affine expression that may involve ternary operators.
