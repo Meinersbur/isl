@@ -1724,12 +1724,8 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 
 	has_paren = isl_stream_eat_if_available(s, ')');
 
-	tok2 = isl_token_new(s->ctx, line, col, 0);
-	if (!tok2)
-		goto error2;
-	tok2->type = ISL_TOKEN_AFF;
-	tok2->u.pwaff = pwaff;
-	isl_stream_push_token(s, tok2);
+	if (push_aff(s, line, col, pwaff) < 0)
+		goto error;
 
 	if (has_paren) {
 		isl_token_free(tok);
@@ -1746,8 +1742,6 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 	isl_stream_push_token(s, tok);
 
 	return 0;
-error2:
-	isl_pw_aff_free(pwaff);
 error:
 	isl_token_free(tok);
 	isl_map_free(map);
