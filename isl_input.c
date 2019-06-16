@@ -705,7 +705,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
 static __isl_give isl_pw_aff *accept_ternary(__isl_keep isl_stream *s,
 	__isl_take isl_map *cond, struct vars *v, int rational)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL, *pa_cond;
 
 	if (!cond)
@@ -714,16 +714,16 @@ static __isl_give isl_pw_aff *accept_ternary(__isl_keep isl_stream *s,
 	if (isl_stream_eat(s, '?'))
 		goto error;
 
-	dim = isl_space_wrap(isl_map_get_space(cond));
-	pwaff1 = accept_extended_affine(s, dim, v, rational);
+	space = isl_space_wrap(isl_map_get_space(cond));
+	pwaff1 = accept_extended_affine(s, space, v, rational);
 	if (!pwaff1)
 		goto error;
 
 	if (isl_stream_eat(s, ':'))
 		goto error;
 
-	dim = isl_pw_aff_get_domain_space(pwaff1);
-	pwaff2 = accept_extended_affine(s, dim, v, rational);
+	space = isl_pw_aff_get_domain_space(pwaff1);
+	pwaff2 = accept_extended_affine(s, space, v, rational);
 	if (!pwaff1)
 		goto error;
 
