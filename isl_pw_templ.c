@@ -334,13 +334,10 @@ error:
 	return NULL;
 }
 
-/* Check that "pw" has only named parameters, reporting an error
- * if it does not.
- */
-isl_stat FN(PW,check_named_params)(__isl_keep PW *pw)
-{
-	return isl_space_check_named_params(FN(PW,peek_space)(pw));
-}
+#undef TYPE
+#define TYPE PW
+
+#include "isl_check_named_params_templ.c"
 
 /* Align the parameters of "pw" to those of "model".
  */

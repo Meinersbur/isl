@@ -457,6 +457,7 @@ EXTRA_DIST = \
 	isl_bind_domain_templ.c \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
+	isl_check_named_params_templ.c \
 	check_reparse_templ.c \
 	check_reparse_test_templ.c \
 	check_type_range_templ.c \

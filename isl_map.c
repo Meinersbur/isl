@@ -1487,21 +1487,16 @@ isl_stat isl_basic_set_check_no_locals(__isl_keep isl_basic_set *bset)
 	return isl_stat_ok;
 }
 
-/* Check that "map" has only named parameters, reporting an error
- * if it does not.
- */
-isl_stat isl_map_check_named_params(__isl_keep isl_map *map)
-{
-	return isl_space_check_named_params(isl_map_peek_space(map));
-}
+#undef TYPE
+#define TYPE isl_map
 
-/* Check that "bmap" has only named parameters, reporting an error
- * if it does not.
- */
-static isl_stat isl_basic_map_check_named_params(__isl_keep isl_basic_map *bmap)
-{
-	return isl_space_check_named_params(isl_basic_map_peek_space(bmap));
-}
+#include "isl_check_named_params_templ.c"
+
+#undef TYPE
+#define TYPE isl_basic_map
+
+static
+#include "isl_check_named_params_templ.c"
 
 /* Check that "bmap1" and "bmap2" have the same parameters,
  * reporting an error if they do not.
