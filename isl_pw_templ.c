@@ -304,7 +304,6 @@ isl_bool FN(PW,IS_ZERO)(__isl_keep PW *pw)
 	return isl_bool_ok(pw->n == 0);
 }
 
-#ifndef NO_REALIGN
 __isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
 	__isl_take isl_reordering *exp)
 {
@@ -432,7 +431,6 @@ error:
 	isl_set_free(set);
 	return NULL;
 }
-#endif
 
 #undef TYPE
 #define TYPE	PW
