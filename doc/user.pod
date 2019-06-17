@@ -670,6 +670,13 @@ C<isl_stat_ok> (the integer value zero), indicating a successful
 operation; and
 C<isl_stat_error> (a negative integer value), indicating that something
 went wrong.
+The function C<isl_stat_non_null> converts an isl object pointer
+to an C<isl_stat>, returning C<isl_stat_ok> if the object pointer is valid and
+C<isl_stat_error> if it is C<NULL>.
+
+	#include <isl/ctx.h>
+	isl_stat isl_stat_non_null(void *obj);
+
 See L</"Error Handling"> for more information on
 C<isl_size_error>, C<isl_bool_error> and C<isl_stat_error>.
 
