@@ -9,70 +9,25 @@
 
 #include <isl_pw_macro.h>
 
-static __isl_give PW *FN(PW,align_params_pw_multi_aff_and)(__isl_take PW *pw,
-	__isl_take isl_multi_aff *ma,
-	__isl_give PW *(*fn)(__isl_take PW *pw, __isl_take isl_multi_aff *ma))
-{
-	isl_ctx *ctx;
-	isl_bool equal_params;
-	isl_space *ma_space;
+#undef RES
+#define RES	PW
+#undef ARG1
+#define ARG1	PW
+#undef ARG2
+#define ARG2	isl_multi_aff
+#undef SUFFIX
+#define SUFFIX	pw_multi_aff_and
 
-	ma_space = isl_multi_aff_get_space(ma);
-	if (!pw || !ma || !ma_space)
-		goto error;
-	equal_params = isl_space_has_equal_params(pw->dim, ma_space);
-	if (equal_params < 0)
-		goto error;
-	if (equal_params) {
-		isl_space_free(ma_space);
-		return fn(pw, ma);
-	}
-	ctx = FN(PW,get_ctx)(pw);
-	if (FN(PW,check_named_params)(pw) < 0)
-		goto error;
-	if (!isl_space_has_named_params(ma_space))
-		isl_die(ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
-	pw = FN(PW,align_params)(pw, ma_space);
-	ma = isl_multi_aff_align_params(ma, FN(PW,get_space)(pw));
-	return fn(pw, ma);
-error:
-	isl_space_free(ma_space);
-	FN(PW,free)(pw);
-	isl_multi_aff_free(ma);
-	return NULL;
-}
+static
+#include "isl_align_params_and_templ.c"
 
-static __isl_give PW *FN(PW,align_params_pw_pw_multi_aff_and)(__isl_take PW *pw,
-	__isl_take isl_pw_multi_aff *pma,
-	__isl_give PW *(*fn)(__isl_take PW *pw,
-		__isl_take isl_pw_multi_aff *ma))
-{
-	isl_bool equal_params;
-	isl_space *pma_space;
+#undef ARG2
+#define ARG2	isl_pw_multi_aff
+#undef SUFFIX
+#define SUFFIX	pw_pw_multi_aff_and
 
-	pma_space = isl_pw_multi_aff_get_space(pma);
-	if (!pw || !pma || !pma_space)
-		goto error;
-	equal_params = isl_space_has_equal_params(pw->dim, pma_space);
-	if (equal_params < 0)
-		goto error;
-	if (equal_params) {
-		isl_space_free(pma_space);
-		return fn(pw, pma);
-	}
-	if (FN(PW,check_named_params)(pw) < 0 ||
-	    isl_pw_multi_aff_check_named_params(pma) < 0)
-		goto error;
-	pw = FN(PW,align_params)(pw, pma_space);
-	pma = isl_pw_multi_aff_align_params(pma, FN(PW,get_space)(pw));
-	return fn(pw, pma);
-error:
-	isl_space_free(pma_space);
-	FN(PW,free)(pw);
-	isl_pw_multi_aff_free(pma);
-	return NULL;
-}
+static
+#include "isl_align_params_and_templ.c"
 
 /* Compute the pullback of "pw" by the function represented by "ma".
  * In other words, plug in "ma" in "pw".

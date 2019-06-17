@@ -504,35 +504,13 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 
 #include "isl_check_named_params_templ.c"
 
-/* Align the parameters of "multi1" and "multi2" (if needed) and call "fn".
- */
-static __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params_multi_multi_and)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2,
-	__isl_give MULTI(BASE) *(*fn)(__isl_take MULTI(BASE) *multi1,
-		__isl_take MULTI(BASE) *multi2))
-{
-	isl_bool equal_params;
+#undef SUFFIX
+#define SUFFIX	multi_multi_and
+#undef TYPE
+#define TYPE	MULTI(BASE)
 
-	if (!multi1 || !multi2)
-		goto error;
-	equal_params = isl_space_has_equal_params(multi1->space, multi2->space);
-	if (equal_params < 0)
-		goto error;
-	if (equal_params)
-		return fn(multi1, multi2);
-	if (FN(MULTI(BASE),check_named_params)(multi1) < 0 ||
-	    FN(MULTI(BASE),check_named_params)(multi2) < 0)
-		goto error;
-	multi1 = FN(MULTI(BASE),align_params)(multi1,
-					    FN(MULTI(BASE),get_space)(multi2));
-	multi2 = FN(MULTI(BASE),align_params)(multi2,
-					    FN(MULTI(BASE),get_space)(multi1));
-	return fn(multi1, multi2);
-error:
-	FN(MULTI(BASE),free)(multi1);
-	FN(MULTI(BASE),free)(multi2);
-	return NULL;
-}
+static
+#include "isl_align_params_and_bin_templ.c"
 
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) (A * C) -> [B -> D].

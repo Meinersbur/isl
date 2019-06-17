@@ -1515,27 +1515,12 @@ static isl_stat isl_basic_map_check_equal_params(
 	return isl_stat_ok;
 }
 
-__isl_give isl_map *isl_map_align_params_map_map_and(
-	__isl_take isl_map *map1, __isl_take isl_map *map2,
-	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
-				    __isl_take isl_map *map2))
-{
-	if (!map1 || !map2)
-		goto error;
-	if (isl_map_has_equal_params(map1, map2))
-		return fn(map1, map2);
-	if (isl_map_check_named_params(map1) < 0)
-		goto error;
-	if (isl_map_check_named_params(map2) < 0)
-		goto error;
-	map1 = isl_map_align_params(map1, isl_map_get_space(map2));
-	map2 = isl_map_align_params(map2, isl_map_get_space(map1));
-	return fn(map1, map2);
-error:
-	isl_map_free(map1);
-	isl_map_free(map2);
-	return NULL;
-}
+#undef SUFFIX
+#define SUFFIX	map_map_and
+#undef TYPE
+#define TYPE	isl_map
+
+#include "isl_align_params_and_bin_templ.c"
 
 isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2,

@@ -375,59 +375,25 @@ error:
 	return NULL;
 }
 
-static __isl_give PW *FN(PW,align_params_pw_pw_and)(__isl_take PW *pw1,
-	__isl_take PW *pw2,
-	__isl_give PW *(*fn)(__isl_take PW *pw1, __isl_take PW *pw2))
-{
-	isl_bool equal_params;
+#undef SUFFIX
+#define SUFFIX	pw_pw_and
+#undef TYPE
+#define TYPE	PW
 
-	if (!pw1 || !pw2)
-		goto error;
-	equal_params = isl_space_has_equal_params(pw1->dim, pw2->dim);
-	if (equal_params < 0)
-		goto error;
-	if (equal_params)
-		return fn(pw1, pw2);
-	if (FN(PW,check_named_params)(pw1) < 0 ||
-	    FN(PW,check_named_params)(pw2) < 0)
-		goto error;
-	pw1 = FN(PW,align_params)(pw1, FN(PW,get_space)(pw2));
-	pw2 = FN(PW,align_params)(pw2, FN(PW,get_space)(pw1));
-	return fn(pw1, pw2);
-error:
-	FN(PW,free)(pw1);
-	FN(PW,free)(pw2);
-	return NULL;
-}
+static
+#include "isl_align_params_and_bin_templ.c"
 
-static __isl_give PW *FN(PW,align_params_pw_set_and)(__isl_take PW *pw,
-	__isl_take isl_set *set,
-	__isl_give PW *(*fn)(__isl_take PW *pw, __isl_take isl_set *set))
-{
-	isl_ctx *ctx;
-	isl_bool aligned;
+#undef SUFFIX
+#define SUFFIX	pw_set_and
+#undef ARG1
+#define ARG1	PW
+#undef ARG2
+#define ARG2	isl_set
+#undef RES
+#define RES	PW
 
-	if (!pw || !set)
-		goto error;
-	aligned = isl_set_space_has_equal_params(set, pw->dim);
-	if (aligned < 0)
-		goto error;
-	if (aligned)
-		return fn(pw, set);
-	ctx = FN(PW,get_ctx)(pw);
-	if (FN(PW,check_named_params)(pw) < 0)
-		goto error;
-	if (!isl_space_has_named_params(set->dim))
-		isl_die(ctx, isl_error_invalid,
-			"unaligned unnamed parameters", goto error);
-	pw = FN(PW,align_params)(pw, isl_set_get_space(set));
-	set = isl_set_align_params(set, FN(PW,get_space)(pw));
-	return fn(pw, set);
-error:
-	FN(PW,free)(pw);
-	isl_set_free(set);
-	return NULL;
-}
+static
+#include "isl_align_params_and_templ.c"
 
 #undef TYPE
 #define TYPE	PW

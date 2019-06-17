@@ -453,6 +453,8 @@ DISTCLEANFILES = \
 EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
+	isl_align_params_and_templ.c \
+	isl_align_params_and_bin_templ.c \
 	basis_reduction_templ.c \
 	isl_bind_domain_templ.c \
 	bset_to_bmap.c \
