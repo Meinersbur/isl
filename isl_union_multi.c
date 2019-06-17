@@ -221,9 +221,10 @@ isl_stat FN(FN(UNION,foreach),BASE)(__isl_keep UNION *u,
 }
 
 /* Is the domain space of the group of expressions at "entry"
- * equal to "space"?
+ * equal to that of "space"?
  */
-static int FN(UNION,group_has_domain_space)(const void *entry, const void *val)
+static int FN(UNION,group_has_same_domain_space)(const void *entry,
+	const void *val)
 {
 	S(UNION,group) *group = (S(UNION,group) *) entry;
 	isl_space *space = (isl_space *) val;
@@ -255,7 +256,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	ctx = FN(UNION,get_ctx)(u);
 	hash = isl_space_get_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_domain_space), space, reserve);
+			&FN(UNION,group_has_same_domain_space), space, reserve);
 	if (!group_entry)
 		return reserve ? NULL : isl_hash_table_entry_none;
 	if (reserve && !group_entry->data) {
@@ -301,7 +302,7 @@ static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
 	space = FN(PART,peek_space)(part);
 	hash = isl_space_get_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_domain_space), space, 0);
+			    &FN(UNION,group_has_same_domain_space), space, 0);
 	if (!group_entry)
 		isl_die(ctx, isl_error_internal, "missing group",
 			return FN(UNION,free)(u));
@@ -385,7 +386,7 @@ static isl_stat FN(UNION,check_disjoint_domain_other)(__isl_keep UNION *u,
 	space = FN(PART,peek_space)(part);
 	hash = isl_space_get_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_domain_space), space, 0);
+			    &FN(UNION,group_has_same_domain_space), space, 0);
 	if (!group_entry)
 		return isl_stat_ok;
 	group = group_entry->data;
