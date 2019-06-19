@@ -4142,6 +4142,9 @@ __isl_give isl_term *isl_poly_foreach_term(__isl_keep isl_poly *poly,
 		if (!term)
 			goto error;
 	}
+	term = isl_term_cow(term);
+	if (!term)
+		return NULL;
 	term->pow[poly->var] = 0;
 
 	return term;

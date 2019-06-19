@@ -106,7 +106,7 @@ struct isl_sched_node {
 	int	compressed;
 	isl_set	*hull;
 	isl_multi_aff *compress;
-	isl_multi_aff *decompress;
+	isl_pw_multi_aff *decompress;
 	isl_mat *sched;
 	isl_map *sched_map;
 	int	 rank;
@@ -701,7 +701,7 @@ static void clear_node(struct isl_sched_graph *graph,
 	isl_space_free(node->space);
 	isl_set_free(node->hull);
 	isl_multi_aff_free(node->compress);
-	isl_multi_aff_free(node->decompress);
+	isl_pw_multi_aff_free(node->decompress);
 	isl_mat_free(node->sched);
 	isl_map_free(node->sched_map);
 	isl_mat_free(node->indep);
@@ -891,6 +891,57 @@ error:
 	return isl_stat_error;
 }
 
+/* Construct an identifier for node "node", which will represent "set".
+ * The name of the identifier is either "compressed" or
+ * "compressed_<name>", with <name> the name of the space of "set".
+ * The user pointer of the identifier points to "node".
+ */
+static __isl_give isl_id *construct_compressed_id(__isl_keep isl_set *set,
+	struct isl_sched_node *node)
+{
+	isl_bool has_name;
+	isl_ctx *ctx;
+	isl_id *id;
+	isl_printer *p;
+	const char *name;
+	char *id_name;
+
+	has_name = isl_set_has_tuple_name(set);
+	if (has_name < 0)
+		return NULL;
+
+	ctx = isl_set_get_ctx(set);
+	if (!has_name)
+		return isl_id_alloc(ctx, "compressed", node);
+
+	p = isl_printer_to_str(ctx);
+	name = isl_set_get_tuple_name(set);
+	p = isl_printer_print_str(p, "compressed_");
+	p = isl_printer_print_str(p, name);
+	id_name = isl_printer_get_str(p);
+	isl_printer_free(p);
+
+	id = isl_id_alloc(ctx, id_name, node);
+	free(id_name);
+
+	return id;
+}
+
+/* Construct a map that isolates the variable in position "pos" in "set".
+ *
+ * That is, construct
+ *
+ *	[i_0, ..., i_pos-1, i_pos+1, ...] -> [i_pos]
+ */
+static __isl_give isl_map *isolate(__isl_take isl_set *set, int pos)
+{
+	isl_map *map;
+
+	map = isl_set_project_onto_map(set, isl_dim_set, pos, 1);
+	map = isl_map_project_out(map, isl_dim_in, pos, 1);
+	return map;
+}
+
 /* Compute and return the size of "set" in dimension "dim".
  * The size is taken to be the difference in values for that variable
  * for fixed values of the other variables.
@@ -914,8 +965,7 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
 	isl_aff *obj;
 	isl_val *v;
 
-	map = isl_set_project_onto_map(set, isl_dim_set, dim, 1);
-	map = isl_map_project_out(map, isl_dim_in, dim, 1);
+	map = isolate(set, dim);
 	map = isl_map_range_product(map, isl_map_copy(map));
 	map = isl_set_unwrap(isl_map_range(map));
 	set = isl_map_deltas(map);
@@ -928,6 +978,156 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
 	return v;
 }
 
+/* Perform a compression on "node" where "hull" represents the constraints
+ * that were used to derive the compression, while "compress" and
+ * "decompress" map the original space to the compressed space and
+ * vice versa.
+ *
+ * If "node" was not compressed already, then simply store
+ * the compression information.
+ * Otherwise the "original" space is actually the result
+ * of a previous compression, which is then combined
+ * with the present compression.
+ *
+ * The dimensionality of the compressed domain is also adjusted.
+ * Other information, such as the sizes and the maximal coefficient values,
+ * has not been computed yet and therefore does not need to be adjusted.
+ */
+static isl_stat compress_node(struct isl_sched_node *node,
+	__isl_take isl_set *hull, __isl_take isl_multi_aff *compress,
+	__isl_take isl_pw_multi_aff *decompress)
+{
+	node->nvar = isl_multi_aff_dim(compress, isl_dim_out);
+	if (!node->compressed) {
+		node->compressed = 1;
+		node->hull = hull;
+		node->compress = compress;
+		node->decompress = decompress;
+	} else {
+		hull = isl_set_preimage_multi_aff(hull,
+					    isl_multi_aff_copy(node->compress));
+		node->hull = isl_set_intersect(node->hull, hull);
+		node->compress = isl_multi_aff_pullback_multi_aff(
+						compress, node->compress);
+		node->decompress = isl_pw_multi_aff_pullback_pw_multi_aff(
+						node->decompress, decompress);
+	}
+
+	if (!node->hull || !node->compress || !node->decompress)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+/* Given that dimension "pos" in "set" has a fixed value
+ * in terms of the other dimensions, (further) compress "node"
+ * by projecting out this dimension.
+ * "set" may be the result of a previous compression.
+ * "uncompressed" is the original domain (without compression).
+ *
+ * The compression function simply projects out the dimension.
+ * The decompression function adds back the dimension
+ * in the right position as an expression of the other dimensions
+ * derived from "set".
+ * As in extract_node, the compressed space has an identifier
+ * that references "node" such that each compressed space is unique and
+ * such that the node can be recovered from the compressed space.
+ *
+ * The constraint removed through the compression is added to the "hull"
+ * such that only edges that relate to the original domains
+ * are taken into account.
+ * In particular, it is obtained by composing compression and decompression and
+ * taking the relation among the variables in the range.
+ */
+static isl_stat project_out_fixed(struct isl_sched_node *node,
+	__isl_keep isl_set *uncompressed, __isl_take isl_set *set, int pos)
+{
+	isl_id *id;
+	isl_space *space;
+	isl_set *domain;
+	isl_map *map;
+	isl_multi_aff *compress;
+	isl_pw_multi_aff *decompress, *pma;
+	isl_multi_pw_aff *mpa;
+	isl_set *hull;
+
+	map = isolate(isl_set_copy(set), pos);
+	pma = isl_pw_multi_aff_from_map(map);
+	domain = isl_pw_multi_aff_domain(isl_pw_multi_aff_copy(pma));
+	pma = isl_pw_multi_aff_gist(pma, domain);
+	space = isl_pw_multi_aff_get_domain_space(pma);
+	mpa = isl_multi_pw_aff_identity(isl_space_map_from_set(space));
+	mpa = isl_multi_pw_aff_range_splice(mpa, pos,
+				    isl_multi_pw_aff_from_pw_multi_aff(pma));
+	decompress = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+	space = isl_set_get_space(set);
+	compress = isl_multi_aff_project_out_map(space, isl_dim_set, pos, 1);
+	id = construct_compressed_id(uncompressed, node);
+	compress = isl_multi_aff_set_tuple_id(compress, isl_dim_out, id);
+	space = isl_space_reverse(isl_multi_aff_get_space(compress));
+	decompress = isl_pw_multi_aff_reset_space(decompress, space);
+	pma = isl_pw_multi_aff_pullback_multi_aff(
+	    isl_pw_multi_aff_copy(decompress), isl_multi_aff_copy(compress));
+	hull = isl_map_range(isl_map_from_pw_multi_aff(pma));
+
+	isl_set_free(set);
+
+	return compress_node(node, hull, compress, decompress);
+}
+
+/* Compute the size of the compressed domain in each dimension and
+ * store the results in node->sizes.
+ * "uncompressed" is the original domain (without compression).
+ *
+ * First compress the domain if needed and then compute the size
+ * in each direction.
+ * If the domain is not convex, then the sizes are computed
+ * on a convex superset in order to avoid picking up sizes
+ * that are valid for the individual disjuncts, but not for
+ * the domain as a whole.
+ *
+ * If any of the sizes turns out to be zero, then this means
+ * that this dimension has a fixed value in terms of
+ * the other dimensions.  Perform an (extra) compression
+ * to remove this dimensions.
+ */
+static isl_stat compute_sizes(struct isl_sched_node *node,
+	__isl_keep isl_set *uncompressed)
+{
+	int j;
+	isl_size n;
+	isl_multi_val *mv;
+	isl_set *set = isl_set_copy(uncompressed);
+
+	if (node->compressed)
+		set = isl_set_preimage_pw_multi_aff(set,
+				    isl_pw_multi_aff_copy(node->decompress));
+	set = isl_set_from_basic_set(isl_set_simple_hull(set));
+	mv = isl_multi_val_zero(isl_set_get_space(set));
+	n = isl_set_dim(set, isl_dim_set);
+	if (n < 0)
+		mv = isl_multi_val_free(mv);
+	for (j = 0; j < n; ++j) {
+		isl_bool is_zero;
+		isl_val *v;
+
+		v = compute_size(isl_set_copy(set), j);
+		is_zero = isl_val_is_zero(v);
+		mv = isl_multi_val_set_val(mv, j, v);
+		if (is_zero >= 0 && is_zero) {
+			isl_multi_val_free(mv);
+			if (project_out_fixed(node, uncompressed, set, j) < 0)
+				return isl_stat_error;
+			return compute_sizes(node, uncompressed);
+		}
+	}
+	node->sizes = mv;
+	isl_set_free(set);
+	if (!node->sizes)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
 /* Compute the size of the instance set "set" of "node", after compression,
  * as well as bounds on the corresponding coefficients, if needed.
  *
@@ -937,44 +1137,24 @@ static __isl_give isl_val *compute_size(__isl_take isl_set *set, int dim)
  *
  * If the schedule_treat_coalescing option is not set, then at most
  * the bounds need to be set and this is done in set_max_coefficient.
- * Otherwise, compress the domain if needed, compute the size
+ * Otherwise, compute the size of the compressed domain
  * in each direction and store the results in node->size.
- * If the domain is not convex, then the sizes are computed
- * on a convex superset in order to avoid picking up sizes
- * that are valid for the individual disjuncts, but not for
- * the domain as a whole.
  * Finally, set the bounds on the coefficients based on the sizes
  * and the schedule_max_coefficient option in compute_max_coefficient.
  */
 static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
 	__isl_take isl_set *set)
 {
-	int j;
-	isl_size n;
-	isl_multi_val *mv;
+	isl_stat r;
 
 	if (!isl_options_get_schedule_treat_coalescing(ctx)) {
 		isl_set_free(set);
 		return set_max_coefficient(ctx, node);
 	}
 
-	if (node->compressed)
-		set = isl_set_preimage_multi_aff(set,
-					isl_multi_aff_copy(node->decompress));
-	set = isl_set_from_basic_set(isl_set_simple_hull(set));
-	mv = isl_multi_val_zero(isl_set_get_space(set));
-	n = isl_set_dim(set, isl_dim_set);
-	if (n < 0)
-		mv = isl_multi_val_free(mv);
-	for (j = 0; j < n; ++j) {
-		isl_val *v;
-
-		v = compute_size(isl_set_copy(set), j);
-		mv = isl_multi_val_set_val(mv, j, v);
-	}
-	node->sizes = mv;
+	r = compute_sizes(node, set);
 	isl_set_free(set);
-	if (!node->sizes)
+	if (r < 0)
 		return isl_stat_error;
 	return compute_max_coefficient(ctx, node);
 }
@@ -996,7 +1176,7 @@ static isl_stat compute_sizes_and_max(isl_ctx *ctx, struct isl_sched_node *node,
 static isl_stat add_node(struct isl_sched_graph *graph,
 	__isl_take isl_set *set, int nvar, int compressed,
 	__isl_take isl_set *hull, __isl_take isl_multi_aff *compress,
-	__isl_take isl_multi_aff *decompress)
+	__isl_take isl_pw_multi_aff *decompress)
 {
 	isl_size nparam;
 	isl_ctx *ctx;
@@ -1040,44 +1220,8 @@ error:
 	isl_set_free(set);
 	isl_set_free(hull);
 	isl_multi_aff_free(compress);
-	isl_multi_aff_free(decompress);
+	isl_pw_multi_aff_free(decompress);
 	return isl_stat_error;
-}
-
-/* Construct an identifier for node "node", which will represent "set".
- * The name of the identifier is either "compressed" or
- * "compressed_<name>", with <name> the name of the space of "set".
- * The user pointer of the identifier points to "node".
- */
-static __isl_give isl_id *construct_compressed_id(__isl_keep isl_set *set,
-	struct isl_sched_node *node)
-{
-	isl_bool has_name;
-	isl_ctx *ctx;
-	isl_id *id;
-	isl_printer *p;
-	const char *name;
-	char *id_name;
-
-	has_name = isl_set_has_tuple_name(set);
-	if (has_name < 0)
-		return NULL;
-
-	ctx = isl_set_get_ctx(set);
-	if (!has_name)
-		return isl_id_alloc(ctx, "compressed", node);
-
-	p = isl_printer_to_str(ctx);
-	name = isl_set_get_tuple_name(set);
-	p = isl_printer_print_str(p, "compressed_");
-	p = isl_printer_print_str(p, name);
-	id_name = isl_printer_get_str(p);
-	isl_printer_free(p);
-
-	id = isl_id_alloc(ctx, id_name, node);
-	free(id_name);
-
-	return id;
 }
 
 /* Add a new node to the graph representing the given set.
@@ -1097,7 +1241,8 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 	isl_basic_set *hull;
 	isl_set *hull_set;
 	isl_morph *morph;
-	isl_multi_aff *compress, *decompress;
+	isl_multi_aff *compress, *decompress_ma;
+	isl_pw_multi_aff *decompress;
 	struct isl_sched_graph *graph = user;
 
 	hull = isl_set_affine_hull(isl_set_copy(set));
@@ -1120,7 +1265,8 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 		set = isl_set_free(set);
 	compress = isl_morph_get_var_multi_aff(morph);
 	morph = isl_morph_inverse(morph);
-	decompress = isl_morph_get_var_multi_aff(morph);
+	decompress_ma = isl_morph_get_var_multi_aff(morph);
+	decompress = isl_pw_multi_aff_from_multi_aff(decompress_ma);
 	isl_morph_free(morph);
 
 	hull_set = isl_set_from_basic_set(hull);
@@ -1574,7 +1720,7 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 		return isl_basic_set_copy(node->bounds);
 
 	if (node->compressed)
-		space = isl_multi_aff_get_domain_space(node->decompress);
+		space = isl_pw_multi_aff_get_domain_space(node->decompress);
 	else
 		space = isl_space_copy(node->space);
 	space = isl_space_drop_all_params(space);
@@ -1598,6 +1744,22 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 
 	node->bounds = isl_basic_set_copy(bounds);
 	return bounds;
+}
+
+/* Compress the dependence relation "map", if needed, i.e.,
+ * when the source node "src" and/or the destination node "dst"
+ * has been compressed.
+ */
+static __isl_give isl_map *compress(__isl_take isl_map *map,
+	struct isl_sched_node *src, struct isl_sched_node *dst)
+{
+	if (src->compressed)
+		map = isl_map_preimage_domain_pw_multi_aff(map,
+					isl_pw_multi_aff_copy(src->decompress));
+	if (dst->compressed)
+		map = isl_map_preimage_range_pw_multi_aff(map,
+					isl_pw_multi_aff_copy(dst->decompress));
+	return map;
 }
 
 /* Drop some constraints from "delta" that could be exploited
@@ -1681,12 +1843,7 @@ static __isl_give isl_basic_set *intra_coefficients(
 	}
 
 	key = isl_map_copy(map);
-	if (node->compressed) {
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-	}
+	map = compress(map, node, node);
 	delta = isl_map_deltas(map);
 	if (treat)
 		delta = drop_coalescing_constraints(delta, node);
@@ -1724,12 +1881,7 @@ static __isl_give isl_basic_set *inter_coefficients(
 	}
 
 	key = isl_map_copy(map);
-	if (edge->src->compressed)
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(edge->src->decompress));
-	if (edge->dst->compressed)
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(edge->dst->decompress));
+	map = compress(map, edge->src, edge->dst);
 	set = isl_map_wrap(isl_map_remove_divs(map));
 	coef = isl_set_coefficients(set);
 	graph->inter_hmap = isl_map_to_basic_set_set(graph->inter_hmap, key,
@@ -3110,7 +3262,7 @@ static __isl_give isl_multi_aff *node_extract_partial_schedule_multi_aff(
 	if (nrow < 0)
 		return NULL;
 	if (node->compressed)
-		space = isl_multi_aff_get_domain_space(node->decompress);
+		space = isl_pw_multi_aff_get_domain_space(node->decompress);
 	else
 		space = isl_space_copy(node->space);
 	ls = isl_local_space_from_space(isl_space_copy(space));
@@ -3525,7 +3677,7 @@ static isl_stat copy_nodes(struct isl_sched_graph *dst,
 		dst->node[j].compress =
 			isl_multi_aff_copy(src->node[i].compress);
 		dst->node[j].decompress =
-			isl_multi_aff_copy(src->node[i].decompress);
+			isl_pw_multi_aff_copy(src->node[i].decompress);
 		dst->node[j].nvar = src->node[i].nvar;
 		dst->node[j].nparam = src->node[i].nparam;
 		dst->node[j].sched = isl_mat_copy(src->node[i].sched);
@@ -4682,12 +4834,7 @@ static __isl_give isl_union_map *add_intra(__isl_take isl_union_map *umap,
 		return umap;
 
 	map = isl_map_copy(edge->map);
-	if (node->compressed) {
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(node->decompress));
-	}
+	map = compress(map, node, node);
 	umap = isl_union_map_add_map(umap, map);
 	return umap;
 }
@@ -4706,12 +4853,7 @@ static __isl_give isl_union_map *add_inter(__isl_take isl_union_map *umap,
 		return umap;
 
 	map = isl_map_copy(edge->map);
-	if (edge->src->compressed)
-		map = isl_map_preimage_domain_multi_aff(map,
-				    isl_multi_aff_copy(edge->src->decompress));
-	if (edge->dst->compressed)
-		map = isl_map_preimage_range_multi_aff(map,
-				    isl_multi_aff_copy(edge->dst->decompress));
+	map = compress(map, edge->src, edge->dst);
 	umap = isl_union_map_add_map(umap, map);
 	return umap;
 }
