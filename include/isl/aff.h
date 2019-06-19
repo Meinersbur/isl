@@ -999,7 +999,11 @@ __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_pw_multi_aff(
 
 __isl_give isl_map *isl_multi_pw_aff_eq_map(__isl_take isl_multi_pw_aff *mpa1,
 	__isl_take isl_multi_pw_aff *mpa2);
+__isl_give isl_map *isl_multi_pw_aff_lex_le_map(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
 __isl_give isl_map *isl_multi_pw_aff_lex_lt_map(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
+__isl_give isl_map *isl_multi_pw_aff_lex_ge_map(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
 __isl_give isl_map *isl_multi_pw_aff_lex_gt_map(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);

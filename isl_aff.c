@@ -7203,7 +7203,15 @@ static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
 }
 
 #undef ORDER
+#define ORDER	le
+#include "isl_aff_lex_templ.c"
+
+#undef ORDER
 #define ORDER	lt
+#include "isl_aff_lex_templ.c"
+
+#undef ORDER
+#define ORDER	ge
 #include "isl_aff_lex_templ.c"
 
 #undef ORDER
