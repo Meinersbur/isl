@@ -8746,14 +8746,10 @@ isl_bool isl_set_is_empty(__isl_keep isl_set *set)
 	return isl_map_is_empty(set_to_map(set));
 }
 
-isl_bool isl_map_has_equal_space(__isl_keep isl_map *map1,
-	__isl_keep isl_map *map2)
-{
-	if (!map1 || !map2)
-		return isl_bool_error;
+#undef TYPE
+#define TYPE	isl_map
 
-	return isl_space_is_equal(map1->dim, map2->dim);
-}
+#include "isl_type_has_equal_space_bin_templ.c"
 
 isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2)

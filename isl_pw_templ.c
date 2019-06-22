@@ -434,6 +434,11 @@ error:
 }
 #endif
 
+#undef TYPE
+#define TYPE	PW
+
+#include "isl_type_has_equal_space_bin_templ.c"
+
 static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
 	__isl_take PW *pw2)
 {
@@ -1746,14 +1751,6 @@ __isl_give PW *FN(PW,reset_user)(__isl_take PW *pw)
 	space = isl_space_reset_user(space);
 
 	return FN(PW,reset_space)(pw, space);
-}
-
-isl_bool FN(PW,has_equal_space)(__isl_keep PW *pw1, __isl_keep PW *pw2)
-{
-	if (!pw1 || !pw2)
-		return isl_bool_error;
-
-	return isl_space_is_equal(pw1->dim, pw2->dim);
 }
 
 isl_size FN(PW,n_piece)(__isl_keep PW *pw)
