@@ -755,26 +755,13 @@ error:
 	return NULL;
 }
 
-/* Check that "multi1" and "multi2" live in the same space,
- * reporting an error if they do not.
- */
-static isl_stat FN(MULTI(BASE),check_equal_space)(
-	__isl_keep MULTI(BASE) *multi1, __isl_keep MULTI(BASE) *multi2)
-{
-	isl_bool equal;
+#undef TYPE
+#define TYPE	MULTI(BASE)
 
-	if (!multi1 || !multi2)
-		return isl_stat_error;
-
-	equal = isl_space_is_equal(multi1->space, multi2->space);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi1), isl_error_invalid,
-			"spaces don't match", return isl_stat_error);
-
-	return isl_stat_ok;
-}
+static
+#include "isl_type_has_equal_space_bin_templ.c"
+static
+#include "isl_type_check_equal_space_templ.c"
 
 /* This function is currently only used from isl_aff.c
  */
