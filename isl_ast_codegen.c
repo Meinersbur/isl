@@ -5174,6 +5174,25 @@ __isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
 }
 
 /* Generate an AST that visits the elements in the domain of "executed"
+ * in the relative order specified by the leaf node "node".
+ *
+ * The relation "executed" maps the outer generated loop iterators
+ * to the domain elements executed by those iterations.
+ *
+ * Simply pass control to generate_inner_level.
+ * Note that the current build does not refer to any band node, so
+ * that generate_inner_level will not try to visit the child of
+ * the leaf node.
+ */
+static __isl_give isl_ast_graft_list *build_ast_from_leaf(
+	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
+	__isl_take isl_union_map *executed)
+{
+	isl_schedule_node_free(node);
+	return generate_inner_level(executed, build);
+}
+
+/* Generate an AST that visits the elements in the domain of "executed"
  * in the relative order specified by the band node "node" and its descendants.
  *
  * The relation "executed" maps the outer generated loop iterators
@@ -5709,12 +5728,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_sequence(
  * The relation "executed" maps the outer generated loop iterators
  * to the domain elements executed by those iterations.
  *
- * If the node is a leaf, then we pass control to generate_inner_level.
- * Note that the current build does not refer to any band node, so
- * that generate_inner_level will not try to visit the child of
- * the leaf node.
- *
- * The other node types are handled in separate functions.
+ * The node types are handled in separate functions.
  * Set nodes are currently treated in the same way as sequence nodes.
  * The children of a set node may be executed in any order,
  * including the order of the children.
@@ -5731,8 +5745,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_schedule_node(
 	case isl_schedule_node_error:
 		goto error;
 	case isl_schedule_node_leaf:
-		isl_schedule_node_free(node);
-		return generate_inner_level(executed, build);
+		return build_ast_from_leaf(build, node, executed);
 	case isl_schedule_node_band:
 		return build_ast_from_band(build, node, executed);
 	case isl_schedule_node_context:
