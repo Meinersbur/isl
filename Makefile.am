@@ -200,6 +200,8 @@ libisl_la_SOURCES = \
 	isl_stream_private.h \
 	isl_seq.c \
 	isl_seq.h \
+	isl_set_to_ast_graft_list.c \
+	isl_set_to_ast_graft_list.h \
 	isl_stride.c \
 	isl_tab.c \
 	isl_tab.h \
@@ -462,6 +464,7 @@ EXTRA_DIST = \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \
+	isl_maybe_ast_graft_list.h \
 	isl_maybe_map.h \
 	isl_multi_macro.h \
 	isl_multi_bind_templ.c \
