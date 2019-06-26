@@ -1,6 +1,7 @@
 /*
  * Copyright 2012      Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2019      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,6 +9,7 @@
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
  * B.P. 105 - 78153 Le Chesnay, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <isl/id.h>
@@ -16,6 +18,7 @@
 #include <isl_ast_build_expr.h>
 #include <isl_ast_build_private.h>
 #include <isl_ast_graft_private.h>
+#include "isl_set_to_ast_graft_list.h"
 
 static __isl_give isl_ast_graft *isl_ast_graft_copy(
 	__isl_keep isl_ast_graft *graft);
@@ -1314,6 +1317,130 @@ error:
 	isl_ast_graft_list_free(list1);
 	isl_ast_graft_list_free(list2);
 	return NULL;
+}
+
+/* Internal data structure for split_on_guard.
+ *
+ * "guard2list" is the constructed associative array.
+ * "any_match" gets set if any guard was seen more than once.
+ */
+struct isl_split_on_guard_data {
+	isl_set_to_ast_graft_list *guard2list;
+	int *any_match;
+};
+
+/* Add "graft" to the list associated to its guard in data->guard2list.
+ * If some other graft was already associated to this guard,
+ * then set data->any_match.
+ */
+static isl_stat add_to_guard_list(__isl_take isl_ast_graft *graft, void *user)
+{
+	struct isl_split_on_guard_data *data = user;
+	isl_set *guard;
+	isl_maybe_isl_ast_graft_list m;
+
+	if (!graft)
+		return isl_stat_error;
+	m = isl_set_to_ast_graft_list_try_get(data->guard2list, graft->guard);
+	if (m.valid < 0)
+		return isl_stat_non_null(isl_ast_graft_free(graft));
+
+	if (m.valid) {
+		*data->any_match = 1;
+		m.value = isl_ast_graft_list_add(m.value, graft);
+	} else {
+		m.value = isl_ast_graft_list_from_ast_graft(graft);
+	}
+	guard = isl_set_copy(graft->guard);
+	data->guard2list =
+		isl_set_to_ast_graft_list_set(data->guard2list, guard, m.value);
+
+	return isl_stat_non_null(data->guard2list);
+}
+
+/* Construct an associative array that groups the elements
+ * of "list" based on their guards.
+ * If any guard appears more than once, then set "any_match".
+ */
+static __isl_give isl_set_to_ast_graft_list *split_on_guard(
+	__isl_keep isl_ast_graft_list *list, int *any_match)
+{
+	struct isl_split_on_guard_data data = { NULL, any_match };
+	isl_size n;
+	isl_ctx *ctx;
+
+	n = isl_ast_graft_list_size(list);
+	if (n < 0)
+		return NULL;
+
+	ctx = isl_ast_graft_list_get_ctx(list);
+	data.guard2list = isl_set_to_ast_graft_list_alloc(ctx, n);
+
+	if (isl_ast_graft_list_foreach(list, &add_to_guard_list, &data) < 0)
+		return isl_set_to_ast_graft_list_free(data.guard2list);
+
+	return data.guard2list;
+}
+
+/* Add the elements of "guard_list" to "list".
+ */
+static isl_stat add_same_guard(__isl_take isl_set *guard,
+	__isl_take isl_ast_graft_list *guard_list, void *user)
+{
+	isl_ast_graft_list **list = user;
+
+	isl_set_free(guard);
+	*list = isl_ast_graft_list_concat(*list, guard_list);
+
+	return isl_stat_non_null(*list);
+}
+
+/* Given an associative array "guard2list" containing the elements
+ * of "list" grouped on common guards, reconstruct "list"
+ * by placing elements with the same guard consecutively.
+ */
+static __isl_give isl_ast_graft_list *reconstruct(
+	__isl_take isl_ast_graft_list *list,
+	__isl_keep isl_set_to_ast_graft_list *guard2list,
+	__isl_keep isl_ast_build *build)
+{
+	list = isl_ast_graft_list_clear(list);
+	if (isl_set_to_ast_graft_list_foreach(guard2list,
+						&add_same_guard, &list) < 0)
+		list = isl_ast_graft_list_free(list);
+
+	return list;
+}
+
+/* Group the grafts in "list" based on identical guards.
+ *
+ * Note that there need to be a least three elements in the list
+ * for the elements not to be grouped already.
+ *
+ * Group the elements in an associative array based on their guards.
+ * If any guard was seen more than once, then reconstruct the list
+ * from the associative array.  Otherwise, simply return the original list.
+ */
+__isl_give isl_ast_graft_list *isl_ast_graft_list_group_on_guard(
+	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
+{
+	int any_match = 0;
+	isl_size n;
+	isl_set_to_ast_graft_list *guard2list;
+
+	n = isl_ast_graft_list_size(list);
+	if (n < 0)
+		return isl_ast_graft_list_free(list);
+	if (n <= 2)
+		return list;
+
+	guard2list = split_on_guard(list, &any_match);
+	if (any_match)
+		list = reconstruct(list, guard2list, build);
+
+	isl_set_to_ast_graft_list_free(guard2list);
+
+	return list;
 }
 
 __isl_give isl_printer *isl_printer_print_ast_graft(__isl_take isl_printer *p,

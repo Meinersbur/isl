@@ -5183,13 +5183,25 @@ __isl_give isl_ast_node *isl_ast_build_ast_from_schedule(
  * Note that the current build does not refer to any band node, so
  * that generate_inner_level will not try to visit the child of
  * the leaf node.
+ *
+ * If multiple statement instances reach a leaf,
+ * then they can be executed in any order.
+ * Group the list of grafts based on shared guards
+ * such that identical guards are only generated once
+ * when the list is eventually passed on to isl_ast_graft_list_fuse.
  */
 static __isl_give isl_ast_graft_list *build_ast_from_leaf(
 	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
 	__isl_take isl_union_map *executed)
 {
+	isl_ast_graft_list *list;
+
 	isl_schedule_node_free(node);
-	return generate_inner_level(executed, build);
+	list = generate_inner_level(executed, isl_ast_build_copy(build));
+	list = isl_ast_graft_list_group_on_guard(list, build);
+	isl_ast_build_free(build);
+
+	return list;
 }
 
 /* Generate an AST that visits the elements in the domain of "executed"
