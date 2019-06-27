@@ -987,6 +987,10 @@ __isl_overload
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
 
+__isl_export
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_union_add(
+	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2);
+
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_move_dims(
 	__isl_take isl_multi_pw_aff *pma,
 	enum isl_dim_type dst_type, unsigned dst_pos,
