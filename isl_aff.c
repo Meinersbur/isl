@@ -8099,6 +8099,7 @@ error:
 #include <isl_multi_intersect.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_tuple_id_templ.c>
+#include <isl_multi_union_add_templ.c>
 
 /* Does "mupa" have a non-trivial explicit domain?
  *
@@ -8159,77 +8160,6 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_zero(
 	return isl_multi_union_pw_aff_alloc(space);
 error:
 	isl_space_free(space);
-	return NULL;
-}
-
-/* Compute the sum of "mupa1" and "mupa2" on the union of their domains,
- * with the actual sum on the shared domain and
- * the defined expression on the symmetric difference of the domains.
- *
- * We simply iterate over the elements in both arguments and
- * call isl_union_pw_aff_union_add on each of them, if there is
- * at least one element.
- *
- * Otherwise, the two expressions have an explicit domain and
- * the union of these explicit domains is computed.
- * This assumes that the explicit domains are either both in terms
- * of specific domains elements or both in terms of parameters.
- * However, if one of the expressions does not have any constraints
- * on its explicit domain, then this is allowed as well and the result
- * is the expression with no constraints on its explicit domain.
- */
-__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
-	__isl_take isl_multi_union_pw_aff *mupa1,
-	__isl_take isl_multi_union_pw_aff *mupa2)
-{
-	isl_bool has_domain, is_params1, is_params2;
-
-	isl_multi_union_pw_aff_align_params_bin(&mupa1, &mupa2);
-	if (isl_multi_union_pw_aff_check_equal_space(mupa1, mupa2) < 0)
-		goto error;
-	if (mupa1->n > 0)
-		return isl_multi_union_pw_aff_bin_op(mupa1, mupa2,
-					    &isl_union_pw_aff_union_add);
-	if (isl_multi_union_pw_aff_check_has_explicit_domain(mupa1) < 0 ||
-	    isl_multi_union_pw_aff_check_has_explicit_domain(mupa2) < 0)
-		goto error;
-
-	has_domain = isl_multi_union_pw_aff_has_non_trivial_domain(mupa1);
-	if (has_domain < 0)
-		goto error;
-	if (!has_domain) {
-		isl_multi_union_pw_aff_free(mupa2);
-		return mupa1;
-	}
-	has_domain = isl_multi_union_pw_aff_has_non_trivial_domain(mupa2);
-	if (has_domain < 0)
-		goto error;
-	if (!has_domain) {
-		isl_multi_union_pw_aff_free(mupa1);
-		return mupa2;
-	}
-
-	is_params1 = isl_union_set_is_params(mupa1->u.dom);
-	is_params2 = isl_union_set_is_params(mupa2->u.dom);
-	if (is_params1 < 0 || is_params2 < 0)
-		goto error;
-	if (is_params1 != is_params2)
-		isl_die(isl_multi_union_pw_aff_get_ctx(mupa1),
-			isl_error_invalid,
-			"cannot compute union of concrete domain and "
-			"parameter constraints", goto error);
-	mupa1 = isl_multi_union_pw_aff_cow(mupa1);
-	if (!mupa1)
-		goto error;
-	mupa1->u.dom = isl_union_set_union(mupa1->u.dom,
-					    isl_union_set_copy(mupa2->u.dom));
-	if (!mupa1->u.dom)
-		goto error;
-	isl_multi_union_pw_aff_free(mupa2);
-	return mupa1;
-error:
-	isl_multi_union_pw_aff_free(mupa1);
-	isl_multi_union_pw_aff_free(mupa2);
 	return NULL;
 }
 

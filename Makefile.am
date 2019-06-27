@@ -511,6 +511,7 @@ EXTRA_DIST = \
 	isl_multi_read_no_explicit_domain_templ.c \
 	isl_multi_splice_templ.c \
 	isl_multi_tuple_id_templ.c \
+	isl_multi_union_add_templ.c \
 	isl_multi_zero_templ.c \
 	opt_type.h \
 	print_templ.c \
