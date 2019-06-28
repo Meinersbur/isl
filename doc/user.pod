@@ -5154,6 +5154,8 @@ Create a relation with the given set(s) as domain and/or range.
 If only the domain or the range is specified, then
 the range or domain of the created relation is a zero-dimensional
 flat anonymous space.
+If the case of C<isl_space_map_from_set>, the input space
+specifies both the domain and the range of the result.
 
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_from_domain(
