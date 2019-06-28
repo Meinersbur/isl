@@ -270,7 +270,7 @@ __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,set)(__isl_take ISL_HMAP *hmap,
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
 	if (entry) {
-		int equal;
+		isl_bool equal;
 		pair = entry->data;
 		equal = ISL_VAL_IS_EQUAL(pair->val, val);
 		if (equal < 0)
