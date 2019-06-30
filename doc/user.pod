@@ -8743,6 +8743,10 @@ Lists can be inspected using the following functions.
 	isl_stat isl_set_list_foreach(__isl_keep isl_set_list *list,
 		isl_stat (*fn)(__isl_take isl_set *el, void *user),
 		void *user);
+	isl_bool isl_set_list_every(__isl_keep isl_set_list *list,
+		isl_bool (*test)(__isl_take isl_set *el,
+			void *user),
+		void *user);
 	isl_stat isl_set_list_foreach_scc(
 		__isl_keep isl_set_list *list,
 		isl_bool (*follows)(__isl_keep isl_set *a,

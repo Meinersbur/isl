@@ -72,6 +72,9 @@ EXPORT									\
 isl_stat isl_##EL##_list_foreach(__isl_keep isl_##EL##_list *list,	\
 	isl_stat (*fn)(__isl_take isl_##EL *el, void *user),		\
 	void *user);							\
+isl_bool isl_##EL##_list_every(__isl_keep isl_##EL##_list *list,	\
+	isl_bool (*test)(__isl_keep isl_##EL *el, void *user),		\
+	void *user);							\
 __isl_give isl_##EL##_list *isl_##EL##_list_map(			\
 	__isl_take isl_##EL##_list *list,				\
 	__isl_give isl_##EL * (*fn)(__isl_take isl_##EL *el,		\
