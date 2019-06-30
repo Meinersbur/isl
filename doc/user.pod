@@ -3499,6 +3499,10 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_aff *aff,
 			  void *user), void *user);
+	isl_bool isl_pw_aff_every_piece(__isl_keep isl_pw_aff *pa,
+		isl_bool (*test)(__isl_keep isl_set *set,
+			__isl_keep isl_aff *aff, void *user),
+			void *user);
 	isl_size isl_pw_multi_aff_n_piece(
 		__isl_keep isl_pw_multi_aff *pma);
 	isl_stat isl_pw_multi_aff_foreach_piece(
@@ -3506,6 +3510,11 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			    __isl_take isl_multi_aff *maff,
 			    void *user), void *user);
+	isl_bool isl_pw_multi_aff_every_piece(
+		__isl_keep isl_pw_multi_aff *pma,
+		isl_bool (*test)(__isl_keep isl_set *set,
+			__isl_keep isl_multi_aff *ma, void *user),
+			void *user);
 
 	#include <isl/polynomial.h>
 	isl_size isl_pw_qpolynomial_n_piece(
@@ -3515,6 +3524,11 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_qpolynomial *qp,
 			  void *user), void *user);
+	isl_bool isl_pw_qpolynomial_every_piece(
+		__isl_keep isl_pw_qpolynomial *pwqp,
+		isl_bool (*test)(__isl_keep isl_set *set,
+			__isl_keep isl_qpolynomial *qp,
+			void *user), void *user);
 	isl_stat isl_pw_qpolynomial_foreach_lifted_piece(
 		__isl_keep isl_pw_qpolynomial *pwqp,
 		isl_stat (*fn)(__isl_take isl_set *set,
@@ -3527,6 +3541,11 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_qpolynomial_fold *fold,
 			  void *user), void *user);
+	isl_bool isl_pw_qpolynomial_fold_every_piece(
+		__isl_keep isl_pw_qpolynomial_fold *pwf,
+		isl_bool (*test)(__isl_keep isl_set *set,
+			__isl_keep isl_qpolynomial_fold *fold,
+			void *user), void *user);
 	isl_stat isl_pw_qpolynomial_fold_foreach_lifted_piece(
 		__isl_keep isl_pw_qpolynomial_fold *pwf,
 		isl_stat (*fn)(__isl_take isl_set *set,
@@ -3547,6 +3566,9 @@ the dimensions of the sets may be different for different
 invocations of C<fn>.
 Similarly for C<isl_pw_qpolynomial_fold_foreach_piece>
 and C<isl_pw_qpolynomial_fold_foreach_lifted_piece>.
+The function C<isl_pw_aff_every_piece> and its variants
+check whether each call to the callback returns true and
+stop checking as soon as one of these calls returns false (or error).
 
 A piecewise expression consisting of the expressions at a given
 position of a piecewise multiple expression can be extracted

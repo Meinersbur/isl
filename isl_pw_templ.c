@@ -1669,6 +1669,28 @@ isl_stat FN(PW,foreach_piece)(__isl_keep PW *pw,
 	return isl_stat_ok;
 }
 
+/* Does "test" succeed on every cell of "pw"?
+ */
+isl_bool FN(PW,every_piece)(__isl_keep PW *pw,
+	isl_bool (*test)(__isl_keep isl_set *set,
+		__isl_keep EL *el, void *user), void *user)
+{
+	int i;
+
+	if (!pw)
+		return isl_bool_error;
+
+	for (i = 0; i < pw->n; ++i) {
+		isl_bool r;
+
+		r = test(pw->p[i].set, pw->p[i].FIELD, user);
+		if (r < 0 || !r)
+			return r;
+	}
+
+	return isl_bool_true;
+}
+
 /* Is "pw" defined over a single universe domain?
  *
  * If the default value of this piecewise type is zero,

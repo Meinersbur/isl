@@ -260,6 +260,9 @@ isl_size isl_pw_qpolynomial_n_piece(__isl_keep isl_pw_qpolynomial *pwqp);
 isl_stat isl_pw_qpolynomial_foreach_piece(__isl_keep isl_pw_qpolynomial *pwqp,
 	isl_stat (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
 		    void *user), void *user);
+isl_bool isl_pw_qpolynomial_every_piece(__isl_keep isl_pw_qpolynomial *pwqp,
+	isl_bool (*test)(__isl_keep isl_set *set,
+		__isl_keep isl_qpolynomial *qp, void *user), void *user);
 isl_stat isl_pw_qpolynomial_foreach_lifted_piece(
 	__isl_keep isl_pw_qpolynomial *pwqp,
 	isl_stat (*fn)(__isl_take isl_set *set, __isl_take isl_qpolynomial *qp,
@@ -471,6 +474,10 @@ isl_stat isl_pw_qpolynomial_fold_foreach_piece(
 	__isl_keep isl_pw_qpolynomial_fold *pwf,
 	isl_stat (*fn)(__isl_take isl_set *set,
 		__isl_take isl_qpolynomial_fold *fold, void *user), void *user);
+isl_bool isl_pw_qpolynomial_fold_every_piece(
+	__isl_keep isl_pw_qpolynomial_fold *pwf,
+	isl_bool (*test)(__isl_keep isl_set *set,
+		__isl_keep isl_qpolynomial_fold *fold, void *user), void *user);
 isl_stat isl_pw_qpolynomial_fold_foreach_lifted_piece(
 	__isl_keep isl_pw_qpolynomial_fold *pwf,
 	isl_stat (*fn)(__isl_take isl_set *set,
