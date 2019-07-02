@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2019      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -10,6 +11,7 @@
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <ctype.h>
@@ -1005,6 +1007,14 @@ static int next_is_tuple(__isl_keep isl_stream *s)
 	return is_tuple;
 }
 
+/* Does the next token mark the end of a tuple element?
+ */
+static int next_is_end_tuple_element(__isl_keep isl_stream *s)
+{
+	return isl_stream_next_token_is(s, ',') ||
+	    isl_stream_next_token_is(s, ']');
+}
+
 /* Is the next token one that necessarily forms the start of a condition?
  */
 static int next_is_condition_start(__isl_keep isl_stream *s)
@@ -1159,6 +1169,42 @@ static __isl_give isl_pw_aff *set_upper(__isl_take isl_pw_aff *range_pa,
 }
 
 /* Construct a piecewise affine expression corresponding
+ * to the last variable in "v" that is greater than or equal to "pa".
+ *
+ * In particular, if D is the domain space of "pa",
+ * then construct the expression
+ *
+ *	D[..., i] -> i,
+ *
+ * impose lower bound "pa" and return
+ *
+ *	D[..., i] -> i : i >= pa
+ */
+static __isl_give isl_pw_aff *construct_lower(__isl_take isl_pw_aff *pa,
+	struct vars *v)
+{
+	return set_lower(init_range(pa, v), pa);
+}
+
+/* Construct a piecewise affine expression corresponding
+ * to the last variable in "v" that is smaller than or equal to "pa".
+ *
+ * In particular, if D is the domain space of "pa",
+ * then construct the expression
+ *
+ *	D[..., i] -> i,
+ *
+ * impose lower bound "pa" and return
+ *
+ *	D[..., i] -> i : i <= pa
+ */
+static __isl_give isl_pw_aff *construct_upper(__isl_take isl_pw_aff *pa,
+	struct vars *v)
+{
+	return set_upper(init_range(pa, v), pa);
+}
+
+/* Construct a piecewise affine expression corresponding
  * to the last variable in "v" that ranges between "pa" and "pa2".
  *
  * In particular, if D is the domain space of "pa" (and "pa2"),
@@ -1190,6 +1236,9 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
  * return a piecewise affine expression that takes values in that range.
  * Note that an affine expression followed by a comparison operator
  * is considered to be part of a condition.
+ * If the colon is not followed by anything (inside the tuple element),
+ * then consider "pa" as a lower bound on a range of values without upper bound
+ * and return a piecewise affine expression that takes values in that range.
  */
 static __isl_give isl_pw_aff *update_piecewise_affine_colon(
 	__isl_take isl_pw_aff *pa, __isl_keep isl_stream *s,
@@ -1204,6 +1253,10 @@ static __isl_give isl_pw_aff *update_piecewise_affine_colon(
 	if (isl_stream_next_token_is(s, '('))
 		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
 			goto error;
+	if (next_is_end_tuple_element(s)) {
+		isl_map_free(map);
+		return construct_lower(pa, v);
+	}
 	if (!next_is_condition_start(s)) {
 		int line = -1, col = -1;
 		isl_space *space;
@@ -1239,15 +1292,25 @@ error:
  *
  *	aff1 : condition1; aff2 : conditions2; ...
  *
- * or
+ * or one of
  *
+ *	aff :
  *	aff1 : aff2
+ *	: aff
+ *	:
  *
  * or simply
  *
  *	aff
  *
  * each of the affine expressions may in turn include ternary operators.
+ *
+ * If the first token is a colon, then the expression must be
+ * ":" or ": aff2", depending on whether anything follows the colon
+ * inside the tuple element.
+ * The first is considered to represent an arbitrary value.
+ * The second is considered to represent a range of values
+ * with the given upper bound and no lower bound.
  *
  * There may be parentheses around some subexpression of "aff1"
  * around "aff1" itself, around "aff1 : condition1" and/or
@@ -1263,6 +1326,13 @@ static __isl_give isl_pw_aff *accept_piecewise_affine(__isl_keep isl_stream *s,
 {
 	isl_pw_aff *res;
 	isl_space *res_space;
+
+	if (isl_stream_eat_if_available(s, ':')) {
+		if (next_is_end_tuple_element(s))
+			return identity_tuple_el_on_space(space, v);
+		else
+			return construct_upper(accept_affine(s, space, v), v);
+	}
 
 	res_space = isl_space_from_domain(isl_space_copy(space));
 	res_space = isl_space_add_dims(res_space, isl_dim_out, 1);
