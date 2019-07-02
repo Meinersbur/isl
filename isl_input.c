@@ -1100,6 +1100,64 @@ static __isl_give isl_pw_aff *identity_tuple_el_on_space(
 	return isl_pw_aff_from_aff(aff);
 }
 
+/* Construct an isl_pw_aff defined on the domain space of "pa"
+ * that is equal to the last variable in "v".
+ *
+ * That is, if D is the domain space of "pa", then construct
+ *
+ *	D[..., i] -> i.
+ */
+static __isl_give isl_pw_aff *init_range(__isl_keep isl_pw_aff *pa,
+	struct vars *v)
+{
+	isl_space *space;
+
+	space = isl_pw_aff_get_domain_space(pa);
+	return identity_tuple_el_on_space(space, v);
+}
+
+/* Impose the lower bound "lower" on the variable represented by "range_pa".
+ *
+ * In particular, "range_pa" is of the form
+ *
+ *	D[..., i] -> i : C
+ *
+ * with D also the domains space of "lower' and "C" some constraints.
+ *
+ * Return the expression
+ *
+ *	D[..., i] -> i : C and i >= lower
+ */
+static __isl_give isl_pw_aff *set_lower(__isl_take isl_pw_aff *range_pa,
+	__isl_take isl_pw_aff *lower)
+{
+	isl_set *range;
+
+	range = isl_pw_aff_ge_set(isl_pw_aff_copy(range_pa), lower);
+	return isl_pw_aff_intersect_domain(range_pa, range);
+}
+
+/* Impose the upper bound "upper" on the variable represented by "range_pa".
+ *
+ * In particular, "range_pa" is of the form
+ *
+ *	D[..., i] -> i : C
+ *
+ * with D also the domains space of "upper' and "C" some constraints.
+ *
+ * Return the expression
+ *
+ *	D[..., i] -> i : C and i <= upper
+ */
+static __isl_give isl_pw_aff *set_upper(__isl_take isl_pw_aff *range_pa,
+	__isl_take isl_pw_aff *upper)
+{
+	isl_set *range;
+
+	range = isl_pw_aff_le_set(isl_pw_aff_copy(range_pa), upper);
+	return isl_pw_aff_intersect_domain(range_pa, range);
+}
+
 /* Construct a piecewise affine expression corresponding
  * to the last variable in "v" that ranges between "pa" and "pa2".
  *
@@ -1108,30 +1166,14 @@ static __isl_give isl_pw_aff *identity_tuple_el_on_space(
  *
  *	D[..., i] -> i,
  *
- * construct the conditions
- *
- *	D[..., i] : i >= pa
- *	D[..., i] : i <= pa2
- *
- * and return
+ * impose lower bound "pa" and upper bound "pa2" and return
  *
  *	D[..., i] -> i : pa <= i <= pa2
  */
 static __isl_give isl_pw_aff *construct_range(__isl_take isl_pw_aff *pa,
 	__isl_take isl_pw_aff *pa2, struct vars *v)
 {
-	isl_set *range1, *range2;
-	isl_space *space;
-	isl_pw_aff *range_pa;
-
-	space = isl_pw_aff_get_domain_space(pa);
-	range_pa = identity_tuple_el_on_space(space, v);
-	range1 = isl_pw_aff_ge_set(isl_pw_aff_copy(range_pa), pa);
-	range2 = isl_pw_aff_le_set(isl_pw_aff_copy(range_pa), pa2);
-	range_pa = isl_pw_aff_intersect_domain(range_pa, range1);
-	range_pa = isl_pw_aff_intersect_domain(range_pa, range2);
-
-	return range_pa;
+	return set_upper(set_lower(init_range(pa, v), pa), pa2);
 }
 
 static int resolve_paren_expr(__isl_keep isl_stream *s,
