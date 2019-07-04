@@ -811,7 +811,7 @@ static __isl_give PART *FN(UNION,subtract_domain_entry)(__isl_take PART *part,
 	return FN(PART,subtract_domain)(part, set);
 }
 
-/* Subtract "uset' from the domain of "u".
+/* Subtract "uset" from the domain of "u".
  */
 __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
