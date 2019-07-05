@@ -27,15 +27,6 @@ static __isl_give isl_val *FN(UNION,eval_void)(__isl_take UNION *u,
 /* Do the tuples of "space" correspond to those of the domain of "part"?
  * That is, is the domain space of "part" equal to "space", ignoring parameters?
  */
-static isl_bool FN(PART,has_domain_space_tuples)(__isl_keep PART *part,
-	__isl_keep isl_space *space)
-{
-	return isl_space_has_domain_tuples(space, FN(PART,peek_space)(part));
-}
-
-/* Do the tuples of "space" correspond to those of the domain of "part"?
- * That is, is the domain space of "part" equal to "space", ignoring parameters?
- */
 static isl_bool FN(UNION,has_domain_space_tuples)(const void *entry,
 	const void *val)
 {

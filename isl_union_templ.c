@@ -124,6 +124,15 @@ __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)
 	return u;
 }
 
+/* Do the tuples of "space" correspond to those of the domain of "part"?
+ * That is, is the domain space of "part" equal to "space", ignoring parameters?
+ */
+static isl_bool FN(PART,has_domain_space_tuples)(__isl_keep PART *part,
+	__isl_keep isl_space *space)
+{
+	return isl_space_has_domain_tuples(space, FN(PART,peek_space)(part));
+}
+
 /* Extract the element of "u" living in "space" (ignoring parameters).
  *
  * Return the ZERO element if "u" does not contain any element
@@ -895,6 +904,36 @@ __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
 	return FN(UNION,subtract_domain_union_set)(u, uset);
+}
+
+/* Return true if this part should be kept.
+ *
+ * In particular, it should be kept if its domain space
+ * does not correspond to "space".
+ */
+static isl_bool FN(UNION,filter_out_entry)(__isl_keep PART *part, void *user)
+{
+	isl_space *space = user;
+
+	return isl_bool_not(FN(PW,has_domain_space_tuples)(part, space));
+}
+
+/* Remove any element in "space" from the domain of "u".
+ *
+ * In particular, filter out any part of the function defined
+ * on this domain space.
+ */
+__isl_give UNION *FN(UNION,subtract_domain_space)(__isl_take UNION *u,
+	__isl_take isl_space *space)
+{
+	S(UNION,transform_control) control = {
+		.filter = &FN(UNION,filter_out_entry),
+		.filter_user = space,
+	};
+
+	u = FN(UNION,transform)(u, &control);
+	isl_space_free(space);
+	return u;
 }
 
 __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
