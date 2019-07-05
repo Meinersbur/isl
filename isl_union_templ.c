@@ -253,7 +253,7 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
  * If "filter" is not NULL, then only the base expressions that satisfy "filter"
  * are taken into account.
  * "filter_user" is passed as the second argument to "filter".
- * "fn" is applied to each entry in the input.
+ * If "fn" it not NULL, then it is applied to each entry in the input.
  * "fn_user" is passed as the second argument to "fn".
  */
 S(UNION,transform_control) {
@@ -296,7 +296,8 @@ static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 
 	if (!control->inplace)
 		part = FN(PART,copy)(part);
-	part = control->fn(part, control->fn_user);
+	if (control->fn)
+		part = control->fn(part, control->fn_user);
 	if (control->inplace)
 		*entry = part;
 	else
