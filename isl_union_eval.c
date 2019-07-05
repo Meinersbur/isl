@@ -33,11 +33,7 @@ static isl_bool FN(UNION,has_domain_space_tuples)(const void *entry,
 	PART *part = (PART *)entry;
 	isl_space *space = (isl_space *) val;
 
-	if (isl_space_is_params(space))
-		return isl_space_is_set(part->dim);
-
-	return isl_space_tuple_is_equal(part->dim, isl_dim_in,
-					space, isl_dim_set);
+	return isl_space_has_domain_tuples(space, FN(PART,peek_space)(part));
 }
 
 __isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
