@@ -6966,7 +6966,15 @@ the same (number of) parameters.
 	__isl_give isl_union_map *isl_union_map_intersect_params(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_set *set);
+	__isl_give isl_union_map *
+	isl_union_map_intersect_domain_union_set(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_union_map *isl_union_map_intersect_domain(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_map *
+	isl_union_map_intersect_range_union_set(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_set *uset);
 	__isl_give isl_union_map *isl_union_map_intersect_range(
@@ -7140,6 +7148,11 @@ at least one element and all elements need to live in the same space.
 The function C<isl_multi_union_pw_aff_intersect_range>
 restricts the input function to those shared domain elements
 that map to the specified range.
+C<isl_union_map_intersect_domain> is an alternative name for
+C<isl_union_map_intersect_domain_union_set>.
+Similarly,
+C<isl_union_map_intersect_range> is an alternative name for
+C<isl_union_map_intersect_range_union_set>.
 
 =item * Union
 

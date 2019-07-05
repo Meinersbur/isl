@@ -1343,13 +1343,21 @@ static __isl_give isl_union_map *union_map_intersect_domain(
  * If "uset" is a parameters domain, then intersect the parameter
  * domain of "umap" with this set.
  */
-__isl_give isl_union_map *isl_union_map_intersect_domain(
+__isl_give isl_union_map *isl_union_map_intersect_domain_union_set(
 	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
 {
 	if (isl_union_set_is_params(uset))
 		return union_map_intersect_params(umap, uset);
 	else
 		return union_map_intersect_domain(umap, uset);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_union_map *isl_union_map_intersect_domain(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
+{
+	return isl_union_map_intersect_domain_union_set(umap, uset);
 }
 
 /* Remove the elements of "uset" from the domain of "umap".
@@ -1419,7 +1427,7 @@ __isl_give isl_union_map *isl_union_map_gist_range(
 	return gen_bin_op(umap, uset, &control);
 }
 
-__isl_give isl_union_map *isl_union_map_intersect_range(
+__isl_give isl_union_map *isl_union_map_intersect_range_union_set(
 	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
 {
 	struct isl_bin_op_control control = {
@@ -1428,6 +1436,14 @@ __isl_give isl_union_map *isl_union_map_intersect_range(
 	};
 
 	return gen_bin_op(umap, uset, &control);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_union_map *isl_union_map_intersect_range(
+	__isl_take isl_union_map *umap, __isl_take isl_union_set *uset)
+{
+	return isl_union_map_intersect_range_union_set(umap, uset);
 }
 
 /* Intersect each map in "umap" in a space [A -> B] -> C
