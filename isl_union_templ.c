@@ -876,7 +876,7 @@ static __isl_give PART *FN(UNION,subtract_domain_entry)(__isl_take PART *part,
 
 /* Subtract "uset" from the domain of "u".
  */
-__isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
+__isl_give UNION *FN(UNION,subtract_domain_union_set)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
 	S(UNION,transform_control) control = {
@@ -887,6 +887,14 @@ __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 	u = FN(UNION,transform)(u, &control);
 	isl_union_set_free(uset);
 	return u;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
+	__isl_take isl_union_set *uset)
+{
+	return FN(UNION,subtract_domain_union_set)(u, uset);
 }
 
 __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,

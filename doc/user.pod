@@ -7240,9 +7240,17 @@ at least one element and all elements need to live in the same space.
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
 	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_subtract_domain_union_set(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_aff *
 	isl_union_pw_aff_subtract_domain(
 		__isl_take isl_union_pw_aff *upa,
 		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_subtract_domain_union_set(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_set *set);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_subtract_domain(
 		__isl_take isl_union_pw_multi_aff *upma,
@@ -7258,13 +7266,25 @@ at least one element and all elements need to live in the same space.
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *set);
 	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_subtract_domain_union_set(
+		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_qpolynomial *
 	isl_union_pw_qpolynomial_subtract_domain(
 		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_subtract_domain_union_set(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_union_set *uset);
 	__isl_give isl_union_pw_qpolynomial_fold *
 	isl_union_pw_qpolynomial_fold_subtract_domain(
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
 		__isl_take isl_union_set *uset);
+
+C<isl_union_pw_aff_subtract_domain> is an alternative name for
+C<isl_union_pw_aff_subtract_domain_union_set>.
+Similarly for the other pairs of functions.
 
 =item * Application
 
