@@ -9444,6 +9444,19 @@ struct isl_union_pw_multi_aff_un_op_control {
 	__isl_give isl_pw_multi_aff *(*fn)(__isl_take isl_pw_multi_aff *pma);
 };
 
+/* Wrapper for isl_union_pw_multi_aff_un_op filter functions (which do not take
+ * a second argument) for use as an isl_union_pw_multi_aff_transform
+ * filter function (which does take a second argument).
+ * Simply call control->filter without the second argument.
+ */
+static isl_bool isl_union_pw_multi_aff_un_op_filter_drop_user(
+	__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_pw_multi_aff_un_op_control *control = user;
+
+	return control->filter(pma);
+}
+
 /* Wrapper for isl_union_pw_multi_aff_un_op base functions (which do not take
  * a second argument) for use as an isl_union_pw_multi_aff_transform
  * base function (which does take a second argument).
@@ -9461,17 +9474,18 @@ static __isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_un_op_drop_user(
  * modifying "upma" according to "control".
  *
  * isl_union_pw_multi_aff_transform performs essentially
- * the same operation, but takes a callback function
+ * the same operation, but takes a filter and a callback function
  * of a different form (with an extra argument).
- * Call isl_union_pw_multi_aff_transform with a wrapper
- * that removes this extra argument.
+ * Call isl_union_pw_multi_aff_transform with wrappers
+ * that remove this extra argument.
  */
 static __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_un_op(
 	__isl_take isl_union_pw_multi_aff *upma,
 	struct isl_union_pw_multi_aff_un_op_control *control)
 {
 	struct isl_union_pw_multi_aff_transform_control t_control = {
-		.filter = control->filter,
+		.filter = &isl_union_pw_multi_aff_un_op_filter_drop_user,
+		.filter_user = control,
 		.fn = &isl_union_pw_multi_aff_un_op_drop_user,
 		.fn_user = control,
 	};

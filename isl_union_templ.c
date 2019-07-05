@@ -252,13 +252,15 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
  * If "space" is not NULL, then a new union is created in this space.
  * If "filter" is not NULL, then only the base expressions that satisfy "filter"
  * are taken into account.
+ * "filter_user" is passed as the second argument to "filter".
  * "fn" is applied to each entry in the input.
  * "fn_user" is passed as the second argument to "fn".
  */
 S(UNION,transform_control) {
 	int inplace;
 	isl_space *space;
-	isl_bool (*filter)(__isl_keep PART *part);
+	isl_bool (*filter)(__isl_keep PART *part, void *user);
+	void *filter_user;
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
 	void *fn_user;
 };
@@ -285,7 +287,7 @@ static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 	if (control->filter) {
 		isl_bool handle;
 
-		handle = control->filter(part);
+		handle = control->filter(part, control->filter_user);
 		if (handle < 0)
 			return isl_stat_error;
 		if (!handle)
