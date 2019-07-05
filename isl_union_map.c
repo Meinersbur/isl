@@ -4438,6 +4438,15 @@ __isl_give isl_union_map *isl_union_map_remove_map_if(
 	return un_op(umap, &control);
 }
 
+/* Does "map" have "space" as domain (ignoring parameters)?
+ */
+static isl_bool has_domain_space_tuples(__isl_keep isl_map *map, void *user)
+{
+	isl_space *space = user;
+
+	return isl_space_has_domain_tuples(space, isl_map_peek_space(map));
+}
+
 /* Does "map" have "space" as range (ignoring parameters)?
  */
 static isl_bool has_range_space_tuples(__isl_keep isl_map *map, void *user)
@@ -4474,4 +4483,34 @@ __isl_give isl_union_set *isl_union_map_bind_range(
 	bound = uset_from_umap(un_op(umap, &control));
 	isl_multi_id_free(tuple);
 	return bound;
+}
+
+/* Only keep those elements in "umap" that have a domain in "space".
+ */
+__isl_give isl_union_map *isl_union_map_intersect_domain_space(
+	__isl_take isl_union_map *umap, __isl_take isl_space *space)
+{
+	struct isl_un_op_control control = {
+		.filter = &has_domain_space_tuples,
+		.filter_user = space,
+	};
+
+	umap = un_op(umap, &control);
+	isl_space_free(space);
+	return umap;
+}
+
+/* Only keep those elements in "umap" that have a range in "space".
+ */
+__isl_give isl_union_map *isl_union_map_intersect_range_space(
+	__isl_take isl_union_map *umap, __isl_take isl_space *space)
+{
+	struct isl_un_op_control control = {
+		.filter = &has_range_space_tuples,
+		.filter_user = space,
+	};
+
+	umap = un_op(umap, &control);
+	isl_space_free(space);
+	return umap;
 }
