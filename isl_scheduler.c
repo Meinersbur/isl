@@ -126,7 +126,7 @@ struct isl_sched_node {
 	isl_vec *max;
 };
 
-static int node_has_tuples(const void *entry, const void *val)
+static isl_bool node_has_tuples(const void *entry, const void *val)
 {
 	struct isl_sched_node *node = (struct isl_sched_node *)entry;
 	isl_space *space = (isl_space *) val;
@@ -452,12 +452,12 @@ static int is_node(struct isl_sched_graph *graph,
 	return node && node >= &graph->node[0] && node < &graph->node[graph->n];
 }
 
-static int edge_has_src_and_dst(const void *entry, const void *val)
+static isl_bool edge_has_src_and_dst(const void *entry, const void *val)
 {
 	const struct isl_sched_edge *edge = entry;
 	const struct isl_sched_edge *temp = val;
 
-	return edge->src == temp->src && edge->dst == temp->dst;
+	return isl_bool_ok(edge->src == temp->src && edge->dst == temp->dst);
 }
 
 /* Add the given edge to graph->edge_table[type].

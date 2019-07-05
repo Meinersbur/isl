@@ -712,7 +712,7 @@ S(UNION,match_domain_data) {
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
-static int FN(UNION,set_has_space)(const void *entry, const void *val)
+static isl_bool FN(UNION,set_has_space)(const void *entry, const void *val)
 {
 	isl_set *set = (isl_set *)entry;
 	isl_space *space = (isl_space *)val;

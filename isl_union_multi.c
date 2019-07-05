@@ -160,7 +160,7 @@ error:
 
 /* Is the space of "entry" equal to "space"?
  */
-static int FN(UNION,has_space)(const void *entry, const void *val)
+static isl_bool FN(UNION,has_space)(const void *entry, const void *val)
 {
 	PART *part = (PART *) entry;
 	isl_space *space = (isl_space *) val;
@@ -223,7 +223,7 @@ isl_stat FN(FN(UNION,foreach),BASE)(__isl_keep UNION *u,
 /* Is the domain space of the group of expressions at "entry"
  * equal to that of "space"?
  */
-static int FN(UNION,group_has_same_domain_space)(const void *entry,
+static isl_bool FN(UNION,group_has_same_domain_space)(const void *entry,
 	const void *val)
 {
 	S(UNION,group) *group = (S(UNION,group) *) entry;

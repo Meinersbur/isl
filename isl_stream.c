@@ -20,11 +20,11 @@ struct isl_keyword {
 	enum isl_token_type	type;
 };
 
-static int same_name(const void *entry, const void *val)
+static isl_bool same_name(const void *entry, const void *val)
 {
 	const struct isl_keyword *keyword = (const struct isl_keyword *)entry;
 
-	return !strcmp(keyword->name, val);
+	return isl_bool_ok(!strcmp(keyword->name, val));
 }
 
 enum isl_token_type isl_stream_register_keyword(__isl_keep isl_stream *s,

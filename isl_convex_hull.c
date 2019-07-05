@@ -1519,12 +1519,12 @@ struct max_constraint {
 	int		ineq;
 };
 
-static int max_constraint_equal(const void *entry, const void *val)
+static isl_bool max_constraint_equal(const void *entry, const void *val)
 {
 	struct max_constraint *a = (struct max_constraint *)entry;
 	isl_int *b = (isl_int *)val;
 
-	return isl_seq_eq(a->c->row[0] + 1, b, a->c->n_col - 1);
+	return isl_bool_ok(isl_seq_eq(a->c->row[0] + 1, b, a->c->n_col - 1));
 }
 
 static isl_stat update_constraint(struct isl_ctx *ctx,
@@ -2031,13 +2031,13 @@ struct ineq_cmp_data {
 	isl_int		*p;
 };
 
-static int has_ineq(const void *entry, const void *val)
+static isl_bool has_ineq(const void *entry, const void *val)
 {
 	isl_int *row = (isl_int *)entry;
 	struct ineq_cmp_data *v = (struct ineq_cmp_data *)val;
 
-	return isl_seq_eq(row + 1, v->p + 1, v->len) ||
-	       isl_seq_is_neg(row + 1, v->p + 1, v->len);
+	return isl_bool_ok(isl_seq_eq(row + 1, v->p + 1, v->len) ||
+			   isl_seq_is_neg(row + 1, v->p + 1, v->len));
 }
 
 static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,

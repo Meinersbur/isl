@@ -395,7 +395,7 @@ isl_bool isl_union_set_space_has_equal_params(__isl_keep isl_union_set *uset,
 	return isl_union_map_space_has_equal_params(uset_to_umap(uset), space);
 }
 
-static int has_space(const void *entry, const void *val)
+static isl_bool has_space(const void *entry, const void *val)
 {
 	isl_map *map = (isl_map *)entry;
 	isl_space *space = (isl_space *) val;

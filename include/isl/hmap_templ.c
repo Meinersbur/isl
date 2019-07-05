@@ -128,7 +128,7 @@ __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,copy)(__isl_keep ISL_HMAP *hmap)
 	return hmap;
 }
 
-static int has_key(const void *entry, const void *c_key)
+static isl_bool has_key(const void *entry, const void *c_key)
 {
 	const ISL_S(pair) *pair = entry;
 	ISL_KEY *key = (ISL_KEY *) c_key;

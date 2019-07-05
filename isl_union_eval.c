@@ -26,7 +26,7 @@ static __isl_give isl_val *FN(UNION,eval_void)(__isl_take UNION *u,
 
 /* Is the domain space of "entry" equal to "space"?
  */
-static int FN(UNION,has_domain_space)(const void *entry, const void *val)
+static isl_bool FN(UNION,has_domain_space)(const void *entry, const void *val)
 {
 	PART *part = (PART *)entry;
 	isl_space *space = (isl_space *) val;

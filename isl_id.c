@@ -81,19 +81,19 @@ struct isl_name_and_user {
 	void *user;
 };
 
-static int isl_id_has_name_and_user(const void *entry, const void *val)
+static isl_bool isl_id_has_name_and_user(const void *entry, const void *val)
 {
 	isl_id *id = (isl_id *)entry;
 	struct isl_name_and_user *nu = (struct isl_name_and_user *) val;
 
 	if (id->user != nu->user)
-		return 0;
+		return isl_bool_false;
 	if (id->name == nu->name)
-		return 1;
+		return isl_bool_true;
 	if (!id->name || !nu->name)
-		return 0;
+		return isl_bool_false;
 
-	return !strcmp(id->name, nu->name);
+	return isl_bool_ok(!strcmp(id->name, nu->name));
 }
 
 __isl_give isl_id *isl_id_alloc(isl_ctx *ctx, const char *name, void *user)
@@ -164,9 +164,9 @@ int isl_id_cmp(__isl_keep isl_id *id1, __isl_keep isl_id *id2)
 		return 1;
 }
 
-static int isl_id_eq(const void *entry, const void *name)
+static isl_bool isl_id_eq(const void *entry, const void *name)
 {
-	return entry == name;
+	return isl_bool_ok(entry == name);
 }
 
 uint32_t isl_hash_id(uint32_t hash, __isl_keep isl_id *id)
