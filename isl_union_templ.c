@@ -279,22 +279,23 @@ S(UNION,transform_data)
 static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 {
 	S(UNION,transform_data) *data = (S(UNION,transform_data) *)user;
+	S(UNION,transform_control) *control = data->control;
 	PART *part = *entry;
 
-	if (data->control->filter) {
+	if (control->filter) {
 		isl_bool handle;
 
-		handle = data->control->filter(part);
+		handle = control->filter(part);
 		if (handle < 0)
 			return isl_stat_error;
 		if (!handle)
 			return isl_stat_ok;
 	}
 
-	if (!data->control->inplace)
+	if (!control->inplace)
 		part = FN(PART,copy)(part);
-	part = data->control->fn(part, data->control->fn_user);
-	if (data->control->inplace)
+	part = control->fn(part, control->fn_user);
+	if (control->inplace)
 		*entry = part;
 	else
 		data->res = FN(FN(UNION,add),BASE)(data->res, part);
