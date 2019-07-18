@@ -4424,7 +4424,7 @@ __isl_give isl_union_map *isl_union_map_remove_map_if(
 
 /* Does "map" have "space" as range (ignoring parameters)?
  */
-static isl_bool has_range_space(__isl_keep isl_map *map, void *user)
+static isl_bool has_range_space_tuples(__isl_keep isl_map *map, void *user)
 {
 	isl_space *space = user;
 
@@ -4448,7 +4448,7 @@ __isl_give isl_union_set *isl_union_map_bind_range(
 	__isl_take isl_union_map *umap, __isl_take isl_multi_id *tuple)
 {
 	struct isl_un_op_control control = {
-		.filter = &has_range_space,
+		.filter = &has_range_space_tuples,
 		.filter_user = isl_multi_id_peek_space(tuple),
 		.fn_map2 = &bind_range,
 		.fn_map2_user = tuple,
