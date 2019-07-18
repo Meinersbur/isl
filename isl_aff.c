@@ -7202,61 +7202,13 @@ static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
 	return res;
 }
 
-/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function value of "mpa1" is lexicographically less than that
- * of "mpa2".  "space" is the space of the result.
- * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
- *
- * "mpa1" is less than "mpa2" if its i-th element is smaller
- * than the i-th element of "mpa2" while all previous elements are
- * pairwise equal.
- */
-static __isl_give isl_map *isl_multi_pw_aff_lex_lt_map_on_space(
-	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
-	__isl_take isl_space *space)
-{
-	return isl_multi_pw_aff_lex_map_on_space(mpa1, mpa2,
-						&isl_pw_aff_lt_map, space);
-}
+#undef ORDER
+#define ORDER	lt
+#include "isl_aff_lex_templ.c"
 
-/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function value of "mpa1" is lexicographically less than that
- * of "mpa2".
- */
-__isl_give isl_map *isl_multi_pw_aff_lex_lt_map(
-	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
-{
-	return isl_multi_pw_aff_order_map(mpa1, mpa2,
-					&isl_multi_pw_aff_lex_lt_map_on_space);
-}
-
-/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function value of "mpa1" is lexicographically greater than that
- * of "mpa2".  "space" is the space of the result.
- * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
- *
- * "mpa1" is greater than "mpa2" if its i-th element is greater
- * than the i-th element of "mpa2" while all previous elements are
- * pairwise equal.
- */
-static __isl_give isl_map *isl_multi_pw_aff_lex_gt_map_on_space(
-	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
-	__isl_take isl_space *space)
-{
-	return isl_multi_pw_aff_lex_map_on_space(mpa1, mpa2,
-						&isl_pw_aff_gt_map, space);
-}
-
-/* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function value of "mpa1" is lexicographically greater than that
- * of "mpa2".
- */
-__isl_give isl_map *isl_multi_pw_aff_lex_gt_map(
-	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
-{
-	return isl_multi_pw_aff_order_map(mpa1, mpa2,
-					&isl_multi_pw_aff_lex_gt_map_on_space);
-}
+#undef ORDER
+#define ORDER	gt
+#include "isl_aff_lex_templ.c"
 
 /* Compare two isl_affs.
  *
