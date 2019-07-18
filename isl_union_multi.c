@@ -375,15 +375,17 @@ static isl_stat FN(UNION,check_disjoint_domain_other)(__isl_keep UNION *u,
 {
 	isl_ctx *ctx;
 	uint32_t hash;
+	isl_space *space;
 	struct isl_hash_table_entry *group_entry;
 	S(UNION,group) *group;
 
 	if (!u || !part)
 		return isl_stat_error;
 	ctx = FN(UNION,get_ctx)(u);
-	hash = isl_space_get_domain_hash(part->dim);
+	space = FN(PART,peek_space)(part);
+	hash = isl_space_get_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_domain_space), part->dim, 0);
+			    &FN(UNION,group_has_domain_space), space, 0);
 	if (!group_entry)
 		return isl_stat_ok;
 	group = group_entry->data;
