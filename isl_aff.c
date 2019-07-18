@@ -7211,7 +7211,7 @@ static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
  * than the i-th element of "mpa2" while all previous elements are
  * pairwise equal.
  */
-__isl_give isl_map *isl_multi_pw_aff_lex_lt_map_on_space(
+static __isl_give isl_map *isl_multi_pw_aff_lex_lt_map_on_space(
 	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
 	__isl_take isl_space *space)
 {
@@ -7239,7 +7239,7 @@ __isl_give isl_map *isl_multi_pw_aff_lex_lt_map(
  * than the i-th element of "mpa2" while all previous elements are
  * pairwise equal.
  */
-__isl_give isl_map *isl_multi_pw_aff_lex_gt_map_on_space(
+static __isl_give isl_map *isl_multi_pw_aff_lex_gt_map_on_space(
 	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
 	__isl_take isl_space *space)
 {
