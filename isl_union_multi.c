@@ -288,6 +288,7 @@ static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
 {
 	isl_ctx *ctx;
 	uint32_t hash;
+	isl_space *space;
 	PART *part;
 	struct isl_hash_table_entry *group_entry;
 	S(UNION,group) *group;
@@ -297,9 +298,10 @@ static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
 
 	part = part_entry->data;
 	ctx = FN(UNION,get_ctx)(u);
-	hash = isl_space_get_domain_hash(part->dim);
+	space = FN(PART,peek_space)(part);
+	hash = isl_space_get_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_domain_space), part->dim, 0);
+			    &FN(UNION,group_has_domain_space), space, 0);
 	if (!group_entry)
 		isl_die(ctx, isl_error_internal, "missing group",
 			return FN(UNION,free)(u));
