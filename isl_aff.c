@@ -2730,7 +2730,7 @@ error:
 	return NULL;
 }
 
-/* Align the parameters of the to isl_pw_aff arguments and
+/* Align the parameters of the two isl_pw_aff arguments and
  * then apply a function "fn" on them that returns an isl_map.
  */
 static __isl_give isl_map *align_params_pw_pw_map_and(
@@ -7282,7 +7282,7 @@ __isl_give isl_map *isl_multi_pw_aff_eq_map(__isl_take isl_multi_pw_aff *mpa1,
 }
 
 /* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function values of "mpa1" is lexicographically satisfies "base"
+ * where the function values of "mpa1" lexicographically satisfies "base"
  * compared to that of "mpa2".  "space" is the space of the result.
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
@@ -9529,7 +9529,7 @@ struct isl_union_pw_multi_aff_un_op_control {
 };
 
 /* Wrapper for isl_union_pw_multi_aff_un_op base functions (which do not take
- * a second argument) for use as a isl_union_pw_multi_aff_transform
+ * a second argument) for use as an isl_union_pw_multi_aff_transform
  * base function (which does take a second argument).
  * Simply call control->fn without the second argument.
  */
