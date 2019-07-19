@@ -606,7 +606,7 @@ static struct isl_sched_edge *graph_find_matching_edge(
 
 /* Remove the given edge from all the edge_tables that refer to it.
  */
-static void graph_remove_edge(struct isl_sched_graph *graph,
+static isl_stat graph_remove_edge(struct isl_sched_graph *graph,
 	struct isl_sched_edge *edge)
 {
 	isl_ctx *ctx = isl_map_get_ctx(edge->map);
@@ -622,6 +622,8 @@ static void graph_remove_edge(struct isl_sched_graph *graph,
 			continue;
 		isl_hash_table_remove(ctx, graph->edge_table[i], entry);
 	}
+
+	return isl_stat_ok;
 }
 
 /* Check whether the dependence graph has any edge
@@ -3398,7 +3400,8 @@ static isl_stat update_edge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (empty < 0)
 		goto error;
 	if (empty) {
-		graph_remove_edge(graph, edge);
+		if (graph_remove_edge(graph, edge) < 0)
+			goto error;
 	} else if (is_multi_edge_type(edge)) {
 		if (graph_edge_tables_add(ctx, graph, edge) < 0)
 			goto error;
