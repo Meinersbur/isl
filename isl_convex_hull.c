@@ -1563,8 +1563,8 @@ static isl_stat update_constraint(struct isl_ctx *ctx,
 /* Check whether the constraint hash table "table" contains the constraint
  * "con".
  */
-static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
-	isl_int *con, unsigned len, int n)
+static isl_bool has_constraint(struct isl_ctx *ctx,
+	struct isl_hash_table *table, isl_int *con, unsigned len, int n)
 {
 	struct isl_hash_table_entry *entry;
 	struct max_constraint *c;
@@ -1574,11 +1574,11 @@ static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
-		return 0;
+		return isl_bool_false;
 	c = entry->data;
 	if (c->count < n)
-		return 0;
-	return isl_int_eq(c->c->row[0][0], con[0]);
+		return isl_bool_false;
+	return isl_bool_ok(isl_int_eq(c->c->row[0][0], con[0]));
 }
 
 /* Are the constraints of "bset" known to be facets?
@@ -1713,8 +1713,12 @@ static __isl_give isl_basic_set *common_constraints(
 		if (set->p[s]->n_ineq != hull->n_ineq)
 			continue;
 		for (i = 0; i < set->p[s]->n_ineq; ++i) {
+			isl_bool has;
 			isl_int *ineq = set->p[s]->ineq[i];
-			if (!has_constraint(hull->ctx, table, ineq, total, n))
+			has = has_constraint(hull->ctx, table, ineq, total, n);
+			if (has < 0)
+				goto error;
+			if (!has)
 				break;
 		}
 		if (i == set->p[s]->n_ineq)
