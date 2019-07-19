@@ -736,9 +736,9 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
 				     hash, &FN(UNION,set_has_space), space, 0);
 	isl_space_free(space);
-	if (!entry2) {
+	if (!entry2 || entry2 == isl_hash_table_entry_none) {
 		FN(PART,free)(part);
-		return isl_stat_ok;
+		return isl_stat_non_null(entry2);
 	}
 
 	part = data->fn(part, isl_set_copy(entry2->data));

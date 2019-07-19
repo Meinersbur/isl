@@ -436,8 +436,12 @@ static struct isl_sched_node *graph_find_node(isl_ctx *ctx,
 	hash = isl_space_get_tuple_hash(space);
 	entry = isl_hash_table_find(ctx, graph->node_table, hash,
 				    &node_has_tuples, space, 0);
+	if (!entry)
+		return NULL;
+	if (entry == isl_hash_table_entry_none)
+		return graph->node + graph->n;
 
-	return entry ? entry->data : graph->node + graph->n;
+	return entry->data;
 }
 
 /* Is "node" a node in "graph"?
@@ -547,6 +551,8 @@ static struct isl_sched_edge *graph_find_edge(struct isl_sched_graph *graph,
 
 	entry = graph_find_edge_entry(graph, type, src, dst);
 	if (!entry)
+		return NULL;
+	if (entry == isl_hash_table_entry_none)
 		return none;
 
 	return entry->data;
@@ -617,6 +623,8 @@ static isl_stat graph_remove_edge(struct isl_sched_graph *graph,
 
 		entry = graph_find_edge_entry(graph, i, edge->src, edge->dst);
 		if (!entry)
+			return isl_stat_error;
+		if (entry == isl_hash_table_entry_none)
 			continue;
 		if (entry->data != edge)
 			continue;

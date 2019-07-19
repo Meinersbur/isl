@@ -345,7 +345,9 @@ static enum isl_token_type check_keywords(__isl_keep isl_stream *s)
 	name_hash = isl_hash_string(isl_hash_init(), s->buffer);
 	entry = isl_hash_table_find(s->ctx, s->keywords, name_hash, same_name,
 					s->buffer, 0);
-	if (entry) {
+	if (!entry)
+		return ISL_TOKEN_ERROR;
+	if (entry != isl_hash_table_entry_none) {
 		keyword = entry->data;
 		return keyword->type;
 	}

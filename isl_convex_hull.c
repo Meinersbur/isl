@@ -1539,6 +1539,8 @@ static isl_stat update_constraint(struct isl_ctx *ctx,
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
+		return isl_stat_error;
+	if (entry == isl_hash_table_entry_none)
 		return isl_stat_ok;
 	c = entry->data;
 	if (c->count < n) {
@@ -1574,6 +1576,8 @@ static isl_bool has_constraint(struct isl_ctx *ctx,
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
+		return isl_bool_error;
+	if (entry == isl_hash_table_entry_none)
 		return isl_bool_false;
 	c = entry->data;
 	if (c->count < n)
@@ -2176,6 +2180,8 @@ static isl_stat set_max_constant_term(struct sh_data *data,
 		entry = isl_hash_table_find(ctx, data->p[j].table,
 						c_hash, &has_ineq, v, 0);
 		if (!entry)
+			return isl_stat_error;
+		if (entry == isl_hash_table_entry_none)
 			continue;
 
 		ineq_j = entry->data;
@@ -2232,13 +2238,17 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 
 	entry = isl_hash_table_find(hull->ctx, data->hull_table, c_hash,
 					has_ineq, &v, 0);
-	if (entry)
+	if (!entry)
+		return isl_basic_set_free(hull);
+	if (entry != isl_hash_table_entry_none)
 		return hull;
 
 	for (j = 0; j < i; ++j) {
 		entry = isl_hash_table_find(hull->ctx, data->p[j].table,
 						c_hash, has_ineq, &v, 0);
-		if (entry)
+		if (!entry)
+			return isl_basic_set_free(hull);
+		if (entry != isl_hash_table_entry_none)
 			break;
 	}
 	if (j < i)
@@ -2266,7 +2276,9 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 		int bound;
 		entry = isl_hash_table_find(hull->ctx, data->p[j].table,
 						c_hash, has_ineq, &v, 0);
-		if (entry)
+		if (!entry)
+			return isl_basic_set_free(hull);
+		if (entry != isl_hash_table_entry_none)
 			continue;
 		bound = is_bound(data, set, j, hull->ineq[k], shift);
 		if (bound < 0)
@@ -2699,7 +2711,9 @@ static __isl_give isl_basic_set *add_bound_from_constraint(
 
 		entry = isl_hash_table_find(ctx, data->p[i].table,
 						c_hash, &has_ineq, &v, 0);
-		if (entry) {
+		if (!entry)
+			return isl_basic_set_free(hull);
+		if (entry != isl_hash_table_entry_none) {
 			isl_int *ineq_i = entry->data;
 			int neg, more_relaxed;
 

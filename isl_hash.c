@@ -8,7 +8,7 @@
  */
 
 #include <stdlib.h>
-#include <isl_hash_private.h>
+#include <isl/hash.h>
 #include <isl/ctx.h>
 #include "isl_config.h"
 
@@ -148,9 +148,8 @@ void isl_hash_table_free(struct isl_ctx *ctx, struct isl_hash_table *table)
 	free(table);
 }
 
-/* A dummy entry that can be used to make a distinction between
- * a missing entry and an error condition.
- * It is used by isl_union_*_find_part_entry.
+/* A dummy entry that is used by isl_hash_table_find
+ * to make a distinction between a missing entry and an error condition.
  */
 static struct isl_hash_table_entry none = { 0, NULL };
 struct isl_hash_table_entry *isl_hash_table_entry_none = &none;
@@ -172,7 +171,7 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 			return &table->entries[h];
 
 	if (!reserve)
-		return NULL;
+		return isl_hash_table_entry_none;
 
 	if (4 * table->n >= 3 * size) {
 		if (grow_table(ctx, table) < 0)

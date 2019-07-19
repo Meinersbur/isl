@@ -63,7 +63,9 @@ __isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
 				    hash, &FN(UNION,has_domain_space),
 				    space, 0);
 	isl_space_free(space);
-	if (!entry) {
+	if (!entry)
+		goto error;
+	if (entry == isl_hash_table_entry_none) {
 		v = isl_val_zero(isl_point_get_ctx(pnt));
 		isl_point_free(pnt);
 	} else {

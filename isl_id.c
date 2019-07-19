@@ -209,6 +209,8 @@ __isl_null isl_id *isl_id_free(__isl_take isl_id *id)
 	entry = isl_hash_table_find(id->ctx, &id->ctx->id_table, id->hash,
 					isl_id_eq, id, 0);
 	if (!entry)
+		return NULL;
+	if (entry == isl_hash_table_entry_none)
 		isl_die(id->ctx, isl_error_unknown,
 			"unable to find id", (void)0);
 	else

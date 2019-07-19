@@ -159,6 +159,8 @@ __isl_give ISL_MAYBE(ISL_VAL) ISL_FN(ISL_HMAP,try_get)(
 					&has_key, key, 0);
 
 	if (!entry)
+		goto error;
+	if (entry == isl_hash_table_entry_none)
 		return res;
 
 	pair = entry->data;
@@ -221,7 +223,9 @@ __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,drop)(__isl_take ISL_HMAP *hmap,
 	hash = ISL_FN(ISL_KEY,get_hash)(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
-	if (!entry) {
+	if (!entry)
+		goto error;
+	if (entry == isl_hash_table_entry_none) {
 		ISL_FN(ISL_KEY,free)(key);
 		return hmap;
 	}
@@ -234,6 +238,8 @@ __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,drop)(__isl_take ISL_HMAP *hmap,
 	ISL_FN(ISL_KEY,free)(key);
 
 	if (!entry)
+		return ISL_FN(ISL_HMAP,free)(hmap);
+	if (entry == isl_hash_table_entry_none)
 		isl_die(hmap->ctx, isl_error_internal,
 			"missing entry" , return ISL_FN(ISL_HMAP,free)(hmap));
 
@@ -269,7 +275,9 @@ __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,set)(__isl_take ISL_HMAP *hmap,
 	hash = ISL_FN(ISL_KEY,get_hash)(key);
 	entry = isl_hash_table_find(hmap->ctx, &hmap->table, hash,
 					&has_key, key, 0);
-	if (entry) {
+	if (!entry)
+		goto error;
+	if (entry != isl_hash_table_entry_none) {
 		isl_bool equal;
 		pair = entry->data;
 		equal = ISL_VAL_IS_EQUAL(pair->val, val);

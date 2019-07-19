@@ -13,7 +13,7 @@
  * 78153 Le Chesnay Cedex France
  */
 
-#include <isl_hash_private.h>
+#include <isl/hash.h>
 #include <isl_union_macro.h>
 
 /* A group of expressions defined over the same domain space "domain_space".
@@ -247,7 +247,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 {
 	isl_ctx *ctx;
 	uint32_t hash;
-	struct isl_hash_table_entry *group_entry, *part_entry;
+	struct isl_hash_table_entry *group_entry;
 	S(UNION,group) *group;
 
 	if (!u || !space)
@@ -257,8 +257,8 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	hash = isl_space_get_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
 			&FN(UNION,group_has_same_domain_space), space, reserve);
-	if (!group_entry)
-		return reserve ? NULL : isl_hash_table_entry_none;
+	if (!group_entry || group_entry == isl_hash_table_entry_none)
+		return group_entry;
 	if (reserve && !group_entry->data) {
 		isl_space *domain = isl_space_domain(isl_space_copy(space));
 		group = FN(UNION,group_alloc)(domain, 1);
@@ -271,11 +271,8 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	if (!group)
 		return NULL;
 	hash = isl_space_get_hash(space);
-	part_entry = isl_hash_table_find(ctx, &group->part_table, hash,
+	return isl_hash_table_find(ctx, &group->part_table, hash,
 				&FN(UNION,has_space), space, reserve);
-	if (!reserve && !part_entry)
-		return isl_hash_table_entry_none;
-	return part_entry;
 }
 
 /* Remove "part_entry" from the hash table of "u".
@@ -304,6 +301,8 @@ static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
 			    &FN(UNION,group_has_same_domain_space), space, 0);
 	if (!group_entry)
+		return FN(UNION,free)(u);
+	if (group_entry == isl_hash_table_entry_none)
 		isl_die(ctx, isl_error_internal, "missing group",
 			return FN(UNION,free)(u));
 	group = group_entry->data;
@@ -388,6 +387,8 @@ static isl_stat FN(UNION,check_disjoint_domain_other)(__isl_keep UNION *u,
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
 			    &FN(UNION,group_has_same_domain_space), space, 0);
 	if (!group_entry)
+		return isl_stat_error;
+	if (group_entry == isl_hash_table_entry_none)
 		return isl_stat_ok;
 	group = group_entry->data;
 	return isl_hash_table_foreach(ctx, &group->part_table,

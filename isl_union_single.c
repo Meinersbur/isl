@@ -10,7 +10,7 @@
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
-#include <isl_hash_private.h>
+#include <isl/hash.h>
 #include <isl_union_macro.h>
 
 /* A union of expressions defined over different domain spaces.
@@ -102,8 +102,8 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	hash = isl_space_get_domain_hash(space);
 	entry = isl_hash_table_find(ctx, &u->table, hash,
 			&FN(UNION,has_same_domain_space), space, reserve);
-	if (!entry)
-		return reserve ? NULL : isl_hash_table_entry_none;
+	if (!entry || entry == isl_hash_table_entry_none)
+		return entry;
 	if (reserve && !entry->data)
 		return entry;
 	part = entry->data;
