@@ -2160,7 +2160,8 @@ static int is_bound(struct sh_data *data, __isl_keep isl_set *set, int j,
  * least its constant term) may need to be temporarily negated to get
  * the actually hashed constraint.
  */
-static void set_max_constant_term(struct sh_data *data, __isl_keep isl_set *set,
+static isl_stat set_max_constant_term(struct sh_data *data,
+	__isl_keep isl_set *set,
 	int i, isl_int *ineq, uint32_t c_hash, struct ineq_cmp_data *v)
 {
 	int j;
@@ -2186,6 +2187,8 @@ static void set_max_constant_term(struct sh_data *data, __isl_keep isl_set *set,
 		if (neg)
 			isl_int_neg(ineq_j[0], ineq_j[0]);
 	}
+
+	return isl_stat_ok;
 }
 
 /* Check if inequality "ineq" from basic set "i" is or can be relaxed to
@@ -2246,7 +2249,8 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 		goto error;
 	isl_seq_cpy(hull->ineq[k], ineq, 1 + v.len);
 
-	set_max_constant_term(data, set, i, hull->ineq[k], c_hash, &v);
+	if (set_max_constant_term(data, set, i, hull->ineq[k], c_hash, &v) < 0)
+		goto error;
 	for (j = 0; j < i; ++j) {
 		int bound;
 		bound = is_bound(data, set, j, hull->ineq[k], shift);
