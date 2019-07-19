@@ -535,17 +535,19 @@ static struct isl_hash_table_entry *graph_find_edge_entry(
 
 /* If graph->edge_table[type] contains an edge from the given source
  * to the given destination, then return this edge.
- * Otherwise, return NULL.
+ * Return "none" if no such edge can be found.
+ * Return NULL on error.
  */
 static struct isl_sched_edge *graph_find_edge(struct isl_sched_graph *graph,
 	enum isl_edge_type type,
-	struct isl_sched_node *src, struct isl_sched_node *dst)
+	struct isl_sched_node *src, struct isl_sched_node *dst,
+	struct isl_sched_edge *none)
 {
 	struct isl_hash_table_entry *entry;
 
 	entry = graph_find_edge_entry(graph, type, src, dst);
 	if (!entry)
-		return NULL;
+		return none;
 
 	return entry->data;
 }
@@ -557,11 +559,14 @@ static isl_bool graph_has_edge(struct isl_sched_graph *graph,
 	enum isl_edge_type type,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
+	struct isl_sched_edge dummy;
 	struct isl_sched_edge *edge;
 	isl_bool empty;
 
-	edge = graph_find_edge(graph, type, src, dst);
+	edge = graph_find_edge(graph, type, src, dst, &dummy);
 	if (!edge)
+		return isl_bool_error;
+	if (edge == &dummy)
 		return isl_bool_false;
 
 	empty = isl_map_plain_is_empty(edge->map);
@@ -584,8 +589,10 @@ static struct isl_sched_edge *graph_find_matching_edge(
 	for (i = isl_edge_first; i <= isl_edge_last; ++i) {
 		int is_equal;
 
-		edge = graph_find_edge(graph, i, model->src, model->dst);
+		edge = graph_find_edge(graph, i, model->src, model->dst, model);
 		if (!edge)
+			return NULL;
+		if (edge == model)
 			continue;
 		is_equal = isl_map_plain_is_equal(model->map, edge->map);
 		if (is_equal < 0)
