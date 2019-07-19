@@ -235,7 +235,7 @@ __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,drop)(__isl_take ISL_HMAP *hmap,
 
 	if (!entry)
 		isl_die(hmap->ctx, isl_error_internal,
-			"missing entry" , goto error);
+			"missing entry" , return ISL_FN(ISL_HMAP,free)(hmap));
 
 	pair = entry->data;
 	isl_hash_table_remove(hmap->ctx, &hmap->table, entry);
