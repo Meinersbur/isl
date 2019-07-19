@@ -1527,7 +1527,8 @@ static int max_constraint_equal(const void *entry, const void *val)
 	return isl_seq_eq(a->c->row[0] + 1, b, a->c->n_col - 1);
 }
 
-static void update_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
+static isl_stat update_constraint(struct isl_ctx *ctx,
+	struct isl_hash_table *table,
 	isl_int *con, unsigned len, int n, int ineq)
 {
 	struct isl_hash_table_entry *entry;
@@ -1538,23 +1539,25 @@ static void update_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
-		return;
+		return isl_stat_ok;
 	c = entry->data;
 	if (c->count < n) {
 		isl_hash_table_remove(ctx, table, entry);
-		return;
+		return isl_stat_ok;
 	}
 	c->count++;
 	if (isl_int_gt(c->c->row[0][0], con[0]))
-		return;
+		return isl_stat_ok;
 	if (isl_int_eq(c->c->row[0][0], con[0])) {
 		if (ineq)
 			c->ineq = ineq;
-		return;
+		return isl_stat_ok;
 	}
 	c->c = isl_mat_cow(c->c);
 	isl_int_set(c->c->row[0][0], con[0]);
 	c->ineq = ineq;
+
+	return isl_stat_ok;
 }
 
 /* Check whether the constraint hash table "table" contains the constraint
@@ -1679,14 +1682,16 @@ static __isl_give isl_basic_set *common_constraints(
 			isl_int *eq = set->p[s]->eq[i];
 			for (j = 0; j < 2; ++j) {
 				isl_seq_neg(eq, eq, 1 + total);
-				update_constraint(hull->ctx, table,
-							    eq, total, n, 0);
+				if (update_constraint(hull->ctx, table,
+						    eq, total, n, 0) < 0)
+					goto error;
 			}
 		}
 		for (i = 0; i < set->p[s]->n_ineq; ++i) {
 			isl_int *ineq = set->p[s]->ineq[i];
-			update_constraint(hull->ctx, table, ineq, total, n,
-				set->p[s]->n_eq == 0);
+			if (update_constraint(hull->ctx, table, ineq, total, n,
+					set->p[s]->n_eq == 0) < 0)
+				goto error;
 		}
 		++n;
 	}
