@@ -1588,6 +1588,12 @@ The identifiers or names of entire spaces may be set or read off
 using the following functions.
 
 	#include <isl/space.h>
+	__isl_give isl_space *isl_space_set_domain_tuple_id(
+		__isl_take isl_space *space,
+		__isl_take isl_id *id);
+	__isl_give isl_space *isl_space_set_range_tuple_id(
+		__isl_take isl_space *space,
+		__isl_take isl_id *id);
 	__isl_give isl_space *isl_space_set_tuple_id(
 		__isl_take isl_space *space,
 		enum isl_dim_type type, __isl_take isl_id *id);

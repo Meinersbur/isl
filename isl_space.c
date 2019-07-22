@@ -655,6 +655,28 @@ error:
 	return NULL;
 }
 
+/* Replace the identifier of the domain tuple of the map space "space"
+ * by "id".
+ */
+__isl_give isl_space *isl_space_set_domain_tuple_id(
+	__isl_take isl_space *space, __isl_take isl_id *id)
+{
+	if (isl_space_check_is_map(space) < 0)
+		space = isl_space_free(space);
+	return isl_space_set_tuple_id(space, isl_dim_in, id);
+}
+
+/* Replace the identifier of the range tuple of the map space "space"
+ * by "id".
+ */
+__isl_give isl_space *isl_space_set_range_tuple_id(
+	__isl_take isl_space *space, __isl_take isl_id *id)
+{
+	if (isl_space_check_is_map(space) < 0)
+		space = isl_space_free(space);
+	return isl_space_set_tuple_id(space, isl_dim_out, id);
+}
+
 __isl_give isl_space *isl_space_reset_tuple_id(__isl_take isl_space *space,
 	enum isl_dim_type type)
 {
