@@ -2723,6 +2723,11 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #include <isl_union_single.c>
 #include <isl_union_neg.c>
 
+#undef BASE
+#define BASE aff
+
+#include <isl_union_pw_templ.c>
+
 /* Compute a piecewise quasi-affine expression with a domain that
  * is the union of those of pwaff1 and pwaff2 and such that on each
  * cell, the quasi-affine expression is the maximum of those of pwaff1
@@ -4345,6 +4350,11 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_union_multi.c>
 #include "isl_union_locals_templ.c"
 #include <isl_union_neg.c>
+
+#undef BASE
+#define BASE multi_aff
+
+#include <isl_union_pw_templ.c>
 
 /* Generic function for extracting a factor from a product "pma".
  * "check_space" checks that the space is that of the right kind of product.

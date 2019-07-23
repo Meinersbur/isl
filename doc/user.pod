@@ -3691,6 +3691,17 @@ expression is known to live in exactly one space.
 	isl_union_pw_multi_aff_as_pw_multi_aff(
 		__isl_take isl_union_pw_multi_aff *upma);
 
+A union piecewise expression containing a single base expression
+on a universe domain can also be created directly from
+a base expression using the following functions.
+
+	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *isl_union_pw_aff_from_aff(
+		__isl_take isl_aff *aff);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_from_multi_aff(
+		__isl_take isl_multi_aff *ma);
+
 The following functions create a base expression on each
 of the sets in the union set and collect the results.
 
