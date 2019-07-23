@@ -4027,6 +4027,15 @@ error:
 }
 
 /* Given a map space, return an isl_pw_multi_aff that maps a wrapped copy
+ * of the space to its domain.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_domain_map(
+	__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_domain_map(space));
+}
+
+/* Given a map space, return an isl_pw_multi_aff that maps a wrapped copy
  * of the space to its range.
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(

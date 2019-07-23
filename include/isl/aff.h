@@ -563,6 +563,8 @@ __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 	__isl_take isl_space *space);
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_domain_map(
+	__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(
 	__isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
