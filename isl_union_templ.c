@@ -721,9 +721,11 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	S(UNION,match_domain_data) *data = user;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
-	isl_space *space;
+	isl_space *space, *uset_space;
 
+	uset_space = isl_union_set_peek_space(data->uset);
 	space = FN(PART,get_domain_space)(part);
+	space = isl_space_replace_params(space, uset_space);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
 				     hash, &FN(UNION,set_has_space), space, 0);
@@ -751,9 +753,6 @@ static __isl_give UNION *FN(UNION,match_domain_op)(__isl_take UNION *u,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
 	S(UNION,match_domain_data) data = { NULL, NULL, fn };
-
-	u = FN(UNION,align_params)(u, isl_union_set_get_space(uset));
-	uset = isl_union_set_align_params(uset, FN(UNION,get_space)(u));
 
 	if (!u || !uset)
 		goto error;
