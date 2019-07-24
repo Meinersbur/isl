@@ -177,6 +177,13 @@ __isl_keep isl_space *isl_union_map_peek_space(__isl_keep isl_union_map *umap)
 	return umap ? umap->dim : NULL;
 }
 
+/* Return the space of "uset".
+ */
+__isl_keep isl_space *isl_union_set_peek_space(__isl_keep isl_union_set *uset)
+{
+	return isl_union_map_peek_space(uset_to_umap(uset));
+}
+
 __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap)
 {
 	return isl_space_copy(isl_union_map_peek_space(umap));
