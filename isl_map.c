@@ -8100,6 +8100,9 @@ __isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
 /* Data structure that specifies how isl_map_intersect_factor
  * should operate.
  *
+ * "preserve_type" is the tuple where the factor differs from
+ * the input map and of which the identifiers needs
+ * to be preserved explicitly.
  * "other_factor" is used to extract the space of the other factor
  * from the space of the product ("map").
  * "product" is used to combine the given factor and a universe map
@@ -8107,6 +8110,7 @@ __isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
  * that lives in the same space as the input map.
  */
 struct isl_intersect_factor_control {
+	enum isl_dim_type preserve_type;
 	__isl_give isl_space *(*other_factor)(__isl_take isl_space *space);
 	__isl_give isl_map *(*product)(__isl_take isl_map *factor,
 		__isl_take isl_map *other);
@@ -8118,12 +8122,18 @@ struct isl_intersect_factor_control {
  * After aligning the parameters,
  * the map "factor" is first extended to a map living in the same space
  * as "map" and then a regular intersection is computed.
+ *
+ * Note that the extension is computed as a product, which is anonymous
+ * by default.  If "map" has an identifier on the corresponding tuple,
+ * then this identifier needs to be set on the product
+ * before the intersection is computed.
  */
 static __isl_give isl_map *isl_map_intersect_factor(
 	__isl_take isl_map *map, __isl_take isl_map *factor,
 	struct isl_intersect_factor_control *control)
 {
-	isl_bool equal;
+	isl_bool equal, has_id;
+	isl_id *id;
 	isl_space *space;
 	isl_map *other, *product;
 
@@ -8136,8 +8146,18 @@ static __isl_give isl_map *isl_map_intersect_factor(
 	}
 
 	space = isl_map_get_space(map);
+	has_id = isl_space_has_tuple_id(space, control->preserve_type);
+	if (has_id < 0)
+		space = isl_space_free(space);
+	else if (has_id)
+		id = isl_space_get_tuple_id(space, control->preserve_type);
+
 	other = isl_map_universe(control->other_factor(space));
 	product = control->product(factor, other);
+
+	if (has_id >= 0 && has_id)
+		product = isl_map_set_tuple_id(product,
+						control->preserve_type, id);
 
 	return map_intersect(map, product);
 error:
@@ -8169,6 +8189,7 @@ __isl_give isl_map *isl_map_intersect_domain_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
 	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_in,
 		.other_factor = isl_space_domain_factor_domain,
 		.product = isl_map_reverse_domain_product,
 	};
@@ -8183,6 +8204,7 @@ __isl_give isl_map *isl_map_intersect_range_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
 	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_out,
 		.other_factor = isl_space_range_factor_domain,
 		.product = isl_map_reverse_range_product,
 	};
