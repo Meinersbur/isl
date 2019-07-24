@@ -830,7 +830,8 @@ __isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
 
 /* Restrict the domain of "pw" by combining each cell
  * with "set" through a call to "fn", where "fn" may be
- * isl_set_intersect, isl_set_intersect_params or isl_set_subtract.
+ * isl_set_intersect, isl_set_intersect_params, isl_set_intersect_factor_domain,
+ * isl_set_intersect_factor_range or isl_set_subtract.
  */
 static __isl_give PW *FN(PW,restrict_domain_aligned)(__isl_take PW *pw,
 	__isl_take isl_set *set,
@@ -892,6 +893,48 @@ __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 {
 	return FN(PW,align_params_pw_set_and)(pw, context,
 					&FN(PW,intersect_params_aligned));
+}
+
+/* Given a piecewise expression "pw" with domain in a space [A -> B] and
+ * a set in the space A, intersect the domain with the set,
+ * assuming the parameters have been aligned.
+ */
+static __isl_give PW *FN(PW,intersect_domain_wrapped_domain_aligned)(
+	__isl_take PW *pw, __isl_take isl_set *set)
+{
+	return FN(PW,restrict_domain_aligned)(pw, set,
+					    &isl_set_intersect_factor_domain);
+}
+
+/* Given a piecewise expression "pw" with domain in a space [A -> B] and
+ * a set in the space A, intersect the domain with the set.
+ */
+__isl_give PW *FN(PW,intersect_domain_wrapped_domain)(__isl_take PW *pw,
+	__isl_take isl_set *set)
+{
+	return FN(PW,align_params_pw_set_and)(pw, set,
+			&FN(PW,intersect_domain_wrapped_domain_aligned));
+}
+
+/* Given a piecewise expression "pw" with domain in a space [A -> B] and
+ * a set in the space B, intersect the domain with the set,
+ * assuming the parameters have been aligned.
+ */
+static __isl_give PW *FN(PW,intersect_domain_wrapped_range_aligned)(
+	__isl_take PW *pw, __isl_take isl_set *set)
+{
+	return FN(PW,restrict_domain_aligned)(pw, set,
+					    &isl_set_intersect_factor_range);
+}
+
+/* Given a piecewise expression "pw" with domain in a space [A -> B] and
+ * a set in the space B, intersect the domain with the set.
+ */
+__isl_give PW *FN(PW,intersect_domain_wrapped_range)(__isl_take PW *pw,
+	__isl_take isl_set *set)
+{
+	return FN(PW,align_params_pw_set_and)(pw, set,
+			&FN(PW,intersect_domain_wrapped_range_aligned));
 }
 
 /* Subtract "domain' from the domain of "pw", assuming their
