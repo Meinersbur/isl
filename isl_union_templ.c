@@ -701,6 +701,8 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
 /* Data structure that specifies how isl_union_*_match_domain_op
  * should combine its arguments.
  *
+ * If "filter" is not NULL, then only parts that pass the given
+ * filter are considered for matching.
  * "fn" is applied to each part in the union and each corresponding
  * set in the union set, i.e., such that the set lives in the same space
  * as the domain of the part.
@@ -710,6 +712,7 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
  * on this domain space.
  */
 S(UNION,match_domain_control) {
+	isl_bool (*filter)(__isl_keep PART *part);
 	__isl_give isl_space *(*match_space)(__isl_take isl_space *space);
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
@@ -738,6 +741,14 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space, *uset_space;
+
+	if (data->control->filter) {
+		isl_bool pass = data->control->filter(part);
+		if (pass < 0 || !pass) {
+			FN(PART,free)(part);
+			return pass < 0 ? isl_stat_error : isl_stat_ok;
+		}
+	}
 
 	uset_space = isl_union_set_peek_space(data->uset);
 	space = FN(PART,get_domain_space)(part);
