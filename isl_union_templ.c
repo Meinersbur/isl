@@ -817,6 +817,43 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	return FN(UNION,match_domain_op)(u, uset, &control);
 }
 
+/* Is the domain of "pw" a wrapped relation?
+ */
+static isl_bool FN(PW,domain_is_wrapping)(__isl_keep PW *pw)
+{
+	return isl_space_domain_is_wrapping(FN(PW,peek_space)(pw));
+}
+
+/* Intersect the domain of the wrapped relation inside the domain of "u"
+ * with "uset".
+ */
+__isl_give UNION *FN(UNION,intersect_domain_wrapped_domain)(__isl_take UNION *u,
+	__isl_take isl_union_set *uset)
+{
+	S(UNION,match_domain_control) control = {
+		.filter = &FN(PART,domain_is_wrapping),
+		.match_space = &isl_space_factor_domain,
+		.fn = &FN(PW,intersect_domain_wrapped_domain),
+	};
+
+	return FN(UNION,match_domain_op)(u, uset, &control);
+}
+
+/* Intersect the range of the wrapped relation inside the domain of "u"
+ * with "uset".
+ */
+__isl_give UNION *FN(UNION,intersect_domain_wrapped_range)(__isl_take UNION *u,
+	__isl_take isl_union_set *uset)
+{
+	S(UNION,match_domain_control) control = {
+		.filter = &FN(PART,domain_is_wrapping),
+		.match_space = &isl_space_factor_range,
+		.fn = &FN(PW,intersect_domain_wrapped_range),
+	};
+
+	return FN(UNION,match_domain_op)(u, uset, &control);
+}
+
 /* Take the set (which may be empty) in data->uset that lives
  * in the same space as the domain of "pw", subtract it from the domain
  * of "part" and return the result.

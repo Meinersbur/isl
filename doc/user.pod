@@ -6822,6 +6822,14 @@ the same (number of) parameters.
 	isl_pw_multi_aff_intersect_domain_wrapped_domain(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_aff *
 	isl_pw_aff_intersect_domain_wrapped_range(
 		__isl_take isl_pw_aff *pa,
@@ -6830,6 +6838,14 @@ the same (number of) parameters.
 	isl_pw_multi_aff_intersect_domain_wrapped_range(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_aff *isl_pw_aff_intersect_params(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_set *set);
@@ -6878,6 +6894,14 @@ the same (number of) parameters.
 	isl_pw_qpolynomial_fold_intersect_domain_wrapped_domain(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_intersect_domain_wrapped_range(
 		__isl_take isl_pw_qpolynomial *pwpq,
@@ -6886,6 +6910,14 @@ the same (number of) parameters.
 	isl_pw_qpolynomial_fold_intersect_domain_wrapped_range(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_intersect_params(
 		__isl_take isl_pw_qpolynomial *pwpq,
