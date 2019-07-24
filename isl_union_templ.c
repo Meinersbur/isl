@@ -704,8 +704,13 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
  * "fn" is applied to each part in the union and each corresponding
  * set in the union set, i.e., such that the set lives in the same space
  * as the domain of the part.
+ * If "match_space" is not NULL, then the set extracted from the union set
+ * does not live in the same space as the domain of the part,
+ * but rather in the space that results from calling "match_space"
+ * on this domain space.
  */
 S(UNION,match_domain_control) {
+	__isl_give isl_space *(*match_space)(__isl_take isl_space *space);
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
@@ -736,6 +741,8 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 
 	uset_space = isl_union_set_peek_space(data->uset);
 	space = FN(PART,get_domain_space)(part);
+	if (data->control->match_space)
+		space = data->control->match_space(space);
 	space = isl_space_replace_params(space, uset_space);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
