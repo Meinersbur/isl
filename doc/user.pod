@@ -6714,6 +6714,12 @@ the same (number of) parameters.
 	__isl_give isl_set *isl_set_intersect(
 		__isl_take isl_set *set1,
 		__isl_take isl_set *set2);
+	__isl_give isl_set *isl_set_intersect_factor_domain(
+		__isl_take isl_set *set,
+		__isl_take isl_set *domain);
+	__isl_give isl_set *isl_set_intersect_factor_range(
+		__isl_take isl_set *set,
+		__isl_take isl_set *range);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_intersect_domain(

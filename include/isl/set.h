@@ -306,6 +306,10 @@ __isl_give isl_set *isl_set_intersect(
 __isl_export
 __isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
 		__isl_take isl_set *params);
+__isl_give isl_set *isl_set_intersect_factor_domain(__isl_take isl_set *set,
+	__isl_take isl_set *domain);
+__isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
+	__isl_take isl_set *range);
 __isl_export
 __isl_give isl_set *isl_set_subtract(
 		__isl_take isl_set *set1,

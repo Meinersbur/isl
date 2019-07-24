@@ -8227,6 +8227,44 @@ __isl_give isl_map *isl_map_intersect_range_factor_range(
 	return isl_map_intersect_factor(map, factor, &control);
 }
 
+/* Given a set "set" in a space [A -> B] and a set "domain"
+ * in the space A, return the intersection.
+ *
+ * The set "domain" is first extended to a set living in the space
+ * [A -> B] and then a regular intersection is computed.
+ */
+__isl_give isl_set *isl_set_intersect_factor_domain(__isl_take isl_set *set,
+	__isl_take isl_set *domain)
+{
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_set,
+		.other_factor = isl_space_factor_range,
+		.product = isl_map_range_product,
+	};
+
+	return set_from_map(isl_map_intersect_factor(set_to_map(set),
+						set_to_map(domain), &control));
+}
+
+/* Given a set "set" in a space [A -> B] and a set "range"
+ * in the space B, return the intersection.
+ *
+ * The set "range" is first extended to a set living in the space
+ * [A -> B] and then a regular intersection is computed.
+ */
+__isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
+	__isl_take isl_set *range)
+{
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_set,
+		.other_factor = isl_space_factor_domain,
+		.product = isl_map_reverse_range_product,
+	};
+
+	return set_from_map(isl_map_intersect_factor(set_to_map(set),
+						set_to_map(range), &control));
+}
+
 static __isl_give isl_map *map_apply_domain(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
