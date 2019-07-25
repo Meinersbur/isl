@@ -5,7 +5,7 @@
  * Copyright 2014      INRIA Rocquencourt
  * Copyright 2016      INRIA Paris
  * Copyright 2016      Sven Verdoolaege
- * Copyright 2018      Cerebras Systems
+ * Copyright 2018-2019 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -3878,6 +3878,33 @@ __isl_give isl_basic_map *isl_basic_map_reverse(__isl_take isl_basic_map *bmap)
 	return isl_basic_map_reset_space(bmap, space);
 }
 
+/* Given a basic map A -> (B -> C), return the corresponding basic map
+ * A -> (C -> B).
+ */
+static __isl_give isl_basic_map *isl_basic_map_range_reverse(
+	__isl_take isl_basic_map *bmap)
+{
+	isl_space *space;
+	isl_size offset, n1, n2;
+
+	space = isl_basic_map_peek_space(bmap);
+	if (isl_space_check_range_is_wrapping(space) < 0)
+		return isl_basic_map_free(bmap);
+	offset = isl_basic_map_var_offset(bmap, isl_dim_out);
+	n1 = isl_space_wrapped_dim(space, isl_dim_out, isl_dim_in);
+	n2 = isl_space_wrapped_dim(space, isl_dim_out, isl_dim_out);
+	if (offset < 0 || n1 < 0 || n2 < 0)
+		return isl_basic_map_free(bmap);
+
+	bmap = isl_basic_map_swap_vars(bmap, 1 + offset, n1, n2);
+
+	space = isl_basic_map_take_space(bmap);
+	space = isl_space_range_reverse(space);
+	bmap = isl_basic_map_restore_space(bmap, space);
+
+	return bmap;
+}
+
 static __isl_give isl_basic_map *basic_map_space_reset(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type)
 {
@@ -6781,6 +6808,14 @@ __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map)
 {
 	return isl_map_transform(map, &isl_space_reverse,
 					&isl_basic_map_reverse);
+}
+
+/* Given a map A -> (B -> C), return the corresponding map A -> (C -> B).
+ */
+__isl_give isl_map *isl_map_range_reverse(__isl_take isl_map *map)
+{
+	return isl_map_transform(map, &isl_space_range_reverse,
+					&isl_basic_map_range_reverse);
 }
 
 #undef TYPE
