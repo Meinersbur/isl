@@ -286,6 +286,19 @@ static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 	return space->ids[gpos];
 }
 
+/* Return the nested space at the given position.
+ */
+static __isl_keep isl_space *isl_space_peek_nested(__isl_keep isl_space *space,
+	int pos)
+{
+	if (!space)
+		return NULL;
+	if (!space->nested[pos])
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"no nested space", return NULL);
+	return space->nested[pos];
+}
+
 static unsigned offset(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	switch (type) {
@@ -437,6 +450,67 @@ static int name_ok(isl_ctx *ctx, const char *s)
 			return 0);
 
 	return 1;
+}
+
+/* Return a copy of the nested space at the given position.
+ */
+static __isl_keep isl_space *isl_space_get_nested(__isl_keep isl_space *space,
+	int pos)
+{
+	return isl_space_copy(isl_space_peek_nested(space, pos));
+}
+
+/* Return the nested space at the given position.
+ * This may be either a copy or the nested space itself
+ * if there is only one reference to "space".
+ * This allows the nested space to be modified inplace
+ * if both "space" and the nested space have only a single reference.
+ * The caller is not allowed to modify "space" between this call and
+ * a subsequent call to isl_space_restore_nested.
+ * The only exception is that isl_space_free can be called instead.
+ */
+static __isl_give isl_space *isl_space_take_nested(__isl_keep isl_space *space,
+	int pos)
+{
+	isl_space *nested;
+
+	if (!space)
+		return NULL;
+	if (space->ref != 1)
+		return isl_space_get_nested(space, pos);
+	nested = space->nested[pos];
+	space->nested[pos] = NULL;
+	return nested;
+}
+
+/* Replace the nested space at the given position by "nested",
+ * where this nested space of "space" may be missing
+ * due to a preceding call to isl_space_take_nested.
+ * However, in this case, "space" only has a single reference and
+ * then the call to isl_space_cow has no effect.
+ */
+static __isl_give isl_space *isl_space_restore_nested(
+	__isl_take isl_space *space, int pos, __isl_take isl_space *nested)
+{
+	if (!space || !nested)
+		goto error;
+
+	if (space->nested[pos] == nested) {
+		isl_space_free(nested);
+		return space;
+	}
+
+	space = isl_space_cow(space);
+	if (!space)
+		goto error;
+	isl_space_free(space->nested[pos]);
+	space->nested[pos] = nested;
+
+	return space;
+error:
+	isl_space_free(space);
+	isl_space_free(nested);
+	return NULL;
 }
 
 /* Is it possible for the given dimension type to have a tuple id?
@@ -784,14 +858,15 @@ __isl_give isl_space *isl_space_reset_user(__isl_take isl_space *space)
 	}
 
 	for (i = 0; i < 2; ++i) {
+		isl_space *nested;
+
 		if (!space->nested[i])
 			continue;
-		space = isl_space_cow(space);
+		nested = isl_space_take_nested(space, i);
+		nested = isl_space_reset_user(nested);
+		space = isl_space_restore_nested(space, i, nested);
 		if (!space)
 			return NULL;
-		space->nested[i] = isl_space_reset_user(space->nested[i]);
-		if (!space->nested[i])
-			return isl_space_free(space);
 	}
 
 	return space;
@@ -1254,12 +1329,15 @@ __isl_give isl_space *isl_space_move_dims(__isl_take isl_space *space,
 		return space;
 
 	for (i = 0; i < 2; ++i) {
+		isl_space *nested;
+
 		if (!space->nested[i])
 			continue;
-		space->nested[i] = isl_space_replace_params(space->nested[i],
-							     space);
-		if (!space->nested[i])
-			goto error;
+		nested = isl_space_take_nested(space, i);
+		nested = isl_space_replace_params(nested, space);
+		space = isl_space_restore_nested(space, i, nested);
+		if (!space)
+			return NULL;
 	}
 
 	return space;
@@ -2721,12 +2799,15 @@ __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 	if (dst) {
 		int i;
 		for (i = 0; i <= 1; ++i) {
+			isl_space *nested;
+
 			if (!dst->nested[i])
 				continue;
-			dst->nested[i] = isl_space_replace_params(
-							dst->nested[i], src);
-			if (!dst->nested[i])
-				goto error;
+			nested = isl_space_take_nested(dst, i);
+			nested = isl_space_replace_params(nested, src);
+			dst = isl_space_restore_nested(dst, i, nested);
+			if (!dst)
+				return NULL;
 		}
 	}
 
@@ -2860,6 +2941,8 @@ isl_bool isl_space_can_range_curry(__isl_keep isl_space *space)
  */
 __isl_give isl_space *isl_space_range_curry(__isl_take isl_space *space)
 {
+	isl_space *nested;
+
 	if (!space)
 		return NULL;
 
@@ -2868,12 +2951,9 @@ __isl_give isl_space *isl_space_range_curry(__isl_take isl_space *space)
 			"space range cannot be curried",
 			return isl_space_free(space));
 
-	space = isl_space_cow(space);
-	if (!space)
-		return NULL;
-	space->nested[1] = isl_space_curry(space->nested[1]);
-	if (!space->nested[1])
-		return isl_space_free(space);
+	nested = isl_space_take_nested(space, 1);
+	nested = isl_space_curry(nested);
+	space = isl_space_restore_nested(space, 1, nested);
 
 	return space;
 }
