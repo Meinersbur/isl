@@ -2090,6 +2090,21 @@ __isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap)
 	return un_op(umap, &control);
 }
 
+/* Given a union map, take the maps of the form A -> (B -> C) and
+ * return the union of the corresponding maps A -> (C -> B).
+ */
+__isl_give isl_union_map *isl_union_map_range_reverse(
+	__isl_take isl_union_map *umap)
+{
+	struct isl_un_op_drop_user_data data = { &isl_map_range_is_wrapping };
+	struct isl_un_op_control control = {
+		.filter = &un_op_filter_drop_user,
+		.filter_user = &data,
+		.fn_map = &isl_map_range_reverse,
+	};
+	return un_op(umap, &control);
+}
+
 /* Compute the parameter domain of the given union map.
  */
 __isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap)
