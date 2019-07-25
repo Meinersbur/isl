@@ -121,6 +121,22 @@ static isl_stat isl_space_check_is_map(__isl_keep isl_space *space)
 	return isl_stat_ok;
 }
 
+/* Check that "space" is the space of a map
+ * where the range is a wrapped map space.
+ */
+isl_stat isl_space_check_range_is_wrapping(__isl_keep isl_space *space)
+{
+	isl_bool wrapping;
+
+	wrapping = isl_space_range_is_wrapping(space);
+	if (wrapping < 0)
+		return isl_stat_error;
+	if (!wrapping)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"range not a product", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim)
 {
@@ -1525,11 +1541,8 @@ error:
 __isl_give isl_space *isl_space_range_factor_domain(
 	__isl_take isl_space *space)
 {
-	if (!space)
-		return NULL;
-	if (!isl_space_range_is_wrapping(space))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"range not a product", return isl_space_free(space));
+	if (isl_space_check_range_is_wrapping(space) < 0)
+		return isl_space_free(space);
 
 	return range_factor_domain(space);
 }
@@ -1603,11 +1616,8 @@ error:
 __isl_give isl_space *isl_space_range_factor_range(
 	__isl_take isl_space *space)
 {
-	if (!space)
-		return NULL;
-	if (!isl_space_range_is_wrapping(space))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"range not a product", return isl_space_free(space));
+	if (isl_space_check_range_is_wrapping(space) < 0)
+		return isl_space_free(space);
 
 	return range_factor_range(space);
 }
