@@ -5919,7 +5919,12 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map)
+/* Transform "map" by applying "fn_space" to its space and "fn_bmap"
+ * to each of its basic maps.
+ */
+static __isl_give isl_map *isl_map_transform(__isl_take isl_map *map,
+	__isl_give isl_space *(*fn_space)(__isl_take isl_space *space),
+	__isl_give isl_basic_map *(*fn_bmap)(__isl_take isl_basic_map *bmap))
 {
 	int i;
 	isl_space *space;
@@ -5929,46 +5934,29 @@ __isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map)
 		return NULL;
 
 	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_domain_map(map->p[i]);
+		map->p[i] = fn_bmap(map->p[i]);
 		if (!map->p[i])
-			goto error;
+			return isl_map_free(map);
 	}
 	map = isl_map_unmark_normalized(map);
 
 	space = isl_map_take_space(map);
-	space = isl_space_domain_map(space);
+	space = fn_space(space);
 	map = isl_map_restore_space(map, space);
 
 	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+}
+
+__isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map)
+{
+	return isl_map_transform(map, &isl_space_domain_map,
+					&isl_basic_map_domain_map);
 }
 
 __isl_give isl_map *isl_map_range_map(__isl_take isl_map *map)
 {
-	int i;
-	isl_space *space;
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_range_map(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map = isl_map_unmark_normalized(map);
-
-	space = isl_map_take_space(map);
-	space = isl_space_range_map(space);
-	map = isl_map_restore_space(map, space);
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_transform(map, &isl_space_range_map,
+					&isl_basic_map_range_map);
 }
 
 /* Given a wrapped map of the form A[B -> C],
@@ -6791,28 +6779,8 @@ __isl_give isl_basic_set *isl_basic_set_upper_bound_val(
 
 __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map)
 {
-	int i;
-	isl_space *space;
-
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_reverse(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map = isl_map_unmark_normalized(map);
-
-	space = isl_map_take_space(map);
-	space = isl_space_reverse(space);
-	map = isl_map_restore_space(map, space);
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_transform(map, &isl_space_reverse,
+					&isl_basic_map_reverse);
 }
 
 #undef TYPE
@@ -8290,31 +8258,11 @@ error:
  */
 __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 {
-	int i;
-	isl_space *space;
-
 	if (isl_map_check_equal_tuples(map) < 0)
 		return isl_map_free(map);
 
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_deltas_map(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map = isl_map_unmark_normalized(map);
-
-	space = isl_map_take_space(map);
-	space = isl_space_range_map(space);
-	map = isl_map_restore_space(map, space);
-
-	return map;
-error:
-	isl_map_free(map);
-	return NULL;
+	return isl_map_transform(map, &isl_space_range_map,
+					&isl_basic_map_deltas_map);
 }
 
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
@@ -12461,9 +12409,6 @@ error:
  */
 __isl_give isl_map *isl_map_zip(__isl_take isl_map *map)
 {
-	int i;
-	isl_space *space;
-
 	if (!map)
 		return NULL;
 
@@ -12471,22 +12416,7 @@ __isl_give isl_map *isl_map_zip(__isl_take isl_map *map)
 		isl_die(map->ctx, isl_error_invalid, "map cannot be zipped",
 			goto error);
 
-	map = isl_map_cow(map);
-	if (!map)
-		return NULL;
-
-	for (i = 0; i < map->n; ++i) {
-		map->p[i] = isl_basic_map_zip(map->p[i]);
-		if (!map->p[i])
-			goto error;
-	}
-	map = isl_map_unmark_normalized(map);
-
-	space = isl_map_take_space(map);
-	space = isl_space_zip(space);
-	map = isl_map_restore_space(map, space);
-
-	return map;
+	return isl_map_transform(map, &isl_space_zip, &isl_basic_map_zip);
 error:
 	isl_map_free(map);
 	return NULL;
