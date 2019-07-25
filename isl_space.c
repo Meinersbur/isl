@@ -1850,6 +1850,36 @@ error:
 	return NULL;
 }
 
+/* Given a space A -> (B -> C), return the corresponding space
+ * A -> (C -> B).
+ *
+ * If the range tuple is named, then the name is only preserved
+ * if B and C are equal tuples, in which case the output
+ * of this function is identical to the input.
+ */
+__isl_give isl_space *isl_space_range_reverse(__isl_take isl_space *space)
+{
+	isl_space *nested;
+	isl_bool equal;
+
+	if (isl_space_check_range_is_wrapping(space) < 0)
+		return isl_space_free(space);
+
+	nested = isl_space_peek_nested(space, 1);
+	equal = match(nested, isl_dim_in, nested, isl_dim_out);
+	if (equal < 0)
+		return isl_space_free(space);
+	if (equal)
+		return space;
+
+	nested = isl_space_take_nested(space, 1);
+	nested = isl_space_reverse(nested);
+	space = isl_space_restore_nested(space, 1, nested);
+	space = isl_space_reset_tuple_id(space, isl_dim_out);
+
+	return space;
+}
+
 __isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned first, unsigned num)
 {

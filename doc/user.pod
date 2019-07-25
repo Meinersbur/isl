@@ -4799,6 +4799,8 @@ earlier dimensions before those that involve later dimensions.
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_reverse(
 		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_range_reverse(
+		__isl_take isl_space *space);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_reverse(
@@ -4809,6 +4811,11 @@ earlier dimensions before those that involve later dimensions.
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_reverse(
 		__isl_take isl_union_map *umap);
+
+The function C<isl_space_range_reverse> reverses the relation
+that is embedded in the range of the input map space.
+The identifier of the range, if any, is only preserved
+if this embedded relation has identical input and output tuples.
 
 =item * Tuple binding
 
