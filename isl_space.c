@@ -1013,6 +1013,27 @@ isl_bool isl_space_tuple_is_equal(__isl_keep isl_space *space1,
 	return isl_bool_true;
 }
 
+/* Is the tuple "inner" within the wrapped relation inside tuple "outer"
+ * of "space1" equal to tuple "type2" of "space2"?
+ */
+isl_bool isl_space_wrapped_tuple_is_equal(__isl_keep isl_space *space1,
+	enum isl_dim_type outer, enum isl_dim_type inner,
+	__isl_keep isl_space *space2, enum isl_dim_type type2)
+{
+	int pos;
+	isl_space *nested;
+
+	if (!space1)
+		return isl_bool_error;
+	if (outer != isl_dim_in && outer != isl_dim_out)
+		isl_die(isl_space_get_ctx(space1), isl_error_invalid,
+			"only input, output and set tuples "
+			"can have nested relations", return isl_bool_error);
+	pos = outer - isl_dim_in;
+	nested = isl_space_peek_nested(space1, pos);
+	return isl_space_tuple_is_equal(nested, inner, space2, type2);
+}
+
 static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
