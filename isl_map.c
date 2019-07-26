@@ -786,6 +786,20 @@ isl_bool isl_map_has_tuple_id(__isl_keep isl_map *map, enum isl_dim_type type)
 	return map ? isl_space_has_tuple_id(map->dim, type) : isl_bool_error;
 }
 
+/* Does the domain tuple of "map" have an identifier?
+ */
+isl_bool isl_map_has_domain_tuple_id(__isl_keep isl_map *map)
+{
+	return isl_map_has_tuple_id(map, isl_dim_in);
+}
+
+/* Does the range tuple of "map" have an identifier?
+ */
+isl_bool isl_map_has_range_tuple_id(__isl_keep isl_map *map)
+{
+	return isl_map_has_tuple_id(map, isl_dim_out);
+}
+
 __isl_give isl_id *isl_map_get_tuple_id(__isl_keep isl_map *map,
 	enum isl_dim_type type)
 {
