@@ -12480,6 +12480,7 @@ __isl_give isl_map *isl_map_zip(__isl_take isl_map *map)
 		if (!map->p[i])
 			goto error;
 	}
+	map = isl_map_unmark_normalized(map);
 
 	space = isl_map_take_space(map);
 	space = isl_space_zip(space);
