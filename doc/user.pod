@@ -7061,16 +7061,20 @@ at least one element and all elements need to live in the same space.
 		__isl_take isl_space *left,
 		__isl_take isl_space *right);
 
-	#include <isl/map.h>
+	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_apply(
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_set *isl_set_apply(
 		__isl_take isl_set *set,
 		__isl_take isl_map *map);
+
+	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_apply(
 		__isl_take isl_union_set *uset,
 		__isl_take isl_union_map *umap);
+
+	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_apply_domain(
 		__isl_take isl_basic_map *bmap1,
 		__isl_take isl_basic_map *bmap2);
