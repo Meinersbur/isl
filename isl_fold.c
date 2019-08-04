@@ -699,7 +699,6 @@ static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 1
 
-#define NO_NEG
 #define NO_SUB
 
 #include <isl_pw_templ.c>
