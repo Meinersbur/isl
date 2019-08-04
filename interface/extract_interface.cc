@@ -402,6 +402,44 @@ static void set_invocation(CompilerInstance *Clang,
 
 #endif
 
+/* Helper function for ignore_error that only gets enabled if T
+ * (which is either const FileEntry * or llvm::ErrorOr<const FileEntry *>)
+ * has getError method, i.e., if it is llvm::ErrorOr<const FileEntry *>.
+ */
+template <class T>
+static const FileEntry *ignore_error_helper(const T obj, int,
+	int[1][sizeof(obj.getError())])
+{
+	return *obj;
+}
+
+/* Helper function for ignore_error that is always enabled,
+ * but that only gets selected if the variant above is not enabled,
+ * i.e., if T is const FileEntry *.
+ */
+template <class T>
+static const FileEntry *ignore_error_helper(const T obj, long, void *)
+{
+	return obj;
+}
+
+/* Given either a const FileEntry * or a llvm::ErrorOr<const FileEntry *>,
+ * extract out the const FileEntry *.
+ */
+template <class T>
+static const FileEntry *ignore_error(const T obj)
+{
+	return ignore_error_helper(obj, 0, NULL);
+}
+
+/* Return the FileEntry corresponding to the given file name
+ * in the given compiler instances, ignoring any error.
+ */
+static const FileEntry *getFile(CompilerInstance *Clang, std::string Filename)
+{
+	return ignore_error(Clang->getFileManager().getFile(Filename));
+}
+
 /* Create an interface generator for the selected language and
  * then use it to generate the interface.
  */
@@ -470,7 +508,7 @@ int main(int argc, char *argv[])
 
 	PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(), LO);
 
-	const FileEntry *file = Clang->getFileManager().getFile(InputFilename);
+	const FileEntry *file = getFile(Clang, InputFilename);
 	assert(file);
 	create_main_file_id(Clang->getSourceManager(), file);
 
