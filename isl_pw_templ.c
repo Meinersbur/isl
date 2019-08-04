@@ -689,13 +689,6 @@ error:
 	return NULL;
 }
 
-#ifndef NO_SUB
-__isl_give PW *FN(PW,sub)(__isl_take PW *pw1, __isl_take PW *pw2)
-{
-	return FN(PW,add)(pw1, FN(PW,neg)(pw2));
-}
-#endif
-
 /* Return the parameter domain of "pw".
  */
 __isl_give isl_set *FN(PW,params)(__isl_take PW *pw)
