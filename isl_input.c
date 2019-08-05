@@ -252,7 +252,7 @@ struct isl_val *isl_val_read_from_str(struct isl_ctx *ctx,
 	return val;
 }
 
-static int accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
+static isl_stat accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
 {
 	struct isl_token *tok;
 
@@ -269,10 +269,10 @@ static int accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
 	if (isl_stream_eat_if_available(s, '*'))
 		return accept_cst_factor(s, f);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_token_free(tok);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Given an affine expression aff, return an affine expression
