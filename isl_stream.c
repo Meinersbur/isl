@@ -623,6 +623,10 @@ static struct isl_token *next_token(__isl_keep isl_stream *s, int same_line)
 			tok->u.s = strdup("/\\");
 			tok->type = ISL_TOKEN_AND;
 			return tok;
+		} else if (c == '/') {
+			tok->u.s = strdup("//");
+			tok->type = ISL_TOKEN_INT_DIV;
+			return tok;
 		} else {
 			tok->type = (enum isl_token_type) '/';
 		}

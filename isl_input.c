@@ -252,6 +252,29 @@ struct isl_val *isl_val_read_from_str(struct isl_ctx *ctx,
 	return val;
 }
 
+/* Perform an integer division on *f and
+ * an integer value read from the stream.
+ */
+static isl_stat int_div_by_cst(__isl_keep isl_stream *s, isl_int *f)
+{
+	struct isl_token *tok;
+
+	tok = next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting constant value");
+		goto error;
+	}
+
+	isl_int_fdiv_q(*f, *f, tok->u.v);
+
+	isl_token_free(tok);
+
+	return isl_stat_ok;
+error:
+	isl_token_free(tok);
+	return isl_stat_error;
+}
+
 static isl_stat accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
 {
 	struct isl_token *tok;
@@ -539,6 +562,8 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 	}
 	if (isl_stream_eat_if_available(s, '/'))
 		res = pw_aff_div_by_cst(s, res);
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_INT_DIV))
+		res = isl_pw_aff_floor(pw_aff_div_by_cst(s, res));
 
 	isl_space_free(space);
 	return res;
@@ -626,6 +651,10 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 				if (!res)
 					goto error;
 			} else {
+				if (isl_stream_eat_if_available(s,
+							ISL_TOKEN_INT_DIV) &&
+				    int_div_by_cst(s, &tok->u.v) < 0)
+					goto error;
 				res = add_cst(res, tok->u.v);
 			}
 			sign = 1;
