@@ -438,6 +438,22 @@ error:
 	return NULL;
 }
 
+/* Divide "pa" by an integer constant read from the stream.
+ */
+static __isl_give isl_pw_aff *pw_aff_div_by_cst(__isl_keep isl_stream *s,
+	__isl_take isl_pw_aff *pa)
+{
+	isl_int f;
+	isl_int_init(f);
+	isl_int_set_si(f, 1);
+	if (accept_cst_factor(s, &f) < 0)
+		pa = isl_pw_aff_free(pa);
+	pa = isl_pw_aff_scale_down(pa, f);
+	isl_int_clear(f);
+
+	return pa;
+}
+
 static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 	__isl_take isl_space *space, struct vars *v)
 {
@@ -521,17 +537,8 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 		res = isl_pw_aff_scale(res, f);
 		isl_int_clear(f);
 	}
-	if (isl_stream_eat_if_available(s, '/')) {
-		isl_int f;
-		isl_int_init(f);
-		isl_int_set_si(f, 1);
-		if (accept_cst_factor(s, &f) < 0) {
-			isl_int_clear(f);
-			goto error2;
-		}
-		res = isl_pw_aff_scale_down(res, f);
-		isl_int_clear(f);
-	}
+	if (isl_stream_eat_if_available(s, '/'))
+		res = pw_aff_div_by_cst(s, res);
 
 	isl_space_free(space);
 	return res;
