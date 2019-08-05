@@ -100,7 +100,7 @@ static llvm::cl::list<string> Includes("I",
 			llvm::cl::desc("Header search path"),
 			llvm::cl::value_desc("path"), llvm::cl::Prefix);
 
-static llvm::cl::opt<string> Language(llvm::cl::Required,
+static llvm::cl::opt<string> OutputLanguage(llvm::cl::Required,
 	llvm::cl::ValueRequired, "language",
 	llvm::cl::desc("Bindings to generate"),
 	llvm::cl::value_desc("name"));
@@ -447,20 +447,21 @@ static void generate(MyASTConsumer &consumer, SourceManager &SM)
 {
 	generator *gen;
 
-	if (Language.compare("python") == 0) {
+	if (OutputLanguage.compare("python") == 0) {
 		gen = new python_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	} else if (Language.compare("cpp") == 0) {
+	} else if (OutputLanguage.compare("cpp") == 0) {
 		gen = new cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	} else if (Language.compare("cpp-checked") == 0) {
+	} else if (OutputLanguage.compare("cpp-checked") == 0) {
 		gen = new cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions, true);
-	} else if (Language.compare("cpp-checked-conversion") == 0) {
+	} else if (OutputLanguage.compare("cpp-checked-conversion") == 0) {
 		gen = new cpp_conversion_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else {
-		cerr << "Language '" << Language << "' not recognized." << endl
+		cerr << "Language '" << OutputLanguage
+		     << "' not recognized." << endl
 		     << "Not generating bindings." << endl;
 		exit(EXIT_FAILURE);
 	}
