@@ -619,13 +619,15 @@ static struct isl_token *next_token(__isl_keep isl_stream *s, int same_line)
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
 		if (!tok)
 			return NULL;
-		if ((c = isl_stream_getc(s)) != '\\' && c != -1) {
-			tok->type = (enum isl_token_type) '/';
-			isl_stream_ungetc(s, c);
-		} else {
+		if ((c = isl_stream_getc(s)) == '\\') {
 			tok->u.s = strdup("/\\");
 			tok->type = ISL_TOKEN_AND;
+			return tok;
+		} else {
+			tok->type = (enum isl_token_type) '/';
 		}
+		if (c != -1)
+			isl_stream_ungetc(s, c);
 		return tok;
 	}
 	if (c == '\\') {
