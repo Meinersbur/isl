@@ -439,7 +439,7 @@ error:
 }
 
 static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v)
+	__isl_take isl_space *space, struct vars *v)
 {
 	struct isl_token *tok = NULL;
 	isl_pw_aff *res = NULL;
@@ -466,7 +466,7 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 			goto error;
 		}
 
-		aff = isl_aff_zero_on_domain(isl_local_space_from_space(isl_space_copy(dim)));
+		aff = isl_aff_zero_on_domain(isl_local_space_from_space(isl_space_copy(space)));
 		if (!aff)
 			goto error;
 		isl_int_set_si(aff->v->el[2 + pos], 1);
@@ -474,12 +474,12 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 		isl_token_free(tok);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
 		if (isl_stream_eat_if_available(s, '*')) {
-			res = accept_affine_factor(s, isl_space_copy(dim), v);
+			res = accept_affine_factor(s, isl_space_copy(space), v);
 			res = isl_pw_aff_scale(res, tok->u.v);
 		} else {
 			isl_local_space *ls;
 			isl_aff *aff;
-			ls = isl_local_space_from_space(isl_space_copy(dim));
+			ls = isl_local_space_from_space(isl_space_copy(space));
 			aff = isl_aff_zero_on_domain(ls);
 			aff = isl_aff_add_constant(aff, tok->u.v);
 			res = isl_pw_aff_from_aff(aff);
@@ -488,7 +488,7 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 	} else if (tok->type == '(') {
 		isl_token_free(tok);
 		tok = NULL;
-		res = accept_affine(s, isl_space_copy(dim), v);
+		res = accept_affine(s, isl_space_copy(space), v);
 		if (!res)
 			goto error;
 		if (isl_stream_eat(s, ')'))
@@ -496,18 +496,18 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 	} else if (is_start_of_div(tok)) {
 		isl_stream_push_token(s, tok);
 		tok = NULL;
-		res = accept_div(s, isl_space_copy(dim), v);
+		res = accept_div(s, isl_space_copy(space), v);
 	} else if (tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX) {
 		isl_stream_push_token(s, tok);
 		tok = NULL;
-		res = accept_minmax(s, isl_space_copy(dim), v);
+		res = accept_minmax(s, isl_space_copy(space), v);
 	} else {
 		isl_stream_error(s, tok, "expecting factor");
 		goto error;
 	}
 	if (isl_stream_eat_if_available(s, '%') ||
 	    isl_stream_eat_if_available(s, ISL_TOKEN_MOD)) {
-		isl_space_free(dim);
+		isl_space_free(space);
 		return affine_mod(s, v, res);
 	}
 	if (isl_stream_eat_if_available(s, '*')) {
@@ -533,13 +533,13 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 		isl_int_clear(f);
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return res;
 error:
 	isl_token_free(tok);
 error2:
 	isl_pw_aff_free(res);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
