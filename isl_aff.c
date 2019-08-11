@@ -2730,8 +2730,6 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 0
 
-#define NO_OPT
-
 #include <isl_pw_templ.c>
 #include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_eval.c>
@@ -4365,8 +4363,6 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define FIELD maff
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 0
-
-#define NO_OPT
 
 #include <isl_pw_templ.c>
 #include <isl_pw_bind_domain_templ.c>

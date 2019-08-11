@@ -522,6 +522,7 @@ EXTRA_DIST = \
 	isl_pw_lift_templ.c \
 	isl_pw_morph_templ.c \
 	isl_pw_neg_templ.c \
+	isl_pw_opt_templ.c \
 	isl_pw_pullback_templ.c \
 	isl_pw_sub_templ.c \
 	isl_pw_union_opt.c \
