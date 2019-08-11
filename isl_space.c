@@ -884,12 +884,17 @@ static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
 	int i;
+	isl_bool equal;
+
+	if (!space1 || !space2)
+		return isl_bool_error;
 
 	if (space1 == space2 && type1 == type2)
 		return isl_bool_true;
 
-	if (!isl_space_tuple_is_equal(space1, type1, space2, type2))
-		return isl_bool_false;
+	equal = isl_space_tuple_is_equal(space1, type1, space2, type2);
+	if (equal < 0 || !equal)
+		return equal;
 
 	if (!space1->ids && !space2->ids)
 		return isl_bool_true;
@@ -906,9 +911,6 @@ static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 isl_bool isl_space_has_equal_params(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2)
 {
-	if (!space1 || !space2)
-		return isl_bool_error;
-
 	return match(space1, isl_dim_param, space2, isl_dim_param);
 }
 
@@ -920,9 +922,6 @@ isl_bool isl_space_has_equal_ids(__isl_keep isl_space *space1,
 {
 	isl_bool equal;
 
-	if (!space1 || !space2)
-		return isl_bool_error;
-
 	equal = match(space1, isl_dim_in, space2, isl_dim_in);
 	if (equal < 0 || !equal)
 		return equal;
@@ -932,9 +931,6 @@ isl_bool isl_space_has_equal_ids(__isl_keep isl_space *space1,
 isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
-	if (!space1 || !space2)
-		return isl_bool_error;
-
 	return match(space1, type1, space2, type2);
 }
 
@@ -1716,13 +1712,15 @@ static __isl_give isl_space *set_ids(__isl_take isl_space *dim,
 __isl_give isl_space *isl_space_reverse(__isl_take isl_space *space)
 {
 	unsigned t;
+	isl_bool equal;
 	isl_space *nested;
 	isl_id **ids = NULL;
 	isl_id *id;
 
-	if (!space)
-		return NULL;
-	if (match(space, isl_dim_in, space, isl_dim_out))
+	equal = match(space, isl_dim_in, space, isl_dim_out);
+	if (equal < 0)
+		return isl_space_free(space);
+	if (equal)
 		return space;
 
 	space = isl_space_cow(space);
