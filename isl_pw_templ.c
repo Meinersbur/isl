@@ -1628,7 +1628,6 @@ isl_bool FN(PW,involves_param_id)(__isl_keep PW *pw, __isl_keep isl_id *id)
 	return FN(PW,involves_dims)(pw, isl_dim_param, pos, 1);
 }
 
-#ifndef NO_RESET_DIM
 /* Reset the space of "pw".  Since we don't know if the elements
  * represent the spaces themselves or their domains, we pass along
  * both when we call their reset_space_and_domain.
@@ -1735,7 +1734,6 @@ error:
 	isl_id_free(id);
 	return FN(PW,free)(pw);
 }
-#endif
 
 /* Reset the user pointer on all identifiers of parameters and tuples
  * of the space of "pw".
