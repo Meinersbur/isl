@@ -1350,46 +1350,6 @@ __isl_give PW *FN(PW,drop_unused_params)(__isl_take PW *pw)
 	return pw;
 }
 
-#ifndef NO_INSERT_DIMS
-__isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
-	unsigned first, unsigned n)
-{
-	int i;
-	enum isl_dim_type set_type;
-
-	if (!pw)
-		return NULL;
-	if (n == 0 && !isl_space_is_named_or_nested(pw->dim, type))
-		return pw;
-
-	set_type = type == isl_dim_in ? isl_dim_set : type;
-
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
-
-	pw->dim = isl_space_insert_dims(pw->dim, type, first, n);
-	if (!pw->dim)
-		goto error;
-
-	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_insert_dims(pw->p[i].set,
-							    set_type, first, n);
-		if (!pw->p[i].set)
-			goto error;
-		pw->p[i].FIELD = FN(EL,insert_dims)(pw->p[i].FIELD,
-								type, first, n);
-		if (!pw->p[i].FIELD)
-			goto error;
-	}
-
-	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
-}
-#endif
-
 __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, isl_int v)
 {

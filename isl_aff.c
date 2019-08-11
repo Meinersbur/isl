@@ -2736,6 +2736,7 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_eval.c>
 #include <isl_pw_hash.c>
+#include <isl_pw_insert_dims_templ.c>
 #include <isl_pw_neg_templ.c>
 #include <isl_pw_pullback_templ.c>
 #include <isl_pw_sub_templ.c>
@@ -4366,7 +4367,6 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define DEFAULT_IS_ZERO 0
 
 #define NO_OPT
-#define NO_INSERT_DIMS
 
 #include <isl_pw_templ.c>
 #include <isl_pw_bind_domain_templ.c>

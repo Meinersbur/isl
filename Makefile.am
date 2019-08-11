@@ -518,6 +518,7 @@ EXTRA_DIST = \
 	isl_pw_bind_domain_templ.c \
 	isl_pw_eval.c \
 	isl_pw_hash.c \
+	isl_pw_insert_dims_templ.c \
 	isl_pw_lift_templ.c \
 	isl_pw_morph_templ.c \
 	isl_pw_neg_templ.c \
