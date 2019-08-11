@@ -152,6 +152,11 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 
 #include <isl_list_templ.h>
 
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_move_dims(
+	__isl_take isl_pw_multi_aff *pma,
+	enum isl_dim_type dst_type, unsigned dst_pos,
+	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_domain_space(
 	__isl_take isl_pw_multi_aff *pwmaff, __isl_take isl_space *space);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_space(
