@@ -7447,6 +7447,9 @@ static struct {
 	{ &isl_union_map_range_reverse,
 	  "{ A[] -> N[B[] -> C[]] }",
 	  "{ A[] -> [C[] -> B[]] }" },
+	{ &isl_union_map_range_reverse,
+	  "{ A[] -> N[B[x] -> B[y]] }",
+	  "{ A[] -> N[B[*] -> B[*]] }" },
 };
 
 /* Perform basic tests of unary operations on isl_union_map.

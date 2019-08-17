@@ -1884,16 +1884,16 @@ __isl_give isl_space *isl_space_range_reverse(__isl_take isl_space *space)
 		return isl_space_free(space);
 
 	nested = isl_space_peek_nested(space, 1);
-	equal = match(nested, isl_dim_in, nested, isl_dim_out);
+	equal = isl_space_tuple_is_equal(nested, isl_dim_in,
+					nested, isl_dim_out);
 	if (equal < 0)
 		return isl_space_free(space);
-	if (equal)
-		return space;
 
 	nested = isl_space_take_nested(space, 1);
 	nested = isl_space_reverse(nested);
 	space = isl_space_restore_nested(space, 1, nested);
-	space = isl_space_reset_tuple_id(space, isl_dim_out);
+	if (!equal)
+		space = isl_space_reset_tuple_id(space, isl_dim_out);
 
 	return space;
 }
