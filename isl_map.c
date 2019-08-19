@@ -1537,19 +1537,24 @@ __isl_give isl_basic_set *isl_basic_set_free_equality(
 							    n));
 }
 
+/* Drop the equality constraint at position "pos",
+ * preserving the order of the other equality constraints.
+ */
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
+	int r;
+
 	if (!bmap)
 		return -1;
 	isl_assert(bmap->ctx, pos < bmap->n_eq, return -1);
 
-	if (pos != bmap->n_eq - 1) {
-		t = bmap->eq[pos];
-		bmap->eq[pos] = bmap->eq[bmap->n_eq - 1];
-		bmap->eq[bmap->n_eq - 1] = t;
-	}
+	t = bmap->eq[pos];
 	bmap->n_eq--;
+	for (r = pos; r < bmap->n_eq; ++r)
+		bmap->eq[r] = bmap->eq[r + 1];
+	bmap->eq[bmap->n_eq] = t;
+
 	return 0;
 }
 
