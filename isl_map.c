@@ -2880,13 +2880,15 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) == -1)
 			continue;
-		isl_basic_map_drop_equality(bmap, i);
+		if (isl_basic_map_drop_equality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) == -1)
 			continue;
-		isl_basic_map_drop_inequality(bmap, i);
+		if (isl_basic_map_drop_inequality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	return bmap;
