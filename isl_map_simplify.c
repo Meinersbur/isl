@@ -1052,7 +1052,8 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 				break;
 		if (i < bmap->n_eq) {
 			bmap = isl_basic_map_drop_div(bmap, j);
-			isl_basic_map_drop_equality(bmap, i);
+			if (isl_basic_map_drop_equality(bmap, i) < 0)
+				goto error;
 			++dropped;
 		}
 	}
