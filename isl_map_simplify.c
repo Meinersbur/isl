@@ -62,7 +62,8 @@ __isl_give isl_basic_map *isl_basic_map_normalize_constraints(
 				bmap = isl_basic_map_set_to_empty(bmap);
 				break;
 			}
-			isl_basic_map_drop_equality(bmap, i);
+			if (isl_basic_map_drop_equality(bmap, i) < 0)
+				goto error;
 			continue;
 		}
 		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
@@ -83,7 +84,8 @@ __isl_give isl_basic_map *isl_basic_map_normalize_constraints(
 				bmap = isl_basic_map_set_to_empty(bmap);
 				break;
 			}
-			isl_basic_map_drop_inequality(bmap, i);
+			if (isl_basic_map_drop_inequality(bmap, i) < 0)
+				goto error;
 			continue;
 		}
 		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
@@ -96,6 +98,10 @@ __isl_give isl_basic_map *isl_basic_map_normalize_constraints(
 	isl_int_clear(gcd);
 
 	return bmap;
+error:
+	isl_int_clear(gcd);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 __isl_give isl_basic_set *isl_basic_set_normalize_constraints(
