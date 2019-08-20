@@ -7652,6 +7652,18 @@ isl_union_pw_multi_aff_pullback_union_pw_multi_aff(
 	return bin_op(upma1, upma2, &pullback_entry);
 }
 
+/* Apply "upma2" to "upma1".
+ *
+ * That is, compute the pullback of "upma2" by "upma1".
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_apply_union_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2)
+{
+	return isl_union_pw_multi_aff_pullback_union_pw_multi_aff(upma2, upma1);
+}
+
 /* Check that the domain space of "upa" matches "space".
  *
  * This function is called from isl_multi_union_pw_aff_set_union_pw_aff and
