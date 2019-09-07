@@ -3292,7 +3292,7 @@ created using the following functions.
 	isl_pw_qpolynomial_from_qpolynomial(
 		__isl_take isl_qpolynomial *qp);
 	__isl_give isl_pw_qpolynomial_fold *
-		isl_pw_qpolynomial_fold_from_qpolynomial_fold(
+	isl_pw_qpolynomial_fold_from_qpolynomial_fold(
 		__isl_take isl_qpolynomial_fold *fold);
 
 The inverse conversions below can only be used if the input

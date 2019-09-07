@@ -372,7 +372,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_alloc(
 	enum isl_fold type,
 	__isl_take isl_set *set, __isl_take isl_qpolynomial_fold *fold);
 __isl_give isl_pw_qpolynomial_fold *
-	isl_pw_qpolynomial_fold_from_qpolynomial_fold(
+isl_pw_qpolynomial_fold_from_qpolynomial_fold(
 	__isl_take isl_qpolynomial_fold *fold);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_copy(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);
