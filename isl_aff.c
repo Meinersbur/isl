@@ -109,6 +109,35 @@ error:
 	return NULL;
 }
 
+__isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return NULL;
+
+	aff->ref++;
+	return aff;
+}
+
+__isl_give isl_aff *isl_aff_dup(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return NULL;
+
+	return isl_aff_alloc_vec(isl_local_space_copy(aff->ls),
+				 isl_vec_copy(aff->v));
+}
+
+__isl_give isl_aff *isl_aff_cow(__isl_take isl_aff *aff)
+{
+	if (!aff)
+		return NULL;
+
+	if (aff->ref == 1)
+		return aff;
+	aff->ref--;
+	return isl_aff_dup(aff);
+}
+
 __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls)
 {
 	isl_aff *aff;
@@ -271,35 +300,6 @@ error:
 	isl_space_free(space);
 	isl_id_free(id);
 	return NULL;
-}
-
-__isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff)
-{
-	if (!aff)
-		return NULL;
-
-	aff->ref++;
-	return aff;
-}
-
-__isl_give isl_aff *isl_aff_dup(__isl_keep isl_aff *aff)
-{
-	if (!aff)
-		return NULL;
-
-	return isl_aff_alloc_vec(isl_local_space_copy(aff->ls),
-				 isl_vec_copy(aff->v));
-}
-
-__isl_give isl_aff *isl_aff_cow(__isl_take isl_aff *aff)
-{
-	if (!aff)
-		return NULL;
-
-	if (aff->ref == 1)
-		return aff;
-	aff->ref--;
-	return isl_aff_dup(aff);
 }
 
 __isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff)
