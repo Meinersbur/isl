@@ -167,6 +167,24 @@ __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(__isl_take isl_local_space *ls)
 	return isl_pw_aff_from_aff(isl_aff_zero_on_domain(ls));
 }
 
+/* Change "aff" into a NaN.
+ *
+ * Note that this function gets called from isl_aff_nan_on_domain,
+ * so "aff" may not have been initialized yet.
+ */
+static __isl_give isl_aff *isl_aff_set_nan(__isl_take isl_aff *aff)
+{
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		return NULL;
+
+	aff->v = isl_vec_clr(aff->v);
+	if (!aff->v)
+		return isl_aff_free(aff);
+
+	return aff;
+}
+
 /* Return an affine expression defined on the specified domain
  * that represents NaN.
  */
@@ -175,12 +193,7 @@ __isl_give isl_aff *isl_aff_nan_on_domain(__isl_take isl_local_space *ls)
 	isl_aff *aff;
 
 	aff = isl_aff_alloc(ls);
-	if (!aff)
-		return NULL;
-
-	isl_seq_clr(aff->v->el, aff->v->size);
-
-	return aff;
+	return isl_aff_set_nan(aff);
 }
 
 /* Return a piecewise affine expression defined on the specified domain
