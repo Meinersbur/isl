@@ -901,25 +901,12 @@ __isl_give isl_aff *isl_aff_add_constant(__isl_take isl_aff *aff, isl_int v)
 	return aff;
 }
 
-/* Add "v" to the constant term of "aff".
- *
- * A NaN is unaffected by this operation.
+/* Add "v" to the constant term of "aff",
+ * in case "aff" is a rational expression.
  */
-__isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
+static __isl_give isl_aff *isl_aff_add_rat_constant_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v)
 {
-	if (!aff || !v)
-		goto error;
-
-	if (isl_aff_is_nan(aff) || isl_val_is_zero(v)) {
-		isl_val_free(v);
-		return aff;
-	}
-
-	if (!isl_val_is_rat(v))
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"expecting rational value", goto error);
-
 	aff = isl_aff_cow(aff);
 	if (!aff)
 		goto error;
@@ -947,6 +934,32 @@ __isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
 
 	isl_val_free(v);
 	return aff;
+error:
+	isl_aff_free(aff);
+	isl_val_free(v);
+	return NULL;
+}
+
+/* Add "v" to the constant term of "aff".
+ *
+ * A NaN is unaffected by this operation.
+ */
+__isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *v)
+{
+	if (!aff || !v)
+		goto error;
+
+	if (isl_aff_is_nan(aff) || isl_val_is_zero(v)) {
+		isl_val_free(v);
+		return aff;
+	}
+
+	if (!isl_val_is_rat(v))
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"expecting rational value", goto error);
+
+	return isl_aff_add_rat_constant_val(aff, v);
 error:
 	isl_aff_free(aff);
 	isl_val_free(v);
