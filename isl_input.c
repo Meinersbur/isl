@@ -593,10 +593,7 @@ static __isl_give isl_pw_aff *add_cst(__isl_take isl_pw_aff *pwaff, isl_int v)
  */
 static __isl_give isl_pw_aff *nan_on_domain(__isl_keep isl_space *space)
 {
-	isl_local_space *ls;
-
-	ls = isl_local_space_from_space(isl_space_copy(space));
-	return isl_pw_aff_nan_on_domain(ls);
+	return isl_pw_aff_nan_on_domain_space(isl_space_copy(space));
 }
 
 static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
