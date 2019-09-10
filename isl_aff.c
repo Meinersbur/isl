@@ -3386,7 +3386,7 @@ error:
 __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
 {
-	int is_cst;
+	isl_bool is_cst;
 	int neg;
 
 	if (!aff1 || !aff2)
