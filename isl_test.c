@@ -5411,6 +5411,8 @@ struct {
 	  "{ [i] -> [NaN] }" },
 	{ "{ [i] -> [NaN] }", '/', "{ [i] -> [i] }",
 	  "{ [i] -> [NaN] }" },
+	{ "{ [i] -> [i] }", '/', "{ [i] -> [0] }",
+	  "{ [i] -> [NaN] }" },
 };
 
 /* Perform some basic tests of binary operations on isl_aff objects.

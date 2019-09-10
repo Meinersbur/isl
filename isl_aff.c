@@ -1810,6 +1810,15 @@ error:
 	return NULL;
 }
 
+/* Replace one of the arguments by a NaN and free the other one.
+ */
+static __isl_give isl_aff *set_nan_free(__isl_take isl_aff *aff1,
+	__isl_take isl_aff *aff2)
+{
+	isl_aff_free(aff2);
+	return isl_aff_set_nan(aff1);
+}
+
 /* Return the sum of "aff1" and "aff2".
  *
  * If either of the two is NaN, then the result is NaN.
@@ -3382,11 +3391,12 @@ error:
 /* Divide "aff1" by "aff2", assuming "aff2" is a constant.
  *
  * If either of the two is NaN, then the result is NaN.
+ * A division by zero also results in NaN.
  */
 __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	__isl_take isl_aff *aff2)
 {
-	isl_bool is_cst;
+	isl_bool is_cst, is_zero;
 	int neg;
 
 	if (!aff1 || !aff2)
@@ -3407,6 +3417,11 @@ __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 	if (!is_cst)
 		isl_die(isl_aff_get_ctx(aff2), isl_error_invalid,
 			"second argument should be a constant", goto error);
+	is_zero = isl_aff_plain_is_zero(aff2);
+	if (is_zero < 0)
+		goto error;
+	if (is_zero)
+		return set_nan_free(aff1, aff2);
 
 	neg = isl_int_is_neg(aff2->v->el[1]);
 	if (neg) {
