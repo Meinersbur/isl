@@ -3408,9 +3408,6 @@ __isl_give isl_aff *isl_aff_div(__isl_take isl_aff *aff1,
 		isl_die(isl_aff_get_ctx(aff2), isl_error_invalid,
 			"second argument should be a constant", goto error);
 
-	if (!aff2)
-		goto error;
-
 	neg = isl_int_is_neg(aff2->v->el[1]);
 	if (neg) {
 		isl_int_neg(aff2->v->el[0], aff2->v->el[0]);
