@@ -204,6 +204,15 @@ __isl_give isl_aff *isl_aff_nan_on_domain_space(__isl_take isl_space *space)
 	return isl_aff_nan_on_domain(isl_local_space_from_space(space));
 }
 
+/* Return a piecewise affine expression defined on the specified domain space
+ * that represents NaN.
+ */
+__isl_give isl_pw_aff *isl_pw_aff_nan_on_domain_space(
+	__isl_take isl_space *space)
+{
+	return isl_pw_aff_from_aff(isl_aff_nan_on_domain_space(space));
+}
+
 /* Return a piecewise affine expression defined on the specified domain
  * that represents NaN.
  */
