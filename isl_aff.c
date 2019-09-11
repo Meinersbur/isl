@@ -949,9 +949,19 @@ static __isl_give isl_aff *pick_free(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Replace the first argument by NaN and free the second argument.
+ */
+static __isl_give isl_aff *set_nan_free_val(__isl_take isl_aff *aff,
+	__isl_take isl_val *v)
+{
+	isl_val_free(v);
+	return isl_aff_set_nan(aff);
+}
+
 /* Add "v" to the constant term of "aff".
  *
  * A NaN is unaffected by this operation.
+ * Conversely, adding a NaN turns "aff" into a NaN.
  */
 __isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
 	__isl_take isl_val *v)
@@ -965,12 +975,15 @@ __isl_give isl_aff *isl_aff_add_constant_val(__isl_take isl_aff *aff,
 	if (is_nan || is_zero)
 		return pick_free(aff, v);
 
+	is_nan = isl_val_is_nan(v);
 	is_rat = isl_val_is_rat(v);
-	if (is_rat < 0)
+	if (is_nan < 0 || is_rat < 0)
 		goto error;
+	if (is_nan)
+		return set_nan_free_val(aff, v);
 	if (!is_rat)
 		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"expecting rational value", goto error);
+			"expecting rational value or NaN", goto error);
 
 	return isl_aff_add_rat_constant_val(aff, v);
 error:
