@@ -171,6 +171,67 @@ __isl_give isl_aff *isl_aff_cow(__isl_take isl_aff *aff)
 	return isl_aff_dup(aff);
 }
 
+/* Return a copy of the rational affine expression of "aff".
+ */
+static __isl_give isl_vec *isl_aff_get_rat_aff(__isl_keep isl_aff *aff)
+{
+	if (!aff)
+		return NULL;
+	return isl_vec_copy(aff->v);
+}
+
+/* Return the rational affine expression of "aff".
+ * This may be either a copy or the expression itself
+ * if there is only one reference to "aff".
+ * This allows the expression to be modified inplace
+ * if both the "aff" and its expression have only a single reference.
+ * The caller is not allowed to modify "aff" between this call and
+ * a subsequent call to isl_aff_restore_rat_aff.
+ * The only exception is that isl_aff_free can be called instead.
+ */
+static __isl_give isl_vec *isl_aff_take_rat_aff(__isl_keep isl_aff *aff)
+{
+	isl_vec *v;
+
+	if (!aff)
+		return NULL;
+	if (aff->ref != 1)
+		return isl_aff_get_rat_aff(aff);
+	v = aff->v;
+	aff->v = NULL;
+	return v;
+}
+
+/* Set the rational affine expression of "aff" to "v",
+ * where the rational affine expression of "aff" may be missing
+ * due to a preceding call to isl_aff_take_rat_aff.
+ * However, in this case, "aff" only has a single reference and
+ * then the call to isl_aff_cow has no effect.
+ */
+static __isl_give isl_aff *isl_aff_restore_rat_aff(__isl_keep isl_aff *aff,
+	__isl_take isl_vec *v)
+{
+	if (!aff || !v)
+		goto error;
+
+	if (aff->v == v) {
+		isl_vec_free(v);
+		return aff;
+	}
+
+	aff = isl_aff_cow(aff);
+	if (!aff)
+		goto error;
+	isl_vec_free(aff->v);
+	aff->v = v;
+
+	return aff;
+error:
+	isl_aff_free(aff);
+	isl_vec_free(v);
+	return NULL;
+}
+
 __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls)
 {
 	isl_aff *aff;
@@ -215,13 +276,11 @@ __isl_give isl_pw_aff *isl_pw_aff_zero_on_domain(__isl_take isl_local_space *ls)
  */
 static __isl_give isl_aff *isl_aff_set_nan(__isl_take isl_aff *aff)
 {
-	aff = isl_aff_cow(aff);
-	if (!aff)
-		return NULL;
+	isl_vec *v;
 
-	aff->v = isl_vec_clr(aff->v);
-	if (!aff->v)
-		return isl_aff_free(aff);
+	v = isl_aff_take_rat_aff(aff);
+	v = isl_vec_clr(v);
+	aff = isl_aff_restore_rat_aff(aff, v);
 
 	return aff;
 }
