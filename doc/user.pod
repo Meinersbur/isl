@@ -9316,7 +9316,6 @@ Several node types have their own functions for querying
 	isl_schedule_node_band_member_set_ast_loop_type(
 		__isl_take isl_schedule_node *node, int pos,
 		enum isl_ast_loop_type type);
-	__isl_give isl_union_set *
 	enum isl_ast_loop_type
 	isl_schedule_node_band_member_get_isolate_ast_loop_type(
 		__isl_keep isl_schedule_node *node, int pos);
@@ -9324,6 +9323,7 @@ Several node types have their own functions for querying
 	isl_schedule_node_band_member_set_isolate_ast_loop_type(
 		__isl_take isl_schedule_node *node, int pos,
 		enum isl_ast_loop_type type);
+	__isl_give isl_union_set *
 	isl_schedule_node_band_get_ast_build_options(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *
