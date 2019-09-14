@@ -346,11 +346,11 @@ isl_size isl_space_wrapped_dim(__isl_keep isl_space *space,
 	return isl_space_dim(isl_space_peek_nested(space, pos), inner);
 }
 
-unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type)
+unsigned isl_space_offset(__isl_keep isl_space *space, enum isl_dim_type type)
 {
-	if (!dim)
+	if (!space)
 		return 0;
-	return offset(dim, type);
+	return offset(space, type);
 }
 
 static __isl_give isl_space *copy_ids(__isl_take isl_space *dst,
