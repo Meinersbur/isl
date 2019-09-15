@@ -2118,7 +2118,7 @@ using the following functions.
 		__isl_take isl_constraint *constraint);
 
 For example, to create a set containing the even integers
-between 10 and 42, you would use the following code.
+between 10 and 42, you could use the following code.
 
 	isl_space *space;
 	isl_local_space *ls;
@@ -2146,7 +2146,40 @@ between 10 and 42, you would use the following code.
 
 	bset = isl_basic_set_project_out(bset, isl_dim_set, 1, 1);
 
-Or, alternatively,
+However, this is considered to be a fairly low-level approach.
+It is more appropriate to construct a (basic) set by means
+of affine expressions (defined below in L</"Functions">).
+For example, the same set could be constructed as follows.
+
+	isl_val *v, *two;
+	isl_space *space;
+	isl_multi_aff *ma;
+	isl_aff *var, *cst;
+	isl_basic_set *bset;
+
+	space = isl_space_unit(ctx);
+	space = isl_space_add_unnamed_tuple_ui(space, 1);
+	ma = isl_multi_aff_identity_on_domain_space(
+		isl_space_copy(space));
+	var = isl_multi_aff_get_at(ma, 0);
+	v = isl_val_int_from_si(ctx, 10);
+	cst = isl_aff_val_on_domain_space(isl_space_copy(space), v);
+	bset = isl_aff_ge_basic_set(isl_aff_copy(var), cst);
+
+	v = isl_val_int_from_si(ctx, 42);
+	cst = isl_aff_val_on_domain_space(space, v);
+	bset = isl_basic_set_intersect(bset,
+		isl_aff_le_basic_set(var, cst));
+
+	two = isl_val_int_from_si(ctx, 2);
+	ma = isl_multi_aff_scale_val(ma, isl_val_copy(two));
+	bset = isl_basic_set_preimage_multi_aff(bset,
+		isl_multi_aff_copy(ma));
+	ma = isl_multi_aff_scale_down_val(ma, isl_val_copy(two));
+	ma = isl_multi_aff_scale_down_val(ma, two);
+	bset = isl_basic_set_preimage_multi_aff(bset, ma);
+
+Alternatively, the set can be parsed from a string representation.
 
 	isl_basic_set *bset;
 	bset = isl_basic_set_read_from_str(ctx,
