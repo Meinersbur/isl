@@ -185,6 +185,14 @@ error:
 	return NULL;
 }
 
+/* Return an affine expression that is equal to "val" on domain space "space".
+ */
+__isl_give isl_aff *isl_aff_val_on_domain_space(__isl_take isl_space *space,
+	__isl_take isl_val *val)
+{
+	return isl_aff_val_on_domain(isl_local_space_from_space(space), val);
+}
+
 /* Return an affine expression that is equal to the specified dimension
  * in "ls".
  */

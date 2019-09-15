@@ -18,6 +18,8 @@ extern "C" {
 #endif
 
 __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls);
+__isl_give isl_aff *isl_aff_val_on_domain_space(__isl_take isl_space *space,
+	__isl_take isl_val *val);
 __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 	__isl_take isl_val *val);
 __isl_give isl_aff *isl_aff_var_on_domain(__isl_take isl_local_space *ls,
