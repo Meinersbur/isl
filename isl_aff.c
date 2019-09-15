@@ -123,6 +123,13 @@ __isl_give isl_aff *isl_aff_zero_on_domain(__isl_take isl_local_space *ls)
 	return aff;
 }
 
+/* Return an affine expression that is equal to zero on domain space "space".
+ */
+__isl_give isl_aff *isl_aff_zero_on_domain_space(__isl_take isl_space *space)
+{
+	return isl_aff_zero_on_domain(isl_local_space_from_space(space));
+}
+
 /* Return a piecewise affine expression defined on the specified domain
  * that is equal to zero.
  */
