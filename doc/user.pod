@@ -5858,6 +5858,8 @@ requires that the input is non-empty and involves only a single
 range space.
 
 	#include <isl/aff.h>
+	__isl_give isl_pw_multi_aff *isl_set_as_pw_multi_aff(
+		__isl_take isl_set *set);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(
 		__isl_take isl_set *set);
 	__isl_give isl_pw_multi_aff *isl_map_as_pw_multi_aff(
@@ -5884,7 +5886,9 @@ range space.
 
 C<isl_map_as_pw_multi_aff> and C<isl_pw_multi_aff_from_map> perform
 the same operation.
-Similarly for C<isl_union_map_as_union_pw_multi_aff> and
+Similarly for C<isl_set_as_pw_multi_aff> and
+C<isl_pw_multi_aff_from_set>,
+for C<isl_union_map_as_union_pw_multi_aff> and
 C<isl_union_pw_multi_aff_from_union_map> and
 for C<isl_union_map_as_multi_union_pw_aff> and
 C<isl_multi_union_pw_aff_from_union_map>.

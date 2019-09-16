@@ -5481,6 +5481,14 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(__isl_take isl_set *set)
 	return isl_pw_multi_aff_from_map(set);
 }
 
+/* This function performs the same operation as isl_pw_multi_aff_from_set,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_set_as_pw_multi_aff(__isl_take isl_set *set)
+{
+	return isl_pw_multi_aff_from_set(set);
+}
+
 /* Convert "map" into an isl_pw_multi_aff (if possible) and
  * add it to *user.
  */

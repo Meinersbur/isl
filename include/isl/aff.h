@@ -798,6 +798,8 @@ __isl_give char *isl_pw_multi_aff_to_str(__isl_keep isl_pw_multi_aff *pma);
 __isl_give isl_printer *isl_printer_print_pw_multi_aff(__isl_take isl_printer *p,
 	__isl_keep isl_pw_multi_aff *pma);
 
+__isl_export
+__isl_give isl_pw_multi_aff *isl_set_as_pw_multi_aff(__isl_take isl_set *set);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_set(__isl_take isl_set *set);
 __isl_export
 __isl_give isl_pw_multi_aff *isl_map_as_pw_multi_aff(__isl_take isl_map *map);
