@@ -8198,6 +8198,21 @@ __isl_give isl_map *isl_map_intersect_domain_factor_range(
 }
 
 /* Given a map "map" in a space A -> [B -> C] and a map "factor"
+ * in the space A -> B, return the intersection.
+ */
+__isl_give isl_map *isl_map_intersect_range_factor_domain(
+	__isl_take isl_map *map, __isl_take isl_map *factor)
+{
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_out,
+		.other_factor = isl_space_range_factor_range,
+		.product = isl_map_range_product,
+	};
+
+	return isl_map_intersect_factor(map, factor, &control);
+}
+
+/* Given a map "map" in a space A -> [B -> C] and a map "factor"
  * in the space A -> C, return the intersection.
  */
 __isl_give isl_map *isl_map_intersect_range_factor_range(
