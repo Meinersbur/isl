@@ -1544,7 +1544,7 @@ its position can be obtained from the following functions.
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, __isl_keep isl_id *id);
 	int isl_multi_union_pw_aff_find_dim_by_id(
-		__isl_keep isl_union_multi_pw_aff *mupa,
+		__isl_keep isl_multi_union_pw_aff *mupa,
 		enum isl_dim_type type, __isl_keep isl_id *id);
 	int isl_aff_find_dim_by_name(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, const char *name);
