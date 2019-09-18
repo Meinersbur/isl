@@ -1448,6 +1448,7 @@ L</"Functions">.
 	isl_multi_union_pw_aff_set_dim_name(
 		__isl_take isl_multi_union_pw_aff *mupa,
 		enum isl_dim_type type, unsigned pos,
+		const char *s);
 	const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, unsigned pos);
 	const char *isl_pw_aff_get_dim_name(
