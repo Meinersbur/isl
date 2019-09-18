@@ -6808,6 +6808,7 @@ the same (number of) parameters.
 	__isl_give isl_union_pw_aff *
 	isl_union_pw_aff_intersect_params(
 		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_set *set);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_intersect_params(
 		__isl_take isl_union_pw_multi_aff *upma,
