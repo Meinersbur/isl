@@ -6947,7 +6947,7 @@ at least one element and all elements need to live in the same space.
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_subtract_domain(
 		__isl_take isl_union_pw_multi_aff *upma,
-		__isl_take isl_set *set);
+		__isl_take isl_union_set *uset);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *
