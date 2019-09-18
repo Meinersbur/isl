@@ -1197,6 +1197,10 @@ error:
  *
  *	aff1 : condition1; aff2 : conditions2; ...
  *
+ * or
+ *
+ *	aff1 : aff2
+ *
  * or simply
  *
  *	aff
