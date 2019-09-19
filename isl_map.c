@@ -1626,19 +1626,24 @@ __isl_give isl_basic_set *isl_basic_set_free_equality(
 							    n));
 }
 
+/* Drop the equality constraint at position "pos",
+ * preserving the order of the other equality constraints.
+ */
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
+	int r;
+
 	if (!bmap)
 		return -1;
 	isl_assert(bmap->ctx, pos < bmap->n_eq, return -1);
 
-	if (pos != bmap->n_eq - 1) {
-		t = bmap->eq[pos];
-		bmap->eq[pos] = bmap->eq[bmap->n_eq - 1];
-		bmap->eq[bmap->n_eq - 1] = t;
-	}
+	t = bmap->eq[pos];
 	bmap->n_eq--;
+	for (r = pos; r < bmap->n_eq; ++r)
+		bmap->eq[r] = bmap->eq[r + 1];
+	bmap->eq[bmap->n_eq] = t;
+
 	return 0;
 }
 
@@ -2971,13 +2976,15 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) == -1)
 			continue;
-		isl_basic_map_drop_equality(bmap, i);
+		if (isl_basic_map_drop_equality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) == -1)
 			continue;
-		isl_basic_map_drop_inequality(bmap, i);
+		if (isl_basic_map_drop_inequality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	return bmap;
@@ -3019,13 +3026,15 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) != -1)
 			continue;
-		isl_basic_map_drop_equality(bmap, i);
+		if (isl_basic_map_drop_equality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) != -1)
 			continue;
-		isl_basic_map_drop_inequality(bmap, i);
+		if (isl_basic_map_drop_inequality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	bmap = isl_basic_map_add_known_div_constraints(bmap);
@@ -4468,6 +4477,10 @@ __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 		if (!map->p[i])
 			goto error;
 	}
+
+	if (map->n > 1)
+		ISL_F_CLR(map, ISL_MAP_DISJOINT);
+	map = isl_map_unmark_normalized(map);
 
 	space = isl_map_take_space(map);
 	space = isl_space_drop_dims(space, type, first, n);
