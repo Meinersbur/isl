@@ -130,3 +130,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_tuple_id)(
 
 	return FN(MULTI(BASE),reset_space)(multi, space);
 }
+
+/* Drop the identifier of the (range) tuple of "multi".
+ *
+ * Technically, the implementation should use isl_dim_set if "multi"
+ * lives in a set space and isl_dim_out if it lives in a map space.
+ * Internally, however, it can be assumed that isl_dim_set is equal
+ * to isl_dim_out.
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),reset_range_tuple_id)(
+	__isl_take MULTI(BASE) *multi)
+{
+	return FN(MULTI(BASE),reset_tuple_id)(multi, isl_dim_out);
+}
