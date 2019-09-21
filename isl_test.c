@@ -7542,6 +7542,14 @@ static struct {
 	  "[n] -> { A[i] -> [] : 0 <= i <= n; B[] -> [] }",
 	  "[m] -> { A[i] -> [] : 0 <= i <= m; C[] -> [] }",
 	  "[m, n] -> { A[i] -> [] : 0 <= i <= n and i <= m }" },
+	{ &isl_union_map_intersect_range_factor_range,
+	  "{ A[i] -> [B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> C[N] }",
+	  "[N] -> { A[N - 2] -> [B[N - 1] -> C[N]] }" },
+	{ &isl_union_map_intersect_range_factor_range,
+	  "{ A[i] -> [B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> B[N] }",
+	  "{ }" },
 };
 
 /* Perform basic tests of binary operations on isl_union_map.
