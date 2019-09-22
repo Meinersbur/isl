@@ -8097,23 +8097,69 @@ __isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
 						&map_intersect_domain);
 }
 
-/* Given a map "map" in a space [A -> B] -> C and a map "factor"
- * in the space B -> C, return the intersection.
- * The parameters are assumed to have been aligned.
+/* Data structure that specifies how isl_map_intersect_factor
+ * should operate.
  *
- * The map "factor" is first extended to a map living in the space
- * [A -> B] -> C and then a regular intersection is computed.
+ * "other_factor" is used to extract the space of the other factor
+ * from the space of the product ("map").
+ * "product" is used to combine the given factor and a universe map
+ * in the space returned by "other_factor" to produce a map
+ * that lives in the same space as the input map.
  */
-static __isl_give isl_map *map_intersect_domain_factor_range(
-	__isl_take isl_map *map, __isl_take isl_map *factor)
-{
-	isl_space *space;
-	isl_map *ext_factor;
+struct isl_intersect_factor_control {
+	__isl_give isl_space *(*other_factor)(__isl_take isl_space *space);
+	__isl_give isl_map *(*product)(__isl_take isl_map *factor,
+		__isl_take isl_map *other);
+};
 
-	space = isl_space_domain_factor_domain(isl_map_get_space(map));
-	ext_factor = isl_map_universe(space);
-	ext_factor = isl_map_domain_product(ext_factor, factor);
-	return map_intersect(map, ext_factor);
+/* Given a map "map" in some product space and a map "factor"
+ * living in some factor space, return the intersection.
+ *
+ * After aligning the parameters,
+ * the map "factor" is first extended to a map living in the same space
+ * as "map" and then a regular intersection is computed.
+ */
+static __isl_give isl_map *isl_map_intersect_factor(
+	__isl_take isl_map *map, __isl_take isl_map *factor,
+	struct isl_intersect_factor_control *control)
+{
+	isl_bool equal;
+	isl_space *space;
+	isl_map *other, *product;
+
+	equal = isl_map_has_equal_params(map, factor);
+	if (equal < 0)
+		goto error;
+	if (!equal) {
+		map = isl_map_align_params(map, isl_map_get_space(factor));
+		factor = isl_map_align_params(factor, isl_map_get_space(map));
+	}
+
+	space = isl_map_get_space(map);
+	other = isl_map_universe(control->other_factor(space));
+	product = control->product(factor, other);
+
+	return map_intersect(map, product);
+error:
+	isl_map_free(map);
+	isl_map_free(factor);
+	return NULL;
+}
+
+/* Return the domain product of "map2" and "map1".
+ */
+static __isl_give isl_map *isl_map_reverse_domain_product(
+	__isl_take isl_map *map1, __isl_take isl_map *map2)
+{
+	return isl_map_domain_product(map2, map1);
+}
+
+/* Return the range product of "map2" and "map1".
+ */
+static __isl_give isl_map *isl_map_reverse_range_product(
+	__isl_take isl_map *map1, __isl_take isl_map *map2)
+{
+	return isl_map_range_product(map2, map1);
 }
 
 /* Given a map "map" in a space [A -> B] -> C and a map "factor"
@@ -8122,26 +8168,12 @@ static __isl_give isl_map *map_intersect_domain_factor_range(
 __isl_give isl_map *isl_map_intersect_domain_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
-	return isl_map_align_params_map_map_and(map, factor,
-					    &map_intersect_domain_factor_range);
-}
+	struct isl_intersect_factor_control control = {
+		.other_factor = isl_space_domain_factor_domain,
+		.product = isl_map_reverse_domain_product,
+	};
 
-/* Given a map "map" in a space A -> [B -> C] and a map "factor"
- * in the space A -> C, return the intersection.
- *
- * The map "factor" is first extended to a map living in the space
- * A -> [B -> C] and then a regular intersection is computed.
- */
-static __isl_give isl_map *map_intersect_range_factor_range(
-	__isl_take isl_map *map, __isl_take isl_map *factor)
-{
-	isl_space *space;
-	isl_map *ext_factor;
-
-	space = isl_space_range_factor_domain(isl_map_get_space(map));
-	ext_factor = isl_map_universe(space);
-	ext_factor = isl_map_range_product(ext_factor, factor);
-	return isl_map_intersect(map, ext_factor);
+	return isl_map_intersect_factor(map, factor, &control);
 }
 
 /* Given a map "map" in a space A -> [B -> C] and a map "factor"
@@ -8150,8 +8182,12 @@ static __isl_give isl_map *map_intersect_range_factor_range(
 __isl_give isl_map *isl_map_intersect_range_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
-	return isl_map_align_params_map_map_and(map, factor,
-					    &map_intersect_range_factor_range);
+	struct isl_intersect_factor_control control = {
+		.other_factor = isl_space_range_factor_domain,
+		.product = isl_map_reverse_range_product,
+	};
+
+	return isl_map_intersect_factor(map, factor, &control);
 }
 
 static __isl_give isl_map *map_apply_domain(__isl_take isl_map *map1,
