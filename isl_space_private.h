@@ -73,6 +73,7 @@ __isl_give isl_space *isl_space_reset(__isl_take isl_space *space,
 	enum isl_dim_type type);
 __isl_give isl_space *isl_space_flatten(__isl_take isl_space *space);
 
+isl_stat isl_space_check_is_wrapping(__isl_keep isl_space *space);
 isl_stat isl_space_check_domain_is_wrapping(__isl_keep isl_space *space);
 isl_stat isl_space_check_range_is_wrapping(__isl_keep isl_space *space);
 

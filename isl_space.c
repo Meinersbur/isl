@@ -121,6 +121,21 @@ static isl_stat isl_space_check_is_map(__isl_keep isl_space *space)
 	return isl_stat_ok;
 }
 
+/* Check that "space" is the space of a set wrapping a map space.
+ */
+isl_stat isl_space_check_is_wrapping(__isl_keep isl_space *space)
+{
+	isl_bool wrapping;
+
+	wrapping = isl_space_is_wrapping(space);
+	if (wrapping < 0)
+		return isl_stat_error;
+	if (!wrapping)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"not a product", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Check that "space" is the space of a map
  * where the domain is a wrapped map space.
  */
