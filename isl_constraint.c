@@ -316,8 +316,8 @@ int isl_constraint_is_equal(struct isl_constraint *constraint1,
 	return isl_vec_is_equal(constraint1->v, constraint2->v);
 }
 
-struct isl_basic_map *isl_basic_map_add_constraint(
-	struct isl_basic_map *bmap, struct isl_constraint *constraint)
+__isl_give isl_basic_map *isl_basic_map_add_constraint(
+	__isl_take isl_basic_map *bmap, __isl_take isl_constraint *constraint)
 {
 	isl_ctx *ctx;
 	isl_space *space;
@@ -341,8 +341,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_add_constraint(
-	struct isl_basic_set *bset, struct isl_constraint *constraint)
+__isl_give isl_basic_set *isl_basic_set_add_constraint(
+	__isl_take isl_basic_set *bset, __isl_take isl_constraint *constraint)
 {
 	return bset_from_bmap(isl_basic_map_add_constraint(bset_to_bmap(bset),
 							    constraint));

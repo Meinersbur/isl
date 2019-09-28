@@ -3188,7 +3188,7 @@ struct isl_basic_map *isl_basic_map_read_from_str(struct isl_ctx *ctx,
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_read_from_str(struct isl_ctx *ctx,
+__isl_give isl_basic_set *isl_basic_set_read_from_str(isl_ctx *ctx,
 	const char *str)
 {
 	isl_basic_set *bset;

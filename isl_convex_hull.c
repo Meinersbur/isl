@@ -1972,7 +1972,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_set_convex_hull(struct isl_set *set)
+__isl_give isl_basic_set *isl_set_convex_hull(__isl_take isl_set *set)
 {
 	return bset_from_bmap(isl_map_convex_hull(set_to_map(set)));
 }

@@ -4069,7 +4069,7 @@ error:
  * can be represented by a single basic set.
  * If so, replace the pair by the single basic set and start over.
  */
-struct isl_set *isl_set_coalesce(struct isl_set *set)
+__isl_give isl_set *isl_set_coalesce(__isl_take isl_set *set)
 {
 	return set_from_map(isl_map_coalesce(set_to_map(set)));
 }

@@ -997,7 +997,8 @@ __isl_give isl_basic_map *isl_basic_map_affine_hull(
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_affine_hull(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_affine_hull(
+	__isl_take isl_basic_set *bset)
 {
 	return bset_from_bmap(isl_basic_map_affine_hull(bset_to_bmap(bset)));
 }
@@ -1243,7 +1244,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_set_affine_hull(struct isl_set *set)
+__isl_give isl_basic_set *isl_set_affine_hull(__isl_take isl_set *set)
 {
 	return bset_from_bmap(isl_map_affine_hull(set_to_map(set)));
 }

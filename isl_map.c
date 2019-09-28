@@ -3256,7 +3256,7 @@ struct isl_map *isl_map_remove_inputs(struct isl_map *map,
 	return isl_map_remove_dims(map, isl_dim_in, first, n);
 }
 
-void isl_basic_set_print_internal(struct isl_basic_set *bset,
+void isl_basic_set_print_internal(__isl_keep isl_basic_set *bset,
 	FILE *out, int indent)
 {
 	isl_printer *p;
@@ -3280,7 +3280,7 @@ void isl_basic_set_print_internal(struct isl_basic_set *bset,
 	isl_printer_free(p);
 }
 
-void isl_basic_map_print_internal(struct isl_basic_map *bmap,
+void isl_basic_map_print_internal(__isl_keep isl_basic_map *bmap,
 	FILE *out, int indent)
 {
 	isl_printer *p;
@@ -3399,7 +3399,7 @@ __isl_null isl_set *isl_set_free(__isl_take isl_set *set)
 	return isl_map_free(set);
 }
 
-void isl_set_print_internal(struct isl_set *set, FILE *out, int indent)
+void isl_set_print_internal(__isl_keep isl_set *set, FILE *out, int indent)
 {
 	int i;
 
@@ -3419,7 +3419,7 @@ void isl_set_print_internal(struct isl_set *set, FILE *out, int indent)
 	}
 }
 
-void isl_map_print_internal(struct isl_map *map, FILE *out, int indent)
+void isl_map_print_internal(__isl_keep isl_map *map, FILE *out, int indent)
 {
 	int i;
 
@@ -3651,8 +3651,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_intersect(
-		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+__isl_give isl_basic_set *isl_basic_set_intersect(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	return bset_from_bmap(isl_basic_map_intersect(bset_to_bmap(bset1),
 							bset_to_bmap(bset2)));
@@ -3812,7 +3812,8 @@ __isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,
 	return map_intersect(map1, map2);
 }
 
-struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
+__isl_give isl_set *isl_set_intersect(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
 {
 	return set_from_map(isl_map_intersect(set_to_map(set1),
 					      set_to_map(set2)));
@@ -4414,8 +4415,9 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 /* Turn the n dimensions of type type, starting at first
  * into existentially quantified variables.
  */
-struct isl_basic_set *isl_basic_set_project_out(struct isl_basic_set *bset,
-		enum isl_dim_type type, unsigned first, unsigned n)
+__isl_give isl_basic_set *isl_basic_set_project_out(
+	__isl_take isl_basic_set *bset, enum isl_dim_type type,
+	unsigned first, unsigned n)
 {
 	return bset_from_bmap(isl_basic_map_project_out(bset_to_bmap(bset),
 							type, first, n));
@@ -4594,8 +4596,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_apply_range(
-		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+__isl_give isl_basic_map *isl_basic_map_apply_range(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
 	isl_space *space_result = NULL;
 	struct isl_basic_map *bmap;
@@ -4662,8 +4664,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_apply_domain(
-		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+__isl_give isl_basic_map *isl_basic_map_apply_domain(
+	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
 	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
@@ -5859,7 +5861,7 @@ isl_bool isl_basic_map_is_set(__isl_keep isl_basic_map *bmap)
 	return isl_space_is_set(bmap->dim);
 }
 
-struct isl_basic_set *isl_basic_map_range(struct isl_basic_map *bmap)
+__isl_give isl_basic_set *isl_basic_map_range(__isl_take isl_basic_map *bmap)
 {
 	isl_bool is_set;
 
@@ -8144,7 +8146,8 @@ __isl_give isl_set *isl_set_union_disjoint(
 						    set_to_map(set2)));
 }
 
-struct isl_set *isl_set_union(struct isl_set *set1, struct isl_set *set2)
+__isl_give isl_set *isl_set_union(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
 {
 	return set_from_map(isl_map_union(set_to_map(set1), set_to_map(set2)));
 }
@@ -8986,8 +8989,8 @@ isl_bool isl_map_is_equal(__isl_keep isl_map *map1, __isl_keep isl_map *map2)
 	return isl_map_align_params_map_map_and_test(map1, map2, &map_is_equal);
 }
 
-isl_bool isl_basic_map_is_strict_subset(
-		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
+isl_bool isl_basic_map_is_strict_subset(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2)
 {
 	isl_bool is_subset;
 
@@ -9222,8 +9225,8 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_basic_set_union(
-		struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+__isl_give isl_set *isl_basic_set_union(__isl_take isl_basic_set *bset1,
+	__isl_take isl_basic_set *bset2)
 {
 	return set_from_map(isl_basic_map_union(bset_to_bmap(bset1),
 						bset_to_bmap(bset2)));
