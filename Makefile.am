@@ -42,7 +42,7 @@ TEST_EXTENSIONS = .py
 AM_TESTS_ENVIRONMENT = \
 	export PYTHONPATH=interface; \
 	export ISL_DYLD_LIBRARY_PATH=.libs; \
-	export LD_LIBRARY_PATH=.libs;
+	export LD_LIBRARY_PATH=".libs:$(LD_LIBRARY_PATH)";
 PY_LOG_COMPILER = $(PYTHON)
 
 if IMATH_FOR_MP
