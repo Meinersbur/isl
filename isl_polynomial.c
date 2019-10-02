@@ -3374,19 +3374,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add_dims(
 	return isl_qpolynomial_insert_dims(qp, type, pos, n);
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_add_dims(
-	__isl_take isl_pw_qpolynomial *pwqp,
-	enum isl_dim_type type, unsigned n)
-{
-	isl_size pos;
-
-	pos = isl_pw_qpolynomial_dim(pwqp, type);
-	if (pos < 0)
-		return isl_pw_qpolynomial_free(pwqp);
-
-	return isl_pw_qpolynomial_insert_dims(pwqp, type, pos, n);
-}
-
 static int *reordering_move(isl_ctx *ctx,
 	unsigned len, unsigned dst, unsigned src, unsigned n)
 {

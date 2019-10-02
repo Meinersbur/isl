@@ -2613,18 +2613,6 @@ __isl_give isl_aff *isl_aff_add_dims(__isl_take isl_aff *aff,
 	return isl_aff_insert_dims(aff, type, pos, n);
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_add_dims(__isl_take isl_pw_aff *pwaff,
-	enum isl_dim_type type, unsigned n)
-{
-	isl_size pos;
-
-	pos = isl_pw_aff_dim(pwaff, type);
-	if (pos < 0)
-		return isl_pw_aff_free(pwaff);
-
-	return isl_pw_aff_insert_dims(pwaff, type, pos, n);
-}
-
 /* Move the "n" dimensions of "src_type" starting at "src_pos" of "aff"
  * to dimensions of "dst_type" at "dst_pos".
  *
