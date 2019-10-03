@@ -5620,7 +5620,7 @@ basic set or relation.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_coalesce(
-		__isl_take isl_pw_aff *pwqp);
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_coalesce(
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
