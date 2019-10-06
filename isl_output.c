@@ -439,13 +439,13 @@ static __isl_give isl_printer *print_nested_tuple(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *print_tuple(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_tuple(__isl_keep isl_space *space,
 	__isl_take isl_printer *p, enum isl_dim_type type,
 	struct isl_print_space_data *data)
 {
-	data->space = dim;
+	data->space = space;
 	data->type = type;
-	return print_nested_tuple(p, dim, type, data, 0);
+	return print_nested_tuple(p, space, type, data, 0);
 }
 
 static __isl_give isl_printer *print_nested_map_dim(__isl_take isl_printer *p,
