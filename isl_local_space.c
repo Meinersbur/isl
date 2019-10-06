@@ -245,20 +245,44 @@ isl_size isl_local_space_dim(__isl_keep isl_local_space *ls,
 #define TYPE	isl_local_space
 #include "check_type_range_templ.c"
 
-unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
+/* Return the position of the variables of the given type
+ * within the sequence of variables of "ls".
+ */
+isl_size isl_local_space_var_offset(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type)
 {
 	isl_space *space;
 
 	space = isl_local_space_peek_space(ls);
 	if (space < 0)
+		return isl_size_error;
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:	return isl_space_offset(space, type);
+	case isl_dim_div:	return isl_space_dim(space, isl_dim_all);
+	case isl_dim_cst:
+	default:
+		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
+			"invalid dimension type", return isl_size_error);
+	}
+}
+
+/* Return the position of the coefficients of the variables of the given type
+ * within the sequence of coefficients of "ls".
+ */
+unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type)
+{
+	if (!ls)
 		return 0;
+
 	switch (type) {
 	case isl_dim_cst:	return 0;
 	case isl_dim_param:
 	case isl_dim_in:
-	case isl_dim_out:	return 1 + isl_space_offset(space, type);
-	case isl_dim_div:	return 1 + isl_space_dim(space, isl_dim_all);
+	case isl_dim_out:
+	case isl_dim_div:	return 1 + isl_local_space_var_offset(ls, type);
 	default:		return 0;
 	}
 }
