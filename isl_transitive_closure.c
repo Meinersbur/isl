@@ -2892,15 +2892,15 @@ static isl_stat power(__isl_take isl_map *map, void *user)
 	return isl_stat_error;
 }
 
-/* Construct a map [[x]->[y]] -> [y-x], with parameters prescribed by "dim".
+/* Construct a map [[x]->[y]] -> [y-x], with parameters prescribed by "space".
  */
-static __isl_give isl_union_map *deltas_map(__isl_take isl_space *dim)
+static __isl_give isl_union_map *deltas_map(__isl_take isl_space *space)
 {
 	isl_basic_map *bmap;
 
-	dim = isl_space_add_dims(dim, isl_dim_in, 1);
-	dim = isl_space_add_dims(dim, isl_dim_out, 1);
-	bmap = isl_basic_map_universe(dim);
+	space = isl_space_add_dims(space, isl_dim_in, 1);
+	space = isl_space_add_dims(space, isl_dim_out, 1);
+	bmap = isl_basic_map_universe(space);
 	bmap = isl_basic_map_deltas_map(bmap);
 
 	return isl_union_map_from_map(isl_map_from_basic_map(bmap));
