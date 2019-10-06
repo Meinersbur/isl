@@ -7890,11 +7890,11 @@ to simplify the expression associated to each cell.
 		__isl_take isl_union_set *context);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_gist_params(
-		__isl_take isl_multi_union_pw_aff *aff,
+		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_set *context);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_gist(
-		__isl_take isl_multi_union_pw_aff *aff,
+		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_union_set *context);
 
 	#include <isl/polynomial.h>

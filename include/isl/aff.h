@@ -1184,10 +1184,10 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_coalesce(
 	__isl_take isl_multi_union_pw_aff *mupa);
 __isl_export
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist(
-	__isl_take isl_multi_union_pw_aff *aff,
+	__isl_take isl_multi_union_pw_aff *mupa,
 	__isl_take isl_union_set *context);
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist_params(
-	__isl_take isl_multi_union_pw_aff *aff, __isl_take isl_set *context);
+	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_set *context);
 
 __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_aff(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_aff *aff);
