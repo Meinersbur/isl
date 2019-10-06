@@ -250,10 +250,9 @@ unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 {
 	isl_space *space;
 
-	if (!ls)
+	space = isl_local_space_peek_space(ls);
+	if (space < 0)
 		return 0;
-
-	space = ls->dim;
 	switch (type) {
 	case isl_dim_cst:	return 0;
 	case isl_dim_param:	return 1;
