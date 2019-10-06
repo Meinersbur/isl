@@ -4390,9 +4390,11 @@ static __isl_give isl_basic_map *align_context_divs(
 	int i;
 	int common = 0;
 	int other;
-	unsigned bmap_n_div;
+	isl_size bmap_n_div;
 
 	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (bmap_n_div < 0)
+		return isl_basic_map_free(bmap);
 
 	for (i = 0; i < dom->n_div; ++i) {
 		isl_size pos;
