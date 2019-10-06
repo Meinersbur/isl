@@ -2169,7 +2169,7 @@ static __isl_give isl_map *box_closure_on_domain(__isl_take isl_map *map,
 	unsigned d;
 	unsigned nparam;
 	unsigned total;
-	isl_space *dim;
+	isl_space *space;
 	isl_set *delta;
 	isl_map *app = NULL;
 	isl_basic_set *aff = NULL;
@@ -2184,11 +2184,11 @@ static __isl_give isl_map *box_closure_on_domain(__isl_take isl_map *map,
 	aff = isl_set_affine_hull(isl_set_copy(delta));
 	if (!aff)
 		goto error;
-	dim = isl_map_get_space(map);
-	d = isl_space_dim(dim, isl_dim_in);
-	nparam = isl_space_dim(dim, isl_dim_param);
-	total = isl_space_dim(dim, isl_dim_all);
-	bmap = isl_basic_map_alloc_space(dim,
+	space = isl_map_get_space(map);
+	d = isl_space_dim(space, isl_dim_in);
+	nparam = isl_space_dim(space, isl_dim_param);
+	total = isl_space_dim(space, isl_dim_all);
+	bmap = isl_basic_map_alloc_space(space,
 					aff->n_div + 1, aff->n_div, 2 * d + 1);
 	for (i = 0; i < aff->n_div + 1; ++i) {
 		k = isl_basic_map_alloc_div(bmap);
