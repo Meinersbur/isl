@@ -3682,18 +3682,18 @@ error:
 	return NULL;
 }
 
-/* Read an isl_pw_multi_aff from "s".
+/* Read an isl_union_pw_multi_aff from "s".
  *
  * In particular, first read the parameters and then read a sequence
- * of one or more tuples of affine expressions with optional conditions and
+ * of zero or more tuples of affine expressions with optional conditions and
  * add them up.
  */
-__isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
+__isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
 	__isl_keep isl_stream *s)
 {
 	struct vars *v;
 	isl_set *dom;
-	isl_pw_multi_aff *pma = NULL;
+	isl_union_pw_multi_aff *upma = NULL;
 
 	v = vars_new(s->ctx);
 	if (!v)
@@ -3708,28 +3708,55 @@ __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
-	pma = read_conditional_multi_aff(s, isl_set_copy(dom), v);
+	upma = isl_union_pw_multi_aff_empty(isl_set_get_space(dom));
 
-	while (isl_stream_eat_if_available(s, ';')) {
-		isl_pw_multi_aff *pma2;
+	do {
+		isl_pw_multi_aff *pma;
+		isl_union_pw_multi_aff *upma2;
 
-		pma2 = read_conditional_multi_aff(s, isl_set_copy(dom), v);
-		pma = isl_pw_multi_aff_union_add(pma, pma2);
-		if (!pma)
+		if (isl_stream_next_token_is(s, '}'))
+			break;
+
+		pma = read_conditional_multi_aff(s, isl_set_copy(dom), v);
+		upma2 = isl_union_pw_multi_aff_from_pw_multi_aff(pma);
+		upma = isl_union_pw_multi_aff_union_add(upma, upma2);
+		if (!upma)
 			goto error;
-	}
+	} while (isl_stream_eat_if_available(s, ';'));
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
 
 	isl_set_free(dom);
 	vars_free(v);
-	return pma;
+	return upma;
 error:
-	isl_pw_multi_aff_free(pma);
+	isl_union_pw_multi_aff_free(upma);
 	isl_set_free(dom);
 	vars_free(v);
 	return NULL;
+}
+
+/* Read an isl_pw_multi_aff from "s".
+ *
+ * Read a more generic isl_union_pw_multi_aff first and
+ * then check that the result lives in a single space.
+ */
+__isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
+	__isl_keep isl_stream *s)
+{
+	isl_bool single_space;
+	isl_union_pw_multi_aff *upma;
+
+	upma = isl_stream_read_union_pw_multi_aff(s);
+	single_space = isl_union_pw_multi_aff_isa_pw_multi_aff(upma);
+	if (single_space < 0)
+		upma = isl_union_pw_multi_aff_free(upma);
+	else if (!single_space)
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting expression in single space",
+			upma = isl_union_pw_multi_aff_free(upma));
+	return isl_union_pw_multi_aff_as_pw_multi_aff(upma);
 }
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
@@ -3742,33 +3769,6 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
 	pma = isl_stream_read_pw_multi_aff(s);
 	isl_stream_free(s);
 	return pma;
-}
-
-/* Read an isl_union_pw_multi_aff from "s".
- * We currently read a generic object and if it turns out to be a set or
- * a map, we convert that to an isl_union_pw_multi_aff.
- * It would be more efficient if we were to construct
- * the isl_union_pw_multi_aff directly.
- */
-__isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
-	__isl_keep isl_stream *s)
-{
-	struct isl_obj obj;
-
-	obj = obj_read(s);
-	if (!obj.v)
-		return NULL;
-
-	if (obj.type == isl_obj_map || obj.type == isl_obj_set)
-		obj = to_union(s->ctx, obj);
-	if (obj.type == isl_obj_union_map)
-		return isl_union_pw_multi_aff_from_union_map(obj.v);
-	if (obj.type == isl_obj_union_set)
-		return isl_union_pw_multi_aff_from_union_set(obj.v);
-
-	obj.type->free(obj.v);
-	isl_die(s->ctx, isl_error_invalid, "unexpected object type",
-		return NULL);
 }
 
 /* Read an isl_union_pw_multi_aff from "str".
