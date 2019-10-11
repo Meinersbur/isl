@@ -536,6 +536,7 @@ void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 ISL_DECLARE_MULTI(pw_aff)
 ISL_DECLARE_MULTI_IDENTITY(pw_aff)
 ISL_DECLARE_MULTI_ARITH(pw_aff)
+ISL_DECLARE_MULTI_MIN_MAX(pw_aff)
 ISL_DECLARE_MULTI_ADD_CONSTANT(pw_aff)
 ISL_DECLARE_MULTI_ZERO(pw_aff)
 ISL_DECLARE_MULTI_NAN(pw_aff)

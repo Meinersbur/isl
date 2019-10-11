@@ -120,6 +120,16 @@ __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_neg(		 	\
 	__isl_take isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_MIN_MAX(BASE)					\
+__isl_export								\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_min(			\
+	__isl_take isl_multi_##BASE *multi1,				\
+	__isl_take isl_multi_##BASE *multi2);				\
+__isl_export								\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_max(			\
+	__isl_take isl_multi_##BASE *multi1,				\
+	__isl_take isl_multi_##BASE *multi2);
+
 #define ISL_DECLARE_MULTI_ADD_CONSTANT(BASE)				\
 __isl_overload								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_add_constant_val(	\

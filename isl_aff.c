@@ -6277,6 +6277,7 @@ error:
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_align_set.c>
 #include <isl_multi_intersect.c>
+#include <isl_multi_min_max_templ.c>
 #include <isl_multi_move_dims_templ.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_param_templ.c>

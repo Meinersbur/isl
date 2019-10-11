@@ -1568,6 +1568,7 @@ __isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls)
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_dims.c>
+#include <isl_multi_min_max_templ.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
