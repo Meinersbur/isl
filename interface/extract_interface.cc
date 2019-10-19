@@ -210,6 +210,32 @@ struct ClangAPI {
 	static Command *command(Command &C) { return &C; }
 };
 
+#ifdef CREATE_FROM_ARGS_TAKES_ARRAYREF
+
+/* Call CompilerInvocation::CreateFromArgs with the right arguments.
+ * In this case, an ArrayRef<const char *>.
+ */
+static void create_from_args(CompilerInvocation &invocation,
+	const ArgStringList *args, DiagnosticsEngine &Diags)
+{
+	CompilerInvocation::CreateFromArgs(invocation, *args, Diags);
+}
+
+#else
+
+/* Call CompilerInvocation::CreateFromArgs with the right arguments.
+ * In this case, two "const char *" pointers.
+ */
+static void create_from_args(CompilerInvocation &invocation,
+	const ArgStringList *args, DiagnosticsEngine &Diags)
+{
+	CompilerInvocation::CreateFromArgs(invocation, args->data() + 1,
+						args->data() + args->size(),
+						Diags);
+}
+
+#endif
+
 /* Create a CompilerInvocation object that stores the command line
  * arguments constructed by the driver.
  * The arguments are mainly useful for setting up the system include
@@ -234,9 +260,7 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	const ArgStringList *args = &cmd->getArguments();
 
 	CompilerInvocation *invocation = new CompilerInvocation;
-	CompilerInvocation::CreateFromArgs(*invocation, args->data() + 1,
-						args->data() + args->size(),
-						Diags);
+	create_from_args(*invocation, args, Diags);
 	return invocation;
 }
 
