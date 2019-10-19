@@ -502,15 +502,15 @@ int main(int argc, char *argv[])
 	create_diagnostics(Clang);
 	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.setSuppressSystemWarnings(true);
+	TargetInfo *target = create_target_info(Clang, Diags);
+	Clang->setTarget(target);
+	set_lang_defaults(Clang);
 	CompilerInvocation *invocation =
 		construct_invocation(InputFilename.c_str(), Diags);
 	if (invocation)
 		set_invocation(Clang, invocation);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
-	TargetInfo *target = create_target_info(Clang, Diags);
-	Clang->setTarget(target);
-	set_lang_defaults(Clang);
 	HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
 	LangOptions &LO = Clang->getLangOpts();
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
