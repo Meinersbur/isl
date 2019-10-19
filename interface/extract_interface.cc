@@ -32,6 +32,7 @@
  */ 
 
 #include "isl_config.h"
+#undef PACKAGE
 
 #include <assert.h>
 #include <iostream>
