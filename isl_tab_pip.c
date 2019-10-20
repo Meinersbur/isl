@@ -4339,7 +4339,7 @@ error:
  * If so, return its position within the divs.
  * Otherwise, return a position beyond the integer divisions.
  */
-static int find_context_div(__isl_keep isl_basic_map *bmap,
+static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
@@ -4350,7 +4350,7 @@ static int find_context_div(__isl_keep isl_basic_map *bmap,
 	d_v_div = isl_basic_set_var_offset(dom, isl_dim_div);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	if (b_v_div < 0 || d_v_div < 0 || n_div < 0)
-		return -1;
+		return isl_size_error;
 
 	if (isl_int_is_zero(dom->div[div][0]))
 		return n_div;
@@ -4395,7 +4395,7 @@ static __isl_give isl_basic_map *align_context_divs(
 	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
 	for (i = 0; i < dom->n_div; ++i) {
-		int pos;
+		isl_size pos;
 
 		pos = find_context_div(bmap, dom, i);
 		if (pos < 0)
@@ -4411,7 +4411,7 @@ static __isl_give isl_basic_map *align_context_divs(
 			return NULL;
 	}
 	for (i = 0; i < dom->n_div; ++i) {
-		int pos = find_context_div(bmap, dom, i);
+		isl_size pos = find_context_div(bmap, dom, i);
 		if (pos < 0)
 			bmap = isl_basic_map_free(bmap);
 		if (pos >= bmap_n_div) {
