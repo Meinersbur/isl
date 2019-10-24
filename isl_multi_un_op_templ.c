@@ -9,10 +9,19 @@
 
 #include <isl_multi_macro.h>
 
-/* Apply "fn" to each of the base expressions of "multi".
+/* Data structure that specifies how isl_multi_*_un_op should
+ * modify its input.
+ *
+ * "fn_el" is applied to each base expression.
+ */
+S(MULTI(BASE),un_op_control) {
+	__isl_give EL *(*fn_el)(__isl_take EL *el);
+};
+
+/* Modify "multi" based on "control".
  */
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),un_op)(
-	__isl_take MULTI(BASE) *multi, __isl_give EL *(*fn)(__isl_take EL *el))
+	__isl_take MULTI(BASE) *multi, S(MULTI(BASE),un_op_control) *control)
 {
 	int i;
 	isl_size n;
@@ -25,7 +34,7 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),un_op)(
 		EL *el;
 
 		el = FN(MULTI(BASE),take_at)(multi, i);
-		el = fn(el);
+		el = control->fn_el(el);
 		multi = FN(MULTI(BASE),restore_at)(multi, i, el);
 	}
 
