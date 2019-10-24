@@ -4280,16 +4280,17 @@ static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
 	isl_size n;
 	int i;
 
-	maff = isl_multi_aff_cow(maff);
 	n = isl_multi_aff_size(maff);
 	if (n < 0 || !eq)
 		goto error;
 
 	for (i = 0; i < n; ++i) {
-		maff->u.p[i] = isl_aff_substitute_equalities(maff->u.p[i],
+		isl_aff *aff;
+
+		aff = isl_multi_aff_take_at(maff, i);
+		aff = isl_aff_substitute_equalities(aff,
 						    isl_basic_set_copy(eq));
-		if (!maff->u.p[i])
-			goto error;
+		maff = isl_multi_aff_restore_at(maff, i, aff);
 	}
 
 	isl_basic_set_free(eq);
@@ -4306,15 +4307,16 @@ __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_size n;
 	int i;
 
-	maff = isl_multi_aff_cow(maff);
 	n = isl_multi_aff_size(maff);
 	if (n < 0)
 		return isl_multi_aff_free(maff);
 
 	for (i = 0; i < n; ++i) {
-		maff->u.p[i] = isl_aff_scale(maff->u.p[i], f);
-		if (!maff->u.p[i])
-			return isl_multi_aff_free(maff);
+		isl_aff *aff;
+
+		aff = isl_multi_aff_take_at(maff, i);
+		aff = isl_aff_scale(aff, f);
+		maff = isl_multi_aff_restore_at(maff, i, aff);
 	}
 
 	return maff;
@@ -5693,7 +5695,6 @@ __isl_give isl_multi_aff *isl_multi_aff_substitute(
 	isl_size n;
 	int i;
 
-	maff = isl_multi_aff_cow(maff);
 	n = isl_multi_aff_size(maff);
 	if (n < 0 || !subs)
 		return isl_multi_aff_free(maff);
@@ -5702,10 +5703,11 @@ __isl_give isl_multi_aff *isl_multi_aff_substitute(
 		type = isl_dim_set;
 
 	for (i = 0; i < n; ++i) {
-		maff->u.p[i] = isl_aff_substitute(maff->u.p[i],
-						type, pos, subs);
-		if (!maff->u.p[i])
-			return isl_multi_aff_free(maff);
+		isl_aff *aff;
+
+		aff = isl_multi_aff_take_at(maff, i);
+		aff = isl_aff_substitute(aff, type, pos, subs);
+		maff = isl_multi_aff_restore_at(maff, i, aff);
 	}
 
 	return maff;
@@ -5975,7 +5977,6 @@ __isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
 
 	isl_multi_aff_align_params_bin(&ma1, &ma2);
 	ma2 = isl_multi_aff_align_divs(ma2);
-	ma1 = isl_multi_aff_cow(ma1);
 	n = isl_multi_aff_size(ma1);
 	if (n < 0 || !ma2)
 		goto error;
@@ -5984,10 +5985,11 @@ __isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
 				isl_multi_aff_get_space(ma1));
 
 	for (i = 0; i < n; ++i) {
-		ma1->u.p[i] = isl_aff_pullback_multi_aff(ma1->u.p[i],
-						    isl_multi_aff_copy(ma2));
-		if (!ma1->u.p[i])
-			goto error;
+		isl_aff *aff;
+
+		aff = isl_multi_aff_take_at(ma1, i);
+		aff = isl_aff_pullback_multi_aff(aff, isl_multi_aff_copy(ma2));
+		ma1 = isl_multi_aff_restore_at(ma1, i, aff);
 	}
 
 	ma1 = isl_multi_aff_reset_space(ma1, space);
@@ -6069,22 +6071,23 @@ __isl_give isl_multi_aff *isl_multi_aff_align_divs(
 		return isl_multi_aff_free(maff);
 	if (n <= 1)
 		return maff;
-	maff = isl_multi_aff_cow(maff);
-	if (!maff)
-		return NULL;
 
+	aff_0 = isl_multi_aff_take_at(maff, 0);
 	for (i = 1; i < n; ++i) {
 		isl_aff *aff_i;
 
 		aff_i = isl_multi_aff_peek_at(maff, i);
-		maff->u.p[0] = isl_aff_align_divs(maff->u.p[0], aff_i);
+		aff_0 = isl_aff_align_divs(aff_0, aff_i);
 	}
+	maff = isl_multi_aff_restore_at(maff, 0, aff_0);
 
 	aff_0 = isl_multi_aff_peek_at(maff, 0);
 	for (i = 1; i < n; ++i) {
-		maff->u.p[i] = isl_aff_align_divs(maff->u.p[i], aff_0);
-		if (!maff->u.p[i])
-			return isl_multi_aff_free(maff);
+		isl_aff *aff_i;
+
+		aff_i = isl_multi_aff_take_at(maff, i);
+		aff_i = isl_aff_align_divs(aff_i, aff_0);
+		maff = isl_multi_aff_restore_at(maff, i, aff_i);
 	}
 
 	return maff;
@@ -6133,7 +6136,6 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 		return maff;
 	}
 
-	maff = isl_multi_aff_cow(maff);
 	maff = isl_multi_aff_align_divs(maff);
 
 	aff = isl_multi_aff_peek_at(maff, 0);
@@ -6145,8 +6147,6 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	space = isl_space_extend_domain_with_range(space,
 						isl_multi_aff_get_space(maff));
 	maff = isl_multi_aff_restore_space(maff, space);
-	if (!maff)
-		return NULL;
 
 	if (ls) {
 		aff = isl_multi_aff_peek_at(maff, 0);
@@ -6156,16 +6156,12 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	}
 
 	for (i = 0; i < n; ++i) {
-		maff->u.p[i] = isl_aff_lift(maff->u.p[i]);
-		if (!maff->u.p[i])
-			goto error;
+		aff = isl_multi_aff_take_at(maff, i);
+		aff = isl_aff_lift(aff);
+		maff = isl_multi_aff_restore_at(maff, i, aff);
 	}
 
 	return maff;
-error:
-	if (ls)
-		isl_local_space_free(*ls);
-	return isl_multi_aff_free(maff);
 }
 
 #undef TYPE

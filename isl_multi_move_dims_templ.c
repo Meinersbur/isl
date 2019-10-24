@@ -53,20 +53,17 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 						src_type, src_pos, n);
 	multi = FN(MULTI(BASE),restore_space)(multi, space);
 
-	multi = FN(MULTI(BASE),cow)(multi);
-
 	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		multi = FN(MULTI(BASE),move_explicit_domain_dims)(multi,
 				dst_type, dst_pos, src_type, src_pos, n);
-	if (!multi)
-		return NULL;
 
 	for (i = 0; i < size; ++i) {
-		multi->u.p[i] = FN(EL,move_dims)(multi->u.p[i],
-						dst_type, dst_pos,
+		EL *el;
+
+		el = FN(MULTI(BASE),take_at)(multi, i);
+		el = FN(EL,move_dims)(el, dst_type, dst_pos,
 						src_type, src_pos, n);
-		if (!multi->u.p[i])
-			return FN(MULTI(BASE),free)(multi);
+		multi = FN(MULTI(BASE),restore_at)(multi, i, el);
 	}
 
 	return multi;

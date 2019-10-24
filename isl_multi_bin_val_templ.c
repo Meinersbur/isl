@@ -20,19 +20,13 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),fn_val)(
 	n = FN(MULTI(BASE),size)(multi);
 	if (n < 0 || !v)
 		goto error;
-	if (n == 0) {
-		isl_val_free(v);
-		return multi;
-	}
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		goto error;
 
 	for (i = 0; i < n; ++i) {
-		multi->u.p[i] = fn(multi->u.p[i], isl_val_copy(v));
-		if (!multi->u.p[i])
-			goto error;
+		EL *el;
+
+		el = FN(MULTI(BASE),take_at)(multi, i);
+		el = fn(el, isl_val_copy(v));
+		multi = FN(MULTI(BASE),restore_at)(multi, i, el);
 	}
 
 	isl_val_free(v);
@@ -60,22 +54,15 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),fn_multi_val)(
 	n = FN(MULTI(BASE),size)(multi);
 	if (n < 0 || FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
 		goto error;
-	if (n == 0) {
-		isl_multi_val_free(mv);
-		return multi;
-	}
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		goto error;
 
 	for (i = 0; i < n; ++i) {
 		isl_val *v;
+		EL *el;
 
 		v = isl_multi_val_get_val(mv, i);
-		multi->u.p[i] = fn(multi->u.p[i], v);
-		if (!multi->u.p[i])
-			goto error;
+		el = FN(MULTI(BASE),take_at)(multi, i);
+		el = fn(el, v);
+		multi = FN(MULTI(BASE),restore_at)(multi, i, el);
 	}
 
 	isl_multi_val_free(mv);

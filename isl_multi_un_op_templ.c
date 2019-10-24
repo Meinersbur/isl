@@ -17,15 +17,16 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),un_op)(
 	int i;
 	isl_size n;
 
-	multi = FN(MULTI(BASE),cow)(multi);
 	n = FN(MULTI(BASE),size)(multi);
 	if (n < 0)
 		return FN(MULTI(BASE),free)(multi);
 
 	for (i = 0; i < n; ++i) {
-		multi->u.p[i] = fn(multi->u.p[i]);
-		if (!multi->u.p[i])
-			return FN(MULTI(BASE),free)(multi);
+		EL *el;
+
+		el = FN(MULTI(BASE),take_at)(multi, i);
+		el = fn(el);
+		multi = FN(MULTI(BASE),restore_at)(multi, i, el);
 	}
 
 	return multi;

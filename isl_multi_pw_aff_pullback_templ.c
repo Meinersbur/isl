@@ -47,9 +47,12 @@ __isl_give isl_multi_pw_aff *FN(isl_multi_pw_aff_pullback,BASE)(
 				isl_multi_pw_aff_get_space(mpa));
 
 	for (i = 0; i < n; ++i) {
-		mpa->u.p[i] = FN(isl_pw_aff_pullback,BASE)(mpa->u.p[i],
-						    FN(TYPE,copy)(fn));
-		if (!mpa->u.p[i])
+		isl_pw_aff *pa;
+
+		pa = isl_multi_pw_aff_take_at(mpa, i);
+		pa = FN(isl_pw_aff_pullback,BASE)(pa, FN(TYPE,copy)(fn));
+		mpa = isl_multi_pw_aff_restore_at(mpa, i, pa);
+		if (!mpa)
 			goto error;
 	}
 	if (isl_multi_pw_aff_has_explicit_domain(mpa)) {
