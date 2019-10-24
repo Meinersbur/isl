@@ -5418,6 +5418,8 @@ earlier dimensions before those that involve later dimensions.
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_reverse(
 		__isl_take isl_space *space);
+	__isl_give isl_space *isl_space_wrapped_reverse(
+		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_domain_reverse(
 		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_range_reverse(
@@ -5442,6 +5444,8 @@ that is embedded in the range of the input map space.
 The identifier of the range, if any, is only preserved
 if this embedded relation has identical input and output tuples.
 Similarly for C<isl_space_domain_reverse>.
+Along the same lines, C<isl_space_wrapped_reverse> reverses
+the relation that is embedded in a set space.
 
 =item * Tuple binding
 

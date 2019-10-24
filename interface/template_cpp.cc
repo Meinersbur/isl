@@ -614,6 +614,8 @@ static std::vector<Signature> fn_domain = { domain, set_params };
 
 /* Signatures for interchanging (wrapped) domain and range.
  */
+static Signature set_reverse =
+	{ { { Range, Domain } }, { { { Domain, Range } } } };
 static Signature map_reverse = { { Range, Domain }, { { Domain, Range } } };
 static Signature map_domain_reverse =
 	{ { { Domain2, Domain }, Range }, { { { Domain, Domain2 }, Range } } };
@@ -915,6 +917,7 @@ member_methods {
 	{ "unwrap",		{ unwrap } },
 	{ "upper_bound",	fn_bin_op },
 	{ "wrap",		{ wrap } },
+	{ "wrapped_reverse",	{ set_reverse } },
 	{ "zero",		fn_un_op },
 	{ "zero_on_domain",	{ anonymous_map_from_domain } },
 };
