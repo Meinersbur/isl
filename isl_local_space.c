@@ -1,6 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2012-2014 Ecole Normale Superieure
+ * Copyright 2019      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,6 +9,7 @@
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <isl_ctx_private.h>
@@ -1680,6 +1682,35 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 	space = isl_space_move_dims(space, dst_type, dst_pos,
 					src_type, src_pos, n);
 	ls = isl_local_space_restore_space(ls, space);
+
+	return ls;
+}
+
+/* Given a local space (A -> B), return the corresponding local space
+ * (B -> A).
+ */
+__isl_give isl_local_space *isl_local_space_wrapped_reverse(
+	__isl_take isl_local_space *ls)
+{
+	isl_space *space;
+	isl_local *local;
+	isl_size n_in, n_out;
+	unsigned offset;
+
+	space = isl_local_space_peek_space(ls);
+	offset = isl_space_offset(space, isl_dim_set);
+	n_in = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_in);
+	n_out = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_out);
+	if (n_in < 0 || n_out < 0)
+		return isl_local_space_free(ls);
+
+	space = isl_local_space_take_space(ls);
+	space = isl_space_wrapped_reverse(space);
+	ls = isl_local_space_restore_space(ls, space);
+
+	local = isl_local_space_take_local(ls);
+	local = isl_local_move_vars(local, offset, offset + n_in, n_out);
+	ls = isl_local_space_restore_local(ls, local);
 
 	return ls;
 }

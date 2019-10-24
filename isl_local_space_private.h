@@ -85,6 +85,8 @@ __isl_give isl_local_space *isl_local_space_lift(
 __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 	__isl_take isl_local_space *ls, __isl_take isl_multi_aff *ma);
 
+__isl_give isl_local_space *isl_local_space_wrapped_reverse(
+	__isl_take isl_local_space *ls);
 __isl_give isl_local_space *isl_local_space_move_dims(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type dst_type, unsigned dst_pos,
