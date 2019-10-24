@@ -122,6 +122,22 @@ static isl_stat isl_space_check_is_map(__isl_keep isl_space *space)
 }
 
 /* Check that "space" is the space of a map
+ * where the domain is a wrapped map space.
+ */
+isl_stat isl_space_check_domain_is_wrapping(__isl_keep isl_space *space)
+{
+	isl_bool wrapping;
+
+	wrapping = isl_space_domain_is_wrapping(space);
+	if (wrapping < 0)
+		return isl_stat_error;
+	if (!wrapping)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"domain not a product", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Check that "space" is the space of a map
  * where the range is a wrapped map space.
  */
 isl_stat isl_space_check_range_is_wrapping(__isl_keep isl_space *space)
@@ -1525,11 +1541,8 @@ __isl_give isl_space *isl_space_domain_factor_domain(
 	isl_space *nested;
 	isl_space *domain;
 
-	if (!space)
-		return NULL;
-	if (!isl_space_domain_is_wrapping(space))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"domain not a product", return isl_space_free(space));
+	if (isl_space_check_domain_is_wrapping(space) < 0)
+		return isl_space_free(space);
 
 	nested = space->nested[0];
 	domain = isl_space_copy(space);
@@ -1564,11 +1577,8 @@ __isl_give isl_space *isl_space_domain_factor_range(
 	isl_space *nested;
 	isl_space *range;
 
-	if (!space)
-		return NULL;
-	if (!isl_space_domain_is_wrapping(space))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"domain not a product", return isl_space_free(space));
+	if (isl_space_check_domain_is_wrapping(space) < 0)
+		return isl_space_free(space);
 
 	nested = space->nested[0];
 	range = isl_space_copy(space);
