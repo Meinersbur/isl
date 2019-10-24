@@ -15,12 +15,14 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),un_op)(
 	__isl_take MULTI(BASE) *multi, __isl_give EL *(*fn)(__isl_take EL *el))
 {
 	int i;
+	isl_size n;
 
 	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
+	n = FN(MULTI(BASE),size)(multi);
+	if (n < 0)
+		return FN(MULTI(BASE),free)(multi);
 
-	for (i = 0; i < multi->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		multi->u.p[i] = fn(multi->u.p[i]);
 		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
