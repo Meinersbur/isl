@@ -5425,6 +5425,10 @@ earlier dimensions before those that involve later dimensions.
 	__isl_give isl_space *isl_space_range_reverse(
 		__isl_take isl_space *space);
 
+	#include <isl/aff.h>
+	__isl_give isl_aff *isl_aff_domain_reverse(
+		__isl_take isl_aff *aff);
+
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_reverse(
 		__isl_take isl_basic_map *bmap);

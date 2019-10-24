@@ -2819,6 +2819,44 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
+/* Given an affine function on a domain (A -> B),
+ * interchange A and B in the wrapped domain
+ * to obtain a function on the domain (B -> A).
+ *
+ * Since this may change the position of some variables,
+ * it may also change the normalized order of the local variables.
+ * Restore this order.  Since sort_divs assumes the input
+ * has a single reference, an explicit isl_aff_cow is required.
+ */
+__isl_give isl_aff *isl_aff_domain_reverse(__isl_take isl_aff *aff)
+{
+	isl_space *space;
+	isl_local_space *ls;
+	isl_vec *v;
+	isl_size n_in, n_out;
+	unsigned offset;
+
+	space = isl_aff_peek_domain_space(aff);
+	offset = isl_space_offset(space, isl_dim_set);
+	n_in = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_in);
+	n_out = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_out);
+	if (n_in < 0 || n_out < 0)
+		return isl_aff_free(aff);
+
+	v = isl_aff_take_rat_aff(aff);
+	v = isl_vec_move_els(v, 1 + 1 + offset, 1 + 1 + offset + n_in, n_out);
+	aff = isl_aff_restore_rat_aff(aff, v);
+
+	ls = isl_aff_take_domain_local_space(aff);
+	ls = isl_local_space_wrapped_reverse(ls);
+	aff = isl_aff_restore_domain_local_space(aff, ls);
+
+	aff = isl_aff_cow(aff);
+	aff = sort_divs(aff);
+
+	return aff;
+}
+
 /* Return a zero isl_aff in the given space.
  *
  * This is a helper function for isl_pw_*_as_* that ensures a uniform
