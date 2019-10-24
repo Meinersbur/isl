@@ -4047,6 +4047,22 @@ static __isl_give isl_basic_map *isl_basic_map_range_reverse(
 	return bmap;
 }
 
+/* Given a basic map that is actually a basic set (A -> B),
+ * return the corresponding basic set (B -> A) as a basic map.
+ */
+static __isl_give isl_basic_map *isl_basic_map_set_reverse(
+	__isl_take isl_basic_map *bmap)
+{
+	isl_space *space;
+
+	space = isl_basic_map_peek_space(bmap);
+	if (isl_space_check_is_wrapping(space) < 0)
+		return isl_basic_map_free(bmap);
+	bmap = isl_basic_map_reverse_wrapped(bmap, isl_dim_set);
+
+	return bmap;
+}
+
 static __isl_give isl_basic_map *basic_map_space_reset(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type)
 {
@@ -7205,6 +7221,17 @@ __isl_give isl_map *isl_map_range_reverse(__isl_take isl_map *map)
 {
 	return isl_map_transform(map, &isl_space_range_reverse,
 					&isl_basic_map_range_reverse);
+}
+
+/* Given a set (A -> B), return the corresponding set (B -> A).
+ */
+__isl_give isl_set *isl_set_wrapped_reverse(__isl_take isl_set *set)
+{
+	isl_map *map = set_to_map(set);
+
+	map = isl_map_transform(map, &isl_space_wrapped_reverse,
+					&isl_basic_map_set_reverse);
+	return set_from_map(map);
 }
 
 #undef TYPE

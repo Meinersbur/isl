@@ -309,6 +309,8 @@ __isl_give isl_basic_set *isl_set_unshifted_simple_hull_from_set_list(
 	__isl_take isl_set *set, __isl_take isl_set_list *list);
 __isl_give isl_basic_set *isl_set_bounded_simple_hull(__isl_take isl_set *set);
 
+__isl_export
+__isl_give isl_set *isl_set_wrapped_reverse(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_union_disjoint(
 	__isl_take isl_set *set1, __isl_take isl_set *set2);
 __isl_export

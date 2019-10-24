@@ -467,6 +467,15 @@ static void test_reverse(isl::ctx ctx)
 	  "{ [B[y] -> A[x]] -> [5*(x // 2) + 7*(y // 3)] }" },
 	});
 
+	C(&isl::set::wrapped_reverse, {
+	{ "{ T[A[] -> B[*]] }",
+	  "{ [B[*] -> A[]] }" },
+	{ "{ T[A[] -> A[]] }",
+	  "{ T[A[] -> A[]] }" },
+	{ "{ [A[x] -> B[2x]] }",
+	  "{ [B[y] -> A[x]] : y = 2x }" },
+	});
+
 	C(&isl::union_map::range_reverse, {
 	{ "{ A[] -> [B[] -> C[]]; A[] -> B[]; A[0] -> N[B[1] -> B[2]] }",
 	  "{ A[] -> [C[] -> B[]]; A[0] -> N[B[2] -> B[1]] }" },
