@@ -3377,12 +3377,14 @@ __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
 
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff)
 {
-	return isl_pw_aff_un_op(pwaff, &isl_aff_floor);
+	struct isl_pw_aff_un_op_control control = { .fn_base = &isl_aff_floor };
+	return isl_pw_aff_un_op(pwaff, &control);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff)
 {
-	return isl_pw_aff_un_op(pwaff, &isl_aff_ceil);
+	struct isl_pw_aff_un_op_control control = { .fn_base = &isl_aff_ceil };
+	return isl_pw_aff_un_op(pwaff, &control);
 }
 
 /* Assuming that "cond1" and "cond2" are disjoint,

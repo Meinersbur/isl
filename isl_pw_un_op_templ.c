@@ -10,12 +10,21 @@
 
 #include <isl_pw_macro.h>
 
-/* Apply "fn" to each of the base expressions of "pw".
- * The function is assumed to have no effect on the default value
+/* Data structure that specifies how isl_pw_*_un_op should
+ * modify its input.
+ *
+ * "fn_base" is applied to each base expression.
+ * This function is assumed to have no effect on the default value
  * (i.e., zero for those objects with a default value).
  */
+S(PW,un_op_control) {
+	__isl_give EL *(*fn_base)(__isl_take EL *el);
+};
+
+/* Modify "pw" based on "control".
+ */
 static __isl_give PW *FN(PW,un_op)(__isl_take PW *pw,
-	__isl_give EL *(*fn)(__isl_take EL *el))
+	S(PW,un_op_control) *control)
 {
 	isl_size n;
 	int i;
@@ -28,7 +37,7 @@ static __isl_give PW *FN(PW,un_op)(__isl_take PW *pw,
 		EL *el;
 
 		el = FN(PW,take_base_at)(pw, i);
-		el = fn(el);
+		el = control->fn_base(el);
 		pw = FN(PW,restore_base_at)(pw, i, el);
 	}
 
