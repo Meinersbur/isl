@@ -13,6 +13,8 @@
 /* Data structure that specifies how isl_pw_*_un_op should
  * modify its input.
  *
+ * If "fn_space" is set, then it is applied to the space.
+ *
  * If "fn_domain" is set, then it is applied to the cells.
  *
  * "fn_base" is applied to each base expression.
@@ -20,6 +22,7 @@
  * (i.e., zero for those objects with a default value).
  */
 S(PW,un_op_control) {
+	__isl_give isl_space *(*fn_space)(__isl_take isl_space *space);
 	__isl_give isl_set *(*fn_domain)(__isl_take isl_set *domain);
 	__isl_give EL *(*fn_base)(__isl_take EL *el);
 };
@@ -32,6 +35,7 @@ S(PW,un_op_control) {
 static __isl_give PW *FN(PW,un_op)(__isl_take PW *pw,
 	S(PW,un_op_control) *control)
 {
+	isl_space *space;
 	isl_size n;
 	int i;
 
@@ -56,6 +60,13 @@ static __isl_give PW *FN(PW,un_op)(__isl_take PW *pw,
 
 		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
 	}
+
+	if (!control->fn_space)
+		return pw;
+
+	space = FN(PW,take_space)(pw);
+	space = control->fn_space(space);
+	pw = FN(PW,restore_space)(pw, space);
 
 	return pw;
 }
