@@ -601,6 +601,7 @@ ISL_DECLARE_MULTI_WITH_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_BIND_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_PARAM(pw_aff)
 ISL_DECLARE_MULTI_UNBIND_PARAMS(pw_aff)
+ISL_DECLARE_MULTI_DOMAIN_REVERSE(pw_aff)
 
 __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space);

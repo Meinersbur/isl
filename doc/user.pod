@@ -5436,6 +5436,9 @@ earlier dimensions before those that involve later dimensions.
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_domain_reverse(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_domain_reverse(
+		__isl_take isl_multi_pw_aff *mpa);
 
 	#include <isl/set.h>
 	__isl_give isl_set *isl_set_wrapped_reverse(
