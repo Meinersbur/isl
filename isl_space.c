@@ -2055,6 +2055,23 @@ __isl_give isl_space *isl_space_reverse_wrapped(__isl_take isl_space *space,
 	return space;
 }
 
+/* Given a space (A -> B) -> C, return the corresponding space
+ * (B -> A) -> C.
+ *
+ * If the domain tuple is named, then the name is only preserved
+ * if A and B are equal tuples, in which case the output
+ * of this function is identical to the input, except possibly
+ * for the dimension identifiers.
+ */
+__isl_give isl_space *isl_space_domain_reverse(__isl_take isl_space *space)
+{
+	if (isl_space_check_domain_is_wrapping(space) < 0)
+		return isl_space_free(space);
+	space = isl_space_reverse_wrapped(space, isl_dim_in);
+
+	return space;
+}
+
 /* Given a space A -> (B -> C), return the corresponding space
  * A -> (C -> B).
  *
