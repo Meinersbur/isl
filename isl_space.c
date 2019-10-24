@@ -2015,6 +2015,46 @@ error:
 	return NULL;
 }
 
+/* Given a space where the tuple of type "type" is a wrapped map space,
+ * swap domain and range of that wrapped space.
+ *
+ * If the tuple is named, then the name is only preserved
+ * if the nested tuples are equal, in which case the output
+ * of this function is identical to the input, except possibly
+ * for the dimension identifiers.
+ *
+ * Make a reasonable attempt at moving the dimension identifiers
+ * along with the tuples.
+ */
+__isl_give isl_space *isl_space_reverse_wrapped(__isl_take isl_space *space,
+	enum isl_dim_type type)
+{
+	int pos = type - isl_dim_in;
+	isl_space *nested;
+	isl_bool equal;
+	isl_size n_in;
+
+	nested = isl_space_peek_nested(space, pos);
+	equal = isl_space_tuple_is_equal(nested, isl_dim_in,
+					nested, isl_dim_out);
+	if (equal < 0)
+		return isl_space_free(space);
+
+	nested = isl_space_take_nested(space, pos);
+	nested = isl_space_reverse(nested);
+	space = isl_space_restore_nested(space, pos, nested);
+	if (!equal)
+		space = isl_space_reset_tuple_id(space, type);
+	nested = isl_space_peek_nested(space, pos);
+	n_in = isl_space_dim(nested, isl_dim_in);
+	if (n_in < 0)
+		return isl_space_free(space);
+	space = copy_ids(space, type, 0, nested, isl_dim_in);
+	space = copy_ids(space, type, n_in, nested, isl_dim_out);
+
+	return space;
+}
+
 /* Given a space A -> (B -> C), return the corresponding space
  * A -> (C -> B).
  *
@@ -2022,36 +2062,12 @@ error:
  * if B and C are equal tuples, in which case the output
  * of this function is identical to the input, except possibly
  * for the dimension identifiers.
- *
- * Make a reasonable attempt at moving the dimension identifiers
- * along with the tuples.
  */
 __isl_give isl_space *isl_space_range_reverse(__isl_take isl_space *space)
 {
-	isl_space *nested;
-	isl_bool equal;
-	isl_size n_in;
-
 	if (isl_space_check_range_is_wrapping(space) < 0)
 		return isl_space_free(space);
-
-	nested = isl_space_peek_nested(space, 1);
-	equal = isl_space_tuple_is_equal(nested, isl_dim_in,
-					nested, isl_dim_out);
-	if (equal < 0)
-		return isl_space_free(space);
-
-	nested = isl_space_take_nested(space, 1);
-	nested = isl_space_reverse(nested);
-	space = isl_space_restore_nested(space, 1, nested);
-	if (!equal)
-		space = isl_space_reset_tuple_id(space, isl_dim_out);
-	nested = isl_space_peek_nested(space, 1);
-	n_in = isl_space_dim(nested, isl_dim_in);
-	if (n_in < 0)
-		return isl_space_free(space);
-	space = copy_ids(space, isl_dim_out, 0, nested, isl_dim_in);
-	space = copy_ids(space, isl_dim_out, n_in, nested, isl_dim_out);
+	space = isl_space_reverse_wrapped(space, isl_dim_out);
 
 	return space;
 }
