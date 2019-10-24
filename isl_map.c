@@ -4006,6 +4006,31 @@ __isl_give isl_basic_map *isl_basic_map_reverse(__isl_take isl_basic_map *bmap)
 	return isl_basic_map_reset_space(bmap, space);
 }
 
+/* Given a basic map where the tuple of type "type" is a wrapped map,
+ * swap domain and range of that wrapped map.
+ */
+static __isl_give isl_basic_map *isl_basic_map_reverse_wrapped(
+	__isl_take isl_basic_map *bmap, enum isl_dim_type type)
+{
+	isl_space *space;
+	isl_size offset, n1, n2;
+
+	space = isl_basic_map_peek_space(bmap);
+	offset = isl_basic_map_var_offset(bmap, type);
+	n1 = isl_space_wrapped_dim(space, type, isl_dim_in);
+	n2 = isl_space_wrapped_dim(space, type, isl_dim_out);
+	if (offset < 0 || n1 < 0 || n2 < 0)
+		return isl_basic_map_free(bmap);
+
+	bmap = isl_basic_map_swap_vars(bmap, 1 + offset, n1, n2);
+
+	space = isl_basic_map_take_space(bmap);
+	space = isl_space_reverse_wrapped(space, type);
+	bmap = isl_basic_map_restore_space(bmap, space);
+
+	return bmap;
+}
+
 /* Given a basic map A -> (B -> C), return the corresponding basic map
  * A -> (C -> B).
  */
@@ -4013,22 +4038,11 @@ static __isl_give isl_basic_map *isl_basic_map_range_reverse(
 	__isl_take isl_basic_map *bmap)
 {
 	isl_space *space;
-	isl_size offset, n1, n2;
 
 	space = isl_basic_map_peek_space(bmap);
 	if (isl_space_check_range_is_wrapping(space) < 0)
 		return isl_basic_map_free(bmap);
-	offset = isl_basic_map_var_offset(bmap, isl_dim_out);
-	n1 = isl_space_wrapped_dim(space, isl_dim_out, isl_dim_in);
-	n2 = isl_space_wrapped_dim(space, isl_dim_out, isl_dim_out);
-	if (offset < 0 || n1 < 0 || n2 < 0)
-		return isl_basic_map_free(bmap);
-
-	bmap = isl_basic_map_swap_vars(bmap, 1 + offset, n1, n2);
-
-	space = isl_basic_map_take_space(bmap);
-	space = isl_space_range_reverse(space);
-	bmap = isl_basic_map_restore_space(bmap, space);
+	bmap = isl_basic_map_reverse_wrapped(bmap, isl_dim_out);
 
 	return bmap;
 }
