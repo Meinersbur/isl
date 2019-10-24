@@ -158,7 +158,7 @@ static void test(isl::ctx ctx, R (T::*fn)(A1) const, const std::string &name,
 		ss << name << "(" << test.arg1 << ", " << test.arg2 << ") =\n"
 		   << res << "\n"
 		   << "expecting:\n"
-		   << test.res;
+		   << expected;
 		THROW_INVALID(ss.str().c_str());
 	}
 }
