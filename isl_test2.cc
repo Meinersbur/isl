@@ -467,6 +467,13 @@ static void test_reverse(isl::ctx ctx)
 	  "{ [B[y] -> A[x]] -> [5*(x // 2) + 7*(y // 3)] }" },
 	});
 
+	C(&isl::multi_aff::domain_reverse, {
+	{ "{ [A[x] -> B[y]] -> [5*(x // 2) + 7*(y // 3)] }",
+	  "{ [B[y] -> A[x]] -> [5*(x // 2) + 7*(y // 3)] }" },
+	{ "{ [A[x] -> B[y]] -> T[5*(x // 2) + 7*(y // 3), 0] }",
+	  "{ [B[y] -> A[x]] -> T[5*(x // 2) + 7*(y // 3), 0] }" },
+	});
+
 	C(&isl::set::wrapped_reverse, {
 	{ "{ T[A[] -> B[*]] }",
 	  "{ [B[*] -> A[]] }" },

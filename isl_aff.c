@@ -4082,6 +4082,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_cmp.c>
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_dims.c>
+#include <isl_multi_domain_reverse_templ.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
 #include <isl_multi_identity_templ.c>

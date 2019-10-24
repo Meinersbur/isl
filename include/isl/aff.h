@@ -512,6 +512,7 @@ ISL_DECLARE_MULTI_TUPLE_ID(aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(aff)
 ISL_DECLARE_MULTI_BIND_DOMAIN(aff)
 ISL_DECLARE_MULTI_UNBIND_PARAMS(aff)
+ISL_DECLARE_MULTI_DOMAIN_REVERSE(aff)
 
 __isl_constructor
 __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);

@@ -572,6 +572,7 @@ EXTRA_DIST = \
 	isl_multi_dim_id_templ.c \
 	isl_multi_dims.c \
 	isl_multi_domain_templ.c \
+	isl_multi_domain_reverse_templ.c \
 	isl_multi_floor.c \
 	isl_multi_from_base_templ.c \
 	isl_multi_from_tuple_templ.c \
