@@ -237,11 +237,16 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),restore)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi || !el)
+	if (FN(MULTI(BASE),check_range)(multi, isl_dim_out, pos, 1) < 0 || !el)
 		goto error;
 
-	if (FN(MULTI(BASE),check_range)(multi, isl_dim_out, pos, 1) < 0)
+	if (multi->u.p[pos] == el) {
+		FN(EL,free)(el);
+		return multi;
+	}
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
 		goto error;
 
 	FN(EL,free)(multi->u.p[pos]);
