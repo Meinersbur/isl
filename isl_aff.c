@@ -4702,6 +4702,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_pw_add_constant_val_templ.c>
 #include <isl_pw_add_disjoint_templ.c>
 #include <isl_pw_bind_domain_templ.c>
+#include <isl_pw_domain_reverse_templ.c>
 #include <isl_pw_fix_templ.c>
 #include <isl_pw_from_range_templ.c>
 #include <isl_pw_insert_dims_templ.c>

@@ -492,6 +492,13 @@ static void test_reverse(isl::ctx ctx)
 	  "{ [B[i] -> A[i - 1]] -> [i + 1] }" },
 	});
 
+	C(&isl::pw_multi_aff::domain_reverse, {
+	{ "{ [A[x] -> B[y]] -> T[5*(x // 2) + 7*(y // 3), 0] : x > y }",
+	  "{ [B[y] -> A[x]] -> T[5*(x // 2) + 7*(y // 3), 0] : x > y }" },
+	{ "{ [A[i] -> B[i + 1]] -> T[0, i + 2] }",
+	  "{ [B[i] -> A[i - 1]] -> T[0, i + 1] }" },
+	});
+
 	C(&isl::union_map::range_reverse, {
 	{ "{ A[] -> [B[] -> C[]]; A[] -> B[]; A[0] -> N[B[1] -> B[2]] }",
 	  "{ A[] -> [C[] -> B[]]; A[0] -> N[B[2] -> B[1]] }" },

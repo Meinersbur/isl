@@ -735,6 +735,10 @@ __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
+__isl_export
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_domain_reverse(
+	__isl_take isl_pw_multi_aff *pma);
+
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_neg(
 	__isl_take isl_pw_multi_aff *pma);
 
