@@ -2647,7 +2647,7 @@ static isl_bool div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 
 	if (isl_int_is_zero(bmap->div[div][0]))
 		return isl_bool_false;
-	if (isl_seq_first_non_zero(bmap->div[div] + 1 + first, n) >= 0)
+	if (isl_seq_first_non_zero(bmap->div[div] + 1 + 1 + first, n) >= 0)
 		return isl_bool_true;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
@@ -2871,7 +2871,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 	off = isl_basic_map_var_offset(bmap, type);
 	if (off < 0)
 		return isl_basic_map_free(bmap);
-	first += 1 + off;
+	first += off;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
 		isl_bool involves;
