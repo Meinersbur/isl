@@ -1308,7 +1308,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
+__isl_give isl_basic_map *isl_basic_map_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned in, unsigned out, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
 {
@@ -1955,8 +1955,8 @@ __isl_give isl_basic_set *isl_basic_set_extend(__isl_take isl_basic_set *base,
 						    extra, n_eq, n_ineq));
 }
 
-struct isl_basic_map *isl_basic_map_extend_constraints(
-		struct isl_basic_map *base, unsigned n_eq, unsigned n_ineq)
+__isl_give isl_basic_map *isl_basic_map_extend_constraints(
+	__isl_take isl_basic_map *base, unsigned n_eq, unsigned n_ineq)
 {
 	return isl_basic_map_extend(base, 0, n_eq, n_ineq);
 }
