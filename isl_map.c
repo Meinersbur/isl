@@ -2864,10 +2864,14 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	isl_size off;
 
 	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
 		return isl_basic_map_free(bmap);
-	first += isl_basic_map_offset(bmap, type);
+	off = isl_basic_map_var_offset(bmap, type);
+	if (off < 0)
+		return isl_basic_map_free(bmap);
+	first += 1 + off;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
 		isl_bool involves;
