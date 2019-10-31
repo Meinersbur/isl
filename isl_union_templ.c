@@ -99,20 +99,20 @@ __isl_give UNION *FN(FN(UNION,ZERO),ctx)(isl_ctx *ctx OPT_TYPE_PARAM)
 	isl_space *space;
 
 	space = isl_space_unit(ctx);
-	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG(NO_LOC));
 }
 
 __isl_give UNION *FN(FN(UNION,ZERO),space)(__isl_take isl_space *space
 	OPT_TYPE_PARAM)
 {
-	return FN(UNION,alloc)(space OPT_TYPE_ARG(), 16);
+	return FN(UNION,alloc)(space OPT_TYPE_ARG(NO_LOC), 16);
 }
 
 /* This is an alternative name for the function above.
  */
 __isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
 {
-	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG(NO_LOC));
 }
 
 __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)

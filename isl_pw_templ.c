@@ -48,7 +48,7 @@ error:
 
 __isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
 {
-	return FN(PW,alloc_size)(space OPT_TYPE_ARG(), 0);
+	return FN(PW,alloc_size)(space OPT_TYPE_ARG(NO_LOC), 0);
 }
 
 __isl_give PW *FN(PW,add_piece)(__isl_take PW *pw,
@@ -131,7 +131,7 @@ __isl_give PW *FN(PW,alloc)(OPT_TYPE_PARAM_FIRST
 	if (FN(PW,check_compatible_domain)(el, set) < 0)
 		goto error;
 
-	pw = FN(PW,alloc_size)(FN(EL,get_space)(el) OPT_TYPE_ARG(), 1);
+	pw = FN(PW,alloc_size)(FN(EL,get_space)(el) OPT_TYPE_ARG(NO_LOC), 1);
 
 	return FN(PW,add_piece)(pw, set, el);
 error:
@@ -206,7 +206,7 @@ static __isl_give PW *FN(FN(FN(PW,from),BASE),type_base)(__isl_take EL *el
 	OPT_TYPE_PARAM)
 {
 	isl_set *dom = isl_set_universe(FN(EL,get_domain_space)(el));
-	return FN(PW,alloc)(OPT_TYPE_ARG_FIRST() dom, el);
+	return FN(PW,alloc)(OPT_TYPE_ARG_FIRST(NO_LOC) dom, el);
 }
 
 /* Create a piecewise expression with the given base expression on a universe
@@ -223,15 +223,17 @@ static __isl_give PW *FN(FN(FN(PW,from),BASE),type)(__isl_take EL *el
 	isl_space *space;
 
 	if (!DEFAULT_IS_ZERO)
-		return FN(FN(FN(PW,from),BASE),type_base)(el OPT_TYPE_ARG());
+		return FN(FN(FN(PW,from),BASE),type_base)(el
+							OPT_TYPE_ARG(NO_LOC));
 	is_zero = FN(EL,EL_IS_ZERO)(el);
 	if (is_zero < 0)
 		goto error;
 	if (!is_zero)
-		return FN(FN(FN(PW,from),BASE),type_base)(el OPT_TYPE_ARG());
+		return FN(FN(FN(PW,from),BASE),type_base)(el
+							OPT_TYPE_ARG(NO_LOC));
 	space = FN(EL,get_space)(el);
 	FN(EL,free)(el);
-	return FN(PW,ZERO)(space OPT_TYPE_ARG());
+	return FN(PW,ZERO)(space OPT_TYPE_ARG(NO_LOC));
 error:
 	FN(EL,free)(el);
 	return NULL;
@@ -1968,7 +1970,7 @@ static __isl_give EL *FN(EL,zero_like_type)(__isl_take PW *pw OPT_TYPE_PARAM)
 
 	space = FN(PW,get_space)(pw);
 	FN(PW,free)(pw);
-	return FN(EL,zero_in_space)(space OPT_TYPE_ARG());
+	return FN(EL,zero_in_space)(space OPT_TYPE_ARG(NO_LOC));
 }
 
 #ifndef HAS_TYPE
