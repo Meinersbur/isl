@@ -77,7 +77,7 @@ static int is_non_neg_after_stealing(__isl_keep isl_aff *aff,
 {
 	isl_aff *shifted;
 	isl_val *shift;
-	int is_zero;
+	isl_bool is_zero;
 	int non_neg;
 
 	if (isl_val_sgn(data->cst) != isl_val_sgn(data->v))
