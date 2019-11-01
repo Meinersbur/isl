@@ -877,7 +877,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
  * Alternatively, we could first compute the dual of the domain
  * and plug in the constraints on the coefficients.
  */
-static int try_extract_mod(struct isl_extract_mod_data *data)
+static isl_stat try_extract_mod(struct isl_extract_mod_data *data)
 {
 	isl_basic_set *hull;
 	isl_val *v1, *v2;
@@ -937,7 +937,7 @@ static int try_extract_mod(struct isl_extract_mod_data *data)
 				    isl_aff_copy(data->div), data->nonneg);
 error:
 	data->aff = isl_aff_free(data->aff);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Check if "data->aff" involves any (implicit) modulo computations based
