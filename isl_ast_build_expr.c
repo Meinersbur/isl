@@ -628,7 +628,7 @@ static isl_stat extract_term_and_mod(struct isl_extract_mod_data *data,
  *
  * to data->neg or data->pos depending on the sign of -f.
  */
-static int extract_mod(struct isl_extract_mod_data *data)
+static isl_stat extract_mod(struct isl_extract_mod_data *data)
 {
 	return extract_term_and_mod(data, isl_aff_copy(data->div),
 			isl_aff_copy(data->div));
