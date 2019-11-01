@@ -3512,13 +3512,15 @@ static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
 		if (!tuple)
 			goto error;
 	}
+	mpa = extract_mpa_from_tuple(isl_set_get_space(dom), tuple);
+	isl_multi_pw_aff_free(tuple);
+	if (!mpa)
+		dom = isl_set_free(dom);
 
 	dom = read_optional_formula(s, dom, v, 0);
 
 	vars_drop(v, v->n - n);
 
-	mpa = extract_mpa_from_tuple(isl_set_get_space(dom), tuple);
-	isl_multi_pw_aff_free(tuple);
 	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
 	pma = isl_pw_multi_aff_intersect_domain(pma, dom);
 
