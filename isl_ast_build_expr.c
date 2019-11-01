@@ -72,23 +72,23 @@ struct isl_ast_add_term_data {
  * Similarly, if floor(cst/v) is zero, then there is no point in
  * checking again.
  */
-static int is_non_neg_after_stealing(__isl_keep isl_aff *aff,
+static isl_bool is_non_neg_after_stealing(__isl_keep isl_aff *aff,
 	__isl_keep isl_val *d, struct isl_ast_add_term_data *data)
 {
 	isl_aff *shifted;
 	isl_val *shift;
 	isl_bool is_zero;
-	int non_neg;
+	isl_bool non_neg;
 
 	if (isl_val_sgn(data->cst) != isl_val_sgn(data->v))
-		return 0;
+		return isl_bool_false;
 
 	shift = isl_val_div(isl_val_copy(data->cst), isl_val_copy(data->v));
 	shift = isl_val_floor(shift);
 	is_zero = isl_val_is_zero(shift);
 	if (is_zero < 0 || is_zero) {
 		isl_val_free(shift);
-		return is_zero < 0 ? -1 : 0;
+		return isl_bool_not(is_zero);
 	}
 	shift = isl_val_mul(shift, isl_val_copy(d));
 	shifted = isl_aff_copy(aff);
@@ -197,7 +197,8 @@ static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
 
 	type = isl_ast_expr_op_fdiv_q;
 	if (isl_options_get_ast_build_prefer_pdiv(ctx)) {
-		int non_neg = isl_ast_build_aff_is_nonneg(data->build, aff);
+		isl_bool non_neg;
+		non_neg = isl_ast_build_aff_is_nonneg(data->build, aff);
 		if (non_neg >= 0 && !non_neg) {
 			isl_aff *opp = oppose_div_arg(isl_aff_copy(aff),
 							isl_val_copy(d));
@@ -654,7 +655,7 @@ static isl_stat extract_mod(struct isl_extract_mod_data *data)
  */
 static isl_stat extract_nonneg_mod(struct isl_extract_mod_data *data)
 {
-	int mod;
+	isl_bool mod;
 
 	mod = isl_ast_build_aff_is_nonneg(data->build, data->div);
 	if (mod < 0)
