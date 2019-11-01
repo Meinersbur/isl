@@ -317,7 +317,7 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
 	return p;
 }
 
-static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *space,
 	__isl_keep isl_mat *div,
 	__isl_take isl_printer *p, isl_int *c, int len)
 {
@@ -337,7 +337,7 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
 				p = isl_printer_print_str(p, " + ");
 		}
 		first = 0;
-		p = print_term(dim, div, c[i], i, p, 0);
+		p = print_term(space, div, c[i], i, p, 0);
 		if (flip)
 			isl_int_neg(c[i], c[i]);
 	}
