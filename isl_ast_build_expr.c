@@ -569,7 +569,7 @@ static isl_bool is_even_test(struct isl_extract_mod_data *data,
  *
  * Also, if "lin - 1" is non-negative, then "lin" is non-negative too.
  */
-static int extract_term_and_mod(struct isl_extract_mod_data *data,
+static isl_stat extract_term_and_mod(struct isl_extract_mod_data *data,
 	__isl_take isl_aff *term, __isl_take isl_aff *arg)
 {
 	isl_bool even;
@@ -605,9 +605,9 @@ static int extract_term_and_mod(struct isl_extract_mod_data *data,
 	else
 		data->add = isl_aff_add(data->add, term);
 	if (!data->add)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Given that data->v * div_i in data->aff is of the form
