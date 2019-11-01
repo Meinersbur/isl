@@ -1914,7 +1914,7 @@ int isl_ast_build_aff_is_nonneg(__isl_keep isl_ast_build *build,
 	__isl_keep isl_aff *aff)
 {
 	isl_set *test;
-	int empty;
+	isl_bool empty;
 
 	if (!build)
 		return -1;
