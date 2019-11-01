@@ -652,7 +652,7 @@ static isl_stat extract_mod(struct isl_extract_mod_data *data)
  *
  * This function may modify data->div.
  */
-static int extract_nonneg_mod(struct isl_extract_mod_data *data)
+static isl_stat extract_nonneg_mod(struct isl_extract_mod_data *data)
 {
 	int mod;
 
@@ -671,10 +671,10 @@ static int extract_nonneg_mod(struct isl_extract_mod_data *data)
 		return extract_mod(data);
 	}
 
-	return 0;
+	return isl_stat_ok;
 error:
 	data->aff = isl_aff_free(data->aff);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Is the affine expression of constraint "c" "simpler" than data->nonneg
