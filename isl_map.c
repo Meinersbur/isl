@@ -1276,17 +1276,17 @@ struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
 	return bset_from_bmap(bmap);
 }
 
-__isl_give isl_basic_set *isl_basic_set_alloc_space(__isl_take isl_space *dim,
+__isl_give isl_basic_set *isl_basic_set_alloc_space(__isl_take isl_space *space,
 		unsigned extra, unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *bmap;
-	if (!dim)
+	if (!space)
 		return NULL;
-	isl_assert(dim->ctx, dim->n_in == 0, goto error);
-	bmap = isl_basic_map_alloc_space(dim, extra, n_eq, n_ineq);
+	isl_assert(space->ctx, space->n_in == 0, goto error);
+	bmap = isl_basic_map_alloc_space(space, extra, n_eq, n_ineq);
 	return bset_from_bmap(bmap);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
