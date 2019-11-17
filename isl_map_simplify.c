@@ -1267,7 +1267,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 		--k;
 	}
 	isl_int_init(sum);
-	for (k = 0; k < bmap->n_ineq-1; ++k) {
+	for (k = 0; bmap && k < bmap->n_ineq-1; ++k) {
 		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
 		h = hash_index(&ci, bmap, k);
 		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
