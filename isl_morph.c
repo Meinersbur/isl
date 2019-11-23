@@ -181,12 +181,20 @@ __isl_give isl_multi_aff *isl_morph_get_var_multi_aff(
 
 /* Return the domain space of "morph".
  */
-__isl_give isl_space *isl_morph_get_dom_space(__isl_keep isl_morph *morph)
+static __isl_keep isl_space *isl_morph_peek_dom_space(
+	__isl_keep isl_morph *morph)
 {
 	if (!morph)
 		return NULL;
 
-	return isl_basic_set_get_space(morph->dom);
+	return isl_basic_set_peek_space(morph->dom);
+}
+
+/* Return a copy of the domain space of "morph".
+ */
+__isl_give isl_space *isl_morph_get_dom_space(__isl_keep isl_morph *morph)
+{
+	return isl_space_copy(isl_morph_peek_dom_space(morph));
 }
 
 __isl_give isl_space *isl_morph_get_ran_space(__isl_keep isl_morph *morph)
