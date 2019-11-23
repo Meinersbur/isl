@@ -3428,6 +3428,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	isl_ctx *ctx;
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
+	isl_size total;
 	int *reordering;
 
 	if (!qp)
@@ -3463,11 +3464,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (!qp->div)
 		goto error;
 	qp = sort_divs(qp);
-	if (!qp)
-		goto error;
 
-	reordering = reordering_move(ctx,
-				qp->div->n_col - 2, g_dst_pos, g_src_pos, n);
+	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
+	if (total < 0)
+		return isl_qpolynomial_free(qp);
+	reordering = reordering_move(ctx, total, g_dst_pos, g_src_pos, n);
 	if (!reordering)
 		goto error;
 
