@@ -397,7 +397,7 @@ void cpp_generator::print_method<cpp_generator::decl>(ostream &os,
  * 	inline explicit val(ctx ctx, const std::string &str);
  */
 void cpp_generator::print_constructors_decl(ostream &os,
-       const isl_class &clazz)
+	const isl_class &clazz)
 {
 	function_set::const_iterator in;
 	const function_set &constructors = clazz.constructors;
@@ -643,7 +643,7 @@ void cpp_generator::print_persistent_callback_data(ostream &os,
  * public methods for setting the persistent callbacks.
  */
 void cpp_generator::print_persistent_callbacks_decl(ostream &os,
-       const isl_class &clazz)
+	const isl_class &clazz)
 {
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
@@ -1223,7 +1223,7 @@ void cpp_generator::print_method<cpp_generator::impl>(ostream &os,
 /* Print implementations of constructors for class "clazz" to "os".
  */
 void cpp_generator::print_constructors_impl(ostream &os,
-       const isl_class &clazz)
+	const isl_class &clazz)
 {
 	function_set::const_iterator in;
 	const function_set constructors = clazz.constructors;
@@ -1405,7 +1405,7 @@ void cpp_generator::print_ctx_impl(ostream &os, const isl_class &clazz)
  * of "clazz".
  */
 void cpp_generator::print_persistent_callbacks_impl(ostream &os,
-       const isl_class &clazz)
+	const isl_class &clazz)
 {
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
