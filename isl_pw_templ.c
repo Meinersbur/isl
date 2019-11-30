@@ -573,7 +573,8 @@ static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
 	if (!OPT_EQUAL_TYPES(pw1->, pw2->))
 		isl_die(ctx, isl_error_invalid,
 			"fold types don't match", goto error);
-	isl_assert(ctx, isl_space_is_equal(pw1->dim, pw2->dim), goto error);
+	if (FN(PW,check_equal_space)(pw1, pw2) < 0)
+		goto error;
 
 	if (FN(PW,IS_ZERO)(pw1)) {
 		FN(PW,free)(pw1);
