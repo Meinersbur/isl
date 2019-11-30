@@ -101,6 +101,41 @@ static std::string to_string(long l)
 	return strm.str();
 }
 
+/* Determine the isl types from which the given class can be implicitly
+ * constructed using a unary constructor.
+ *
+ * Look through all constructors for implicit conversion constructors that take
+ * an isl type and add those types, along with the corresponding
+ * constructor argument.
+ */
+void cpp_generator::set_class_construction_types(isl_class &clazz)
+{
+	for (const auto &cons : clazz.constructors) {
+		ParmVarDecl *param;
+		QualType type;
+		std::string arg_type;
+
+		if (!is_implicit_conversion(Method(clazz, cons)))
+			continue;
+
+		param = cons->getParamDecl(0);
+		type = param->getOriginalType();
+		arg_type = extract_type(type);
+		clazz.construction_types.emplace(arg_type, param);
+	}
+}
+
+/* Determine the isl types from which any (proper) class can be constructed
+ * using a unary constructor.
+ */
+void cpp_generator::set_construction_types()
+{
+	for (auto &kvp : classes) {
+		auto &clazz = kvp.second;
+		set_class_construction_types(clazz);
+	}
+}
+
 /* Construct a generator for C++ bindings.
  *
  * "checked" is set if C++ bindings should be generated
@@ -108,6 +143,8 @@ static std::string to_string(long l)
  *
  * The classes and methods are extracted by the constructor
  * of the generator superclass.
+ * Additionally extract information about types
+ * that can be converted to a class.
  */
 cpp_generator::cpp_generator(SourceManager &SM,
 	set<RecordDecl *> &exported_types,
@@ -116,9 +153,184 @@ cpp_generator::cpp_generator(SourceManager &SM,
 		generator(SM, exported_types, exported_functions, functions),
 		checked(checked)
 {
+	set_construction_types();
+}
+
+/* Copy the method called "name" described by "fd" from "super" to "clazz"
+ * with the distance to the original ancestor given by "depth".
+ *
+ * In particular, keep track of "fd" as well as the superclass
+ * from which it was copied and the distance to the original ancestor.
+ */
+static void copy_method(isl_class &clazz, const isl_class &super,
+	const std::string &name, FunctionDecl *fd, int depth)
+{
+	clazz.methods[name].insert(fd);
+	clazz.copied_from.emplace(fd, super);
+	clazz.copy_depth.emplace(fd, depth);
+}
+
+/* Do "fd1" and "fd2" have the same signature (ignoring the first argument
+ * which represents the object class on which the corresponding method
+ * gets called).
+ */
+static bool same_signature(FunctionDecl *fd1, FunctionDecl *fd2)
+{
+	int n1 = fd1->getNumParams();
+	int n2 = fd2->getNumParams();
+
+	if (n1 != n2)
+		return false;
+
+	for (int i = 1; i < n1; ++i) {
+		ParmVarDecl *p1 = fd1->getParamDecl(i);
+		ParmVarDecl *p2 = fd2->getParamDecl(i);
+
+		if (p1->getOriginalType() != p2->getOriginalType())
+			return false;
+	}
+
+	return true;
+}
+
+/* Return the distance between "clazz" and the ancestor
+ * from which "fd" got copied.
+ * If no distance was recorded, then the method has not been copied
+ * but appears in "clazz" itself and so the distance is zero.
+ */
+static int copy_depth(const isl_class &clazz, FunctionDecl *fd)
+{
+	if (clazz.copy_depth.count(fd) == 0)
+		return 0;
+	return clazz.copy_depth.at(fd);
+}
+
+/* Is the method derived from "fd", with method name "name" and
+ * with distance to the original ancestor "depth",
+ * overridden by a method already in "clazz"?
+ *
+ * A method is considered to have been overridden if there
+ * is a method with the same name in "clazz" that has the same signature and
+ * that comes from an ancestor closer to "clazz",
+ * where an ancestor is closer if the distance in the class hierarchy
+ * is smaller or the distance is the same and the ancestor appears
+ * closer in the declaration of the type (in which case it gets added first).
+ *
+ * If a method with the same signature has already been added,
+ * but it does not override the method derived from "fd",
+ * then this method is removed since it is overridden by "fd".
+ */
+static bool is_overridden(FunctionDecl *fd, isl_class &clazz,
+	const std::string &name, int depth)
+{
+	if (clazz.methods.count(name) == 0)
+		return false;
+
+	for (const auto &m : clazz.methods.at(name)) {
+		if (!same_signature(fd, m))
+			continue;
+		if (copy_depth(clazz, m) <= depth)
+			return true;
+		clazz.methods[name].erase(m);
+		return false;
+	}
+	return false;
+}
+
+/* Add the methods "methods" with method name "name" from "super" to "clazz"
+ * provided they have not been overridden by a method already in "clazz".
+ *
+ * Methods that are static in their original class are not copied.
+ */
+void cpp_generator::copy_methods(isl_class &clazz, const std::string &name,
+	const isl_class &super, const function_set &methods)
+{
+	for (auto fd : methods) {
+		int depth;
+
+		if (method2class(fd)->is_static(fd))
+			continue;
+		depth = copy_depth(super, fd) + 1;
+		if (is_overridden(fd, clazz, name, depth))
+			continue;
+		copy_method(clazz, super, name, fd, depth);
+	}
+}
+
+/* Add all methods from "super" to "clazz" that have not been overridden
+ * by a method already in "clazz".
+ *
+ * Look through all groups of methods with the same name.
+ */
+void cpp_generator::copy_super_methods(isl_class &clazz, const isl_class &super)
+{
+	for (const auto &kvp : super.methods) {
+		const auto &name = kvp.first;
+		const auto &methods = kvp.second;
+
+		copy_methods(clazz, name, super, methods);
+	}
+}
+
+/* Copy methods from the superclasses of "clazz"
+ * if an object of this class can be implicitly converted to an object
+ * from the superclass, keeping track
+ * of the classes that have already been handled in "done".
+ *
+ * Make sure the superclasses have copied methods from their superclasses first
+ * since those methods could be copied further down to this class.
+ *
+ * Consider the superclass that appears closest to the subclass first.
+ */
+void cpp_generator::copy_super_methods(isl_class &clazz, set<string> &done)
+{
+	auto supers = find_superclasses(clazz.type);
+
+	for (const auto &super : supers)
+		if (done.count(super) == 0)
+			copy_super_methods(classes[super], done);
+	done.insert(clazz.name);
+
+	for (const auto &super_name : supers) {
+		const auto &super = classes[super_name];
+
+		if (super.construction_types.count(clazz.name) == 0)
+			continue;
+		copy_super_methods(clazz, super);
+	}
+}
+
+/* For each (proper) class, copy methods from its superclasses,
+ * if an object from the class can be converted to an object
+ * from the superclass.
+ *
+ * Type based subclasses are not considered for now since
+ * they do not have any explicit superclasses.
+ *
+ * Iterate through all (proper) classes and copy methods
+ * from their superclasses,
+ * unless they have already been determined by a recursive call.
+ */
+void cpp_generator::copy_super_methods()
+{
+	set<string> done;
+
+	for (auto &kvp : classes) {
+		auto &clazz = kvp.second;
+
+		if (clazz.is_type_subclass())
+			continue;
+		if (done.count(clazz.name) != 0)
+			continue;
+		copy_super_methods(clazz, done);
+	}
 }
 
 /* Generate a cpp interface based on the extracted types and functions.
+ *
+ * Before any printing is performed, first copy all methods
+ * from superclasses that can be converted to a given class
+ * to that class.
  *
  * Print first a set of forward declarations for all isl wrapper
  * classes, then the declarations of the classes, and at the end all
@@ -136,6 +348,8 @@ void cpp_generator::generate()
 	osprintf(os, "namespace isl {\n\n");
 	if (checked)
 		osprintf(os, "namespace checked {\n\n");
+
+	copy_super_methods();
 
 	print_forward_declarations(os);
 	osprintf(os, "\n");
@@ -727,7 +941,9 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
 /* Print a declaration or definition for a method called "name"
  * derived from "fd".
  *
- * For methods that are identified as "get" methods, also
+ * If the method was copied from a superclass, then print a definition
+ * that calls the corresponding method in the superclass.
+ * Otherwise, for methods that are identified as "get" methods, also
  * print a declaration or definition for the method
  * using a name that includes the "get_" prefix.
  *
@@ -737,6 +953,12 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
  * for each combination of converted arguments.
  * Do so by constructing a ConversionMethod that changes the converted arguments
  * to those of the sources of the conversions.
+ *
+ * Note that a method may be both copied from a superclass and
+ * have arguments that can be automatically converted.
+ * In this case, the conversion methods for the arguments
+ * call the corresponding method in this class, which
+ * in turn will call the method in the superclass.
  */
 void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 	const std::string &name)
@@ -744,9 +966,14 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 	Method method(clazz, fd, name);
 	std::vector<bool> convert(method.num_params());
 
-	print_method(method);
-	if (clazz.is_get_method(fd))
-		print_get_method(fd);
+	if (method.clazz.copied_from.count(method.fd) == 0) {
+		print_method(method);
+		if (clazz.is_get_method(fd))
+			print_get_method(fd);
+	} else {
+		auto super = method.clazz.copied_from.at(method.fd);
+		print_method(ConversionMethod(method, super.name));
+	}
 	if (method.kind != Method::Kind::member_method)
 		return;
 	while (next_variant(fd, convert)) {
@@ -756,14 +983,92 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 	}
 }
 
+/* Given a function declaration representing a method,
+ * does this method have a single argument (beyond the object
+ * on which the method is called) that corresponds to
+ * an isl object?
+ */
+static bool has_single_isl_argument(FunctionDecl *fd)
+{
+	ParmVarDecl *param;
+
+	if (fd->getNumParams() != 2)
+		return false;
+
+	param = fd->getParamDecl(1);
+	return generator::is_isl_type(param->getOriginalType());
+}
+
+/* Does the set "methods" contain exactly one function declaration
+ * that corresponds to a method of "clazz" itself (i.e., that
+ * was not copied from an ancestor)?
+ */
+static FunctionDecl *single_local(const isl_class &clazz,
+	const function_set &methods)
+{
+	int count = 0;
+	FunctionDecl *local;
+
+	for (const auto &fn : methods) {
+		if (!clazz.first_arg_matches_class(fn))
+			continue;
+		++count;
+		local = fn;
+	}
+
+	return count == 1 ? local : NULL;
+}
+
+/* Given a function declaration "fd" for a method called "name"
+ * with a single argument representing an isl object,
+ * generate declarations or definitions for methods with the same name,
+ * but with as argument an isl object of a class that can be implicitly
+ * converted to that of the original argument.
+ * In particular, generate methods for converting this argument.
+ */
+void cpp_generator::class_printer::print_descendent_overloads(FunctionDecl *fd,
+	const std::string &name)
+{
+	Method method(clazz, fd, name);
+	ParmVarDecl *param = fd->getParamDecl(1);
+	QualType type = param->getOriginalType();
+	std::string arg = type->getPointeeType().getAsString();
+
+	for (const auto &kvp : generator.classes[arg].construction_types) {
+		const auto sub = kvp.second;
+		print_method(ConversionMethod(method, [&] (int pos) {
+			return sub;
+		}));
+	}
+}
+
 /* Print declarations or definitions for methods called "name"
  * derived from "methods".
+ *
+ * If the group of methods contains both methods originally defined
+ * in the printed class
+ * and methods that have been copied from an ancestor (meaning that there
+ * are at least two methods in the group) and if only one of them
+ * was originally defined in "clazz", then add variants that take
+ * as arguments those types that can be converted to the original argument type
+ * through a unary constructor.
+ * Only do this for methods with a single (isl object) argument.
  */
 void cpp_generator::class_printer::print_method_group(
 	const function_set &methods, const std::string &name)
 {
+	FunctionDecl *local;
+
 	for (const auto &fd : methods)
 		print_method_variants(fd, name);
+	if (methods.size() <= 1)
+		return;
+	local = single_local(clazz, methods);
+	if (!local)
+		return;
+	if (!has_single_isl_argument(local))
+		return;
+	print_descendent_overloads(local, name);
 }
 
 /* Print implementations for class "clazz" to "os".
@@ -2440,7 +2745,23 @@ ConversionMethod::ConversionMethod(const Method &method,
 {
 }
 
-/* Construct a method that performs one or more arguments conversions
+/* Construct a method that only performs a conversion on "this"
+ * from the original Method (without conversions) and
+ * the name of the type to which "this" should be converted.
+ *
+ * Call the generic constructor with
+ * a function for determining the arguments of the constructed method
+ * that performs no conversion.
+ */
+ConversionMethod::ConversionMethod(const Method &method,
+	const std::string &this_type) :
+		ConversionMethod(method, this_type, [this] (int pos) {
+			return Method::get_param(pos);
+		})
+{
+}
+
+/* Construct a method that performs one or more argument conversions
  * from the original Method (without conversions) and
  * a function for determining the arguments of the constructed method.
  *

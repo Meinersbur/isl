@@ -56,6 +56,7 @@ struct Method {
 struct ConversionMethod : Method {
 	ConversionMethod(const Method &method, const std::string &this_type,
 		const std::function<clang::ParmVarDecl *(int pos)> &get_param);
+	ConversionMethod(const Method &method, const std::string &this_type);
 	ConversionMethod(const Method &method,
 		const std::function<clang::ParmVarDecl *(int pos)> &get_param);
 	virtual bool param_needs_copy(int pos) const override;
@@ -101,6 +102,13 @@ public:
 
 	virtual void generate();
 private:
+	void set_class_construction_types(isl_class &clazz);
+	void set_construction_types();
+	void copy_methods(isl_class &clazz, const std::string &name,
+		const isl_class &super, const function_set &methods);
+	void copy_super_methods(isl_class &clazz, const isl_class &super);
+	void copy_super_methods(isl_class &clazz, set<string> &done);
+	void copy_super_methods();
 	void print_forward_declarations(ostream &os);
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
@@ -151,6 +159,8 @@ struct cpp_generator::class_printer {
 	void print_methods();
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_method_variants(FunctionDecl *fd, const std::string &name);
+	void print_descendent_overloads(FunctionDecl *fd,
+		const std::string &name);
 	void print_method_group(const function_set &methods,
 		const std::string &name);
 	virtual void print_method(const Method &method) = 0;

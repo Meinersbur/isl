@@ -66,9 +66,14 @@ bool isl_class::first_arg_matches_class(FunctionDecl *method) const
 /* Should "method" be considered to be a static method?
  * That is, is the first argument something other than
  * an instance of the class?
+ *
+ * If this method was copied from a superclass, then check
+ * whether the method is static with respect to this superclass.
  */
 bool isl_class::is_static(FunctionDecl *method) const
 {
+	if (copied_from.count(method) != 0)
+		return copied_from.at(method).is_static(method);
 	return !first_arg_matches_class(method);
 }
 
