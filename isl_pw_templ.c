@@ -2075,8 +2075,9 @@ isl_bool FN(PW,plain_is_equal)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 
 	if (pw1 == pw2)
 		return isl_bool_true;
-	if (!isl_space_is_equal(pw1->dim, pw2->dim))
-		return isl_bool_false;
+	equal = FN(PW,has_equal_space)(pw1, pw2);
+	if (equal < 0 || !equal)
+		return equal;
 
 	pw1 = FN(PW,copy)(pw1);
 	pw2 = FN(PW,copy)(pw2);
