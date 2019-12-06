@@ -766,6 +766,7 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
 {
 	int i;
 
+	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
 	multi1 = FN(MULTI(BASE),cow)(multi1);
 	if (FN(MULTI(BASE),check_equal_space)(multi1, multi2) < 0)
 		goto error;

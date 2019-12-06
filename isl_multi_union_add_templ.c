@@ -29,12 +29,14 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),union_add)(
 {
 	isl_bool has_domain, is_params1, is_params2;
 
-	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
-	if (FN(MULTI(BASE),check_equal_space)(multi1, multi2) < 0)
+	if (!multi1)
 		goto error;
 	if (multi1->n > 0)
 		return FN(MULTI(BASE),bin_op)(multi1, multi2,
 					    &FN(EL,union_add));
+	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
+	if (FN(MULTI(BASE),check_equal_space)(multi1, multi2) < 0)
+		goto error;
 	if (FN(MULTI(BASE),check_has_explicit_domain)(multi1) < 0 ||
 	    FN(MULTI(BASE),check_has_explicit_domain)(multi2) < 0)
 		goto error;
