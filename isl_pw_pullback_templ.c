@@ -9,35 +9,36 @@
 
 #include <isl_pw_macro.h>
 
-#undef RES
-#define RES	PW
+#undef SUFFIX
+#define SUFFIX	multi_aff
 #undef ARG1
 #define ARG1	PW
 #undef ARG2
 #define ARG2	isl_multi_aff
-#undef SUFFIX
-#define SUFFIX	pw_multi_aff_and
 
 static
-#include "isl_align_params_and_templ.c"
+#include "isl_align_params_templ.c"
 
+#undef SUFFIX
+#define SUFFIX	pw_multi_aff
+#undef ARG1
+#define ARG1	PW
 #undef ARG2
 #define ARG2	isl_pw_multi_aff
-#undef SUFFIX
-#define SUFFIX	pw_pw_multi_aff_and
 
 static
-#include "isl_align_params_and_templ.c"
+#include "isl_align_params_templ.c"
 
 /* Compute the pullback of "pw" by the function represented by "ma".
  * In other words, plug in "ma" in "pw".
  */
-static __isl_give PW *FN(PW,pullback_multi_aff_aligned)(__isl_take PW *pw,
+__isl_give PW *FN(PW,pullback_multi_aff)(__isl_take PW *pw,
 	__isl_take isl_multi_aff *ma)
 {
 	int i;
 	isl_space *space = NULL;
 
+	FN(PW,align_params_multi_aff)(&pw, &ma);
 	ma = isl_multi_aff_align_divs(ma);
 	pw = FN(PW,cow)(pw);
 	if (!pw || !ma)
@@ -65,13 +66,6 @@ error:
 	isl_multi_aff_free(ma);
 	FN(PW,free)(pw);
 	return NULL;
-}
-
-__isl_give PW *FN(PW,pullback_multi_aff)(__isl_take PW *pw,
-	__isl_take isl_multi_aff *ma)
-{
-	return FN(PW,align_params_pw_multi_aff_and)(pw, ma,
-					&FN(PW,pullback_multi_aff_aligned));
 }
 
 /* Compute the pullback of "pw" by the function represented by "pma".
@@ -122,6 +116,6 @@ error:
 __isl_give PW *FN(PW,pullback_pw_multi_aff)(__isl_take PW *pw,
 	__isl_take isl_pw_multi_aff *pma)
 {
-	return FN(PW,align_params_pw_pw_multi_aff_and)(pw, pma,
-					&FN(PW,pullback_pw_multi_aff_aligned));
+	FN(PW,align_params_pw_multi_aff)(&pw, &pma);
+	return FN(PW,pullback_pw_multi_aff_aligned)(pw, pma);
 }

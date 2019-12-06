@@ -503,24 +503,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 #define TYPE MULTI(BASE)
 
 #include "isl_check_named_params_templ.c"
-
-#undef SUFFIX
-#define SUFFIX	multi_multi_and
-#undef TYPE
-#define TYPE	MULTI(BASE)
-
 static
-#include "isl_align_params_and_bin_templ.c"
+#include "isl_align_params_bin_templ.c"
 
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) (A * C) -> [B -> D].
  *
- * The parameters are assumed to have been aligned.
- *
  * If "multi1" and/or "multi2" has an explicit domain, then
  * intersect the domain of the result with these explicit domains.
  */
-static __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product_aligned)(
+__isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
 {
 	int i;
@@ -529,6 +521,7 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product_aligned)(
 	isl_space *space;
 	MULTI(BASE) *res;
 
+	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
 	n1 = FN(MULTI(BASE),size)(multi1);
 	n2 = FN(MULTI(BASE),size)(multi2);
 	if (n1 < 0 || n2 < 0)
@@ -560,16 +553,6 @@ error:
 	FN(MULTI(BASE),free)(multi1);
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
-}
-
-/* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) (A * C) -> [B -> D].
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),range_product)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
-{
-	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
-					&FN(MULTI(BASE),range_product_aligned));
 }
 
 /* Is the range of "multi" a wrapped relation?

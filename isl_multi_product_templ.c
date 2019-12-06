@@ -14,12 +14,10 @@
 /* Given two MULTI(BASE)s A -> B and C -> D,
  * construct a MULTI(BASE) [A -> C] -> [B -> D].
  *
- * The parameters are assumed to have been aligned.
- *
  * If "multi1" and/or "multi2" has an explicit domain, then
  * intersect the domain of the result with these explicit domains.
  */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),product_aligned)(
+__isl_give MULTI(BASE) *FN(MULTI(BASE),product)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
 {
 	int i;
@@ -28,6 +26,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),product_aligned)(
 	MULTI(BASE) *res;
 	isl_size in1, in2, out1, out2;
 
+	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
 	in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
 	in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
 	out1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
@@ -66,14 +65,4 @@ error:
 	FN(MULTI(BASE),free)(multi1);
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
-}
-
-/* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) [A -> C] -> [B -> D].
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),product)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
-{
-	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
-					&FN(MULTI(BASE),product_aligned));
 }

@@ -3543,7 +3543,7 @@ static __isl_give isl_map *replace_by_universe(__isl_take isl_map *map,
  * for the context.  These can then be used to simplify away
  * the corresponding constraints in "map".
  */
-static __isl_give isl_map *map_gist(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
 	__isl_take isl_map *context)
 {
 	int equal;
@@ -3562,6 +3562,7 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 		return map;
 	}
 
+	isl_map_align_params_bin(&map, &context);
 	equal = isl_map_plain_is_equal(map, context);
 	if (equal < 0)
 		goto error;
@@ -3601,12 +3602,6 @@ error:
 	isl_map_free(map);
 	isl_map_free(context);
 	return NULL;
-}
-
-__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
-	__isl_take isl_map *context)
-{
-	return isl_map_align_params_map_map_and(map, context, &map_gist);
 }
 
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,

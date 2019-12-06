@@ -530,13 +530,15 @@ static __isl_give isl_map *replace_pair_by_empty( __isl_take isl_map *map1,
  *
  * If "map1" and "map2" are disjoint, then simply return "map1".
  */
-static __isl_give isl_map *map_subtract( __isl_take isl_map *map1,
+__isl_give isl_map *isl_map_subtract( __isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	int i;
 	int equal, disjoint;
 	struct isl_map *diff;
 
+	if (isl_map_align_params_bin(&map1, &map2) < 0)
+		goto error;
 	if (isl_map_check_equal_space(map1, map2) < 0)
 		goto error;
 
@@ -583,12 +585,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_subtract( __isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return isl_map_align_params_map_map_and(map1, map2, &map_subtract);
-}
-
 struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
 {
 	return set_from_map(isl_map_subtract(set_to_map(set1),
@@ -597,12 +593,13 @@ struct isl_set *isl_set_subtract(struct isl_set *set1, struct isl_set *set2)
 
 /* Remove the elements of "dom" from the domain of "map".
  */
-static __isl_give isl_map *map_subtract_domain(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_subtract_domain(__isl_take isl_map *map,
 	__isl_take isl_set *dom)
 {
 	isl_bool ok;
 	isl_map *ext_dom;
 
+	isl_map_align_params_set(&map, &dom);
 	ok = isl_map_compatible_domain(map, dom);
 	if (ok < 0)
 		goto error;
@@ -619,20 +616,15 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_subtract_domain(__isl_take isl_map *map,
-	__isl_take isl_set *dom)
-{
-	return isl_map_align_params_map_map_and(map, dom, &map_subtract_domain);
-}
-
 /* Remove the elements of "dom" from the range of "map".
  */
-static __isl_give isl_map *map_subtract_range(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_subtract_range(__isl_take isl_map *map,
 	__isl_take isl_set *dom)
 {
 	isl_bool ok;
 	isl_map *ext_dom;
 
+	isl_map_align_params_set(&map, &dom);
 	ok = isl_map_compatible_range(map, dom);
 	if (ok < 0)
 		goto error;
@@ -647,12 +639,6 @@ error:
 	isl_map_free(map);
 	isl_set_free(dom);
 	return NULL;
-}
-
-__isl_give isl_map *isl_map_subtract_range(__isl_take isl_map *map,
-	__isl_take isl_set *dom)
-{
-	return isl_map_align_params_map_map_and(map, dom, &map_subtract_range);
 }
 
 /* A diff collector that aborts as soon as its add function is called,

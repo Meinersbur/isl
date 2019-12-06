@@ -1515,12 +1515,19 @@ static isl_stat isl_basic_map_check_equal_params(
 	return isl_stat_ok;
 }
 
-#undef SUFFIX
-#define SUFFIX	map_map_and
 #undef TYPE
 #define TYPE	isl_map
 
-#include "isl_align_params_and_bin_templ.c"
+#include "isl_align_params_bin_templ.c"
+
+#undef SUFFIX
+#define SUFFIX	set
+#undef ARG1
+#define ARG1	isl_map
+#undef ARG2
+#define ARG2	isl_set
+
+#include "isl_align_params_templ.c"
 
 isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2,
@@ -3787,7 +3794,8 @@ error:
 __isl_give isl_map *isl_map_intersect(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	return isl_map_align_params_map_map_and(map1, map2, &map_intersect);
+	isl_map_align_params_bin(&map1, &map2);
+	return map_intersect(map1, map2);
 }
 
 struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
@@ -3799,17 +3807,11 @@ struct isl_set *isl_set_intersect(struct isl_set *set1, struct isl_set *set2)
 /* map_intersect_internal accepts intersections
  * with parameter domains, so we can just call that function.
  */
-static __isl_give isl_map *map_intersect_params(__isl_take isl_map *map,
-		__isl_take isl_set *params)
-{
-	return map_intersect_internal(map, params);
-}
-
-__isl_give isl_map *isl_map_intersect_params(__isl_take isl_map *map1,
+__isl_give isl_map *isl_map_intersect_params(__isl_take isl_map *map,
 	__isl_take isl_set *params)
 {
-	return isl_map_align_params_map_map_and(map1, params,
-						&map_intersect_params);
+	isl_map_align_params_set(&map, &params);
+	return map_intersect_internal(map, params);
 }
 
 __isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
@@ -7883,11 +7885,12 @@ error:
 __isl_give isl_map *isl_map_union_disjoint(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	return isl_map_align_params_map_map_and(map1, map2, &map_union_disjoint);
+	isl_map_align_params_bin(&map1, &map2);
+	return map_union_disjoint(map1, map2);
 }
 
 /* Return the union of "map1" and "map2", where "map1" and "map2" may
- * not be disjoint.  The parameters are assumed to have been aligned.
+ * not be disjoint.
  *
  * We currently simply call map_union_disjoint, the internal operation
  * of which does not really depend on the inputs being disjoint.
@@ -7898,12 +7901,12 @@ __isl_give isl_map *isl_map_union_disjoint(__isl_take isl_map *map1,
  * As a special case, if "map1" and "map2" are obviously equal,
  * then we simply return "map1".
  */
-static __isl_give isl_map *map_union_aligned(__isl_take isl_map *map1,
+__isl_give isl_map *isl_map_union(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	int equal;
 
-	if (!map1 || !map2)
+	if (isl_map_align_params_bin(&map1, &map2) < 0)
 		goto error;
 
 	equal = isl_map_plain_is_equal(map1, map2);
@@ -7924,15 +7927,6 @@ error:
 	isl_map_free(map1);
 	isl_map_free(map2);
 	return NULL;
-}
-
-/* Return the union of "map1" and "map2", where "map1" and "map2" may
- * not be disjoint.
- */
-__isl_give isl_map *isl_map_union(__isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return isl_map_align_params_map_map_and(map1, map2, &map_union_aligned);
 }
 
 __isl_give isl_set *isl_set_union_disjoint(
@@ -7985,12 +7979,13 @@ static __isl_give isl_map *map_intersect_set(__isl_take isl_map *map,
 	return result;
 }
 
-static __isl_give isl_map *map_intersect_range(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_intersect_range(__isl_take isl_map *map,
 	__isl_take isl_set *set)
 {
 	isl_bool ok;
 	isl_space *space;
 
+	isl_map_align_params_set(&map, &set);
 	ok = isl_map_compatible_range(map, set);
 	if (ok < 0)
 		goto error;
@@ -8007,24 +8002,18 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_intersect_range(__isl_take isl_map *map,
-	__isl_take isl_set *set)
-{
-	return isl_map_align_params_map_map_and(map, set, &map_intersect_range);
-}
-
-/* Intersect the domain of "map" with "set", assuming the parameters
- * have been aligned.
+/* Intersect the domain of "map" with "set".
  *
  * If the domain dimensions of "map" do not have any identifiers,
  * then copy them over from "set".
  */
-static __isl_give isl_map *map_intersect_domain(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
 	__isl_take isl_set *set)
 {
 	isl_bool ok;
 	isl_space *space;
 
+	isl_map_align_params_set(&map, &set);
 	ok = isl_map_compatible_domain(map, set);
 	if (ok < 0)
 		goto error;
@@ -8041,13 +8030,6 @@ error:
 	isl_map_free(map);
 	isl_set_free(set);
 	return NULL;
-}
-
-__isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
-	__isl_take isl_set *set)
-{
-	return isl_map_align_params_map_map_and(map, set,
-						&map_intersect_domain);
 }
 
 /* Data structure that specifies how isl_map_intersect_factor
@@ -8218,10 +8200,10 @@ __isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
 						set_to_map(range), &control));
 }
 
-static __isl_give isl_map *map_apply_domain(__isl_take isl_map *map1,
+__isl_give isl_map *isl_map_apply_domain(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	if (!map1 || !map2)
+	if (isl_map_align_params_bin(&map1, &map2) < 0)
 		goto error;
 	map1 = isl_map_reverse(map1);
 	map1 = isl_map_apply_range(map1, map2);
@@ -8232,20 +8214,14 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_apply_domain(__isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return isl_map_align_params_map_map_and(map1, map2, &map_apply_domain);
-}
-
-static __isl_give isl_map *map_apply_range(__isl_take isl_map *map1,
+__isl_give isl_map *isl_map_apply_range(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
 	isl_space *space;
 	struct isl_map *result;
 	int i, j;
 
-	if (!map1 || !map2)
+	if (isl_map_align_params_bin(&map1, &map2) < 0)
 		goto error;
 
 	space = isl_space_join(isl_space_copy(map1->dim),
@@ -8272,12 +8248,6 @@ error:
 	isl_map_free(map1);
 	isl_map_free(map2);
 	return NULL;
-}
-
-__isl_give isl_map *isl_map_apply_range(__isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return isl_map_align_params_map_map_and(map1, map2, &map_apply_range);
 }
 
 /*
@@ -9381,11 +9351,12 @@ __isl_give isl_basic_map_list *isl_basic_map_list_align_divs_to_basic_map(
 	return list;
 }
 
-static __isl_give isl_set *set_apply( __isl_take isl_set *set,
+__isl_give isl_set *isl_set_apply( __isl_take isl_set *set,
 	__isl_take isl_map *map)
 {
 	isl_bool ok;
 
+	isl_map_align_params_set(&map, &set);
 	ok = isl_map_compatible_domain(map, set);
 	if (ok < 0)
 		goto error;
@@ -9399,12 +9370,6 @@ error:
 	isl_set_free(set);
 	isl_map_free(map);
 	return NULL;
-}
-
-__isl_give isl_set *isl_set_apply( __isl_take isl_set *set,
-	__isl_take isl_map *map)
-{
-	return isl_map_align_params_map_map_and(set, map, &set_apply);
 }
 
 /* There is no need to cow as removing empty parts doesn't change
@@ -10468,17 +10433,12 @@ error:
 
 /* Given two maps A -> B and C -> D, construct a map [A -> C] -> [B -> D]
  */
-static __isl_give isl_map *map_product_aligned(__isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return map_product(map1, map2, &isl_space_product,
-			&isl_basic_map_product, 0);
-}
-
 __isl_give isl_map *isl_map_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	return isl_map_align_params_map_map_and(map1, map2, &map_product_aligned);
+	isl_map_align_params_bin(&map1, &map2);
+	return map_product(map1, map2, &isl_space_product,
+			&isl_basic_map_product, 0);
 }
 
 /* Given two maps A -> B and C -> D, construct a map (A, C) -> (B, D)
@@ -10508,34 +10468,22 @@ __isl_give isl_set *isl_set_flat_product(__isl_take isl_set *set1,
 
 /* Given two maps A -> B and C -> D, construct a map [A -> C] -> (B * D)
  */
-static __isl_give isl_map *map_domain_product_aligned(__isl_take isl_map *map1,
+__isl_give isl_map *isl_map_domain_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
+	isl_map_align_params_bin(&map1, &map2);
 	return map_product(map1, map2, &isl_space_domain_product,
 				&isl_basic_map_domain_product, 1);
 }
 
 /* Given two maps A -> B and C -> D, construct a map (A * C) -> [B -> D]
  */
-static __isl_give isl_map *map_range_product_aligned(__isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return map_product(map1, map2, &isl_space_range_product,
-				&isl_basic_map_range_product, 1);
-}
-
-__isl_give isl_map *isl_map_domain_product(__isl_take isl_map *map1,
-	__isl_take isl_map *map2)
-{
-	return isl_map_align_params_map_map_and(map1, map2,
-						&map_domain_product_aligned);
-}
-
 __isl_give isl_map *isl_map_range_product(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	return isl_map_align_params_map_map_and(map1, map2,
-						&map_range_product_aligned);
+	isl_map_align_params_bin(&map1, &map2);
+	return map_product(map1, map2, &isl_space_range_product,
+				&isl_basic_map_range_product, 1);
 }
 
 /* Given a map of the form [A -> B] -> [C -> D], return the map A -> C.

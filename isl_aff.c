@@ -2748,43 +2748,17 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #include <isl_union_single.c>
 #include <isl_union_neg.c>
 
-#undef ARG1
-#define ARG1	PW
-#undef ARG2
-#define ARG2	PW
-#undef RES
-#define RES	isl_set
-#undef SUFFIX
-#define SUFFIX	pw_pw_set_and
-
-static
-#include "isl_align_params_and_templ.c"
-
-#undef RES
-#define RES	isl_map
-#undef SUFFIX
-#define SUFFIX	pw_pw_map_and
-
-static
-#include "isl_align_params_and_templ.c"
-
 /* Compute a piecewise quasi-affine expression with a domain that
  * is the union of those of pwaff1 and pwaff2 and such that on each
  * cell, the quasi-affine expression is the maximum of those of pwaff1
  * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
  * cell, then the associated expression is the defined one.
  */
-static __isl_give isl_pw_aff *pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_union_opt_cmp(pwaff1, pwaff2, &isl_aff_ge_set);
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2,
-							&pw_aff_union_max);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return isl_pw_aff_union_opt_cmp(pwaff1, pwaff2, &isl_aff_ge_set);
 }
 
 /* Compute a piecewise quasi-affine expression with a domain that
@@ -2793,17 +2767,11 @@ __isl_give isl_pw_aff *isl_pw_aff_union_max(__isl_take isl_pw_aff *pwaff1,
  * and pwaff2.  If only one of pwaff1 or pwaff2 is defined on a given
  * cell, then the associated expression is the defined one.
  */
-static __isl_give isl_pw_aff *pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_union_opt_cmp(pwaff1, pwaff2, &isl_aff_le_set);
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_union_min(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2,
-							&pw_aff_union_min);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return isl_pw_aff_union_opt_cmp(pwaff1, pwaff2, &isl_aff_le_set);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
@@ -2993,49 +2961,31 @@ static __isl_give isl_set *pw_aff_gte_set(__isl_take isl_pw_aff *pwaff1,
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is equal to pwaff2.
  */
-static __isl_give isl_set *pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return pw_aff_gte_set(pwaff1, pwaff2, 0, 1);
-}
-
 __isl_give isl_set *isl_pw_aff_eq_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_set_and(pwaff1, pwaff2,
-							&pw_aff_eq_set);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return pw_aff_gte_set(pwaff1, pwaff2, 0, 1);
 }
 
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is greater than or equal to pwaff2.
  */
-static __isl_give isl_set *pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return pw_aff_gte_set(pwaff1, pwaff2, 0, 0);
-}
-
 __isl_give isl_set *isl_pw_aff_ge_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_set_and(pwaff1, pwaff2,
-							&pw_aff_ge_set);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return pw_aff_gte_set(pwaff1, pwaff2, 0, 0);
 }
 
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is strictly greater than pwaff2.
  */
-static __isl_give isl_set *pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return pw_aff_gte_set(pwaff1, pwaff2, 1, 0);
-}
-
 __isl_give isl_set *isl_pw_aff_gt_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_set_and(pwaff1, pwaff2,
-							&pw_aff_gt_set);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return pw_aff_gte_set(pwaff1, pwaff2, 1, 0);
 }
 
 __isl_give isl_set *isl_pw_aff_le_set(__isl_take isl_pw_aff *pwaff1,
@@ -3084,32 +3034,12 @@ static __isl_give isl_map *isl_pw_aff_order_map_aligned(
 
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
  * where the function values are equal.
- * The parameters of "pa1" and "pa2" are assumed to have been aligned.
- */
-static __isl_give isl_map *isl_pw_aff_eq_map_aligned(__isl_take isl_pw_aff *pa1,
-	__isl_take isl_pw_aff *pa2)
-{
-	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_eq_set);
-}
-
-/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
- * where the function values are equal.
  */
 __isl_give isl_map *isl_pw_aff_eq_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	return isl_pw_aff_align_params_pw_pw_map_and(pa1, pa2,
-						&isl_pw_aff_eq_map_aligned);
-}
-
-/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
- * where the function value of "pa1" is less than the function value of "pa2".
- * The parameters of "pa1" and "pa2" are assumed to have been aligned.
- */
-static __isl_give isl_map *isl_pw_aff_lt_map_aligned(__isl_take isl_pw_aff *pa1,
-	__isl_take isl_pw_aff *pa2)
-{
-	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_lt_set);
+	isl_pw_aff_align_params_bin(&pa1, &pa2);
+	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_eq_set);
 }
 
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
@@ -3118,19 +3048,8 @@ static __isl_give isl_map *isl_pw_aff_lt_map_aligned(__isl_take isl_pw_aff *pa1,
 __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	return isl_pw_aff_align_params_pw_pw_map_and(pa1, pa2,
-						&isl_pw_aff_lt_map_aligned);
-}
-
-/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
- * where the function value of "pa1" is greater than the function value
- * of "pa2".
- * The parameters of "pa1" and "pa2" are assumed to have been aligned.
- */
-static __isl_give isl_map *isl_pw_aff_gt_map_aligned(__isl_take isl_pw_aff *pa1,
-	__isl_take isl_pw_aff *pa2)
-{
-	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_gt_set);
+	isl_pw_aff_align_params_bin(&pa1, &pa2);
+	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_lt_set);
 }
 
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
@@ -3140,8 +3059,8 @@ static __isl_give isl_map *isl_pw_aff_gt_map_aligned(__isl_take isl_pw_aff *pa1,
 __isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	return isl_pw_aff_align_params_pw_pw_map_and(pa1, pa2,
-						&isl_pw_aff_gt_map_aligned);
+	isl_pw_aff_align_params_bin(&pa1, &pa2);
+	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_gt_set);
 }
 
 /* Return a set containing those elements in the shared domain
@@ -3232,22 +3151,16 @@ __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 /* Return a set containing those elements in the shared domain
  * of pwaff1 and pwaff2 where pwaff1 is not equal to pwaff2.
  */
-static __isl_give isl_set *pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
+__isl_give isl_set *isl_pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
 	isl_set *set_lt, *set_gt;
 
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
 	set_lt = isl_pw_aff_lt_set(isl_pw_aff_copy(pwaff1),
 				   isl_pw_aff_copy(pwaff2));
 	set_gt = isl_pw_aff_gt_set(pwaff1, pwaff2);
 	return isl_set_union_disjoint(set_lt, set_gt);
-}
-
-__isl_give isl_set *isl_pw_aff_ne_set(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_align_params_pw_pw_set_and(pwaff1, pwaff2,
-							&pw_aff_ne_set);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
@@ -3528,16 +3441,11 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_pw_aff *pw_aff_add(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_add);
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_add);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_add);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
@@ -3546,22 +3454,11 @@ __isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
 	return isl_pw_aff_union_add_(pwaff1, pwaff2);
 }
 
-static __isl_give isl_pw_aff *pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_mul);
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
-	return isl_pw_aff_align_params_pw_pw_and(pwaff1, pwaff2, &pw_aff_mul);
-}
-
-static __isl_give isl_pw_aff *pw_aff_div(__isl_take isl_pw_aff *pa1,
-	__isl_take isl_pw_aff *pa2)
-{
-	return isl_pw_aff_on_shared_domain(pa1, pa2, &isl_aff_div);
+	isl_pw_aff_align_params_bin(&pwaff1, &pwaff2);
+	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_mul);
 }
 
 /* Divide "pa1" by "pa2", assuming "pa2" is a piecewise constant.
@@ -3578,7 +3475,8 @@ __isl_give isl_pw_aff *isl_pw_aff_div(__isl_take isl_pw_aff *pa1,
 		isl_die(isl_pw_aff_get_ctx(pa2), isl_error_invalid,
 			"second argument should be a piecewise constant",
 			goto error);
-	return isl_pw_aff_align_params_pw_pw_and(pa1, pa2, &pw_aff_div);
+	isl_pw_aff_align_params_bin(&pa1, &pa2);
+	return isl_pw_aff_on_shared_domain(pa1, pa2, &isl_aff_div);
 error:
 	isl_pw_aff_free(pa1);
 	isl_pw_aff_free(pa2);
@@ -3731,10 +3629,11 @@ static __isl_give isl_pw_aff *pw_aff_min_max(__isl_take isl_pw_aff *pa1,
 	else if (has_nan)
 		return replace_by_nan(pa1, pa2);
 
+	isl_pw_aff_align_params_bin(&pa1, &pa2);
 	if (max)
-		return isl_pw_aff_align_params_pw_pw_and(pa1, pa2, &pw_aff_max);
+		return pw_aff_max(pa1, pa2);
 	else
-		return isl_pw_aff_align_params_pw_pw_and(pa1, pa2, &pw_aff_min);
+		return pw_aff_min(pa1, pa2);
 }
 
 /* Return an expression for the minimum of "pwaff1" and "pwaff2".
@@ -4429,14 +4328,6 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_range(
 				&isl_multi_aff_range_factor_range);
 }
 
-static __isl_give isl_pw_multi_aff *pw_multi_aff_union_lexmax(
-	__isl_take isl_pw_multi_aff *pma1,
-	__isl_take isl_pw_multi_aff *pma2)
-{
-	return isl_pw_multi_aff_union_opt_cmp(pma1, pma2,
-					    &isl_multi_aff_lex_ge_set);
-}
-
 /* Given two piecewise multi affine expressions, return a piecewise
  * multi-affine expression defined on the union of the definition domains
  * of the inputs that is equal to the lexicographic maximum of the two
@@ -4447,16 +4338,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmax(
 	__isl_take isl_pw_multi_aff *pma1,
 	__isl_take isl_pw_multi_aff *pma2)
 {
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-						    &pw_multi_aff_union_lexmax);
-}
-
-static __isl_give isl_pw_multi_aff *pw_multi_aff_union_lexmin(
-	__isl_take isl_pw_multi_aff *pma1,
-	__isl_take isl_pw_multi_aff *pma2)
-{
+	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
 	return isl_pw_multi_aff_union_opt_cmp(pma1, pma2,
-					    &isl_multi_aff_lex_le_set);
+					    &isl_multi_aff_lex_ge_set);
 }
 
 /* Given two piecewise multi affine expressions, return a piecewise
@@ -4469,29 +4353,17 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmin(
 	__isl_take isl_pw_multi_aff *pma1,
 	__isl_take isl_pw_multi_aff *pma2)
 {
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-						    &pw_multi_aff_union_lexmin);
-}
-
-static __isl_give isl_pw_multi_aff *pw_multi_aff_add(
-	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
-{
-	return isl_pw_multi_aff_on_shared_domain(pma1, pma2,
-						&isl_multi_aff_add);
+	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
+	return isl_pw_multi_aff_union_opt_cmp(pma1, pma2,
+					    &isl_multi_aff_lex_le_set);
 }
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_add(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-						&pw_multi_aff_add);
-}
-
-static __isl_give isl_pw_multi_aff *pw_multi_aff_sub(
-	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
-{
+	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
 	return isl_pw_multi_aff_on_shared_domain(pma1, pma2,
-						&isl_multi_aff_sub);
+						&isl_multi_aff_add);
 }
 
 /* Subtract "pma2" from "pma1" and return the result.
@@ -4499,8 +4371,9 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_sub(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-						&pw_multi_aff_sub);
+	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
+	return isl_pw_multi_aff_on_shared_domain(pma1, pma2,
+						&isl_multi_aff_sub);
 }
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
@@ -4533,14 +4406,14 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_union_add(
 /* Given two piecewise multi-affine expressions A -> B and C -> D,
  * construct a piecewise multi-affine expression [A -> C] -> [B -> D].
  */
-static __isl_give isl_pw_multi_aff *pw_multi_aff_product(
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
 	int i, j, n;
 	isl_space *space;
 	isl_pw_multi_aff *res;
 
-	if (!pma1 || !pma2)
+	if (isl_pw_multi_aff_align_params_bin(&pma1, &pma2) < 0)
 		goto error;
 
 	n = pma1->n * pma2->n;
@@ -4569,13 +4442,6 @@ error:
 	isl_pw_multi_aff_free(pma1);
 	isl_pw_multi_aff_free(pma2);
 	return NULL;
-}
-
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_product(
-	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
-{
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-						&pw_multi_aff_product);
 }
 
 /* Subtract the initial "n" elements in "ma" with coefficients in "c" and
@@ -5804,15 +5670,14 @@ __isl_give isl_aff *isl_aff_pullback_aff(__isl_take isl_aff *aff1,
 
 /* Compute the pullback of "ma1" by the function represented by "ma2".
  * In other words, plug in "ma2" in "ma1".
- *
- * The parameters of "ma1" and "ma2" are assumed to have been aligned.
  */
-static __isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff_aligned(
+__isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
 	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
 {
 	int i;
 	isl_space *space = NULL;
 
+	isl_multi_aff_align_params_bin(&ma1, &ma2);
 	ma2 = isl_multi_aff_align_divs(ma2);
 	ma1 = isl_multi_aff_cow(ma1);
 	if (!ma1 || !ma2)
@@ -5836,16 +5701,6 @@ error:
 	isl_multi_aff_free(ma2);
 	isl_multi_aff_free(ma1);
 	return NULL;
-}
-
-/* Compute the pullback of "ma1" by the function represented by "ma2".
- * In other words, plug in "ma2" in "ma1".
- */
-__isl_give isl_multi_aff *isl_multi_aff_pullback_multi_aff(
-	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2)
-{
-	return isl_multi_aff_align_params_multi_multi_and(ma1, ma2,
-				&isl_multi_aff_pullback_multi_aff_aligned);
 }
 
 /* Extend the local space of "dst" to include the divs
@@ -6165,50 +6020,32 @@ error:
 /* Given two aligned isl_pw_multi_affs A -> B and C -> D,
  * construct an isl_pw_multi_aff (A * C) -> [B -> D].
  */
-static __isl_give isl_pw_multi_aff *pw_multi_aff_range_product(
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
 	isl_space *space;
 
+	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
 	space = isl_space_range_product(isl_pw_multi_aff_get_space(pma1),
 					isl_pw_multi_aff_get_space(pma2));
 	return isl_pw_multi_aff_on_shared_domain_in(pma1, pma2, space,
 					    &isl_multi_aff_range_product);
 }
 
-/* Given two isl_pw_multi_affs A -> B and C -> D,
- * construct an isl_pw_multi_aff (A * C) -> [B -> D].
- */
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
-	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
-{
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-					    &pw_multi_aff_range_product);
-}
-
 /* Given two aligned isl_pw_multi_affs A -> B and C -> D,
- * construct an isl_pw_multi_aff (A * C) -> (B, D).
- */
-static __isl_give isl_pw_multi_aff *pw_multi_aff_flat_range_product(
-	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
-{
-	isl_space *space;
-
-	space = isl_space_range_product(isl_pw_multi_aff_get_space(pma1),
-					isl_pw_multi_aff_get_space(pma2));
-	space = isl_space_flatten_range(space);
-	return isl_pw_multi_aff_on_shared_domain_in(pma1, pma2, space,
-					    &isl_multi_aff_flat_range_product);
-}
-
-/* Given two isl_pw_multi_affs A -> B and C -> D,
  * construct an isl_pw_multi_aff (A * C) -> (B, D).
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
 {
-	return isl_pw_multi_aff_align_params_pw_pw_and(pma1, pma2,
-					    &pw_multi_aff_flat_range_product);
+	isl_space *space;
+
+	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
+	space = isl_space_range_product(isl_pw_multi_aff_get_space(pma1),
+					isl_pw_multi_aff_get_space(pma2));
+	space = isl_space_flatten_range(space);
+	return isl_pw_multi_aff_on_shared_domain_in(pma1, pma2, space,
+					    &isl_multi_aff_flat_range_product);
 }
 
 /* If data->pma and "pma2" have the same domain space, then compute
@@ -7152,13 +6989,13 @@ __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
  * If "mpa1" has an explicit domain, then it is this domain
  * that needs to undergo a pullback instead, i.e., a preimage.
  */
-static __isl_give isl_multi_pw_aff *
-isl_multi_pw_aff_pullback_multi_pw_aff_aligned(
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
 	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
 {
 	int i;
 	isl_space *space = NULL;
 
+	isl_multi_pw_aff_align_params_bin(&mpa1, &mpa2);
 	mpa1 = isl_multi_pw_aff_cow(mpa1);
 	if (!mpa1 || !mpa2)
 		goto error;
@@ -7188,16 +7025,6 @@ error:
 	isl_multi_pw_aff_free(mpa1);
 	isl_multi_pw_aff_free(mpa2);
 	return NULL;
-}
-
-/* Compute the pullback of "mpa1" by the function represented by "mpa2".
- * In other words, plug in "mpa2" in "mpa1".
- */
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
-	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
-{
-	return isl_multi_pw_aff_align_params_multi_multi_and(mpa1, mpa2,
-			&isl_multi_pw_aff_pullback_multi_pw_aff_aligned);
 }
 
 /* Align the parameters of "mpa1" and "mpa2", check that the ranges
@@ -8328,13 +8155,13 @@ error:
  * on its explicit domain, then this is allowed as well and the result
  * is the expression with no constraints on its explicit domain.
  */
-static __isl_give isl_multi_union_pw_aff *
-isl_multi_union_pw_aff_union_add_aligned(
+__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
 	__isl_take isl_multi_union_pw_aff *mupa1,
 	__isl_take isl_multi_union_pw_aff *mupa2)
 {
 	isl_bool has_domain, is_params1, is_params2;
 
+	isl_multi_union_pw_aff_align_params_bin(&mupa1, &mupa2);
 	if (isl_multi_union_pw_aff_check_equal_space(mupa1, mupa2) < 0)
 		goto error;
 	if (mupa1->n > 0)
@@ -8381,18 +8208,6 @@ error:
 	isl_multi_union_pw_aff_free(mupa1);
 	isl_multi_union_pw_aff_free(mupa2);
 	return NULL;
-}
-
-/* Compute the sum of "mupa1" and "mupa2" on the union of their domains,
- * with the actual sum on the shared domain and
- * the defined expression on the symmetric difference of the domains.
- */
-__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_union_add(
-	__isl_take isl_multi_union_pw_aff *mupa1,
-	__isl_take isl_multi_union_pw_aff *mupa2)
-{
-	return isl_multi_union_pw_aff_align_params_multi_multi_and(mupa1, mupa2,
-				    &isl_multi_union_pw_aff_union_add_aligned);
 }
 
 /* Construct and return a multi union piecewise affine expression

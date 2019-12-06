@@ -375,25 +375,21 @@ error:
 	return NULL;
 }
 
-#undef SUFFIX
-#define SUFFIX	pw_pw_and
 #undef TYPE
 #define TYPE	PW
 
 static
-#include "isl_align_params_and_bin_templ.c"
+#include "isl_align_params_bin_templ.c"
 
 #undef SUFFIX
-#define SUFFIX	pw_set_and
+#define SUFFIX	set
 #undef ARG1
 #define ARG1	PW
 #undef ARG2
 #define ARG2	isl_set
-#undef RES
-#define RES	PW
 
 static
-#include "isl_align_params_and_templ.c"
+#include "isl_align_params_templ.c"
 
 #undef TYPE
 #define TYPE	PW
@@ -401,15 +397,17 @@ static
 #include "isl_type_has_equal_space_bin_templ.c"
 #include "isl_type_check_equal_space_templ.c"
 
-static __isl_give PW *FN(PW,union_add_aligned)(__isl_take PW *pw1,
-	__isl_take PW *pw2)
+/* Private version of "union_add".  For isl_pw_qpolynomial and
+ * isl_pw_qpolynomial_fold, we prefer to simply call it "add".
+ */
+static __isl_give PW *FN(PW,union_add_)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
 	int i, j, n;
 	struct PW *res;
 	isl_ctx *ctx;
 	isl_set *set;
 
-	if (!pw1 || !pw2)
+	if (FN(PW,align_params_bin)(&pw1, &pw2) < 0)
 		goto error;
 
 	ctx = isl_space_get_ctx(pw1->dim);
@@ -474,15 +472,6 @@ error:
 	return NULL;
 }
 
-/* Private version of "union_add".  For isl_pw_qpolynomial and
- * isl_pw_qpolynomial_fold, we prefer to simply call it "add".
- */
-static __isl_give PW *FN(PW,union_add_)(__isl_take PW *pw1, __isl_take PW *pw2)
-{
-	return FN(PW,align_params_pw_pw_and)(pw1, pw2,
-						&FN(PW,union_add_aligned));
-}
-
 /* Make sure "pw" has room for at least "n" more pieces.
  *
  * If there is only one reference to pw, we extend it in place.
@@ -518,17 +507,16 @@ static __isl_give PW *FN(PW,grow)(__isl_take PW *pw, int n)
 	return res;
 }
 
-static __isl_give PW *FN(PW,add_disjoint_aligned)(__isl_take PW *pw1,
-	__isl_take PW *pw2)
+__isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
 {
 	int i;
 	isl_ctx *ctx;
 
-	if (!pw1 || !pw2)
+	if (FN(PW,align_params_bin)(&pw1, &pw2) < 0)
 		goto error;
 
 	if (pw1->size < pw1->n + pw2->n && pw1->n < pw2->n)
-		return FN(PW,add_disjoint_aligned)(pw2, pw1);
+		return FN(PW,add_disjoint)(pw2, pw1);
 
 	ctx = isl_space_get_ctx(pw1->dim);
 	if (!OPT_EQUAL_TYPES(pw1->, pw2->))
@@ -563,12 +551,6 @@ error:
 	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
 	return NULL;
-}
-
-__isl_give PW *FN(PW,add_disjoint)(__isl_take PW *pw1, __isl_take PW *pw2)
-{
-	return FN(PW,align_params_pw_pw_and)(pw1, pw2,
-						&FN(PW,add_disjoint_aligned));
 }
 
 /* This function is currently only used from isl_aff.c
@@ -805,24 +787,11 @@ error:
 	return NULL;
 }
 
-static __isl_give PW *FN(PW,intersect_domain_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *set)
-{
-	return FN(PW,restrict_domain_aligned)(pw, set, &isl_set_intersect);
-}
-
 __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	return FN(PW,align_params_pw_set_and)(pw, context,
-					&FN(PW,intersect_domain_aligned));
-}
-
-static __isl_give PW *FN(PW,intersect_params_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *set)
-{
-	return FN(PW,restrict_domain_aligned)(pw, set,
-					&isl_set_intersect_params);
+	FN(PW,align_params_set)(&pw, &context);
+	return FN(PW,restrict_domain_aligned)(pw, context, &isl_set_intersect);
 }
 
 /* Intersect the domain of "pw" with the parameter domain "context".
@@ -830,19 +799,9 @@ static __isl_give PW *FN(PW,intersect_params_aligned)(__isl_take PW *pw,
 __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	return FN(PW,align_params_pw_set_and)(pw, context,
-					&FN(PW,intersect_params_aligned));
-}
-
-/* Given a piecewise expression "pw" with domain in a space [A -> B] and
- * a set in the space A, intersect the domain with the set,
- * assuming the parameters have been aligned.
- */
-static __isl_give PW *FN(PW,intersect_domain_wrapped_domain_aligned)(
-	__isl_take PW *pw, __isl_take isl_set *set)
-{
-	return FN(PW,restrict_domain_aligned)(pw, set,
-					    &isl_set_intersect_factor_domain);
+	FN(PW,align_params_set)(&pw, &context);
+	return FN(PW,restrict_domain_aligned)(pw, context,
+					&isl_set_intersect_params);
 }
 
 /* Given a piecewise expression "pw" with domain in a space [A -> B] and
@@ -851,19 +810,9 @@ static __isl_give PW *FN(PW,intersect_domain_wrapped_domain_aligned)(
 __isl_give PW *FN(PW,intersect_domain_wrapped_domain)(__isl_take PW *pw,
 	__isl_take isl_set *set)
 {
-	return FN(PW,align_params_pw_set_and)(pw, set,
-			&FN(PW,intersect_domain_wrapped_domain_aligned));
-}
-
-/* Given a piecewise expression "pw" with domain in a space [A -> B] and
- * a set in the space B, intersect the domain with the set,
- * assuming the parameters have been aligned.
- */
-static __isl_give PW *FN(PW,intersect_domain_wrapped_range_aligned)(
-	__isl_take PW *pw, __isl_take isl_set *set)
-{
+	FN(PW,align_params_set)(&pw, &set);
 	return FN(PW,restrict_domain_aligned)(pw, set,
-					    &isl_set_intersect_factor_range);
+					    &isl_set_intersect_factor_domain);
 }
 
 /* Given a piecewise expression "pw" with domain in a space [A -> B] and
@@ -872,17 +821,9 @@ static __isl_give PW *FN(PW,intersect_domain_wrapped_range_aligned)(
 __isl_give PW *FN(PW,intersect_domain_wrapped_range)(__isl_take PW *pw,
 	__isl_take isl_set *set)
 {
-	return FN(PW,align_params_pw_set_and)(pw, set,
-			&FN(PW,intersect_domain_wrapped_range_aligned));
-}
-
-/* Subtract "domain' from the domain of "pw", assuming their
- * parameters have been aligned.
- */
-static __isl_give PW *FN(PW,subtract_domain_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *domain)
-{
-	return FN(PW,restrict_domain_aligned)(pw, domain, &isl_set_subtract);
+	FN(PW,align_params_set)(&pw, &set);
+	return FN(PW,restrict_domain_aligned)(pw, set,
+					    &isl_set_intersect_factor_range);
 }
 
 /* Subtract "domain' from the domain of "pw".
@@ -890,8 +831,8 @@ static __isl_give PW *FN(PW,subtract_domain_aligned)(__isl_take PW *pw,
 __isl_give PW *FN(PW,subtract_domain)(__isl_take PW *pw,
 	__isl_take isl_set *domain)
 {
-	return FN(PW,align_params_pw_set_and)(pw, domain,
-					&FN(PW,subtract_domain_aligned));
+	FN(PW,align_params_set)(&pw, &domain);
+	return FN(PW,restrict_domain_aligned)(pw, domain, &isl_set_subtract);
 }
 
 /* Compute the gist of "pw" with respect to the domain constraints
@@ -1029,31 +970,19 @@ error:
 	return NULL;
 }
 
-static __isl_give PW *FN(PW,gist_domain_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *set)
-{
-	return FN(PW,gist_aligned)(pw, set, &FN(EL,gist),
-					&isl_set_gist_basic_set);
-}
-
 __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 {
-	return FN(PW,align_params_pw_set_and)(pw, context,
-						&FN(PW,gist_domain_aligned));
-}
-
-static __isl_give PW *FN(PW,gist_params_aligned)(__isl_take PW *pw,
-	__isl_take isl_set *set)
-{
-	return FN(PW,gist_aligned)(pw, set, &FN(EL,gist_params),
-					&isl_set_gist_params_basic_set);
+	FN(PW,align_params_set)(&pw, &context);
+	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist),
+					&isl_set_gist_basic_set);
 }
 
 __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	return FN(PW,align_params_pw_set_and)(pw, context,
-						&FN(PW,gist_params_aligned));
+	FN(PW,align_params_set)(&pw, &context);
+	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist_params),
+					&isl_set_gist_params_basic_set);
 }
 
 /* Return -1 if the piece "p1" should be sorted before "p2"

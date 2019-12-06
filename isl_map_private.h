@@ -486,10 +486,10 @@ isl_bool isl_set_space_has_equal_params(__isl_keep isl_set *set,
 isl_bool isl_map_space_has_equal_params(__isl_keep isl_map *map,
 	__isl_keep isl_space *space);
 
-__isl_give isl_map *isl_map_align_params_map_map_and(
-	__isl_take isl_map *map1, __isl_take isl_map *map2,
-	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
-				    __isl_take isl_map *map2));
+isl_stat isl_map_align_params_bin(__isl_keep isl_map **map1,
+	__isl_keep isl_map **map2);
+isl_stat isl_map_align_params_set(__isl_keep isl_map **map,
+	__isl_keep isl_set **set);
 isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2,
 	isl_bool (*fn)(__isl_keep isl_map *map1, __isl_keep isl_map *map2));
