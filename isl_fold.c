@@ -75,10 +75,18 @@ isl_ctx *isl_qpolynomial_fold_get_ctx(__isl_keep isl_qpolynomial_fold *fold)
 	return fold ? fold->dim->ctx : NULL;
 }
 
+/* Return the domain space of "fold".
+ */
+static __isl_keep isl_space *isl_qpolynomial_fold_peek_domain_space(
+	__isl_keep isl_qpolynomial_fold *fold)
+{
+	return fold ? fold->dim : NULL;
+}
+
 __isl_give isl_space *isl_qpolynomial_fold_get_domain_space(
 	__isl_keep isl_qpolynomial_fold *fold)
 {
-	return fold ? isl_space_copy(fold->dim) : NULL;
+	return isl_space_copy(isl_qpolynomial_fold_peek_domain_space(fold));
 }
 
 /* Return the space of the domain of "fold".
