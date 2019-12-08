@@ -5067,17 +5067,17 @@ static int aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
 	return equal;
 }
 
-static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
+static isl_stat aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 {
 	int equal;
 
 	equal = aff_plain_is_equal(aff, str);
 	if (equal < 0)
-		return -1;
+		return isl_stat_error;
 	if (!equal)
 		isl_die(isl_aff_get_ctx(aff), isl_error_unknown,
-			"result not as expected", return -1);
-	return 0;
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
 }
 
 /* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
@@ -6466,7 +6466,7 @@ static isl_stat test_aff_set_tuple_id(isl_ctx *ctx)
 {
 	isl_id *id;
 	isl_aff *aff;
-	int equal;
+	isl_stat equal;
 
 	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x + 1] }");
 	id = isl_id_alloc(ctx, "A", NULL);
@@ -6486,7 +6486,8 @@ int test_aff(isl_ctx *ctx)
 	isl_space *space;
 	isl_local_space *ls;
 	isl_aff *aff;
-	int zero, equal;
+	int zero;
+	isl_stat equal;
 
 	if (test_upa(ctx) < 0)
 		return -1;
