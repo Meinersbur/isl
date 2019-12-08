@@ -1374,7 +1374,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
 		goto error;
 
 	ctx = fold->dim->ctx;
-	isl_assert(ctx, isl_space_is_equal(fold->dim, morph->dom->dim), goto error);
+	space = isl_qpolynomial_fold_peek_domain_space(fold);
+	isl_assert(ctx, isl_space_is_equal(space, morph->dom->dim), goto error);
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
