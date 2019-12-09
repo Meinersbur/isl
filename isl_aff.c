@@ -6677,8 +6677,8 @@ isl_bool isl_pw_multi_aff_is_equal(__isl_keep isl_pw_multi_aff *pma1,
 	if (has_nan < 0 || has_nan)
 		return isl_bool_not(has_nan);
 
-	map1 = isl_map_from_pw_multi_aff(isl_pw_multi_aff_copy(pma1));
-	map2 = isl_map_from_pw_multi_aff(isl_pw_multi_aff_copy(pma2));
+	map1 = isl_map_from_pw_multi_aff_internal(isl_pw_multi_aff_copy(pma1));
+	map2 = isl_map_from_pw_multi_aff_internal(isl_pw_multi_aff_copy(pma2));
 	equal = isl_map_is_equal(map1, map2);
 	isl_map_free(map1);
 	isl_map_free(map2);

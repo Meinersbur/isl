@@ -403,6 +403,8 @@ __isl_give isl_basic_map *isl_basic_map_from_multi_aff2(
 __isl_give isl_map *isl_map_from_multi_aff_internal(
 	__isl_take isl_multi_aff *ma);
 __isl_give isl_map *isl_map_from_pw_aff_internal(__isl_take isl_pw_aff *pa);
+__isl_give isl_map *isl_map_from_pw_multi_aff_internal(
+	__isl_take isl_pw_multi_aff *pma);
 
 struct isl_mat;
 

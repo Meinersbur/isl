@@ -7192,7 +7192,7 @@ static __isl_give isl_map *isl_map_partial_lexopt_aligned(
 
 	pma = isl_map_partial_lexopt_aligned_pw_multi_aff(map, dom, empty,
 							flags);
-	return isl_map_from_pw_multi_aff(pma);
+	return isl_map_from_pw_multi_aff_internal(pma);
 error:
 	if (empty)
 		*empty = NULL;
