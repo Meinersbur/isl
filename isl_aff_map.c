@@ -331,6 +331,14 @@ __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff)
 	return isl_map_from_pw_aff_internal(pwaff);
 }
 
+/* This function performs the same operation as isl_map_from_pw_aff,
+ * but is considered as a function on an isl_pw_aff when exported.
+ */
+__isl_give isl_map *isl_pw_aff_as_map(__isl_take isl_pw_aff *pa)
+{
+	return isl_map_from_pw_aff(pa);
+}
+
 /* Construct a one-dimensional set with as parameter domain
  * the domain of pwaff and the single set dimension
  * corresponding to the affine expressions.

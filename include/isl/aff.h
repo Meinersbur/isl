@@ -402,6 +402,8 @@ isl_bool isl_pw_aff_isa_aff(__isl_keep isl_pw_aff *pa);
 __isl_export
 __isl_give isl_aff *isl_pw_aff_as_aff(__isl_take isl_pw_aff *pa);
 
+__isl_export
+__isl_give isl_map *isl_pw_aff_as_map(__isl_take isl_pw_aff *pa);
 __isl_give isl_set *isl_set_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 __isl_give isl_map *isl_map_from_pw_aff(__isl_take isl_pw_aff *pwaff);
 
