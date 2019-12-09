@@ -12680,6 +12680,22 @@ __isl_give isl_set *isl_set_unbind_params(__isl_take isl_set *set,
 	return set_from_map(unbind_params_insert_domain(set, tuple));
 }
 
+/* Check that "set" is a proper set, i.e., that it is not a parameter domain.
+ */
+static isl_stat isl_set_check_is_set(__isl_keep isl_set *set)
+{
+	isl_bool is_params;
+
+	is_params = isl_set_is_params(set);
+	if (is_params < 0)
+		return isl_stat_error;
+	else if (is_params)
+		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+			"expecting proper set", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Construct a map with "domain" as domain and "set" as range.
  * Any parameters with identifiers in "domain" are reinterpreted
  * as the corresponding domain dimensions.
@@ -12687,14 +12703,8 @@ __isl_give isl_set *isl_set_unbind_params(__isl_take isl_set *set,
 __isl_give isl_map *isl_set_unbind_params_insert_domain(
 	__isl_take isl_set *set, __isl_take isl_multi_id *domain)
 {
-	isl_bool is_params;
-
-	is_params = isl_set_is_params(set);
-	if (is_params < 0)
+	if (isl_set_check_is_set(set) < 0)
 		set = isl_set_free(set);
-	else if (is_params)
-		isl_die(isl_set_get_ctx(set), isl_error_invalid,
-			"expecting proper set", set = isl_set_free(set));
 	return unbind_params_insert_domain(set, domain);
 }
 
