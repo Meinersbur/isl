@@ -12708,6 +12708,31 @@ __isl_give isl_map *isl_set_unbind_params_insert_domain(
 	return unbind_params_insert_domain(set, domain);
 }
 
+/* Construct a map with "domain" as domain and "set" as range.
+ */
+__isl_give isl_map *isl_set_insert_domain(__isl_take isl_set *set,
+	__isl_take isl_space *domain)
+{
+	isl_size dim;
+	isl_space *space;
+	isl_map *map;
+
+	if (isl_set_check_is_set(set) < 0 || isl_space_check_is_set(domain) < 0)
+		domain = isl_space_free(domain);
+	dim = isl_space_dim(domain, isl_dim_set);
+	if (dim < 0)
+		domain = isl_space_free(domain);
+	space = isl_set_get_space(set);
+	domain = isl_space_replace_params(domain, space);
+	space = isl_space_map_from_domain_and_range(domain, space);
+
+	map = isl_map_from_range(set);
+	map = isl_map_add_dims(map, isl_dim_in, dim);
+	map = isl_map_reset_space(map, space);
+
+	return map;
+}
+
 __isl_give isl_mat *isl_basic_map_equalities_matrix(
 		__isl_keep isl_basic_map *bmap, enum isl_dim_type c1,
 		enum isl_dim_type c2, enum isl_dim_type c3,

@@ -5400,6 +5400,9 @@ specifies both the domain and the range of the result.
 		__isl_take isl_local_space *ls);
 
 	#include <isl/map.h>
+	__isl_give isl_map *isl_set_insert_domain(
+		__isl_take isl_set *set,
+		__isl_take isl_space *domain);
 	__isl_give isl_map *isl_map_from_domain(
 		__isl_take isl_set *set);
 	__isl_give isl_map *isl_map_from_range(
