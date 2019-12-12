@@ -817,7 +817,7 @@ error:
  * If "uset" is a parameters domain, then intersect the parameter
  * domain of "u" with this set.
  */
-__isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
+__isl_give UNION *FN(UNION,intersect_domain_union_set)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
 	S(UNION,match_domain_control) control = {
@@ -828,6 +828,14 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 		return FN(UNION,intersect_params)(u,
 						isl_set_from_union_set(uset));
 	return FN(UNION,match_domain_op)(u, uset, &control);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
+	__isl_take isl_union_set *uset)
+{
+	return FN(UNION,intersect_domain_union_set)(u, uset);
 }
 
 /* Is the domain of "pw" a wrapped relation?
