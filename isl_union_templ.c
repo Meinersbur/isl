@@ -838,6 +838,36 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	return FN(UNION,intersect_domain_union_set)(u, uset);
 }
 
+/* Return true if this part should be kept.
+ *
+ * In particular, it should be kept if its domain space
+ * corresponds to "space".
+ */
+static isl_bool FN(UNION,select_entry)(__isl_keep PART *part, void *user)
+{
+	isl_space *space = user;
+
+	return FN(PW,has_domain_space_tuples)(part, space);
+}
+
+/* Remove any not element in "space" from the domain of "u".
+ *
+ * In particular, select any part of the function defined
+ * on this domain space.
+ */
+__isl_give UNION *FN(UNION,intersect_domain_space)(__isl_take UNION *u,
+	__isl_take isl_space *space)
+{
+	S(UNION,transform_control) control = {
+		.filter = &FN(UNION,select_entry),
+		.filter_user = space,
+	};
+
+	u = FN(UNION,transform)(u, &control);
+	isl_space_free(space);
+	return u;
+}
+
 /* Is the domain of "pw" a wrapped relation?
  */
 static isl_bool FN(PW,domain_is_wrapping)(__isl_keep PW *pw)
