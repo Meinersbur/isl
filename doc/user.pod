@@ -5775,6 +5775,16 @@ between image elements and corresponding domain elements in the input.
 The functions above construct a (basic, regular or union) relation
 that maps (a wrapped version of) the input relation to its delta set.
 
+=item * Translation
+
+	#include <isl/map.h>
+	__isl_give isl_map *isl_set_translation(
+		__isl_take isl_set *deltas);
+
+This function performs essentially the opposite operation
+of C<isl_map_deltas>.  In particular, it returns pairs
+of elements in the same space that have a difference in C<deltas>.
+
 =item * Coalescing
 
 Simplify the representation of a set, relation or functions by trying

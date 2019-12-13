@@ -504,6 +504,8 @@ __isl_give isl_map *isl_map_order_gt(__isl_take isl_map *map,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
 
 __isl_export
+__isl_give isl_map *isl_set_translation(__isl_take isl_set *deltas);
+__isl_export
 __isl_give isl_map *isl_set_identity(__isl_take isl_set *set);
 
 __isl_export

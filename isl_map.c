@@ -8722,6 +8722,20 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 					&isl_basic_map_deltas_map);
 }
 
+/* Return pairs of elements { x -> y } such that y - x is in "deltas".
+ */
+__isl_give isl_map *isl_set_translation(__isl_take isl_set *deltas)
+{
+	isl_space *space;
+	isl_map *map;
+
+	space = isl_space_map_from_set(isl_set_get_space(deltas));
+	map = isl_map_deltas_map(isl_map_universe(space));
+	map = isl_map_intersect_range(map, deltas);
+
+	return isl_set_unwrap(isl_map_domain(map));
+}
+
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
 {
 	isl_size n_in, n_out;
