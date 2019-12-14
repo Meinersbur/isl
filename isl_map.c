@@ -8639,9 +8639,9 @@ __isl_give isl_map *isl_map_identity(__isl_take isl_space *space)
 
 __isl_give isl_map *isl_set_identity(__isl_take isl_set *set)
 {
-	isl_space *dim = isl_set_get_space(set);
+	isl_space *space = isl_set_get_space(set);
 	isl_map *id;
-	id = isl_map_identity(isl_space_map_from_set(dim));
+	id = isl_map_identity(isl_space_map_from_set(space));
 	return isl_map_intersect_range(id, set);
 }
 
