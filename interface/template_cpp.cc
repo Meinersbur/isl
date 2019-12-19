@@ -833,6 +833,7 @@ member_methods {
 	{ "range_factor_domain",
 				{ range_factor_domain } },
 	{ "range_factor_range",	{ range_factor_range } },
+	{ "range_lattice_tile",	{ un_map } },
 	{ "range_map",		{ range_map } },
 	{ "range_product",	{ range_product } },
 	{ "range_simple_fixed_box_hull",

@@ -4801,6 +4801,9 @@ can be found then assign C<1> to C<*modulo> and C<1> to C<*residue>.
 	__isl_give isl_stride_info *
 	isl_map_get_range_stride_info(
 		__isl_keep isl_map *map, int pos);
+	__isl_give isl_fixed_box *
+	isl_map_get_range_lattice_tile(
+		__isl_keep isl_map *map);
 
 Check if the values of the given set dimension are equal to
 some affine expression of the other dimensions (the offset)
@@ -4812,6 +4815,17 @@ If no more specific information can be found, then the stride
 is taken to be one and the offset is taken to be the zero expression.
 The function C<isl_set_get_stride> performs the same
 computation as C<isl_set_get_stride_info> but only returns the stride.
+The function C<isl_map_get_range_lattice_tile> collects the stride
+information over all output dimensions.
+In particular, it returns a tile of a rectangular lattice
+(possibly of size 1 in all directions)
+containing the output in terms of the parameters and the input dimensions.
+The size and the offset of this tile correspond to
+the strides and the offsets of the stride information and
+can be extracted from the returned
+C<isl_fixed_box> using the functions described under "Box hull" in
+L</"Unary Operations">.  Note that the C<isl_fixed_box> object returned by
+C<isl_map_get_range_lattice_tile> is always valid.
 For the other functions,
 the stride and offset can be extracted from the returned object
 using the following functions.
