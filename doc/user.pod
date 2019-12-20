@@ -5456,6 +5456,14 @@ dimension has the fixed given value.
 	__isl_give isl_map *isl_map_upper_bound_si(
 		__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
+	__isl_give isl_map *isl_map_lower_bound_val(
+		__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_val *value);
+	__isl_give isl_map *isl_map_upper_bound_val(
+		__isl_take isl_map *map,
+		enum isl_dim_type type, unsigned pos,
+		__isl_take isl_val *value);
 
 Intersect the set or relation with the half-space where the given
 dimension has a value bounded by the fixed given integer value.

@@ -6736,23 +6736,55 @@ __isl_give isl_set *isl_set_upper_bound(__isl_take isl_set *set,
 	return isl_map_upper_bound(set, type, pos, value);
 }
 
+/* Force the values of the variable at position "pos" of type "type" of "map"
+ * to be no smaller than "value".
+ */
+__isl_give isl_map *isl_map_lower_bound_val(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value)
+{
+	if (!value)
+		goto error;
+	if (!isl_val_is_int(value))
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
+			"expecting integer value", goto error);
+	map = isl_map_lower_bound(map, type, pos, value->n);
+	isl_val_free(value);
+	return map;
+error:
+	isl_val_free(value);
+	isl_map_free(map);
+	return NULL;
+}
+
 /* Force the values of the variable at position "pos" of type "type" of "set"
  * to be no smaller than "value".
  */
 __isl_give isl_set *isl_set_lower_bound_val(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value)
 {
+	isl_map *map;
+
+	map = set_to_map(set);
+	return set_from_map(isl_map_lower_bound_val(map, type, pos, value));
+}
+
+/* Force the values of the variable at position "pos" of type "type" of "map"
+ * to be no greater than "value".
+ */
+__isl_give isl_map *isl_map_upper_bound_val(__isl_take isl_map *map,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value)
+{
 	if (!value)
 		goto error;
 	if (!isl_val_is_int(value))
-		isl_die(isl_set_get_ctx(set), isl_error_invalid,
+		isl_die(isl_map_get_ctx(map), isl_error_invalid,
 			"expecting integer value", goto error);
-	set = isl_set_lower_bound(set, type, pos, value->n);
+	map = isl_map_upper_bound(map, type, pos, value->n);
 	isl_val_free(value);
-	return set;
+	return map;
 error:
 	isl_val_free(value);
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
 }
 
@@ -6762,18 +6794,10 @@ error:
 __isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value)
 {
-	if (!value)
-		goto error;
-	if (!isl_val_is_int(value))
-		isl_die(isl_set_get_ctx(set), isl_error_invalid,
-			"expecting integer value", goto error);
-	set = isl_set_upper_bound(set, type, pos, value->n);
-	isl_val_free(value);
-	return set;
-error:
-	isl_val_free(value);
-	isl_set_free(set);
-	return NULL;
+	isl_map *map;
+
+	map = set_to_map(set);
+	return set_from_map(isl_map_upper_bound_val(map, type, pos, value));
 }
 
 /* Bound the given variable of "bset" from below (or above is "upper"
