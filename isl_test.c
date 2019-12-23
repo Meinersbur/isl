@@ -5103,18 +5103,18 @@ static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
 /* Check that "pma" is obviously equal to the isl_pw_multi_aff
  * represented by "str".
  */
-static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
+static isl_stat pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
 	const char *str)
 {
 	int equal;
 
 	equal = pw_multi_aff_plain_is_equal(pma, str);
 	if (equal < 0)
-		return -1;
+		return isl_stat_error;
 	if (!equal)
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
-			"result not as expected", return -1);
-	return 0;
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
 }
 
 /* Is "upa" obviously equal to the isl_union_pw_aff represented by "str"?
@@ -7310,7 +7310,7 @@ int test_dim_max(isl_ctx *ctx)
  */
 static int test_product_pma(isl_ctx *ctx)
 {
-	int equal;
+	isl_stat equal;
 	const char *str;
 	isl_pw_multi_aff *pma1, *pma2;
 
