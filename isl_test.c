@@ -5052,13 +5052,13 @@ int test_injective(isl_ctx *ctx)
 	return 0;
 }
 
-static int aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
+static isl_bool aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
 {
 	isl_aff *aff2;
-	int equal;
+	isl_bool equal;
 
 	if (!aff)
-		return -1;
+		return isl_bool_error;
 
 	aff2 = isl_aff_read_from_str(isl_aff_get_ctx(aff), str);
 	equal = isl_aff_plain_is_equal(aff, aff2);
@@ -5069,7 +5069,7 @@ static int aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
 
 static isl_stat aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 {
-	int equal;
+	isl_bool equal;
 
 	equal = aff_plain_is_equal(aff, str);
 	if (equal < 0)
