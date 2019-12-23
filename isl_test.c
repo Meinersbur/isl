@@ -5082,15 +5082,15 @@ static isl_stat aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 
 /* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
  */
-static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
+static isl_bool pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
 	const char *str)
 {
 	isl_ctx *ctx;
 	isl_pw_multi_aff *pma2;
-	int equal;
+	isl_bool equal;
 
 	if (!pma)
-		return -1;
+		return isl_bool_error;
 
 	ctx = isl_pw_multi_aff_get_ctx(pma);
 	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
@@ -5106,7 +5106,7 @@ static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
 static isl_stat pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
 	const char *str)
 {
-	int equal;
+	isl_bool equal;
 
 	equal = pw_multi_aff_plain_is_equal(pma, str);
 	if (equal < 0)
