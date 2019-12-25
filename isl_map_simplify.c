@@ -4860,7 +4860,7 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 	isl_size off;
 	int *pairs = NULL;
 	int n = 0;
-	int n_ineq;
+	isl_size n_ineq;
 
 	if (!bmap)
 		goto error;
@@ -4875,6 +4875,8 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		goto error;
 
 	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (n_ineq < 0)
+		goto error;
 	for (i = 0; i < bmap->n_div; ++i) {
 		int pos, neg;
 		int last_pos, last_neg;

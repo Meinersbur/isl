@@ -1591,7 +1591,7 @@ static isl_bool has_constraint(struct isl_ctx *ctx,
  */
 static isl_bool has_facets(__isl_keep isl_basic_set *bset)
 {
-	int n_eq;
+	isl_size n_eq;
 
 	n_eq = isl_basic_set_n_equality(bset);
 	if (n_eq < 0)

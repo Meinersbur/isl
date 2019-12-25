@@ -221,37 +221,37 @@ isl_size isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap)
 }
 
 /* Return the number of equality constraints in the description of "bmap".
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-int isl_basic_map_n_equality(__isl_keep isl_basic_map *bmap)
+isl_size isl_basic_map_n_equality(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_size_error;
 	return bmap->n_eq;
 }
 
 /* Return the number of equality constraints in the description of "bset".
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-int isl_basic_set_n_equality(__isl_keep isl_basic_set *bset)
+isl_size isl_basic_set_n_equality(__isl_keep isl_basic_set *bset)
 {
 	return isl_basic_map_n_equality(bset_to_bmap(bset));
 }
 
 /* Return the number of inequality constraints in the description of "bmap".
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-int isl_basic_map_n_inequality(__isl_keep isl_basic_map *bmap)
+isl_size isl_basic_map_n_inequality(__isl_keep isl_basic_map *bmap)
 {
 	if (!bmap)
-		return -1;
+		return isl_size_error;
 	return bmap->n_ineq;
 }
 
 /* Return the number of inequality constraints in the description of "bset".
- * Return -1 on error.
+ * Return isl_size_error on error.
  */
-int isl_basic_set_n_inequality(__isl_keep isl_basic_set *bset)
+isl_size isl_basic_set_n_inequality(__isl_keep isl_basic_set *bset)
 {
 	return isl_basic_map_n_inequality(bset_to_bmap(bset));
 }

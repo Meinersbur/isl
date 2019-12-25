@@ -209,7 +209,7 @@ struct isl_coalesce_info {
  */
 static int any_eq(struct isl_coalesce_info *info, int status)
 {
-	unsigned n_eq;
+	isl_size n_eq;
 
 	n_eq = isl_basic_map_n_equality(info->bmap);
 	return any(info->eq, 2 * n_eq, status);
@@ -221,7 +221,7 @@ static int any_eq(struct isl_coalesce_info *info, int status)
  */
 static int any_ineq(struct isl_coalesce_info *info, int status)
 {
-	unsigned n_ineq;
+	isl_size n_ineq;
 
 	n_ineq = isl_basic_map_n_inequality(info->bmap);
 	return any(info->ineq, n_ineq, status);
@@ -236,7 +236,7 @@ static int any_ineq(struct isl_coalesce_info *info, int status)
  */
 static int find_eq(struct isl_coalesce_info *info, int status)
 {
-	unsigned n_eq;
+	isl_size n_eq;
 
 	n_eq = isl_basic_map_n_equality(info->bmap);
 	return find(info->eq, 2 * n_eq, status);
@@ -249,7 +249,7 @@ static int find_eq(struct isl_coalesce_info *info, int status)
  */
 static int find_ineq(struct isl_coalesce_info *info, int status)
 {
-	unsigned n_ineq;
+	isl_size n_ineq;
 
 	n_ineq = isl_basic_map_n_inequality(info->bmap);
 	return find(info->ineq, n_ineq, status);
@@ -261,7 +261,7 @@ static int find_ineq(struct isl_coalesce_info *info, int status)
  */
 static int count_eq(struct isl_coalesce_info *info, int status)
 {
-	unsigned n_eq;
+	isl_size n_eq;
 
 	n_eq = isl_basic_map_n_equality(info->bmap);
 	return count(info->eq, 2 * n_eq, status);
@@ -273,7 +273,7 @@ static int count_eq(struct isl_coalesce_info *info, int status)
  */
 static int count_ineq(struct isl_coalesce_info *info, int status)
 {
-	unsigned n_ineq;
+	isl_size n_ineq;
 
 	n_ineq = isl_basic_map_n_inequality(info->bmap);
 	return count(info->ineq, n_ineq, status);
@@ -1470,7 +1470,7 @@ static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
 static isl_bool has_redundant_cuts(struct isl_coalesce_info *info)
 {
 	int l;
-	int n_eq, n_ineq;
+	isl_size n_eq, n_ineq;
 
 	n_eq = isl_basic_map_n_equality(info->bmap);
 	n_ineq = isl_basic_map_n_inequality(info->bmap);
