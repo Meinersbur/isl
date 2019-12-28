@@ -3520,9 +3520,40 @@ struct {
 	{ "{ [i] -> i^2 : i != 0 }", "{ [i] : i != 0 }", "{ [i] -> i^2 }" },
 };
 
-static int test_pwqp(struct isl_ctx *ctx)
+/* Perform some basic isl_pw_qpolynomial_gist tests.
+ */
+static isl_stat test_pwqp_gist(isl_ctx *ctx)
 {
 	int i;
+	const char *str;
+	isl_set *set;
+	isl_pw_qpolynomial *pwqp1, *pwqp2;
+	isl_bool equal;
+
+	for (i = 0; i < ARRAY_SIZE(pwqp_gist_tests); ++i) {
+		str = pwqp_gist_tests[i].pwqp;
+		pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
+		str = pwqp_gist_tests[i].set;
+		set = isl_set_read_from_str(ctx, str);
+		pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
+		str = pwqp_gist_tests[i].gist;
+		pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
+		pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
+		equal = isl_pw_qpolynomial_is_zero(pwqp1);
+		isl_pw_qpolynomial_free(pwqp1);
+
+		if (equal < 0)
+			return isl_stat_error;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
+static int test_pwqp(struct isl_ctx *ctx)
+{
 	const char *str;
 	isl_set *set;
 	isl_pw_qpolynomial *pwqp1, *pwqp2;
@@ -3543,24 +3574,8 @@ static int test_pwqp(struct isl_ctx *ctx)
 
 	isl_pw_qpolynomial_free(pwqp1);
 
-	for (i = 0; i < ARRAY_SIZE(pwqp_gist_tests); ++i) {
-		str = pwqp_gist_tests[i].pwqp;
-		pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
-		str = pwqp_gist_tests[i].set;
-		set = isl_set_read_from_str(ctx, str);
-		pwqp1 = isl_pw_qpolynomial_gist(pwqp1, set);
-		str = pwqp_gist_tests[i].gist;
-		pwqp2 = isl_pw_qpolynomial_read_from_str(ctx, str);
-		pwqp1 = isl_pw_qpolynomial_sub(pwqp1, pwqp2);
-		equal = isl_pw_qpolynomial_is_zero(pwqp1);
-		isl_pw_qpolynomial_free(pwqp1);
-
-		if (equal < 0)
-			return -1;
-		if (!equal)
-			isl_die(ctx, isl_error_unknown,
-				"unexpected result", return -1);
-	}
+	if (test_pwqp_gist(ctx) < 0)
+		return -1;
 
 	str = "{ [i] -> ([([i/2] + [i/2])/5]) }";
 	pwqp1 = isl_pw_qpolynomial_read_from_str(ctx, str);
