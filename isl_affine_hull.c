@@ -1110,7 +1110,6 @@ static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
 	for (n_known = 0; n_known < bmap->n_div; ++n_known)
 		if (isl_int_is_zero(bmap->div[n_known][0]))
 			break;
-	ctx = isl_basic_map_get_ctx(bmap);
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0)
 		return isl_basic_map_free(bmap);
@@ -1120,6 +1119,7 @@ static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
 			break;
 	if (n == 0)
 		return bmap;
+	ctx = isl_basic_map_get_ctx(bmap);
 	B = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 0, 1 + v_div + n_known);
 	n_col = bmap->n_div - n_known;
 	A = isl_mat_sub_alloc6(ctx, bmap->eq, 0, n, 1 + v_div + n_known, n_col);
