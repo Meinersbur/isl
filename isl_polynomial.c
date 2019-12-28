@@ -3429,6 +3429,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
 	isl_size total;
+	isl_size src_off, dst_off;
 	int *reordering;
 
 	if (!qp)
@@ -3452,11 +3453,13 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 		return qp;
 
 	qp = isl_qpolynomial_cow(qp);
-	if (!qp)
-		return NULL;
+	src_off = isl_qpolynomial_domain_var_offset(qp, src_type);
+	dst_off = isl_qpolynomial_domain_var_offset(qp, dst_type);
+	if (src_off < 0 || dst_off < 0)
+		return isl_qpolynomial_free(qp);
 
-	g_dst_pos = pos(qp->dim, dst_type) + dst_pos;
-	g_src_pos = pos(qp->dim, src_type) + src_pos;
+	g_dst_pos = dst_off + dst_pos;
+	g_src_pos = src_off + src_pos;
 	if (dst_type > src_type)
 		g_dst_pos -= n;
 
