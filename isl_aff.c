@@ -6705,10 +6705,12 @@ __isl_give isl_multi_pw_aff *isl_map_max_multi_pw_aff(__isl_take isl_map *map)
 #define TYPE	isl_pw_multi_aff
 #include "isl_type_check_match_range_multi_val.c"
 
-/* Scale the elements of "pma" by the corresponding elements of "mv".
+/* Apply "fn" to the base expressions of "pma" and "mv".
  */
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
-	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+static __isl_give isl_pw_multi_aff *isl_pw_multi_aff_op_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv,
+	__isl_give isl_multi_aff *(*fn)(__isl_take isl_multi_aff *ma,
+		__isl_take isl_multi_val *mv))
 {
 	int i;
 	isl_size n;
@@ -6724,7 +6726,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 		isl_multi_aff *ma;
 
 		ma = isl_pw_multi_aff_take_base_at(pma, i);
-		ma = isl_multi_aff_scale_multi_val(ma, isl_multi_val_copy(mv));
+		ma = fn(ma, isl_multi_val_copy(mv));
 		pma = isl_pw_multi_aff_restore_base_at(pma, i, ma);
 	}
 
@@ -6734,6 +6736,24 @@ error:
 	isl_multi_val_free(mv);
 	isl_pw_multi_aff_free(pma);
 	return NULL;
+}
+
+/* Scale the elements of "pma" by the corresponding elements of "mv".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+{
+	return isl_pw_multi_aff_op_multi_val(pma, mv,
+					&isl_multi_aff_scale_multi_val);
+}
+
+/* Scale the elements of "pma" down by the corresponding elements of "mv".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+{
+	return isl_pw_multi_aff_op_multi_val(pma, mv,
+					&isl_multi_aff_scale_down_multi_val);
 }
 
 /* This function is called for each entry of an isl_union_pw_multi_aff.

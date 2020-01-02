@@ -169,6 +169,15 @@ static void test_scale(isl::ctx ctx)
 	{ "{ A[a] -> B[a, a - 1] : a >= 0 }", "{ B[1/2, 7] }",
 	  "{ A[a] -> B[a/2, 7a - 7] : a >= 0 }" },
 	});
+
+	C(arg<isl::multi_val>(&isl::pw_multi_aff::scale_down), {
+	{ "{ A[a] -> B[a, a + 1] : a >= 0 }", "{ B[2, 7] }",
+	  "{ A[a] -> B[a/2, (a + 1)/7] : a >= 0 }" },
+	});
+	C(arg<isl::multi_val>(&isl::pw_multi_aff::scale_down), {
+	{ "{ A[a] -> B[a, a - 1] : a >= 0 }", "{ B[2, 1/7] }",
+	  "{ A[a] -> B[a/2, 7a - 7] : a >= 0 }" },
+	});
 }
 
 /* The list of tests to perform.
