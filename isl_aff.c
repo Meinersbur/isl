@@ -6711,12 +6711,17 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
 {
 	int i;
+	isl_size n;
 
 	pma = isl_pw_multi_aff_cow(pma);
 	if (isl_pw_multi_aff_check_match_range_multi_val(pma, mv) < 0)
 		goto error;
 
-	for (i = 0; i < pma->n; ++i) {
+	n = isl_pw_multi_aff_n_piece(pma);
+	if (n < 0)
+		goto error;
+
+	for (i = 0; i < n; ++i) {
 		pma->p[i].maff = isl_multi_aff_scale_multi_val(pma->p[i].maff,
 							isl_multi_val_copy(mv));
 		if (!pma->p[i].maff)
