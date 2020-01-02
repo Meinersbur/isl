@@ -6711,22 +6711,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
 {
 	int i;
-	isl_bool equal_params;
 
 	pma = isl_pw_multi_aff_cow(pma);
 	if (isl_pw_multi_aff_check_match_range_multi_val(pma, mv) < 0)
 		goto error;
-	equal_params = isl_space_has_equal_params(pma->dim, mv->space);
-	if (equal_params < 0)
-		goto error;
-	if (!equal_params) {
-		pma = isl_pw_multi_aff_align_params(pma,
-					    isl_multi_val_get_space(mv));
-		mv = isl_multi_val_align_params(mv,
-					    isl_pw_multi_aff_get_space(pma));
-		if (!pma || !mv)
-			goto error;
-	}
 
 	for (i = 0; i < pma->n; ++i) {
 		pma->p[i].maff = isl_multi_aff_scale_multi_val(pma->p[i].maff,
