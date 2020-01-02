@@ -6754,10 +6754,7 @@ static __isl_give isl_pw_multi_aff *union_pw_multi_aff_scale_multi_val_entry(
 	isl_bool equal;
 	isl_multi_val *mv = user;
 
-	if (!pma)
-		return NULL;
-	equal = isl_space_tuple_is_equal(pma->dim, isl_dim_out,
-				    mv->space, isl_dim_set);
+	equal = isl_pw_multi_aff_match_range_multi_val(pma, mv);
 	if (equal < 0)
 		return isl_pw_multi_aff_free(pma);
 	if (!equal) {
