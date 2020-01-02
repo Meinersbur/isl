@@ -598,6 +598,7 @@ EXTRA_DIST = \
 	isl_test_list_templ.c \
 	isl_test_plain_equal_templ.c \
 	isl_type_check_equal_space_templ.c \
+	isl_type_check_match_range_multi_val.c \
 	isl_type_has_equal_space_bin_templ.c \
 	isl_type_has_equal_space_templ.c \
 	isl_type_has_space_templ.c \

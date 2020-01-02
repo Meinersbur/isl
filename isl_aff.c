@@ -6701,6 +6701,10 @@ __isl_give isl_multi_pw_aff *isl_map_max_multi_pw_aff(__isl_take isl_map *map)
 	return map_opt_mpa(map, &isl_map_dim_max);
 }
 
+#undef TYPE
+#define TYPE	isl_pw_multi_aff
+#include "isl_type_check_match_range_multi_val.c"
+
 /* Scale the elements of "pma" by the corresponding elements of "mv".
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
@@ -6710,12 +6714,8 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 	isl_bool equal_params;
 
 	pma = isl_pw_multi_aff_cow(pma);
-	if (!pma || !mv)
+	if (isl_pw_multi_aff_check_match_range_multi_val(pma, mv) < 0)
 		goto error;
-	if (!isl_space_tuple_is_equal(pma->dim, isl_dim_out,
-					mv->space, isl_dim_set))
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-			"spaces don't match", goto error);
 	equal_params = isl_space_has_equal_params(pma->dim, mv->space);
 	if (equal_params < 0)
 		goto error;
