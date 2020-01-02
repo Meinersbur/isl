@@ -6713,7 +6713,6 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 	int i;
 	isl_size n;
 
-	pma = isl_pw_multi_aff_cow(pma);
 	if (isl_pw_multi_aff_check_match_range_multi_val(pma, mv) < 0)
 		goto error;
 
@@ -6722,10 +6721,11 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
 		goto error;
 
 	for (i = 0; i < n; ++i) {
-		pma->p[i].maff = isl_multi_aff_scale_multi_val(pma->p[i].maff,
-							isl_multi_val_copy(mv));
-		if (!pma->p[i].maff)
-			goto error;
+		isl_multi_aff *ma;
+
+		ma = isl_pw_multi_aff_take_base_at(pma, i);
+		ma = isl_multi_aff_scale_multi_val(ma, isl_multi_val_copy(mv));
+		pma = isl_pw_multi_aff_restore_base_at(pma, i, ma);
 	}
 
 	isl_multi_val_free(mv);
