@@ -1211,11 +1211,13 @@ static enum isl_change is_relaxed_extension(int i, int j, int n, int *relax,
 /* Data structure that keeps track of the wrapping constraints
  * and of information to bound the coefficients of those constraints.
  *
+ * "failed" is set if wrapping has failed.
  * bound is set if we want to apply a bound on the coefficients
  * mat contains the wrapping constraints
  * max is the bound on the coefficients (if bound is set)
  */
 struct isl_wraps {
+	int failed;
 	int bound;
 	isl_mat *mat;
 	isl_int max;
@@ -1270,6 +1272,7 @@ static isl_stat wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
 {
 	isl_ctx *ctx;
 
+	wraps->failed = 0;
 	wraps->bound = 0;
 	wraps->mat = mat;
 	if (!mat)
@@ -1297,11 +1300,11 @@ static void wraps_free(struct isl_wraps *wraps)
 		isl_int_clear(wraps->max);
 }
 
-/* Mark the wrapping as failed by resetting wraps->mat->n_row to zero.
+/* Mark the wrapping as failed.
  */
 static isl_stat wraps_mark_failed(struct isl_wraps *wraps)
 {
-	wraps->mat->n_row = 0;
+	wraps->failed = 1;
 	return isl_stat_ok;
 }
 
@@ -1363,11 +1366,11 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
  * been added.
  * If any of the wrapping problems results in a constraint that is
  * identical to "bound", then this means that "set" is unbounded in such
- * a way that no wrapping is possible.  If this happens then wraps->n_row
- * is reset to zero.
+ * a way that no wrapping is possible.  If this happens then "wraps"
+ * is marked as failed.
  * Similarly, if we want to bound the coefficients of the wrapping
  * constraints and a newly added wrapping constraint does not
- * satisfy the bound, then wraps->n_row is also reset to zero.
+ * satisfy the bound, then "wraps" is also marked as failed.
  */
 static isl_stat add_wraps(struct isl_wraps *wraps,
 	struct isl_coalesce_info *info, isl_int *bound, __isl_keep isl_set *set)
@@ -1509,13 +1512,13 @@ static isl_bool has_redundant_cuts(struct isl_coalesce_info *info)
  * Since the wrapped constraints are not guaranteed to contain the whole
  * of info->bmap, we check them in check_wraps.
  * If any of the wrapped constraints turn out to be invalid, then
- * check_wraps will reset wrap->n_row to zero.
+ * check_wraps will mark "wraps" as failed.
  *
  * If any of the cut constraints of info->bmap turn out
  * to be redundant with respect to other constraints
  * then these will neither be wrapped nor added directly to the result.
  * The result may therefore not be correct.
- * Skip wrapping and reset wrap->mat->n_row to zero in this case.
+ * Skip wrapping and mark "wraps" as failed in this case.
  */
 static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 	struct isl_coalesce_info *info, int k, isl_int *bound,
@@ -1613,14 +1616,14 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 
 	if (add_wraps(&wraps, &info[j], bound->el, set_i) < 0)
 		goto error;
-	if (!wraps.mat->n_row)
+	if (wraps.failed)
 		goto unbounded;
 
 	if (wrap_facet) {
 		if (add_wraps_around_facet(&wraps, &info[i], k,
 					    bound->el, set_j) < 0)
 			goto error;
-		if (!wraps.mat->n_row)
+		if (wraps.failed)
 			goto unbounded;
 	}
 
@@ -1732,7 +1735,7 @@ static enum isl_change try_wrap_in_facets(int i, int j,
 			if (wrap_in_facet(wraps, w, &info[j], set_i, snap) < 0)
 				return isl_change_error;
 
-			if (!wraps->mat->n_row)
+			if (wraps->failed)
 				return isl_change_none;
 		}
 	}
@@ -1746,7 +1749,7 @@ static enum isl_change try_wrap_in_facets(int i, int j,
 		if (wrap_in_facet(wraps, w, &info[j], set_i, snap) < 0)
 			return isl_change_error;
 
-		if (!wraps->mat->n_row)
+		if (wraps->failed)
 			return isl_change_none;
 	}
 
@@ -2162,7 +2165,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 
 	if (add_wraps(&wraps, &info[j], bound->el, set_i) < 0)
 		goto error;
-	if (!wraps.mat->n_row)
+	if (wraps.failed)
 		goto unbounded;
 
 	isl_int_sub_ui(bound->el[0], bound->el[0], 1);
@@ -2173,7 +2176,7 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 
 	if (add_wraps(&wraps, &info[i], bound->el, set_j) < 0)
 		goto error;
-	if (!wraps.mat->n_row)
+	if (wraps.failed)
 		goto unbounded;
 
 	change = fuse(i, j, info, wraps.mat, detect_equalities, 0);
