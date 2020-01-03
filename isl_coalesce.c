@@ -1431,7 +1431,7 @@ unbounded:
  * are all valid for the basic set represented by "tab".
  * If not, wraps->n_row is set to zero.
  */
-static int check_wraps(__isl_keep isl_mat *wraps, int first,
+static isl_stat check_wraps(__isl_keep isl_mat *wraps, int first,
 	struct isl_tab *tab)
 {
 	int i;
@@ -1440,14 +1440,14 @@ static int check_wraps(__isl_keep isl_mat *wraps, int first,
 		enum isl_ineq_type type;
 		type = isl_tab_ineq_type(tab, wraps->row[i]);
 		if (type == isl_ineq_error)
-			return -1;
+			return isl_stat_error;
 		if (type == isl_ineq_redundant)
 			continue;
 		wraps->n_row = 0;
-		return 0;
+		return isl_stat_ok;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Return a set that corresponds to the non-redundant constraints
