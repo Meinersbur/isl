@@ -1431,19 +1431,19 @@ unbounded:
  * are all valid for the basic set represented by "tab".
  * If not, wraps->n_row is set to zero.
  */
-static isl_stat check_wraps(__isl_keep isl_mat *wraps, int first,
+static isl_stat check_wraps(struct isl_wraps *wraps, int first,
 	struct isl_tab *tab)
 {
 	int i;
 
-	for (i = first; i < wraps->n_row; ++i) {
+	for (i = first; i < wraps->mat->n_row; ++i) {
 		enum isl_ineq_type type;
-		type = isl_tab_ineq_type(tab, wraps->row[i]);
+		type = isl_tab_ineq_type(tab, wraps->mat->row[i]);
 		if (type == isl_ineq_error)
 			return isl_stat_error;
 		if (type == isl_ineq_redundant)
 			continue;
-		wraps->n_row = 0;
+		wraps->mat->n_row = 0;
 		return isl_stat_ok;
 	}
 
@@ -1552,7 +1552,7 @@ static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 		return isl_stat_error;
 	if (nowrap)
 		return wraps_mark_failed(wraps);
-	if (check_wraps(wraps->mat, n, info->tab) < 0)
+	if (check_wraps(wraps, n, info->tab) < 0)
 		return isl_stat_error;
 
 	return isl_stat_ok;
