@@ -1429,7 +1429,7 @@ unbounded:
 
 /* Check if the constraints in "wraps" from "first" until the last
  * are all valid for the basic set represented by "tab".
- * If not, wraps->n_row is set to zero.
+ * If not, then mark the wrapping as failed.
  */
 static isl_stat check_wraps(struct isl_wraps *wraps, int first,
 	struct isl_tab *tab)
@@ -1443,8 +1443,7 @@ static isl_stat check_wraps(struct isl_wraps *wraps, int first,
 			return isl_stat_error;
 		if (type == isl_ineq_redundant)
 			continue;
-		wraps->mat->n_row = 0;
-		return isl_stat_ok;
+		return wraps_mark_failed(wraps);
 	}
 
 	return isl_stat_ok;
