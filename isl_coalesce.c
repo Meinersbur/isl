@@ -805,65 +805,6 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	return isl_change_none;
 }
 
-
-/* Both basic maps have at least one inequality with and adjacent
- * (but opposite) inequality in the other basic map.
- * Check that there are no cut constraints and that there is only
- * a single pair of adjacent inequalities.
- * If so, we can replace the pair by a single basic map described
- * by all but the pair of adjacent inequalities.
- * Any additional points introduced lie strictly between the two
- * adjacent hyperplanes and can therefore be integral.
- *
- *        ____			  _____
- *       /    ||\		 /     \
- *      /     || \		/       \
- *      \     ||  \	=>	\        \
- *       \    ||  /		 \       /
- *        \___||_/		  \_____/
- *
- * The test for a single pair of adjacent inequalities is important
- * for avoiding the combination of two basic maps like the following
- *
- *       /|
- *      / |
- *     /__|
- *         _____
- *         |   |
- *         |   |
- *         |___|
- *
- * If there are some cut constraints on one side, then we may
- * still be able to fuse the two basic maps, but we need to perform
- * some additional checks in is_adj_ineq_extension.
- */
-static enum isl_change check_adj_ineq(int i, int j,
-	struct isl_coalesce_info *info)
-{
-	int count_i, count_j;
-	int cut_i, cut_j;
-
-	count_i = count_ineq(&info[i], STATUS_ADJ_INEQ);
-	count_j = count_ineq(&info[j], STATUS_ADJ_INEQ);
-
-	if (count_i != 1 && count_j != 1)
-		return isl_change_none;
-
-	cut_i = any_eq(&info[i], STATUS_CUT) || any_ineq(&info[i], STATUS_CUT);
-	cut_j = any_eq(&info[j], STATUS_CUT) || any_ineq(&info[j], STATUS_CUT);
-
-	if (!cut_i && !cut_j && count_i == 1 && count_j == 1)
-		return fuse(i, j, info, NULL, 0, 0);
-
-	if (count_i == 1 && !cut_i)
-		return is_adj_ineq_extension(i, j, info);
-
-	if (count_j == 1 && !cut_j)
-		return is_adj_ineq_extension(j, i, info);
-
-	return isl_change_none;
-}
-
 /* Given an affine transformation matrix "T", does row "row" represent
  * anything other than a unit vector (possibly shifted by a constant)
  * that is not involved in any of the other rows?
@@ -1559,6 +1500,64 @@ static isl_stat add_wraps_around_facet(struct isl_wraps *wraps,
 		return isl_stat_error;
 
 	return isl_stat_ok;
+}
+
+/* Both basic maps have at least one inequality with and adjacent
+ * (but opposite) inequality in the other basic map.
+ * Check that there are no cut constraints and that there is only
+ * a single pair of adjacent inequalities.
+ * If so, we can replace the pair by a single basic map described
+ * by all but the pair of adjacent inequalities.
+ * Any additional points introduced lie strictly between the two
+ * adjacent hyperplanes and can therefore be integral.
+ *
+ *        ____			  _____
+ *       /    ||\		 /     \
+ *      /     || \		/       \
+ *      \     ||  \	=>	\        \
+ *       \    ||  /		 \       /
+ *        \___||_/		  \_____/
+ *
+ * The test for a single pair of adjacent inequalities is important
+ * for avoiding the combination of two basic maps like the following
+ *
+ *       /|
+ *      / |
+ *     /__|
+ *         _____
+ *         |   |
+ *         |   |
+ *         |___|
+ *
+ * If there are some cut constraints on one side, then we may
+ * still be able to fuse the two basic maps, but we need to perform
+ * some additional checks in is_adj_ineq_extension.
+ */
+static enum isl_change check_adj_ineq(int i, int j,
+	struct isl_coalesce_info *info)
+{
+	int count_i, count_j;
+	int cut_i, cut_j;
+
+	count_i = count_ineq(&info[i], STATUS_ADJ_INEQ);
+	count_j = count_ineq(&info[j], STATUS_ADJ_INEQ);
+
+	if (count_i != 1 && count_j != 1)
+		return isl_change_none;
+
+	cut_i = any_eq(&info[i], STATUS_CUT) || any_ineq(&info[i], STATUS_CUT);
+	cut_j = any_eq(&info[j], STATUS_CUT) || any_ineq(&info[j], STATUS_CUT);
+
+	if (!cut_i && !cut_j && count_i == 1 && count_j == 1)
+		return fuse(i, j, info, NULL, 0, 0);
+
+	if (count_i == 1 && !cut_i)
+		return is_adj_ineq_extension(i, j, info);
+
+	if (count_j == 1 && !cut_j)
+		return is_adj_ineq_extension(j, i, info);
+
+	return isl_change_none;
 }
 
 /* Given a basic set i with a constraint k that is adjacent to
