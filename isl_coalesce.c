@@ -1277,6 +1277,7 @@ static isl_stat wraps_init(struct isl_wraps *wraps, __isl_take isl_mat *mat,
 	wraps->mat = mat;
 	if (!mat)
 		return isl_stat_error;
+	wraps->mat->n_row = 0;
 	ctx = isl_mat_get_ctx(mat);
 	wraps->bound = isl_options_get_coalesce_bounded_wrapping(ctx);
 	if (!wraps->bound)
@@ -1718,8 +1719,6 @@ static enum isl_change try_wrap_in_facets(int i, int j,
 		return isl_change_error;
 
 	snap = isl_tab_snap(info[j].tab);
-
-	wraps->mat->n_row = 0;
 
 	for (k = 0; k < info[i].bmap->n_eq; ++k) {
 		for (l = 0; l < 2; ++l) {
