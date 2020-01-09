@@ -314,12 +314,12 @@ __isl_give isl_morph *isl_morph_ran_params(__isl_take isl_morph *morph)
 /* Replace the identifier of the tuple of the range of the morph by "id".
  */
 static __isl_give isl_morph *isl_morph_set_ran_tuple_id(
-	__isl_take isl_morph *morph, isl_id *id)
+	__isl_take isl_morph *morph, __isl_keep isl_id *id)
 {
 	morph = isl_morph_cow(morph);
 	if (!morph)
 		return NULL;
-	morph->ran = isl_basic_set_set_tuple_id(morph->ran, id);
+	morph->ran = isl_basic_set_set_tuple_id(morph->ran, isl_id_copy(id));
 	if (!morph->ran)
 		return isl_morph_free(morph);
 	return morph;
@@ -505,7 +505,7 @@ __isl_give isl_morph *isl_basic_set_variable_compression_with_id(
 	isl_morph *morph;
 
 	morph = isl_basic_set_variable_compression(bset, isl_dim_set);
-	morph = isl_morph_set_ran_tuple_id(morph, isl_id_copy(id));
+	morph = isl_morph_set_ran_tuple_id(morph, id);
 	return morph;
 }
 
