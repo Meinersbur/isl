@@ -1380,19 +1380,34 @@ error:
 	return NULL;
 }
 
-static int defining_equality(__isl_keep isl_basic_map *eq,
+/* Given a set of equality constraints "eq" obtained from get_aff,
+ * i.e., with a (positive or negative) unit coefficient in the last position,
+ * look for an equality constraint in "eq" that defines
+ * the "type" variable at position "pos" in "space",
+ * i.e., where that last coefficient corresponds to the given variable.
+ * If so, return the position of that equality constraint.
+ * Return a value beyond the number of equality constraints
+ * if no such constraint can be found.
+ * Return isl_size_error in case of error.
+ *
+ * If a suitable constraint is found, then also make sure
+ * it has a negative unit coefficient for the given variable.
+ */
+static isl_size defining_equality(__isl_keep isl_basic_map *eq,
 	__isl_keep isl_space *space, enum isl_dim_type type, int pos)
 {
 	int i;
 	isl_size total;
+	isl_size n_eq;
 
 	total = isl_basic_map_dim(eq, isl_dim_all);
-	if (total < 0)
-		return -1;
+	n_eq = isl_basic_map_n_equality(eq);
+	if (total < 0 || n_eq < 0)
+		return isl_size_error;
 
 	pos += isl_space_offset(space, type);
 
-	for (i = 0; i < eq->n_eq; ++i) {
+	for (i = 0; i < n_eq; ++i) {
 		if (isl_seq_last_non_zero(eq->eq[i] + 1, total) != pos)
 			continue;
 		if (isl_int_is_one(eq->eq[i][1 + pos]))
@@ -1400,7 +1415,7 @@ static int defining_equality(__isl_keep isl_basic_map *eq,
 		return i;
 	}
 
-	return -1;
+	return n_eq;
 }
 
 /* Print dimension "pos" of data->space to "p".
@@ -1415,10 +1430,13 @@ static __isl_give isl_printer *print_dim_eq(__isl_take isl_printer *p,
 	struct isl_print_space_data *data, unsigned pos)
 {
 	isl_basic_map *eq = data->user;
-	int j;
+	isl_size j, n_eq;
 
+	n_eq = isl_basic_map_n_equality(eq);
 	j = defining_equality(eq, data->space, data->type, pos);
-	if (j >= 0) {
+	if (j < 0 || n_eq < 0)
+		return isl_printer_free(p);
+	if (j < n_eq) {
 		if (isl_space_has_dim_name(data->space, data->type, pos)) {
 			p = print_name(data->space, p, data->type, pos,
 					data->latex);
