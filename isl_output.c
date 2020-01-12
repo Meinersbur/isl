@@ -1381,7 +1381,7 @@ error:
 }
 
 static int defining_equality(__isl_keep isl_basic_map *eq,
-	__isl_keep isl_space *dim, enum isl_dim_type type, int pos)
+	__isl_keep isl_space *space, enum isl_dim_type type, int pos)
 {
 	int i;
 	isl_size total;
@@ -1390,7 +1390,7 @@ static int defining_equality(__isl_keep isl_basic_map *eq,
 	if (total < 0)
 		return -1;
 
-	pos += isl_space_offset(dim, type);
+	pos += isl_space_offset(space, type);
 
 	for (i = 0; i < eq->n_eq; ++i) {
 		if (isl_seq_last_non_zero(eq->eq[i] + 1, total) != pos)
