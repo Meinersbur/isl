@@ -271,13 +271,15 @@ static isl_bool can_select(__isl_keep isl_basic_set *bset, int level,
 {
 	int i;
 	isl_bool indep;
-	unsigned ovar;
+	isl_size ovar;
 	struct isl_tab_undo *snap;
 
 	if (isl_tab_is_redundant(tab, level))
 		return isl_bool_false;
 
 	ovar = isl_space_offset(bset->dim, isl_dim_set);
+	if (ovar < 0)
+		return isl_bool_error;
 
 	indep = is_independent(facets, selected, bset->ineq[level] + 1 + ovar);
 	if (indep < 0 || !indep)

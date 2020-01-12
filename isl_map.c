@@ -148,8 +148,6 @@ isl_size isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
 	isl_space *space;
 
 	space = isl_basic_map_peek_space(bmap);
-	if (!space)
-		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -12138,8 +12136,7 @@ static int unique(isl_int *p, unsigned pos, unsigned len)
 isl_bool isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
 {
 	int i, j;
-	isl_size nvar, n_div;
-	unsigned ovar;
+	isl_size nvar, ovar, n_div;
 
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
 	if (n_div < 0)
@@ -12148,9 +12145,9 @@ isl_bool isl_basic_set_is_box(__isl_keep isl_basic_set *bset)
 		return isl_bool_false;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	if (nvar < 0)
-		return isl_bool_error;
 	ovar = isl_space_offset(bset->dim, isl_dim_set);
+	if (nvar < 0 || ovar < 0)
+		return isl_bool_error;
 	for (j = 0; j < nvar; ++j) {
 		int lower = 0, upper = 0;
 		for (i = 0; i < bset->n_eq; ++i) {

@@ -2840,7 +2840,7 @@ __isl_give isl_aff *isl_aff_domain_reverse(__isl_take isl_aff *aff)
 	offset = isl_space_offset(space, isl_dim_set);
 	n_in = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_in);
 	n_out = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_out);
-	if (n_in < 0 || n_out < 0)
+	if (offset < 0 || n_in < 0 || n_out < 0)
 		return isl_aff_free(aff);
 
 	v = isl_aff_take_rat_aff(aff);

@@ -256,8 +256,6 @@ isl_size isl_local_space_var_offset(__isl_keep isl_local_space *ls,
 	isl_space *space;
 
 	space = isl_local_space_peek_space(ls);
-	if (space < 0)
-		return isl_size_error;
 	switch (type) {
 	case isl_dim_param:
 	case isl_dim_in:
@@ -1701,7 +1699,7 @@ __isl_give isl_local_space *isl_local_space_wrapped_reverse(
 	offset = isl_space_offset(space, isl_dim_set);
 	n_in = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_in);
 	n_out = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_out);
-	if (n_in < 0 || n_out < 0)
+	if (offset < 0 || n_in < 0 || n_out < 0)
 		return isl_local_space_free(ls);
 
 	space = isl_local_space_take_space(ls);

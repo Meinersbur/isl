@@ -560,8 +560,6 @@ static isl_size isl_qpolynomial_domain_var_offset(
 	isl_space *space;
 
 	space = isl_qpolynomial_peek_domain_space(qp);
-	if (!space)
-		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -2270,14 +2268,18 @@ __isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(
 __isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
 	__isl_take isl_space *domain, enum isl_dim_type type, unsigned pos)
 {
+	isl_size off;
+
 	if (isl_space_check_is_set(domain ) < 0)
 		goto error;
 	if (isl_space_check_range(domain, type, pos, 1) < 0)
 		goto error;
 
-	pos += isl_space_offset(domain, type);
+	off = isl_space_offset(domain, type);
+	if (off < 0)
+		goto error;
 
-	return isl_qpolynomial_var_pow_on_domain(domain, pos, 1);
+	return isl_qpolynomial_var_pow_on_domain(domain, off + pos, 1);
 error:
 	isl_space_free(domain);
 	return NULL;
@@ -3701,7 +3703,7 @@ int isl_poly_degree(__isl_keep isl_poly *poly, int first, int last)
  */
 int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly)
 {
-	unsigned ovar;
+	isl_size ovar;
 	isl_size nvar;
 
 	if (!poly)
@@ -3709,7 +3711,7 @@ int isl_qpolynomial_degree(__isl_keep isl_qpolynomial *poly)
 
 	ovar = isl_space_offset(poly->dim, isl_dim_set);
 	nvar = isl_space_dim(poly->dim, isl_dim_set);
-	if (nvar < 0)
+	if (ovar < 0 || nvar < 0)
 		return -2;
 	return isl_poly_degree(poly->poly, ovar, ovar + nvar);
 }
@@ -3864,7 +3866,7 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_homogenize(
 	__isl_take isl_qpolynomial *poly)
 {
-	unsigned ovar;
+	isl_size ovar;
 	isl_size nvar;
 	int deg = isl_qpolynomial_degree(poly);
 
@@ -3878,7 +3880,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_homogenize(
 
 	ovar = isl_space_offset(poly->dim, isl_dim_set);
 	nvar = isl_space_dim(poly->dim, isl_dim_set);
-	if (nvar < 0)
+	if (ovar < 0 || nvar < 0)
 		return isl_qpolynomial_free(poly);
 	poly->poly = isl_poly_homogenize(poly->poly, 0, deg, ovar, ovar + nvar);
 	if (!poly->poly)

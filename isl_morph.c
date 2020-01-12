@@ -250,7 +250,7 @@ isl_size isl_morph_ran_dim(__isl_keep isl_morph *morph, enum isl_dim_type type)
 __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	unsigned dom_offset;
+	isl_size dom_offset;
 
 	if (n == 0)
 		return morph;
@@ -259,13 +259,15 @@ __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 	if (!morph)
 		return NULL;
 
-	dom_offset = 1 + isl_space_offset(morph->dom->dim, type);
+	dom_offset = isl_space_offset(morph->dom->dim, type);
+	if (dom_offset < 0)
+		return isl_morph_free(morph);
 
 	morph->dom = isl_basic_set_remove_dims(morph->dom, type, first, n);
 
-	morph->map = isl_mat_drop_cols(morph->map, dom_offset + first, n);
+	morph->map = isl_mat_drop_cols(morph->map, 1 + dom_offset + first, n);
 
-	morph->inv = isl_mat_drop_rows(morph->inv, dom_offset + first, n);
+	morph->inv = isl_mat_drop_rows(morph->inv, 1 + dom_offset + first, n);
 
 	if (morph->dom && morph->ran && morph->map && morph->inv)
 		return morph;
@@ -277,7 +279,7 @@ __isl_give isl_morph *isl_morph_remove_dom_dims(__isl_take isl_morph *morph,
 __isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	unsigned ran_offset;
+	isl_size ran_offset;
 
 	if (n == 0)
 		return morph;
@@ -286,13 +288,15 @@ __isl_give isl_morph *isl_morph_remove_ran_dims(__isl_take isl_morph *morph,
 	if (!morph)
 		return NULL;
 
-	ran_offset = 1 + isl_space_offset(morph->ran->dim, type);
+	ran_offset = isl_space_offset(morph->ran->dim, type);
+	if (ran_offset < 0)
+		return isl_morph_free(morph);
 
 	morph->ran = isl_basic_set_remove_dims(morph->ran, type, first, n);
 
-	morph->map = isl_mat_drop_rows(morph->map, ran_offset + first, n);
+	morph->map = isl_mat_drop_rows(morph->map, 1 + ran_offset + first, n);
 
-	morph->inv = isl_mat_drop_cols(morph->inv, ran_offset + first, n);
+	morph->inv = isl_mat_drop_cols(morph->inv, 1 + ran_offset + first, n);
 
 	if (morph->dom && morph->ran && morph->map && morph->inv)
 		return morph;

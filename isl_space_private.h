@@ -53,7 +53,7 @@ isl_stat isl_space_check_wrapped_tuple_is_equal(__isl_keep isl_space *space1,
 
 isl_size isl_space_wrapped_dim(__isl_keep isl_space *space,
 	enum isl_dim_type outer, enum isl_dim_type inner);
-unsigned isl_space_offset(__isl_keep isl_space *space, enum isl_dim_type type);
+isl_size isl_space_offset(__isl_keep isl_space *space, enum isl_dim_type type);
 
 isl_stat isl_space_check_range(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned first, unsigned n);

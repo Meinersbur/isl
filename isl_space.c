@@ -377,10 +377,10 @@ isl_size isl_space_wrapped_dim(__isl_keep isl_space *space,
 	return isl_space_dim(isl_space_peek_nested(space, pos), inner);
 }
 
-unsigned isl_space_offset(__isl_keep isl_space *space, enum isl_dim_type type)
+isl_size isl_space_offset(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	if (!space)
-		return 0;
+		return isl_size_error;
 	return offset(space, type);
 }
 
@@ -887,14 +887,14 @@ int isl_space_find_dim_by_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, __isl_keep isl_id *id)
 {
 	int i;
-	int offset;
+	isl_size offset;
 	isl_size n;
 
 	n = isl_space_dim(space, type);
-	if (n < 0 || !id)
+	offset = isl_space_offset(space, type);
+	if (n < 0 || offset < 0 || !id)
 		return -1;
 
-	offset = isl_space_offset(space, type);
 	for (i = 0; i < n && offset + i < space->n_id; ++i)
 		if (space->ids[offset + i] == id)
 			return i;
@@ -906,14 +906,14 @@ int isl_space_find_dim_by_name(__isl_keep isl_space *space,
 	enum isl_dim_type type, const char *name)
 {
 	int i;
-	int offset;
+	isl_size offset;
 	isl_size n;
 
 	n = isl_space_dim(space, type);
-	if (n < 0 || !name)
+	offset = isl_space_offset(space, type);
+	if (n < 0 || offset < 0 || !name)
 		return -1;
 
-	offset = isl_space_offset(space, type);
 	for (i = 0; i < n && offset + i < space->n_id; ++i) {
 		isl_id *id = get_id(space, type, i);
 		if (id && id->name && !strcmp(id->name, name))
@@ -3302,13 +3302,15 @@ __isl_give isl_space *isl_space_uncurry(__isl_take isl_space *space)
 isl_bool isl_space_has_named_params(__isl_keep isl_space *space)
 {
 	int i;
-	unsigned off;
+	isl_size off;
 
 	if (!space)
 		return isl_bool_error;
 	if (space->nparam == 0)
 		return isl_bool_true;
 	off = isl_space_offset(space, isl_dim_param);
+	if (off < 0)
+		return isl_bool_error;
 	if (off + space->nparam > space->n_id)
 		return isl_bool_false;
 	for (i = 0; i < space->nparam; ++i)

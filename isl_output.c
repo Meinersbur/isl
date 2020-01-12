@@ -1397,15 +1397,16 @@ static isl_size defining_equality(__isl_keep isl_basic_map *eq,
 	__isl_keep isl_space *space, enum isl_dim_type type, int pos)
 {
 	int i;
-	isl_size total;
+	isl_size total, off;
 	isl_size n_eq;
 
 	total = isl_basic_map_dim(eq, isl_dim_all);
 	n_eq = isl_basic_map_n_equality(eq);
-	if (total < 0 || n_eq < 0)
+	off = isl_space_offset(space, type);
+	if (total < 0 || n_eq < 0 || off < 0)
 		return isl_size_error;
 
-	pos += isl_space_offset(space, type);
+	pos += off;
 
 	for (i = 0; i < n_eq; ++i) {
 		if (isl_seq_last_non_zero(eq->eq[i] + 1, total) != pos)
@@ -1437,12 +1438,17 @@ static __isl_give isl_printer *print_dim_eq(__isl_take isl_printer *p,
 	if (j < 0 || n_eq < 0)
 		return isl_printer_free(p);
 	if (j < n_eq) {
+		isl_size off;
+
 		if (isl_space_has_dim_name(data->space, data->type, pos)) {
 			p = print_name(data->space, p, data->type, pos,
 					data->latex);
 			p = isl_printer_print_str(p, " = ");
 		}
-		pos += 1 + isl_space_offset(data->space, data->type);
+		off = isl_space_offset(data->space, data->type);
+		if (off < 0)
+			return isl_printer_free(p);
+		pos += 1 + off;
 		p = print_affine_of_len(data->space, NULL, p, eq->eq[j], pos);
 	} else {
 		p = print_name(data->space, p, data->type, pos, data->latex);
