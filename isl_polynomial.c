@@ -5156,7 +5156,7 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	__isl_take isl_qpolynomial *qp)
 {
 	int i, k;
-	isl_space *dim;
+	isl_space *space;
 	isl_vec *aff = NULL;
 	isl_basic_map *bmap = NULL;
 	isl_bool is_affine;
@@ -5174,10 +5174,10 @@ __isl_give isl_basic_map *isl_basic_map_from_qpolynomial(
 	aff = isl_qpolynomial_extract_affine(qp);
 	if (!aff)
 		goto error;
-	dim = isl_qpolynomial_get_space(qp);
-	pos = 1 + isl_space_offset(dim, isl_dim_out);
+	space = isl_qpolynomial_get_space(qp);
+	pos = 1 + isl_space_offset(space, isl_dim_out);
 	n_div = qp->div->n_row;
-	bmap = isl_basic_map_alloc_space(dim, n_div, 1, 2 * n_div);
+	bmap = isl_basic_map_alloc_space(space, n_div, 1, 2 * n_div);
 
 	for (i = 0; i < n_div; ++i) {
 		k = isl_basic_map_alloc_div(bmap);
