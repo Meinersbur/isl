@@ -1955,16 +1955,15 @@ __isl_give isl_map *isl_map_drop_constraints_involving_unknown_divs(
 /* Don't assume equalities are in order, because align_divs
  * may have changed the order of the divs.
  */
-static void compute_elimination_index(__isl_keep isl_basic_map *bmap, int *elim)
+static void compute_elimination_index(__isl_keep isl_basic_map *bmap, int *elim,
+	unsigned len)
 {
 	int d, i;
-	unsigned total;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
-	for (d = 0; d < total; ++d)
+	for (d = 0; d < len; ++d)
 		elim[d] = -1;
 	for (i = 0; i < bmap->n_eq; ++i) {
-		for (d = total - 1; d >= 0; --d) {
+		for (d = len - 1; d >= 0; --d) {
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
 			elim[d] = i;
@@ -1974,9 +1973,9 @@ static void compute_elimination_index(__isl_keep isl_basic_map *bmap, int *elim)
 }
 
 static void set_compute_elimination_index(__isl_keep isl_basic_set *bset,
-	int *elim)
+	int *elim, unsigned len)
 {
-	compute_elimination_index(bset_to_bmap(bset), elim);
+	compute_elimination_index(bset_to_bmap(bset), elim, len);
 }
 
 static int reduced_using_equalities(isl_int *dst, isl_int *src,
@@ -2031,7 +2030,7 @@ static __isl_give isl_basic_set *isl_basic_set_reduce_using_equalities(
 	elim = isl_alloc_array(bset->ctx, int, dim);
 	if (!elim)
 		goto error;
-	set_compute_elimination_index(context, elim);
+	set_compute_elimination_index(context, elim, dim);
 	for (i = 0; i < bset->n_eq; ++i)
 		set_reduced_using_equalities(bset->eq[i], bset->eq[i],
 							context, elim);
@@ -3833,7 +3832,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	elim = isl_alloc_array(bmap1->ctx, int, total);
 	if (!elim)
 		goto error;
-	compute_elimination_index(bmap1, elim);
+	compute_elimination_index(bmap1, elim, total);
 	for (i = 0; i < bmap2->n_eq; ++i) {
 		int reduced;
 		reduced = reduced_using_equalities(v->block.data, bmap2->eq[i],
@@ -3850,7 +3849,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
 	}
-	compute_elimination_index(bmap2, elim);
+	compute_elimination_index(bmap2, elim, total);
 	for (i = 0; i < bmap1->n_ineq; ++i) {
 		int reduced;
 		reduced = reduced_using_equalities(v->block.data,
