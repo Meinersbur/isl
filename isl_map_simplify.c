@@ -1979,13 +1979,11 @@ static void set_compute_elimination_index(__isl_keep isl_basic_set *bset,
 }
 
 static int reduced_using_equalities(isl_int *dst, isl_int *src,
-	__isl_keep isl_basic_map *bmap, int *elim)
+	__isl_keep isl_basic_map *bmap, int *elim, unsigned total)
 {
 	int d;
 	int copied = 0;
-	unsigned total;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
 	for (d = total - 1; d >= 0; --d) {
 		if (isl_int_is_zero(src[1+d]))
 			continue;
@@ -2001,10 +1999,10 @@ static int reduced_using_equalities(isl_int *dst, isl_int *src,
 }
 
 static int set_reduced_using_equalities(isl_int *dst, isl_int *src,
-	__isl_keep isl_basic_set *bset, int *elim)
+	__isl_keep isl_basic_set *bset, int *elim, unsigned total)
 {
 	return reduced_using_equalities(dst, src,
-					bset_to_bmap(bset), elim);
+					bset_to_bmap(bset), elim, total);
 }
 
 static __isl_give isl_basic_set *isl_basic_set_reduce_using_equalities(
@@ -2033,10 +2031,10 @@ static __isl_give isl_basic_set *isl_basic_set_reduce_using_equalities(
 	set_compute_elimination_index(context, elim, dim);
 	for (i = 0; i < bset->n_eq; ++i)
 		set_reduced_using_equalities(bset->eq[i], bset->eq[i],
-							context, elim);
+							context, elim, dim);
 	for (i = 0; i < bset->n_ineq; ++i)
 		set_reduced_using_equalities(bset->ineq[i], bset->ineq[i],
-							context, elim);
+							context, elim, dim);
 	isl_basic_set_free(context);
 	free(elim);
 	bset = isl_basic_set_simplify(bset);
@@ -3836,7 +3834,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	for (i = 0; i < bmap2->n_eq; ++i) {
 		int reduced;
 		reduced = reduced_using_equalities(v->block.data, bmap2->eq[i],
-							bmap1, elim);
+							bmap1, elim, total);
 		if (reduced && !isl_int_is_zero(v->block.data[0]) &&
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
@@ -3844,7 +3842,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	for (i = 0; i < bmap2->n_ineq; ++i) {
 		int reduced;
 		reduced = reduced_using_equalities(v->block.data,
-						bmap2->ineq[i], bmap1, elim);
+					bmap2->ineq[i], bmap1, elim, total);
 		if (reduced && isl_int_is_neg(v->block.data[0]) &&
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
@@ -3853,7 +3851,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	for (i = 0; i < bmap1->n_ineq; ++i) {
 		int reduced;
 		reduced = reduced_using_equalities(v->block.data,
-						bmap1->ineq[i], bmap2, elim);
+					bmap1->ineq[i], bmap2, elim, total);
 		if (reduced && isl_int_is_neg(v->block.data[0]) &&
 		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
 			goto disjoint;
