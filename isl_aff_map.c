@@ -415,6 +415,14 @@ __isl_give isl_set *isl_set_from_pw_multi_aff(__isl_take isl_pw_multi_aff *pma)
 	return set_from_map(isl_map_from_pw_multi_aff_internal(pma));
 }
 
+/* This function performs the same operation as isl_set_from_pw_multi_aff,
+ * but is considered as a function on an isl_pw_multi_aff when exported.
+ */
+__isl_give isl_set *isl_pw_multi_aff_as_set(__isl_take isl_pw_multi_aff *pma)
+{
+	return isl_set_from_pw_multi_aff(pma);
+}
+
 /* Construct a set or map mapping the shared (parameter) domain
  * of the piecewise affine expressions to the range of "mpa"
  * with each dimension in the range equated to the
