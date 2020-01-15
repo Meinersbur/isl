@@ -3065,7 +3065,7 @@ static __isl_give isl_printer *print_union_pw_aff_body(
 	data.p = p;
 	if (isl_union_pw_aff_foreach_pw_aff(upa,
 					    &print_pw_aff_body_wrap, &data) < 0)
-		data.p = isl_printer_free(p);
+		data.p = isl_printer_free(data.p);
 	p = data.p;
 	p = isl_printer_print_str(p, s_close_set[0]);
 
