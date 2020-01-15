@@ -51,6 +51,7 @@
 #include <llvm/Support/ManagedStatic.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/ASTConsumer.h>
+#include <clang/Basic/Builtins.h>
 #include <clang/Basic/FileSystemOptions.h>
 #include <clang/Basic/FileManager.h>
 #include <clang/Basic/TargetOptions.h>
