@@ -5,35 +5,31 @@ AC_SUBST(CLANG_RFLAG)
 AC_SUBST(CLANG_LIBS)
 AC_PROG_GREP
 AC_PROG_SED
-llvm_config="llvm-config"
-AC_CHECK_PROG([llvm_config_found], ["$llvm_config"], [yes])
 if test "x$with_clang_prefix" != "x"; then
-	llvm_config="$with_clang_prefix/bin/llvm-config"
-	if test -x "$llvm_config"; then
-		llvm_config_found=yes
-	fi
+	LLVM_CONFIG="$with_clang_prefix/bin/llvm-config"
 fi
-if test "$llvm_config_found" != yes; then
+AC_PATH_PROG([LLVM_CONFIG], ["llvm-config"])
+if test -z "$LLVM_CONFIG" || test ! -x "$LLVM_CONFIG"; then
 	AC_MSG_ERROR([llvm-config not found])
 fi
-CLANG_CXXFLAGS=`$llvm_config --cxxflags | \
+CLANG_CXXFLAGS=`$LLVM_CONFIG --cxxflags | \
 	$SED -e 's/-Wcovered-switch-default//;s/-gsplit-dwarf//'`
-CLANG_LDFLAGS=`$llvm_config --ldflags`
+CLANG_LDFLAGS=`$LLVM_CONFIG --ldflags`
 # Construct a -R argument for libtool.
 # This is needed in case some of the clang libraries are shared libraries.
 CLANG_RFLAG=`echo "$CLANG_LDFLAGS" | $SED -e 's/-L/-R/g'`
-targets=`$llvm_config --targets-built`
+targets=`$LLVM_CONFIG --targets-built`
 components="$targets asmparser bitreader support mc"
-$llvm_config --components | $GREP option > /dev/null 2> /dev/null
+$LLVM_CONFIG --components | $GREP option > /dev/null 2> /dev/null
 if test $? -eq 0; then
 	components="$components option"
 fi
-CLANG_LIBS=`$llvm_config --libs $components`
-systemlibs=`$llvm_config --system-libs 2> /dev/null | tail -1`
+CLANG_LIBS=`$LLVM_CONFIG --libs $components`
+systemlibs=`$LLVM_CONFIG --system-libs 2> /dev/null | tail -1`
 if test $? -eq 0; then
 	CLANG_LIBS="$CLANG_LIBS $systemlibs"
 fi
-CLANG_PREFIX=`$llvm_config --prefix`
+CLANG_PREFIX=`$LLVM_CONFIG --prefix`
 AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"], [Clang installation prefix])
 
 SAVE_CPPFLAGS="$CPPFLAGS"
