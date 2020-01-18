@@ -478,6 +478,14 @@ __isl_give isl_map *isl_map_from_multi_pw_aff(__isl_take isl_multi_pw_aff *mpa)
 	return map_from_multi_pw_aff(mpa);
 }
 
+/* This function performs the same operation as isl_map_from_multi_pw_aff,
+ * but is considered as a function on an isl_multi_pw_aff when exported.
+ */
+__isl_give isl_map *isl_multi_pw_aff_as_map(__isl_take isl_multi_pw_aff *mpa)
+{
+	return isl_map_from_multi_pw_aff(mpa);
+}
+
 /* Construct a set mapping the shared parameter domain
  * of the piecewise affine expressions to the space of "mpa"
  * with each dimension in the range equated to the
