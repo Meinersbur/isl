@@ -8628,9 +8628,9 @@ error:
 	return NULL;
 }
 
-__isl_give isl_map *isl_map_identity(__isl_take isl_space *dim)
+__isl_give isl_map *isl_map_identity(__isl_take isl_space *space)
 {
-	return isl_map_from_basic_map(isl_basic_map_identity(dim));
+	return isl_map_from_basic_map(isl_basic_map_identity(space));
 }
 
 __isl_give isl_map *isl_set_identity(__isl_take isl_set *set)

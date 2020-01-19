@@ -290,7 +290,7 @@ __isl_give isl_map *isl_map_universe(__isl_take isl_space *space);
 __isl_give isl_map *isl_map_nat_universe(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_map *isl_map_empty(__isl_take isl_space *space);
-__isl_give isl_map *isl_map_identity(__isl_take isl_space *dim);
+__isl_give isl_map *isl_map_identity(__isl_take isl_space *space);
 __isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *dim, unsigned n);
 __isl_give isl_map *isl_map_lex_le_first(__isl_take isl_space *dim, unsigned n);
 __isl_give isl_map *isl_map_lex_lt(__isl_take isl_space *set_dim);
