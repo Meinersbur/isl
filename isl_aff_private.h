@@ -82,7 +82,7 @@ isl_size isl_aff_domain_offset(__isl_keep isl_aff *aff, enum isl_dim_type type);
 __isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
 	__isl_take isl_space *space, __isl_take isl_space *domain);
 __isl_give isl_aff *isl_aff_reset_domain_space(__isl_take isl_aff *aff,
-	__isl_take isl_space *dim);
+	__isl_take isl_space *space);
 __isl_give isl_aff *isl_aff_realign_domain(__isl_take isl_aff *aff,
 	__isl_take isl_reordering *r);
 

@@ -504,20 +504,20 @@ const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 }
 
 __isl_give isl_aff *isl_aff_reset_domain_space(__isl_take isl_aff *aff,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
 	aff = isl_aff_cow(aff);
-	if (!aff || !dim)
+	if (!aff || !space)
 		goto error;
 
-	aff->ls = isl_local_space_reset_space(aff->ls, dim);
+	aff->ls = isl_local_space_reset_space(aff->ls, space);
 	if (!aff->ls)
 		return isl_aff_free(aff);
 
 	return aff;
 error:
 	isl_aff_free(aff);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
