@@ -340,7 +340,7 @@ static __isl_give isl_pw_aff_list *accept_affine_list(__isl_keep isl_stream *s,
 	__isl_take isl_space *space, struct vars *v);
 
 static __isl_give isl_pw_aff *accept_minmax(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v)
+	__isl_take isl_space *space, struct vars *v)
 {
 	struct isl_token *tok;
 	isl_pw_aff_list *list = NULL;
@@ -355,17 +355,17 @@ static __isl_give isl_pw_aff *accept_minmax(__isl_keep isl_stream *s,
 	if (isl_stream_eat(s, '('))
 		goto error;
 
-	list = accept_affine_list(s, isl_space_copy(dim), v);
+	list = accept_affine_list(s, isl_space_copy(space), v);
 	if (!list)
 		goto error;
 
 	if (isl_stream_eat(s, ')'))
 		goto error;
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return min ? isl_pw_aff_list_min(list) : isl_pw_aff_list_max(list);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_pw_aff_list_free(list);
 	return NULL;
 }
