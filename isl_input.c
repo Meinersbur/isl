@@ -736,7 +736,7 @@ static int is_comparator(struct isl_token *tok)
 static __isl_give isl_map *read_formula(__isl_keep isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational);
 static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v, int rational);
+	__isl_take isl_space *space, struct vars *v, int rational);
 
 /* Accept a ternary operator, given the first argument.
  */
@@ -834,16 +834,15 @@ static int next_is_comparator(__isl_keep isl_stream *s)
  * argument of a ternary operator and try to parse that.
  */
 static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v, int rational)
+	__isl_take isl_space *space, struct vars *v, int rational)
 {
-	isl_space *space;
 	isl_map *cond;
 	isl_pw_aff *pwaff;
 	int line = -1, col = -1;
 
 	set_current_line_col(s, &line, &col);
 
-	pwaff = accept_affine(s, dim, v);
+	pwaff = accept_affine(s, space, v);
 	if (rational)
 		pwaff = isl_pw_aff_set_rational(pwaff);
 	if (!pwaff)
