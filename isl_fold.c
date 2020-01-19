@@ -1347,15 +1347,15 @@ enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
-	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim)
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *space)
 {
 	int i;
 
-	if (!fold || !dim)
+	if (!fold || !space)
 		goto error;
 
-	if (isl_space_is_equal(fold->dim, dim)) {
-		isl_space_free(dim);
+	if (isl_space_is_equal(fold->dim, space)) {
+		isl_space_free(space);
 		return fold;
 	}
 
@@ -1364,23 +1364,23 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 		goto error;
 
 	isl_space_free(fold->dim);
-	fold->dim = isl_space_copy(dim);
+	fold->dim = isl_space_copy(space);
 	if (!fold->dim)
 		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_lift(fold->qp[i],
-						isl_space_copy(dim));
+						isl_space_copy(space));
 		if (!fold->qp[i])
 			goto error;
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	return fold;
 error:
 	isl_qpolynomial_fold_free(fold);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
