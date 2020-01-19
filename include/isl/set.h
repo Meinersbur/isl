@@ -271,7 +271,7 @@ __isl_export
 __isl_give isl_set *isl_set_empty(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_set *isl_set_universe(__isl_take isl_space *space);
-__isl_give isl_set *isl_set_nat_universe(__isl_take isl_space *dim);
+__isl_give isl_set *isl_set_nat_universe(__isl_take isl_space *space);
 __isl_give isl_set *isl_set_copy(__isl_keep isl_set *set);
 __isl_null isl_set *isl_set_free(__isl_take isl_set *set);
 __isl_constructor
