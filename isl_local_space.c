@@ -90,9 +90,10 @@ __isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *space,
 	return isl_local_space_alloc_div(space, div);
 }
 
-__isl_give isl_local_space *isl_local_space_from_space(__isl_take isl_space *dim)
+__isl_give isl_local_space *isl_local_space_from_space(
+	__isl_take isl_space *space)
 {
-	return isl_local_space_alloc(dim, 0);
+	return isl_local_space_alloc(space, 0);
 }
 
 __isl_give isl_local_space *isl_local_space_copy(__isl_keep isl_local_space *ls)
