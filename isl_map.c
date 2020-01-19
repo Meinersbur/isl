@@ -5186,14 +5186,14 @@ __isl_give isl_map *isl_map_lex_le_first(__isl_take isl_space *space,
 	return map_lex_lte_first(space, n, 1);
 }
 
-__isl_give isl_map *isl_map_lex_lt(__isl_take isl_space *set_dim)
+__isl_give isl_map *isl_map_lex_lt(__isl_take isl_space *set_space)
 {
-	return map_lex_lte(isl_space_map_from_set(set_dim), 0);
+	return map_lex_lte(isl_space_map_from_set(set_space), 0);
 }
 
-__isl_give isl_map *isl_map_lex_le(__isl_take isl_space *set_dim)
+__isl_give isl_map *isl_map_lex_le(__isl_take isl_space *set_space)
 {
-	return map_lex_lte(isl_space_map_from_set(set_dim), 1);
+	return map_lex_lte(isl_space_map_from_set(set_space), 1);
 }
 
 static __isl_give isl_map *map_lex_gte_first(__isl_take isl_space *space,
@@ -5242,14 +5242,14 @@ __isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *space,
 	return map_lex_gte_first(space, n, 1);
 }
 
-__isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_dim)
+__isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_space)
 {
-	return map_lex_gte(isl_space_map_from_set(set_dim), 0);
+	return map_lex_gte(isl_space_map_from_set(set_space), 0);
 }
 
-__isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_dim)
+__isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_space)
 {
-	return map_lex_gte(isl_space_map_from_set(set_dim), 1);
+	return map_lex_gte(isl_space_map_from_set(set_space), 1);
 }
 
 __isl_give isl_map *isl_set_lex_le_set(__isl_take isl_set *set1,
