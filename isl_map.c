@@ -67,12 +67,12 @@ static __isl_keep const isl_basic_map *const_bset_to_bmap(
 #define TYPE	isl_basic_map
 #include "has_single_reference_templ.c"
 
-static unsigned pos(__isl_keep isl_space *dim, enum isl_dim_type type)
+static unsigned pos(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	switch (type) {
 	case isl_dim_param:	return 1;
-	case isl_dim_in:	return 1 + dim->nparam;
-	case isl_dim_out:	return 1 + dim->nparam + dim->n_in;
+	case isl_dim_in:	return 1 + space->nparam;
+	case isl_dim_out:	return 1 + space->nparam + space->n_in;
 	default:		return 0;
 	}
 }
