@@ -5654,10 +5654,10 @@ error:
 }
 
 __isl_give isl_basic_set *isl_basic_set_reset_space(
-	__isl_take isl_basic_set *bset, __isl_take isl_space *dim)
+	__isl_take isl_basic_set *bset, __isl_take isl_space *space)
 {
 	return bset_from_bmap(isl_basic_map_reset_space(bset_to_bmap(bset),
-							dim));
+							space));
 }
 
 /* Check that the total dimensions of "map" and "space" are the same.
