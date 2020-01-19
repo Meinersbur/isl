@@ -5174,14 +5174,16 @@ static __isl_give isl_map *map_lex_lte(__isl_take isl_space *space, int equal)
 	return map_lex_lte_first(space, space->n_out, equal);
 }
 
-__isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *dim, unsigned n)
+__isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *space,
+	unsigned n)
 {
-	return map_lex_lte_first(dim, n, 0);
+	return map_lex_lte_first(space, n, 0);
 }
 
-__isl_give isl_map *isl_map_lex_le_first(__isl_take isl_space *dim, unsigned n)
+__isl_give isl_map *isl_map_lex_le_first(__isl_take isl_space *space,
+	unsigned n)
 {
-	return map_lex_lte_first(dim, n, 1);
+	return map_lex_lte_first(space, n, 1);
 }
 
 __isl_give isl_map *isl_map_lex_lt(__isl_take isl_space *set_dim)
@@ -5228,14 +5230,16 @@ static __isl_give isl_map *map_lex_gte(__isl_take isl_space *space, int equal)
 	return map_lex_gte_first(space, space->n_out, equal);
 }
 
-__isl_give isl_map *isl_map_lex_gt_first(__isl_take isl_space *dim, unsigned n)
+__isl_give isl_map *isl_map_lex_gt_first(__isl_take isl_space *space,
+	unsigned n)
 {
-	return map_lex_gte_first(dim, n, 0);
+	return map_lex_gte_first(space, n, 0);
 }
 
-__isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *dim, unsigned n)
+__isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *space,
+	unsigned n)
 {
-	return map_lex_gte_first(dim, n, 1);
+	return map_lex_gte_first(space, n, 1);
 }
 
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_dim)
