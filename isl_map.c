@@ -5734,9 +5734,9 @@ error:
 }
 
 __isl_give isl_set *isl_set_reset_space(__isl_take isl_set *set,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
-	return set_from_map(isl_map_reset_space(set_to_map(set), dim));
+	return set_from_map(isl_map_reset_space(set_to_map(set), space));
 }
 
 /* Compute the parameter domain of the given basic set.
