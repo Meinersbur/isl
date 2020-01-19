@@ -1573,12 +1573,13 @@ __isl_give PW *FN(PW,reset_domain_space)(__isl_take PW *pw,
 	return FN(PW,reset_space_and_domain)(pw, space, domain);
 }
 
-__isl_give PW *FN(PW,reset_space)(__isl_take PW *pw, __isl_take isl_space *dim)
+__isl_give PW *FN(PW,reset_space)(__isl_take PW *pw,
+	__isl_take isl_space *space)
 {
 	isl_space *domain;
 
-	domain = isl_space_domain(isl_space_copy(dim));
-	return FN(PW,reset_space_and_domain)(pw, dim, domain);
+	domain = isl_space_domain(isl_space_copy(space));
+	return FN(PW,reset_space_and_domain)(pw, space, domain);
 }
 
 __isl_give PW *FN(PW,set_tuple_id)(__isl_take PW *pw, enum isl_dim_type type,

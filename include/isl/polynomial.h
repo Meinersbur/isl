@@ -393,7 +393,7 @@ __isl_give isl_space *isl_pw_qpolynomial_fold_get_domain_space(
 __isl_give isl_space *isl_pw_qpolynomial_fold_get_space(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_space(
-	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_space *dim);
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_space *space);
 isl_size isl_pw_qpolynomial_fold_dim(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	enum isl_dim_type type);
 isl_bool isl_pw_qpolynomial_fold_involves_param_id(
