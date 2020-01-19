@@ -92,28 +92,28 @@ __isl_give isl_space *isl_qpolynomial_fold_get_space(
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_domain_space(
-	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim)
+	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *space)
 {
 	int i;
 
 	fold = isl_qpolynomial_fold_cow(fold);
-	if (!fold || !dim)
+	if (!fold || !space)
 		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_reset_domain_space(fold->qp[i],
-							isl_space_copy(dim));
+							isl_space_copy(space));
 		if (!fold->qp[i])
 			goto error;
 	}
 
 	isl_space_free(fold->dim);
-	fold->dim = dim;
+	fold->dim = space;
 
 	return fold;
 error:
 	isl_qpolynomial_fold_free(fold);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
