@@ -400,7 +400,7 @@ static int is_start_of_div(struct isl_token *tok)
  *	ceild(<affine expression>,<denominator>)
  */
 static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v)
+	__isl_take isl_space *space, struct vars *v)
 {
 	struct isl_token *tok;
 	int f = 0;
@@ -424,7 +424,7 @@ static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
 			goto error;
 	}
 
-	pwaff = accept_affine(s, isl_space_copy(dim), v);
+	pwaff = accept_affine(s, isl_space_copy(space), v);
 
 	if (extra) {
 		if (isl_stream_eat(s, ','))
@@ -455,10 +455,10 @@ static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
 			goto error;
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return pwaff;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_pw_aff_free(pwaff);
 	return NULL;
 }
