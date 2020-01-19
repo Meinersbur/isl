@@ -552,14 +552,15 @@ isl_ctx *isl_flow_get_ctx(__isl_keep isl_flow *deps)
  * be greater than the loop iterator of the range at the last
  * of the level/2 shared loops, i.e., loop level/2 - 1.
  */
-static __isl_give isl_map *after_at_level(__isl_take isl_space *dim, int level)
+static __isl_give isl_map *after_at_level(__isl_take isl_space *space,
+	int level)
 {
 	struct isl_basic_map *bmap;
 
 	if (level % 2)
-		bmap = isl_basic_map_equal(dim, level/2);
+		bmap = isl_basic_map_equal(space, level/2);
 	else
-		bmap = isl_basic_map_more_at(dim, level/2 - 1);
+		bmap = isl_basic_map_more_at(space, level/2 - 1);
 
 	return isl_map_from_basic_map(bmap);
 }
