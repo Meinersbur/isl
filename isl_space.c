@@ -1961,20 +1961,20 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_drop_inputs(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_drop_inputs(__isl_take isl_space *space,
 		unsigned first, unsigned n)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	return isl_space_drop_dims(dim, isl_dim_in, first, n);
+	return isl_space_drop_dims(space, isl_dim_in, first, n);
 }
 
-__isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *space,
 		unsigned first, unsigned n)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	return isl_space_drop_dims(dim, isl_dim_out, first, n);
+	return isl_space_drop_dims(space, isl_dim_out, first, n);
 }
 
 /* Remove all parameters from "space".
