@@ -337,7 +337,7 @@ error:
 static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 	__isl_take isl_space *space, struct vars *v);
 static __isl_give isl_pw_aff_list *accept_affine_list(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v);
+	__isl_take isl_space *space, struct vars *v);
 
 static __isl_give isl_pw_aff *accept_minmax(__isl_keep isl_stream *s,
 	__isl_take isl_space *dim, struct vars *v)
@@ -900,13 +900,13 @@ static __isl_give isl_map *read_var_def(__isl_keep isl_stream *s,
 }
 
 static __isl_give isl_pw_aff_list *accept_affine_list(__isl_keep isl_stream *s,
-	__isl_take isl_space *dim, struct vars *v)
+	__isl_take isl_space *space, struct vars *v)
 {
 	isl_pw_aff *pwaff;
 	isl_pw_aff_list *list;
 	struct isl_token *tok = NULL;
 
-	pwaff = accept_affine(s, isl_space_copy(dim), v);
+	pwaff = accept_affine(s, isl_space_copy(space), v);
 	list = isl_pw_aff_list_from_pw_aff(pwaff);
 	if (!list)
 		goto error;
@@ -923,17 +923,17 @@ static __isl_give isl_pw_aff_list *accept_affine_list(__isl_keep isl_stream *s,
 		}
 		isl_token_free(tok);
 
-		pwaff = accept_affine(s, isl_space_copy(dim), v);
+		pwaff = accept_affine(s, isl_space_copy(space), v);
 		list = isl_pw_aff_list_concat(list,
 				isl_pw_aff_list_from_pw_aff(pwaff));
 		if (!list)
 			goto error;
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return list;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_pw_aff_list_free(list);
 	return NULL;
 }
