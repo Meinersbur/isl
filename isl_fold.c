@@ -716,9 +716,9 @@ static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
 #include <isl_union_eval.c>
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
-	return qpolynomial_fold_alloc(type, dim, 0);
+	return qpolynomial_fold_alloc(type, space, 0);
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
