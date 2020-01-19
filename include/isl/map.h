@@ -287,7 +287,7 @@ isl_bool isl_basic_map_is_strict_subset(__isl_keep isl_basic_map *bmap1,
 
 __isl_export
 __isl_give isl_map *isl_map_universe(__isl_take isl_space *space);
-__isl_give isl_map *isl_map_nat_universe(__isl_take isl_space *dim);
+__isl_give isl_map *isl_map_nat_universe(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_map *isl_map_empty(__isl_take isl_space *space);
 __isl_give isl_map *isl_map_identity(__isl_take isl_space *dim);
