@@ -163,7 +163,7 @@ __isl_give isl_space *isl_pw_qpolynomial_get_domain_space(
 __isl_give isl_space *isl_pw_qpolynomial_get_space(
 	__isl_keep isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_reset_domain_space(
-	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_space *dim);
+	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_space *space);
 isl_size isl_pw_qpolynomial_dim(__isl_keep isl_pw_qpolynomial *pwqp,
 	enum isl_dim_type type);
 isl_bool isl_pw_qpolynomial_involves_param_id(
