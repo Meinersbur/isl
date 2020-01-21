@@ -338,7 +338,8 @@ static bool less_name(const FunctionDecl *a, const FunctionDecl *b)
 }
 
 /* Collect all functions that belong to a certain type, separating
- * constructors from methods that set a persistent callback and
+ * constructors from methods that set an enum value,
+ * methods that set a persistent callback and
  * from regular methods, while keeping track of the _to_str,
  * _copy and _free functions, if any, separately.  If there are any overloaded
  * functions, then they are grouped based on their name after removing the
