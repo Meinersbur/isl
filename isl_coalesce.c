@@ -822,7 +822,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
  *       \    ||  /		 \       /
  *        \___||_/		  \_____/
  *
- * The test for a single pair of adjancent inequalities is important
+ * The test for a single pair of adjacent inequalities is important
  * for avoiding the combination of two basic maps like the following
  *
  *       /|
@@ -1363,7 +1363,7 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
  * been added.
  * If any of the wrapping problems results in a constraint that is
  * identical to "bound", then this means that "set" is unbounded in such
- * way that no wrapping is possible.  If this happens then wraps->n_row
+ * a way that no wrapping is possible.  If this happens then wraps->n_row
  * is reset to zero.
  * Similarly, if we want to bound the coefficients of the wrapping
  * constraints and a newly added wrapping constraint does not
