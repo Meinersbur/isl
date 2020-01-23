@@ -329,6 +329,21 @@ static bool sets_persistent_callback(isl_class *c, FunctionDecl *fd)
 			 c->set_callback_prefix) == 0;
 }
 
+/* Does this function take any enum arguments?
+ */
+static bool takes_enums(FunctionDecl *fd)
+{
+	unsigned n;
+
+	n = fd->getNumParams();
+	for (unsigned i = 0; i < n; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		if (param->getType()->getAs<EnumType>())
+			return true;
+	}
+	return false;
+}
+
 /* Sorting function that places declaration of functions
  * with a shorter name first.
  */
@@ -341,7 +356,10 @@ static bool less_name(const FunctionDecl *a, const FunctionDecl *b)
  * constructors from methods that set an enum value,
  * methods that set a persistent callback and
  * from regular methods, while keeping track of the _to_str,
- * _copy and _free functions, if any, separately.  If there are any overloaded
+ * _copy and _free functions, if any, separately.
+ * Methods that accept any enum arguments that are not specifically handled
+ * are not supported.
+ * If there are any overloaded
  * functions, then they are grouped based on their name after removing the
  * argument type suffix.
  * Check for functions that describe subclasses before considering
@@ -393,6 +411,9 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		} else if (handled_sets_enum(c, method)) {
 		} else if (sets_persistent_callback(c, method)) {
 			c->persistent_callbacks.insert(method);
+		} else if (takes_enums(method)) {
+			std::string name = method->getName();
+			die(name + " has unhandled enum argument");
 		} else {
 			string fullname = c->name_without_type_suffixes(method);
 			c->methods[fullname].insert(method);
