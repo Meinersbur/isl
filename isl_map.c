@@ -1313,13 +1313,13 @@ struct isl_basic_map *isl_basic_map_alloc(struct isl_ctx *ctx,
 		unsigned n_eq, unsigned n_ineq)
 {
 	struct isl_basic_map *bmap;
-	isl_space *dim;
+	isl_space *space;
 
-	dim = isl_space_alloc(ctx, nparam, in, out);
-	if (!dim)
+	space = isl_space_alloc(ctx, nparam, in, out);
+	if (!space)
 		return NULL;
 
-	bmap = isl_basic_map_alloc_space(dim, extra, n_eq, n_ineq);
+	bmap = isl_basic_map_alloc_space(space, extra, n_eq, n_ineq);
 	return bmap;
 }
 
