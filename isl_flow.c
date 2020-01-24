@@ -448,11 +448,11 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 
 	dep->n_source = n;
 	for (i = 0; i < acc->n_must; ++i) {
-		isl_space *dim;
-		dim = space_align_and_join(
+		isl_space *space;
+		space = space_align_and_join(
 			isl_map_get_space(acc->source[i].map),
 			isl_space_reverse(isl_map_get_space(acc->sink.map)));
-		dep->dep[2 * i].map = isl_map_empty(dim);
+		dep->dep[2 * i].map = isl_map_empty(space);
 		dep->dep[2 * i + 1].map = isl_map_copy(dep->dep[2 * i].map);
 		dep->dep[2 * i].data = acc->source[i].data;
 		dep->dep[2 * i + 1].data = acc->source[i].data;
@@ -462,11 +462,11 @@ static __isl_give isl_flow *isl_flow_alloc(__isl_keep isl_access_info *acc)
 			goto error;
 	}
 	for (i = acc->n_must; i < acc->n_must + acc->n_may; ++i) {
-		isl_space *dim;
-		dim = space_align_and_join(
+		isl_space *space;
+		space = space_align_and_join(
 			isl_map_get_space(acc->source[i].map),
 			isl_space_reverse(isl_map_get_space(acc->sink.map)));
-		dep->dep[acc->n_must + i].map = isl_map_empty(dim);
+		dep->dep[acc->n_must + i].map = isl_map_empty(space);
 		dep->dep[acc->n_must + i].data = acc->source[i].data;
 		dep->dep[acc->n_must + i].must = 0;
 		if (!dep->dep[acc->n_must + i].map)
