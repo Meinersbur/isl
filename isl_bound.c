@@ -313,7 +313,7 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
 	__isl_take isl_union_pw_qpolynomial *upwqp,
 	enum isl_fold type, isl_bool *tight)
 {
-	isl_space *dim;
+	isl_space *space;
 	struct isl_union_bound_data data = { type, 1, NULL };
 
 	if (!upwqp)
@@ -322,8 +322,8 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
 	if (!tight)
 		data.tight = isl_bool_false;
 
-	dim = isl_union_pw_qpolynomial_get_space(upwqp);
-	data.res = isl_union_pw_qpolynomial_fold_zero(dim, type);
+	space = isl_union_pw_qpolynomial_get_space(upwqp);
+	data.res = isl_union_pw_qpolynomial_fold_zero(space, type);
 	if (isl_union_pw_qpolynomial_foreach_pw_qpolynomial(upwqp,
 						    &bound_pw, &data) < 0)
 		goto error;
