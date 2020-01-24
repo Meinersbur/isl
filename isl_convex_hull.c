@@ -993,7 +993,7 @@ error:
 static __isl_give isl_basic_set *valid_direction_lp(
 	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
-	isl_space *dim;
+	isl_space *space;
 	struct isl_basic_set *lp;
 	unsigned d;
 	int n;
@@ -1006,8 +1006,8 @@ static __isl_give isl_basic_set *valid_direction_lp(
 	d = 1 + total;
 	n = 2 +
 	    2 * bset1->n_eq + bset1->n_ineq + 2 * bset2->n_eq + bset2->n_ineq;
-	dim = isl_space_set_alloc(bset1->ctx, 0, n);
-	lp = isl_basic_set_alloc_space(dim, 0, d, n);
+	space = isl_space_set_alloc(bset1->ctx, 0, n);
+	lp = isl_basic_set_alloc_space(space, 0, d, n);
 	if (!lp)
 		goto error;
 	for (i = 0; i < n; ++i) {
