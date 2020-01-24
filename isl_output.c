@@ -1803,16 +1803,16 @@ static __isl_give isl_printer *print_base(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_pow(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_mat *div, int var, int exp)
+	__isl_keep isl_space *space, __isl_keep isl_mat *div, int var, int exp)
 {
-	p = print_base(p, dim, div, var);
+	p = print_base(p, space, div, var);
 	if (exp == 1)
 		return p;
 	if (p->output_format == ISL_FORMAT_C) {
 		int i;
 		for (i = 1; i < exp; ++i) {
 			p = isl_printer_print_str(p, "*");
-			p = print_base(p, dim, div, var);
+			p = print_base(p, space, div, var);
 		}
 	} else {
 		p = isl_printer_print_str(p, "^");
