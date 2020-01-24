@@ -2765,7 +2765,7 @@ isl_bool isl_union_set_is_empty(__isl_keep isl_union_set *uset)
 static isl_bool is_subset_of_identity(__isl_keep isl_map *map)
 {
 	isl_bool is_subset;
-	isl_space *dim;
+	isl_space *space;
 	isl_map *id;
 
 	if (!map)
@@ -2775,8 +2775,8 @@ static isl_bool is_subset_of_identity(__isl_keep isl_map *map)
 					map->dim, isl_dim_out))
 		return isl_bool_false;
 
-	dim = isl_map_get_space(map);
-	id = isl_map_identity(dim);
+	space = isl_map_get_space(map);
+	id = isl_map_identity(space);
 
 	is_subset = isl_map_is_subset(map, id);
 
