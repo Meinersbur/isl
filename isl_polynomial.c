@@ -4752,7 +4752,7 @@ error:
 static __isl_give isl_pw_qpolynomial *constant_on_domain(
 	__isl_take isl_basic_set *bset, int cst)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_qpolynomial *qp;
 
 	if (cst < 0 && isl_basic_set_is_empty(bset) == isl_bool_true)
@@ -4761,13 +4761,13 @@ static __isl_give isl_pw_qpolynomial *constant_on_domain(
 		return NULL;
 
 	bset = isl_basic_set_params(bset);
-	dim = isl_basic_set_get_space(bset);
+	space = isl_basic_set_get_space(bset);
 	if (cst < 0)
-		qp = isl_qpolynomial_infty_on_domain(dim);
+		qp = isl_qpolynomial_infty_on_domain(space);
 	else if (cst == 0)
-		qp = isl_qpolynomial_zero_on_domain(dim);
+		qp = isl_qpolynomial_zero_on_domain(space);
 	else
-		qp = isl_qpolynomial_one_on_domain(dim);
+		qp = isl_qpolynomial_one_on_domain(space);
 	return isl_pw_qpolynomial_alloc(isl_set_from_basic_set(bset), qp);
 }
 
