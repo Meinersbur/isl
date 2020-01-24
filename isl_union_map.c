@@ -468,15 +468,15 @@ __isl_give isl_union_set *isl_union_set_add_set(__isl_take isl_union_set *uset,
 
 __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_union_map *umap;
 
 	if (!map)
 		return NULL;
 
-	dim = isl_map_get_space(map);
-	dim = isl_space_params(dim);
-	umap = isl_union_map_empty(dim);
+	space = isl_map_get_space(map);
+	space = isl_space_params(space);
+	umap = isl_union_map_empty(space);
 	umap = isl_union_map_add_map(umap, map);
 
 	return umap;
