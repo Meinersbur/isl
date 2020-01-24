@@ -1803,16 +1803,16 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_space *set_ids(__isl_take isl_space *dim,
+static __isl_give isl_space *set_ids(__isl_take isl_space *space,
 	enum isl_dim_type type,
 	unsigned first, unsigned n, __isl_take isl_id **ids)
 {
 	int i;
 
 	for (i = 0; i < n ; ++i)
-		dim = set_id(dim, type, first + i, ids[i]);
+		space = set_id(space, type, first + i, ids[i]);
 
-	return dim;
+	return space;
 }
 
 __isl_give isl_space *isl_space_reverse(__isl_take isl_space *space)
