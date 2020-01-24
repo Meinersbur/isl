@@ -948,16 +948,16 @@ static int test_div(isl_ctx *ctx)
 {
 	const char *str;
 	int empty;
-	isl_space *dim;
+	isl_space *space;
 	isl_set *set;
 	isl_local_space *ls;
 	struct isl_basic_set *bset;
 	struct isl_constraint *c;
 
 	/* test 1 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_constant_si(c, -1);
@@ -978,9 +978,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 2 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_constant_si(c, 1);
@@ -1001,9 +1001,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 3 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_constant_si(c, 1);
@@ -1024,9 +1024,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 4 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_constant_si(c, 2);
@@ -1047,9 +1047,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 5 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
@@ -1068,9 +1068,9 @@ static int test_div(isl_ctx *ctx)
 	isl_local_space_free(ls);
 
 	/* test 6 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
@@ -1098,9 +1098,9 @@ static int test_div(isl_ctx *ctx)
 	 * and we end up with the original equality and div again.
 	 * Perhaps we can avoid the introduction of this temporary div.
 	 */
-	dim = isl_space_set_alloc(ctx, 0, 4);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 4);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
@@ -1119,9 +1119,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 8 */
-	dim = isl_space_set_alloc(ctx, 0, 5);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 5);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
@@ -1146,9 +1146,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 9 */
-	dim = isl_space_set_alloc(ctx, 0, 4);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 4);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, 1);
@@ -1172,9 +1172,9 @@ static int test_div(isl_ctx *ctx)
 	isl_basic_set_free(bset);
 
 	/* test 10 */
-	dim = isl_space_set_alloc(ctx, 0, 3);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 0, 3);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, 1);
