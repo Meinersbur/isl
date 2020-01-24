@@ -281,7 +281,7 @@ static isl_bool can_print_div_expr(__isl_keep isl_printer *p,
 	return isl_bool_not(isl_local_div_is_marked_unknown(div, pos));
 }
 
-static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_div(__isl_keep isl_space *space,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p);
 
 static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
@@ -871,7 +871,7 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
+static __isl_give isl_printer *print_div(__isl_keep isl_space *space,
 	__isl_keep isl_mat *div, int pos, __isl_take isl_printer *p)
 {
 	int c;
@@ -881,7 +881,7 @@ static __isl_give isl_printer *print_div(__isl_keep isl_space *dim,
 
 	c = p->output_format == ISL_FORMAT_C;
 	p = isl_printer_print_str(p, c ? "floord(" : "floor((");
-	p = print_affine_of_len(dim, div, p,
+	p = print_affine_of_len(space, div, p,
 				div->row[pos] + 1, div->n_col - 1);
 	p = isl_printer_print_str(p, c ? ", " : ")/");
 	p = isl_printer_print_isl_int(p, div->row[pos][0]);
