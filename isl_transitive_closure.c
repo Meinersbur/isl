@@ -943,7 +943,7 @@ static __isl_give isl_map *construct_projected_component(
  * with path lengths greater than or equal to zero and with
  * domain and range equal to "dom".
  */
-static __isl_give isl_map *q_closure(__isl_take isl_space *dim,
+static __isl_give isl_map *q_closure(__isl_take isl_space *space,
 	__isl_take isl_set *dom, __isl_keep isl_basic_map *bmap,
 	isl_bool *exact)
 {
@@ -955,7 +955,7 @@ static __isl_give isl_map *q_closure(__isl_take isl_space *dim,
 	dom = isl_set_add_dims(dom, isl_dim_set, 1);
 	app = isl_map_from_domain_and_range(dom, isl_set_copy(dom));
 	map = isl_map_from_basic_map(isl_basic_map_copy(bmap));
-	path = construct_extended_path(dim, map, &project);
+	path = construct_extended_path(space, map, &project);
 	app = isl_map_intersect(app, path);
 
 	if ((*exact = check_exactness(map, isl_map_copy(app), project)) < 0)
