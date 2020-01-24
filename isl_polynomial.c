@@ -408,19 +408,19 @@ __isl_give isl_poly_rec *isl_poly_alloc_rec(isl_ctx *ctx, int var, int size)
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_reset_domain_space(
-	__isl_take isl_qpolynomial *qp, __isl_take isl_space *dim)
+	__isl_take isl_qpolynomial *qp, __isl_take isl_space *space)
 {
 	qp = isl_qpolynomial_cow(qp);
-	if (!qp || !dim)
+	if (!qp || !space)
 		goto error;
 
 	isl_space_free(qp->dim);
-	qp->dim = dim;
+	qp->dim = space;
 
 	return qp;
 error:
 	isl_qpolynomial_free(qp);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 

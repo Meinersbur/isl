@@ -257,7 +257,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_realign_domain(
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_reset_space(
 	__isl_take isl_pw_qpolynomial *pwqp, __isl_take isl_space *space);
 __isl_give isl_qpolynomial *isl_qpolynomial_reset_domain_space(
-	__isl_take isl_qpolynomial *qp, __isl_take isl_space *dim);
+	__isl_take isl_qpolynomial *qp, __isl_take isl_space *space);
 __isl_give isl_qpolynomial *isl_qpolynomial_reset_space_and_domain(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_space *space,
 	__isl_take isl_space *domain);
