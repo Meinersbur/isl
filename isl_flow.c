@@ -1071,7 +1071,7 @@ static __isl_give isl_flow *compute_mem_based_dependences(
 	for (i = 0; i < acc->n_may; ++i) {
 		int plevel;
 		int is_before;
-		isl_space *dim;
+		isl_space *space;
 		isl_map *before;
 		isl_map *dep;
 
@@ -1082,11 +1082,11 @@ static __isl_give isl_flow *compute_mem_based_dependences(
 		is_before = plevel & 1;
 		plevel >>= 1;
 
-		dim = isl_map_get_space(res->dep[i].map);
+		space = isl_map_get_space(res->dep[i].map);
 		if (is_before)
-			before = isl_map_lex_le_first(dim, plevel);
+			before = isl_map_lex_le_first(space, plevel);
 		else
-			before = isl_map_lex_lt_first(dim, plevel);
+			before = isl_map_lex_lt_first(space, plevel);
 		dep = isl_map_apply_range(isl_map_copy(acc->source[i].map),
 			isl_map_reverse(isl_map_copy(acc->sink.map)));
 		dep = isl_map_intersect(dep, before);
