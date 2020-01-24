@@ -37,7 +37,7 @@ uint32_t isl_local_space_get_hash(__isl_keep isl_local_space *ls)
 		return 0;
 
 	hash = isl_hash_init();
-	space_hash = isl_space_get_hash(ls->dim);
+	space_hash = isl_space_get_hash(isl_local_space_peek_space(ls));
 	isl_hash_hash(hash, space_hash);
 	div_hash = isl_mat_get_hash(ls->div);
 	isl_hash_hash(hash, div_hash);
