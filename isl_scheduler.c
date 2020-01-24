@@ -4411,7 +4411,7 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 {
 	int i;
 	int k;
-	isl_space *dim;
+	isl_space *space;
 	unsigned total;
 	int n_eq, n_ineq;
 
@@ -4425,11 +4425,11 @@ static isl_stat setup_carry_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (count_all_constraints(intra, inter, &n_eq, &n_ineq) < 0)
 		return isl_stat_error;
 
-	dim = isl_space_set_alloc(ctx, 0, total);
+	space = isl_space_set_alloc(ctx, 0, total);
 	isl_basic_set_free(graph->lp);
 	n_eq += 3;
 	n_ineq += n_edge;
-	graph->lp = isl_basic_set_alloc_space(dim, 0, n_eq, n_ineq);
+	graph->lp = isl_basic_set_alloc_space(space, 0, n_eq, n_ineq);
 	graph->lp = isl_basic_set_set_rational(graph->lp);
 
 	k = isl_basic_set_alloc_equality(graph->lp);
