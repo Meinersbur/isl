@@ -146,11 +146,13 @@ __isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *space,
 __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(
+	__isl_take isl_space *domain,
 	isl_int v);
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
-	__isl_take isl_space *space, const isl_int n, const isl_int d);
-__isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(__isl_take isl_space *dim,
+	__isl_take isl_space *domain, const isl_int n, const isl_int d);
+__isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(
+	__isl_take isl_space *domain,
 	int pos, int power);
 isl_bool isl_qpolynomial_is_one(__isl_keep isl_qpolynomial *qp);
 isl_bool isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp);
