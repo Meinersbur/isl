@@ -1043,13 +1043,13 @@ isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	return match(space1, type1, space2, type2);
 }
 
-static void get_ids(__isl_keep isl_space *dim, enum isl_dim_type type,
+static void get_ids(__isl_keep isl_space *space, enum isl_dim_type type,
 	unsigned first, unsigned n, __isl_keep isl_id **ids)
 {
 	int i;
 
 	for (i = 0; i < n ; ++i)
-		ids[i] = get_id(dim, type, first + i);
+		ids[i] = get_id(space, type, first + i);
 }
 
 static __isl_give isl_space *space_extend(__isl_take isl_space *space,
