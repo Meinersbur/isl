@@ -3316,15 +3316,15 @@ __isl_give isl_union_set *isl_union_set_coefficients(
 	__isl_take isl_union_set *uset)
 {
 	isl_ctx *ctx;
-	isl_space *dim;
+	isl_space *space;
 	isl_union_set *res;
 
 	if (!uset)
 		return NULL;
 
 	ctx = isl_union_set_get_ctx(uset);
-	dim = isl_space_set_alloc(ctx, 0, 0);
-	res = isl_union_map_alloc(dim, uset->table.n);
+	space = isl_space_set_alloc(ctx, 0, 0);
+	res = isl_union_map_alloc(space, uset->table.n);
 	if (isl_hash_table_foreach(uset->dim->ctx, &uset->table,
 				   &coefficients_entry, &res) < 0)
 		goto error;
