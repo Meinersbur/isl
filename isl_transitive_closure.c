@@ -865,7 +865,7 @@ static isl_bool isl_set_overlaps(__isl_keep isl_set *set1,
  *				x in dom R and x + d in ran R and
  *				\sum_i k_i >= 1 }
  */
-static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
+static __isl_give isl_map *construct_component(__isl_take isl_space *space,
 	__isl_keep isl_map *map, isl_bool *exact, int project)
 {
 	struct isl_set *domain = NULL;
@@ -883,7 +883,7 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 	if (overlaps < 0 || !overlaps) {
 		isl_set_free(domain);
 		isl_set_free(range);
-		isl_space_free(dim);
+		isl_space_free(space);
 
 		if (overlaps < 0)
 			map = NULL;
@@ -898,7 +898,7 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 	app = isl_map_add_dims(app, isl_dim_out, 1);
 
 	check = exact && *exact == isl_bool_true;
-	path = construct_extended_path(isl_space_copy(dim), map,
+	path = construct_extended_path(isl_space_copy(space), map,
 					check ? &project : NULL);
 	app = isl_map_intersect(app, path);
 
@@ -907,11 +907,11 @@ static __isl_give isl_map *construct_component(__isl_take isl_space *dim,
 				      project)) < 0)
 		goto error;
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	app = set_path_length(app, 0, 1);
 	return app;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_map_free(app);
 	return NULL;
 }
