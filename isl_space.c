@@ -902,15 +902,15 @@ static __isl_keep isl_id *tuple_id(__isl_keep isl_space *space,
 	return NULL;
 }
 
-static __isl_keep isl_space *nested(__isl_keep isl_space *dim,
+static __isl_keep isl_space *nested(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (type == isl_dim_in)
-		return dim->nested[0];
+		return space->nested[0];
 	if (type == isl_dim_out)
-		return dim->nested[1];
+		return space->nested[1];
 	return NULL;
 }
 
