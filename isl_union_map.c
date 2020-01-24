@@ -3156,7 +3156,7 @@ static isl_bool plain_injective_on_range(__isl_take isl_union_map *umap,
 	for (data.pos = first; data.pos < n_range; ++data.pos) {
 		isl_bool fixed;
 		int injective;
-		isl_space *dim;
+		isl_space *space;
 
 		data.n = 0;
 		fixed = union_map_forall_user(umap, &fixed_at_pos, &data);
@@ -3164,8 +3164,8 @@ static isl_bool plain_injective_on_range(__isl_take isl_union_map *umap,
 			goto error;
 		if (!fixed)
 			continue;
-		dim = isl_union_map_get_space(umap);
-		injective = separates(data.v, n, dim, data.pos, n_range);
+		space = isl_union_map_get_space(umap);
+		injective = separates(data.v, n, space, data.pos, n_range);
 		isl_union_map_free(umap);
 		return injective;
 	}
