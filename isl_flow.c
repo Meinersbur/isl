@@ -2365,17 +2365,17 @@ static isl_stat count_matching_array(__isl_take isl_map *map, void *user)
 static isl_stat collect_matching_array(__isl_take isl_map *map, void *user)
 {
 	int eq;
-	isl_space *dim;
+	isl_space *space;
 	struct isl_sched_info *info;
 	struct isl_compute_flow_data *data;
 
 	data = (struct isl_compute_flow_data *)user;
 
-	dim = isl_space_range(isl_map_get_space(map));
+	space = isl_space_range(isl_map_get_space(map));
 
-	eq = isl_space_is_equal(dim, data->dim);
+	eq = isl_space_is_equal(space, data->dim);
 
-	isl_space_free(dim);
+	isl_space_free(space);
 
 	if (eq < 0)
 		goto error;
