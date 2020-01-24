@@ -1724,8 +1724,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_mul_isl_int(
 		return fold;
 	if (fold && isl_int_is_zero(v)) {
 		isl_qpolynomial_fold *zero;
-		isl_space *dim = isl_space_copy(fold->dim);
-		zero = isl_qpolynomial_fold_empty(fold->type, dim);
+		isl_space *space = isl_space_copy(fold->dim);
+		zero = isl_qpolynomial_fold_empty(fold->type, space);
 		isl_qpolynomial_fold_free(fold);
 		return zero;
 	}
