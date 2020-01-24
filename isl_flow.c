@@ -667,7 +667,7 @@ static struct isl_map *last_later_source(struct isl_access_info *acc,
 					 int k, int after_level,
 					 struct isl_set **empty)
 {
-	isl_space *dim;
+	isl_space *space;
 	struct isl_set *set_C;
 	struct isl_map *read_map;
 	struct isl_map *write_map;
@@ -682,9 +682,9 @@ static struct isl_map *last_later_source(struct isl_access_info *acc,
 
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	dim = space_align_and_join(isl_map_get_space(acc->source[k].map),
+	space = space_align_and_join(isl_map_get_space(acc->source[k].map),
 		    isl_space_reverse(isl_map_get_space(acc->source[j].map)));
-	after_write = after_at_level(dim, after_level);
+	after_write = after_at_level(space, after_level);
 	after_write = isl_map_apply_range(after_write, old_map);
 	after_write = isl_map_reverse(after_write);
 	dep_map = isl_map_intersect(dep_map, after_write);
