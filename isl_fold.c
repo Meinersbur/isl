@@ -1646,7 +1646,7 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_map_apply_union_pw_qpolynomi
 	__isl_take isl_union_map *umap,
 	__isl_take isl_union_pw_qpolynomial_fold *upwf, isl_bool *tight)
 {
-	isl_space *dim;
+	isl_space *space;
 	enum isl_fold type;
 	struct isl_apply_fold_data data;
 
@@ -1657,9 +1657,9 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_map_apply_union_pw_qpolynomi
 
 	data.upwf = upwf;
 	data.tight = tight ? isl_bool_true : isl_bool_false;
-	dim = isl_union_pw_qpolynomial_fold_get_space(upwf);
+	space = isl_union_pw_qpolynomial_fold_get_space(upwf);
 	type = isl_union_pw_qpolynomial_fold_get_type(upwf);
-	data.res = isl_union_pw_qpolynomial_fold_zero(dim, type);
+	data.res = isl_union_pw_qpolynomial_fold_zero(space, type);
 	if (isl_union_map_foreach_map(umap, &map_apply, &data) < 0)
 		goto error;
 
