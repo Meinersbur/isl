@@ -890,15 +890,15 @@ __isl_give isl_space *isl_space_reset_user(__isl_take isl_space *space)
 	return space;
 }
 
-static __isl_keep isl_id *tuple_id(__isl_keep isl_space *dim,
+static __isl_keep isl_id *tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (type == isl_dim_in)
-		return dim->tuple_id[0];
+		return space->tuple_id[0];
 	if (type == isl_dim_out)
-		return dim->tuple_id[1];
+		return space->tuple_id[1];
 	return NULL;
 }
 
