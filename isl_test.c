@@ -3211,7 +3211,7 @@ static isl_stat uset_check_equal(__isl_keep isl_union_set *uset,
 static int test_dep(struct isl_ctx *ctx)
 {
 	const char *str;
-	isl_space *dim;
+	isl_space *space;
 	isl_map *map;
 	isl_access_info *ai;
 	isl_flow *flow;
@@ -3233,9 +3233,9 @@ static int test_dep(struct isl_ctx *ctx)
 	ai = isl_access_info_add_source(ai, map, 1, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
-	dim = isl_space_alloc(ctx, 0, 3, 3);
-	mm.must = isl_map_empty(isl_space_copy(dim));
-	mm.may = isl_map_empty(dim);
+	space = isl_space_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_space_copy(space));
+	mm.may = isl_map_empty(space);
 
 	isl_flow_foreach(flow, collect_must_may, &mm);
 
@@ -3263,9 +3263,9 @@ static int test_dep(struct isl_ctx *ctx)
 	ai = isl_access_info_add_source(ai, map, 0, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
-	dim = isl_space_alloc(ctx, 0, 3, 3);
-	mm.must = isl_map_empty(isl_space_copy(dim));
-	mm.may = isl_map_empty(dim);
+	space = isl_space_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_space_copy(space));
+	mm.may = isl_map_empty(space);
 
 	isl_flow_foreach(flow, collect_must_may, &mm);
 
@@ -3292,9 +3292,9 @@ static int test_dep(struct isl_ctx *ctx)
 	ai = isl_access_info_add_source(ai, map, 0, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
-	dim = isl_space_alloc(ctx, 0, 3, 3);
-	mm.must = isl_map_empty(isl_space_copy(dim));
-	mm.may = isl_map_empty(dim);
+	space = isl_space_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_space_copy(space));
+	mm.may = isl_map_empty(space);
 
 	isl_flow_foreach(flow, collect_must_may, &mm);
 
@@ -3322,9 +3322,9 @@ static int test_dep(struct isl_ctx *ctx)
 	ai = isl_access_info_add_source(ai, map, 0, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
-	dim = isl_space_alloc(ctx, 0, 3, 3);
-	mm.must = isl_map_empty(isl_space_copy(dim));
-	mm.may = isl_map_empty(dim);
+	space = isl_space_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_space_copy(space));
+	mm.may = isl_map_empty(space);
 
 	isl_flow_foreach(flow, collect_must_may, &mm);
 
@@ -3352,9 +3352,9 @@ static int test_dep(struct isl_ctx *ctx)
 	ai = isl_access_info_add_source(ai, map, 0, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
-	dim = isl_space_alloc(ctx, 0, 3, 3);
-	mm.must = isl_map_empty(isl_space_copy(dim));
-	mm.may = isl_map_empty(dim);
+	space = isl_space_alloc(ctx, 0, 3, 3);
+	mm.must = isl_map_empty(isl_space_copy(space));
+	mm.may = isl_map_empty(space);
 
 	isl_flow_foreach(flow, collect_must_may, &mm);
 
@@ -3380,9 +3380,9 @@ static int test_dep(struct isl_ctx *ctx)
 	ai = isl_access_info_add_source(ai, map, 1, &depth);
 
 	flow = isl_access_info_compute_flow(ai);
-	dim = isl_space_alloc(ctx, 0, 5, 5);
-	mm.must = isl_map_empty(isl_space_copy(dim));
-	mm.may = isl_map_empty(dim);
+	space = isl_space_alloc(ctx, 0, 5, 5);
+	mm.must = isl_map_empty(isl_space_copy(space));
+	mm.may = isl_map_empty(space);
 
 	isl_flow_foreach(flow, collect_must_may, &mm);
 
