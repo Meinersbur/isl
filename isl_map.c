@@ -11668,7 +11668,7 @@ isl_bool isl_map_plain_is_single_valued(__isl_keep isl_map *map)
  */
 isl_bool isl_map_is_single_valued(__isl_keep isl_map *map)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_map *test;
 	isl_map *id;
 	isl_bool sv;
@@ -11680,8 +11680,8 @@ isl_bool isl_map_is_single_valued(__isl_keep isl_map *map)
 	test = isl_map_reverse(isl_map_copy(map));
 	test = isl_map_apply_range(test, isl_map_copy(map));
 
-	dim = isl_space_map_from_set(isl_space_range(isl_map_get_space(map)));
-	id = isl_map_identity(dim);
+	space = isl_space_map_from_set(isl_space_range(isl_map_get_space(map)));
+	id = isl_map_identity(space);
 
 	sv = isl_map_is_subset(test, id);
 
