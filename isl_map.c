@@ -8527,7 +8527,7 @@ isl_stat isl_map_check_equal_tuples(__isl_keep isl_map *map)
 __isl_give isl_set *isl_map_deltas(__isl_take isl_map *map)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	struct isl_set *result;
 
 	if (!map)
@@ -8536,9 +8536,9 @@ __isl_give isl_set *isl_map_deltas(__isl_take isl_map *map)
 	isl_assert(map->ctx, isl_space_tuple_is_equal(map->dim, isl_dim_in,
 						 map->dim, isl_dim_out),
 		   goto error);
-	dim = isl_map_get_space(map);
-	dim = isl_space_domain(dim);
-	result = isl_set_alloc_space(dim, map->n, 0);
+	space = isl_map_get_space(map);
+	space = isl_space_domain(space);
+	result = isl_set_alloc_space(space, map->n, 0);
 	if (!result)
 		goto error;
 	for (i = 0; i < map->n; ++i)
