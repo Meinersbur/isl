@@ -809,7 +809,7 @@ static __isl_give isl_map *all_later_sources(__isl_keep isl_access_info *acc,
 	__isl_take isl_map *old_map,
 	int j, int before_level, int k, int after_level)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_set *set_C;
 	isl_map *read_map;
 	isl_map *write_map;
@@ -824,9 +824,10 @@ static __isl_give isl_map *all_later_sources(__isl_keep isl_access_info *acc,
 
 	write_map = isl_map_reverse(write_map);
 	dep_map = isl_map_apply_range(read_map, write_map);
-	dim = isl_space_join(isl_map_get_space(acc->source[acc->n_must + j].map),
+	space = isl_space_join(isl_map_get_space(
+		    acc->source[acc->n_must + j].map),
 		    isl_space_reverse(isl_map_get_space(acc->source[k].map)));
-	after_write = after_at_level(dim, after_level);
+	after_write = after_at_level(space, after_level);
 	after_write = isl_map_apply_range(after_write, old_map);
 	after_write = isl_map_reverse(after_write);
 	dep_map = isl_map_intersect(dep_map, after_write);
