@@ -543,14 +543,14 @@ static int test_bounded(isl_ctx *ctx)
 /* Construct the basic set { [i] : 5 <= i <= N } */
 static int test_construction_1(isl_ctx *ctx)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_local_space *ls;
 	isl_basic_set *bset;
 	isl_constraint *c;
 
-	dim = isl_space_set_alloc(ctx, 1, 1);
-	bset = isl_basic_set_universe(isl_space_copy(dim));
-	ls = isl_local_space_from_space(dim);
+	space = isl_space_set_alloc(ctx, 1, 1);
+	bset = isl_basic_set_universe(isl_space_copy(space));
+	ls = isl_local_space_from_space(space);
 
 	c = isl_constraint_alloc_inequality(isl_local_space_copy(ls));
 	c = isl_constraint_set_coefficient_si(c, isl_dim_set, 0, -1);
