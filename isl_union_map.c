@@ -3076,7 +3076,7 @@ static isl_bool plain_injective_on_range(__isl_take isl_union_map *umap,
  * based on later dimensions.
  */
 static int separates(struct isl_fixed_map *v, int n,
-	__isl_take isl_space *dim, int pos, int n_range)
+	__isl_take isl_space *space, int pos, int n_range)
 {
 	int i;
 
@@ -3097,7 +3097,7 @@ static int separates(struct isl_fixed_map *v, int n,
 		if (j == i + 1)
 			continue;
 
-		part = isl_union_map_alloc(isl_space_copy(dim), j - i);
+		part = isl_union_map_alloc(isl_space_copy(space), j - i);
 		for (k = i; k < j; ++k)
 			part = isl_union_map_add_map(part,
 						     isl_map_copy(v[k].map));
@@ -3111,11 +3111,11 @@ static int separates(struct isl_fixed_map *v, int n,
 		i = j - 1;
 	}
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	free_isl_fixed_map_array(v, n);
 	return i + 1 >= n;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	free_isl_fixed_map_array(v, n);
 	return -1;
 }
