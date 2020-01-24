@@ -2028,9 +2028,9 @@ static __isl_give isl_map *read_conjunct(__isl_keep isl_stream *s,
 		return map;
 
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_FALSE)) {
-		isl_space *dim = isl_map_get_space(map);
+		isl_space *space = isl_map_get_space(map);
 		isl_map_free(map);
-		return isl_map_empty(dim);
+		return isl_map_empty(space);
 	}
 		
 	return add_constraint(s, v, map, rational);
