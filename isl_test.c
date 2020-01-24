@@ -2826,12 +2826,12 @@ static int test_isl_bool(isl_ctx *ctx)
 
 static int test_lex(struct isl_ctx *ctx)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_map *map;
 	int empty;
 
-	dim = isl_space_set_alloc(ctx, 0, 0);
-	map = isl_map_lex_le(dim);
+	space = isl_space_set_alloc(ctx, 0, 0);
+	map = isl_map_lex_le(space);
 	empty = isl_map_is_empty(map);
 	isl_map_free(map);
 
