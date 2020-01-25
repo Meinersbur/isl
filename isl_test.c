@@ -10001,6 +10001,16 @@ struct {
 	  "{ rat: coefficients[[cst] -> [a]] }" },
 	{ "{ rat: [i] : }",
 	  "{ rat: coefficients[[cst] -> [0]] : cst >= 0 }" },
+	{ "{ [0:,1,2:3] }",
+	  "{ rat: coefficients[[c_cst] -> [a, b, c]] : "
+		"a >= 0 and 2c >= -c_cst - b and 3c >= -c_cst - b }" },
+	{ "[M, N] -> { [x = (1 - N):-1, -4x:(M - 4x)] }",
+	  "{ rat: coefficients[[c_cst, c_M = 0:, c_N = 0:] -> [a, b = -c_M:]] :"
+		"4b >= -c_N + a and 4b >= -c_cst - 2c_N + a }" },
+	{ "{ rat : [x, y] : 1 <= 2x <= 9 and 2 <= 3y <= 16 }",
+	  "{ rat: coefficients[[c_cst] -> [c_x, c_y]] : "
+		"4c_y >= -6c_cst - 3c_x and 4c_y >= -6c_cst - 27c_x and "
+		"32c_y >= -6c_cst - 3c_x and 32c_y >= -6c_cst - 27c_x }" },
 };
 
 struct {
