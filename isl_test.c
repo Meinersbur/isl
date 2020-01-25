@@ -10011,6 +10011,8 @@ struct {
 	  "{ rat: coefficients[[c_cst] -> [c_x, c_y]] : "
 		"4c_y >= -6c_cst - 3c_x and 4c_y >= -6c_cst - 27c_x and "
 		"32c_y >= -6c_cst - 3c_x and 32c_y >= -6c_cst - 27c_x }" },
+	{ "{ [x, y, z] : 3y <= 2x - 2 and y >= -2 + 2x and 2y >= 2 - x }",
+	  "{ rat: coefficients[[cst] -> [a, b, c]] }" },
 };
 
 struct {
