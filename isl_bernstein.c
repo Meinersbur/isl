@@ -482,7 +482,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_factors(
 		goto error;
 	if (f->n_group == 0) {
 		isl_factorizer_free(f);
-		return  bernstein_coefficients_base(bset, poly, data, tight);
+		return bernstein_coefficients_base(bset, poly, data, tight);
 	}
 
 	set = isl_set_from_basic_set(bset);
