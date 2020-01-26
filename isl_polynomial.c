@@ -4771,6 +4771,32 @@ static __isl_give isl_pw_qpolynomial *constant_on_domain(
 	return isl_pw_qpolynomial_alloc(isl_set_from_basic_set(bset), qp);
 }
 
+/* Internal data structure for multiplicative_call_factor_pw_qpolynomial.
+ * "fn" is the function that is called on each factor.
+ * "pwpq" collects the results.
+ */
+struct isl_multiplicative_call_data_pw_qpolynomial {
+	__isl_give isl_pw_qpolynomial *(*fn)(__isl_take isl_basic_set *bset);
+	isl_pw_qpolynomial *pwqp;
+};
+
+/* isl_factorizer_every_factor_basic_set callback that applies
+ * data->fn to the factor "bset" and multiplies in the result
+ * in data->pwqp.
+ */
+static isl_bool multiplicative_call_factor_pw_qpolynomial(
+	__isl_keep isl_basic_set *bset, void *user)
+{
+	struct isl_multiplicative_call_data_pw_qpolynomial *data = user;
+
+	bset = isl_basic_set_copy(bset);
+	data->pwqp = isl_pw_qpolynomial_mul(data->pwqp, data->fn(bset));
+	if (!data->pwqp)
+		return isl_bool_error;
+
+	return isl_bool_true;
+}
+
 /* Factor bset, call fn on each of the factors and return the product.
  *
  * If no factors can be found, simply call fn on the input.
@@ -4781,14 +4807,12 @@ static __isl_give isl_pw_qpolynomial *compressed_multiplicative_call(
 	__isl_take isl_basic_set *bset,
 	__isl_give isl_pw_qpolynomial *(*fn)(__isl_take isl_basic_set *bset))
 {
-	int i, n;
+	struct isl_multiplicative_call_data_pw_qpolynomial data = { fn };
 	isl_space *space;
 	isl_set *set;
 	isl_factorizer *f;
 	isl_qpolynomial *qp;
-	isl_pw_qpolynomial *pwqp;
-	isl_size nparam;
-	isl_size nvar;
+	isl_bool every;
 
 	f = isl_basic_set_factorizer(bset);
 	if (!f)
@@ -4798,42 +4822,21 @@ static __isl_give isl_pw_qpolynomial *compressed_multiplicative_call(
 		return fn(bset);
 	}
 
-	nparam = isl_basic_set_dim(bset, isl_dim_param);
-	nvar = isl_basic_set_dim(bset, isl_dim_set);
-	if (nparam < 0 || nvar < 0)
-		bset = isl_basic_set_free(bset);
-
 	space = isl_basic_set_get_space(bset);
 	space = isl_space_params(space);
 	set = isl_set_universe(isl_space_copy(space));
 	qp = isl_qpolynomial_one_on_domain(space);
-	pwqp = isl_pw_qpolynomial_alloc(set, qp);
+	data.pwqp = isl_pw_qpolynomial_alloc(set, qp);
 
-	bset = isl_morph_basic_set(isl_morph_copy(f->morph), bset);
-
-	for (i = 0, n = 0; i < f->n_group; ++i) {
-		isl_basic_set *bset_i;
-		isl_pw_qpolynomial *pwqp_i;
-
-		bset_i = isl_basic_set_copy(bset);
-		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
-			    nparam + n + f->len[i], nvar - n - f->len[i]);
-		bset_i = isl_basic_set_drop_constraints_involving(bset_i,
-			    nparam, n);
-		bset_i = isl_basic_set_drop(bset_i, isl_dim_set,
-			    n + f->len[i], nvar - n - f->len[i]);
-		bset_i = isl_basic_set_drop(bset_i, isl_dim_set, 0, n);
-
-		pwqp_i = fn(bset_i);
-		pwqp = isl_pw_qpolynomial_mul(pwqp, pwqp_i);
-
-		n += f->len[i];
-	}
+	every = isl_factorizer_every_factor_basic_set(f,
+			&multiplicative_call_factor_pw_qpolynomial, &data);
+	if (every < 0)
+		data.pwqp = isl_pw_qpolynomial_free(data.pwqp);
 
 	isl_basic_set_free(bset);
 	isl_factorizer_free(f);
 
-	return pwqp;
+	return data.pwqp;
 error:
 	isl_basic_set_free(bset);
 	return NULL;

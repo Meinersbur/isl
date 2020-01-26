@@ -330,3 +330,51 @@ error:
 	clear_groups(&g);
 	return NULL;
 }
+
+/* Given the factorizer "f" of a basic set,
+ * call "test" on each resulting factor as long as each call succeeds.
+ */
+__isl_give isl_bool isl_factorizer_every_factor_basic_set(
+	__isl_keep isl_factorizer *f,
+	isl_bool (*test)(__isl_keep isl_basic_set *bset, void *user),
+	void *user)
+{
+	int i, n;
+	isl_bool every = isl_bool_true;
+	isl_size nparam, nvar;
+	isl_basic_set *bset;
+
+	if (!f)
+		return isl_bool_error;
+	nparam = isl_basic_set_dim(f->bset, isl_dim_param);
+	nvar = isl_basic_set_dim(f->bset, isl_dim_set);
+	if (nparam < 0 || nvar < 0)
+		return isl_bool_error;
+
+	bset = isl_basic_set_copy(f->bset);
+	bset = isl_morph_basic_set(isl_morph_copy(f->morph), bset);
+
+	for (i = 0, n = 0; i < f->n_group; ++i) {
+		isl_basic_set *factor;
+
+		factor = isl_basic_set_copy(bset);
+		factor = isl_basic_set_drop_constraints_involving(factor,
+			    nparam + n + f->len[i], nvar - n - f->len[i]);
+		factor = isl_basic_set_drop_constraints_involving(factor,
+			    nparam, n);
+		factor = isl_basic_set_drop(factor, isl_dim_set,
+			    n + f->len[i], nvar - n - f->len[i]);
+		factor = isl_basic_set_drop(factor, isl_dim_set, 0, n);
+		every = test(factor, user);
+		isl_basic_set_free(factor);
+
+		if (every < 0 || !every)
+			break;
+
+		n += f->len[i];
+	}
+
+	isl_basic_set_free(bset);
+
+	return every;
+}
