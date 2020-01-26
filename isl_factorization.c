@@ -48,14 +48,15 @@ error:
 	return NULL;
 }
 
-void isl_factorizer_free(__isl_take isl_factorizer *f)
+__isl_null isl_factorizer *isl_factorizer_free(__isl_take isl_factorizer *f)
 {
 	if (!f)
-		return;
+		return NULL;
 
 	isl_morph_free(f->morph);
 	free(f->len);
 	free(f);
+	return NULL;
 }
 
 void isl_factorizer_dump(__isl_take isl_factorizer *f)
