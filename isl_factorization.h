@@ -8,13 +8,14 @@
 extern "C" {
 #endif
 
-/* Data for factorizing a particular basic set.
+/* Data for factorizing the basic set "bset".
  * After applying "morph" to the basic set, there are "n_group"
  * groups of consecutive set variables, each of length "len[i]",
  * with 0 <= i < n_group.
  * If no factorization is possible, then "n_group" is set to 0.
  */
 struct isl_factorizer {
+	isl_basic_set	*bset;
 	isl_morph	*morph;
 	int		n_group;
 	int		*len;

@@ -19,7 +19,8 @@
 #include <isl_mat_private.h>
 
 static __isl_give isl_factorizer *isl_factorizer_alloc(
-	__isl_take isl_morph *morph, int n_group)
+	__isl_keep isl_basic_set *bset, __isl_take isl_morph *morph,
+	int n_group)
 {
 	isl_factorizer *f = NULL;
 	int *len = NULL;
@@ -37,6 +38,7 @@ static __isl_give isl_factorizer *isl_factorizer_alloc(
 	if (!f)
 		goto error;
 
+	f->bset = isl_basic_set_copy(bset);
 	f->morph = morph;
 	f->n_group = n_group;
 	f->len = len;
@@ -53,6 +55,7 @@ __isl_null isl_factorizer *isl_factorizer_free(__isl_take isl_factorizer *f)
 	if (!f)
 		return NULL;
 
+	isl_basic_set_free(f->bset);
 	isl_morph_free(f->morph);
 	free(f->len);
 	free(f);
@@ -78,7 +81,7 @@ void isl_factorizer_dump(__isl_take isl_factorizer *f)
 
 __isl_give isl_factorizer *isl_factorizer_identity(__isl_keep isl_basic_set *bset)
 {
-	return isl_factorizer_alloc(isl_morph_identity(bset), 0);
+	return isl_factorizer_alloc(bset, isl_morph_identity(bset), 0);
 }
 
 __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
@@ -109,7 +112,7 @@ __isl_give isl_factorizer *isl_factorizer_groups(__isl_keep isl_basic_set *bset,
 	space = isl_space_add_dims(space, isl_dim_set, nvar);
 	ran = isl_basic_set_universe(space);
 	morph = isl_morph_alloc(dom, ran, Q, U);
-	f = isl_factorizer_alloc(morph, n);
+	f = isl_factorizer_alloc(bset, morph, n);
 	if (!f)
 		return NULL;
 	for (i = 0; i < n; ++i)
