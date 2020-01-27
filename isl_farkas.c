@@ -222,29 +222,34 @@ static __isl_give isl_basic_set *rational_universe(__isl_take isl_space *space)
  * As explained above, we add an extra dimension to represent
  * the coefficient of the constant term when going from solutions
  * to coefficients (shift == 1) and we drop the extra dimension when going
- * in the opposite direction (shift == -1).  "space" is the space in which
- * the dual should be created.
+ * in the opposite direction (shift == -1).
+ * The dual can be created in an arbitrary space.
+ * The caller is responsible for putting the result in the appropriate space.
  *
  * If "bset" is (obviously) empty, then the way this emptiness
  * is represented by the constraints does not allow for the application
  * of the standard farkas algorithm.  We therefore handle this case
  * specifically and return the universe basic set.
  */
-static __isl_give isl_basic_set *farkas(__isl_take isl_space *space,
-	__isl_take isl_basic_set *bset, int shift)
+static __isl_give isl_basic_set *farkas(__isl_take isl_basic_set *bset,
+	int shift)
 {
 	int i, j, k;
+	isl_ctx *ctx;
+	isl_space *space;
 	isl_basic_set *dual = NULL;
 	isl_size total;
 
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
+		return isl_basic_set_free(bset);
+
+	ctx = isl_basic_set_get_ctx(bset);
+	space = isl_space_set_alloc(ctx, 0, total + shift);
 	if (isl_basic_set_plain_is_empty(bset)) {
 		isl_basic_set_free(bset);
 		return rational_universe(space);
 	}
-
-	total = isl_basic_set_dim(bset, isl_dim_all);
-	if (total < 0)
-		space = isl_space_free(space);
 
 	dual = isl_basic_set_alloc_space(space, bset->n_eq + bset->n_ineq,
 					total, bset->n_ineq + (shift > 0));
@@ -324,7 +329,9 @@ __isl_give isl_basic_set *isl_basic_set_coefficients(
 	space = isl_basic_set_get_space(bset);
 	space = isl_space_coefficients(space);
 
-	return farkas(space, bset, 1);
+	bset = farkas(bset, 1);
+	bset = isl_basic_set_reset_space(bset, space);
+	return bset;
 error:
 	isl_basic_set_free(bset);
 	return NULL;
@@ -349,7 +356,9 @@ __isl_give isl_basic_set *isl_basic_set_solutions(
 	space = isl_basic_set_get_space(bset);
 	space = isl_space_solutions(space);
 
-	return farkas(space, bset, -1);
+	bset = farkas(bset, -1);
+	bset = isl_basic_set_reset_space(bset, space);
+	return bset;
 error:
 	isl_basic_set_free(bset);
 	return NULL;
