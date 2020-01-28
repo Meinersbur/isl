@@ -129,8 +129,9 @@ struct cpp_generator::class_printer {
 	void print_persistent_callback_setter_prototype(FunctionDecl *method);
 	void print_methods();
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
-	void print_method_variants(FunctionDecl *fd);
-	void print_method_group(const function_set &methods);
+	void print_method_variants(FunctionDecl *fd, const std::string &name);
+	void print_method_group(const function_set &methods,
+		const std::string &name);
 	virtual void print_method(const Method &method) = 0;
 	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) = 0;

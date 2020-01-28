@@ -637,7 +637,7 @@ void cpp_generator::decl_printer::print_persistent_callbacks()
 void cpp_generator::class_printer::print_methods()
 {
 	for (const auto &kvp : clazz.methods)
-		print_method_group(kvp.second);
+		print_method_group(kvp.second, kvp.first);
 }
 
 /* Print declarations or implementations for the methods derived from "fd",
@@ -712,7 +712,8 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
 	return false;
 }
 
-/* Print a declaration or definition for method "fd".
+/* Print a declaration or definition for a method called "name"
+ * derived from "fd".
  *
  * For methods that are identified as "get" methods, also
  * print a declaration or definition for the method
@@ -723,9 +724,10 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
  * from something else, and, if so, generate a method
  * for each combination of converted arguments.
  */
-void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
+void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
+	const std::string &name)
 {
-	Method method(clazz, fd);
+	Method method(clazz, fd, name);
 	std::vector<bool> convert(method.num_params());
 
 	print_method(method);
@@ -737,13 +739,14 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
 		print_method(method, convert);
 }
 
-/* Print declarations or definitions for methods "methods".
+/* Print declarations or definitions for methods called "name"
+ * derived from "methods".
  */
 void cpp_generator::class_printer::print_method_group(
-	const function_set &methods)
+	const function_set &methods, const std::string &name)
 {
 	for (const auto &fd : methods)
-		print_method_variants(fd);
+		print_method_variants(fd, name);
 }
 
 /* Print implementations for class "clazz" to "os".
