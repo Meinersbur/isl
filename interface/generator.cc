@@ -417,8 +417,8 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 			std::string name = method->getName().str();
 			die(name + " has unhandled enum argument");
 		} else {
-			string fullname = c->name_without_type_suffixes(method);
-			c->methods[fullname].insert(method);
+			string name = c->method_name(method);
+			c->methods[name].insert(method);
 		}
 	}
 
