@@ -18,6 +18,15 @@
 #include <isl_space_private.h>
 #include <isl_mat_private.h>
 
+/* Return the isl_ctx to which "f" belongs.
+ */
+isl_ctx *isl_factorizer_get_ctx(__isl_keep isl_factorizer *f)
+{
+	if (!f)
+		return NULL;
+	return isl_basic_set_get_ctx(f->bset);
+}
+
 static __isl_give isl_factorizer *isl_factorizer_alloc(
 	__isl_keep isl_basic_set *bset, __isl_take isl_morph *morph,
 	int n_group)
