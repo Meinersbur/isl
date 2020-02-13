@@ -1324,6 +1324,8 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
 
 /* Eliminate known divs from constraints where they appear with
  * a (positive or negative) unit coefficient.
+ * If "progress" is not NULL, then it gets set if the elimination
+ * results in any changes.
  *
  * That is, replace
  *
@@ -1385,7 +1387,8 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 			    !isl_int_is_negone(bmap->ineq[j][total + i]))
 				continue;
 
-			*progress = 1;
+			if (progress)
+				*progress = 1;
 
 			s = isl_int_sgn(bmap->ineq[j][total + i]);
 			isl_int_set_si(bmap->ineq[j][total + i], 0);
