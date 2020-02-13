@@ -500,6 +500,11 @@ static int number_of_constraints_increases(int i, int j,
  * the same as that of the other basic map.  Otherwise, we mark
  * the integer division as unknown and simplify the basic map
  * in an attempt to recover the integer division definition.
+ * If any extra constraints get introduced, then these may
+ * involve integer divisions with a unit coefficient.
+ * Eliminate those that do not appear with any other coefficient
+ * in other constraints, to ensure they get eliminated completely,
+ * improving the chances of further coalescing.
  */
 static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	__isl_keep isl_mat *extra, int detect_equalities, int check_number)
@@ -556,6 +561,8 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	if (simplify || info[j].simplify) {
 		fused = isl_basic_map_simplify(fused);
 		info[i].simplify = 0;
+	} else if (extra_rows > 0) {
+		fused = isl_basic_map_eliminate_pure_unit_divs(fused);
 	}
 	fused = isl_basic_map_finalize(fused);
 

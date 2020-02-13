@@ -2378,6 +2378,8 @@ struct {
 	{ 0, "{ [j, a, l] : a mod 2 = 0 and j <= 29 and a >= 2 and "
 			"2a <= -5 + j and 32j + 2a + 2 <= 4l < 33j; "
 		"[j, 0, l] : 4 <= j <= 29 and -3 + 33j <= 4l <= 33j }" },
+	{ 1, "{ [a] : (a = 0 or ((1 + a) mod 2 = 0 and 0 < a <= 15) or "
+		"((a) mod 2 = 0 and 0 < a <= 15)) }" },
 };
 
 /* A specialized coalescing test case that would result
