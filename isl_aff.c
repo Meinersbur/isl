@@ -629,32 +629,9 @@ error:
 	return NULL;
 }
 
-/* Given an affine function "aff" defined over a parameter domain,
- * convert it to a function defined over a domain corresponding
- * to "domain".
- * Any parameters with identifiers in "domain" are reinterpreted
- * as the corresponding domain dimensions.
- */
-__isl_give isl_aff *isl_aff_unbind_params_insert_domain(
-	__isl_take isl_aff *aff, __isl_take isl_multi_id *domain)
-{
-	isl_bool is_params;
-	isl_space *space;
-	isl_reordering *r;
-
-	space = isl_aff_peek_domain_space(aff);
-	is_params = isl_space_is_params(space);
-	if (is_params < 0)
-		domain = isl_multi_id_free(domain);
-	else if (!is_params)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"expecting function with parameter domain",
-			domain = isl_multi_id_free(domain));
-	r = isl_reordering_unbind_params_insert_domain(space, domain);
-	isl_multi_id_free(domain);
-
-	return isl_aff_realign_domain(aff, r);
-}
+#undef TYPE
+#define TYPE isl_aff
+#include "isl_unbind_params_templ.c"
 
 /* Is "aff" obviously equal to zero?
  *

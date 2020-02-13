@@ -549,6 +549,7 @@ EXTRA_DIST = \
 	isl_type_check_equal_space_templ.c \
 	isl_type_has_equal_space_bin_templ.c \
 	isl_type_has_equal_space_templ.c \
+	isl_unbind_params_templ.c \
 	uset_to_umap.c \
 	uset_from_umap.c \
 	isl_union_macro.h \
