@@ -1374,6 +1374,34 @@ int test_affine_hull(struct isl_ctx *ctx)
 	return 0;
 }
 
+/* Test a special case of isl_set_plain_unshifted_simple_hull
+ * where older versions of isl would include a redundant constraint
+ * in the result.
+ * Check that the result does not have any constraints.
+ */
+static isl_stat test_plain_unshifted_simple_hull_special(isl_ctx *ctx)
+{
+	const char *str;
+	isl_bool is_universe;
+	isl_set *set;
+	isl_basic_set *bset;
+
+	str = "{[x, y] : x = 0 or 2*((x+y)//2) <= y + 2 }";
+	set = isl_set_read_from_str(ctx, str);
+	bset = isl_set_plain_unshifted_simple_hull(set);
+	is_universe = isl_basic_set_plain_is_universe(bset);
+	isl_basic_set_free(bset);
+
+	if (is_universe < 0)
+		return isl_stat_error;
+	if (!is_universe)
+		isl_die(ctx, isl_error_unknown,
+			"hull should not have any constraints",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Pairs of maps and the corresponding expected results of
  * isl_map_plain_unshifted_simple_hull.
  */
@@ -1478,6 +1506,8 @@ static int test_simple_hull(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown, "Empty set should be detected",
 			return -1);
 
+	if (test_plain_unshifted_simple_hull_special(ctx) < 0)
+		return -1;
 	if (test_plain_unshifted_simple_hull(ctx) < 0)
 		return -1;
 	if (test_unshifted_simple_hull(ctx) < 0)
