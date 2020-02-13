@@ -226,6 +226,13 @@ isl_multi_##BASE##_bind_domain_wrapped_domain(				\
 	__isl_take isl_multi_##BASE *multi,				\
 	__isl_take isl_multi_id *tuple);
 
+#define ISL_DECLARE_MULTI_UNBIND_PARAMS(BASE)				\
+__isl_export								\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_unbind_params_insert_domain(				\
+	__isl_take isl_multi_##BASE *multi,				\
+	__isl_take isl_multi_id *domain);
+
 #define ISL_DECLARE_MULTI_PARAM(BASE)					\
 __isl_overload								\
 isl_bool isl_multi_##BASE##_involves_param_id(				\

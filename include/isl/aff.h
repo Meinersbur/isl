@@ -478,6 +478,7 @@ ISL_DECLARE_MULTI_DIM_ID(aff)
 ISL_DECLARE_MULTI_TUPLE_ID(aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(aff)
 ISL_DECLARE_MULTI_BIND_DOMAIN(aff)
+ISL_DECLARE_MULTI_UNBIND_PARAMS(aff)
 
 __isl_constructor
 __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
@@ -551,6 +552,7 @@ ISL_DECLARE_MULTI_TUPLE_ID(pw_aff)
 ISL_DECLARE_MULTI_WITH_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_BIND_DOMAIN(pw_aff)
 ISL_DECLARE_MULTI_PARAM(pw_aff)
+ISL_DECLARE_MULTI_UNBIND_PARAMS(pw_aff)
 
 __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_zero(__isl_take isl_space *space);

@@ -3818,6 +3818,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_tuple_id_templ.c>
+#include <isl_multi_unbind_params_templ.c>
 #include <isl_multi_zero_templ.c>
 
 #undef DOMBASE
@@ -6392,6 +6393,7 @@ error:
 #include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_union_add_templ.c>
 #include <isl_multi_zero_templ.c>
+#include <isl_multi_unbind_params_templ.c>
 
 /* Are all elements of "mpa" piecewise constants?
  */
