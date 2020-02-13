@@ -1249,6 +1249,7 @@ __isl_give isl_aff *isl_constraint_get_bound(
 		isl_seq_neg(aff->v->el + 1, constraint->v->el, aff->v->size - 1);
 	isl_int_set_si(aff->v->el[1 + pos], 0);
 	isl_int_abs(aff->v->el[0], constraint->v->el[pos]);
+	aff = isl_aff_normalize(aff);
 
 	return aff;
 }
