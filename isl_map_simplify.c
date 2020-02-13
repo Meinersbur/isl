@@ -581,7 +581,7 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
  * from all constraints.
  *
  * If "progress" is not NULL, then it gets set if the elimination
- * result in any changes.
+ * results in any changes.
  * The elimination process may result in some equality constraints
  * getting interchanged or removed.
  * If "swap" or "drop" are not NULL, then they get called when
@@ -1322,7 +1322,7 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
 	return bmap;
 }
 
-/* Eliminate knowns divs from constraints where they appear with
+/* Eliminate known divs from constraints where they appear with
  * a (positive or negative) unit coefficient.
  *
  * That is, replace
