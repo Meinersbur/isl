@@ -410,10 +410,42 @@ static isl_bool has_space(const void *entry, const void *val)
 	return isl_map_has_space(map, space);
 }
 
+/* Find the entry in "umap" with space "space",
+ * returning isl_hash_table_entry_none if no such entry appears in "umap" and
+ * NULL on error.
+ * If "reserve" is set, then an entry is created if it does
+ * not exist already.
+ */
+static struct isl_hash_table_entry *isl_union_map_find_entry(
+	__isl_keep isl_union_map *umap, __isl_keep isl_space *space,
+	int reserve)
+{
+	uint32_t hash;
+
+	if (!umap || !space)
+		return NULL;
+
+	hash = isl_space_get_full_hash(space);
+	return isl_hash_table_find(isl_union_map_get_ctx(umap), &umap->table,
+				    hash, &has_space, space, reserve);
+}
+
+/* Find the entry in "uset" with space "space",
+ * returning isl_hash_table_entry_none if no such entry appears in "uset" and
+ * NULL on error.
+ * If "reserve" is set, then an entry is created if it does
+ * not exist already.  In this case, a NULL return indicates an error.
+ */
+struct isl_hash_table_entry *isl_union_set_find_entry(
+	__isl_keep isl_union_set *uset, __isl_keep isl_space *space,
+	int reserve)
+{
+	return isl_union_map_find_entry(uset_to_umap(uset), space, reserve);
+}
+
 __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 	__isl_take isl_map *map)
 {
-	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 	isl_bool aligned;
 	isl_space *space;
@@ -436,13 +468,8 @@ __isl_give isl_union_map *isl_union_map_add_map(__isl_take isl_union_map *umap,
 
 	umap = isl_union_map_cow(umap);
 
-	if (!map || !umap)
-		goto error;
-
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_full_hash(space);
-	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_space, space, 1);
+	entry = isl_union_map_find_entry(umap, space, 1);
 	if (!entry)
 		goto error;
 
@@ -703,17 +730,12 @@ __isl_give isl_set *isl_set_from_union_set(__isl_take isl_union_set *uset)
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	__isl_take isl_space *space)
 {
-	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
 	space = isl_space_drop_all_params(space);
 	space = isl_space_align_params(space, isl_union_map_get_space(umap));
-	if (!umap || !space)
-		goto error;
 
-	hash = isl_space_get_full_hash(space);
-	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_space, space, 0);
+	entry = isl_union_map_find_entry(umap, space, 0);
 	if (!entry)
 		goto error;
 	if (entry == isl_hash_table_entry_none)
@@ -736,17 +758,11 @@ __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space)
 {
-	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
 	space = isl_space_drop_all_params(isl_space_copy(space));
 	space = isl_space_align_params(space, isl_union_map_get_space(umap));
-	if (!space)
-		return isl_bool_error;
-
-	hash = isl_space_get_full_hash(space);
-	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
-				    &has_space, space, 0);
+	entry = isl_union_map_find_entry(umap, space, 0);
 	isl_space_free(space);
 	if (!entry)
 		return isl_bool_error;
@@ -905,7 +921,6 @@ static __isl_give isl_space *identity(__isl_take isl_space *space)
 static __isl_keep isl_maybe_isl_map bin_try_get_match(
 	struct isl_union_map_gen_bin_data *data, __isl_keep isl_map *map)
 {
-	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	isl_maybe_isl_map res = { isl_bool_error, NULL };
@@ -920,12 +935,7 @@ static __isl_keep isl_maybe_isl_map bin_try_get_match(
 	space = isl_map_get_space(map);
 	if (data->control->match_space != &identity)
 		space = data->control->match_space(space);
-	if (!space)
-		return res;
-	hash = isl_space_get_full_hash(space);
-	entry2 = isl_hash_table_find(isl_union_map_get_ctx(data->umap2),
-				     &data->umap2->table, hash,
-				     &has_space, space, 0);
+	entry2 = isl_union_map_find_entry(data->umap2, space, 0);
 	isl_space_free(space);
 	if (entry2)
 		res.valid = isl_bool_ok(entry2 != isl_hash_table_entry_none);
@@ -1121,16 +1131,13 @@ struct isl_union_map_match_bin_data {
 static isl_stat match_bin_entry(void **entry, void *user)
 {
 	struct isl_union_map_match_bin_data *data = user;
-	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	isl_map *map = *entry;
 	int empty;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_full_hash(space);
-	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_space, space, 0);
+	entry2 = isl_union_map_find_entry(data->umap2, space, 0);
 	if (!entry2)
 		return isl_stat_error;
 	if (entry2 == isl_hash_table_entry_none)
@@ -2504,15 +2511,12 @@ struct isl_union_map_is_subset_data {
 static isl_stat is_subset_entry(void **entry, void *user)
 {
 	struct isl_union_map_is_subset_data *data = user;
-	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	isl_map *map = *entry;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_full_hash(space);
-	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_space, space, 0);
+	entry2 = isl_union_map_find_entry(data->umap2, space, 0);
 	if (!entry2)
 		return isl_stat_error;
 	if (entry2 == isl_hash_table_entry_none) {
@@ -2623,15 +2627,12 @@ struct isl_union_map_is_disjoint_data {
 static isl_stat is_disjoint_entry(void **entry, void *user)
 {
 	struct isl_union_map_is_disjoint_data *data = user;
-	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space;
 	isl_map *map = *entry;
 
 	space = isl_map_peek_space(map);
-	hash = isl_space_get_full_hash(space);
-	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
-				     hash, &has_space, space, 0);
+	entry2 = isl_union_map_find_entry(data->umap2, space, 0);
 	if (!entry2)
 		return isl_stat_error;
 	if (entry2 == isl_hash_table_entry_none)
