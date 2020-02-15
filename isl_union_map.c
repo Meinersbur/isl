@@ -32,6 +32,13 @@
 #include <uset_from_umap.c>
 #include <set_list_from_map_list_inl.c>
 
+#undef TYPE
+#define TYPE	isl_union_map
+static
+#include "has_single_reference_templ.c"
+static
+#include "check_single_reference_templ.c"
+
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
  */
@@ -414,7 +421,8 @@ static isl_bool has_space(const void *entry, const void *val)
  * returning isl_hash_table_entry_none if no such entry appears in "umap" and
  * NULL on error.
  * If "reserve" is set, then an entry is created if it does
- * not exist already.
+ * not exist already.  Since this modifies the hash table in-place,
+ * this means "umap" must have a single reference when "reserve" is set.
  */
 static struct isl_hash_table_entry *isl_union_map_find_entry(
 	__isl_keep isl_union_map *umap, __isl_keep isl_space *space,
@@ -423,6 +431,8 @@ static struct isl_hash_table_entry *isl_union_map_find_entry(
 	uint32_t hash;
 
 	if (!umap || !space)
+		return NULL;
+	if (reserve && isl_union_map_check_single_reference(umap) < 0)
 		return NULL;
 
 	hash = isl_space_get_full_hash(space);

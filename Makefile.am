@@ -465,6 +465,7 @@ EXTRA_DIST = \
 	isl_check_named_params_templ.c \
 	check_reparse_templ.c \
 	check_reparse_test_templ.c \
+	check_single_reference_templ.c \
 	check_type_range_templ.c \
 	isl_domain_factor_templ.c \
 	extract_key.c \
