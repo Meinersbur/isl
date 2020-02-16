@@ -799,6 +799,7 @@ functions.  The result of C<isl_val_cmp_si> is undefined for NaN.
 
 	#include <isl/val.h>
 	isl_bool isl_val_gt_si(__isl_keep isl_val *v, long i);
+	isl_bool isl_val_eq_si(__isl_keep isl_val *v, long i);
 	int isl_val_cmp_si(__isl_keep isl_val *v, long i);
 
 The following unary operations are available on C<isl_val>s.

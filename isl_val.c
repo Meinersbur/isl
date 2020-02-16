@@ -1428,6 +1428,17 @@ isl_bool isl_val_eq(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
 			   isl_int_eq(v1->d, v2->d));
 }
 
+/* Is "v" equal to "i"?
+ */
+isl_bool isl_val_eq_si(__isl_keep isl_val *v, long i)
+{
+	if (!v)
+		return isl_bool_error;
+	if (!isl_val_is_int(v))
+		return isl_bool_false;
+	return isl_bool_ok(isl_int_cmp_si(v->n, i) == 0);
+}
+
 /* Is "v1" equal to "v2" in absolute value?
  */
 isl_bool isl_val_abs_eq(__isl_keep isl_val *v1, __isl_keep isl_val *v2)
