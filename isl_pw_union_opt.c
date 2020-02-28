@@ -218,6 +218,7 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 		for (j = 0; j < pw2->n; ++j) {
 			isl_bool disjoint;
 			isl_set *better, *set_i, *set_j;
+			EL *el_i, *el_j;
 
 			disjoint = isl_set_is_disjoint(pw1->p[i].set,
 							pw2->p[j].set);
@@ -225,8 +226,9 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 				goto error;
 			if (disjoint)
 				continue;
-			better = FN(PW,better)(pw2->p[j].FIELD,
-						pw1->p[i].FIELD, cmp);
+			el_i = FN(PW,peek_base_at)(pw1, i);
+			el_j = FN(PW,peek_base_at)(pw2, j);
+			better = FN(PW,better)(el_j, el_i, cmp);
 			set_i = isl_set_list_get_set(list1, i);
 			set_j = isl_set_copy(pw2->p[j].set);
 			set_i = FN(PW,worse_or_out)(set_i,
