@@ -223,8 +223,9 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 			isl_set *better, *set_i, *set_j;
 			EL *el_i, *el_j;
 
-			disjoint = isl_set_is_disjoint(pw1->p[i].set,
-							pw2->p[j].set);
+			set_i = FN(PW,peek_domain_at)(pw1, i);
+			set_j = FN(PW,peek_domain_at)(pw2, j);
+			disjoint = isl_set_is_disjoint(set_i, set_j);
 			if (disjoint < 0)
 				goto error;
 			if (disjoint)
