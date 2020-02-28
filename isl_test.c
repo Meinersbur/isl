@@ -3177,6 +3177,53 @@ static int test_min_special2(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the result of isl_set_min_multi_pw_aff
+ * on the union of the sets with string descriptions "s1" and "s2"
+ * consists of a single expression (on a single cell).
+ */
+static isl_stat check_single_expr_min(isl_ctx *ctx, const char *s1,
+	const char *s2)
+{
+	isl_size n;
+	isl_set *set1, *set2;
+	isl_multi_pw_aff *mpa;
+	isl_pw_multi_aff *pma;
+
+	set1 = isl_set_read_from_str(ctx, s1);
+	set2 = isl_set_read_from_str(ctx, s2);
+	set1 = isl_set_union(set1, set2);
+	mpa = isl_set_min_multi_pw_aff(set1);
+	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
+	n = isl_pw_multi_aff_n_piece(pma);
+	isl_pw_multi_aff_free(pma);
+
+	if (n < 0)
+		return isl_stat_error;
+	if (n != 1)
+		isl_die(ctx, isl_error_unknown, "expecting single expression",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* A specialized isl_set_min_multi_pw_aff test that checks
+ * that the minimum of 2N and 3N for N >= 0 is represented
+ * by a single expression, without splitting off the special case N = 0.
+ * Do this for both orderings.
+ */
+static int test_min_mpa(isl_ctx *ctx)
+{
+	const char *s1, *s2;
+
+	s1 = "[N=0:] -> { [1, 3N:] }";
+	s2 = "[N=0:] -> { [10, 2N:] }";
+	if (check_single_expr_min(ctx, s1, s2) < 0)
+		return -1;
+	if (check_single_expr_min(ctx, s2, s1) < 0)
+		return -1;
+
+	return 0;
+}
+
 struct {
 	const char *set;
 	const char *obj;
@@ -10793,6 +10840,7 @@ struct {
 	{ "intersect", &test_intersect },
 	{ "lexmin", &test_lexmin },
 	{ "min", &test_min },
+	{ "set lower bounds", &test_min_mpa },
 	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 	{ "lift", &test_lift },

@@ -1,6 +1,7 @@
 /*
  * Copyright 2011      INRIA Saclay
  * Copyright 2012      Ecole Normale Superieure
+ * Copyright 2020      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -8,6 +9,7 @@
  * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
  * 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <isl_pw_macro.h>
@@ -88,13 +90,12 @@ static void FN(PW,union_opt_cmp_data_clear)(S(PW,union_opt_cmp_data) *data)
 }
 
 /* Given (potentially) updated cells "i" of data_i->pw and "j" of data_j->pw and
- * a function "cmp" that returns the set of elements where
- * "el1" is "better" than "el2",
- * (further) update the specified cells such that only the "better" elements
+ * a set "better" where the piece from data_j->pw is better
+ * than the piece from data_i->pw,
+ * (further) update the specified cells such that only the better elements
  * remain on the (non-empty) intersection.
  *
- * Let C be the set where the piece from data_j->pw is better
- * (according to "cmp") than the piece from data_i->pw.
+ * Let C be the set "better".
  * Let A be the cell data_i->cell[i] and B the cell data_j->cell[j].
  *
  * The elements in C need to be removed from A, except for those parts
@@ -117,16 +118,12 @@ static void FN(PW,union_opt_cmp_data_clear)(S(PW,union_opt_cmp_data) *data)
  * because the continued updating of A may result in this domain
  * getting broken up into more disjuncts.
  */
-static isl_stat FN(PW,union_opt_cmp_pair)(S(PW,union_opt_cmp_data) *data_i,
+static isl_stat FN(PW,union_opt_cmp_split)(S(PW,union_opt_cmp_data) *data_i,
 	int i, S(PW,union_opt_cmp_data) *data_j, int j,
-	__isl_give isl_set *(*cmp)(__isl_take EL *el1, __isl_take EL *el2))
+	__isl_take isl_set *better)
 {
-	isl_set *better, *set_i, *set_j;
-	EL *el_i, *el_j;
+	isl_set *set_i, *set_j;
 
-	el_i = FN(PW,peek_base_at)(data_i->pw, i);
-	el_j = FN(PW,peek_base_at)(data_j->pw, j);
-	better = FN(PW,better)(el_j, el_i, cmp);
 	set_i = isl_set_list_get_set(data_i->cell, i);
 	set_j = FN(PW,get_domain_at)(data_j->pw, j);
 	set_i = FN(PW,worse_or_out)(set_i, isl_set_copy(better), set_j);
@@ -137,6 +134,80 @@ static isl_stat FN(PW,union_opt_cmp_pair)(S(PW,union_opt_cmp_data) *data_i,
 	data_j->cell = isl_set_list_set_set(data_j->cell, j, set_j);
 
 	return isl_stat_ok;
+}
+
+/* Given (potentially) updated cells "i" of data_i->pw and "j" of data_j->pw and
+ * a function "cmp" that returns the set of elements where
+ * "el1" is "better" than "el2",
+ * (further) update the specified cells such that only the "better" elements
+ * remain on the (non-empty) intersection.
+ */
+static isl_stat FN(PW,union_opt_cmp_pair)(S(PW,union_opt_cmp_data) *data_i,
+	int i, S(PW,union_opt_cmp_data) *data_j, int j,
+	__isl_give isl_set *(*cmp)(__isl_take EL *el1, __isl_take EL *el2))
+{
+	isl_set *better;
+	EL *el_i, *el_j;
+
+	el_i = FN(PW,peek_base_at)(data_i->pw, i);
+	el_j = FN(PW,peek_base_at)(data_j->pw, j);
+	better = FN(PW,better)(el_j, el_i, cmp);
+	return FN(PW,union_opt_cmp_split)(data_i, i, data_j, j, better);
+}
+
+/* Given (potentially) updated cells "i" of data_i->pw and "j" of data_j->pw and
+ * a function "cmp" that returns the set of elements where
+ * "el1" is "better" than "el2",
+ * (further) update the specified cells such that only the "better" elements
+ * remain on the (non-empty) intersection.
+ *
+ * The base computation is performed by isl_pw_*_union_opt_cmp_pair,
+ * which splits the cells according to the set of elements
+ * where the piece from data_j->pw is better than the piece from data_i->pw.
+ *
+ * In some cases, there may be a subset of the intersection
+ * where both pieces have the same value and can therefore
+ * both be considered to be "better" than the other.
+ * This can result in unnecessary splitting on this subset.
+ * Avoid some of these cases by checking whether
+ * data_i->pw is always better than data_j->pw on the intersection.
+ * In particular, do this for the special case where this intersection
+ * is equal to the cell "j" and data_i->pw is better on its entire cell.
+ *
+ * Similarly, if data_i->pw is never better than data_j->pw,
+ * then no splitting will occur and there is no need to check
+ * where data_j->pw is better than data_i->pw.
+ */
+static isl_stat FN(PW,union_opt_cmp_two)(S(PW,union_opt_cmp_data) *data_i,
+	int i, S(PW,union_opt_cmp_data) *data_j, int j,
+	__isl_give isl_set *(*cmp)(__isl_take EL *el1, __isl_take EL *el2))
+{
+	isl_bool is_subset, is_empty;
+	isl_set *better, *set_i, *set_j;
+	EL *el_i, *el_j;
+
+	set_i = FN(PW,peek_domain_at)(data_i->pw, i);
+	set_j = FN(PW,peek_domain_at)(data_j->pw, j);
+	is_subset = isl_set_is_subset(set_j, set_i);
+	if (is_subset < 0)
+		return isl_stat_error;
+	if (!is_subset)
+		return FN(PW,union_opt_cmp_pair)(data_i, i, data_j, j, cmp);
+
+	el_i = FN(PW,peek_base_at)(data_i->pw, i);
+	el_j = FN(PW,peek_base_at)(data_j->pw, j);
+	better = FN(PW,better)(el_i, el_j, cmp);
+	is_empty = isl_set_is_empty(better);
+	if (is_empty >= 0 && is_empty)
+		return FN(PW,union_opt_cmp_split)(data_j, j, data_i, i, better);
+	is_subset = isl_set_is_subset(set_i, better);
+	if (is_subset >= 0 && is_subset)
+		return FN(PW,union_opt_cmp_split)(data_j, j, data_i, i, better);
+	isl_set_free(better);
+	if (is_empty < 0 || is_subset < 0)
+		return isl_stat_error;
+
+	return FN(PW,union_opt_cmp_pair)(data_i, i, data_j, j, cmp);
 }
 
 /* Given two piecewise expressions data1->pw and data2->pw, replace
@@ -270,7 +341,7 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 				goto error;
 			if (disjoint)
 				continue;
-			if (FN(PW,union_opt_cmp_pair)(&data[0], i,
+			if (FN(PW,union_opt_cmp_two)(&data[0], i,
 							&data[1], j, cmp) < 0)
 				goto error;
 		}
