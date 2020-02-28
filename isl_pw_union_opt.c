@@ -184,6 +184,7 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 	__isl_give isl_set *(*cmp)(__isl_take EL *el1, __isl_take EL *el2))
 {
 	int i, j;
+	isl_size n1, n2;
 	PW *res = NULL;
 	isl_ctx *ctx;
 	isl_set_list *list1 = NULL, *list2 = NULL;
@@ -208,14 +209,16 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 
 	pw1 = FN(PW,sort)(pw1);
 	pw2 = FN(PW,sort)(pw2);
-	if (!pw1 || !pw2)
-		goto error;
 
 	list1 = FN(PW,extract_domains)(pw1);
 	list2 = FN(PW,extract_domains)(pw2);
 
-	for (i = 0; i < pw1->n; ++i) {
-		for (j = 0; j < pw2->n; ++j) {
+	n1 = FN(PW,n_piece)(pw1);
+	n2 = FN(PW,n_piece)(pw2);
+	if (n1 < 0 || n2 < 0)
+		goto error;
+	for (i = 0; i < n1; ++i) {
+		for (j = 0; j < n2; ++j) {
 			isl_bool disjoint;
 			isl_set *better, *set_i, *set_j;
 			EL *el_i, *el_j;
