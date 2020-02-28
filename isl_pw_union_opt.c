@@ -87,6 +87,58 @@ static void FN(PW,union_opt_cmp_data_clear)(S(PW,union_opt_cmp_data) *data)
 	FN(PW,free)(data->pw);
 }
 
+/* Given (potentially) updated cells "i" of data_i->pw and "j" of data_j->pw and
+ * a function "cmp" that returns the set of elements where
+ * "el1" is "better" than "el2",
+ * (further) update the specified cells such that only the "better" elements
+ * remain on the (non-empty) intersection.
+ *
+ * Let C be the set where the piece from data_j->pw is better
+ * (according to "cmp") than the piece from data_i->pw.
+ * Let A be the cell data_i->cell[i] and B the cell data_j->cell[j].
+ *
+ * The elements in C need to be removed from A, except for those parts
+ * that lie outside of B.  That is,
+ *
+ *	A <- (A \setminus C) \cup ((A \cap C) \setminus B')
+ *
+ * Conversely, the elements in B need to be restricted to C, except
+ * for those parts that lie outside of A.  That is
+ *
+ *	B <- (B \cap C) \cup ((B \setminus C) \setminus A')
+ *
+ * Since all pairs of pieces are considered, the domains are updated
+ * several times.  A and B refer to these updated domains
+ * (kept track of in data_i->cell[i] and data_j->cell[j]), while A' and B' refer
+ * to the original domains of the pieces.  It is safe to use these
+ * original domains because the difference between, say, A' and A is
+ * the domains of pw2-pieces that have been removed before and
+ * those domains are disjoint from B.  A' is used instead of A
+ * because the continued updating of A may result in this domain
+ * getting broken up into more disjuncts.
+ */
+static isl_stat FN(PW,union_opt_cmp_pair)(S(PW,union_opt_cmp_data) *data_i,
+	int i, S(PW,union_opt_cmp_data) *data_j, int j,
+	__isl_give isl_set *(*cmp)(__isl_take EL *el1, __isl_take EL *el2))
+{
+	isl_set *better, *set_i, *set_j;
+	EL *el_i, *el_j;
+
+	el_i = FN(PW,peek_base_at)(data_i->pw, i);
+	el_j = FN(PW,peek_base_at)(data_j->pw, j);
+	better = FN(PW,better)(el_j, el_i, cmp);
+	set_i = isl_set_list_get_set(data_i->cell, i);
+	set_j = FN(PW,get_domain_at)(data_j->pw, j);
+	set_i = FN(PW,worse_or_out)(set_i, isl_set_copy(better), set_j);
+	data_i->cell = isl_set_list_set_set(data_i->cell, i, set_i);
+	set_i = FN(PW,get_domain_at)(data_i->pw, i);
+	set_j = isl_set_list_get_set(data_j->cell, j);
+	set_j = FN(PW,better_or_out)(set_j, better, set_i);
+	data_j->cell = isl_set_list_set_set(data_j->cell, j, set_j);
+
+	return isl_stat_ok;
+}
+
 /* Given two piecewise expressions data1->pw and data2->pw, replace
  * their domains
  * by the sets in data1->cell and data2->cell and combine the results into
@@ -161,29 +213,6 @@ static __isl_give PW *FN(PW,merge)(S(PW,union_opt_cmp_data) *data1,
  * Run through all pairs of pieces in "pw1" and "pw2".
  * If the domains of these pieces intersect, then the intersection
  * needs to be distributed over the two pieces based on "cmp".
- * Let C be the set where the piece from "pw2" is better (according to "cmp")
- * than the piece from "pw1".  Let A be the domain of the piece from "pw1" and
- * B the domain of the piece from "pw2".
- *
- * The elements in C need to be removed from A, except for those parts
- * that lie outside of B.  That is,
- *
- *	A <- (A \setminus C) \cup ((A \cap C) \setminus B')
- *
- * Conversely, the elements in B need to be restricted to C, except
- * for those parts that lie outside of A.  That is
- *
- *	B <- (B \cap C) \cup ((B \setminus C) \setminus A')
- *
- * Since all pairs of pieces are considered, the domains are updated
- * several times.  A and B refer to these updated domains
- * (kept track of in data[0].cell and data[1].cell), while A' and B' refer
- * to the original domains of the pieces.  It is safe to use these
- * original domains because the difference between, say, A' and A is
- * the domains of pw2-pieces that have been removed before and
- * those domains are disjoint from B.  A' is used instead of A
- * because the continued updating of A may result in this domain
- * getting broken up into more disjuncts.
  *
  * After the updated domains have been computed, the result is constructed
  * from "pw1", "pw2", data[0].cell and data[1].cell.  If there are any pieces
@@ -232,8 +261,7 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 	for (i = 0; i < n1; ++i) {
 		for (j = 0; j < n2; ++j) {
 			isl_bool disjoint;
-			isl_set *better, *set_i, *set_j;
-			EL *el_i, *el_j;
+			isl_set *set_i, *set_j;
 
 			set_i = FN(PW,peek_domain_at)(data[0].pw, i);
 			set_j = FN(PW,peek_domain_at)(data[1].pw, j);
@@ -242,20 +270,9 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 				goto error;
 			if (disjoint)
 				continue;
-			el_i = FN(PW,peek_base_at)(data[0].pw, i);
-			el_j = FN(PW,peek_base_at)(data[1].pw, j);
-			better = FN(PW,better)(el_j, el_i, cmp);
-			set_i = isl_set_list_get_set(data[0].cell, i);
-			set_j = FN(PW,get_domain_at)(data[1].pw, j);
-			set_i = FN(PW,worse_or_out)(set_i,
-						isl_set_copy(better), set_j);
-			data[0].cell =
-				isl_set_list_set_set(data[0].cell, i, set_i);
-			set_i = FN(PW,get_domain_at)(data[0].pw, i);
-			set_j = isl_set_list_get_set(data[1].cell, j);
-			set_j = FN(PW,better_or_out)(set_j, better, set_i);
-			data[1].cell =
-				isl_set_list_set_set(data[1].cell, j, set_j);
+			if (FN(PW,union_opt_cmp_pair)(&data[0], i,
+							&data[1], j, cmp) < 0)
+				goto error;
 		}
 	}
 
