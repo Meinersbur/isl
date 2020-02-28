@@ -234,11 +234,11 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 			el_j = FN(PW,peek_base_at)(pw2, j);
 			better = FN(PW,better)(el_j, el_i, cmp);
 			set_i = isl_set_list_get_set(list1, i);
-			set_j = isl_set_copy(pw2->p[j].set);
+			set_j = FN(PW,get_domain_at)(pw2, j);
 			set_i = FN(PW,worse_or_out)(set_i,
 						isl_set_copy(better), set_j);
 			list1 = isl_set_list_set_set(list1, i, set_i);
-			set_i = isl_set_copy(pw1->p[i].set);
+			set_i = FN(PW,get_domain_at)(pw1, i);
 			set_j = isl_set_list_get_set(list2, j);
 			set_j = FN(PW,better_or_out)(set_j, better, set_i);
 			list2 = isl_set_list_set_set(list2, j, set_j);
