@@ -186,7 +186,6 @@ static __isl_give PW *FN(PW,union_opt_cmp)(
 	int i, j;
 	PW *res = NULL;
 	isl_ctx *ctx;
-	isl_set *set = NULL;
 	isl_set_list *list1 = NULL, *list2 = NULL;
 
 	if (!pw1 || !pw2)
@@ -248,6 +247,5 @@ error:
 	isl_set_list_free(list2);
 	FN(PW,free)(pw1);
 	FN(PW,free)(pw2);
-	isl_set_free(set);
 	return FN(PW,free)(res);
 }
