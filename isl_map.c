@@ -3250,7 +3250,7 @@ __isl_give isl_set *isl_set_remove_dims(__isl_take isl_set *bset,
 }
 
 /* Project out n inputs starting at first using Fourier-Motzkin */
-struct isl_map *isl_map_remove_inputs(struct isl_map *map,
+__isl_give isl_map *isl_map_remove_inputs(__isl_take isl_map *map,
 	unsigned first, unsigned n)
 {
 	return isl_map_remove_dims(map, isl_dim_in, first, n);
