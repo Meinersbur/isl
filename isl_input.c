@@ -3236,8 +3236,7 @@ __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 	return set;
 }
 
-struct isl_set *isl_set_read_from_str(struct isl_ctx *ctx,
-	const char *str)
+__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx, const char *str)
 {
 	isl_set *set;
 	isl_stream *s = isl_stream_new_str(ctx, str);
