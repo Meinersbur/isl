@@ -2342,7 +2342,7 @@ error:
 	return NULL;
 }
 
-static struct isl_map *map_read_polylib(__isl_keep isl_stream *s)
+static __isl_give isl_map *map_read_polylib(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 	struct isl_token *tok2;
