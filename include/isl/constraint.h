@@ -108,7 +108,8 @@ __isl_give isl_constraint *isl_constraint_set_coefficient_val(
 __isl_give isl_aff *isl_constraint_get_div(__isl_keep isl_constraint *constraint,
 	int pos);
 
-struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
+__isl_give isl_constraint *isl_constraint_negate(
+	__isl_take isl_constraint *constraint);
 
 isl_bool isl_constraint_is_equality(__isl_keep isl_constraint *constraint);
 isl_bool isl_constraint_is_div_constraint(

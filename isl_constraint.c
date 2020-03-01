@@ -636,7 +636,8 @@ __isl_give isl_constraint *isl_constraint_set_coefficient_si(
 	return constraint;
 }
 
-struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint)
+__isl_give isl_constraint *isl_constraint_negate(
+	__isl_take isl_constraint *constraint)
 {
 	isl_ctx *ctx;
 
