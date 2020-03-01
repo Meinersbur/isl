@@ -704,8 +704,9 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_remove_equalities(
-	struct isl_basic_set *bset, struct isl_mat **T, struct isl_mat **T2)
+__isl_give isl_basic_set *isl_basic_set_remove_equalities(
+	__isl_take isl_basic_set *bset, __isl_give isl_mat **T,
+	__isl_give isl_mat **T2)
 {
 	if (T)
 		*T = NULL;
