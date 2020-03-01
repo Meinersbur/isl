@@ -146,7 +146,7 @@ __isl_give isl_constraint *isl_constraint_dup(__isl_keep isl_constraint *c)
 						isl_vec_copy(c->v));
 }
 
-struct isl_constraint *isl_constraint_cow(struct isl_constraint *c)
+__isl_give isl_constraint *isl_constraint_cow(__isl_take isl_constraint *c)
 {
 	if (!c)
 		return NULL;
