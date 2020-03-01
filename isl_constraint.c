@@ -137,7 +137,7 @@ __isl_give isl_constraint *isl_constraint_alloc_inequality(
 	return isl_constraint_alloc(0, ls);
 }
 
-struct isl_constraint *isl_constraint_dup(struct isl_constraint *c)
+__isl_give isl_constraint *isl_constraint_dup(__isl_keep isl_constraint *c)
 {
 	if (!c)
 		return NULL;
