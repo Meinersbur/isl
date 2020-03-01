@@ -29,7 +29,7 @@ __isl_give isl_mat *isl_mat_alloc(isl_ctx *ctx,
 	unsigned n_row, unsigned n_col);
 struct isl_mat *isl_mat_extend(struct isl_mat *mat,
 	unsigned n_row, unsigned n_col);
-struct isl_mat *isl_mat_identity(struct isl_ctx *ctx, unsigned n_row);
+__isl_give isl_mat *isl_mat_identity(isl_ctx *ctx, unsigned n_row);
 __isl_give isl_mat *isl_mat_copy(__isl_keep isl_mat *mat);
 __isl_null isl_mat *isl_mat_free(__isl_take isl_mat *mat);
 
