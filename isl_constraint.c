@@ -157,7 +157,8 @@ struct isl_constraint *isl_constraint_cow(struct isl_constraint *c)
 	return isl_constraint_dup(c);
 }
 
-struct isl_constraint *isl_constraint_copy(struct isl_constraint *constraint)
+__isl_give isl_constraint *isl_constraint_copy(
+	__isl_keep isl_constraint *constraint)
 {
 	if (!constraint)
 		return NULL;
