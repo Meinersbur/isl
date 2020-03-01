@@ -86,7 +86,7 @@ error:
 	return NULL;
 }
 
-struct isl_mat *isl_mat_extend(struct isl_mat *mat,
+__isl_give isl_mat *isl_mat_extend(__isl_take isl_mat *mat,
 	unsigned n_row, unsigned n_col)
 {
 	int i;
