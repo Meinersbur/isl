@@ -2476,7 +2476,7 @@ __isl_give isl_basic_map *isl_map_simple_hull(__isl_take isl_map *map)
 	return map_simple_hull(map, 1);
 }
 
-struct isl_basic_set *isl_set_simple_hull(struct isl_set *set)
+__isl_give isl_basic_set *isl_set_simple_hull(__isl_take isl_set *set)
 {
 	return bset_from_bmap(isl_map_simple_hull(set_to_map(set)));
 }
