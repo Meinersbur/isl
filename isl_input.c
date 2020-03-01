@@ -242,8 +242,7 @@ error:
 
 /* Read an isl_val from "str".
  */
-struct isl_val *isl_val_read_from_str(struct isl_ctx *ctx,
-	const char *str)
+__isl_give isl_val *isl_val_read_from_str(isl_ctx *ctx, const char *str)
 {
 	isl_val *val;
 	isl_stream *s = isl_stream_new_str(ctx, str);
