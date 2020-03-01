@@ -452,7 +452,7 @@ __isl_give isl_vec *isl_vec_ceil(__isl_take isl_vec *vec)
 	return vec;
 }
 
-struct isl_vec *isl_vec_normalize(struct isl_vec *vec)
+__isl_give isl_vec *isl_vec_normalize(__isl_take isl_vec *vec)
 {
 	if (!vec)
 		return NULL;
