@@ -59,8 +59,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_implicit_equalities(
-						struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_implicit_equalities(
+	__isl_take isl_basic_set *bset)
 {
 	return bset_from_bmap(
 		isl_basic_map_implicit_equalities(bset_to_bmap(bset)));
