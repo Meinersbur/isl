@@ -85,8 +85,8 @@ __isl_give isl_constraint *isl_constraint_alloc(int eq,
 	return isl_constraint_alloc_vec(eq, ls, v);
 }
 
-struct isl_constraint *isl_basic_map_constraint(struct isl_basic_map *bmap,
-	isl_int **line)
+__isl_give isl_constraint *isl_basic_map_constraint(
+	__isl_take isl_basic_map *bmap, isl_int **line)
 {
 	int eq;
 	isl_size dim;
