@@ -407,7 +407,7 @@ __isl_give isl_map *isl_map_subtract_range(__isl_take isl_map *map,
 	__isl_take isl_set *dom);
 __isl_export
 __isl_give isl_map *isl_map_complement(__isl_take isl_map *map);
-struct isl_map *isl_map_fix_input_si(struct isl_map *map,
+__isl_give isl_map *isl_map_fix_input_si(__isl_take isl_map *map,
 		unsigned input, int value);
 __isl_give isl_map *isl_map_fix_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);

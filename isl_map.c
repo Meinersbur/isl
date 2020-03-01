@@ -6555,7 +6555,7 @@ __isl_give isl_set *isl_set_fix_val(__isl_take isl_set *set,
 	return isl_map_fix_val(set, type, pos, v);
 }
 
-struct isl_map *isl_map_fix_input_si(struct isl_map *map,
+__isl_give isl_map *isl_map_fix_input_si(__isl_take isl_map *map,
 		unsigned input, int value)
 {
 	return isl_map_fix_si(map, isl_dim_in, input, value);
