@@ -199,7 +199,7 @@ __isl_give isl_basic_set *isl_basic_set_extend(__isl_take isl_basic_set *base,
 	unsigned extra, unsigned n_eq, unsigned n_ineq);
 
 __isl_give isl_map *isl_map_grow(__isl_take isl_map *map, int n);
-struct isl_set *isl_set_grow(struct isl_set *set, int n);
+__isl_give isl_set *isl_set_grow(__isl_take isl_set *set, int n);
 
 isl_bool isl_basic_set_contains(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_vec *vec);

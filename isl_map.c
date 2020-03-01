@@ -3366,7 +3366,7 @@ error:
 
 /* Make sure "set" has room for at least "n" more basic sets.
  */
-struct isl_set *isl_set_grow(struct isl_set *set, int n)
+__isl_give isl_set *isl_set_grow(__isl_take isl_set *set, int n)
 {
 	return set_from_map(isl_map_grow(set_to_map(set), n));
 }
