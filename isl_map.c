@@ -1261,7 +1261,7 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_alloc(struct isl_ctx *ctx,
+__isl_give isl_basic_set *isl_basic_set_alloc(isl_ctx *ctx,
 		unsigned nparam, unsigned dim, unsigned extra,
 		unsigned n_eq, unsigned n_ineq)
 {
@@ -1372,7 +1372,7 @@ __isl_give isl_basic_map *isl_basic_map_dup(__isl_keep isl_basic_map *bmap)
 	return dup;
 }
 
-struct isl_basic_set *isl_basic_set_dup(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_dup(__isl_keep isl_basic_set *bset)
 {
 	struct isl_basic_map *dup;
 
@@ -1961,8 +1961,8 @@ __isl_give isl_basic_map *isl_basic_map_extend_constraints(
 	return isl_basic_map_extend(base, 0, n_eq, n_ineq);
 }
 
-struct isl_basic_set *isl_basic_set_extend_constraints(
-		struct isl_basic_set *base, unsigned n_eq, unsigned n_ineq)
+__isl_give isl_basic_set *isl_basic_set_extend_constraints(
+	__isl_take isl_basic_set *base, unsigned n_eq, unsigned n_ineq)
 {
 	isl_basic_map *bmap = bset_to_bmap(base);
 	bmap = isl_basic_map_extend_constraints(bmap, n_eq, n_ineq);
@@ -5595,8 +5595,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_from_underlying_set(
-	struct isl_basic_set *bset, struct isl_basic_set *like)
+__isl_give isl_basic_set *isl_basic_set_from_underlying_set(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *like)
 {
 	return bset_from_bmap(isl_basic_map_overlying_set(bset,
 							bset_to_bmap(like)));

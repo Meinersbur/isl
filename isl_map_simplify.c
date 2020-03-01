@@ -1448,7 +1448,8 @@ __isl_give isl_basic_map *isl_basic_map_simplify(__isl_take isl_basic_map *bmap)
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_simplify(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_simplify(
+	__isl_take isl_basic_set *bset)
 {
 	return bset_from_bmap(isl_basic_map_simplify(bset_to_bmap(bset)));
 }
@@ -1584,7 +1585,8 @@ __isl_give isl_basic_map *isl_basic_map_finalize(__isl_take isl_basic_map *bmap)
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_finalize(struct isl_basic_set *bset)
+__isl_give isl_basic_set *isl_basic_set_finalize(
+	__isl_take isl_basic_set *bset)
 {
 	return bset_from_bmap(isl_basic_map_finalize(bset_to_bmap(bset)));
 }
