@@ -64,8 +64,6 @@ private:
 		const isl_class &clazz);
 	void print_methods_decl(ostream &os, const isl_class &clazz);
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
-	void print_method_group_decl(ostream &os, const isl_class &clazz,
-		const function_set &methods);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name, function_kind kind,
 		const std::vector<bool> &convert = {});
@@ -96,8 +94,6 @@ private:
 	void print_persistent_callbacks_impl(ostream &os,
 		const isl_class &clazz);
 	void print_methods_impl(ostream &os, const isl_class &clazz);
-	void print_method_group_impl(ostream &os, const isl_class &clazz,
-		const function_set &methods);
 	void print_argument_validity_check(ostream &os, FunctionDecl *method,
 		function_kind kind);
 	void print_save_ctx(ostream &os, FunctionDecl *method,
@@ -175,6 +171,7 @@ struct cpp_generator::class_printer {
 			cpp_generator &generator);
 
 	void print_method_variants(FunctionDecl *fd);
+	void print_method_group(const function_set &methods);
 	virtual void print_method(FunctionDecl *method, function_kind kind) = 0;
 	virtual void print_method(FunctionDecl *method, function_kind kind,
 		const std::vector<bool> &convert) = 0;

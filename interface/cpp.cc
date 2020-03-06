@@ -667,10 +667,11 @@ void cpp_generator::print_persistent_callbacks_decl(ostream &os,
  */
 void cpp_generator::print_methods_decl(ostream &os, const isl_class &clazz)
 {
+	decl_printer printer(os, clazz, *this);
 	map<string, function_set >::const_iterator it;
 
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		print_method_group_decl(os, clazz, it->second);
+		printer.print_method_group(it->second);
 }
 
 /* Print a declaration for a method "name" in "clazz" derived
@@ -787,16 +788,15 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
 			print_method(fd, kind, convert);
 }
 
-/* Print declarations for methods "methods" in class "clazz" to "os".
+/* Print declarations or definitions for methods "methods".
  */
-void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
+void cpp_generator::class_printer::print_method_group(
 	const function_set &methods)
 {
-	decl_printer printer(os, clazz, *this);
 	function_set::const_iterator it;
 
 	for (it = methods.begin(); it != methods.end(); ++it)
-		printer.print_method_variants(*it);
+		print_method_variants(*it);
 }
 
 /* Print a declaration for a method called "name" in class "clazz"
@@ -1434,10 +1434,11 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
  */
 void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
 {
+	impl_printer printer(os, clazz, *this);
 	map<string, function_set>::const_iterator it;
 
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		print_method_group_impl(os, clazz, it->second);
+		printer.print_method_group(it->second);
 }
 
 /* Print the definition for a method "method_name" in "clazz" derived
@@ -1539,18 +1540,6 @@ void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
 	}
 	osprintf(os, ");\n");
 	osprintf(os, "}\n");
-}
-
-/* Print definitions for methods "methods" in class "clazz" to "os".
- */
-void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
-	const function_set &methods)
-{
-	impl_printer printer(os, clazz, *this);
-	function_set::const_iterator it;
-
-	for (it = methods.begin(); it != methods.end(); ++it)
-		printer.print_method_variants(*it);
 }
 
 /* Print the use of "param" to "os".
