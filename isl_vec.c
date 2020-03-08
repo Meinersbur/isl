@@ -216,7 +216,7 @@ struct isl_vec *isl_vec_dup(struct isl_vec *vec)
 	return vec2;
 }
 
-struct isl_vec *isl_vec_cow(struct isl_vec *vec)
+__isl_give isl_vec *isl_vec_cow(__isl_take isl_vec *vec)
 {
 	struct isl_vec *vec2;
 	if (!vec)
