@@ -2632,8 +2632,8 @@ static void get_rounded_sample_value(struct isl_tab *tab,
  * The tableau is assumed to have been created from "bmap" using
  * isl_tab_from_basic_map.
  */
-struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
-	struct isl_tab *tab)
+__isl_give isl_basic_map *isl_basic_map_update_from_tab(
+	__isl_take isl_basic_map *bmap, struct isl_tab *tab)
 {
 	int i;
 	unsigned n_eq;
@@ -2661,8 +2661,8 @@ struct isl_basic_map *isl_basic_map_update_from_tab(struct isl_basic_map *bmap,
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_update_from_tab(struct isl_basic_set *bset,
-	struct isl_tab *tab)
+__isl_give isl_basic_set *isl_basic_set_update_from_tab(
+	__isl_take isl_basic_set *bset, struct isl_tab *tab)
 {
 	return bset_from_bmap(isl_basic_map_update_from_tab(bset_to_bmap(bset),
 								tab));
