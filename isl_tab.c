@@ -2573,7 +2573,7 @@ static struct isl_vec *extract_integer_sample(struct isl_tab *tab)
 	return vec;
 }
 
-struct isl_vec *isl_tab_get_sample_value(struct isl_tab *tab)
+__isl_give isl_vec *isl_tab_get_sample_value(struct isl_tab *tab)
 {
 	int i;
 	struct isl_vec *vec;

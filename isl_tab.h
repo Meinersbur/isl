@@ -223,7 +223,7 @@ int isl_tab_is_equality(struct isl_tab *tab, int con);
 int isl_tab_is_redundant(struct isl_tab *tab, int con);
 
 int isl_tab_sample_is_integer(struct isl_tab *tab);
-struct isl_vec *isl_tab_get_sample_value(struct isl_tab *tab);
+__isl_give isl_vec *isl_tab_get_sample_value(struct isl_tab *tab);
 
 enum isl_ineq_type {
 	isl_ineq_error = -1,
