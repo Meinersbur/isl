@@ -6386,19 +6386,6 @@ __isl_give isl_basic_set *isl_basic_set_fix(__isl_take isl_basic_set *bset,
 						    type, pos, value));
 }
 
-struct isl_basic_map *isl_basic_map_fix_input_si(struct isl_basic_map *bmap,
-		unsigned input, int value)
-{
-	return isl_basic_map_fix_si(bmap, isl_dim_in, input, value);
-}
-
-struct isl_basic_set *isl_basic_set_fix_dim_si(struct isl_basic_set *bset,
-		unsigned dim, int value)
-{
-	return bset_from_bmap(isl_basic_map_fix_si(bset_to_bmap(bset),
-					isl_dim_set, dim, value));
-}
-
 /* Remove the basic map at position "i" from "map" if this basic map
  * is (obviously) empty.
  */
