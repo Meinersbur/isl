@@ -6231,7 +6231,7 @@ __isl_give isl_set *isl_set_universe(__isl_take isl_space *space)
 	return set;
 }
 
-struct isl_map *isl_map_dup(struct isl_map *map)
+__isl_give isl_map *isl_map_dup(__isl_keep isl_map *map)
 {
 	int i;
 	struct isl_map *dup;
