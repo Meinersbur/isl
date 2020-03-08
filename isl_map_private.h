@@ -348,7 +348,7 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
 	__isl_take isl_basic_map *bmap, int *progress);
 
 __isl_give isl_map *isl_map_remove_empty_parts(__isl_take isl_map *map);
-struct isl_set *isl_set_remove_empty_parts(struct isl_set *set);
+__isl_give isl_set *isl_set_remove_empty_parts(__isl_take isl_set *set);
 __isl_give isl_map *isl_map_remove_obvious_duplicates(__isl_take isl_map *map);
 
 struct isl_set *isl_set_normalize(struct isl_set *set);

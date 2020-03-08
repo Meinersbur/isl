@@ -9595,7 +9595,7 @@ __isl_give isl_map *isl_map_remove_empty_parts(__isl_take isl_map *map)
 	return map;
 }
 
-struct isl_set *isl_set_remove_empty_parts(struct isl_set *set)
+__isl_give isl_set *isl_set_remove_empty_parts(__isl_take isl_set *set)
 {
 	return set_from_map(isl_map_remove_empty_parts(set_to_map(set)));
 }
