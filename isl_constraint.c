@@ -488,7 +488,7 @@ __isl_give isl_val *isl_constraint_get_constant_val(
 	return isl_val_int_from_isl_int(ctx, constraint->v->el[0]);
 }
 
-void isl_constraint_get_coefficient(struct isl_constraint *constraint,
+void isl_constraint_get_coefficient(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, int pos, isl_int *v)
 {
 	if (isl_constraint_check_range(constraint, type, pos, 1) < 0)
