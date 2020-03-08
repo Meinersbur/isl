@@ -194,7 +194,7 @@ error:
 	return NULL;
 }
 
-struct isl_vec *isl_vec_copy(struct isl_vec *vec)
+__isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec)
 {
 	if (!vec)
 		return NULL;
