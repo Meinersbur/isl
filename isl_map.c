@@ -10691,7 +10691,8 @@ __isl_give isl_map *isl_map_flat_product(__isl_take isl_map *map1,
 
 /* Given two set A and B, construct its Cartesian product A x B.
  */
-struct isl_set *isl_set_product(struct isl_set *set1, struct isl_set *set2)
+__isl_give isl_set *isl_set_product(__isl_take isl_set *set1,
+	__isl_take isl_set *set2)
 {
 	return isl_map_range_product(set1, set2);
 }
