@@ -3633,8 +3633,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
-						struct isl_basic_set *context)
+__isl_give isl_basic_set *isl_basic_set_gist(__isl_take isl_basic_set *bset,
+	__isl_take isl_basic_set *context)
 {
 	return bset_from_bmap(isl_basic_map_gist(bset_to_bmap(bset),
 						bset_to_bmap(context)));
