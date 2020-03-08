@@ -9246,11 +9246,6 @@ __isl_give isl_basic_map *isl_basic_map_order_divs(
 	return bmap;
 }
 
-struct isl_basic_set *isl_basic_set_order_divs(struct isl_basic_set *bset)
-{
-	return bset_from_bmap(isl_basic_map_order_divs(bset_to_bmap(bset)));
-}
-
 __isl_give isl_map *isl_map_order_divs(__isl_take isl_map *map)
 {
 	int i;
