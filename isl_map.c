@@ -10256,7 +10256,7 @@ error:
 	return NULL;
 }
 
-struct isl_set *isl_set_normalize(struct isl_set *set)
+__isl_give isl_set *isl_set_normalize(__isl_take isl_set *set)
 {
 	return set_from_map(isl_map_normalize(set_to_map(set)));
 }
