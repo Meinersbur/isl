@@ -375,7 +375,7 @@ static int greedy_search(isl_ctx *ctx, struct isl_tab *tab,
  * reduction computation to return early.  That is, as soon as it
  * finds a reasonable first direction.
  */ 
-struct isl_vec *isl_tab_sample(struct isl_tab *tab)
+__isl_give isl_vec *isl_tab_sample(struct isl_tab *tab)
 {
 	unsigned dim;
 	unsigned gbr;
