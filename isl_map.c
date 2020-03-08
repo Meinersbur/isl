@@ -6388,7 +6388,7 @@ __isl_give isl_basic_set *isl_basic_set_fix_val(__isl_take isl_basic_set *bset,
 	return isl_basic_map_fix_val(bset, type, pos, v);
 }
 
-struct isl_basic_set *isl_basic_set_fix_si(struct isl_basic_set *bset,
+__isl_give isl_basic_set *isl_basic_set_fix_si(__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned pos, int value)
 {
 	return bset_from_bmap(isl_basic_map_fix_si(bset_to_bmap(bset),
