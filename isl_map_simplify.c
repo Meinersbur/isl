@@ -1713,8 +1713,8 @@ error:
 	return NULL;
 }
 
-struct isl_basic_set *isl_basic_set_eliminate_vars(
-	struct isl_basic_set *bset, unsigned pos, unsigned n)
+__isl_give isl_basic_set *isl_basic_set_eliminate_vars(
+	__isl_take isl_basic_set *bset, unsigned pos, unsigned n)
 {
 	return bset_from_bmap(isl_basic_map_eliminate_vars(bset_to_bmap(bset),
 								pos, n));
