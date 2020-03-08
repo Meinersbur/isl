@@ -50,7 +50,7 @@ uint32_t isl_mat_get_hash(__isl_keep isl_mat *mat)
 	return hash;
 }
 
-struct isl_mat *isl_mat_alloc(struct isl_ctx *ctx,
+__isl_give isl_mat *isl_mat_alloc(isl_ctx *ctx,
 	unsigned n_row, unsigned n_col)
 {
 	int i;
