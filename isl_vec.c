@@ -203,7 +203,7 @@ __isl_give isl_vec *isl_vec_copy(__isl_keep isl_vec *vec)
 	return vec;
 }
 
-struct isl_vec *isl_vec_dup(struct isl_vec *vec)
+__isl_give isl_vec *isl_vec_dup(__isl_keep isl_vec *vec)
 {
 	struct isl_vec *vec2;
 
