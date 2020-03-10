@@ -726,8 +726,8 @@ error:
  * The affine hull in the original space is then obtained as
  * A = preimage(A'', Q_1).
  */
-static struct isl_basic_set *affine_hull_with_cone(struct isl_basic_set *bset,
-	struct isl_basic_set *cone)
+static __isl_give isl_basic_set *affine_hull_with_cone(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *cone)
 {
 	isl_size total;
 	unsigned cone_dim;
