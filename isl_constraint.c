@@ -37,7 +37,7 @@ static isl_size n(__isl_keep isl_constraint *c, enum isl_dim_type type)
 	return isl_local_space_dim(c->ls, type);
 }
 
-static unsigned offset(struct isl_constraint *c, enum isl_dim_type type)
+static unsigned offset(__isl_keep isl_constraint *c, enum isl_dim_type type)
 {
 	return isl_local_space_offset(c->ls, type);
 }
