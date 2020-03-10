@@ -497,7 +497,7 @@ isl_bool isl_set_plain_is_equal(__isl_keep isl_set *set1,
 isl_bool isl_set_plain_is_disjoint(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2);
 
-uint32_t isl_set_get_hash(struct isl_set *set);
+uint32_t isl_set_get_hash(__isl_keep isl_set *set);
 
 isl_size isl_set_n_basic_set(__isl_keep isl_set *set);
 __isl_export
