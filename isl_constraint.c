@@ -302,8 +302,8 @@ __isl_give isl_constraint_list *isl_basic_set_get_constraint_list(
 	return isl_basic_map_get_constraint_list(bset);
 }
 
-int isl_constraint_is_equal(struct isl_constraint *constraint1,
-	struct isl_constraint *constraint2)
+int isl_constraint_is_equal(__isl_keep isl_constraint *constraint1,
+	__isl_keep isl_constraint *constraint2)
 {
 	int equal;
 
