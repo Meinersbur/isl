@@ -804,7 +804,8 @@ error:
  * In particular, if the recession cone is full-dimensional, then
  * the affine hull is simply the whole universe.
  */
-static struct isl_basic_set *uset_affine_hull(struct isl_basic_set *bset)
+static __isl_give isl_basic_set *uset_affine_hull(
+	__isl_take isl_basic_set *bset)
 {
 	struct isl_basic_set *cone;
 	isl_size total;
