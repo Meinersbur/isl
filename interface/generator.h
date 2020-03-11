@@ -80,6 +80,8 @@ struct isl_class {
 	FunctionDecl *fn_copy;
 	FunctionDecl *fn_free;
 
+	/* Is the first argument an instance of the class? */
+	bool first_arg_matches_class(FunctionDecl *method) const;
 	/* Does "method" correspond to a static method? */
 	bool is_static(FunctionDecl *method) const;
 	/* Is this class a subclass based on a type function? */

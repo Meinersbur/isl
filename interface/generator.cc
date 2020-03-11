@@ -46,23 +46,30 @@
 const char *isl_class::get_prefix = "get_";
 const char *isl_class::set_callback_prefix = "set_";
 
+/* Is the first argument an instance of the class?
+ */
+bool isl_class::first_arg_matches_class(FunctionDecl *method) const
+{
+	ParmVarDecl *param;
+	QualType type;
+
+	if (method->getNumParams() < 1)
+		return false;
+
+	param = method->getParamDecl(0);
+	type = param->getOriginalType();
+	if (!generator::is_isl_type(type))
+		return false;
+	return generator::extract_type(type) == name;
+}
+
 /* Should "method" be considered to be a static method?
  * That is, is the first argument something other than
  * an instance of the class?
  */
 bool isl_class::is_static(FunctionDecl *method) const
 {
-	ParmVarDecl *param;
-	QualType type;
-
-	if (method->getNumParams() < 1)
-		return true;
-
-	param = method->getParamDecl(0);
-	type = param->getOriginalType();
-	if (!generator::is_isl_type(type))
-		return true;
-	return generator::extract_type(type) != name;
+	return !first_arg_matches_class(method);
 }
 
 /* Should "method" be considered to be a static method?
