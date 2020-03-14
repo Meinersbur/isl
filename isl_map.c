@@ -1553,7 +1553,7 @@ isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	return r;
 }
 
-int isl_basic_map_alloc_equality(struct isl_basic_map *bmap)
+int isl_basic_map_alloc_equality(__isl_keep isl_basic_map *bmap)
 {
 	isl_size total;
 	struct isl_ctx *ctx;
