@@ -1100,7 +1100,7 @@ void isl_mat_col_scale(__isl_keep isl_mat *mat, unsigned col, isl_int m)
 		isl_int_mul(mat->row[i][col], mat->row[i][col], m);
 }
 
-void isl_mat_col_combine(struct isl_mat *mat, unsigned dst,
+void isl_mat_col_combine(__isl_keep isl_mat *mat, unsigned dst,
 	isl_int m1, unsigned src1, isl_int m2, unsigned src2)
 {
 	int i;
