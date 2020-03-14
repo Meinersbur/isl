@@ -1639,7 +1639,7 @@ __isl_give isl_mat *isl_mat_add_zero_rows(__isl_take isl_mat *mat, unsigned n)
 	return isl_mat_insert_zero_rows(mat, mat->n_row, n);
 }
 
-void isl_mat_col_submul(struct isl_mat *mat,
+void isl_mat_col_submul(__isl_keep isl_mat *mat,
 			int dst_col, isl_int f, int src_col)
 {
 	int i;
