@@ -1708,7 +1708,7 @@ __isl_give isl_basic_set *isl_basic_set_free_inequality(
 							    n));
 }
 
-int isl_basic_map_drop_inequality(struct isl_basic_map *bmap, unsigned pos)
+int isl_basic_map_drop_inequality(__isl_keep isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
 	if (!bmap)
