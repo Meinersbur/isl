@@ -1616,7 +1616,7 @@ __isl_give isl_basic_set *isl_basic_set_free_equality(
 /* Drop the equality constraint at position "pos",
  * preserving the order of the other equality constraints.
  */
-int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
+int isl_basic_map_drop_equality(__isl_keep isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
 	int r;
