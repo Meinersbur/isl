@@ -1092,7 +1092,7 @@ error:
 	return NULL;
 }
 
-void isl_mat_col_scale(struct isl_mat *mat, unsigned col, isl_int m)
+void isl_mat_col_scale(__isl_keep isl_mat *mat, unsigned col, isl_int m)
 {
 	int i;
 
