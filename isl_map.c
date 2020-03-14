@@ -1791,7 +1791,7 @@ __isl_give isl_basic_set *isl_basic_set_add_ineq(__isl_take isl_basic_set *bset,
 	return bset_from_bmap(isl_basic_map_add_ineq(bset_to_bmap(bset), ineq));
 }
 
-int isl_basic_map_alloc_div(struct isl_basic_map *bmap)
+int isl_basic_map_alloc_div(__isl_keep isl_basic_map *bmap)
 {
 	isl_size total;
 
