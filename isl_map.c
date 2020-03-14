@@ -1805,7 +1805,7 @@ int isl_basic_map_alloc_div(__isl_keep isl_basic_map *bmap)
 	return bmap->n_div++;
 }
 
-int isl_basic_set_alloc_div(struct isl_basic_set *bset)
+int isl_basic_set_alloc_div(__isl_keep isl_basic_set *bset)
 {
 	return isl_basic_map_alloc_div(bset_to_bmap(bset));
 }
