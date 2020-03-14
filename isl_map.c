@@ -1642,7 +1642,7 @@ int isl_basic_map_drop_equality(__isl_keep isl_basic_map *bmap, unsigned pos)
  * change in the ordering of the constraints.
  */
 void isl_basic_map_inequality_to_equality(
-		struct isl_basic_map *bmap, unsigned pos)
+		__isl_keep isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
 

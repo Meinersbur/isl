@@ -235,7 +235,7 @@ isl_stat isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n);
 __isl_give isl_basic_map *isl_basic_map_drop_div(
 	__isl_take isl_basic_map *bmap, unsigned div);
 void isl_basic_map_inequality_to_equality(
-		struct isl_basic_map *bmap, unsigned pos);
+		__isl_keep isl_basic_map *bmap, unsigned pos);
 int isl_basic_map_drop_equality(__isl_keep isl_basic_map *bmap, unsigned pos);
 int isl_basic_set_drop_inequality(__isl_keep isl_basic_set *bset, unsigned pos);
 int isl_basic_map_drop_inequality(__isl_keep isl_basic_map *bmap, unsigned pos);
