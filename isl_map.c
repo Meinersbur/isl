@@ -1860,7 +1860,7 @@ __isl_give isl_basic_map *isl_basic_map_insert_div(
 	return bmap;
 }
 
-isl_stat isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
+isl_stat isl_basic_map_free_div(__isl_keep isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)
 		return isl_stat_error;
