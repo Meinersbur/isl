@@ -3852,6 +3852,26 @@ static int test_subset(isl_ctx *ctx)
 	return 0;
 }
 
+/* Perform a set subtraction with a set that has a non-obviously empty disjunct.
+ * Older versions of isl would fail on such cases.
+ */
+static isl_stat test_subtract_empty(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *s1, *s2;
+
+	s1 = isl_set_read_from_str(ctx, "{ [0] }");
+	str = "{ [a] : (exists (e0, e1, e2: 1056e1 <= 32 + a - 33e0 and "
+			"1089e1 >= a - 33e0 and 1089e1 <= 1 + a - 33e0 and "
+			"33e2 >= -a + 33e0 + 1056e1 and "
+			"33e2 < -2a + 66e0 + 2112e1)) or a = 0 }";
+	s2 = isl_set_read_from_str(ctx, str);
+	s1 = isl_set_subtract(s1, s2);
+	isl_set_free(s1);
+
+	return isl_stat_non_null(s1);
+}
+
 struct {
 	const char *minuend;
 	const char *subtrahend;
@@ -3869,6 +3889,9 @@ static int test_subtract(isl_ctx *ctx)
 	isl_union_pw_multi_aff *upma1, *upma2;
 	isl_union_set *uset;
 	int equal;
+
+	if (test_subtract_empty(ctx) < 0)
+		return -1;
 
 	for (i = 0; i < ARRAY_SIZE(subtract_domain_tests); ++i) {
 		umap1 = isl_union_map_read_from_str(ctx,
