@@ -5486,6 +5486,18 @@ static struct {
 	{ &isl_union_pw_multi_aff_involves_nan,
 	  "{ A[] -> [0]; B[0] -> [1, NaN, 5] }",
 	  isl_bool_true },
+	{ &isl_union_pw_multi_aff_involves_locals,
+	  "{ A[] -> [0]; B[0] -> [1] }",
+	  isl_bool_false },
+	{ &isl_union_pw_multi_aff_involves_locals,
+	  "{ A[] -> [0]; B[x] -> [1] : x mod 2 = 0 }",
+	  isl_bool_true },
+	{ &isl_union_pw_multi_aff_involves_locals,
+	  "{ A[] -> [0]; B[x] -> [x // 2] }",
+	  isl_bool_true },
+	{ &isl_union_pw_multi_aff_involves_locals,
+	  "{ A[i] -> [i // 2]; B[0] -> [1] }",
+	  isl_bool_true },
 };
 
 /* Perform some basic tests of test operations on

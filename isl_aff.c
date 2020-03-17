@@ -4373,6 +4373,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define BASE pw_multi_aff
 
 #include <isl_union_multi.c>
+#include "isl_union_locals_templ.c"
 #include <isl_union_neg.c>
 
 /* Generic function for extracting a factor from a product "pma".
