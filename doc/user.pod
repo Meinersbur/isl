@@ -4478,6 +4478,10 @@ To check whether a function involves any local variables,
 i.e., integer divisions,
 the following functions can be used.
 
+	#include <isl/set.h>
+	isl_bool isl_set_involves_locals(
+		__isl_keep isl_set *set);
+
 	#include <isl/aff.h>
 	isl_bool isl_aff_involves_locals(
 		__isl_keep isl_aff *aff);

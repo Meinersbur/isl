@@ -2928,6 +2928,36 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 	return isl_map_involves_dims(set, type, first, n);
 }
 
+/* Does "bset" involve any local variables, i.e., integer divisions?
+ */
+static isl_bool isl_basic_set_involves_locals(__isl_keep isl_basic_set *bset)
+{
+	isl_size n;
+
+	n = isl_basic_set_dim(bset, isl_dim_div);
+	if (n < 0)
+		return isl_bool_error;
+	return isl_basic_set_involves_dims(bset, isl_dim_div, 0, n);
+}
+
+/* isl_set_every_basic_set callback that checks whether "bset"
+ * is free of local variables.
+ */
+static isl_bool basic_set_no_locals(__isl_keep isl_basic_set *bset, void *user)
+{
+	return isl_bool_not(isl_basic_set_involves_locals(bset));
+}
+
+/* Does "set" involve any local variables, i.e., integer divisions?
+ */
+isl_bool isl_set_involves_locals(__isl_keep isl_set *set)
+{
+	isl_bool no_locals;
+
+	no_locals = isl_set_every_basic_set(set, &basic_set_no_locals, NULL);
+	return isl_bool_not(no_locals);
+}
+
 /* Drop all constraints in bmap that involve any of the dimensions
  * first to first+n-1.
  * This function only performs the actual removal of constraints.
