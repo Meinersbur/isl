@@ -576,6 +576,8 @@ __isl_null isl_pw_multi_aff *isl_pw_multi_aff_free(
 
 isl_size isl_pw_multi_aff_dim(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type);
+__isl_export
+isl_bool isl_pw_multi_aff_involves_locals(__isl_keep isl_pw_multi_aff *pma);
 isl_bool isl_pw_multi_aff_involves_param_id(__isl_keep isl_pw_multi_aff *pma,
 	__isl_keep isl_id *id);
 isl_bool isl_pw_multi_aff_involves_dims(__isl_keep isl_pw_multi_aff *pma,

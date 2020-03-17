@@ -4487,6 +4487,8 @@ the following functions can be used.
 		__isl_keep isl_aff *aff);
 	isl_bool isl_multi_aff_involves_locals(
 		__isl_keep isl_multi_aff *ma);
+	isl_bool isl_pw_multi_aff_involves_locals(
+		__isl_keep isl_pw_multi_aff *pma);
 
 To check whether the description of a set, relation or function depends
 on a parameter or one or more given dimensions,
