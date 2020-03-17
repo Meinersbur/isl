@@ -11110,6 +11110,28 @@ isl_stat isl_set_foreach_basic_set(__isl_keep isl_set *set,
 	return isl_stat_ok;
 }
 
+/* Does "test" succeed on every basic set in "set"?
+ */
+isl_bool isl_set_every_basic_set(__isl_keep isl_set *set,
+	isl_bool (*test)(__isl_keep isl_basic_set *bset, void *user),
+	void *user)
+{
+	int i;
+
+	if (!set)
+		return isl_bool_error;
+
+	for (i = 0; i < set->n; ++i) {
+		isl_bool r;
+
+		r = test(set->p[i], user);
+		if (r < 0 || !r)
+			return r;
+	}
+
+	return isl_bool_true;
+}
+
 /* Return a list of basic sets, the union of which is equal to "set".
  */
 __isl_give isl_basic_set_list *isl_set_get_basic_set_list(

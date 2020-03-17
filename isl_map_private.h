@@ -465,6 +465,9 @@ isl_bool isl_map_divs_known(__isl_keep isl_map *map);
 __isl_give isl_mat *isl_basic_set_get_divs(__isl_keep isl_basic_set *bset);
 __isl_give isl_mat *isl_basic_map_get_divs(__isl_keep isl_basic_map *bmap);
 
+isl_bool isl_set_every_basic_set(__isl_keep isl_set *set,
+	isl_bool (*test)(__isl_keep isl_basic_set *bset, void *user),
+	void *user);
 __isl_give isl_map *isl_map_inline_foreach_basic_map(__isl_take isl_map *map,
 	__isl_give isl_basic_map *(*fn)(__isl_take isl_basic_map *bmap));
 
