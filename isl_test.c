@@ -5430,6 +5430,54 @@ static int test_bin_pw_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of test operations on
+ * isl_union_pw_multi_aff objects.
+ * "fn" is the function that is being tested.
+ * "arg" is a string description of the input.
+ * "res" is the expected result.
+ */
+static struct {
+	isl_bool (*fn)(__isl_keep isl_union_pw_multi_aff *upma1);
+	const char *arg;
+	isl_bool res;
+} upma_test_tests[] = {
+	{ &isl_union_pw_multi_aff_involves_nan, "{ A[] -> [0]; B[0] -> [1] }",
+	  isl_bool_false },
+	{ &isl_union_pw_multi_aff_involves_nan, "{ A[] -> [NaN]; B[0] -> [1] }",
+	  isl_bool_true },
+	{ &isl_union_pw_multi_aff_involves_nan, "{ A[] -> [0]; B[0] -> [NaN] }",
+	  isl_bool_true },
+	{ &isl_union_pw_multi_aff_involves_nan,
+	  "{ A[] -> [0]; B[0] -> [1, NaN, 5] }",
+	  isl_bool_true },
+};
+
+/* Perform some basic tests of test operations on
+ * isl_union_pw_multi_aff objects.
+ */
+static isl_stat test_upma_test(isl_ctx *ctx)
+{
+	int i;
+	isl_union_pw_multi_aff *upma;
+	isl_bool res;
+
+	for (i = 0; i < ARRAY_SIZE(upma_test_tests); ++i) {
+		const char *str;
+
+		str = upma_test_tests[i].arg;
+		upma = isl_union_pw_multi_aff_read_from_str(ctx, str);
+		res = upma_test_tests[i].fn(upma);
+		isl_union_pw_multi_aff_free(upma);
+		if (res < 0)
+			return isl_stat_error;
+		if (res != upma_test_tests[i].res)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
 struct {
 	__isl_give isl_union_pw_multi_aff *(*fn)(
 		__isl_take isl_union_pw_multi_aff *upma1,
@@ -6603,6 +6651,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_bin_aff(ctx) < 0)
 		return -1;
 	if (test_bin_pw_aff(ctx) < 0)
+		return -1;
+	if (test_upma_test(ctx) < 0)
 		return -1;
 	if (test_bin_upma(ctx) < 0)
 		return -1;
