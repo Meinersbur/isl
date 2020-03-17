@@ -1062,38 +1062,75 @@ error:
 	return NULL;
 }
 
-S(UNION,plain_is_equal_data)
-{
-	UNION *u2;
-	isl_bool is_equal;
+/* Internal data structure for isl_union_*_every_*.
+ *
+ * "test" is the user-specified callback function.
+ * "user" is the user-specified callback function argument.
+ *
+ * "res" is the final result, initialized to isl_bool_true.
+ */
+S(UNION,every_data) {
+	isl_bool (*test)(__isl_keep PW *pw, void *user);
+	void *user;
+
+	isl_bool res;
 };
 
-static isl_stat FN(UNION,plain_is_equal_entry)(void **entry, void *user)
+/* Call data->test on the piecewise expression at *entry,
+ * updating the result in data->res.
+ * Abort if this result is no longer isl_bool_true.
+ */
+static isl_stat FN(UNION,every_entry)(void **entry, void *user)
 {
-	S(UNION,plain_is_equal_data) *data = user;
-	struct isl_hash_table_entry *entry2;
+	S(UNION,every_data) *data = user;
 	PW *pw = *entry;
 
-	entry2 = FN(UNION,find_part_entry)(data->u2, pw->dim, 0);
-	if (!entry2 || entry2 == isl_hash_table_entry_none) {
-		if (!entry2)
-			data->is_equal = isl_bool_error;
-		else
-			data->is_equal = isl_bool_false;
-		return isl_stat_error;
-	}
-
-	data->is_equal = FN(PW,plain_is_equal)(pw, entry2->data);
-	if (data->is_equal < 0 || !data->is_equal)
+	data->res = data->test(pw, data->user);
+	if (data->res < 0 || !data->res)
 		return isl_stat_error;
 
 	return isl_stat_ok;
 }
 
+/* Does "test" succeed on every piecewise expression in "u"?
+ */
+isl_bool FN(FN(UNION,every),BASE)(__isl_keep UNION *u,
+	isl_bool (*test)(__isl_keep PW *pw, void *user), void *user)
+{
+	S(UNION,every_data) data = { test, user };
+
+	data.res = isl_bool_true;
+	if (FN(UNION,foreach_inplace)(u, &FN(UNION,every_entry), &data) < 0 &&
+	    data.res == isl_bool_true)
+		return isl_bool_error;
+
+	return data.res;
+}
+
+S(UNION,plain_is_equal_data)
+{
+	UNION *u2;
+};
+
+static isl_bool FN(UNION,plain_is_equal_el)(__isl_keep PW *pw, void *user)
+{
+	S(UNION,plain_is_equal_data) *data = user;
+	struct isl_hash_table_entry *entry;
+
+	entry = FN(UNION,find_part_entry)(data->u2, pw->dim, 0);
+	if (!entry)
+		return isl_bool_error;
+	if (entry == isl_hash_table_entry_none)
+		return isl_bool_false;
+
+	return FN(PW,plain_is_equal)(pw, entry->data);
+}
+
 isl_bool FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
 {
-	S(UNION,plain_is_equal_data) data = { NULL, isl_bool_true };
+	S(UNION,plain_is_equal_data) data;
 	isl_size n1, n2;
+	isl_bool is_equal;
 
 	if (!u1 || !u2)
 		return isl_bool_error;
@@ -1116,52 +1153,36 @@ isl_bool FN(UNION,plain_is_equal)(__isl_keep UNION *u1, __isl_keep UNION *u2)
 		goto error;
 
 	data.u2 = u2;
-	if (FN(UNION,foreach_inplace)(u1,
-			       &FN(UNION,plain_is_equal_entry), &data) < 0 &&
-	    data.is_equal)
-		goto error;
+	is_equal = FN(FN(UNION,every),BASE)(u1,
+					  &FN(UNION,plain_is_equal_el), &data);
 
 	FN(UNION,free)(u1);
 	FN(UNION,free)(u2);
 
-	return data.is_equal;
+	return is_equal;
 error:
 	FN(UNION,free)(u1);
 	FN(UNION,free)(u2);
 	return isl_bool_error;
 }
 
-/* Check whether the element that "entry" points to involves any NaNs and
- * store the result in *nan.
- * Abort as soon as one such element has been found.
+/* An isl_union_*_every_* callback that checks whether "pw"
+ * does not involve any NaNs.
  */
-static isl_stat FN(UNION,involves_nan_entry)(void **entry, void *user)
+static isl_bool FN(UNION,no_nan_el)(__isl_keep PW *pw, void *user)
 {
-	isl_bool *nan = user;
-	PW *pw = *entry;
-
-	*nan = FN(PW,involves_nan)(pw);
-	if (*nan < 0 || *nan)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return isl_bool_not(FN(PW,involves_nan)(pw));
 }
 
 /* Does "u" involve any NaNs?
  */
 isl_bool FN(UNION,involves_nan)(__isl_keep UNION *u)
 {
-	isl_bool nan = isl_bool_false;
+	isl_bool no_nan;
 
-	if (!u)
-		return isl_bool_error;
+	no_nan = FN(FN(UNION,every),BASE)(u, &FN(UNION,no_nan_el), NULL);
 
-	if (FN(UNION,foreach_inplace)(u,
-				    &FN(UNION,involves_nan_entry), &nan) < 0 &&
-	    !nan)
-		return isl_bool_error;
-
-	return nan;
+	return isl_bool_not(no_nan);
 }
 
 /* Internal data structure for isl_union_*_drop_dims.

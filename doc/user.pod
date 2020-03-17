@@ -3788,12 +3788,21 @@ use the following functions.
 		__isl_keep isl_union_pw_aff *upa,
 		isl_stat (*fn)(__isl_take isl_pw_aff *pa,
 			void *user), void *user);
+	isl_bool isl_union_pw_aff_every_pw_aff(
+		__isl_keep isl_union_pw_aff *upa,
+		isl_bool (*test)(__isl_keep isl_pw_aff *pa,
+			void *user), void *user);
 	isl_size isl_union_pw_multi_aff_n_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma);
 	isl_stat isl_union_pw_multi_aff_foreach_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma,
 		isl_stat (*fn)(__isl_take isl_pw_multi_aff *pma,
 			    void *user), void *user);
+	isl_bool isl_union_pw_multi_aff_every_pw_multi_aff(
+		__isl_keep isl_union_pw_multi_aff *upma,
+		isl_bool (*test)(
+			__isl_keep isl_pw_multi_aff *pma,
+			void *user), void *user);
 
 	#include <isl/polynomial.h>
 	isl_size isl_union_pw_qpolynomial_n_pw_qpolynomial(
@@ -3802,12 +3811,23 @@ use the following functions.
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		isl_stat (*fn)(__isl_take isl_pw_qpolynomial *pwqp,
 			    void *user), void *user);
+	isl_bool isl_union_pw_qpolynomial_every_pw_qpolynomial(
+		__isl_keep isl_union_pw_qpolynomial *upwqp,
+		isl_bool (*test)(
+			__isl_keep isl_pw_qpolynomial *pwqp,
+			void *user), void *user);
 	isl_size isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	isl_stat isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
 		isl_stat (*fn)(__isl_take isl_pw_qpolynomial_fold *pwf,
 			    void *user), void *user);
+	isl_bool
+	isl_union_pw_qpolynomial_fold_every_pw_qpolynomial_fold(
+		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
+		isl_bool (*test)(
+			__isl_keep isl_pw_qpolynomial_fold *pwf,
+			void *user), void *user);
 
 To extract the base expression in a given space from a union, use
 the following functions.
