@@ -46,6 +46,9 @@ isl_stat isl_space_check_domain_wrapped_domain_tuples(
 isl_bool isl_space_wrapped_tuple_is_equal(__isl_keep isl_space *space1,
 	enum isl_dim_type outer, enum isl_dim_type inner,
 	__isl_keep isl_space *space2, enum isl_dim_type type2);
+isl_stat isl_space_check_wrapped_tuple_is_equal(__isl_keep isl_space *space1,
+	enum isl_dim_type outer, enum isl_dim_type inner,
+	__isl_keep isl_space *space2, enum isl_dim_type type2);
 
 isl_size isl_space_wrapped_dim(__isl_keep isl_space *space,
 	enum isl_dim_type outer, enum isl_dim_type inner);

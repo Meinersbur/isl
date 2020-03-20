@@ -1034,6 +1034,20 @@ isl_bool isl_space_wrapped_tuple_is_equal(__isl_keep isl_space *space1,
 	return isl_space_tuple_is_equal(nested, inner, space2, type2);
 }
 
+/* Check that the tuple "inner" within the wrapped relation inside tuple "outer"
+ * of "space1" is equal to tuple "type2" of "space2".
+ */
+isl_stat isl_space_check_wrapped_tuple_is_equal(__isl_keep isl_space *space1,
+	enum isl_dim_type outer, enum isl_dim_type inner,
+	__isl_keep isl_space *space2, enum isl_dim_type type2)
+{
+	isl_bool is_equal;
+
+	is_equal = isl_space_wrapped_tuple_is_equal(space1, outer, inner,
+							space2, type2);
+	return check_match(space1, is_equal);
+}
+
 static isl_bool match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2)
 {
