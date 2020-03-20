@@ -8287,6 +8287,11 @@ error:
 	return NULL;
 }
 
+#undef TYPE
+#define TYPE isl_map
+static
+#include "isl_copy_tuple_id_templ.c"
+
 /* Data structure that specifies how isl_map_intersect_factor
  * should operate.
  *
@@ -8322,8 +8327,7 @@ static __isl_give isl_map *isl_map_intersect_factor(
 	__isl_take isl_map *map, __isl_take isl_map *factor,
 	struct isl_intersect_factor_control *control)
 {
-	isl_bool equal, has_id;
-	isl_id *id;
+	isl_bool equal;
 	isl_space *space;
 	isl_map *other, *product;
 
@@ -8336,19 +8340,12 @@ static __isl_give isl_map *isl_map_intersect_factor(
 	}
 
 	space = isl_map_get_space(map);
-	has_id = isl_space_has_tuple_id(space, control->preserve_type);
-	if (has_id < 0)
-		space = isl_space_free(space);
-	else if (has_id)
-		id = isl_space_get_tuple_id(space, control->preserve_type);
-
 	other = isl_map_universe(control->other_factor(space));
 	product = control->product(factor, other);
 
-	if (has_id >= 0 && has_id)
-		product = isl_map_set_tuple_id(product,
-						control->preserve_type, id);
-
+	space = isl_map_peek_space(map);
+	product = isl_map_copy_tuple_id(product, control->preserve_type,
+					space, control->preserve_type);
 	return map_intersect(map, product);
 error:
 	isl_map_free(map);
