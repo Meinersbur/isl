@@ -945,6 +945,20 @@ isl_bool isl_space_has_equal_tuples(__isl_keep isl_space *space1,
 					space2, isl_dim_out);
 }
 
+/* Check that a match involving "space" was successful.
+ * That is, check that "match" is equal to isl_bool_true.
+ */
+static isl_stat check_match(__isl_keep isl_space *space, isl_bool match)
+{
+	if (match < 0)
+		return isl_stat_error;
+	if (!match)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"incompatible spaces", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Check that the two spaces are the same,
  * apart from positions and names of parameters.
  */
@@ -954,13 +968,7 @@ isl_stat isl_space_check_equal_tuples(__isl_keep isl_space *space1,
 	isl_bool is_equal;
 
 	is_equal = isl_space_has_equal_tuples(space1, space2);
-	if (is_equal < 0)
-		return isl_stat_error;
-	if (!is_equal)
-		isl_die(isl_space_get_ctx(space1), isl_error_invalid,
-			"incompatible spaces", return isl_stat_error);
-
-	return isl_stat_ok;
+	return check_match(space1, is_equal);
 }
 
 /* Check if the tuple of type "type1" of "space1" is the same as
@@ -2434,13 +2442,7 @@ isl_stat isl_space_check_domain_tuples(__isl_keep isl_space *space1,
 	isl_bool is_equal;
 
 	is_equal = isl_space_has_domain_tuples(space1, space2);
-	if (is_equal < 0)
-		return isl_stat_error;
-	if (!is_equal)
-		isl_die(isl_space_get_ctx(space1), isl_error_invalid,
-			"incompatible spaces", return isl_stat_error);
-
-	return isl_stat_ok;
+	return check_match(space1, is_equal);
 }
 
 /* Check that the tuples of "space1" correspond to those
