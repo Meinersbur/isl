@@ -4,7 +4,7 @@
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
  * Copyright 2016      Sven Verdoolaege
- * Copyright 2018      Cerebras Systems
+ * Copyright 2018,2020 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -7755,6 +7755,55 @@ isl_union_pw_multi_aff_apply_union_pw_multi_aff(
 	__isl_take isl_union_pw_multi_aff *upma2)
 {
 	return isl_union_pw_multi_aff_pullback_union_pw_multi_aff(upma2, upma1);
+}
+
+#undef TYPE
+#define TYPE isl_pw_multi_aff
+static
+#include "isl_copy_tuple_id_templ.c"
+
+/* Given a function "pma1" of the form A[B -> C] -> D and
+ * a function "pma2" of the form E -> B,
+ * replace the domain of the wrapped relation inside the domain of "pma1"
+ * by the preimage with respect to "pma2".
+ * In other words, plug in "pma2" in this nested domain.
+ * The result is of the form A[E -> C] -> D.
+ *
+ * In particular, extend E -> B to A[E -> C] -> A[B -> C] and
+ * plug that into "pma1".
+ */
+__isl_give isl_pw_multi_aff *
+isl_pw_multi_aff_preimage_domain_wrapped_domain_pw_multi_aff(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
+{
+	isl_space *pma1_space, *pma2_space;
+	isl_space *space;
+	isl_pw_multi_aff *id;
+
+	pma1_space = isl_pw_multi_aff_peek_space(pma1);
+	pma2_space = isl_pw_multi_aff_peek_space(pma2);
+
+	if (isl_space_check_domain_is_wrapping(pma1_space) < 0)
+		goto error;
+	if (isl_space_check_wrapped_tuple_is_equal(pma1_space,
+			isl_dim_in, isl_dim_in, pma2_space, isl_dim_out) < 0)
+		goto error;
+
+	space = isl_space_domain(isl_space_copy(pma1_space));
+	space = isl_space_range(isl_space_unwrap(space));
+	id = isl_pw_multi_aff_identity_on_domain_space(space);
+	pma2 = isl_pw_multi_aff_product(pma2, id);
+
+	pma2 = isl_pw_multi_aff_copy_tuple_id(pma2, isl_dim_in,
+						pma1_space, isl_dim_in);
+	pma2 = isl_pw_multi_aff_copy_tuple_id(pma2, isl_dim_out,
+						pma1_space, isl_dim_in);
+
+	return isl_pw_multi_aff_pullback_pw_multi_aff(pma1, pma2);
+error:
+	isl_pw_multi_aff_free(pma1);
+	isl_pw_multi_aff_free(pma2);
+	return NULL;
 }
 
 /* Check that the domain space of "upa" matches "space".

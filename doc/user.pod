@@ -7564,9 +7564,15 @@ piecewise quasipolynomial reduction.
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_pw_multi_aff *upma);
 
+	#include <isl/aff.h>
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_preimage_domain_wrapped_domain_pw_multi_aff(
+		__isl_take isl_pw_multi_aff *pma1,
+		__isl_take isl_pw_multi_aff *pma2);
+
 These functions compute the preimage of the given set or map domain/range under
 the given function.  In other words, the expression is plugged
-into the set description or into the domain/range of the map.
+into the set description or into the domain/range of the map or function.
 
 =item * Pullback
 

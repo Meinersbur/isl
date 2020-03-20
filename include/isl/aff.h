@@ -758,6 +758,10 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_pullback_multi_aff(
 __isl_overload
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_pullback_pw_multi_aff(
 	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
+__isl_overload
+__isl_give isl_pw_multi_aff *
+isl_pw_multi_aff_preimage_domain_wrapped_domain_pw_multi_aff(
+	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2);
 
 __isl_export
 isl_size isl_pw_multi_aff_n_piece(__isl_keep isl_pw_multi_aff *pma);
