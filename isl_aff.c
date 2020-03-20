@@ -7806,6 +7806,55 @@ error:
 	return NULL;
 }
 
+/* If data->pma and "pma2" are such that
+ * data->pma is of the form A[B -> C] -> D and
+ * "pma2" is of the form E -> B,
+ * then replace the domain of the wrapped relation
+ * inside the domain of data->pma by the preimage with respect to "pma2" and
+ * add the result to data->res.
+ */
+static isl_stat preimage_domain_wrapped_domain_entry(
+	__isl_take isl_pw_multi_aff *pma2, void *user)
+{
+	struct isl_union_pw_multi_aff_bin_data *data = user;
+	isl_space *pma1_space, *pma2_space;
+	isl_bool match;
+
+	pma1_space = isl_pw_multi_aff_peek_space(data->pma);
+	pma2_space = isl_pw_multi_aff_peek_space(pma2);
+
+	match = isl_space_domain_is_wrapping(pma1_space);
+	if (match >= 0 && match)
+		match = isl_space_wrapped_tuple_is_equal(pma1_space, isl_dim_in,
+					isl_dim_in, pma2_space, isl_dim_out);
+	if (match < 0 || !match) {
+		isl_pw_multi_aff_free(pma2);
+		return match < 0 ? isl_stat_error : isl_stat_ok;
+	}
+
+	pma2 = isl_pw_multi_aff_preimage_domain_wrapped_domain_pw_multi_aff(
+		isl_pw_multi_aff_copy(data->pma), pma2);
+
+	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma2);
+
+	return isl_stat_non_null(data->res);
+}
+
+/* For each pair of functions A[B -> C] -> D in "upma1" and
+ * E -> B in "upma2",
+ * replace the domain of the wrapped relation inside the domain of the first
+ * by the preimage with respect to the second and collect the results.
+ * In other words, plug in the second function in this nested domain.
+ * The results are of the form A[E -> C] -> D.
+ */
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_preimage_domain_wrapped_domain_union_pw_multi_aff(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2)
+{
+	return bin_op(upma1, upma2, &preimage_domain_wrapped_domain_entry);
+}
+
 /* Check that the domain space of "upa" matches "space".
  *
  * This function is called from isl_multi_union_pw_aff_set_union_pw_aff and

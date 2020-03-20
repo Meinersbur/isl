@@ -5600,6 +5600,26 @@ struct {
 	{ &isl_union_pw_multi_aff_union_add, "{ B[x] -> A[1] : x <= 0 }",
 	  "{ B[x] -> A[2] : x >= 0 }",
 	  "{ B[x] -> A[1] : x < 0; B[x] -> A[2] : x > 0; B[0] -> A[3] }" },
+	{
+  &isl_union_pw_multi_aff_preimage_domain_wrapped_domain_union_pw_multi_aff,
+	  "{ B[x] -> C[x + 2] }",
+	  "{ D[y] -> B[2y] }",
+	  "{ }" },
+	{
+  &isl_union_pw_multi_aff_preimage_domain_wrapped_domain_union_pw_multi_aff,
+	  "{ [A[x] -> B[x + 1]] -> C[x + 2] }",
+	  "{ D[y] -> B[2y] }",
+	  "{ }" },
+	{
+  &isl_union_pw_multi_aff_preimage_domain_wrapped_domain_union_pw_multi_aff,
+	  "{ [A[x] -> B[x + 1]] -> C[x + 2]; B[x] -> C[x + 2] }",
+	  "{ D[y] -> A[2y] }",
+	  "{ [D[y] -> B[2y + 1]] -> C[2y + 2] }" },
+	{
+  &isl_union_pw_multi_aff_preimage_domain_wrapped_domain_union_pw_multi_aff,
+	  "{ T[A[x] -> B[x + 1]] -> C[x + 2]; B[x] -> C[x + 2] }",
+	  "{ D[y] -> A[2y] }",
+	  "{ T[D[y] -> B[2y + 1]] -> C[2y + 2] }" },
 };
 
 /* Perform some basic tests of binary operations on
