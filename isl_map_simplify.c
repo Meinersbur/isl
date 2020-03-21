@@ -2551,6 +2551,18 @@ static __isl_give isl_basic_set *uset_gist_uncompressed(
 	return uset_gist_full(bset, ineq, context);
 }
 
+/* Replace "bset" by an empty basic set in the same space.
+ */
+static __isl_give isl_basic_set *replace_by_empty(
+	__isl_take isl_basic_set *bset)
+{
+	isl_space *space;
+
+	space = isl_basic_set_get_space(bset);
+	isl_basic_set_free(bset);
+	return isl_basic_set_empty(space);
+}
+
 /* Remove all information from "bset" that is redundant in the context
  * of "context", for the case where the combined equalities of
  * "bset" and "context" allow for a compression that can be obtained
@@ -2677,6 +2689,8 @@ static __isl_give isl_basic_set *project_onto_involved(
  * compute the gist inside this intersection and then reduce
  * the constraints with respect to the equalities of the context
  * that only involve variables already involved in the input.
+ * If the intersection of the affine hulls turns out to be empty,
+ * then return the empty set.
  *
  * If two constraints are mutually redundant, then uset_gist_full
  * will remove the second of those constraints.  We therefore first
@@ -2726,7 +2740,7 @@ static __isl_give isl_basic_set *uset_gist(__isl_take isl_basic_set *bset,
 	if (T && T->n_col == 0) {
 		isl_mat_free(T);
 		isl_basic_set_free(context);
-		return isl_basic_set_set_to_empty(bset);
+		return replace_by_empty(bset);
 	}
 
 	aff_context = isl_basic_set_affine_hull(isl_basic_set_copy(context));

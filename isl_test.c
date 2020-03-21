@@ -1603,6 +1603,53 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
+/* Check that computing the gist of "map" with respect to "context"
+ * does not make any copy of "map" get marked empty.
+ * Earlier versions of isl would end up doing that.
+ */
+static isl_stat test_gist_empty_pair(isl_ctx *ctx, const char *map,
+	const char *context)
+{
+	isl_map *m1, *m2, *m3;
+	isl_bool empty_before, empty_after;
+
+	m1 = isl_map_read_from_str(ctx, map);
+	m2 = isl_map_read_from_str(ctx, context);
+	m3 = isl_map_copy(m1);
+	empty_before = isl_map_is_empty(m3);
+	m1 = isl_map_gist(m1, m2);
+	empty_after = isl_map_is_empty(m3);
+	isl_map_free(m1);
+	isl_map_free(m3);
+
+	if (empty_before < 0 || empty_after < 0)
+		return isl_stat_error;
+	if (empty_before)
+		isl_die(ctx, isl_error_unknown, "map should not be empty",
+			return isl_stat_error);
+	if (empty_after)
+		isl_die(ctx, isl_error_unknown, "map should still not be empty",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that computing a gist does not make any copy of the input
+ * get marked empty.
+ * Earlier versions of isl would end up doing that on some pairs of inputs.
+ */
+static isl_stat test_gist_empty(isl_ctx *ctx)
+{
+	const char *map, *context;
+
+	map = "{ [] -> [a, b, c] : 2b = 1 + a }";
+	context = "{ [] -> [a, b, c] : 2c = 2 + a }";
+	if (test_gist_empty_pair(ctx, map, context) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Inputs to isl_map_plain_gist_basic_map, along with the expected output.
  */
 struct {
@@ -1876,6 +1923,8 @@ static int test_gist(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown, "expecting single div",
 			return -1);
 
+	if (test_gist_empty(ctx) < 0)
+		return -1;
 	if (test_plain_gist(ctx) < 0)
 		return -1;
 
