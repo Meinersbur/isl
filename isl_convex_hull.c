@@ -2616,8 +2616,8 @@ __isl_give isl_basic_map *isl_basic_map_plain_unshifted_simple_hull(
 	if (isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
 		goto error;
 
-	bmap1 = isl_basic_map_drop_constraint_involving_unknown_divs(bmap1);
-	bmap2 = isl_basic_map_drop_constraint_involving_unknown_divs(bmap2);
+	bmap1 = isl_basic_map_drop_constraints_involving_unknown_divs(bmap1);
+	bmap2 = isl_basic_map_drop_constraints_involving_unknown_divs(bmap2);
 	bmap2 = isl_basic_map_align_divs(bmap2, bmap1);
 	bmap1 = isl_basic_map_align_divs(bmap1, bmap2);
 	bmap1 = isl_basic_map_gauss(bmap1, NULL);
@@ -2659,7 +2659,7 @@ __isl_give isl_basic_map *isl_map_plain_unshifted_simple_hull(
 		return NULL;
 	if (map->n <= 1)
 		return map_simple_hull_trivial(map);
-	map = isl_map_drop_constraint_involving_unknown_divs(map);
+	map = isl_map_drop_constraints_involving_unknown_divs(map);
 	hull = isl_basic_map_copy(map->p[0]);
 	for (i = 1; i < map->n; ++i) {
 		isl_basic_map *bmap_i;

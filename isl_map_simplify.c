@@ -1775,7 +1775,7 @@ __isl_give isl_basic_set *isl_basic_set_eliminate(
  * Therefore, start over after calling
  * isl_basic_map_drop_constraints_involving_dims.
  */
-__isl_give isl_basic_map *isl_basic_map_drop_constraint_involving_unknown_divs(
+__isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_unknown_divs(
 	__isl_take isl_basic_map *bmap)
 {
 	isl_bool known;
@@ -1817,7 +1817,7 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraint_involving_unknown_divs(
  * Since constraints may get dropped from the basic maps,
  * they may no longer be disjoint from each other.
  */
-__isl_give isl_map *isl_map_drop_constraint_involving_unknown_divs(
+__isl_give isl_map *isl_map_drop_constraints_involving_unknown_divs(
 	__isl_take isl_map *map)
 {
 	int i;
@@ -1835,7 +1835,7 @@ __isl_give isl_map *isl_map_drop_constraint_involving_unknown_divs(
 
 	for (i = 0; i < map->n; ++i) {
 		map->p[i] =
-		    isl_basic_map_drop_constraint_involving_unknown_divs(
+		    isl_basic_map_drop_constraints_involving_unknown_divs(
 								    map->p[i]);
 		if (!map->p[i])
 			return isl_map_free(map);

@@ -4747,7 +4747,7 @@ static __isl_give isl_pw_multi_aff *plain_pw_multi_aff_from_map(
 {
 	isl_multi_aff *ma;
 
-	bmap = isl_basic_map_drop_constraint_involving_unknown_divs(bmap);
+	bmap = isl_basic_map_drop_constraints_involving_unknown_divs(bmap);
 	ma = extract_isl_multi_aff_from_basic_map(bmap);
 	ma = isl_multi_aff_floor(ma);
 	return isl_pw_multi_aff_alloc(domain, ma);
