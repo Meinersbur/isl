@@ -1811,6 +1811,19 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_unknown_divs(
 	return bmap;
 }
 
+/* Remove all constraints from "bset" that reference any unknown local
+ * variables (directly or indirectly).
+ */
+__isl_give isl_basic_set *isl_basic_set_drop_constraints_involving_unknown_divs(
+	__isl_take isl_basic_set *bset)
+{
+	isl_basic_map *bmap;
+
+	bmap = bset_to_bmap(bset);
+	bmap = isl_basic_map_drop_constraints_involving_unknown_divs(bmap);
+	return bset_from_bmap(bmap);
+}
+
 /* Remove all constraints from "map" that reference any unknown local
  * variables (directly or indirectly).
  *

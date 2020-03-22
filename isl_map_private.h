@@ -320,6 +320,8 @@ __isl_give isl_basic_set_list *isl_basic_map_list_underlying_set(
 __isl_give isl_set *isl_map_underlying_set(__isl_take isl_map *map);
 __isl_give isl_basic_map *isl_basic_map_overlying_set(
 	__isl_take isl_basic_set *bset, __isl_take isl_basic_map *like);
+__isl_give isl_basic_set *isl_basic_set_drop_constraints_involving_unknown_divs(
+	__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_unknown_divs(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_drop_constraints_involving_unknown_divs(
