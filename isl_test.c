@@ -1501,6 +1501,9 @@ static struct {
 	  "[N] -> { S[N, N] }", "{ S[10, 10] }" },
 	{ "{ S[x, y] : 0 <= x + y, x - y < 10 }",
 	  "{ S[0, -4] }", "{ S[10, 9] }" },
+	{ "{ [i=0:10] : exists (e0, e1: 3e1 >= 1 + 2e0 and "
+	    "8e1 <= -1 + 5i - 5e0 and 2e1 >= 1 + 2i - 5e0) }",
+	  "{ [0] }", "{ [11] }" },
 };
 
 /* Perform basic isl_set_get_simple_fixed_box_hull tests.
