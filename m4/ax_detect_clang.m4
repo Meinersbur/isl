@@ -20,10 +20,14 @@ CLANG_LDFLAGS=`$LLVM_CONFIG --ldflags`
 CLANG_RFLAG=`echo "$CLANG_LDFLAGS" | $SED -e 's/-L/-R/g'`
 targets=`$LLVM_CONFIG --targets-built`
 components="$targets asmparser bitreader support mc"
-$LLVM_CONFIG --components | $GREP option > /dev/null 2> /dev/null
-if test $? -eq 0; then
-	components="$components option"
-fi
+# Link in option and frontendopenmp components when available
+# since they may be used by the clang libraries.
+for c in option frontendopenmp; do
+	$LLVM_CONFIG --components | $GREP $c > /dev/null 2> /dev/null
+	if test $? -eq 0; then
+		components="$components $c"
+	fi
+done
 CLANG_LIBS=`$LLVM_CONFIG --libs $components`
 systemlibs=`$LLVM_CONFIG --system-libs 2> /dev/null | tail -1`
 if test $? -eq 0; then
