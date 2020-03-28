@@ -2258,7 +2258,7 @@ __isl_give isl_basic_set *isl_basic_set_drop_dims(
 
 /* Move "n" divs starting at "first" to the end of the list of divs.
  */
-static struct isl_basic_map *move_divs_last(struct isl_basic_map *bmap,
+static __isl_give isl_basic_map *move_divs_last(__isl_take isl_basic_map *bmap,
 	unsigned first, unsigned n)
 {
 	isl_int **div;
