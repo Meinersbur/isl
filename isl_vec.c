@@ -431,7 +431,7 @@ __isl_give isl_vec *isl_vec_clr(__isl_take isl_vec *vec)
 	return vec;
 }
 
-void isl_vec_lcm(struct isl_vec *vec, isl_int *lcm)
+void isl_vec_lcm(__isl_keep isl_vec *vec, isl_int *lcm)
 {
 	isl_seq_lcm(vec->block.data, vec->size, lcm);
 }
