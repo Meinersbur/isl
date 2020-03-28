@@ -157,8 +157,8 @@ static __isl_take isl_mat *parameter_compression_1(__isl_keep isl_mat *B,
  * Putting this on the common denominator, we have
  * D * L_i^{-T} = U_i^T diag(D/d_i, D, ..., D).
  */
-static struct isl_mat *parameter_compression_multi(
-			struct isl_mat *B, struct isl_vec *d)
+static __isl_give isl_mat *parameter_compression_multi(__isl_keep isl_mat *B,
+	__isl_keep isl_vec *d)
 {
 	int i, j, k;
 	isl_int D;
