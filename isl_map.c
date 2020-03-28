@@ -7484,8 +7484,8 @@ error:
 /* Intersect the set "set" with the affine space specified by the
  * equalities in "eq".
  */
-static struct isl_set *set_append_equalities(struct isl_set *set,
-	struct isl_mat *eq)
+static __isl_give isl_set *set_append_equalities(__isl_take isl_set *set,
+	__isl_take isl_mat *eq)
 {
 	int i;
 
