@@ -28,14 +28,14 @@
 #include <set_to_map.c>
 #include <set_from_map.c>
 
-static void swap_equality(struct isl_basic_map *bmap, int a, int b)
+static void swap_equality(__isl_keep isl_basic_map *bmap, int a, int b)
 {
 	isl_int *t = bmap->eq[a];
 	bmap->eq[a] = bmap->eq[b];
 	bmap->eq[b] = t;
 }
 
-static void swap_inequality(struct isl_basic_map *bmap, int a, int b)
+static void swap_inequality(__isl_keep isl_basic_map *bmap, int a, int b)
 {
 	if (a != b) {
 		isl_int *t = bmap->ineq[a];
