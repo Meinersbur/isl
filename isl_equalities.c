@@ -126,8 +126,8 @@ error:
  * The columns of this matrix generate the lattice that satisfies
  * the single (linear) modulo constraint.
  */
-static struct isl_mat *parameter_compression_1(
-			struct isl_mat *B, struct isl_vec *d)
+static __isl_take isl_mat *parameter_compression_1(__isl_keep isl_mat *B,
+	__isl_keep isl_vec *d)
 {
 	struct isl_mat *U;
 
