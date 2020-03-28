@@ -263,7 +263,8 @@ error:
  * The caller of this function ensures that the tableau is bounded or
  * that tab->basis and tab->n_unbounded have been set appropriately.
  */
-static struct isl_vec *outside_point(struct isl_tab *tab, isl_int *eq, int up)
+static __isl_give isl_vec *outside_point(struct isl_tab *tab, isl_int *eq,
+	int up)
 {
 	struct isl_ctx *ctx;
 	struct isl_vec *sample = NULL;
