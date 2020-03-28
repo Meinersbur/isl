@@ -1450,7 +1450,7 @@ __isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset)
 	return isl_basic_map_free(bset_to_bmap(bset));
 }
 
-static int room_for_con(struct isl_basic_map *bmap, unsigned n)
+static int room_for_con(__isl_keep isl_basic_map *bmap, unsigned n)
 {
 	return bmap->n_eq + bmap->n_ineq + n <= bmap->c_size;
 }
