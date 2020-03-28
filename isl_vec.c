@@ -370,7 +370,7 @@ error:
 	return NULL;
 }
 
-void isl_vec_dump(struct isl_vec *vec)
+void isl_vec_dump(__isl_keep isl_vec *vec)
 {
 	isl_printer *printer;
 
