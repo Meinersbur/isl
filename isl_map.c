@@ -7591,7 +7591,8 @@ static __isl_give isl_set *base_compute_divs(__isl_take isl_basic_set *bset)
  * if so recurse.  The removal of parameter equalities is required
  * for the parameter compression performed by base_compute_divs.
  */
-static struct isl_set *parameter_compute_divs(struct isl_basic_set *bset)
+static __isl_give isl_set *parameter_compute_divs(
+	__isl_take isl_basic_set *bset)
 {
 	int i;
 	struct isl_mat *eq;
