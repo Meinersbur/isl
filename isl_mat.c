@@ -979,7 +979,7 @@ static isl_stat inv_exchange(__isl_keep isl_mat **left,
 }
 
 static void inv_oppose(
-	struct isl_mat *left, struct isl_mat *right, unsigned row)
+	__isl_keep isl_mat *left, __isl_keep isl_mat *right, unsigned row)
 {
 	isl_seq_neg(left->row[row]+row, left->row[row]+row, left->n_col-row);
 	isl_seq_neg(right->row[row], right->row[row], right->n_col);
