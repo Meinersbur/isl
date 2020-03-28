@@ -320,8 +320,8 @@ error:
  * The order of the rows and columns in the result is as explained
  * in isl_tab_product.
  */
-static struct isl_mat *tab_mat_product(struct isl_mat *mat1,
-	struct isl_mat *mat2, unsigned row1, unsigned row2,
+static __isl_give isl_mat *tab_mat_product(__isl_keep isl_mat *mat1,
+	__isl_keep isl_mat *mat2, unsigned row1, unsigned row2,
 	unsigned col1, unsigned col2,
 	unsigned off, unsigned r1, unsigned r2, unsigned d1, unsigned d2)
 {
