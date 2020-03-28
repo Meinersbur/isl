@@ -850,8 +850,8 @@ error:
  * In particular, dimensions that correspond to existential variables
  * in bmap and that are found to be fixed are not removed.
  */
-static struct isl_basic_set *equalities_in_underlying_set(
-						struct isl_basic_map *bmap)
+static __isl_give isl_basic_set *equalities_in_underlying_set(
+	__isl_take isl_basic_map *bmap)
 {
 	struct isl_mat *T1 = NULL;
 	struct isl_mat *T2 = NULL;
