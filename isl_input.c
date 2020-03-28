@@ -2064,7 +2064,7 @@ static __isl_give isl_map *read_conjuncts(__isl_keep isl_stream *s,
 	return res;
 }
 
-static struct isl_map *read_disjuncts(__isl_keep isl_stream *s,
+static __isl_give isl_map *read_disjuncts(__isl_keep isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	isl_map *res;
