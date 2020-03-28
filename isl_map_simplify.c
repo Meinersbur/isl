@@ -894,7 +894,7 @@ out:
 	return bmap;
 }
 
-static int n_pure_div_eq(struct isl_basic_map *bmap)
+static int n_pure_div_eq(__isl_keep isl_basic_map *bmap)
 {
 	int i, j;
 	isl_size v_div;
