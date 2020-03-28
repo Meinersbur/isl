@@ -63,7 +63,8 @@
  * then the constraints admit no integer solution and
  * a zero-column matrix is returned.
  */
-static struct isl_mat *particular_solution(struct isl_mat *B, struct isl_vec *d)
+static __isl_give isl_mat *particular_solution(__isl_keep isl_mat *B,
+	__isl_keep isl_vec *d)
 {
 	int i, j;
 	struct isl_mat *M = NULL;
