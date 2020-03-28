@@ -580,8 +580,8 @@ error:
 	return NULL;
 }
 
-static void exchange(struct isl_mat *M, struct isl_mat **U,
-	struct isl_mat **Q, unsigned row, unsigned i, unsigned j)
+static void exchange(__isl_keep isl_mat *M, __isl_keep isl_mat **U,
+	__isl_keep isl_mat **Q, unsigned row, unsigned i, unsigned j)
 {
 	int r;
 	for (r = row; r < M->n_row; ++r)
