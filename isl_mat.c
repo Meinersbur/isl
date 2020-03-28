@@ -594,8 +594,8 @@ static void exchange(__isl_keep isl_mat *M, __isl_keep isl_mat **U,
 		isl_mat_swap_rows(*Q, i, j);
 }
 
-static void subtract(struct isl_mat *M, struct isl_mat **U,
-	struct isl_mat **Q, unsigned row, unsigned i, unsigned j, isl_int m)
+static void subtract(__isl_keep isl_mat *M, __isl_keep isl_mat **U,
+	__isl_keep isl_mat **Q, unsigned row, unsigned i, unsigned j, isl_int m)
 {
 	int r;
 	for (r = row; r < M->n_row; ++r)
