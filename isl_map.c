@@ -1659,7 +1659,7 @@ void isl_basic_map_inequality_to_equality(
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
 }
 
-static int room_for_ineq(struct isl_basic_map *bmap, unsigned n)
+static int room_for_ineq(__isl_keep isl_basic_map *bmap, unsigned n)
 {
 	return bmap->n_ineq + n <= bmap->eq - bmap->ineq;
 }
