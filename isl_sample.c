@@ -990,7 +990,7 @@ error:
 	return NULL;
 }
 
-static void vec_sum_of_neg(struct isl_vec *v, isl_int *s)
+static void vec_sum_of_neg(__isl_keep isl_vec *v, isl_int *s)
 {
 	int i;
 
