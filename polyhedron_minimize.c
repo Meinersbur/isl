@@ -43,7 +43,7 @@ error:
  * In particular, move the constant term from the end of the
  * vector to the start of the vector.
  */
-static struct isl_vec *vec_ror(struct isl_vec *vec)
+static __isl_give isl_vec *vec_ror(__isl_take isl_vec *vec)
 {
 	int i;
 
