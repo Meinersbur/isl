@@ -985,7 +985,7 @@ static void inv_oppose(
 	isl_seq_neg(right->row[row], right->row[row], right->n_col);
 }
 
-static void inv_subtract(struct isl_mat *left, struct isl_mat *right,
+static void inv_subtract(__isl_keep isl_mat *left, __isl_keep isl_mat *right,
 	unsigned row, unsigned i, isl_int m)
 {
 	isl_int_neg(m, m);
