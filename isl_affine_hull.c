@@ -93,7 +93,7 @@ static void set_common_multiple(
 
 /* Delete a given equality, moving all the following equalities one up.
  */
-static void delete_row(struct isl_basic_set *bset, unsigned row)
+static void delete_row(__isl_keep isl_basic_set *bset, unsigned row)
 {
 	isl_int *t;
 	int r;
