@@ -1141,7 +1141,7 @@ static isl_stat FN(UNION,involves_nan_entry)(void **entry, void *user)
 	PW *pw = *entry;
 
 	*nan = FN(PW,involves_nan)(pw);
-	if (*nan < 0 || !nan)
+	if (*nan < 0 || *nan)
 		return isl_stat_error;
 
 	return isl_stat_ok;

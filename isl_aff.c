@@ -3885,7 +3885,8 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 			"dimension mismatch", goto error);
 
 	ma = isl_multi_aff_zero(isl_space_copy(space));
-	ls = isl_local_space_from_space(isl_space_domain(space));
+	space = isl_space_domain(space);
+	ls = isl_local_space_from_space(isl_space_copy(space));
 
 	for (i = 0; i < n_row - 1; ++i) {
 		isl_vec *v;
@@ -3901,10 +3902,12 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
 
+	isl_space_free(space);
 	isl_local_space_free(ls);
 	isl_mat_free(mat);
 	return ma;
 error:
+	isl_space_free(space);
 	isl_local_space_free(ls);
 	isl_mat_free(mat);
 	isl_multi_aff_free(ma);

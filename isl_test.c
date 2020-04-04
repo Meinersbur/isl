@@ -1677,6 +1677,57 @@ void test_gist_case(struct isl_ctx *ctx, const char *name)
 	fclose(input);
 }
 
+/* Check that computing the gist of "map" with respect to "context"
+ * does not make any copy of "map" get marked empty.
+ * Earlier versions of isl would end up doing that.
+ */
+static isl_stat test_gist_empty_pair(isl_ctx *ctx, const char *map,
+	const char *context)
+{
+	isl_map *m1, *m2, *m3;
+	isl_bool empty_before, empty_after;
+
+	m1 = isl_map_read_from_str(ctx, map);
+	m2 = isl_map_read_from_str(ctx, context);
+	m3 = isl_map_copy(m1);
+	empty_before = isl_map_is_empty(m3);
+	m1 = isl_map_gist(m1, m2);
+	empty_after = isl_map_is_empty(m3);
+	isl_map_free(m1);
+	isl_map_free(m3);
+
+	if (empty_before < 0 || empty_after < 0)
+		return isl_stat_error;
+	if (empty_before)
+		isl_die(ctx, isl_error_unknown, "map should not be empty",
+			return isl_stat_error);
+	if (empty_after)
+		isl_die(ctx, isl_error_unknown, "map should still not be empty",
+			return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that computing a gist does not make any copy of the input
+ * get marked empty.
+ * Earlier versions of isl would end up doing that on some pairs of inputs.
+ */
+static isl_stat test_gist_empty(isl_ctx *ctx)
+{
+	const char *map, *context;
+
+	map = "{ [] -> [a, b, c] : 2b = 1 + a }";
+	context = "{ [] -> [a, b, c] : 2c = 2 + a }";
+	if (test_gist_empty_pair(ctx, map, context) < 0)
+		return isl_stat_error;
+	map = "{ [] -> [0, 0] }";
+	context = "{ [] -> [a, b] : a > b }";
+	if (test_gist_empty_pair(ctx, map, context) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Inputs to isl_map_plain_gist_basic_map, along with the expected output.
  */
 struct {
@@ -1950,6 +2001,8 @@ static int test_gist(struct isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown, "expecting single div",
 			return -1);
 
+	if (test_gist_empty(ctx) < 0)
+		return -1;
 	if (test_plain_gist(ctx) < 0)
 		return -1;
 
@@ -3968,6 +4021,26 @@ static int test_subset(isl_ctx *ctx)
 	return 0;
 }
 
+/* Perform a set subtraction with a set that has a non-obviously empty disjunct.
+ * Older versions of isl would fail on such cases.
+ */
+static isl_stat test_subtract_empty(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *s1, *s2;
+
+	s1 = isl_set_read_from_str(ctx, "{ [0] }");
+	str = "{ [a] : (exists (e0, e1, e2: 1056e1 <= 32 + a - 33e0 and "
+			"1089e1 >= a - 33e0 and 1089e1 <= 1 + a - 33e0 and "
+			"33e2 >= -a + 33e0 + 1056e1 and "
+			"33e2 < -2a + 66e0 + 2112e1)) or a = 0 }";
+	s2 = isl_set_read_from_str(ctx, str);
+	s1 = isl_set_subtract(s1, s2);
+	isl_set_free(s1);
+
+	return isl_stat_non_null(s1);
+}
+
 struct {
 	const char *minuend;
 	const char *subtrahend;
@@ -3985,6 +4058,9 @@ static int test_subtract(isl_ctx *ctx)
 	isl_union_pw_multi_aff *upma1, *upma2;
 	isl_union_set *uset;
 	int equal;
+
+	if (test_subtract_empty(ctx) < 0)
+		return -1;
 
 	for (i = 0; i < ARRAY_SIZE(subtract_domain_tests); ++i) {
 		umap1 = isl_union_map_read_from_str(ctx,
