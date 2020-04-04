@@ -237,6 +237,26 @@ static void create_from_args(CompilerInvocation &invocation,
 
 #endif
 
+#ifdef CLANG_SYSROOT
+/* Set sysroot if required.
+ *
+ * If CLANG_SYSROOT is defined, then set it to this value.
+ */
+static void set_sysroot(ArgStringList &args)
+{
+	args.push_back("-isysroot");
+	args.push_back(CLANG_SYSROOT);
+}
+#else
+/* Set sysroot if required.
+ *
+ * If CLANG_SYSROOT is not defined, then it does not need to be set.
+ */
+static void set_sysroot(ArgStringList &args)
+{
+}
+#endif
+
 /* Create a CompilerInvocation object that stores the command line
  * arguments constructed by the driver.
  * The arguments are mainly useful for setting up the system include
@@ -258,10 +278,11 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	if (strcmp(cmd->getCreator().getName(), "clang"))
 		return NULL;
 
-	const ArgStringList *args = &cmd->getArguments();
+	ArgStringList args = cmd->getArguments();
+	set_sysroot(args);
 
 	CompilerInvocation *invocation = new CompilerInvocation;
-	create_from_args(*invocation, args, Diags);
+	create_from_args(*invocation, &args, Diags);
 	return invocation;
 }
 

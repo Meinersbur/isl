@@ -36,6 +36,42 @@ fi
 CLANG_PREFIX=`$LLVM_CONFIG --prefix`
 AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"], [Clang installation prefix])
 
+# If $CLANG_PREFIX/bin/clang cannot find the standard include files,
+# then see if setting sysroot to `xcode-select -p`/SDKs/MacOSX.sdk helps.
+# This may be required on some versions of OS X since they lack /usr/include.
+# If so, set CLANG_SYSROOT accordingly.
+SAVE_CC="$CC"
+CC="$CLANG_PREFIX/bin/clang"
+AC_MSG_CHECKING(
+	[whether $CLANG_PREFIX/bin/clang can find standard include files])
+found_header=no
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]], [[]])],
+	[found_header=yes])
+AC_MSG_RESULT([$found_header])
+if test "x$found_header" != "xyes"; then
+	AC_CHECK_PROG(XCODE_SELECT, xcode-select, xcode-select, [])
+	if test -z "$XCODE_SELECT"; then
+		AC_MSG_ERROR([Cannot find xcode-select])
+	fi
+	sysroot=`$XCODE_SELECT -p`/SDKs/MacOSX.sdk
+	SAVE_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CPPFLAGS -isysroot $sysroot"
+	AC_MSG_CHECKING(
+		[whether standard include files can be found with sysroot set])
+	found_header=no
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]], [[]])],
+		[found_header=yes])
+	AC_MSG_RESULT([$found_header])
+	CPPFLAGS="$SAVE_CPPFLAGS"
+	if test "x$found_header" != "xyes"; then
+		AC_MSG_ERROR([Cannot find standard include files])
+	else
+		AC_DEFINE_UNQUOTED([CLANG_SYSROOT], ["$sysroot"],
+			[Define to sysroot if needed])
+	fi
+fi
+CC="$SAVE_CC"
+
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CLANG_CXXFLAGS $CPPFLAGS"
 AC_LANG_PUSH(C++)
