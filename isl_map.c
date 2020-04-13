@@ -288,6 +288,14 @@ static isl_bool isl_map_set_has_equal_params(__isl_keep isl_map *map,
 	return isl_map_has_equal_params(map, set_to_map(set));
 }
 
+/* Is the tuple of type "type" of "map" the same as the single tuple of "set"?
+ */
+static isl_bool isl_map_set_tuple_is_equal(__isl_keep isl_map *map,
+	enum isl_dim_type type, __isl_keep isl_set *set)
+{
+	return isl_map_tuple_is_equal(map, type, set_to_map(set), isl_dim_set);
+}
+
 isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
 	__isl_keep isl_set *set)
 {
@@ -297,8 +305,7 @@ isl_bool isl_map_compatible_domain(__isl_keep isl_map *map,
 	m = isl_map_has_equal_params(map, set_to_map(set));
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_is_equal(map->dim, isl_dim_in,
-					set->dim, isl_dim_set);
+	return isl_map_set_tuple_is_equal(map, isl_dim_in, set);
 }
 
 isl_bool isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
@@ -323,8 +330,7 @@ isl_bool isl_map_compatible_range(__isl_keep isl_map *map,
 	m = isl_map_has_equal_params(map, set_to_map(set));
 	if (m < 0 || !m)
 		return m;
-	return isl_space_tuple_is_equal(map->dim, isl_dim_out,
-					set->dim, isl_dim_set);
+	return isl_map_set_tuple_is_equal(map, isl_dim_out, set);
 }
 
 isl_bool isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
