@@ -2023,7 +2023,7 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map,
 	if (exact)
 		*exact = isl_bool_true;
 
-	if (isl_map_check_equal_tuples(map) < 0)
+	if (isl_map_check_transformation(map) < 0)
 		return isl_map_free(map);
 
 	app = construct_power(map, exact, project);

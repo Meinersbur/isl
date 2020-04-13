@@ -8510,9 +8510,10 @@ error:
 	return NULL;
 }
 
-/* Check that domain and range of "map" are the same.
+/* Check that "map" is a transformation, i.e.,
+ * that it relates elements from the same space.
  */
-isl_stat isl_map_check_equal_tuples(__isl_keep isl_map *map)
+isl_stat isl_map_check_transformation(__isl_keep isl_map *map)
 {
 	isl_space *space;
 	isl_bool equal;
@@ -8613,7 +8614,7 @@ error:
  */
 __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 {
-	if (isl_map_check_equal_tuples(map) < 0)
+	if (isl_map_check_transformation(map) < 0)
 		return isl_map_free(map);
 
 	return isl_map_transform(map, &isl_space_range_map,
