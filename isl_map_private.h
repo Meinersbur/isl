@@ -342,6 +342,8 @@ __isl_give isl_map *isl_map_drop(__isl_take isl_map *map,
 __isl_give isl_basic_map *isl_basic_map_drop_unrelated_constraints(
 	__isl_take isl_basic_map *bmap, __isl_take int *group);
 
+__isl_give isl_basic_map *isl_basic_map_eliminate_pure_unit_divs(
+	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	__isl_take isl_basic_map *bmap, int *progress, int detect_divs);
 __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(

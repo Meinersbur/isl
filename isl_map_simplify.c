@@ -1468,6 +1468,51 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 	return eliminate_selected_unit_divs(bmap, &is_any_div, progress);
 }
 
+/* eliminate_selected_unit_divs callback that selects
+ * integer divisions that only appear with
+ * a (positive or negative) unit coefficient
+ * (outside their div constraints).
+ */
+static isl_bool is_pure_unit_div(__isl_keep isl_basic_map *bmap, int div)
+{
+	int i;
+	isl_size v_div, n_ineq;
+
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (v_div < 0 || n_ineq < 0)
+		return isl_bool_error;
+
+	for (i = 0; i < n_ineq; ++i) {
+		isl_bool skip;
+
+		if (isl_int_is_zero(bmap->ineq[i][1 + v_div + div]))
+			continue;
+		skip = isl_basic_map_is_div_constraint(bmap,
+							bmap->ineq[i], div);
+		if (skip < 0)
+			return isl_bool_error;
+		if (skip)
+			continue;
+		if (!isl_int_is_one(bmap->ineq[i][1 + v_div + div]) &&
+		    !isl_int_is_negone(bmap->ineq[i][1 + v_div + div]))
+			return isl_bool_false;
+	}
+
+	return isl_bool_true;
+}
+
+/* Eliminate known divs from constraints where they appear with
+ * a (positive or negative) unit coefficient,
+ * but only if they do not appear in any other constraints
+ * (other than the div constraints).
+ */
+__isl_give isl_basic_map *isl_basic_map_eliminate_pure_unit_divs(
+	__isl_take isl_basic_map *bmap)
+{
+	return eliminate_selected_unit_divs(bmap, &is_pure_unit_div, NULL);
+}
+
 __isl_give isl_basic_map *isl_basic_map_simplify(__isl_take isl_basic_map *bmap)
 {
 	int progress = 1;
