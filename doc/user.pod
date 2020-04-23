@@ -11393,7 +11393,8 @@ while printing the AST.
 	const char *isl_options_get_ast_iterator_type(
 		isl_ctx *ctx);
 
-The AST printer only prints body nodes as blocks if these
+The AST printer only prints body nodes of C<if> and C<for> nodes
+as blocks if these
 blocks cannot be safely omitted.
 For example, a C<for> node with one body node will not be
 surrounded with braces in C<ISL_FORMAT_C>.
