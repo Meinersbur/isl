@@ -11404,6 +11404,15 @@ A block will always be printed by setting the following option.
 		int val);
 	int isl_options_get_ast_always_print_block(isl_ctx *ctx);
 
+Explicit block nodes that appear inside the AST are always printed as blocks.
+If the block node appears as the outermost node,
+then it is only printed if the following option is set.
+
+	isl_stat isl_options_set_ast_print_outermost_block(
+		isl_ctx *ctx, int val);
+	int isl_options_get_ast_print_outermost_block(
+		isl_ctx *ctx);
+
 =head3 Options
 
 	#include <isl/ast_build.h>
