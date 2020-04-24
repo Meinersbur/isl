@@ -328,9 +328,7 @@ static isl_stat compute_size_in_direction(__isl_take isl_constraint *c,
  * Note that while evaluating the size corresponding to a lower bound,
  * an affine expression is constructed from the lower bound.
  * This lower bound may therefore not have any unknown local variables.
- * Remove all constraints with unknown local variables up front such that
- * the unknown local variables themselves also get removed
- * (since that makes them redundant).
+ * Eliminate any unknown local variables up front.
  * No such restriction needs to be imposed on the set over which
  * the size is computed.
  */
@@ -353,7 +351,7 @@ static __isl_give isl_fixed_box *set_dim_extent(__isl_take isl_fixed_box *box,
 	info.pos = isl_map_dim(map, isl_dim_in);
 	info.bset = isl_basic_map_wrap(isl_map_simple_hull(map));
 	bset = isl_basic_set_copy(info.bset);
-	bset = isl_basic_set_drop_constraints_involving_unknown_divs(bset);
+	bset = isl_basic_set_remove_unknown_divs(bset);
 	if (info.pos < 0)
 		bset = isl_basic_set_free(bset);
 	if (isl_basic_set_foreach_constraint(bset,

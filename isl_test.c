@@ -1533,7 +1533,10 @@ static struct {
 	  "{ S[0, -4] }", "{ S[10, 9] }" },
 	{ "{ [i=0:10] : exists (e0, e1: 3e1 >= 1 + 2e0 and "
 	    "8e1 <= -1 + 5i - 5e0 and 2e1 >= 1 + 2i - 5e0) }",
-	  "{ [0] }", "{ [11] }" },
+	  "{ [3] }", "{ [8] }" },
+	{ "[N] -> { [w = 0:17] : exists (e0: w < 2N and "
+	    "-1 + w <= e0 <= w and 2e0 >= N + w and w <= 2e0 <= 15 + w) }",
+	  "[N] -> { [N] }", "{ [9] }" },
 };
 
 /* Perform basic isl_set_get_simple_fixed_box_hull tests.
