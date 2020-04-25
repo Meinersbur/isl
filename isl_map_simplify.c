@@ -1407,8 +1407,9 @@ static __isl_give isl_basic_map *eliminate_unit_div(
 	return bmap;
 }
 
-/* Eliminate known divs from constraints where they appear with
+/* Eliminate selected known divs from constraints where they appear with
  * a (positive or negative) unit coefficient.
+ * In particular, only handle those for which "select" returns isl_bool_true.
  * If "progress" is not NULL, then it gets set if the elimination
  * results in any changes.
  *
@@ -1418,8 +1419,10 @@ static __isl_give isl_basic_map *eliminate_unit_div(
  * out to form an equality and this equality can then be used to eliminate
  * the div from all constraints.
  */
-static __isl_give isl_basic_map *eliminate_unit_divs(
-	__isl_take isl_basic_map *bmap, int *progress)
+static __isl_give isl_basic_map *eliminate_selected_unit_divs(
+	__isl_take isl_basic_map *bmap,
+	isl_bool (*select)(__isl_keep isl_basic_map *bmap, int div),
+	int *progress)
 {
 	int i;
 
@@ -1427,9 +1430,16 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 		return NULL;
 
 	for (i = 0; i < bmap->n_div; ++i) {
+		isl_bool selected;
+
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (isl_int_is_one(bmap->div[i][0]))
+			continue;
+		selected = select(bmap, i);
+		if (selected < 0)
+			return isl_basic_map_free(bmap);
+		if (!selected)
 			continue;
 		bmap = eliminate_unit_div(bmap, i, progress);
 		if (!bmap)
@@ -1437,6 +1447,25 @@ static __isl_give isl_basic_map *eliminate_unit_divs(
 	}
 
 	return bmap;
+}
+
+/* eliminate_selected_unit_divs callback that selects every
+ * integer division.
+ */
+static isl_bool is_any_div(__isl_keep isl_basic_map *bmap, int div)
+{
+	return isl_bool_true;
+}
+
+/* Eliminate known divs from constraints where they appear with
+ * a (positive or negative) unit coefficient.
+ * If "progress" is not NULL, then it gets set if the elimination
+ * results in any changes.
+ */
+static __isl_give isl_basic_map *eliminate_unit_divs(
+	__isl_take isl_basic_map *bmap, int *progress)
+{
+	return eliminate_selected_unit_divs(bmap, &is_any_div, progress);
 }
 
 __isl_give isl_basic_map *isl_basic_map_simplify(__isl_take isl_basic_map *bmap)
