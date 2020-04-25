@@ -1322,8 +1322,9 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
 	return bmap;
 }
 
-/* Eliminate known divs from constraints where they appear with
- * a (positive or negative) unit coefficient.
+/* Given a known integer division "div" that is not integral
+ * (with denominator 1), eliminate it from the constraints in "bmap"
+ * where it appears with a (positive or negative) unit coefficient.
  * If "progress" is not NULL, then it gets set if the elimination
  * results in any changes.
  *
@@ -1355,6 +1356,61 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
  * being modified by this function.  The modified constraint may
  * no longer imply this div constraint, so we add it back to make
  * sure we do not lose any information.
+ */
+static __isl_give isl_basic_map *eliminate_unit_div(
+	__isl_take isl_basic_map *bmap, int div, int *progress)
+{
+	int j;
+	isl_size v_div, dim;
+	isl_ctx *ctx;
+
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	dim = isl_basic_map_dim(bmap, isl_dim_all);
+	if (v_div < 0 || dim < 0)
+		return isl_basic_map_free(bmap);
+
+	ctx = isl_basic_map_get_ctx(bmap);
+
+	for (j = 0; j < bmap->n_ineq; ++j) {
+		int s;
+
+		if (!isl_int_is_one(bmap->ineq[j][1 + v_div + div]) &&
+		    !isl_int_is_negone(bmap->ineq[j][1 + v_div + div]))
+			continue;
+
+		if (progress)
+			*progress = 1;
+
+		s = isl_int_sgn(bmap->ineq[j][1 + v_div + div]);
+		isl_int_set_si(bmap->ineq[j][1 + v_div + div], 0);
+		if (s < 0)
+			isl_seq_combine(bmap->ineq[j],
+				ctx->negone, bmap->div[div] + 1,
+				bmap->div[div][0], bmap->ineq[j], 1 + dim);
+		else
+			isl_seq_combine(bmap->ineq[j],
+				ctx->one, bmap->div[div] + 1,
+				bmap->div[div][0], bmap->ineq[j], 1 + dim);
+		if (s < 0) {
+			isl_int_add(bmap->ineq[j][0],
+				bmap->ineq[j][0], bmap->div[div][0]);
+			isl_int_sub_ui(bmap->ineq[j][0],
+				bmap->ineq[j][0], 1);
+		}
+
+		bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
+		bmap = isl_basic_map_add_div_constraint(bmap, div, s);
+		if (!bmap)
+			return NULL;
+	}
+
+	return bmap;
+}
+
+/* Eliminate known divs from constraints where they appear with
+ * a (positive or negative) unit coefficient.
+ * If "progress" is not NULL, then it gets set if the elimination
+ * results in any changes.
  *
  * We skip integral divs, i.e., those with denominator 1, as we would
  * risk eliminating the div from the div constraints.  We do not need
@@ -1365,55 +1421,19 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
 static __isl_give isl_basic_map *eliminate_unit_divs(
 	__isl_take isl_basic_map *bmap, int *progress)
 {
-	int i, j;
-	isl_ctx *ctx;
-	unsigned total;
+	int i;
 
 	if (!bmap)
 		return NULL;
-
-	ctx = isl_basic_map_get_ctx(bmap);
-	total = isl_basic_map_offset(bmap, isl_dim_div);
 
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (isl_int_is_one(bmap->div[i][0]))
 			continue;
-		for (j = 0; j < bmap->n_ineq; ++j) {
-			int s;
-
-			if (!isl_int_is_one(bmap->ineq[j][total + i]) &&
-			    !isl_int_is_negone(bmap->ineq[j][total + i]))
-				continue;
-
-			if (progress)
-				*progress = 1;
-
-			s = isl_int_sgn(bmap->ineq[j][total + i]);
-			isl_int_set_si(bmap->ineq[j][total + i], 0);
-			if (s < 0)
-				isl_seq_combine(bmap->ineq[j],
-					ctx->negone, bmap->div[i] + 1,
-					bmap->div[i][0], bmap->ineq[j],
-					total + bmap->n_div);
-			else
-				isl_seq_combine(bmap->ineq[j],
-					ctx->one, bmap->div[i] + 1,
-					bmap->div[i][0], bmap->ineq[j],
-					total + bmap->n_div);
-			if (s < 0) {
-				isl_int_add(bmap->ineq[j][0],
-					bmap->ineq[j][0], bmap->div[i][0]);
-				isl_int_sub_ui(bmap->ineq[j][0],
-					bmap->ineq[j][0], 1);
-			}
-
-			bmap = isl_basic_map_extend_constraints(bmap, 0, 1);
-			bmap = isl_basic_map_add_div_constraint(bmap, i, s);
-			if (!bmap)
-				return NULL;
-		}
+		bmap = eliminate_unit_div(bmap, i, progress);
+		if (!bmap)
+			return NULL;
 	}
 
 	return bmap;
