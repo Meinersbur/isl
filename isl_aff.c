@@ -6093,7 +6093,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
 }
 
 /* If data->pma and "pma2" have the same domain space, then compute
- * their flat range product and the result to data->res.
+ * their flat range product and add the result to data->res.
  */
 static isl_stat flat_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
 	void *user)
