@@ -6141,6 +6141,26 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_flat_range_product(
 	return bin_op(upma1, upma2, &flat_range_product_entry);
 }
 
+/* If data->pma and "pma2" have the same domain space, then compute
+ * their range product and add the result to data->res.
+ */
+static isl_stat range_product_entry(__isl_take isl_pw_multi_aff *pma2,
+	void *user)
+{
+	return gen_range_product_entry(pma2,
+				&isl_pw_multi_aff_range_product, user);
+}
+
+/* Given two isl_union_pw_multi_affs A -> B and C -> D,
+ * construct an isl_union_pw_multi_aff (A * C) -> [B -> D].
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_product(
+	__isl_take isl_union_pw_multi_aff *upma1,
+	__isl_take isl_union_pw_multi_aff *upma2)
+{
+	return bin_op(upma1, upma2, &range_product_entry);
+}
+
 /* Replace the affine expressions at position "pos" in "pma" by "pa".
  * The parameters are assumed to have been aligned.
  *
