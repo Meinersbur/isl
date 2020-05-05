@@ -6099,11 +6099,16 @@ static isl_stat flat_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
 	void *user)
 {
 	struct isl_union_pw_multi_aff_bin_data *data = user;
+	isl_bool match;
+	isl_space *space1, *space2;
 
-	if (!isl_space_tuple_is_equal(data->pma->dim, isl_dim_in,
-				 pma2->dim, isl_dim_in)) {
+	space1 = isl_pw_multi_aff_peek_space(data->pma);
+	space2 = isl_pw_multi_aff_peek_space(pma2);
+	match = isl_space_tuple_is_equal(space1, isl_dim_in,
+					space2, isl_dim_in);
+	if (match < 0 || !match) {
 		isl_pw_multi_aff_free(pma2);
-		return isl_stat_ok;
+		return match < 0 ? isl_stat_error : isl_stat_ok;
 	}
 
 	pma2 = isl_pw_multi_aff_flat_range_product(
