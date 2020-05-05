@@ -6092,10 +6092,13 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
 					    &isl_multi_aff_flat_range_product);
 }
 
-/* If data->pma and "pma2" have the same domain space, then compute
- * their flat range product and add the result to data->res.
+/* If data->pma and "pma2" have the same domain space, then use "range_product"
+ * to compute some form of range product and add the result to data->res.
  */
-static isl_stat flat_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
+static isl_stat gen_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
+	__isl_give isl_pw_multi_aff *(*range_product)(
+		__isl_take isl_pw_multi_aff *pma1,
+		__isl_take isl_pw_multi_aff *pma2),
 	void *user)
 {
 	struct isl_union_pw_multi_aff_bin_data *data = user;
@@ -6111,12 +6114,21 @@ static isl_stat flat_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
 		return match < 0 ? isl_stat_error : isl_stat_ok;
 	}
 
-	pma2 = isl_pw_multi_aff_flat_range_product(
-					isl_pw_multi_aff_copy(data->pma), pma2);
+	pma2 = range_product(isl_pw_multi_aff_copy(data->pma), pma2);
 
 	data->res = isl_union_pw_multi_aff_add_pw_multi_aff(data->res, pma2);
 
 	return isl_stat_ok;
+}
+
+/* If data->pma and "pma2" have the same domain space, then compute
+ * their flat range product and add the result to data->res.
+ */
+static isl_stat flat_range_product_entry(__isl_take isl_pw_multi_aff *pma2,
+	void *user)
+{
+	return gen_range_product_entry(pma2,
+				&isl_pw_multi_aff_flat_range_product, user);
 }
 
 /* Given two isl_union_pw_multi_affs A -> B and C -> D,
