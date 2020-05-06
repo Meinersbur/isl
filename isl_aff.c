@@ -6061,7 +6061,7 @@ error:
 	return NULL;
 }
 
-/* Given two aligned isl_pw_multi_affs A -> B and C -> D,
+/* Given two isl_pw_multi_affs A -> B and C -> D,
  * construct an isl_pw_multi_aff (A * C) -> [B -> D].
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
@@ -6076,7 +6076,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_product(
 					    &isl_multi_aff_range_product);
 }
 
-/* Given two aligned isl_pw_multi_affs A -> B and C -> D,
+/* Given two isl_pw_multi_affs A -> B and C -> D,
  * construct an isl_pw_multi_aff (A * C) -> (B, D).
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_flat_range_product(
@@ -7035,8 +7035,6 @@ __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
 
 /* Compute the pullback of "mpa1" by the function represented by "mpa2".
  * In other words, plug in "mpa2" in "mpa1".
- *
- * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
  * We pullback each member of "mpa1" in turn.
  *
