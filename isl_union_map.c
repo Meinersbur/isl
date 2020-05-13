@@ -1447,6 +1447,22 @@ __isl_give isl_union_map *isl_union_map_intersect_range(
 }
 
 /* Intersect each map in "umap" in a space [A -> B] -> C
+ * with the corresponding map in "factor" in the space A -> C and
+ * collect the results.
+ */
+__isl_give isl_union_map *isl_union_map_intersect_domain_factor_domain(
+	__isl_take isl_union_map *umap, __isl_take isl_union_map *factor)
+{
+	struct isl_bin_op_control control = {
+		.filter = &isl_map_domain_is_wrapping,
+		.match_space = &isl_space_domain_factor_domain,
+		.fn_map = &isl_map_intersect_domain_factor_domain,
+	};
+
+	return gen_bin_op(umap, factor, &control);
+}
+
+/* Intersect each map in "umap" in a space [A -> B] -> C
  * with the corresponding map in "factor" in the space B -> C and
  * collect the results.
  */
