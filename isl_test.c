@@ -2981,6 +2981,7 @@ struct {
 	    "[a] -> [b = 0] : 0 < a <= 509 }" },
 	{ "{ rat: [i] : 1 <= 2i <= 9 }", "{ rat: [i] : 2i = 1 }" },
 	{ "{ rat: [i] : 1 <= 2i <= 9 or i >= 10 }", "{ rat: [i] : 2i = 1 }" },
+	{ "{ rat: [i] : 21 <= 2i <= 29 or i = 5 }", "{ rat: [5] }" },
 };
 
 static int test_lexmin(struct isl_ctx *ctx)

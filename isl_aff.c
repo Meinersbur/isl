@@ -4222,26 +4222,106 @@ __isl_give isl_set *isl_multi_aff_lex_lt_set(__isl_take isl_multi_aff *ma1,
 	return isl_multi_aff_lex_gt_set(ma2, ma1);
 }
 
-/* Return the set of domain elements where "ma1" and "ma2"
- * satisfy "order".
+/* Return the set of domain elements where "ma1" is lexicographically
+ * greater than to "ma2".  If "equal" is set, then include the domain
+ * elements where they are equal.
+ * Do this for the case where there are no entries.
+ * In this case, "ma1" cannot be greater than "ma2",
+ * but it is (greater than or) equal to "ma2".
  */
-static __isl_give isl_set *isl_multi_aff_order_set(
-	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2,
-	__isl_give isl_map *order(__isl_take isl_space *set_space))
+static __isl_give isl_set *isl_multi_aff_lex_gte_set_0d(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2, int equal)
 {
 	isl_space *space;
-	isl_map *map1, *map2;
-	isl_map *map, *ge;
 
-	map1 = isl_map_from_multi_aff_internal(ma1);
-	map2 = isl_map_from_multi_aff_internal(ma2);
-	map = isl_map_range_product(map1, map2);
-	space = isl_space_range(isl_map_get_space(map));
-	space = isl_space_domain(isl_space_unwrap(space));
-	ge = order(space);
-	map = isl_map_intersect_range(map, isl_map_wrap(ge));
+	space = isl_multi_aff_get_domain_space(ma1);
 
-	return isl_map_domain(map);
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+
+	if (equal)
+		return isl_set_universe(space);
+	else
+		return isl_set_empty(space);
+}
+
+/* Return the set where entry "i" of "ma1" and "ma2"
+ * satisfy the relation prescribed by "cmp".
+ */
+static __isl_give isl_set *isl_multi_aff_order_at(__isl_keep isl_multi_aff *ma1,
+	__isl_keep isl_multi_aff *ma2, int i,
+	__isl_give isl_set *(*cmp)(__isl_take isl_aff *aff1,
+		__isl_take isl_aff *aff2))
+{
+	isl_aff *aff1, *aff2;
+
+	aff1 = isl_multi_aff_get_at(ma1, i);
+	aff2 = isl_multi_aff_get_at(ma2, i);
+	return cmp(aff1, aff2);
+}
+
+/* Return the set of domain elements where "ma1" is lexicographically
+ * greater than to "ma2".  If "equal" is set, then include the domain
+ * elements where they are equal.
+ *
+ * In particular, for all but the final entry,
+ * include the set of elements where this entry is strictly greater in "ma1"
+ * and all previous entries are equal.
+ * The final entry is also allowed to be equal in the two functions
+ * if "equal" is set.
+ *
+ * The case where there are no entries is handled separately.
+ */
+static __isl_give isl_set *isl_multi_aff_lex_gte_set(
+	__isl_take isl_multi_aff *ma1, __isl_take isl_multi_aff *ma2, int equal)
+{
+	int i;
+	isl_size n;
+	isl_space *space;
+	isl_set *res;
+	isl_set *equal_set;
+	isl_set *gte;
+
+	if (isl_multi_aff_check_equal_space(ma1, ma2) < 0)
+		goto error;
+	n = isl_multi_aff_size(ma1);
+	if (n < 0)
+		goto error;
+	if (n == 0)
+		return isl_multi_aff_lex_gte_set_0d(ma1, ma2, equal);
+
+	space = isl_multi_aff_get_domain_space(ma1);
+	res = isl_set_empty(isl_space_copy(space));
+	equal_set = isl_set_universe(space);
+
+	for (i = 0; i + 1 < n; ++i) {
+		isl_bool empty;
+		isl_set *gt, *eq;
+
+		gt = isl_multi_aff_order_at(ma1, ma2, i, &isl_aff_gt_set);
+		gt = isl_set_intersect(gt, isl_set_copy(equal_set));
+		res = isl_set_union(res, gt);
+		eq = isl_multi_aff_order_at(ma1, ma2, i, &isl_aff_eq_set);
+		equal_set = isl_set_intersect(equal_set, eq);
+
+		empty = isl_set_is_empty(equal_set);
+		if (empty >= 0 && empty)
+			break;
+	}
+
+	if (equal)
+		gte = isl_multi_aff_order_at(ma1, ma2, n - 1, &isl_aff_ge_set);
+	else
+		gte = isl_multi_aff_order_at(ma1, ma2, n - 1, &isl_aff_gt_set);
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+
+	gte = isl_set_intersect(gte, equal_set);
+	return isl_set_union(res, gte);
+error:
+	isl_multi_aff_free(ma1);
+	isl_multi_aff_free(ma2);
+	return NULL;
 }
 
 /* Return the set of domain elements where "ma1" is lexicographically
@@ -4250,7 +4330,7 @@ static __isl_give isl_set *isl_multi_aff_order_set(
 __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 	__isl_take isl_multi_aff *ma2)
 {
-	return isl_multi_aff_order_set(ma1, ma2, &isl_map_lex_ge);
+	return isl_multi_aff_lex_gte_set(ma1, ma2, 1);
 }
 
 /* Return the set of domain elements where "ma1" is lexicographically
@@ -4259,7 +4339,7 @@ __isl_give isl_set *isl_multi_aff_lex_ge_set(__isl_take isl_multi_aff *ma1,
 __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 	__isl_take isl_multi_aff *ma2)
 {
-	return isl_multi_aff_order_set(ma1, ma2, &isl_map_lex_gt);
+	return isl_multi_aff_lex_gte_set(ma1, ma2, 0);
 }
 
 #define isl_multi_aff_zero_in_space	isl_multi_aff_zero
