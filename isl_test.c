@@ -8073,6 +8073,72 @@ static int test_bin_locus(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of functions that determine
+ * the part of the domain where two isl_multi_aff objects
+ * related to each other in a specific way.
+ * "fn" is the function that is being tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+static struct {
+	__isl_give isl_set *(*fn)(__isl_take isl_multi_aff *ma1,
+		__isl_take isl_multi_aff *ma2);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} bin_locus_ma_tests[] = {
+	{ &isl_multi_aff_lex_le_set, "{ [] }", "{ [] }", "{ : }" },
+	{ &isl_multi_aff_lex_lt_set, "{ [] }", "{ [] }", "{ : false }" },
+	{ &isl_multi_aff_lex_le_set,
+	  "{ A[i] -> [i] }", "{ A[i] -> [0] }",
+	  "{ A[i] : i <= 0 }" },
+	{ &isl_multi_aff_lex_lt_set,
+	  "{ A[i] -> [i] }", "{ A[i] -> [0] }",
+	  "{ A[i] : i < 0 }" },
+	{ &isl_multi_aff_lex_le_set,
+	  "{ A[i] -> [i, i] }", "{ A[i] -> [0, 0] }",
+	  "{ A[i] : i <= 0 }" },
+	{ &isl_multi_aff_lex_le_set,
+	  "{ A[i] -> [i, 0] }", "{ A[i] -> [0, 0] }",
+	  "{ A[i] : i <= 0 }" },
+	{ &isl_multi_aff_lex_le_set,
+	  "{ A[i] -> [i, 1] }", "{ A[i] -> [0, 0] }",
+	  "{ A[i] : i < 0 }" },
+};
+
+/* Perform some basic tests of functions that determine
+ * the part of the domain where two isl_multi_aff objects
+ * related to each other in a specific way.
+ */
+static isl_stat test_bin_locus_ma(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bin_locus_ma_tests); ++i) {
+		const char *str;
+		isl_bool ok;
+		isl_multi_aff *ma1, *ma2;
+		isl_set *set, *res;
+
+		str = bin_locus_ma_tests[i].arg1;
+		ma1 = isl_multi_aff_read_from_str(ctx, str);
+		str = bin_locus_ma_tests[i].arg2;
+		ma2 = isl_multi_aff_read_from_str(ctx, str);
+		res = isl_set_read_from_str(ctx, bin_locus_ma_tests[i].res);
+		set = bin_locus_ma_tests[i].fn(ma1, ma2);
+		ok = isl_set_is_equal(set, res);
+		isl_set_free(set);
+		isl_set_free(res);
+		if (ok < 0)
+			return isl_stat_error;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform basic locus tests.
  */
 static int test_locus(isl_ctx *ctx)
@@ -8080,6 +8146,8 @@ static int test_locus(isl_ctx *ctx)
 	if (test_un_locus(ctx) < 0)
 		return -1;
 	if (test_bin_locus(ctx) < 0)
+		return -1;
+	if (test_bin_locus_ma(ctx) < 0)
 		return -1;
 	return 0;
 }
