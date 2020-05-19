@@ -471,7 +471,7 @@ used exactly once as a value for an C<__isl_take> argument.
 In between, it can be used as a value for as many
 C<__isl_keep> arguments as the user likes.
 There is one exception, and that is the case where the
-pointer returned is C<NULL>.  Is this case, the user
+pointer returned is C<NULL>.  In this case, the user
 is free to use it as an C<__isl_take> argument or not.
 When applied to a C<char *>, the returned pointer needs to be
 freed using C<free>.
