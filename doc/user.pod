@@ -11800,7 +11800,7 @@ is used.  The meaning of the options is as follows.
 =item C<atomic>
 
 When this option is specified, the AST generator will make
-sure that a given domains space only appears in a single
+sure that a given domain space only appears in a single
 loop at the specified level.
 
 For example, for the schedule tree
