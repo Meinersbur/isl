@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS = -I ../m4
 AUTOMAKE_OPTIONS = nostdinc
 
 noinst_PROGRAMS = extract_interface

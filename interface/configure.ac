@@ -1,0 +1,17 @@
+AC_INIT([isl-interface], [0], [isl-development@googlegroups.com])
+AC_CONFIG_AUX_DIR([.])
+AC_CONFIG_MACRO_DIR([../m4])
+AM_INIT_AUTOMAKE([foreign])
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+
+AC_PROG_CXX
+
+AC_PROG_LIBTOOL
+
+AX_DETECT_CLANG
+
+AC_SUBST([CONFIG_STATUS_DEPENDENCIES], [$LLVM_CONFIG])
+AC_CONFIG_HEADERS(isl_config.h)
+AC_CONFIG_FILES(Makefile)
+
+AC_OUTPUT

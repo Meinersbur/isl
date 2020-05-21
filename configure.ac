@@ -112,11 +112,6 @@ if test "x$ac_cv_have_decl_snprintf" = xno -a \
 fi
 
 AX_SUBMODULE(clang,system|no,no)
-case "$with_clang" in
-system)
-	AX_DETECT_CLANG
-	;;
-esac
 AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
 AM_CONDITIONAL(HAVE_CPP_ISL_H,
     [(test $with_clang = system -a "x$HAVE_CXX11" = "x1") || \
@@ -133,14 +128,13 @@ AX_CREATE_PKGCONFIG_INFO
 
 AX_DETECT_GIT_HEAD
 
-AC_SUBST([CONFIG_STATUS_DEPENDENCIES], [$LLVM_CONFIG])
 AH_BOTTOM([#include <isl_config_post.h>])
 AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_FILES(isl_srcdir.c)
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_FILES(doc/Makefile)
 if test $with_clang = system; then
-	AC_CONFIG_FILES(interface/Makefile)
+	AC_CONFIG_SUBDIRS(interface)
 fi
 AC_CONFIG_FILES([bound_test.sh], [chmod +x bound_test.sh])
 AC_CONFIG_FILES([codegen_test.sh], [chmod +x codegen_test.sh])
