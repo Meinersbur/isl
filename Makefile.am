@@ -2,8 +2,8 @@ if HAVE_CLANG
 if HAVE_CXX11
 MAYBE_INTERFACE = interface
 FORCE:
-interface/extract_interface$(EXEEXT): FORCE
-	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface$(EXEEXT)
+interface/extract_interface$(BUILD_EXEEXT): FORCE
+	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface$(BUILD_EXEEXT)
 endif
 endif
 SUBDIRS = . $(MAYBE_INTERFACE) doc
@@ -323,40 +323,41 @@ if HAVE_CLANG
 if HAVE_CXX11
 interface/isldlname.py: libisl.la
 	$(AM_V_GEN) $(GREP) dlname $< | $(SED) -e 's/dlname/isl_dlname/' > $@
-interface/isl.py: interface/extract_interface$(EXEEXT) libdep.a \
+interface/isl.py: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		python/isl.py.top interface/isldlname.py
 	(cat interface/isldlname.py $(srcdir)/python/isl.py.top && \
-		interface/extract_interface$(EXEEXT) --language=python \
+		interface/extract_interface$(BUILD_EXEEXT) --language=python \
 			$(includes) $(srcdir)/all.h) \
 			> $@ || (rm $@ && false)
 
-include/isl/cpp.h: interface/extract_interface$(EXEEXT) libdep.a \
+include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp.h.top cpp/cpp.h.pre cpp/cpp.h.bot
 	$(MKDIR_P) "include/isl/cpp" && \
 	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h \
 	    $(srcdir)/cpp/cpp.h.pre && \
-		interface/extract_interface$(EXEEXT) --language=cpp \
+		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp.h.bot) \
 			> $@ || (rm $@ && false)
 
-include/isl/cpp-checked.h: interface/extract_interface$(EXEEXT) libdep.a \
+include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top \
 		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
 	    $(srcdir)/cpp/cpp-checked.h.pre && \
-		interface/extract_interface$(EXEEXT) \
+		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
 			> $@ || (rm $@ && false)
 
-include/isl/cpp-checked-conversion.h: interface/extract_interface$(EXEEXT) \
+include/isl/cpp-checked-conversion.h: \
+		interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a \
 		cpp/cpp-checked-conversion.h.top \
 		cpp/cpp-checked-conversion.h.bot
 	(cat $(srcdir)/cpp/cpp-checked-conversion.h.top && \
-		interface/extract_interface$(EXEEXT) \
+		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked-conversion \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \

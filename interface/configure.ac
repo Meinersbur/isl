@@ -5,6 +5,17 @@ AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_PROG_CXX
+AX_PROG_CXX_FOR_BUILD
+
+# extract_interface needs to be run on the build system.
+# Since this is the only target that is being built,
+# simply use the build compiler throughout.
+# This ensures that the clang configure checks are
+# performed using the right compiler.
+CXX="$CXX_FOR_BUILD"
+CXXCPP="$CXXCPP_FOR_BUILD"
+EXEEXT="$BUILD_EXEEXT"
+OBJEXT="$BUILD_OBJEXT"
 
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
