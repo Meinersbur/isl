@@ -147,9 +147,4 @@ AC_CONFIG_FILES([codegen_test.sh], [chmod +x codegen_test.sh])
 AC_CONFIG_FILES([pip_test.sh], [chmod +x pip_test.sh])
 AC_CONFIG_FILES([flow_test.sh], [chmod +x flow_test.sh])
 AC_CONFIG_FILES([schedule_test.sh], [chmod +x schedule_test.sh])
-AC_CONFIG_COMMANDS_POST([
-	dnl pass on arguments to subdir configures, but don't
-	dnl add them to config.status
-	ac_configure_args="$ac_configure_args $isl_configure_args"
-])
 AC_OUTPUT
