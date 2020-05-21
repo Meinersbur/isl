@@ -2,8 +2,8 @@ if HAVE_CLANG
 if HAVE_CXX11
 MAYBE_INTERFACE = interface
 FORCE:
-interface/extract_interface: FORCE
-	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface
+interface/extract_interface$(EXEEXT): FORCE
+	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface$(EXEEXT)
 endif
 endif
 SUBDIRS = . $(MAYBE_INTERFACE) doc
@@ -323,14 +323,14 @@ if HAVE_CLANG
 if HAVE_CXX11
 interface/isldlname.py: libisl.la
 	$(AM_V_GEN) $(GREP) dlname $< | $(SED) -e 's/dlname/isl_dlname/' > $@
-interface/isl.py: interface/extract_interface libdep.a python/isl.py.top \
-		interface/isldlname.py
+interface/isl.py: interface/extract_interface$(EXEEXT) libdep.a \
+		python/isl.py.top interface/isldlname.py
 	(cat interface/isldlname.py $(srcdir)/python/isl.py.top && \
 		interface/extract_interface$(EXEEXT) --language=python \
 			$(includes) $(srcdir)/all.h) \
 			> $@ || (rm $@ && false)
 
-include/isl/cpp.h: interface/extract_interface libdep.a \
+include/isl/cpp.h: interface/extract_interface$(EXEEXT) libdep.a \
 		cpp/cpp.h.top cpp/cpp.h.pre cpp/cpp.h.bot
 	$(MKDIR_P) "include/isl/cpp" && \
 	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h \
@@ -340,7 +340,7 @@ include/isl/cpp.h: interface/extract_interface libdep.a \
 		cat $(srcdir)/cpp/cpp.h.bot) \
 			> $@ || (rm $@ && false)
 
-include/isl/cpp-checked.h: interface/extract_interface libdep.a \
+include/isl/cpp-checked.h: interface/extract_interface$(EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top \
 		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
@@ -351,7 +351,8 @@ include/isl/cpp-checked.h: interface/extract_interface libdep.a \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
 			> $@ || (rm $@ && false)
 
-include/isl/cpp-checked-conversion.h: interface/extract_interface libdep.a \
+include/isl/cpp-checked-conversion.h: interface/extract_interface$(EXEEXT) \
+		libdep.a \
 		cpp/cpp-checked-conversion.h.top \
 		cpp/cpp-checked-conversion.h.bot
 	(cat $(srcdir)/cpp/cpp-checked-conversion.h.top && \
