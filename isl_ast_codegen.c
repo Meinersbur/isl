@@ -2631,7 +2631,7 @@ static int foreach_iteration(__isl_take isl_set *domain,
 	int (*fn)(__isl_take isl_basic_set *bset, void *user), void *user)
 {
 	int i, n;
-	int empty;
+	isl_bool empty;
 	int depth;
 	isl_multi_aff *expansion;
 	isl_basic_map *bmap;
