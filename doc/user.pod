@@ -708,9 +708,13 @@ went wrong.
 The function C<isl_stat_non_null> converts an isl object pointer
 to an C<isl_stat>, returning C<isl_stat_ok> if the object pointer is valid and
 C<isl_stat_error> if it is C<NULL>.
+Similarly, the function C<isl_stat_non_error_bool> converts an C<isl_bool>
+to an C<isl_stat>, returning C<isl_stat_ok> if the C<isl_bool>
+represents a valid result and C<isl_stat_error> if it is C<isl_bool_error>.
 
 	#include <isl/ctx.h>
 	isl_stat isl_stat_non_null(void *obj);
+	isl_stat isl_stat_non_error_bool(isl_bool b);
 
 See L</"Error Handling"> for more information on
 C<isl_size_error>, C<isl_bool_error> and C<isl_stat_error>.
