@@ -221,7 +221,20 @@ CPPFLAGS="$SAVE_CPPFLAGS"
 
 SAVE_LDFLAGS="$LDFLAGS"
 LDFLAGS="$CLANG_LDFLAGS $LDFLAGS"
-AC_SUBST(LIB_CLANG_EDIT)
-AC_CHECK_LIB([clangEdit], [main], [LIB_CLANG_EDIT=-lclangEdit], [])
+
+# Use single libclang-cpp shared library when available.
+# Otherwise, use a selection of clang libraries that appears to work.
+AC_CHECK_LIB([clang-cpp], [main], [have_lib_clang=yes], [have_lib_clang=no])
+if test "$have_lib_clang" = yes; then
+	CLANG_LIBS="-lclang-cpp $CLANG_LIBS"
+else
+	AC_CHECK_LIB([clangEdit], [main], [LIB_CLANG_EDIT=-lclangEdit], [])
+	CLANG_LIBS="-lclangBasic -lclangDriver $CLANG_LIBS"
+	CLANG_LIBS="-lclangAnalysis -lclangAST -lclangLex $CLANG_LIBS"
+	CLANG_LIBS="$LIB_CLANG_EDIT $CLANG_LIBS"
+	CLANG_LIBS="-lclangParse -lclangSema $CLANG_LIBS"
+	CLANG_LIBS="-lclangFrontend -lclangSerialization $CLANG_LIBS"
+fi
+
 LDFLAGS="$SAVE_LDFLAGS"
 ])

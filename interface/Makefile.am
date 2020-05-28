@@ -19,8 +19,4 @@ extract_interface_SOURCES = \
 	extract_interface.h \
 	extract_interface.cc
 extract_interface_LDFLAGS = $(CLANG_LDFLAGS) $(CLANG_RFLAG)
-extract_interface_LDADD = \
-	-lclangFrontend -lclangSerialization -lclangParse -lclangSema \
-	$(LIB_CLANG_EDIT) \
-	-lclangAnalysis -lclangAST -lclangLex -lclangBasic -lclangDriver \
-	$(CLANG_LIBS) $(CLANG_LDFLAGS)
+extract_interface_LDADD = $(CLANG_LIBS) $(CLANG_LDFLAGS)
