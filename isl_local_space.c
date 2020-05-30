@@ -163,14 +163,7 @@ isl_bool isl_local_space_is_set(__isl_keep isl_local_space *ls)
 #define TYPE	isl_local_space
 
 #include "isl_type_has_equal_space_bin_templ.c"
-
-/* Is the space of "ls" equal to "space"?
- */
-isl_bool isl_local_space_has_space(__isl_keep isl_local_space *ls,
-	__isl_keep isl_space *space)
-{
-	return isl_space_is_equal(isl_local_space_peek_space(ls), space);
-}
+#include "isl_type_has_space_templ.c"
 
 /* Check that the space of "ls" is equal to "space".
  */
