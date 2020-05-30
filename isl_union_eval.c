@@ -53,14 +53,13 @@ __isl_give isl_val *FN(UNION,eval)(__isl_take UNION *u,
 	if (is_void)
 		return FN(UNION,eval_void)(u, pnt);
 
-	space = isl_space_copy(pnt->dim);
+	space = isl_point_peek_space(pnt);
 	if (!space)
 		goto error;
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(FN(UNION,get_ctx)(u), &u->table,
 				    hash, &FN(UNION,has_domain_space_tuples),
 				    space, 0);
-	isl_space_free(space);
 	if (!entry)
 		goto error;
 	if (entry == isl_hash_table_entry_none) {
