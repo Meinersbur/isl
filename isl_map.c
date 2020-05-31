@@ -2937,7 +2937,7 @@ static isl_bool isl_basic_set_involves_locals(__isl_keep isl_basic_set *bset)
 	n = isl_basic_set_dim(bset, isl_dim_div);
 	if (n < 0)
 		return isl_bool_error;
-	return isl_basic_set_involves_dims(bset, isl_dim_div, 0, n);
+	return isl_bool_ok(n > 0);
 }
 
 /* isl_set_every_basic_set callback that checks whether "bset"

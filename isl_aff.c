@@ -2483,7 +2483,7 @@ isl_bool isl_aff_involves_locals(__isl_keep isl_aff *aff)
 	n = isl_aff_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_bool_error;
-	return isl_aff_involves_dims(aff, isl_dim_div, 0, n);
+	return isl_bool_ok(n > 0);
 }
 
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
