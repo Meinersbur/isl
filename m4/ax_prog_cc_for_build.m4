@@ -54,6 +54,7 @@ pushdef([ac_cv_objext], ac_cv_build_objext)dnl
 pushdef([ac_exeext], ac_build_exeext)dnl
 pushdef([ac_objext], ac_build_objext)dnl
 pushdef([CC], CC_FOR_BUILD)dnl
+pushdef([CCDEPMODE], CCDEPMODE_FOR_BUILD)dnl
 pushdef([CPP], CPP_FOR_BUILD)dnl
 pushdef([GCC], GCC_FOR_BUILD)dnl
 pushdef([CFLAGS], CFLAGS_FOR_BUILD)dnl
@@ -73,6 +74,8 @@ pushdef([ac_cv_host_vendor], ac_cv_build_vendor)dnl
 pushdef([ac_cv_host_os], ac_cv_build_os)dnl
 pushdef([ac_tool_prefix], ac_build_tool_prefix)dnl
 pushdef([am_cv_CC_dependencies_compiler_type], am_cv_build_CC_dependencies_compiler_type)dnl
+pushdef([am__fastdepCC_FALSE], am__fastdepCC_build_FALSE)dnl
+pushdef([am__fastdepCC_TRUE], am__fastdepCC_build_TRUE)dnl
 pushdef([am_cv_prog_cc_c_o], am_cv_build_prog_cc_c_o)dnl
 pushdef([cross_compiling], cross_compiling_build)dnl
 
@@ -92,6 +95,8 @@ dnl Restore the old definitions
 dnl
 popdef([cross_compiling])dnl
 popdef([am_cv_prog_cc_c_o])dnl
+popdef([am__fastdepCC_TRUE])dnl
+popdef([am__fastdepCC_FALSE])dnl
 popdef([am_cv_CC_dependencies_compiler_type])dnl
 popdef([ac_tool_prefix])dnl
 popdef([ac_cv_host_os])dnl
@@ -111,6 +116,7 @@ popdef([CPPFLAGS])dnl
 popdef([CFLAGS])dnl
 popdef([GCC])dnl
 popdef([CPP])dnl
+popdef([CCDEPMODE])dnl
 popdef([CC])dnl
 popdef([ac_objext])dnl
 popdef([ac_exeext])dnl
