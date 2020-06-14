@@ -97,18 +97,18 @@ typedef isl_sioimath *isl_sioimath_ptr;
 /* Used for function parameters that are read-only. */
 typedef isl_sioimath isl_sioimath_src;
 
-/* Return whether the argument is stored in small representation.
- */
-inline int isl_sioimath_is_small(isl_sioimath val)
-{
-	return val & 0x00000001;
-}
-
 /* Return whether the argument is stored in big representation.
  */
 inline int isl_sioimath_is_big(isl_sioimath val)
 {
-	return !isl_sioimath_is_small(val);
+	return (val >> 32) & 0x00000001;
+}
+
+/* Return whether the argument is stored in small representation.
+ */
+inline int isl_sioimath_is_small(isl_sioimath val)
+{
+	return !isl_sioimath_is_big(val);
 }
 
 /* Get the number of an isl_int in small representation. Result is undefined if
@@ -116,7 +116,7 @@ inline int isl_sioimath_is_big(isl_sioimath val)
  */
 inline int32_t isl_sioimath_get_small(isl_sioimath val)
 {
-	return val >> 32;
+	return val;
 }
 
 /* Get the number of an in isl_int in big representation. Result is undefined if
@@ -124,7 +124,7 @@ inline int32_t isl_sioimath_get_small(isl_sioimath val)
  */
 inline mp_int isl_sioimath_get_big(isl_sioimath val)
 {
-	return (mp_int)(uintptr_t) val;
+	return (mp_int)(uintptr_t)(~(val >> 32 | val << 32));
 }
 
 /* Return 1 if val is stored in small representation and store its value to
@@ -151,14 +151,19 @@ inline int isl_sioimath_decode_big(isl_sioimath val, mp_int *big)
  */
 inline isl_sioimath isl_sioimath_encode_small(int32_t val)
 {
-	return ((isl_sioimath) val) << 32 | 0x00000001;
+	return (uint32_t)val;
 }
 
 /* Encode a big representation.
  */
 inline isl_sioimath isl_sioimath_encode_big(mp_int val)
 {
-	return (isl_sioimath)(uintptr_t) val;
+  uintptr_t ptrval;
+  
+  ptrval = (uintptr_t) val;
+  ptrval = ~ptrval;
+  ptrval = ptrval << 32 | ptrval >> 32;
+	return (isl_sioimath)ptrval;
 }
 
 /* A common situation is to call an IMath function with at least one argument
