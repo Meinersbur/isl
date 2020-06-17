@@ -105,6 +105,7 @@ __isl_export
 __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_map_from_domain_and_range(
 	__isl_take isl_space *domain, __isl_take isl_space *range);
+__isl_export
 __isl_give isl_space *isl_space_reverse(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_range_reverse(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *space,
