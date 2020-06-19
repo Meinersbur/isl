@@ -5503,6 +5503,15 @@ static __isl_give isl_basic_map *reduce_coefficients(
  * We therefore call isl_basic_map_detect_inequality_pairs,
  * which checks for such pairs of inequalities as well as eliminate_divs_eq
  * and isl_basic_map_gauss if such a pair was found.
+ * This call to isl_basic_map_gauss may undo much of the effect
+ * of the reduction on which isl_map_coalesce depends.
+ * In particular, constraints in terms of (compressed) local variables
+ * get reformulated in terms of the set variables again.
+ * The reduction is therefore applied again afterwards.
+ * This has to be done before the call to eliminate_divs_eq, however,
+ * since that may remove some local variables, while
+ * the data used during the reduction is formulated in terms
+ * of the original variables.
  *
  * Tightening may also result in some other constraints becoming
  * (rationally) redundant with respect to the tightened constraint
@@ -5548,8 +5557,6 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	if (!bmap)
 		goto error;
 
-	isl_reduce_coefficients_data_clear(&data);
-
 	if (data.tightened) {
 		int progress = 0;
 
@@ -5557,9 +5564,12 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 		bmap = isl_basic_map_detect_inequality_pairs(bmap, &progress);
 		if (progress) {
 			bmap = isl_basic_map_gauss(bmap, NULL);
+			bmap = reduce_coefficients(bmap, &data);
 			bmap = eliminate_divs_eq(bmap, &progress);
 		}
 	}
+
+	isl_reduce_coefficients_data_clear(&data);
 
 	return bmap;
 error:
