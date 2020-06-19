@@ -507,6 +507,11 @@ static int number_of_constraints_increases(int i, int j,
  * Eliminate those that do not appear with any other coefficient
  * in other constraints, to ensure they get eliminated completely,
  * improving the chances of further coalescing.
+ *
+ * Factor out any (hidden) common factor from the constraint
+ * coefficients of the fused basic map
+ * to improve the detection of adjacent constraints
+ * with respect to other basic maps.
  */
 static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 	__isl_keep isl_mat *extra, int detect_equalities, int check_number)
@@ -567,6 +572,7 @@ static enum isl_change fuse(int i, int j, struct isl_coalesce_info *info,
 		fused = isl_basic_map_eliminate_pure_unit_divs(fused);
 	}
 	fused = isl_basic_map_finalize(fused);
+	fused = isl_basic_map_reduce_coefficients(fused);
 
 	fused_tab = isl_tab_from_basic_map(fused, 0);
 	if (isl_tab_detect_redundant(fused_tab) < 0)
