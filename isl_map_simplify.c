@@ -5442,6 +5442,41 @@ error:
 	return isl_stat_error;
 }
 
+/* Reduce the coefficients of "bmap" by applying the variable compression
+ * in "data".
+ * In particular, apply the variable compression to each constraint,
+ * factor out any common factor in the non-constant coefficients and
+ * then apply the inverse of the compression.
+ *
+ * Only apply the reduction on a single copy of the basic map
+ * since the reduction may leave the result in an inconsistent state.
+ * In particular, the constraints may not be gaussed.
+ */
+static __isl_give isl_basic_map *reduce_coefficients(
+	__isl_take isl_basic_map *bmap,
+	struct isl_reduce_coefficients_data *data)
+{
+	int i;
+
+	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
+
+	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_seq_cpy(data->v->el, bmap->ineq[i], 1 + data->total);
+		data->v = isl_vec_mat_product(data->v, isl_mat_copy(data->T));
+		data->v = normalize_constraint(data->v, &data->tightened);
+		data->v = isl_vec_mat_product(data->v, isl_mat_copy(data->T2));
+		if (!data->v)
+			return isl_basic_map_free(bmap);
+		isl_seq_cpy(bmap->ineq[i], data->v->el, 1 + data->total);
+	}
+
+	ISL_F_SET(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
+
+	return bmap;
+}
+
 /* If "bmap" is an integer set that satisfies any equality involving
  * more than 2 variables and/or has coefficients different from -1 and 1,
  * then use variable compression to reduce the coefficients by removing
@@ -5477,7 +5512,6 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 {
 	struct isl_reduce_coefficients_data data;
 	isl_bool multi;
-	int i;
 
 	if (!bmap)
 		return NULL;
@@ -5501,23 +5535,11 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 		return isl_basic_map_set_to_empty(bmap);
 	}
 
-	bmap = isl_basic_map_cow(bmap);
+	bmap = reduce_coefficients(bmap, &data);
 	if (!bmap)
 		goto error;
 
-	for (i = 0; i < bmap->n_ineq; ++i) {
-		isl_seq_cpy(data.v->el, bmap->ineq[i], 1 + data.total);
-		data.v = isl_vec_mat_product(data.v, isl_mat_copy(data.T));
-		data.v = normalize_constraint(data.v, &data.tightened);
-		data.v = isl_vec_mat_product(data.v, isl_mat_copy(data.T2));
-		if (!data.v)
-			goto error;
-		isl_seq_cpy(bmap->ineq[i], data.v->el, 1 + data.total);
-	}
-
 	isl_reduce_coefficients_data_clear(&data);
-
-	ISL_F_SET(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 
 	if (data.tightened) {
 		int progress = 0;
