@@ -5375,6 +5375,73 @@ static __isl_give isl_vec *normalize_constraint(__isl_take isl_vec *v,
 	return v;
 }
 
+/* Internal representation used by isl_basic_map_reduce_coefficients.
+ *
+ * "total" is the total dimensionality of the original basic map.
+ * "v" is a temporary vector of size 1 + total that can be used
+ * to store constraint coefficients.
+ * "T" is the variable compression.
+ * "T2" is the inverse transformation.
+ * "tightened" is set if any constant term got tightened
+ * while reducing the coefficients.
+ */
+struct isl_reduce_coefficients_data {
+	isl_size total;
+	isl_vec *v;
+	isl_mat *T;
+	isl_mat *T2;
+	int tightened;
+};
+
+/* Free all memory allocated in "data".
+ */
+static void isl_reduce_coefficients_data_clear(
+	struct isl_reduce_coefficients_data *data)
+{
+	data->T = isl_mat_free(data->T);
+	data->T2 = isl_mat_free(data->T2);
+	data->v = isl_vec_free(data->v);
+}
+
+/* Initialize "data" for "bmap", freeing all allocated memory
+ * if anything goes wrong.
+ *
+ * In particular, construct a variable compression
+ * from the equality constraints of "bmap" and
+ * allocate a temporary vector.
+ */
+static isl_stat isl_reduce_coefficients_data_init(
+	__isl_keep isl_basic_map *bmap,
+	struct isl_reduce_coefficients_data *data)
+{
+	isl_ctx *ctx;
+	isl_mat *eq;
+
+	data->v = NULL;
+	data->T = NULL;
+	data->T2 = NULL;
+	data->tightened = 0;
+
+	data->total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (data->total < 0)
+		return isl_stat_error;
+	ctx = isl_basic_map_get_ctx(bmap);
+	data->v = isl_vec_alloc(ctx, 1 + data->total);
+	if (!data->v)
+		return isl_stat_error;
+
+	eq = isl_mat_sub_alloc6(ctx, bmap->eq, 0, bmap->n_eq,
+				0, 1 + data->total);
+	data->T = isl_mat_variable_compression(eq, &data->T2);
+	if (!data->T || !data->T2)
+		goto error;
+
+	return isl_stat_ok;
+error:
+	isl_reduce_coefficients_data_clear(data);
+	return isl_stat_error;
+}
+
 /* If "bmap" is an integer set that satisfies any equality involving
  * more than 2 variables and/or has coefficients different from -1 and 1,
  * then use variable compression to reduce the coefficients by removing
@@ -5408,13 +5475,9 @@ static __isl_give isl_vec *normalize_constraint(__isl_take isl_vec *v,
 __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	__isl_take isl_basic_map *bmap)
 {
-	isl_size total;
+	struct isl_reduce_coefficients_data data;
 	isl_bool multi;
-	isl_ctx *ctx;
-	isl_vec *v;
-	isl_mat *eq, *T, *T2;
 	int i;
-	int tightened;
 
 	if (!bmap)
 		return NULL;
@@ -5430,22 +5493,11 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	if (!multi)
 		return bmap;
 
-	total = isl_basic_map_dim(bmap, isl_dim_all);
-	if (total < 0)
-		return isl_basic_map_free(bmap);
-	ctx = isl_basic_map_get_ctx(bmap);
-	v = isl_vec_alloc(ctx, 1 + total);
-	if (!v)
+	if (isl_reduce_coefficients_data_init(bmap, &data) < 0)
 		return isl_basic_map_free(bmap);
 
-	eq = isl_mat_sub_alloc6(ctx, bmap->eq, 0, bmap->n_eq, 0, 1 + total);
-	T = isl_mat_variable_compression(eq, &T2);
-	if (!T || !T2)
-		goto error;
-	if (T->n_col == 0) {
-		isl_mat_free(T);
-		isl_mat_free(T2);
-		isl_vec_free(v);
+	if (data.T->n_col == 0) {
+		isl_reduce_coefficients_data_clear(&data);
 		return isl_basic_map_set_to_empty(bmap);
 	}
 
@@ -5453,24 +5505,21 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 	if (!bmap)
 		goto error;
 
-	tightened = 0;
 	for (i = 0; i < bmap->n_ineq; ++i) {
-		isl_seq_cpy(v->el, bmap->ineq[i], 1 + total);
-		v = isl_vec_mat_product(v, isl_mat_copy(T));
-		v = normalize_constraint(v, &tightened);
-		v = isl_vec_mat_product(v, isl_mat_copy(T2));
-		if (!v)
+		isl_seq_cpy(data.v->el, bmap->ineq[i], 1 + data.total);
+		data.v = isl_vec_mat_product(data.v, isl_mat_copy(data.T));
+		data.v = normalize_constraint(data.v, &data.tightened);
+		data.v = isl_vec_mat_product(data.v, isl_mat_copy(data.T2));
+		if (!data.v)
 			goto error;
-		isl_seq_cpy(bmap->ineq[i], v->el, 1 + total);
+		isl_seq_cpy(bmap->ineq[i], data.v->el, 1 + data.total);
 	}
 
-	isl_mat_free(T);
-	isl_mat_free(T2);
-	isl_vec_free(v);
+	isl_reduce_coefficients_data_clear(&data);
 
 	ISL_F_SET(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 
-	if (tightened) {
+	if (data.tightened) {
 		int progress = 0;
 
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
@@ -5483,9 +5532,7 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 
 	return bmap;
 error:
-	isl_mat_free(T);
-	isl_mat_free(T2);
-	isl_vec_free(v);
+	isl_reduce_coefficients_data_clear(&data);
 	return isl_basic_map_free(bmap);
 }
 
