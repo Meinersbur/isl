@@ -1329,8 +1329,6 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 			ci.index[h] = &bmap->ineq[k];
 			continue;
 		}
-		if (progress)
-			*progress = 1;
 		l = ci.index[h] - &bmap->ineq[0];
 		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
 			swap_inequality(bmap, k, l);
