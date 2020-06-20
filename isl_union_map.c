@@ -2550,28 +2550,16 @@ isl_bool isl_union_map_is_subset(__isl_keep isl_union_map *umap1,
 {
 	struct isl_union_map_is_subset_data data = { NULL, isl_bool_true };
 
-	umap1 = isl_union_map_copy(umap1);
-	umap2 = isl_union_map_copy(umap2);
-	umap1 = isl_union_map_align_params(umap1, isl_union_map_get_space(umap2));
-	umap2 = isl_union_map_align_params(umap2, isl_union_map_get_space(umap1));
-
 	if (!umap1 || !umap2)
-		goto error;
+		return isl_bool_error;
 
 	data.umap2 = umap2;
 	if (isl_hash_table_foreach(umap1->dim->ctx, &umap1->table,
 				   &is_subset_entry, &data) < 0 &&
 	    data.is_subset)
-		goto error;
-
-	isl_union_map_free(umap1);
-	isl_union_map_free(umap2);
+		return isl_bool_error;
 
 	return data.is_subset;
-error:
-	isl_union_map_free(umap1);
-	isl_union_map_free(umap2);
-	return isl_bool_error;
 }
 
 isl_bool isl_union_set_is_subset(__isl_keep isl_union_set *uset1,
