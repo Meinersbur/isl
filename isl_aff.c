@@ -1534,7 +1534,7 @@ static __isl_give isl_aff *sort_divs(__isl_take isl_aff *aff)
 
 /* Normalize the representation of "aff".
  *
- * This function should only be called of "new" isl_affs, i.e.,
+ * This function should only be called on "new" isl_affs, i.e.,
  * with only a single reference.  We therefore do not need to
  * worry about affecting other instances.
  */
