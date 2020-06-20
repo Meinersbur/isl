@@ -744,9 +744,6 @@ __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 {
 	struct isl_hash_table_entry *entry;
 
-	space = isl_space_drop_all_params(space);
-	space = isl_space_align_params(space, isl_union_map_get_space(umap));
-
 	entry = isl_union_map_find_entry(umap, space, 0);
 	if (!entry)
 		goto error;
