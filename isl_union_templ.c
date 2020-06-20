@@ -737,14 +737,14 @@ S(UNION,match_domain_data) {
 };
 
 /* Find the set in data->uset that lives in the same space as the domain
- * of "part", apply data->fn to *entry and this set (if any), and add
- * the result to data->res.
+ * of "part" (ignoring parameters), apply data->fn to *entry and this set
+ * (if any), and add the result to data->res.
  */
 static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 {
 	S(UNION,match_domain_data) *data = user;
 	struct isl_hash_table_entry *entry2;
-	isl_space *space, *uset_space;
+	isl_space *space;
 
 	if (data->control->filter) {
 		isl_bool pass = data->control->filter(part);
@@ -754,11 +754,9 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 		}
 	}
 
-	uset_space = isl_union_set_peek_space(data->uset);
 	space = FN(PART,get_domain_space)(part);
 	if (data->control->match_space)
 		space = data->control->match_space(space);
-	space = isl_space_replace_params(space, uset_space);
 	entry2 = isl_union_set_find_entry(data->uset, space, 0);
 	isl_space_free(space);
 	if (!entry2 || entry2 == isl_hash_table_entry_none) {
