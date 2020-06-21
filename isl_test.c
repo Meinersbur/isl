@@ -7997,13 +7997,44 @@ static isl_stat test_bin_union_map(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
-/* Perform basic tests of operations on isl_union_map.
+/* Check that isl_union_set_contains finds space independently
+ * of the parameters.
+ */
+static isl_stat test_union_set_contains(isl_ctx *ctx)
+{
+	const char *str;
+	isl_bool ok;
+	isl_space *space;
+	isl_id *id;
+	isl_union_set *uset;
+
+	str = "[N] -> { A[0:N]; B[*,*] }";
+	uset = isl_union_set_read_from_str(ctx, str);
+	space = isl_space_unit(ctx);
+	id = isl_id_alloc(ctx, "A", NULL);
+	space = isl_space_add_named_tuple_id_ui(space, id, 1);
+	ok = isl_union_set_contains(uset, space);
+	isl_space_free(space);
+	isl_union_set_free(uset);
+
+	if (ok < 0)
+		return isl_stat_error;
+	if (!ok)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected result", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Perform basic tests of operations on isl_union_map or isl_union_set.
  */
 static int test_union_map(isl_ctx *ctx)
 {
 	if (test_un_union_map(ctx) < 0)
 		return -1;
 	if (test_bin_union_map(ctx) < 0)
+		return -1;
+	if (test_union_set_contains(ctx) < 0)
 		return -1;
 	return 0;
 }

@@ -729,7 +729,7 @@ __isl_give isl_set *isl_union_set_extract_set(__isl_keep isl_union_set *uset,
 	return set_from_map(isl_union_map_extract_map(uset, space));
 }
 
-/* Check if umap contains a map in the given space.
+/* Check if umap contains a map in the given space (ignoring parameters).
  */
 isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space)
@@ -737,12 +737,15 @@ isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	uint32_t hash;
 	struct isl_hash_table_entry *entry;
 
-	if (!umap || !space)
+	space = isl_space_drop_all_params(isl_space_copy(space));
+	space = isl_space_align_params(space, isl_union_map_get_space(umap));
+	if (!space)
 		return isl_bool_error;
 
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
 				    &has_space, space, 0);
+	isl_space_free(space);
 	if (!entry)
 		return isl_bool_error;
 	return isl_bool_ok(entry != isl_hash_table_entry_none);
