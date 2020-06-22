@@ -1401,6 +1401,7 @@ __isl_give isl_basic_set *isl_basic_set_preimage(
 	ISL_F_CLR(bset, ISL_BASIC_SET_SORTED);
 	ISL_F_CLR(bset, ISL_BASIC_SET_NORMALIZED_DIVS);
 	ISL_F_CLR(bset, ISL_BASIC_SET_ALL_EQUALITIES);
+	ISL_F_CLR(bset, ISL_BASIC_SET_REDUCED_COEFFICIENTS);
 
 	bset = isl_basic_set_simplify(bset);
 	bset = isl_basic_set_finalize(bset);

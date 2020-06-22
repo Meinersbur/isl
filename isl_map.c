@@ -1752,6 +1752,7 @@ int isl_basic_map_alloc_inequality(__isl_keep isl_basic_map *bmap)
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_ALL_EQUALITIES);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	isl_seq_clr(bmap->ineq[bmap->n_ineq] + 1 + total,
 		      bmap->extra - bmap->n_div);
 	return bmap->n_ineq++;
@@ -2057,10 +2058,8 @@ __isl_give isl_basic_map *isl_basic_map_cow(__isl_take isl_basic_map *bmap)
 		bmap->ref--;
 		bmap = isl_basic_map_dup(bmap);
 	}
-	if (bmap) {
+	if (bmap)
 		ISL_F_CLR(bmap, ISL_BASIC_SET_FINAL);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
-	}
 	return bmap;
 }
 
@@ -2423,6 +2422,7 @@ __isl_give isl_basic_map *isl_basic_map_drop_core(
 
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	return bmap;
 }
 
@@ -14671,6 +14671,7 @@ __isl_give isl_basic_map *isl_basic_map_transform_dims(
 
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 
 	isl_mat_free(trans);
 	return bmap;

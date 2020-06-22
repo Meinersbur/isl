@@ -332,6 +332,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		isl_seq_normalize(bmap->ctx, bmap->ineq[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	}
 
 	for (k = 0; k < bmap->n_div; ++k) {
@@ -1539,8 +1540,6 @@ __isl_give isl_basic_map *isl_basic_map_simplify(__isl_take isl_basic_map *bmap)
 		bmap = normalize_divs(bmap, &progress);
 		bmap = isl_basic_map_remove_duplicate_constraints(bmap,
 								&progress, 1);
-		if (bmap && progress)
-			ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	}
 	return bmap;
 }
