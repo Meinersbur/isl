@@ -72,9 +72,10 @@ if test "x$found_header" != "xyes"; then
 fi
 CC="$SAVE_CC"
 
+AC_LANG_PUSH(C++)
+
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CLANG_CXXFLAGS $CPPFLAGS"
-AC_LANG_PUSH(C++)
 AC_CHECK_HEADER([clang/Basic/SourceLocation.h], [],
 	[AC_ERROR([clang header file not found])])
 AC_EGREP_HEADER([getDefaultTargetTriple], [llvm/Support/Host.h], [],
@@ -216,7 +217,6 @@ AC_TRY_COMPILE([
 AC_CHECK_HEADER([llvm/Option/Arg.h],
 	[AC_DEFINE([HAVE_LLVM_OPTION_ARG_H], [],
 		   [Define if llvm/Option/Arg.h exists])])
-AC_LANG_POP
 CPPFLAGS="$SAVE_CPPFLAGS"
 
 SAVE_LDFLAGS="$LDFLAGS"
@@ -237,4 +237,6 @@ else
 fi
 
 LDFLAGS="$SAVE_LDFLAGS"
+
+AC_LANG_POP
 ])
