@@ -159,16 +159,16 @@ error:
 	return NULL;
 }
 
-/* Is the space of "entry" equal to "space"?
+/* Is the space of "entry" equal to "space", ignoring parameters?
  */
-static isl_bool FN(UNION,has_space)(const void *entry, const void *val)
+static isl_bool FN(UNION,has_space_tuples)(const void *entry, const void *val)
 {
 	PART *part = (PART *) entry;
 	isl_space *space = (isl_space *) val;
 	isl_space *part_space;
 
 	part_space = FN(PART,peek_space)(part);
-	return isl_space_is_equal(part_space, space);
+	return isl_space_has_equal_tuples(part_space, space);
 }
 
 /* Return a group equal to "group", but with a single reference.
@@ -224,15 +224,15 @@ isl_stat FN(FN(UNION,foreach),BASE)(__isl_keep UNION *u,
 }
 
 /* Is the domain space of the group of expressions at "entry"
- * equal to that of "space"?
+ * equal to that of "space", ignoring parameters?
  */
-static isl_bool FN(UNION,group_has_same_domain_space)(const void *entry,
+static isl_bool FN(UNION,group_has_same_domain_space_tuples)(const void *entry,
 	const void *val)
 {
 	S(UNION,group) *group = (S(UNION,group) *) entry;
 	isl_space *space = (isl_space *) val;
 
-	return isl_space_is_domain_internal(group->domain_space, space);
+	return isl_space_has_domain_tuples(group->domain_space, space);
 }
 
 /* Return the entry, if any, in "u" that lives in "space".
@@ -259,7 +259,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	ctx = FN(UNION,get_ctx)(u);
 	hash = isl_space_get_tuple_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			&FN(UNION,group_has_same_domain_space), space, reserve);
+		&FN(UNION,group_has_same_domain_space_tuples), space, reserve);
 	if (!group_entry || group_entry == isl_hash_table_entry_none)
 		return group_entry;
 	if (reserve && !group_entry->data) {
@@ -275,7 +275,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 		return NULL;
 	hash = isl_space_get_tuple_hash(space);
 	return isl_hash_table_find(ctx, &group->part_table, hash,
-				&FN(UNION,has_space), space, reserve);
+				&FN(UNION,has_space_tuples), space, reserve);
 }
 
 /* Remove "part_entry" from the hash table of "u".
@@ -302,7 +302,7 @@ static __isl_give UNION *FN(UNION,remove_part_entry)(__isl_take UNION *u,
 	space = FN(PART,peek_space)(part);
 	hash = isl_space_get_tuple_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_same_domain_space), space, 0);
+		    &FN(UNION,group_has_same_domain_space_tuples), space, 0);
 	if (!group_entry)
 		return FN(UNION,free)(u);
 	if (group_entry == isl_hash_table_entry_none)
@@ -388,7 +388,7 @@ static isl_stat FN(UNION,check_disjoint_domain_other)(__isl_keep UNION *u,
 	space = FN(PART,peek_space)(part);
 	hash = isl_space_get_tuple_domain_hash(space);
 	group_entry = isl_hash_table_find(ctx, &u->table, hash,
-			    &FN(UNION,group_has_same_domain_space), space, 0);
+		    &FN(UNION,group_has_same_domain_space_tuples), space, 0);
 	if (!group_entry)
 		return isl_stat_error;
 	if (group_entry == isl_hash_table_entry_none)
