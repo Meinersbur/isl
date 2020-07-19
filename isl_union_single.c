@@ -64,9 +64,10 @@ isl_stat FN(FN(UNION,foreach),BASE)(__isl_keep UNION *u,
 				      &FN(UNION,call_on_copy), &data);
 }
 
-/* Is the domain space of "entry" equal to the domain of "space"?
+/* Is the domain space of "entry" equal to the domain of "space",
+ * ignoring parameters?
  */
-static isl_bool FN(UNION,has_same_domain_space)(const void *entry,
+static isl_bool FN(UNION,has_same_domain_space_tuples)(const void *entry,
 	const void *val)
 {
 	PART *part = (PART *)entry;
@@ -103,7 +104,7 @@ static struct isl_hash_table_entry *FN(UNION,find_part_entry)(
 	ctx = FN(UNION,get_ctx)(u);
 	hash = isl_space_get_tuple_domain_hash(space);
 	entry = isl_hash_table_find(ctx, &u->table, hash,
-			&FN(UNION,has_same_domain_space), space, reserve);
+		&FN(UNION,has_same_domain_space_tuples), space, reserve);
 	if (!entry || entry == isl_hash_table_entry_none)
 		return entry;
 	if (reserve && !entry->data)
