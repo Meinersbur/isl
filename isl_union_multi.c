@@ -164,8 +164,10 @@ static isl_bool FN(UNION,has_space)(const void *entry, const void *val)
 {
 	PART *part = (PART *) entry;
 	isl_space *space = (isl_space *) val;
+	isl_space *part_space;
 
-	return isl_space_is_equal(part->dim, space);
+	part_space = FN(PART,peek_space)(part);
+	return isl_space_is_equal(part_space, space);
 }
 
 /* Return a group equal to "group", but with a single reference.
