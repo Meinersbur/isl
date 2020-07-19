@@ -143,8 +143,6 @@ __isl_give PART *FN(FN(UNION,extract),BASE)(__isl_keep UNION *u,
 {
 	struct isl_hash_table_entry *entry;
 
-	space = isl_space_replace_params(space, FN(UNION,peek_space)(u));
-
 	entry = FN(UNION,find_part_entry)(u, space, 0);
 	if (!entry)
 		goto error;
