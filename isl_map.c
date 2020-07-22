@@ -14362,20 +14362,21 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
  * "d" is the position of x among the output variables.
  * "total" is the total number of variables.
  */
-static int is_potential_div_constraint(isl_int *c, int v_out, int d, int total)
+static isl_bool is_potential_div_constraint(isl_int *c, int v_out, int d,
+	int total)
 {
 	if (isl_int_is_zero(c[1 + v_out + d]))
-		return 0;
+		return isl_bool_false;
 	if (isl_int_is_one(c[1 + v_out + d]))
-		return 0;
+		return isl_bool_false;
 	if (isl_int_is_negone(c[1 + v_out + d]))
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_first_non_zero(c + 1 + v_out, d) != -1)
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_first_non_zero(c + 1 + v_out + d + 1,
 				    total - (v_out + d + 1)) != -1)
-		return 0;
-	return 1;
+		return isl_bool_false;
+	return isl_bool_true;
 }
 
 /* Look for a pair of constraints
@@ -14419,8 +14420,13 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 
 	isl_int_init(sum);
 	for (i = 0; i < n_ineq; ++i) {
-		if (!is_potential_div_constraint(bmap->ineq[i],
-						v_out, pos, total))
+		isl_bool potential;
+
+		potential = is_potential_div_constraint(bmap->ineq[i],
+						v_out, pos, total);
+		if (potential < 0)
+			goto error;
+		if (!potential)
 			continue;
 		for (j = i + 1; j < n_ineq; ++j) {
 			if (!isl_seq_is_neg(bmap->ineq[i] + 1,
@@ -14441,6 +14447,9 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 		return i;
 	else
 		return j;
+error:
+	isl_int_clear(sum);
+	return isl_size_error;
 }
 
 /* Return a copy of the equality constraints of "bset" as a matrix.
