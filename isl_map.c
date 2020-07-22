@@ -14348,7 +14348,7 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
 	return v;
 }
 
-/* Is constraint "c" of the form
+/* Is constraint "c" of "bmap" of the form
  *
  *	e(...) + c1 - m x >= 0
  *
@@ -14356,15 +14356,23 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
  *
  *	-e(...) + c2 + m x >= 0
  *
- * where m > 1 and e only depends on parameters and input dimensions?
+ * where m > 1 and e does not involve any other output variables?
  *
  * "v_out" is the offset to the output variables.
  * "d" is the position of x among the output variables.
+ * "v_div" is the offset to the local variables.
  * "total" is the total number of variables.
+ *
+ * Since the purpose of this function is to use the constraint
+ * to express the output variable as an integer division,
+ * do not allow the constraint to involve any local variables
+ * that do not have an explicit representation.
  */
-static isl_bool is_potential_div_constraint(isl_int *c, int v_out, int d,
-	int total)
+static isl_bool is_potential_div_constraint(__isl_keep isl_basic_map *bmap,
+	isl_int *c, int v_out, int d, int v_div, int total)
 {
+	int i = 0;
+
 	if (isl_int_is_zero(c[1 + v_out + d]))
 		return isl_bool_false;
 	if (isl_int_is_one(c[1 + v_out + d]))
@@ -14374,8 +14382,20 @@ static isl_bool is_potential_div_constraint(isl_int *c, int v_out, int d,
 	if (isl_seq_first_non_zero(c + 1 + v_out, d) != -1)
 		return isl_bool_false;
 	if (isl_seq_first_non_zero(c + 1 + v_out + d + 1,
-				    total - (v_out + d + 1)) != -1)
+				    v_div - (v_out + d + 1)) != -1)
 		return isl_bool_false;
+	for (i = 0; v_div + i < total; ++i) {
+		isl_bool known, involves;
+
+		if (isl_int_is_zero(c[1 + v_div + i]))
+			continue;
+		known = isl_basic_map_div_is_known(bmap, i);
+		if (known < 0 || !known)
+			return known;
+		involves = div_involves_vars(bmap, i, v_out, v_div - v_out);
+		if (involves < 0 || involves)
+			return isl_bool_not(involves);
+	}
 	return isl_bool_true;
 }
 
@@ -14388,8 +14408,8 @@ static isl_bool is_potential_div_constraint(isl_int *c, int v_out, int d,
  *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
  *
  * that express that the output dimension x at position "pos"
- * is some integer division of an expression in terms of the parameters and
- * input dimension.
+ * is some integer division of an expression in terms of the parameters,
+ * input dimensions and integer divisions.
  * If such a pair can be found, then return the index
  * of the upper bound constraint, m x <= e(...) + c1.
  * Otherwise, return an index beyond the number of constraints.
@@ -14408,22 +14428,23 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 {
 	int i, j;
 	isl_size n_ineq;
-	isl_size v_out;
+	isl_size v_out, v_div;
 	isl_size total;
 	isl_int sum;
 
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	n_ineq = isl_basic_map_n_inequality(bmap);
-	if (total < 0 || v_out < 0 || n_ineq < 0)
+	if (total < 0 || v_out < 0 || v_div < 0 || n_ineq < 0)
 		return isl_size_error;
 
 	isl_int_init(sum);
 	for (i = 0; i < n_ineq; ++i) {
 		isl_bool potential;
 
-		potential = is_potential_div_constraint(bmap->ineq[i],
-						v_out, pos, total);
+		potential = is_potential_div_constraint(bmap, bmap->ineq[i],
+						v_out, pos, v_div, total);
 		if (potential < 0)
 			goto error;
 		if (!potential)

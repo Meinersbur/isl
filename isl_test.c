@@ -168,6 +168,7 @@ static const char *reparse_pw_multi_aff_tests[] = {
 	"{ [x, x + 1] -> [x % 4] : x mod 3 = 1 }",
 	"{ [x, x mod 2] -> [x % 4] }",
 	"{ [a] -> [a//2] : exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }",
+	"{ [a, b] -> [(2*floor((a)/8) + floor((b)/6))] }",
 };
 
 #undef BASE

@@ -220,7 +220,8 @@ static void test_space(isl::ctx ctx)
  *
  * In particular, check that a map with an output dimension
  * that is equal to some integer division over a domain involving
- * a local variable without a known integer division expression
+ * a local variable without a known integer division expression or
+ * to some linear combination of integer divisions
  * can be converted to a function expressed in the same way.
  */
 static void test_conversion(isl::ctx ctx)
@@ -240,6 +241,8 @@ static void test_conversion(isl::ctx ctx)
 	    "exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }",
 	  "{ [a] -> [a//2] : "
 	    "exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }" },
+	{ "{ [a, b] -> [(2*floor((a)/8) + floor((b)/6))] }",
+	  "{ [a, b] -> [(2*floor((a)/8) + floor((b)/6))] }" },
 	});
 }
 
