@@ -5122,7 +5122,7 @@ error:
  *
  *	-e(...) + c2 + m x >= 0
  *
- * where m > 1 and e only depends on parameters and input dimemnsions?
+ * where m > 1 and e only depends on parameters and input dimensions?
  *
  * "offset" is the offset of the output dimensions
  * "pos" is the position of output dimension x.
@@ -5157,7 +5157,7 @@ static int is_potential_div_constraint(isl_int *c, int offset, int d, int total)
  *
  *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
  *
- * where m > 1 and e only depends on parameters and input dimemnsions,
+ * where m > 1 and e only depends on parameters and input dimensions,
  * and such that
  *
  *	c1 + c2 < m			i.e.,		-c2 >= c1 - (m - 1)
