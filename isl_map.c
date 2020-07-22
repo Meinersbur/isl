@@ -14309,14 +14309,17 @@ __isl_give isl_set *isl_set_preimage_multi_pw_aff(__isl_take isl_set *set,
 }
 
 /* Given that inequality "ineq" of "bmap" expresses an upper bound
- * on the output dimension "pos" in terms of the parameters and
- * the input dimensions, extract this upper bound.
+ * on the output dimension "pos" in terms of the parameters,
+ * the input dimensions and possibly some integer divisions,
+ * but not any other output dimensions, extract this upper bound
+ * as a function of all dimensions (with zero coefficients
+ * for the output dimensions).
  *
  * That is, the inequality is of the form
  *
  *	e(...) + c - m x >= 0
  *
- * where e only depends on parameters and input dimensions.
+ * where e does not depend on any other output dimensions.
  * Return (e(...) + c) / m, with the denominator m in the first position.
  */
 __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
@@ -14324,17 +14327,19 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
 {
 	isl_ctx *ctx;
 	isl_vec *v;
-	isl_size v_out;
+	isl_size v_out, total;
 
 	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
-	if (v_out < 0)
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (v_out < 0 || total < 0)
 		return NULL;
 	ctx = isl_basic_map_get_ctx(bmap);
-	v = isl_vec_alloc(ctx, 1 + 1 + v_out);
+	v = isl_vec_alloc(ctx, 1 + 1 + total);
 	if (!v)
 		return NULL;
 	isl_int_neg(v->el[0], bmap->ineq[ineq][1 + v_out + pos]);
-	isl_seq_cpy(v->el + 1, bmap->ineq[ineq], 1 + v_out);
+	isl_seq_cpy(v->el + 1, bmap->ineq[ineq], 1 + total);
+	isl_int_set_si(v->el[1 + 1 + v_out + pos], 0);
 
 	return v;
 }

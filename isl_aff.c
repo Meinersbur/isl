@@ -5203,6 +5203,48 @@ error:
 	return NULL;
 }
 
+/* Construct an isl_aff from the given domain local space "ls" and
+ * coefficients "v", where the local space may involve
+ * local variables without a known expression, as long as these
+ * do not have a non-zero coefficient in "v".
+ * These need to be pruned away first since an isl_aff cannot
+ * reference any local variables without a known expression.
+ * For simplicity, remove all local variables that have a zero coefficient and
+ * that are not used in other local variables with a non-zero coefficient.
+ */
+static __isl_give isl_aff *isl_aff_alloc_vec_prune(
+	__isl_take isl_local_space *ls, __isl_take isl_vec *v)
+{
+	int i;
+	isl_size n_div, v_div;
+
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	v_div = isl_local_space_var_offset(ls, isl_dim_div);
+	if (n_div < 0 || v_div < 0 || !v)
+		goto error;
+	for (i = n_div - 1; i >= 0; --i) {
+		isl_bool involves;
+
+		if (!isl_int_is_zero(v->el[1 + 1 + v_div + i]))
+			continue;
+		involves = isl_local_space_involves_dims(ls, isl_dim_div, i, 1);
+		if (involves < 0)
+			goto error;
+		if (involves)
+			continue;
+		ls = isl_local_space_drop_dims(ls, isl_dim_div, i, 1);
+		v = isl_vec_drop_els(v, 1 + 1 + v_div + i, 1);
+		if (!v)
+			goto error;
+	}
+
+	return isl_aff_alloc_vec(ls, v);
+error:
+	isl_local_space_free(ls);
+	isl_vec_free(v);
+	return NULL;
+}
+
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
  * taking into account that the output dimension at position "d"
  * can be represented as
@@ -5212,6 +5254,8 @@ error:
  * given that constraint "i" is of the form
  *
  *	e(...) + c1 - m x >= 0
+ *
+ * with e(...) an expression that does not involve any other output dimensions.
  *
  *
  * Let "map" be of the form
@@ -5229,6 +5273,11 @@ error:
  * and equate dimension "d" to x.
  * We then compute a isl_pw_multi_aff representation of the resulting map
  * and plug in the mapping above.
+ *
+ * The constraint "i" is guaranteed by the caller not to involve
+ * any local variables without a known expression, but such local variables
+ * may appear in other constraints.  They therefore need to be removed
+ * during the construction of the affine expression.
  */
 static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
@@ -5252,16 +5301,20 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	if (n_in < 0)
 		goto error;
 
+	ls = isl_basic_map_get_local_space(hull);
+	if (!is_set)
+		ls = isl_local_space_wrap(ls);
 	v = isl_basic_map_inequality_extract_output_upper_bound(hull, i, d);
 	isl_basic_map_free(hull);
 
-	ls = isl_local_space_from_space(isl_space_copy(space));
-	aff = isl_aff_alloc_vec_validated(ls, v);
+	aff = isl_aff_alloc_vec_prune(ls, v);
 	aff = isl_aff_floor(aff);
 	if (is_set) {
+		aff = isl_aff_project_domain_on_params(aff);
 		isl_space_free(space);
 		ma = isl_multi_aff_from_aff(aff);
 	} else {
+		aff = isl_aff_domain_factor_domain(aff);
 		ma = isl_multi_aff_identity(isl_space_map_from_set(space));
 		ma = isl_multi_aff_range_product(ma,
 						isl_multi_aff_from_aff(aff));
