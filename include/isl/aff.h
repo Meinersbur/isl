@@ -75,6 +75,7 @@ __isl_give isl_aff *isl_aff_add_coefficient_si(__isl_take isl_aff *aff,
 __isl_give isl_aff *isl_aff_add_coefficient_val(__isl_take isl_aff *aff,
 	enum isl_dim_type type, int pos, __isl_take isl_val *v);
 
+__isl_export
 isl_bool isl_aff_is_cst(__isl_keep isl_aff *aff);
 
 __isl_give isl_aff *isl_aff_set_tuple_id(__isl_take isl_aff *aff,
