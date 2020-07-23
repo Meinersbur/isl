@@ -51,6 +51,7 @@ __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff);
 
 const char *isl_aff_get_dim_name(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned pos);
+__isl_export
 __isl_give isl_val *isl_aff_get_constant_val(__isl_keep isl_aff *aff);
 __isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, int pos);
