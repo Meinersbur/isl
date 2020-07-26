@@ -8411,7 +8411,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_pw_aff(
 
 		pa = isl_multi_pw_aff_get_pw_aff(mpa, i);
 		upa = isl_union_pw_aff_from_pw_aff(pa);
-		mupa = isl_multi_union_pw_aff_set_union_pw_aff(mupa, i, upa);
+		mupa = isl_multi_union_pw_aff_restore_check_space(mupa, i, upa);
 	}
 
 	isl_multi_pw_aff_free(mpa);
