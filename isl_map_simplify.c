@@ -4838,7 +4838,7 @@ static __isl_give isl_basic_map *fix_cst_lower(__isl_take isl_basic_map *bmap,
 /* Do any of the integer divisions of "bmap" involve integer division "div"?
  *
  * The integer division "div" could only ever appear in any later
- * integer division.
+ * integer division (with an explicit representation).
  */
 static isl_bool any_div_involves_div(__isl_keep isl_basic_map *bmap, int div)
 {
@@ -4850,9 +4850,17 @@ static isl_bool any_div_involves_div(__isl_keep isl_basic_map *bmap, int div)
 	if (v_div < 0 || n_div < 0)
 		return isl_bool_error;
 
-	for (i = div + 1; i < n_div; ++i)
+	for (i = div + 1; i < n_div; ++i) {
+		isl_bool unknown;
+
+		unknown = isl_basic_map_div_is_marked_unknown(bmap, i);
+		if (unknown < 0)
+			return isl_bool_error;
+		if (unknown)
+			continue;
 		if (!isl_int_is_zero(bmap->div[i][1 + 1 + v_div + div]))
 			return isl_bool_true;
+	}
 
 	return isl_bool_false;
 }
