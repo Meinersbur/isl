@@ -9471,7 +9471,7 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 	if (data->before >= 3)
 		isl_die(ctx, isl_error_unknown,
 			"unexpected number of for nodes", return NULL);
-	if (data->depth >= 2)
+	if (data->depth < 0 || data->depth >= 2)
 		isl_die(ctx, isl_error_unknown,
 			"unexpected depth", return NULL);
 
