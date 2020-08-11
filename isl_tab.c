@@ -292,7 +292,7 @@ struct isl_tab *isl_tab_dup(struct isl_tab *tab)
 	dup->need_undo = 0;
 	dup->in_undo = 0;
 	dup->M = tab->M;
-	tab->cone = tab->cone;
+	dup->cone = tab->cone;
 	dup->bottom.type = isl_tab_undo_bottom;
 	dup->bottom.next = NULL;
 	dup->top = &dup->bottom;
