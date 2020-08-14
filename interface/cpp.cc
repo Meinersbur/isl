@@ -651,10 +651,8 @@ void cpp_generator::decl_printer::print_persistent_callbacks()
  */
 void cpp_generator::class_printer::print_methods()
 {
-	map<string, function_set >::const_iterator it;
-
-	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		print_method_group(it->second);
+	for (const auto &kvp : clazz.methods)
+		print_method_group(kvp.second);
 }
 
 /* Print a declaration for a method called "method_name" derived
