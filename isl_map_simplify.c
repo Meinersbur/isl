@@ -4927,6 +4927,36 @@ static __isl_give isl_basic_map *fix_cst_lower(__isl_take isl_basic_map *bmap,
 	return isl_basic_map_drop_redundant_divs(bmap);
 }
 
+/* Do any of the integer divisions of "bmap" involve integer division "div"?
+ *
+ * The integer division "div" could only ever appear in any later
+ * integer division (with an explicit representation).
+ */
+static isl_bool any_div_involves_div(__isl_keep isl_basic_map *bmap, int div)
+{
+	int i;
+	isl_size v_div, n_div;
+
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (v_div < 0 || n_div < 0)
+		return isl_bool_error;
+
+	for (i = div + 1; i < n_div; ++i) {
+		isl_bool unknown;
+
+		unknown = isl_basic_map_div_is_marked_unknown(bmap, i);
+		if (unknown < 0)
+			return isl_bool_error;
+		if (unknown)
+			continue;
+		if (!isl_int_is_zero(bmap->div[i][1 + 1 + v_div + div]))
+			return isl_bool_true;
+	}
+
+	return isl_bool_false;
+}
+
 /* Remove divs that are not strictly needed based on the inequality
  * constraints.
  * In particular, if a div only occurs positively (or negatively)
@@ -4998,13 +5028,13 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		int last_pos, last_neg;
 		int redundant;
 		int defined;
-		isl_bool opp, set_div;
+		isl_bool involves, opp, set_div;
 
 		defined = !isl_int_is_zero(bmap->div[i][0]);
-		for (j = i; j < bmap->n_div; ++j)
-			if (!isl_int_is_zero(bmap->div[j][1 + 1 + off + i]))
-				break;
-		if (j < bmap->n_div)
+		involves = any_div_involves_div(bmap, i);
+		if (involves < 0)
+			goto error;
+		if (involves)
 			continue;
 		for (j = 0; j < bmap->n_eq; ++j)
 			if (!isl_int_is_zero(bmap->eq[j][1 + off + i]))
