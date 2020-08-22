@@ -1787,17 +1787,6 @@ int isl_tab_insert_var(struct isl_tab *tab, int r)
 	return r;
 }
 
-/* Add a variable to the tableau and allocate a column for it.
- * Return the index into the variable array "var".
- */
-int isl_tab_allocate_var(struct isl_tab *tab)
-{
-	if (!tab)
-		return -1;
-
-	return isl_tab_insert_var(tab, tab->n_var);
-}
-
 /* Add a row to the tableau.  The row is given as an affine combination
  * of the original variables and needs to be expressed in terms of the
  * column variables.
