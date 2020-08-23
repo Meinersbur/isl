@@ -1683,33 +1683,6 @@ static int test_convex_hull(isl_ctx *ctx)
 	return 0;
 }
 
-void test_gist_case(struct isl_ctx *ctx, const char *name)
-{
-	char *filename;
-	FILE *input;
-	struct isl_basic_set *bset1, *bset2;
-
-	filename = get_filename(ctx, name, "polylib");
-	assert(filename);
-	input = fopen(filename, "r");
-	assert(input);
-
-	bset1 = isl_basic_set_read_from_file(ctx, input);
-	bset2 = isl_basic_set_read_from_file(ctx, input);
-
-	bset1 = isl_basic_set_gist(bset1, bset2);
-
-	bset2 = isl_basic_set_read_from_file(ctx, input);
-
-	assert(isl_basic_set_is_equal(bset1, bset2) == 1);
-
-	isl_basic_set_free(bset1);
-	isl_basic_set_free(bset2);
-	free(filename);
-
-	fclose(input);
-}
-
 /* Check that computing the gist of "map" with respect to "context"
  * does not make any copy of "map" get marked empty.
  * Earlier versions of isl would end up doing that.
@@ -1858,6 +1831,9 @@ struct {
 	const char *context;
 	const char *gist;
 } gist_tests[] = {
+	{ "{ [1, -1, 3] }",
+	  "{ [1, b, 2 - b] : -1 <= b <= 2 }",
+	  "{ [a, -1, c] }" },
 	{ "{ [a, b, c] : a <= 15 and a >= 1 }",
 	  "{ [a, b, c] : exists (e0 = floor((-1 + a)/16): a >= 1 and "
 			"c <= 30 and 32e0 >= -62 + 2a + 2b - c and b >= 0) }",
@@ -1981,8 +1957,6 @@ static int test_gist(struct isl_ctx *ctx)
 
 	if (test_gist_fail(ctx) < 0)
 		return -1;
-
-	test_gist_case(ctx, "gist1");
 
 	str = "[p0, p2, p3, p5, p6, p10] -> { [] : "
 	    "exists (e0 = [(15 + p0 + 15p6 + 15p10)/16], e1 = [(p5)/8], "
