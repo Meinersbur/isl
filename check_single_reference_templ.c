@@ -17,4 +17,3 @@ isl_stat FN(TYPE,check_single_reference)(__isl_keep TYPE *obj)
 			return isl_stat_error);
 	return isl_stat_ok;
 }
-
