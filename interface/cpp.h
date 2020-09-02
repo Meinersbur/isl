@@ -13,6 +13,7 @@ using namespace clang;
  * "name" is the name of the method, which may be different
  * from the default name derived from "fd".
  * "kind" is the type of the method.
+ * "callback" stores the callback argument, if any, or NULL.
  */
 struct Method {
 	enum Kind {
@@ -34,6 +35,7 @@ struct Method {
 	FunctionDecl *const fd;
 	const std::string name;
 	const enum Kind kind;
+	ParmVarDecl *const callback;
 };
 
 /* A specialized generated C++ method for setting an enum.

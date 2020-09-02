@@ -1017,11 +1017,6 @@ void cpp_generator::impl_printer::print_public_constructors()
  * do not return a value, but instead update the pointer stored inside the
  * newly created object.
  *
- * If the method has a callback argument, we reduce the number of parameters
- * that are exposed by one to hide the user pointer from the interface. On
- * the C++ side no user pointer is needed, as arguments can be forwarded
- * as part of the std::function argument which specifies the callback function.
- *
  * Unless checked C++ bindings are being generated,
  * the inputs of the method are first checked for being valid isl objects and
  * a copy of the associated isl::ctx is saved (if needed).
@@ -1042,13 +1037,8 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 	print_save_ctx(method);
 	print_on_error_continue();
 
-	for (int i = 0; i < num_params; ++i) {
-		ParmVarDecl *param = method.fd->getParamDecl(i);
-		if (is_callback(param->getType())) {
-			num_params -= 1;
-			print_callback_local(param);
-		}
-	}
+	if (method.callback)
+		print_callback_local(method.callback);
 
 	osprintf(os, "  auto res = %s(", methodname.c_str());
 
@@ -1551,7 +1541,6 @@ static void print_persistent_callback_exceptional_execution_check(ostream &os,
 void cpp_generator::impl_printer::print_exceptional_execution_check(
 	const Method &method)
 {
-	int n;
 	bool check_null, check_neg;
 	QualType return_type = method.fd->getReturnType();
 
@@ -1560,14 +1549,10 @@ void cpp_generator::impl_printer::print_exceptional_execution_check(
 
 	print_persistent_callback_exceptional_execution_check(os, method);
 
-	n = method.num_params();
-	for (int i = 0; i < n; ++i) {
-		ParmVarDecl *param = method.fd->getParamDecl(i);
+	if (method.callback) {
 		const char *name;
 
-		if (!is_callback(param->getOriginalType()))
-			continue;
-		name = param->getName().str().c_str();
+		name = method.callback->getName().str().c_str();
 		osprintf(os, "  if (%s_data.eptr)\n", name);
 		osprintf(os, "    std::rethrow_exception(%s_data.eptr);\n",
 			name);
@@ -1811,9 +1796,6 @@ void cpp_generator::class_printer::print_method_header(
 		ParmVarDecl *param = get_param(method.fd, i, convert);
 		QualType type = param->getOriginalType();
 		string cpptype = generator.param2cpp(type);
-
-		if (is_callback(type))
-			num_params--;
 
 		if (keeps(param) || is_string(type) || is_callback(type))
 			osprintf(os, "const %s &%s", cpptype.c_str(),
@@ -2314,6 +2296,22 @@ static Method::Kind get_kind(const isl_class &clazz, FunctionDecl *method)
 		return Method::Kind::member_method;
 }
 
+/* Return the callback argument of "fd", if there is any.
+ * Return NULL otherwise.
+ */
+static ParmVarDecl *find_callback_arg(FunctionDecl *fd)
+{
+	int num_params = fd->getNumParams();
+
+	for (int i = 0; i < num_params; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		if (generator::is_callback(param->getType()))
+			return param;
+	}
+
+	return NULL;
+}
+
 /* Construct a C++ method object from the class to which is belongs,
  * the isl function from which it is derived and the method name.
  *
@@ -2323,7 +2321,8 @@ static Method::Kind get_kind(const isl_class &clazz, FunctionDecl *method)
 Method::Method(const isl_class &clazz, FunctionDecl *fd,
 	const std::string &name) :
 		clazz(clazz), fd(fd), name(rename_method(name)),
-		kind(get_kind(clazz, fd))
+		kind(get_kind(clazz, fd)),
+		callback(find_callback_arg(fd))
 {
 }
 
@@ -2339,10 +2338,20 @@ Method::Method(const isl_class &clazz, FunctionDecl *fd) :
 }
 
 /* Return the number of parameters of the corresponding C function.
+ *
+ * If the method has a callback argument, we reduce the number of parameters
+ * that are exposed by one to hide the user pointer from the interface. On
+ * the C++ side no user pointer is needed, as arguments can be forwarded
+ * as part of the std::function argument which specifies the callback function.
+ *
+ * The user pointer is also removed from the number of parameters
+ * of the C function because the pair of callback and user pointer
+ * is considered as a single argument that is printed as a whole
+ * by Method::print_param_use.
  */
 int Method::c_num_params() const
 {
-	return fd->getNumParams();
+	return fd->getNumParams() - (callback != NULL);
 }
 
 /* Return the number of parameters of the method
