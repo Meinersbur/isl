@@ -1628,7 +1628,7 @@ static void print_persistent_callback_exceptional_execution_check(ostream &os,
 }
 
 /* Print code that checks whether the execution of the core of "method"
- * of class "clazz" was successful.
+ * was successful.
  * "kind" specifies what kind of method "method" is.
  *
  * If checked bindings are being generated,
