@@ -485,7 +485,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	for (i = 0; i < fold2->n; ++i) {
 		for (j = n1 - 1; j >= 0; --j) {
 			isl_qpolynomial *d;
-			int sgn, equal;
+			int sgn;
+			isl_bool equal;
+
 			equal = isl_qpolynomial_plain_is_equal(res->qp[j],
 								fold2->qp[i]);
 			if (equal < 0)
