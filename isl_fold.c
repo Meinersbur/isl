@@ -1104,7 +1104,9 @@ int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
 
 	/* We probably want to sort the qps first... */
 	for (i = 0; i < fold1->n; ++i) {
-		int eq = isl_qpolynomial_plain_is_equal(fold1->qp[i], fold2->qp[i]);
+		isl_bool eq;
+
+		eq = isl_qpolynomial_plain_is_equal(fold1->qp[i], fold2->qp[i]);
 		if (eq < 0 || !eq)
 			return eq;
 	}
