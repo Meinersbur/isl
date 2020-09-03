@@ -8926,7 +8926,7 @@ Lists are defined over several element types, including
 C<isl_val>, C<isl_id>, C<isl_aff>, C<isl_pw_aff>, C<isl_pw_multi_aff>,
 C<isl_union_pw_aff>,
 C<isl_union_pw_multi_aff>,
-C<isl_pw_qpolynomial>, C<isl_pw_qpolynomial_fold>,
+C<isl_qpolynomial>, C<isl_pw_qpolynomial>, C<isl_pw_qpolynomial_fold>,
 C<isl_constraint>,
 C<isl_basic_set>, C<isl_set>, C<isl_basic_map>, C<isl_map>, C<isl_union_set>,
 C<isl_union_map>, C<isl_ast_expr> and C<isl_ast_node>.

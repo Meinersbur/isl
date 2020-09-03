@@ -29,6 +29,11 @@
 #include <isl_config.h>
 
 #undef EL_BASE
+#define EL_BASE qpolynomial
+
+#include <isl_list_templ.c>
+
+#undef EL_BASE
 #define EL_BASE pw_qpolynomial
 
 #include <isl_list_templ.c>

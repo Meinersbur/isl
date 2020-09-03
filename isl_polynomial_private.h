@@ -40,6 +40,11 @@ struct isl_qpolynomial {
 	isl_poly *poly;
 };
 
+#undef EL
+#define EL isl_qpolynomial
+
+#include <isl_list_templ.h>
+
 struct isl_term {
 	int ref;
 
