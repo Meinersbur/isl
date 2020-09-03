@@ -226,6 +226,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	if (!fold)
 		return NULL;
@@ -235,7 +236,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_space_insert_dims(fold->dim, type, first, n);
+
+	set_type = domain_type(type);
+	fold->dim = isl_space_insert_dims(fold->dim, set_type, first, n);
 	if (!fold->dim)
 		goto error;
 
