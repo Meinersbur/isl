@@ -735,12 +735,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_qpolynomial *qp)
 {
+	isl_space *space;
 	isl_qpolynomial_fold *fold;
 
-	if (!qp)
-		return NULL;
-
-	fold = qpolynomial_fold_alloc(type, isl_space_copy(qp->dim), 1);
+	space = isl_qpolynomial_get_domain_space(qp);
+	fold = qpolynomial_fold_alloc(type, space, 1);
 	if (!fold)
 		goto error;
 
