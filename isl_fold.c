@@ -141,7 +141,7 @@ static int isl_qpolynomial_fold_involves_dims(
 		return 0;
 
 	for (i = 0; i < fold->n; ++i) {
-		int involves = isl_qpolynomial_involves_dims(fold->qp[i],
+		isl_bool involves = isl_qpolynomial_involves_dims(fold->qp[i],
 							    type, first, n);
 		if (involves < 0 || involves)
 			return involves;
