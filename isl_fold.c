@@ -1091,16 +1091,17 @@ int isl_qpolynomial_fold_plain_cmp(__isl_keep isl_qpolynomial_fold *fold1,
 	return 0;
 }
 
-int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
+isl_bool isl_qpolynomial_fold_plain_is_equal(
+	__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2)
 {
 	int i;
 
 	if (!fold1 || !fold2)
-		return -1;
+		return isl_bool_error;
 
 	if (fold1->n != fold2->n)
-		return 0;
+		return isl_bool_false;
 
 	/* We probably want to sort the qps first... */
 	for (i = 0; i < fold1->n; ++i) {
@@ -1111,7 +1112,7 @@ int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
 			return eq;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 __isl_give isl_val *isl_qpolynomial_fold_eval(

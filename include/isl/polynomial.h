@@ -315,7 +315,8 @@ __isl_null isl_qpolynomial_fold *isl_qpolynomial_fold_free(
 
 isl_bool isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
 isl_bool isl_qpolynomial_fold_is_nan(__isl_keep isl_qpolynomial_fold *fold);
-int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
+isl_bool isl_qpolynomial_fold_plain_is_equal(
+	__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2);
 
 __isl_give isl_space *isl_qpolynomial_fold_get_domain_space(
