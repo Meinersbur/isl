@@ -163,11 +163,14 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_space_set_dim_name(fold->dim, type, pos, s);
+
+	set_type = domain_type(type);
+	fold->dim = isl_space_set_dim_name(fold->dim, set_type, pos, s);
 	if (!fold->dim)
 		goto error;
 
