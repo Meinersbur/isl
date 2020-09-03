@@ -148,6 +148,16 @@ int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
 	return 0;
 }
 
+/* Given a dimension type for an isl_qpolynomial_fold,
+ * return the corresponding type for the domain.
+ */
+static enum isl_dim_type domain_type(enum isl_dim_type type)
+{
+	if (type == isl_dim_in)
+		return isl_dim_set;
+	return type;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned pos, const char *s)
@@ -172,16 +182,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 error:
 	isl_qpolynomial_fold_free(fold);
 	return NULL;
-}
-
-/* Given a dimension type for an isl_qpolynomial_fold,
- * return the corresponding type for the domain.
- */
-static enum isl_dim_type domain_type(enum isl_dim_type type)
-{
-	if (type == isl_dim_in)
-		return isl_dim_set;
-	return type;
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
