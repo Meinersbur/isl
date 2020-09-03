@@ -129,16 +129,16 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space_and_domain(
 	return isl_qpolynomial_fold_reset_domain_space(fold, domain);
 }
 
-static int isl_qpolynomial_fold_involves_dims(
+static isl_bool isl_qpolynomial_fold_involves_dims(
 	__isl_keep isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 
 	if (!fold)
-		return -1;
+		return isl_bool_error;
 	if (fold->n == 0 || n == 0)
-		return 0;
+		return isl_bool_false;
 
 	for (i = 0; i < fold->n; ++i) {
 		isl_bool involves = isl_qpolynomial_involves_dims(fold->qp[i],
@@ -146,7 +146,7 @@ static int isl_qpolynomial_fold_involves_dims(
 		if (involves < 0 || involves)
 			return involves;
 	}
-	return 0;
+	return isl_bool_false;
 }
 
 /* Given a dimension type for an isl_qpolynomial_fold,
