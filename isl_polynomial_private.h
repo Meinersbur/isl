@@ -92,10 +92,7 @@ struct isl_qpolynomial_fold {
 	enum isl_fold type;
 	isl_space *dim;
 
-	int n;
-
-	size_t size;
-	struct isl_qpolynomial *qp[1];
+	isl_qpolynomial_list *list;
 };
 
 struct isl_pw_qpolynomial_fold_piece {
@@ -206,6 +203,9 @@ enum isl_fold isl_fold_type_negate(enum isl_fold type);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_cow(
 	__isl_take isl_qpolynomial_fold *fold);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_dup(
+	__isl_keep isl_qpolynomial_fold *fold);
+
+__isl_keep isl_qpolynomial_list *isl_qpolynomial_fold_peek_list(
 	__isl_keep isl_qpolynomial_fold *fold);
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_cow(
