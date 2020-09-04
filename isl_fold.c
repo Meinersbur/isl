@@ -540,48 +540,26 @@ static isl_stat isl_qpolynomial_fold_check_equal_space(
  * those elements of one reduction that are already covered by the other
  * reduction on "set".
  *
- * If "fold1" or "fold2" is an empty reduction, then return
- * the other reduction.
- * If "fold1" or "fold2" is a NaN, then return this NaN.
+ * "better" is the sign that the difference qp1 - qp2 needs to have for qp1
+ * to be covered by qp2.
  */
-__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
-	__isl_keep isl_set *set,
-	__isl_take isl_qpolynomial_fold *fold1,
-	__isl_take isl_qpolynomial_fold *fold2)
+static __isl_give isl_qpolynomial_fold *merge_folds(__isl_keep isl_set *set,
+	__isl_keep isl_qpolynomial_fold *fold1,
+	__isl_keep isl_qpolynomial_fold *fold2, int better)
 {
 	int i, j;
 	int n1;
-	struct isl_qpolynomial_fold *res = NULL;
-	int better;
-
-	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
-		goto error;
-	if (isl_qpolynomial_fold_check_equal_space(fold1, fold2) < 0)
-		goto error;
-
-	better = fold1->type == isl_fold_max ? -1 : 1;
-
-	if (isl_qpolynomial_fold_is_empty(fold1) ||
-	    isl_qpolynomial_fold_is_nan(fold2)) {
-		isl_qpolynomial_fold_free(fold1);
-		return fold2;
-	}
-
-	if (isl_qpolynomial_fold_is_empty(fold2) ||
-	    isl_qpolynomial_fold_is_nan(fold1)) {
-		isl_qpolynomial_fold_free(fold2);
-		return fold1;
-	}
+	isl_qpolynomial_fold *res;
 
 	res = qpolynomial_fold_alloc(fold1->type, isl_space_copy(fold1->dim),
 					fold1->n + fold2->n);
 	if (!res)
-		goto error;
+		return NULL;
 
 	for (i = 0; i < fold1->n; ++i) {
 		res->qp[res->n] = isl_qpolynomial_copy(fold1->qp[i]);
 		if (!res->qp[res->n])
-			goto error;
+			return isl_qpolynomial_fold_free(res);
 		res->n++;
 	}
 	n1 = res->n;
@@ -595,7 +573,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 			equal = isl_qpolynomial_plain_is_equal(res->qp[j],
 								fold2->qp[i]);
 			if (equal < 0)
-				goto error;
+				return isl_qpolynomial_fold_free(res);
 			if (equal)
 				break;
 			d = isl_qpolynomial_sub(
@@ -619,16 +597,55 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 			continue;
 		res->qp[res->n] = isl_qpolynomial_copy(fold2->qp[i]);
 		if (!res->qp[res->n])
-			goto error;
+			return isl_qpolynomial_fold_free(res);
 		res->n++;
 	}
+
+	return res;
+}
+
+/* Combine "fold1" and "fold2" into a single reduction, eliminating
+ * those elements of one reduction that are already covered by the other
+ * reduction on "set".
+ *
+ * If "fold1" or "fold2" is an empty reduction, then return
+ * the other reduction.
+ * If "fold1" or "fold2" is a NaN, then return this NaN.
+ */
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
+	__isl_keep isl_set *set,
+	__isl_take isl_qpolynomial_fold *fold1,
+	__isl_take isl_qpolynomial_fold *fold2)
+{
+	isl_qpolynomial_fold *res;
+	int better;
+
+	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
+		goto error;
+	if (isl_qpolynomial_fold_check_equal_space(fold1, fold2) < 0)
+		goto error;
+
+	better = fold1->type == isl_fold_max ? -1 : 1;
+
+	if (isl_qpolynomial_fold_is_empty(fold1) ||
+	    isl_qpolynomial_fold_is_nan(fold2)) {
+		isl_qpolynomial_fold_free(fold1);
+		return fold2;
+	}
+
+	if (isl_qpolynomial_fold_is_empty(fold2) ||
+	    isl_qpolynomial_fold_is_nan(fold1)) {
+		isl_qpolynomial_fold_free(fold2);
+		return fold1;
+	}
+
+	res = merge_folds(set, fold1, fold2, better);
 
 	isl_qpolynomial_fold_free(fold1);
 	isl_qpolynomial_fold_free(fold2);
 
 	return res;
 error:
-	isl_qpolynomial_fold_free(res);
 	isl_qpolynomial_fold_free(fold1);
 	isl_qpolynomial_fold_free(fold2);
 	return NULL;
