@@ -1342,10 +1342,20 @@ static isl_bool isl_qpolynomial_list_plain_is_equal(unsigned n,
 	return isl_bool_true;
 }
 
+/* Wrapper around isl_qpolynomial_plain_cmp for use
+ * as a isl_qpolynomial_list_sort callback.
+ */
+static int qpolynomial_cmp(__isl_keep isl_qpolynomial *a,
+	__isl_keep isl_qpolynomial *b, void *user)
+{
+	return isl_qpolynomial_plain_cmp(a, b);
+}
+
 isl_bool isl_qpolynomial_fold_plain_is_equal(
 	__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2)
 {
+	isl_bool equal;
 	isl_size n1, n2;
 	isl_qpolynomial_list *list1, *list2;
 
@@ -1359,8 +1369,14 @@ isl_bool isl_qpolynomial_fold_plain_is_equal(
 	if (n1 != n2)
 		return isl_bool_false;
 
-	/* We probably want to sort the qps first... */
-	return isl_qpolynomial_list_plain_is_equal(n1, list1, list2);
+	list1 = isl_qpolynomial_list_copy(list1);
+	list1 = isl_qpolynomial_list_sort(list1, &qpolynomial_cmp, NULL);
+	list2 = isl_qpolynomial_list_copy(list2);
+	list2 = isl_qpolynomial_list_sort(list2, &qpolynomial_cmp, NULL);
+	equal = isl_qpolynomial_list_plain_is_equal(n1, list1, list2);
+	isl_qpolynomial_list_free(list1);
+	isl_qpolynomial_list_free(list2);
+	return equal;
 }
 
 __isl_give isl_val *isl_qpolynomial_fold_eval(
