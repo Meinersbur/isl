@@ -1320,11 +1320,32 @@ int isl_qpolynomial_fold_plain_cmp(__isl_keep isl_qpolynomial_fold *fold1,
 	return 0;
 }
 
+/* Are the lists "list1" and "list2", both consisting of "n" elements
+ * obviously equal to each other?
+ */
+static isl_bool isl_qpolynomial_list_plain_is_equal(unsigned n,
+	isl_qpolynomial_list *list1, isl_qpolynomial_list *list2)
+{
+	int i;
+
+	for (i = 0; i < n; ++i) {
+		isl_bool eq;
+		isl_qpolynomial *qp1, *qp2;
+
+		qp1 = isl_qpolynomial_list_peek(list1, i);
+		qp2 = isl_qpolynomial_list_peek(list2, i);
+		eq = isl_qpolynomial_plain_is_equal(qp1, qp2);
+		if (eq < 0 || !eq)
+			return eq;
+	}
+
+	return isl_bool_true;
+}
+
 isl_bool isl_qpolynomial_fold_plain_is_equal(
 	__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2)
 {
-	int i;
 	isl_size n1, n2;
 	isl_qpolynomial_list *list1, *list2;
 
@@ -1339,18 +1360,7 @@ isl_bool isl_qpolynomial_fold_plain_is_equal(
 		return isl_bool_false;
 
 	/* We probably want to sort the qps first... */
-	for (i = 0; i < n1; ++i) {
-		isl_bool eq;
-		isl_qpolynomial *qp1, *qp2;
-
-		qp1 = isl_qpolynomial_list_peek(list1, i);
-		qp2 = isl_qpolynomial_list_peek(list2, i);
-		eq = isl_qpolynomial_plain_is_equal(qp1, qp2);
-		if (eq < 0 || !eq)
-			return eq;
-	}
-
-	return isl_bool_true;
+	return isl_qpolynomial_list_plain_is_equal(n1, list1, list2);
 }
 
 __isl_give isl_val *isl_qpolynomial_fold_eval(
