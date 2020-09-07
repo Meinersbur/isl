@@ -3891,35 +3891,28 @@ static int test_union(isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that computing a bound of a non-zero polynomial over an unbounded
- * domain does not produce a rational value.
- * In particular, check that the upper bound is infinity.
+/* Inputs for basic isl_pw_qpolynomial_bound tests.
+ * "type" is the type of bound that should be computed.
+ * "poly" is a string representation of the input.
+ * "bound" is a string representation of the expected result.
+ * "tight" is set if the result is expected to be tight.
  */
-static int test_bound_unbounded_domain(isl_ctx *ctx)
-{
-	const char *str;
-	isl_pw_qpolynomial *pwqp;
-	isl_pw_qpolynomial_fold *pwf, *pwf2;
-	isl_bool equal;
-
-	str = "{ [m,n] -> -m * n }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	str = "{ infty }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf2 = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	equal = isl_pw_qpolynomial_fold_plain_is_equal(pwf, pwf2);
-	isl_pw_qpolynomial_fold_free(pwf);
-	isl_pw_qpolynomial_fold_free(pwf2);
-
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown,
-			"expecting infinite polynomial bound", return -1);
-
-	return 0;
-}
+static struct {
+	int tight;
+	enum isl_fold type;
+	const char *poly;
+	const char *bound;
+} bound_tests[] = {
+	/* Check that computing a bound of a non-zero polynomial
+	 * over an unbounded domain does not produce a rational value.
+	 * In particular, check that the upper bound is infinity.
+	 */
+	{ 0, isl_fold_max, "{ [m, n] -> -m * n }", "{ max(infty) }" },
+	{ 1, isl_fold_max, "{ [[a, b, c, d] -> [e]] -> 0 }",
+	  "{ [a, b, c, d] -> max(0) }" },
+	{ 1, isl_fold_max, "{ [[x] -> [x]] -> 1 : exists a : x = 2 a }",
+	  "{ [x] -> max(1) : x mod 2 = 0 }" },
+};
 
 /* Check that the bound computation can handle differences
  * in domain dimension names of the input polynomial and its domain.
@@ -3942,39 +3935,40 @@ static isl_stat test_bound_space(isl_ctx *ctx)
 	return isl_stat_non_null(pwf);
 }
 
+/* Perform basic isl_pw_qpolynomial_bound tests.
+ */
 static int test_bound(isl_ctx *ctx)
 {
-	const char *str;
-	isl_size dim;
-	isl_pw_qpolynomial *pwqp;
-	isl_pw_qpolynomial_fold *pwf;
+	int i;
 
-	if (test_bound_unbounded_domain(ctx) < 0)
-		return -1;
 	if (test_bound_space(ctx) < 0)
 		return -1;
 
-	str = "{ [[a, b, c, d] -> [e]] -> 0 }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	dim = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in);
-	isl_pw_qpolynomial_fold_free(pwf);
-	if (dim < 0)
-		return -1;
-	if (dim != 4)
-		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
-			return -1);
+	for (i = 0; i < ARRAY_SIZE(bound_tests); ++i) {
+		const char *str;
+		enum isl_fold type;
+		isl_bool equal, tight;
+		isl_pw_qpolynomial *pwqp;
+		isl_pw_qpolynomial_fold *pwf1, *pwf2;
 
-	str = "{ [[x]->[x]] -> 1 : exists a : x = 2 a }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	dim = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in);
-	isl_pw_qpolynomial_fold_free(pwf);
-	if (dim < 0)
-		return -1;
-	if (dim != 1)
-		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
-			return -1);
+		str = bound_tests[i].poly;
+		pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+		type = bound_tests[i].type;
+		pwf1 = isl_pw_qpolynomial_bound(pwqp, type, &tight);
+		str = bound_tests[i].bound;
+		pwf2 = isl_pw_qpolynomial_fold_read_from_str(ctx, str);
+		equal = isl_pw_qpolynomial_fold_plain_is_equal(pwf1, pwf2);
+		isl_pw_qpolynomial_fold_free(pwf2);
+		isl_pw_qpolynomial_fold_free(pwf1);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect bound result", return -1);
+		if (bound_tests[i].tight && !tight)
+			isl_die(ctx, isl_error_unknown,
+				"bound unexpectedly not tight", return -1);
+	}
 
 	return 0;
 }
