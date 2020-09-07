@@ -488,6 +488,8 @@ isl_bool isl_pw_qpolynomial_fold_isa_qpolynomial_fold(
 __isl_give isl_qpolynomial_fold *isl_pw_qpolynomial_fold_as_qpolynomial_fold(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_read_from_str(
+	isl_ctx *ctx, const char *str);
 __isl_give isl_printer *isl_printer_print_pw_qpolynomial_fold(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf);
 void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,

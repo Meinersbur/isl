@@ -4026,6 +4026,10 @@ Objects can be read from input using the following functions.
 	isl_union_pw_qpolynomial_read_from_str(
 		isl_ctx *ctx, const char *str);
 
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_read_from_str(
+		isl_ctx *ctx, const char *str);
+
 For sets and relations,
 the input format is autodetected and may be either the C<PolyLib> format
 or the C<isl> format.

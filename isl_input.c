@@ -3386,6 +3386,42 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
 	return pwqp;
 }
 
+/* Read an isl_pw_qpolynomial_fold from "s".
+ * First read a generic object and
+ * then check that it is an isl_pw_qpolynomial_fold.
+ */
+__isl_give isl_pw_qpolynomial_fold *isl_stream_read_pw_qpolynomial_fold(
+	__isl_keep isl_stream *s)
+{
+	struct isl_obj obj;
+
+	obj = obj_read(s);
+	if (obj.v && obj.type != isl_obj_pw_qpolynomial_fold)
+		isl_die(s->ctx, isl_error_invalid, "invalid input", goto error);
+
+	return obj.v;
+error:
+	obj.type->free(obj.v);
+	return NULL;
+}
+
+/* Read an isl_pw_qpolynomial_fold from "str".
+ */
+__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_read_from_str(
+	isl_ctx *ctx, const char *str)
+{
+	isl_pw_qpolynomial_fold *pwqp;
+	isl_stream *s;
+
+	s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	pwqp = isl_stream_read_pw_qpolynomial_fold(s);
+	isl_stream_free(s);
+
+	return pwqp;
+}
+
 /* Is the next token an identifier not in "v"?
  */
 static int next_is_fresh_ident(__isl_keep isl_stream *s, struct vars *v)
