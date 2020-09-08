@@ -10,6 +10,8 @@ using namespace clang;
  *
  * "clazz" is the class to which the method belongs.
  * "fd" is the original isl function.
+ * "name" is the name of the method, which may be different
+ * from the default name derived from "fd".
  * "kind" is the type of the method.
  */
 struct Method {
@@ -19,12 +21,15 @@ struct Method {
 		constructor,
 	};
 
+	Method(const isl_class &clazz, FunctionDecl *fd,
+		const std::string &name);
 	Method(const isl_class &clazz, FunctionDecl *fd);
 
 	bool is_subclass_mutator() const;
 
 	const isl_class &clazz;
 	FunctionDecl *const fd;
+	const std::string name;
 	const enum Kind kind;
 };
 
@@ -64,7 +69,6 @@ private:
 	std::string get_return_type(const Method &method);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
-	std::string rename_method(std::string name);
 	string isl_bool2cpp();
 	string isl_namespace();
 	string param2cpp(QualType type);
@@ -106,17 +110,15 @@ struct cpp_generator::class_printer {
 		const std::vector<bool> &convert) = 0;
 	virtual void print_get_method(FunctionDecl *fd) = 0;
 	virtual void print_set_enum(const Method &method,
-		const string &enum_name, const string &method_name) = 0;
+		const string &enum_name) = 0;
 	void print_set_enums(FunctionDecl *fd);
 	void print_set_enums();
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
-	void print_method_header(const Method &method, const string &cname,
-		int num_params,
+	void print_method_header(const Method &method, int num_params,
 		const std::vector<bool> &convert = {});
-	void print_named_method_header(const Method &method, string name,
+	void print_method_header(const Method &method,
 		const std::vector<bool> &convert = {});
-	void print_method_header(const Method &method);
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);
 };
 
@@ -139,14 +141,12 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	void print_ctx();
 	void print_persistent_callback_data(FunctionDecl *method);
 	void print_persistent_callbacks();
-	void print_named_method(const Method &method, const string &name,
-		const std::vector<bool> &convert = {});
 	virtual void print_method(const Method &method) override;
 	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(const Method &method,
-		const string &enum_name, const string &method_name) override;
+		const string &enum_name) override;
 };
 
 /* A helper class for printing method definitions of a class.
@@ -161,7 +161,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(const Method &method,
-		const string &enum_name, const string &method_name) override;
+		const string &enum_name) override;
 	void print_check_ptr(const char *ptr);
 	void print_check_ptr_start(const char *ptr);
 	void print_check_ptr_end(const char *ptr);

@@ -356,9 +356,7 @@ void cpp_generator::decl_printer::print_public_constructors()
 void cpp_generator::decl_printer::print_method(const Method &method,
 	const std::vector<bool> &convert)
 {
-	string name = clazz.method_name(method.fd);
-
-	print_named_method(method, name, convert);
+	print_method_header(method, convert);
 }
 
 /* Print declarations for "method",
@@ -642,18 +640,18 @@ void cpp_generator::class_printer::print_methods()
 		print_method_group(kvp.second);
 }
 
-/* Print a declaration for a method "method" called "method_name",
+/* Print a declaration for a method "method",
  * which sets an enum called "enum_name".
  *
  * The last argument is removed because it is replaced by
  * a break-up into several methods.
  */
 void cpp_generator::decl_printer::print_set_enum(const Method &method,
-	const string &enum_name, const string &method_name)
+	const string &enum_name)
 {
 	int n = method.fd->getNumParams();
 
-	print_method_header(method, method_name, n - 1);
+	print_method_header(method, n - 1);
 }
 
 /* Print declarations or implementations for the methods derived from "fd",
@@ -665,9 +663,9 @@ void cpp_generator::decl_printer::print_set_enum(const Method &method,
 void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 {
 	for (const auto &set : clazz.set_enums.at(fd)) {
-		Method method(clazz, fd);
+		Method method(clazz, fd, set.method_name);
 
-		print_set_enum(method, set.name, set.method_name);
+		print_set_enum(method, set.name);
 	}
 }
 
@@ -687,7 +685,7 @@ void cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
 {
 	string base = clazz.base_method_name(fd);
 
-	print_named_method(Method(clazz, fd), base);
+	print_method(Method(clazz, fd, base));
 }
 
 /* Update "convert" to reflect the next combination of automatic conversions
@@ -760,18 +758,6 @@ void cpp_generator::class_printer::print_method_group(
 {
 	for (const auto &fd : methods)
 		print_method_variants(fd);
-}
-
-/* Print a declaration for a method "method" called "name".
- *
- * "convert" specifies which of the method arguments should
- * be automatically converted.
- */
-void cpp_generator::decl_printer::print_named_method(
-	const Method &method, const string &name,
-	const std::vector<bool> &convert)
-{
-	print_named_method_header(method, name, convert);
 }
 
 /* Print implementations for class "clazz" to "os".
@@ -1128,7 +1114,6 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 void cpp_generator::impl_printer::print_method(const Method &method,
 	const std::vector<bool> &convert)
 {
-	string name = clazz.method_name(method.fd);
 	int num_params = method.fd->getNumParams();
 
 	if (method.kind != Method::Kind::member_method)
@@ -1136,10 +1121,10 @@ void cpp_generator::impl_printer::print_method(const Method &method,
 		    "for object methods");
 
 	osprintf(os, "\n");
-	print_named_method_header(method, name, convert);
+	print_method_header(method, convert);
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
-	osprintf(os, "  return this->%s(", name.c_str());
+	osprintf(os, "  return this->%s(", method.name.c_str());
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		std::string name = param->getName().str();
@@ -1347,7 +1332,7 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 		print_set_persistent_callback(Method(clazz, callback));
 }
 
-/* Print the definition for a method "method" called "method_name",
+/* Print the definition for a method "method",
  * which sets an enum called "enum_name".
  *
  * The last argument of the C function does not appear in the method call,
@@ -1357,13 +1342,13 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
  * some of the special cases do not occur.
  */
 void cpp_generator::impl_printer::print_set_enum(const Method &method,
-	const string &enum_name, const string &method_name)
+	const string &enum_name)
 {
 	string c_name = method.fd->getName().str();
 	int n = method.fd->getNumParams();
 
 	osprintf(os, "\n");
-	print_method_header(method, method_name, n - 1);
+	print_method_header(method, n - 1);
 	osprintf(os, "{\n");
 
 	print_argument_validity_check(method);
@@ -1402,7 +1387,7 @@ void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
 	int num_params = fd->getNumParams();
 
 	osprintf(os, "\n");
-	print_named_method_header(Method(clazz, fd), get_name);
+	print_method_header(Method(clazz, fd, get_name));
 	osprintf(os, "{\n");
 	osprintf(os, "  return %s(", name.c_str());
 	for (int i = 1; i < num_params; ++i) {
@@ -1797,7 +1782,7 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
 	return generator.conversions[param->getOriginalType().getTypePtr()];
 }
 
-/* Print the header for "method", with name "cname" and
+/* Print the header for "method", with
  * "num_params" number of arguments.
  *
  * Print the header of a declaration if this->declarations is set,
@@ -1845,7 +1830,7 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  * function argument.
  */
 void cpp_generator::class_printer::print_method_header(
-	const Method &method, const string &cname, int num_params,
+	const Method &method, int num_params,
 	const std::vector<bool> &convert)
 {
 	string rettype_str = generator.get_return_type(method);
@@ -1877,7 +1862,7 @@ void cpp_generator::class_printer::print_method_header(
 		osprintf(os, "%s::", cppstring.c_str());
 
 	if (method.kind != Method::Kind::constructor)
-		osprintf(os, "%s", cname.c_str());
+		osprintf(os, "%s", method.name.c_str());
 	else
 		osprintf(os, "%s", cppstring.c_str());
 
@@ -1912,7 +1897,7 @@ void cpp_generator::class_printer::print_method_header(
 	osprintf(os, "\n");
 }
 
-/* Print the header for a method "method" called "name".
+/* Print the header for a method "method".
  *
  * Print the header of a declaration if this->declarations is set,
  * otherwise print the header of a method definition.
@@ -1920,27 +1905,13 @@ void cpp_generator::class_printer::print_method_header(
  * "convert" specifies which of the method arguments should
  * be automatically converted.
  */
-void cpp_generator::class_printer::print_named_method_header(
-	const Method &method, string name,
+void cpp_generator::class_printer::print_method_header(
+	const Method &method,
 	const std::vector<bool> &convert)
 {
 	int num_params = method.fd->getNumParams();
 
-	name = generator.rename_method(name);
-	print_method_header(method, name, num_params, convert);
-}
-
-/* Print the header for "method" using its default name.
- *
- * Print the header of a declaration if this->declarations is set,
- * otherwise print the header of a method definition.
- */
-void cpp_generator::class_printer::print_method_header(
-	const Method &method)
-{
-	string name = clazz.method_name(method.fd);
-
-	print_named_method_header(method, name);
+	print_method_header(method, num_params, convert);
 }
 
 /* Generate the list of argument types for a callback function of
@@ -2278,7 +2249,7 @@ static const char *rename_map[][2] = {
  * match the name in the C bindings. We do this for example to avoid
  * C++ keywords.
  */
-std::string cpp_generator::rename_method(std::string name)
+static std::string rename_method(std::string name)
 {
 	for (size_t i = 0; i < sizeof(rename_map) / sizeof(rename_map[0]); i++)
 		if (name.compare(rename_map[i][0]) == 0)
@@ -2422,13 +2393,27 @@ static Method::Kind get_kind(const isl_class &clazz, FunctionDecl *method)
 		return Method::Kind::member_method;
 }
 
+/* Construct a C++ method object from the class to which is belongs,
+ * the isl function from which it is derived and the method name.
+ *
+ * Perform any renaming of the method that may be required and
+ * determine the type of the method.
+ */
+Method::Method(const isl_class &clazz, FunctionDecl *fd,
+	const std::string &name) :
+		clazz(clazz), fd(fd), name(rename_method(name)),
+		kind(get_kind(clazz, fd))
+{
+}
+
 /* Construct a C++ method object from the class to which is belongs and
  * the isl function from which it is derived.
  *
- * Determine the type of the method.
+ * Obtain the default method name and continue
+ * with the generic constructor.
  */
 Method::Method(const isl_class &clazz, FunctionDecl *fd) :
-	clazz(clazz), fd(fd), kind(get_kind(clazz, fd))
+	Method(clazz, fd, clazz.method_name(fd))
 {
 }
 
