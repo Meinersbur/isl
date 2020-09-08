@@ -34,6 +34,8 @@ struct Method {
 	bool is_subclass_mutator() const;
 	static void print_arg_list(std::ostream &os, int start, int end,
 		const std::function<void(int i)> &print_arg);
+	void print_cpp_arg_list(std::ostream &os,
+		const std::function<void(int i)> &print_arg) const;
 
 	const isl_class &clazz;
 	FunctionDecl *const fd;

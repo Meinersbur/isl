@@ -1076,8 +1076,6 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 void cpp_generator::impl_printer::print_method(const Method &method,
 	const std::vector<bool> &convert)
 {
-	int num_params = method.num_params();
-
 	if (method.kind != Method::Kind::member_method)
 		die("Automatic conversion currently only supported "
 		    "for object methods");
@@ -1087,7 +1085,7 @@ void cpp_generator::impl_printer::print_method(const Method &method,
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
 	osprintf(os, "  return this->%s", method.name.c_str());
-	Method::print_arg_list(os, 1, num_params, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		std::string name = param->getName().str();
 
@@ -1751,11 +1749,6 @@ void cpp_generator::class_printer::print_method_header(
 	const std::vector<bool> &convert)
 {
 	string rettype_str = generator.get_return_type(method);
-	int first_param = 0;
-	int num_params = method.num_params();
-
-	if (method.kind == Method::Kind::member_method)
-		first_param = 1;
 
 	if (declarations) {
 		osprintf(os, "  ");
@@ -1784,7 +1777,7 @@ void cpp_generator::class_printer::print_method_header(
 	else
 		osprintf(os, "%s", cppstring.c_str());
 
-	Method::print_arg_list(os, first_param, num_params, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i) {
 		std::string name = method.fd->getParamDecl(i)->getName().str();
 		ParmVarDecl *param = get_param(method.fd, i, convert);
 		QualType type = param->getOriginalType();
@@ -2367,6 +2360,16 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
 		print_arg(i);
 	}
 	os << ")";
+}
+
+/* Print the arguments to the method call, using "print_arg"
+ * to print each individual argument.
+ */
+void Method::print_cpp_arg_list(std::ostream &os,
+	const std::function<void(int i)> &print_arg) const
+{
+	int first_param = kind == member_method ? 1 : 0;
+	print_arg_list(os, first_param, num_params(), print_arg);
 }
 
 /* Construct an object representing a C++ method for setting an enum
