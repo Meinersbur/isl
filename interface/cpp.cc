@@ -1040,15 +1040,12 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 	if (method.callback)
 		print_callback_local(method.callback);
 
-	osprintf(os, "  auto res = %s(", methodname.c_str());
+	osprintf(os, "  auto res = %s", methodname.c_str());
 
-	for (int i = 0; i < num_params; ++i) {
+	Method::print_arg_list(os, 0, num_params, [&] (int i) {
 		method.print_param_use(os, i);
-
-		if (i != num_params - 1)
-			osprintf(os, ", ");
-	}
-	osprintf(os, ");\n");
+	});
+	osprintf(os, ";\n");
 
 	print_exceptional_execution_check(method);
 	if (method.kind == Method::Kind::constructor) {
@@ -1089,13 +1086,11 @@ void cpp_generator::impl_printer::print_method(const Method &method,
 	print_method_header(method, convert);
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
-	osprintf(os, "  return this->%s(", method.name.c_str());
-	for (int i = 1; i < num_params; ++i) {
+	osprintf(os, "  return this->%s", method.name.c_str());
+	Method::print_arg_list(os, 1, num_params, [&] (int i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		std::string name = param->getName().str();
 
-		if (i != 1)
-			osprintf(os, ", ");
 		if (convert[i]) {
 			QualType type = param->getOriginalType();
 			string cpptype = generator.param2cpp(type);
@@ -1104,8 +1099,8 @@ void cpp_generator::impl_printer::print_method(const Method &method,
 		} else {
 			osprintf(os, "%s", name.c_str());
 		}
-	}
-	osprintf(os, ");\n");
+	});
+	osprintf(os, ";\n");
 	osprintf(os, "}\n");
 }
 
@@ -1789,9 +1784,7 @@ void cpp_generator::class_printer::print_method_header(
 	else
 		osprintf(os, "%s", cppstring.c_str());
 
-	osprintf(os, "(");
-
-	for (int i = first_param; i < num_params; ++i) {
+	Method::print_arg_list(os, first_param, num_params, [&] (int i) {
 		std::string name = method.fd->getParamDecl(i)->getName().str();
 		ParmVarDecl *param = get_param(method.fd, i, convert);
 		QualType type = param->getOriginalType();
@@ -1802,12 +1795,7 @@ void cpp_generator::class_printer::print_method_header(
 				 name.c_str());
 		else
 			osprintf(os, "%s %s", cpptype.c_str(), name.c_str());
-
-		if (i != num_params - 1)
-			osprintf(os, ", ");
-	}
-
-	osprintf(os, ")");
+	});
 
 	if (method.kind == Method::Kind::member_method)
 		osprintf(os, " const");
@@ -2363,6 +2351,22 @@ int Method::c_num_params() const
 int Method::num_params() const
 {
 	return c_num_params();
+}
+
+/* Print the arguments from "start" (inclusive) to "end" (exclusive)
+ * as arguments to a method of C function call, using "print_arg"
+ * to print each individual argument.
+ */
+void Method::print_arg_list(std::ostream &os, int start, int end,
+	const std::function<void(int i)> &print_arg)
+{
+	os << "(";
+	for (int i = start; i < end; ++i) {
+		if (i != start)
+			os << ", ";
+		print_arg(i);
+	}
+	os << ")";
 }
 
 /* Construct an object representing a C++ method for setting an enum

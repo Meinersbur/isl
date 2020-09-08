@@ -1,6 +1,8 @@
 #ifndef ISL_INTERFACE_CPP_H
 #define ISL_INTERFACE_CPP_H
 
+#include <functional>
+
 #include "generator.h"
 
 using namespace std;
@@ -30,6 +32,8 @@ struct Method {
 	virtual int num_params() const;
 	virtual void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
+	static void print_arg_list(std::ostream &os, int start, int end,
+		const std::function<void(int i)> &print_arg);
 
 	const isl_class &clazz;
 	FunctionDecl *const fd;
