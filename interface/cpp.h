@@ -49,16 +49,21 @@ struct Method {
 /* A generated method that performs one or more argument conversions and
  * then calls the original method.
  *
+ * "this_type" is the name of the type to which "this" should be converted
+ * (if different from clazz.name).
  * "get_param_fn" returns the method argument at position "pos".
  */
 struct ConversionMethod : Method {
+	ConversionMethod(const Method &method, const std::string &this_type,
+		const std::function<clang::ParmVarDecl *(int pos)> &get_param);
 	ConversionMethod(const Method &method,
 		const std::function<clang::ParmVarDecl *(int pos)> &get_param);
 	virtual bool param_needs_copy(int pos) const override;
 	virtual clang::ParmVarDecl *get_param(int pos) const override;
 
-	void print_call(std::ostream &os) const;
+	void print_call(std::ostream &os, const std::string &ns) const;
 
+	const std::string this_type;
 	const std::function<clang::ParmVarDecl *(int pos)> get_param_fn;
 };
 

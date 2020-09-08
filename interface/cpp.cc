@@ -1061,14 +1061,14 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 }
 
 /* Print a definition for "method",
- * where at least one of the argument types needs to be converted.
+ * where "this" or at least one of the argument types needs to be converted.
  *
  * "method" is assumed to be a member method.
  *
  * The generated method performs the required conversion(s) and
  * calls the method generated without conversions.
  *
- * A conversion is needed if the argument in the method declaration
+ * An argument conversion is needed if the argument in the method declaration
  * (as specified by Method::get_param) is different from
  * the argument of the C function.
  * Each conversion is performed by calling the conversion function
@@ -1089,7 +1089,7 @@ void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
 	osprintf(os, "  return ");
-	method.print_call(os);
+	method.print_call(os, generator.isl_namespace());
 	method.print_cpp_arg_list(os, [&] (int i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		std::string name = param->getName().str();
@@ -2398,12 +2398,27 @@ clang::ParmVarDecl *Method::get_param(int pos) const
 }
 
 /* Construct a method that performs one or more conversions
- * from the original Method (without conversions) and
+ * from the original Method (without conversions),
+ * the name of the type to which "this" should be converted and
  * a function for determining the arguments of the constructed method.
  */
 ConversionMethod::ConversionMethod(const Method &method,
+	const std::string &this_type,
 	const std::function<clang::ParmVarDecl *(int pos)> &get_param) :
-		Method(method), get_param_fn(get_param)
+		Method(method), this_type(this_type), get_param_fn(get_param)
+{
+}
+
+/* Construct a method that performs one or more arguments conversions
+ * from the original Method (without conversions) and
+ * a function for determining the arguments of the constructed method.
+ *
+ * Call the generic constructor with method.clazz.name as "this" type,
+ * indicating that "this" should not be converted.
+ */
+ConversionMethod::ConversionMethod(const Method &method,
+	const std::function<clang::ParmVarDecl *(int pos)> &get_param) :
+		ConversionMethod(method, method.clazz.name, get_param)
 {
 }
 
@@ -2436,11 +2451,21 @@ clang::ParmVarDecl *ConversionMethod::get_param(int pos) const
 	return get_param_fn(pos);
 }
 
-/* Print a call to the method (without the arguments).
+/* Print a call to the method (without the arguments),
+ * with "ns" the namespace of the generated C++ bindings.
+ *
+ * If "this_type" is different from the name of the class of the method,
+ * then "this" needs to be converted to that type before
+ * the call is performed.
  */
-void ConversionMethod::print_call(std::ostream &os) const
+void ConversionMethod::print_call(std::ostream &os, const std::string &ns) const
 {
-	os << "this->";
+	if (clazz.name == this_type) {
+		os << "this->";
+	} else {
+		auto cpp_type = ns + cpp_generator::type2cpp(this_type);
+		os << cpp_type << "(*this).";
+	}
 	os << name;
 }
 
