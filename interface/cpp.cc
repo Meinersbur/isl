@@ -1723,8 +1723,7 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  * For static functions and constructors all parameters of the original isl
  * function are exposed.
  *
- * Parameters that are defined as __isl_keep, are of type string or
- * are callbacks, are passed
+ * Parameters of which no copy is required, are passed
  * as const reference, which allows the compiler to optimize the parameter
  * transfer.
  *
@@ -1777,7 +1776,7 @@ void cpp_generator::class_printer::print_method_header(const Method &method)
 		QualType type = param->getOriginalType();
 		string cpptype = generator.param2cpp(type);
 
-		if (keeps(param) || is_string(type) || is_callback(type))
+		if (!method.param_needs_copy(i))
 			osprintf(os, "const %s &%s", cpptype.c_str(),
 				 name.c_str());
 		else
@@ -2364,6 +2363,30 @@ void Method::print_cpp_arg_list(std::ostream &os,
 {
 	int first_param = kind == member_method ? 1 : 0;
 	print_arg_list(os, first_param, num_params(), print_arg);
+}
+
+/* Should the parameter at position "pos" be a copy (rather than
+ * a const reference)?
+ *
+ * Strictly speaking, a copy is only needed on isl types that are
+ * not marked __isl_keep, since those will be release()'d
+ * by code printed by Method::print_param_use.
+ *
+ * However, there may be other arguments such as integer types
+ * that are more naturally passed as a copy.
+ * The default is therefore to require a copy, except for
+ * arguments marked __isl_keep, string arguments or callback arguments.
+ */
+bool Method::param_needs_copy(int pos) const
+{
+	ParmVarDecl *param = get_param(pos);
+	QualType type = param->getOriginalType();
+
+	if (generator::keeps(param))
+		return false;
+	if (generator::is_string(type) || generator::is_callback(type))
+		return false;
+	return true;
 }
 
 /* Return the method argument at position "pos".

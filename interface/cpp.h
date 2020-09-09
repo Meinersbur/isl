@@ -30,6 +30,7 @@ struct Method {
 
 	int c_num_params() const;
 	virtual int num_params() const;
+	bool param_needs_copy(int pos) const;
 	virtual clang::ParmVarDecl *get_param(int pos) const;
 	virtual void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
