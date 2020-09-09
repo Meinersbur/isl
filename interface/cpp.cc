@@ -349,22 +349,17 @@ void cpp_generator::decl_printer::print_public_constructors()
 }
 
 /* Print declarations for "method".
- *
- * "convert" specifies which of the method arguments should
- * be automatically converted.
  */
-void cpp_generator::decl_printer::print_method(const Method &method,
-	const std::vector<bool> &convert)
+void cpp_generator::decl_printer::print_method(const ConversionMethod &method)
 {
-	print_method_header(method, convert);
+	print_method_header(method);
 }
 
-/* Print declarations for "method",
- * without any argument conversions.
+/* Print declarations for "method".
  */
 void cpp_generator::decl_printer::print_method(const Method &method)
 {
-	print_method(method, {});
+	print_method_header(method);
 }
 
 /* Print declarations or implementations of constructors.
@@ -723,6 +718,8 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
  * whether any of its arguments can be automatically converted
  * from something else, and, if so, generate a method
  * for each combination of converted arguments.
+ * Do so by constructing a ConversionMethod that changes the converted arguments
+ * to those of the sources of the conversions.
  */
 void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 	const std::string &name)
@@ -735,8 +732,11 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 		print_get_method(fd);
 	if (method.kind != Method::Kind::member_method)
 		return;
-	while (next_variant(fd, convert))
-		print_method(method, convert);
+	while (next_variant(fd, convert)) {
+		print_method(ConversionMethod(method, [&] (int pos) {
+			return get_param(fd, pos, convert);
+		}));
+	}
 }
 
 /* Print declarations or definitions for methods called "name"
@@ -1061,14 +1061,16 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 }
 
 /* Print a definition for "method",
- * where at least one of the argument types needs to be converted,
- * as specified by "convert".
+ * where at least one of the argument types needs to be converted.
  *
  * "method" is assumed to be a member method.
  *
  * The generated method performs the required conversion(s) and
  * calls the method generated without conversions.
  *
+ * A conversion is needed if the argument in the method declaration
+ * (as specified by Method::get_param) is different from
+ * the argument of the C function.
  * Each conversion is performed by calling the conversion function
  * with as arguments the isl_ctx of the object and the argument
  * to the generated method.
@@ -1076,15 +1078,14 @@ void cpp_generator::impl_printer::print_method(const Method &method)
  * to valid.  The validity of other arguments is checked
  * by the called method.
  */
-void cpp_generator::impl_printer::print_method(const Method &method,
-	const std::vector<bool> &convert)
+void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
 {
 	if (method.kind != Method::Kind::member_method)
 		die("Automatic conversion currently only supported "
 		    "for object methods");
 
 	osprintf(os, "\n");
-	print_method_header(method, convert);
+	print_method_header(method);
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
 	osprintf(os, "  return this->%s", method.name.c_str());
@@ -1092,7 +1093,7 @@ void cpp_generator::impl_printer::print_method(const Method &method,
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		std::string name = param->getName().str();
 
-		if (convert[i]) {
+		if (param != method.get_param(i)) {
 			QualType type = param->getOriginalType();
 			string cpptype = generator.param2cpp(type);
 			osprintf(os, "%s(ctx(), %s)",
@@ -1685,17 +1686,12 @@ void cpp_generator::impl_printer::print_method_return(const Method &method)
  * However, if this parameter should be converted, as indicated
  * by "convert", then return the second formal parameter
  * of the conversion function instead.
- *
- * If "convert" is empty, then it is assumed that
- * none of the arguments should be converted.
  */
 ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
 	const std::vector<bool> &convert)
 {
 	ParmVarDecl *param = fd->getParamDecl(pos);
 
-	if (convert.size() == 0)
-		return param;
 	if (!convert[pos])
 		return param;
 	return generator.conversions[param->getOriginalType().getTypePtr()];
@@ -1705,9 +1701,6 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  *
  * Print the header of a declaration if this->declarations is set,
  * otherwise print the header of a method definition.
- *
- * "convert" specifies which of the method arguments should
- * be automatically converted.
  *
  * This function prints headers for member methods, static methods, and
  * constructors, either for their declaration or definition.
@@ -1742,14 +1735,12 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  * for these constructors, whereas without a comment not every user would
  * know that implicit construction is allowed in absence of an explicit keyword.
  *
- * If any of the arguments needs to be converted, then the argument
- * of the method is changed to that of the source of the conversion.
+ * Note that in case "method" is a ConversionMethod, the argument returned
+ * by Method::get_param may be different from the original argument.
  * The name of the argument is, however, derived from the original
  * function argument.
  */
-void cpp_generator::class_printer::print_method_header(
-	const Method &method,
-	const std::vector<bool> &convert)
+void cpp_generator::class_printer::print_method_header(const Method &method)
 {
 	string rettype_str = generator.get_return_type(method);
 
@@ -1782,7 +1773,7 @@ void cpp_generator::class_printer::print_method_header(
 
 	method.print_cpp_arg_list(os, [&] (int i) {
 		std::string name = method.fd->getParamDecl(i)->getName().str();
-		ParmVarDecl *param = get_param(method.fd, i, convert);
+		ParmVarDecl *param = method.get_param(i);
 		QualType type = param->getOriginalType();
 		string cpptype = generator.param2cpp(type);
 
@@ -2373,6 +2364,32 @@ void Method::print_cpp_arg_list(std::ostream &os,
 {
 	int first_param = kind == member_method ? 1 : 0;
 	print_arg_list(os, first_param, num_params(), print_arg);
+}
+
+/* Return the method argument at position "pos".
+ */
+clang::ParmVarDecl *Method::get_param(int pos) const
+{
+	return fd->getParamDecl(pos);
+}
+
+/* Construct a method that performs one or more conversions
+ * from the original Method (without conversions) and
+ * a function for determining the arguments of the constructed method.
+ */
+ConversionMethod::ConversionMethod(const Method &method,
+	const std::function<clang::ParmVarDecl *(int pos)> &get_param) :
+		Method(method), get_param_fn(get_param)
+{
+}
+
+/* Return the method argument at position "pos".
+ *
+ * Call get_param_fn to determine this argument.
+ */
+clang::ParmVarDecl *ConversionMethod::get_param(int pos) const
+{
+	return get_param_fn(pos);
 }
 
 /* Construct an object representing a C++ method for setting an enum

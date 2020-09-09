@@ -30,6 +30,7 @@ struct Method {
 
 	int c_num_params() const;
 	virtual int num_params() const;
+	virtual clang::ParmVarDecl *get_param(int pos) const;
 	virtual void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
 	static void print_arg_list(std::ostream &os, int start, int end,
@@ -42,6 +43,19 @@ struct Method {
 	const std::string name;
 	const enum Kind kind;
 	ParmVarDecl *const callback;
+};
+
+/* A generated method that performs one or more argument conversions and
+ * then calls the original method.
+ *
+ * "get_param_fn" returns the method argument at position "pos".
+ */
+struct ConversionMethod : Method {
+	ConversionMethod(const Method &method,
+		const std::function<clang::ParmVarDecl *(int pos)> &get_param);
+	virtual clang::ParmVarDecl *get_param(int pos) const override;
+
+	const std::function<clang::ParmVarDecl *(int pos)> get_param_fn;
 };
 
 /* A specialized generated C++ method for setting an enum.
@@ -133,15 +147,13 @@ struct cpp_generator::class_printer {
 	void print_method_group(const function_set &methods,
 		const std::string &name);
 	virtual void print_method(const Method &method) = 0;
-	virtual void print_method(const Method &method,
-		const std::vector<bool> &convert) = 0;
+	virtual void print_method(const ConversionMethod &method) = 0;
 	virtual void print_get_method(FunctionDecl *fd) = 0;
 	void print_set_enums(FunctionDecl *fd);
 	void print_set_enums();
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
-	void print_method_header(const Method &method,
-		const std::vector<bool> &convert = {});
+	void print_method_header(const Method &method);
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);
 };
 
@@ -165,8 +177,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	void print_persistent_callback_data(FunctionDecl *method);
 	void print_persistent_callbacks();
 	virtual void print_method(const Method &method) override;
-	virtual void print_method(const Method &method,
-		const std::vector<bool> &convert) override;
+	virtual void print_method(const ConversionMethod &method) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
 };
 
@@ -178,8 +189,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 		class_printer(os, clazz, generator, false) {}
 
 	virtual void print_method(const Method &method) override;
-	virtual void print_method(const Method &method,
-		const std::vector<bool> &convert) override;
+	virtual void print_method(const ConversionMethod &method) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
 	void print_check_ptr(const char *ptr);
 	void print_check_ptr_start(const char *ptr);
