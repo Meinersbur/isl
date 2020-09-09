@@ -30,7 +30,7 @@ struct Method {
 
 	int c_num_params() const;
 	virtual int num_params() const;
-	bool param_needs_copy(int pos) const;
+	virtual bool param_needs_copy(int pos) const;
 	virtual clang::ParmVarDecl *get_param(int pos) const;
 	virtual void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
@@ -54,6 +54,7 @@ struct Method {
 struct ConversionMethod : Method {
 	ConversionMethod(const Method &method,
 		const std::function<clang::ParmVarDecl *(int pos)> &get_param);
+	virtual bool param_needs_copy(int pos) const override;
 	virtual clang::ParmVarDecl *get_param(int pos) const override;
 
 	const std::function<clang::ParmVarDecl *(int pos)> get_param_fn;

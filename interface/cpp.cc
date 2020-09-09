@@ -2406,6 +2406,26 @@ ConversionMethod::ConversionMethod(const Method &method,
 {
 }
 
+/* Should the parameter at position "pos" be a copy (rather than
+ * a const reference)?
+ *
+ * Unlike methods that call an isl C function,
+ * a conversion method never calls release() on an isl type argument,
+ * so they can all be passed as const references.
+ *
+ * For other types, use the same defaults as Method.
+ */
+bool ConversionMethod::param_needs_copy(int pos) const
+{
+	ParmVarDecl *param = get_param(pos);
+	QualType type = param->getOriginalType();
+
+	if (generator::is_isl_type(type))
+		return false;
+
+	return Method::param_needs_copy(pos);
+}
+
 /* Return the method argument at position "pos".
  *
  * Call get_param_fn to determine this argument.
