@@ -1060,6 +1060,27 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 	osprintf(os, "}\n");
 }
 
+/* Convert argument of type "src" to "dst", with a name specified by "dst".
+ *
+ * If "src" is the same as "dst", then no argument conversion is needed.
+ *
+ * Otherwise, call the conversion function
+ * with as arguments the isl_ctx of the object and the argument name.
+ * This means this isl_ctx should be available.
+ */
+void cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
+	ParmVarDecl *src)
+{
+	std::string name = dst->getName().str();
+	QualType type = dst->getOriginalType();
+	string cpptype = generator.param2cpp(type);
+
+	if (dst == src)
+		os << name;
+	else
+		os << cpptype << "(ctx(), " << name << ")";
+}
+
 /* Print a definition for "method",
  * where "this" or at least one of the argument types needs to be converted.
  *
@@ -1068,12 +1089,10 @@ void cpp_generator::impl_printer::print_method(const Method &method)
  * The generated method performs the required conversion(s) and
  * calls the method generated without conversions.
  *
- * An argument conversion is needed if the argument in the method declaration
- * (as specified by Method::get_param) is different from
- * the argument of the C function.
- * Each conversion is performed by calling the conversion function
- * with as arguments the isl_ctx of the object and the argument
- * to the generated method.
+ * Perform a conversion from the argument in the method declaration
+ * (as specified by Method::get_param) to the argument of the C function,
+ * if needed.
+ * Such a conversion requires the isl_ctx to be available.
  * In order to be able to use this isl_ctx, the current object needs
  * to valid.  The validity of other arguments is checked
  * by the called method.
@@ -1092,16 +1111,8 @@ void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
 	method.print_call(os, generator.isl_namespace());
 	method.print_cpp_arg_list(os, [&] (int i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
-		std::string name = param->getName().str();
 
-		if (param != method.get_param(i)) {
-			QualType type = param->getOriginalType();
-			string cpptype = generator.param2cpp(type);
-			osprintf(os, "%s(ctx(), %s)",
-				cpptype.c_str(), name.c_str());
-		} else {
-			osprintf(os, "%s", name.c_str());
-		}
+		print_arg_conversion(param, method.get_param(i));
 	});
 	osprintf(os, ";\n");
 	osprintf(os, "}\n");

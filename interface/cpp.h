@@ -197,6 +197,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 			cpp_generator &generator) :
 		class_printer(os, clazz, generator, false) {}
 
+	void print_arg_conversion(ParmVarDecl *dst, ParmVarDecl *src);
 	virtual void print_method(const Method &method) override;
 	virtual void print_method(const ConversionMethod &method) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
