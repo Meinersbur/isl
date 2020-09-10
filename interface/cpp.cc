@@ -1065,7 +1065,8 @@ void cpp_generator::impl_printer::print_method(const Method &method)
  * If "src" is the same as "dst", then no argument conversion is needed.
  *
  * Otherwise, call the conversion function
- * with as arguments the isl_ctx of the object and the argument name.
+ * with as arguments the isl_ctx of the object and the argument name,
+ * or simply the argument name if the source type is an isl type.
  * This means this isl_ctx should be available.
  */
 void cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
@@ -1077,6 +1078,8 @@ void cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
 
 	if (dst == src)
 		os << name;
+	else if (is_isl_type(src->getOriginalType()))
+		os << cpptype << "(" << name << ")";
 	else
 		os << cpptype << "(ctx(), " << name << ")";
 }
@@ -1092,7 +1095,7 @@ void cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
  * Perform a conversion from the argument in the method declaration
  * (as specified by Method::get_param) to the argument of the C function,
  * if needed.
- * Such a conversion requires the isl_ctx to be available.
+ * Such a conversion may require the isl_ctx to be available.
  * In order to be able to use this isl_ctx, the current object needs
  * to valid.  The validity of other arguments is checked
  * by the called method.
