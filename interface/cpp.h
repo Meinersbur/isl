@@ -97,9 +97,7 @@ public:
 	cpp_generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		set<FunctionDecl *> exported_functions,
 		set<FunctionDecl *> functions,
-		bool checked = false) :
-		generator(SM, exported_types, exported_functions, functions),
-		checked(checked) {}
+		bool checked = false);
 
 	virtual void generate();
 private:

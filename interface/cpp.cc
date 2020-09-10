@@ -101,6 +101,23 @@ static std::string to_string(long l)
 	return strm.str();
 }
 
+/* Construct a generator for C++ bindings.
+ *
+ * "checked" is set if C++ bindings should be generated
+ * that rely on the user to check for error conditions.
+ *
+ * The classes and methods are extracted by the constructor
+ * of the generator superclass.
+ */
+cpp_generator::cpp_generator(SourceManager &SM,
+	set<RecordDecl *> &exported_types,
+	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions,
+	bool checked) :
+		generator(SM, exported_types, exported_functions, functions),
+		checked(checked)
+{
+}
+
 /* Generate a cpp interface based on the extracted types and functions.
  *
  * Print first a set of forward declarations for all isl wrapper
