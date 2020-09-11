@@ -1024,12 +1024,7 @@ void cpp_generator::impl_printer::print_public_constructors()
  * This method distinguishes three kinds of methods: member methods, static
  * methods, and constructors.
  *
- * Member methods call "method" by passing to the underlying isl function the
- * isl object belonging to "this" as first argument and the remaining arguments
- * as subsequent arguments.
- *
- * Static methods call "method" by passing all arguments to the underlying isl
- * function, as no this-pointer is available. The result is a newly managed
+ * Member methods and static methods return a newly managed
  * isl C++ object.
  *
  * Constructors create a new object from a given set of input parameters. They
@@ -1072,13 +1067,7 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 	osprintf(os, "  auto res = %s(", methodname.c_str());
 
 	for (int i = 0; i < num_params; ++i) {
-		ParmVarDecl *param = method.fd->getParamDecl(i);
-		bool load_from_this_ptr = false;
-
-		if (i == 0 && method.kind == Method::Kind::member_method)
-			load_from_this_ptr = true;
-
-		generator.print_method_param_use(os, param, load_from_this_ptr);
+		method.print_param_use(os, i);
 
 		if (i != num_params - 1)
 			osprintf(os, ", ");
@@ -1358,11 +1347,9 @@ void cpp_generator::impl_printer::print_set_enum(const Method &method,
 	osprintf(os, "  auto res = %s(", c_name.c_str());
 
 	for (int i = 0; i < n - 1; ++i) {
-		ParmVarDecl *param = method.fd->getParamDecl(i);
-
 		if (i > 0)
 			osprintf(os, ", ");
-		generator.print_method_param_use(os, param, i == 0);
+		method.print_param_use(os, i);
 	}
 	osprintf(os, ", %s", enum_name.c_str());
 	osprintf(os, ");\n");
@@ -1401,13 +1388,16 @@ void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
 	osprintf(os, "}\n");
 }
 
-/* Print the use of "param" to "os".
+/* Print the use of the argument at position "pos" to "os".
  *
- * "load_from_this_ptr" specifies whether the parameter should be loaded from
- * the this-ptr.  In case a value is loaded from a this pointer, the original
+ * Member methods pass the isl object corresponding to "this"
+ * as first argument (at position 0).
+ * Any other arguments are passed along from the method arguments.
+ *
+ * If the argument value is loaded from a this pointer, the original
  * value must be preserved and must consequently be copied.  Values that are
- * loaded from parameters do not need to be preserved, as such values will
- * already be copies of the actual parameters.  It is consequently possible
+ * loaded from method parameters do not need to be preserved, as such values
+ * will already be copies of the actual parameters.  It is consequently possible
  * to directly take the pointer from these values, which saves
  * an unnecessary copy.
  *
@@ -1419,9 +1409,10 @@ void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
  * in a structure called <name>_data.
  * The caller of this function must ensure that these variables exist.
  */
-void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
-	bool load_from_this_ptr)
+void Method::print_param_use(ostream &os, int pos) const
 {
+	ParmVarDecl *param = fd->getParamDecl(pos);
+	bool load_from_this_ptr = pos == 0 && kind == member_method;
 	string name = param->getName().str();
 	const char *name_str = name.c_str();
 	QualType type = param->getOriginalType();
@@ -1431,12 +1422,12 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 		return;
 	}
 
-	if (is_string(type)) {
+	if (generator::is_string(type)) {
 		osprintf(os, "%s.c_str()", name_str);
 		return;
 	}
 
-	if (is_callback(type)) {
+	if (generator::is_callback(type)) {
 		osprintf(os, "%s_lambda, ", name_str);
 		osprintf(os, "&%s_data", name_str);
 		return;
@@ -1445,7 +1436,7 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 	if (!load_from_this_ptr)
 		osprintf(os, "%s.", name_str);
 
-	if (keeps(param)) {
+	if (generator::keeps(param)) {
 		osprintf(os, "get()");
 	} else {
 		if (load_from_this_ptr)

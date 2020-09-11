@@ -25,6 +25,7 @@ struct Method {
 		const std::string &name);
 	Method(const isl_class &clazz, FunctionDecl *fd);
 
+	void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
 
 	const isl_class &clazz;
