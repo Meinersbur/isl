@@ -1502,7 +1502,6 @@ void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz,
 	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
 
 	for (it = set_enums.begin(); it != set_enums.end(); ++it) {
-		osprintf(os, "\n");
 		print_set_enum_impl(os, clazz, fd, it->name, it->method_name);
 	}
 }
