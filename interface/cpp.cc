@@ -751,9 +751,10 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
 	print_method(fd, kind);
 	if (clazz.is_get_method(fd))
 		print_get_method(fd);
-	if (kind == function_kind_member_method)
-		while (next_variant(fd, convert))
-			print_method(fd, kind, convert);
+	if (kind != function_kind_member_method)
+		return;
+	while (next_variant(fd, convert))
+		print_method(fd, kind, convert);
 }
 
 /* Print declarations or definitions for methods "methods".
