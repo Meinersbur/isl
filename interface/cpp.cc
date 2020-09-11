@@ -624,8 +624,6 @@ void cpp_generator::decl_printer::print_persistent_callback_data(
 void cpp_generator::decl_printer::print_persistent_callbacks()
 {
 	const char *cppname = cppstring.c_str();
-	set<FunctionDecl *>::const_iterator in;
-	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
 	if (!clazz.has_persistent_callbacks())
 		return;
@@ -633,12 +631,12 @@ void cpp_generator::decl_printer::print_persistent_callbacks()
 	osprintf(os, "private:\n");
 	osprintf(os, "  inline %s &copy_callbacks(const %s &obj);\n",
 		cppname, cppname);
-	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		print_persistent_callback_data(*in);
+	for (const auto &callback : clazz.persistent_callbacks)
+		print_persistent_callback_data(callback);
 
 	osprintf(os, "public:\n");
-	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		print_method(*in, function_kind_member_method);
+	for (const auto &callback : clazz.persistent_callbacks)
+		print_method(callback, function_kind_member_method);
 }
 
 /* Print declarations or definitions for methods in the class.
