@@ -256,7 +256,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	print_persistent_callbacks_decl(os, clazz);
 	printer.print_methods();
-	print_set_enums_decl(os, clazz);
+	printer.print_set_enums();
 
 	osprintf(os, "};\n");
 }
@@ -671,46 +671,45 @@ void cpp_generator::class_printer::print_methods()
 		print_method_group(it->second);
 }
 
-/* Print a declaration for a method "name" in "clazz" derived
- * from "fd", which sets an enum, to "os".
+/* Print a declaration for a method called "method_name" derived
+ * from "fd", which sets an enum called "enum_name".
  *
  * The last argument is removed because it is replaced by
  * a break-up into several methods.
  */
-void cpp_generator::print_set_enum_decl(ostream &os, const isl_class &clazz,
-	FunctionDecl *fd, const string &name)
+void cpp_generator::decl_printer::print_set_enum(FunctionDecl *fd,
+	const string &enum_name, const string &method_name)
 {
 	int n = fd->getNumParams();
 
-	print_method_header(os, clazz, fd, name, n - 1, true,
+	generator.print_method_header(os, clazz, fd, method_name, n - 1, true,
 				function_kind_member_method);
 }
 
-/* Print declarations for the methods in "clazz" derived from "fd",
- * which sets an enum, to "os".
+/* Print declarations or implementations for the methods derived from "fd",
+ * which sets an enum.
  *
  * A method is generated for each value in the enum, setting
  * the enum to that value.
  */
-void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz,
-	FunctionDecl *fd)
+void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 {
 	vector<set_enum>::const_iterator it;
 	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
 
 	for (it = set_enums.begin(); it != set_enums.end(); ++it)
-		print_set_enum_decl(os, clazz, fd, it->method_name);
+		print_set_enum(fd, it->name, it->method_name);
 }
 
-/* Print declarations for methods in "clazz" derived from functions
- * that set an enum, to "os".
+/* Print declarations or implementations for methods derived from functions
+ * that set an enum.
  */
-void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz)
+void cpp_generator::class_printer::print_set_enums()
 {
 	map<FunctionDecl *, vector<set_enum> >::const_iterator it;
 
 	for (it = clazz.set_enums.begin(); it != clazz.set_enums.end(); ++it)
-		print_set_enums_decl(os, clazz, it->first);
+		print_set_enums(it->first);
 }
 
 /* Print a declaration for the "get" method "fd",
@@ -831,7 +830,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_ctx_impl(os, clazz);
 	print_persistent_callbacks_impl(os, clazz);
 	printer.print_methods();
-	print_set_enums_impl(os, clazz);
+	printer.print_set_enums();
 	print_stream_insertion(os, clazz);
 }
 
@@ -1411,9 +1410,8 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
 	}
 }
 
-/* Print the definition for a method "method_name" in "clazz" derived
- * from "fd", which sets an enum, to "os".
- * In particular, the method "method_name" sets the enum to "enum_name".
+/* Print the definition for a method called "method_name" derived
+ * from "fd", which sets an enum called "enum_name".
  *
  * The last argument of the C function does not appear in the method call,
  * but is fixed to "enum_name" instead.
@@ -1421,20 +1419,21 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
  * printed by cpp_generator::print_method_impl, except that
  * some of the special cases do not occur.
  */
-void cpp_generator::print_set_enum_impl(ostream &os, const isl_class &clazz,
-	FunctionDecl *fd, const string &enum_name, const string &method_name)
+void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
+	const string &enum_name, const string &method_name)
 {
 	string c_name = fd->getName().str();
 	int n = fd->getNumParams();
 	function_kind kind = function_kind_member_method;
 
 	osprintf(os, "\n");
-	print_method_header(os, clazz, fd, method_name, n - 1, false, kind);
+	generator.print_method_header(os, clazz, fd, method_name, n - 1, false,
+					kind);
 	osprintf(os, "{\n");
 
-	print_argument_validity_check(os, fd, kind);
-	print_save_ctx(os, fd, kind);
-	print_on_error_continue(os);
+	generator.print_argument_validity_check(os, fd, kind);
+	generator.print_save_ctx(os, fd, kind);
+	generator.print_on_error_continue(os);
 
 	osprintf(os, "  auto res = %s(", c_name.c_str());
 
@@ -1443,43 +1442,15 @@ void cpp_generator::print_set_enum_impl(ostream &os, const isl_class &clazz,
 
 		if (i > 0)
 			osprintf(os, ", ");
-		print_method_param_use(os, param, i == 0);
+		generator.print_method_param_use(os, param, i == 0);
 	}
 	osprintf(os, ", %s", enum_name.c_str());
 	osprintf(os, ");\n");
 
-	print_exceptional_execution_check(os, clazz, fd, kind);
-	print_method_return(os, clazz, fd);
+	generator.print_exceptional_execution_check(os, clazz, fd, kind);
+	generator.print_method_return(os, clazz, fd);
 
 	osprintf(os, "}\n");
-}
-
-/* Print definitions for the methods in "clazz" derived from "fd",
- * which sets an enum, to "os".
- *
- * A method is generated for each value in the enum, setting
- * the enum to that value.
- */
-void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz,
-	FunctionDecl *fd)
-{
-	vector<set_enum>::const_iterator it;
-	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
-
-	for (it = set_enums.begin(); it != set_enums.end(); ++it) {
-		print_set_enum_impl(os, clazz, fd, it->name, it->method_name);
-	}
-}
-
-/* Print definitions for methods in "clazz" derived from functions
- * that set an enum, to "os".
- */
-void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz)
-{
-	map<FunctionDecl *, vector<set_enum> >::const_iterator it;
-
-	for (it = clazz.set_enums.begin(); it != clazz.set_enums.end(); ++it)
-		print_set_enums_impl(os, clazz, it->first);
 }
 
 /* Print a definition for the "get" method "fd" in class "clazz",

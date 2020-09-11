@@ -65,11 +65,6 @@ private:
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name, function_kind kind,
 		const std::vector<bool> &convert = {});
-	void print_set_enum_decl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd, const string &name);
-	void print_set_enums_decl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd);
-	void print_set_enums_decl(ostream &os, const isl_class &clazz);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -102,12 +97,6 @@ private:
 		FunctionDecl *method, function_kind kind);
 	void print_method_return(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
-	void print_set_enum_impl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd, const string &enum_name,
-		const string &method_name);
-	void print_set_enums_impl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd);
-	void print_set_enums_impl(ostream &os, const isl_class &clazz);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
 	void print_stream_insertion(ostream &os, const isl_class &clazz);
@@ -174,6 +163,10 @@ struct cpp_generator::class_printer {
 	virtual void print_method(FunctionDecl *method, function_kind kind,
 		const std::vector<bool> &convert) = 0;
 	virtual void print_get_method(FunctionDecl *fd) = 0;
+	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
+		const string &method_name) = 0;
+	void print_set_enums(FunctionDecl *fd);
+	void print_set_enums();
 };
 
 /* A helper class for printing method declarations of a class.
@@ -188,6 +181,8 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	virtual void print_method(FunctionDecl *method, function_kind kind,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
+	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
+		const string &method_name) override;
 };
 
 /* A helper class for printing method definitions of a class.
@@ -202,6 +197,8 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	virtual void print_method(FunctionDecl *method, function_kind kind,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
+	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
+		const string &method_name) override;
 };
 
 #endif
