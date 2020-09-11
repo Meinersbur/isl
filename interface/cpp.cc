@@ -255,7 +255,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	print_ctx_decl(os);
 	osprintf(os, "\n");
 	print_persistent_callbacks_decl(os, clazz);
-	print_methods_decl(os, clazz);
+	printer.print_methods();
 	print_set_enums_decl(os, clazz);
 
 	osprintf(os, "};\n");
@@ -663,15 +663,14 @@ void cpp_generator::print_persistent_callbacks_decl(ostream &os,
 		printer.print_method(*in, function_kind_member_method);
 }
 
-/* Print declarations for methods in class "clazz" to "os".
+/* Print declarations or definitions for methods in the class.
  */
-void cpp_generator::print_methods_decl(ostream &os, const isl_class &clazz)
+void cpp_generator::class_printer::print_methods()
 {
-	decl_printer printer(os, clazz, *this);
 	map<string, function_set >::const_iterator it;
 
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		printer.print_method_group(it->second);
+		print_method_group(it->second);
 }
 
 /* Print a declaration for a method "name" in "clazz" derived
@@ -833,7 +832,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_downcast_impl(os, clazz);
 	print_ctx_impl(os, clazz);
 	print_persistent_callbacks_impl(os, clazz);
-	print_methods_impl(os, clazz);
+	printer.print_methods();
 	print_set_enums_impl(os, clazz);
 	print_stream_insertion(os, clazz);
 }
@@ -1428,17 +1427,6 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
 
 		print_set_persistent_callback(os, clazz, *in, kind);
 	}
-}
-
-/* Print definitions for methods of class "clazz" to "os".
- */
-void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
-{
-	impl_printer printer(os, clazz, *this);
-	map<string, function_set>::const_iterator it;
-
-	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		printer.print_method_group(it->second);
 }
 
 /* Print the definition for a method "method_name" in "clazz" derived
