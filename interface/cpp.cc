@@ -670,11 +670,8 @@ void cpp_generator::decl_printer::print_set_enum(FunctionDecl *fd,
  */
 void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 {
-	vector<set_enum>::const_iterator it;
-	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
-
-	for (it = set_enums.begin(); it != set_enums.end(); ++it)
-		print_set_enum(fd, it->name, it->method_name);
+	for (const auto &set : clazz.set_enums.at(fd))
+		print_set_enum(fd, set.name, set.method_name);
 }
 
 /* Print declarations or implementations for methods derived from functions
