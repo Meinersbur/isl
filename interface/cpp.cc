@@ -1343,8 +1343,6 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 {
 	const char *cppname = cppstring.c_str();
 	string classname = type2cpp(clazz);
-	set<FunctionDecl *>::const_iterator in;
-	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
 	if (!clazz.has_persistent_callbacks())
 		return;
@@ -1353,8 +1351,8 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 	osprintf(os, "%s &%s::copy_callbacks(const %s &obj)\n",
 		cppname, classname.c_str(), cppname);
 	osprintf(os, "{\n");
-	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
-		string callback_name = clazz.persistent_callback_name(*in);
+	for (const auto &callback : clazz.persistent_callbacks) {
+		string callback_name = clazz.persistent_callback_name(callback);
 
 		osprintf(os, "  %s_data = obj.%s_data;\n",
 			callback_name.c_str(), callback_name.c_str());
@@ -1362,10 +1360,10 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 	osprintf(os, "  return *this;\n");
 	osprintf(os, "}\n");
 
-	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
+	for (const auto &callback : clazz.persistent_callbacks) {
 		function_kind kind = function_kind_member_method;
 
-		print_set_persistent_callback(*in, kind);
+		print_set_persistent_callback(callback, kind);
 	}
 }
 
