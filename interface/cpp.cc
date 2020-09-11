@@ -388,14 +388,8 @@ void cpp_generator::decl_printer::print_method(FunctionDecl *method,
  */
 void cpp_generator::class_printer::print_constructors()
 {
-	function_set::const_iterator in;
-	const function_set &constructors = clazz.constructors;
-
-	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		FunctionDecl *cons = *in;
-
+	for (const auto &cons : clazz.constructors)
 		print_method(cons, function_kind_constructor);
-	}
 }
 
 /* Print declarations of copy assignment operator.
