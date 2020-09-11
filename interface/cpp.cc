@@ -247,7 +247,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
 	print_public_constructors_decl(os, clazz);
-	print_constructors_decl(os, clazz);
+	printer.print_constructors();
 	print_copy_assignment_decl(os, clazz);
 	print_destructor_decl(os, clazz);
 	print_ptr_decl(os, clazz);
@@ -382,29 +382,27 @@ void cpp_generator::decl_printer::print_method(FunctionDecl *method,
 	print_method(method, kind, {});
 }
 
-/* Print declarations for constructors for class "class" to "os".
+/* Print declarations or implementations of constructors.
  *
  * For each isl function that is marked as __isl_constructor,
  * add a corresponding C++ constructor.
  *
- * Example:
+ * Example of declarations:
  *
  * 	inline /\* implicit *\/ union_set(basic_set bset);
  * 	inline /\* implicit *\/ union_set(set set);
  * 	inline explicit val(ctx ctx, long i);
  * 	inline explicit val(ctx ctx, const std::string &str);
  */
-void cpp_generator::print_constructors_decl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::class_printer::print_constructors()
 {
-	decl_printer printer(os, clazz, *this);
 	function_set::const_iterator in;
 	const function_set &constructors = clazz.constructors;
 
 	for (in = constructors.begin(); in != constructors.end(); ++in) {
 		FunctionDecl *cons = *in;
 
-		printer.print_method(cons, function_kind_constructor);
+		print_method(cons, function_kind_constructor);
 	}
 }
 
@@ -825,7 +823,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_class_factory_impl(os, clazz);
 	print_public_constructors_impl(os, clazz);
 	print_protected_constructors_impl(os, clazz);
-	print_constructors_impl(os, clazz);
+	printer.print_constructors();
 	print_copy_assignment_impl(os, clazz);
 	print_destructor_impl(os, clazz);
 	print_ptr_impl(os, clazz);
@@ -1210,22 +1208,6 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	}
 	osprintf(os, ");\n");
 	osprintf(os, "}\n");
-}
-
-/* Print implementations of constructors for class "clazz" to "os".
- */
-void cpp_generator::print_constructors_impl(ostream &os,
-	const isl_class &clazz)
-{
-	impl_printer printer(os, clazz, *this);
-	function_set::const_iterator in;
-	const function_set constructors = clazz.constructors;
-
-	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		FunctionDecl *cons = *in;
-
-		printer.print_method(cons, function_kind_constructor);
-	}
 }
 
 /* Print implementation of copy assignment operator for class "clazz" to "os".

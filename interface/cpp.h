@@ -45,7 +45,6 @@ private:
 	void print_copy_assignment_decl(ostream &os, const isl_class &clazz);
 	void print_public_constructors_decl(ostream &os,
 		const isl_class &clazz);
-	void print_constructors_decl(ostream &os, const isl_class &clazz);
 	void print_destructor_decl(ostream &os, const isl_class &clazz);
 	void print_ptr_decl(ostream &os, const isl_class &clazz);
 	void print_isa_type_template(ostream &os, int indent,
@@ -82,7 +81,6 @@ private:
 		const isl_class &clazz);
 	void print_public_constructors_impl(ostream &os,
 		const isl_class &clazz);
-	void print_constructors_impl(ostream &os, const isl_class &clazz);
 	void print_copy_assignment_impl(ostream &os, const isl_class &clazz);
 	void print_destructor_impl(ostream &os, const isl_class &clazz);
 	void print_check_no_persistent_callback(ostream &os,
@@ -168,6 +166,7 @@ struct cpp_generator::class_printer {
 	class_printer(std::ostream &os, const isl_class &clazz,
 			cpp_generator &generator);
 
+	void print_constructors();
 	void print_methods();
 	void print_method_variants(FunctionDecl *fd);
 	void print_method_group(const function_set &methods);
