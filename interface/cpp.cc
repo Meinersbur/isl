@@ -640,13 +640,6 @@ void cpp_generator::class_printer::print_methods()
 		print_method_group(kvp.second);
 }
 
-/* Print a declaration for a method "method", which sets an enum.
- */
-void cpp_generator::decl_printer::print_set_enum(const EnumMethod &method)
-{
-	print_method_header(method);
-}
-
 /* Print declarations or implementations for the methods derived from "fd",
  * which sets an enum.
  *
@@ -658,7 +651,7 @@ void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 	for (const auto &set : clazz.set_enums.at(fd)) {
 		EnumMethod method(clazz, fd, set.method_name, set.name);
 
-		print_set_enum(method);
+		print_method(method);
 	}
 }
 
@@ -1312,42 +1305,6 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 
 	for (const auto &callback : clazz.persistent_callbacks)
 		print_set_persistent_callback(Method(clazz, callback));
-}
-
-/* Print the definition for a method "method", which sets an enum.
- *
- * The last argument of the C function is fixed to "enum_name".
- * Other than that, the method printed here is similar to one
- * printed by cpp_generator::print_method_impl, except that
- * some of the special cases do not occur.
- */
-void cpp_generator::impl_printer::print_set_enum(const EnumMethod &method)
-{
-	string c_name = method.fd->getName().str();
-	int n = method.num_params();
-
-	osprintf(os, "\n");
-	print_method_header(method);
-	osprintf(os, "{\n");
-
-	print_argument_validity_check(method);
-	print_save_ctx(method);
-	print_on_error_continue();
-
-	osprintf(os, "  auto res = %s(", c_name.c_str());
-
-	for (int i = 0; i < n; ++i) {
-		if (i > 0)
-			osprintf(os, ", ");
-		method.print_param_use(os, i);
-	}
-	osprintf(os, ", %s", method.enum_name.c_str());
-	osprintf(os, ");\n");
-
-	print_exceptional_execution_check(method);
-	print_method_return(method);
-
-	osprintf(os, "}\n");
 }
 
 /* Print a definition for the "get" method "fd" in class "clazz",
@@ -2407,6 +2364,20 @@ EnumMethod::EnumMethod(const isl_class &clazz, FunctionDecl *fd,
 	const std::string &method_name, const std::string &enum_name) :
 		Method(clazz, fd, method_name), enum_name(enum_name)
 {
+}
+
+/* Print the use of the argument at position "pos" to "os".
+ *
+ * If the position is beyond the number of method arguments,
+ * then it corresponds to the enum value corresponding to this EnumMethod.
+ * Otherwise, delegate to Method::print_param_use.
+ */
+void EnumMethod::print_param_use(ostream &os, int pos) const
+{
+	if (pos == num_params())
+		osprintf(os, "%s", enum_name.c_str());
+	else
+		Method::print_param_use(os, pos);
 }
 
 /* Return the number of parameters of the method
