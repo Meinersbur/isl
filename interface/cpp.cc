@@ -640,14 +640,12 @@ void cpp_generator::class_printer::print_methods()
 		print_method_group(kvp.second);
 }
 
-/* Print a declaration for a method "method",
- * which sets an enum called "enum_name".
+/* Print a declaration for a method "method", which sets an enum.
  *
  * The last argument is removed because it is replaced by
  * a break-up into several methods.
  */
-void cpp_generator::decl_printer::print_set_enum(const Method &method,
-	const string &enum_name)
+void cpp_generator::decl_printer::print_set_enum(const EnumMethod &method)
 {
 	int n = method.fd->getNumParams();
 
@@ -663,9 +661,9 @@ void cpp_generator::decl_printer::print_set_enum(const Method &method,
 void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 {
 	for (const auto &set : clazz.set_enums.at(fd)) {
-		Method method(clazz, fd, set.method_name);
+		EnumMethod method(clazz, fd, set.method_name, set.name);
 
-		print_set_enum(method, set.name);
+		print_set_enum(method);
 	}
 }
 
@@ -1321,8 +1319,7 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 		print_set_persistent_callback(Method(clazz, callback));
 }
 
-/* Print the definition for a method "method",
- * which sets an enum called "enum_name".
+/* Print the definition for a method "method", which sets an enum.
  *
  * The last argument of the C function does not appear in the method call,
  * but is fixed to "enum_name" instead.
@@ -1330,8 +1327,7 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
  * printed by cpp_generator::print_method_impl, except that
  * some of the special cases do not occur.
  */
-void cpp_generator::impl_printer::print_set_enum(const Method &method,
-	const string &enum_name)
+void cpp_generator::impl_printer::print_set_enum(const EnumMethod &method)
 {
 	string c_name = method.fd->getName().str();
 	int n = method.fd->getNumParams();
@@ -1351,7 +1347,7 @@ void cpp_generator::impl_printer::print_set_enum(const Method &method,
 			osprintf(os, ", ");
 		method.print_param_use(os, i);
 	}
-	osprintf(os, ", %s", enum_name.c_str());
+	osprintf(os, ", %s", method.enum_name.c_str());
 	osprintf(os, ");\n");
 
 	print_exceptional_execution_check(method);
@@ -2405,6 +2401,16 @@ Method::Method(const isl_class &clazz, FunctionDecl *fd,
  */
 Method::Method(const isl_class &clazz, FunctionDecl *fd) :
 	Method(clazz, fd, clazz.method_name(fd))
+{
+}
+
+/* Construct an object representing a C++ method for setting an enum
+ * from the class to which is belongs,
+ * the isl function from which it is derived and the method and enum names.
+ */
+EnumMethod::EnumMethod(const isl_class &clazz, FunctionDecl *fd,
+	const std::string &method_name, const std::string &enum_name) :
+		Method(clazz, fd, method_name), enum_name(enum_name)
 {
 }
 

@@ -34,6 +34,18 @@ struct Method {
 	const enum Kind kind;
 };
 
+/* A specialized generated C++ method for setting an enum.
+ *
+ * "enum_name" is a string representation of the enum value
+ * set by this method.
+ */
+struct EnumMethod : public Method {
+	EnumMethod(const isl_class &clazz, FunctionDecl *fd,
+		const std::string &method_name, const std::string &enum_name);
+
+	std::string enum_name;
+};
+
 /* Generator for C++ bindings.
  *
  * "checked" is set if C++ bindings should be generated
@@ -110,8 +122,7 @@ struct cpp_generator::class_printer {
 	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) = 0;
 	virtual void print_get_method(FunctionDecl *fd) = 0;
-	virtual void print_set_enum(const Method &method,
-		const string &enum_name) = 0;
+	virtual void print_set_enum(const EnumMethod &method) = 0;
 	void print_set_enums(FunctionDecl *fd);
 	void print_set_enums();
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
@@ -146,8 +157,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
-	virtual void print_set_enum(const Method &method,
-		const string &enum_name) override;
+	virtual void print_set_enum(const EnumMethod &method) override;
 };
 
 /* A helper class for printing method definitions of a class.
@@ -161,8 +171,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
-	virtual void print_set_enum(const Method &method,
-		const string &enum_name) override;
+	virtual void print_set_enum(const EnumMethod &method) override;
 	void print_check_ptr(const char *ptr);
 	void print_check_ptr_start(const char *ptr);
 	void print_check_ptr_end(const char *ptr);
