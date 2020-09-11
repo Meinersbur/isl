@@ -679,10 +679,8 @@ void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
  */
 void cpp_generator::class_printer::print_set_enums()
 {
-	map<FunctionDecl *, vector<set_enum> >::const_iterator it;
-
-	for (it = clazz.set_enums.begin(); it != clazz.set_enums.end(); ++it)
-		print_set_enums(it->first);
+	for (const auto &kvp : clazz.set_enums)
+		print_set_enums(kvp.first);
 }
 
 /* Print a declaration for the "get" method "fd",
