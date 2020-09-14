@@ -1611,14 +1611,11 @@ void cpp_generator::impl_printer::print_on_error_continue()
 static void print_persistent_callback_exceptional_execution_check(ostream &os,
 	const isl_class &clazz, cpp_generator::function_kind kind)
 {
-	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
-	set<FunctionDecl *>::const_iterator in;
-
 	if (kind != cpp_generator::function_kind_member_method)
 		return;
 
-	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
-		string callback_name = clazz.persistent_callback_name(*in);
+	for (const auto &pcb : clazz.persistent_callbacks) {
+		string callback_name = clazz.persistent_callback_name(pcb);
 
 		osprintf(os, "  if (%s_data && %s_data->eptr) {\n",
 			callback_name.c_str(), callback_name.c_str());
