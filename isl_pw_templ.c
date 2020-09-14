@@ -777,13 +777,14 @@ __isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
  * isl_set_intersect, isl_set_intersect_params, isl_set_intersect_factor_domain,
  * isl_set_intersect_factor_range or isl_set_subtract.
  */
-static __isl_give PW *FN(PW,restrict_domain_aligned)(__isl_take PW *pw,
+static __isl_give PW *FN(PW,restrict_domain)(__isl_take PW *pw,
 	__isl_take isl_set *set,
 	__isl_give isl_set *(*fn)(__isl_take isl_set *set1,
 				    __isl_take isl_set *set2))
 {
 	int i;
 
+	FN(PW,align_params_set)(&pw, &set);
 	if (!pw || !set)
 		goto error;
 
@@ -813,8 +814,7 @@ error:
 __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	FN(PW,align_params_set)(&pw, &context);
-	return FN(PW,restrict_domain_aligned)(pw, context, &isl_set_intersect);
+	return FN(PW,restrict_domain)(pw, context, &isl_set_intersect);
 }
 
 /* Intersect the domain of "pw" with the parameter domain "context".
@@ -822,9 +822,7 @@ __isl_give PW *FN(PW,intersect_domain)(__isl_take PW *pw,
 __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	FN(PW,align_params_set)(&pw, &context);
-	return FN(PW,restrict_domain_aligned)(pw, context,
-					&isl_set_intersect_params);
+	return FN(PW,restrict_domain)(pw, context, &isl_set_intersect_params);
 }
 
 /* Given a piecewise expression "pw" with domain in a space [A -> B] and
@@ -833,8 +831,7 @@ __isl_give PW *FN(PW,intersect_params)(__isl_take PW *pw,
 __isl_give PW *FN(PW,intersect_domain_wrapped_domain)(__isl_take PW *pw,
 	__isl_take isl_set *set)
 {
-	FN(PW,align_params_set)(&pw, &set);
-	return FN(PW,restrict_domain_aligned)(pw, set,
+	return FN(PW,restrict_domain)(pw, set,
 					    &isl_set_intersect_factor_domain);
 }
 
@@ -844,9 +841,7 @@ __isl_give PW *FN(PW,intersect_domain_wrapped_domain)(__isl_take PW *pw,
 __isl_give PW *FN(PW,intersect_domain_wrapped_range)(__isl_take PW *pw,
 	__isl_take isl_set *set)
 {
-	FN(PW,align_params_set)(&pw, &set);
-	return FN(PW,restrict_domain_aligned)(pw, set,
-					    &isl_set_intersect_factor_range);
+	return FN(PW,restrict_domain)(pw, set, &isl_set_intersect_factor_range);
 }
 
 /* Subtract "domain' from the domain of "pw".
@@ -854,8 +849,7 @@ __isl_give PW *FN(PW,intersect_domain_wrapped_range)(__isl_take PW *pw,
 __isl_give PW *FN(PW,subtract_domain)(__isl_take PW *pw,
 	__isl_take isl_set *domain)
 {
-	FN(PW,align_params_set)(&pw, &domain);
-	return FN(PW,restrict_domain_aligned)(pw, domain, &isl_set_subtract);
+	return FN(PW,restrict_domain)(pw, domain, &isl_set_subtract);
 }
 
 /* Return -1 if the piece "p1" should be sorted before "p2"
