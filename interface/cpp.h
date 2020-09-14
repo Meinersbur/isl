@@ -10,14 +10,22 @@ using namespace clang;
  *
  * "clazz" is the class to which the method belongs.
  * "fd" is the original isl function.
+ * "kind" is the type of the method.
  */
 struct Method {
+	enum Kind {
+		static_method,
+		member_method,
+		constructor,
+	};
+
 	Method(const isl_class &clazz, FunctionDecl *fd);
 
 	bool is_subclass_mutator() const;
 
 	const isl_class &clazz;
 	FunctionDecl *const fd;
+	const enum Kind kind;
 };
 
 /* Generator for C++ bindings.
@@ -38,12 +46,6 @@ public:
 		bool checked = false) :
 		generator(SM, exported_types, exported_functions, functions),
 		checked(checked) {}
-
-	enum function_kind {
-		function_kind_static_method,
-		function_kind_member_method,
-		function_kind_constructor,
-	};
 
 	virtual void generate();
 private:
@@ -68,8 +70,6 @@ private:
 	string param2cpp(QualType type);
 	bool is_implicit_conversion(const Method &cons);
 	bool is_subclass(QualType subclass_type, const isl_class &class_type);
-	function_kind get_method_kind(const isl_class &clazz,
-		FunctionDecl *method);
 public:
 	static string type2cpp(const isl_class &clazz);
 	static string type2cpp(string type_string);
@@ -101,8 +101,8 @@ struct cpp_generator::class_printer {
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_method_variants(FunctionDecl *fd);
 	void print_method_group(const function_set &methods);
-	virtual void print_method(const Method &method, function_kind kind) = 0;
-	virtual void print_method(const Method &method, function_kind kind,
+	virtual void print_method(const Method &method) = 0;
+	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) = 0;
 	virtual void print_get_method(FunctionDecl *fd) = 0;
 	virtual void print_set_enum(const Method &method,
@@ -112,11 +112,11 @@ struct cpp_generator::class_printer {
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
 	void print_method_header(const Method &method, const string &cname,
-		int num_params, function_kind kind,
+		int num_params,
 		const std::vector<bool> &convert = {});
 	void print_named_method_header(const Method &method, string name,
-		function_kind kind, const std::vector<bool> &convert = {});
-	void print_method_header(const Method &method, function_kind kind);
+		const std::vector<bool> &convert = {});
+	void print_method_header(const Method &method);
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);
 };
 
@@ -140,11 +140,9 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	void print_persistent_callback_data(FunctionDecl *method);
 	void print_persistent_callbacks();
 	void print_named_method(const Method &method, const string &name,
-		function_kind kind,
 		const std::vector<bool> &convert = {});
-	virtual void print_method(const Method &method, function_kind kind)
-		override;
-	virtual void print_method(const Method &method, function_kind kind,
+	virtual void print_method(const Method &method) override;
+	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(const Method &method,
@@ -158,9 +156,8 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 			cpp_generator &generator) :
 		class_printer(os, clazz, generator, false) {}
 
-	virtual void print_method(const Method &method, function_kind kind)
-		override;
-	virtual void print_method(const Method &method, function_kind kind,
+	virtual void print_method(const Method &method) override;
+	virtual void print_method(const Method &method,
 		const std::vector<bool> &convert) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(const Method &method,
@@ -176,15 +173,12 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_ptr();
 	void print_downcast();
 	void print_ctx();
-	void print_set_persistent_callback(const Method &method,
-		function_kind kind);
+	void print_set_persistent_callback(const Method &method);
 	void print_persistent_callbacks();
-	void print_argument_validity_check(FunctionDecl *method,
-		function_kind kind);
-	void print_save_ctx(FunctionDecl *method, function_kind kind);
+	void print_argument_validity_check(const Method &method);
+	void print_save_ctx(const Method &method);
 	void print_on_error_continue();
-	void print_exceptional_execution_check(FunctionDecl *method,
-		function_kind kind);
+	void print_exceptional_execution_check(const Method &method);
 	void print_method_return(const Method &method);
 	void print_stream_insertion();
 	void print_wrapped_call_checked(int indent, const std::string &call);
