@@ -8400,8 +8400,8 @@ error:
 	return NULL;
 }
 
-#undef TYPE
-#define TYPE isl_map
+#undef BASE
+#define BASE map
 static
 #include "isl_copy_tuple_id_templ.c"
 
