@@ -4257,7 +4257,15 @@ __isl_give isl_union_map *isl_union_map_eq_at_multi_union_pw_aff(
 }
 
 #undef ORDER
+#define ORDER		le
+#include "isl_union_map_lex_templ.c"
+
+#undef ORDER
 #define ORDER		lt
+#include "isl_union_map_lex_templ.c"
+
+#undef ORDER
+#define ORDER		ge
 #include "isl_union_map_lex_templ.c"
 
 #undef ORDER

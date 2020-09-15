@@ -8239,11 +8239,21 @@ struct {
 	  "{ A[i,j] -> B[i',j'] }",
 	  "F[{ A[i,j] -> [i] : i > j; B[i,j] -> [i] }]",
 	  "{ A[i,j] -> B[i,j'] : i > j }" },
+	{ &isl_union_map_lex_le_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [j] }]",
+	  "{ A[i,j] -> B[i',j'] : i,j <<= i',j' }" },
 	{ &isl_union_map_lex_lt_at_multi_union_pw_aff,
 	  "{ A[i,j] -> B[i',j'] }",
 	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
 	    "{ A[i,j] -> [j]; B[i,j] -> [j] }]",
 	  "{ A[i,j] -> B[i',j'] : i,j << i',j' }" },
+	{ &isl_union_map_lex_ge_at_multi_union_pw_aff,
+	  "{ A[i,j] -> B[i',j'] }",
+	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
+	    "{ A[i,j] -> [j]; B[i,j] -> [j] }]",
+	  "{ A[i,j] -> B[i',j'] : i,j >>= i',j' }" },
 	{ &isl_union_map_lex_gt_at_multi_union_pw_aff,
 	  "{ A[i,j] -> B[i',j'] }",
 	  "F[{ A[i,j] -> [i]; B[i,j] -> [i] }, "
