@@ -19,13 +19,17 @@
  * "mpa1" is in the given lexicographic order compared to "mpa2"
  * if, for some i, the i-th element of "mpa1" is in that order compared to
  * the i-th element of "mpa2" while all previous elements are
- * pairwise equal.
+ * pairwise equal, where the order needs to be strict (not-equal)
+ * if i corresponds to anything but the last element.
+ * The strict version of "ORDER" is defined by "STRICT_ORDER",
+ * which is the same if "ORDER" itself is strict.
  */
 static __isl_give isl_map *FN(FN(isl_multi_pw_aff_lex,ORDER),map_on_space)(
 	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
 	__isl_take isl_space *space)
 {
 	return isl_multi_pw_aff_lex_map_on_space(mpa1, mpa2,
+					&FN(FN(isl_pw_aff,STRICT_ORDER),map),
 					&FN(FN(isl_pw_aff,ORDER),map), space);
 }
 

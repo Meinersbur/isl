@@ -7440,17 +7440,24 @@ __isl_give isl_map *isl_map_eq_at_multi_pw_aff(__isl_take isl_map *map,
 }
 
 /* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function values of "mpa1" lexicographically satisfies "base"
- * compared to that of "mpa2".  "space" is the space of the result.
+ * where the function values of "mpa1" lexicographically satisfies
+ * "strict_base"/"base" compared to that of "mpa2".
+ * "space" is the space of the result.
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
- * "mpa1" lexicographically satisfies "base" compared to "mpa2"
- * if, for some i, the i-th element of "mpa1" satisfies "base" when compared to
- * the i-th element of "mpa2" while all previous elements are
+ * "mpa1" lexicographically satisfies "strict_base"/"base" compared to "mpa2"
+ * if, for some i, the i-th element of "mpa1" satisfies "strict_base"/"base"
+ * when compared to the i-th element of "mpa2" while all previous elements are
  * pairwise equal.
+ * In particular, if i corresponds to the final elements
+ * then they need to satisfy "base", while "strict_base" needs to be satisfied
+ * for other values of i.
+ * If "base" is a strict order, then "base" and "strict_base" are the same.
  */
 static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
 	__isl_keep isl_multi_pw_aff *mpa1, __isl_keep isl_multi_pw_aff *mpa2,
+	__isl_give isl_map *(*strict_base)(__isl_take isl_pw_aff *pa1,
+		__isl_take isl_pw_aff *pa2),
 	__isl_give isl_map *(*base)(__isl_take isl_pw_aff *pa1,
 		__isl_take isl_pw_aff *pa2),
 	__isl_take isl_space *space)
@@ -7466,16 +7473,19 @@ static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
 	rest = isl_map_universe(space);
 
 	for (i = 0; i < n; ++i) {
+		int last;
 		isl_pw_aff *pa1, *pa2;
 		isl_map *map;
 
+		last = i == n - 1;
+
 		pa1 = isl_multi_pw_aff_get_pw_aff(mpa1, i);
 		pa2 = isl_multi_pw_aff_get_pw_aff(mpa2, i);
-		map = base(pa1, pa2);
+		map = last ? base(pa1, pa2) : strict_base(pa1, pa2);
 		map = isl_map_intersect(map, isl_map_copy(rest));
 		res = isl_map_union(res, map);
 
-		if (i == n - 1)
+		if (last)
 			continue;
 
 		pa1 = isl_multi_pw_aff_get_pw_aff(mpa1, i);
@@ -7489,19 +7499,27 @@ static __isl_give isl_map *isl_multi_pw_aff_lex_map_on_space(
 }
 
 #undef ORDER
-#define ORDER	le
+#define ORDER		le
+#undef STRICT_ORDER
+#define STRICT_ORDER	lt
 #include "isl_aff_lex_templ.c"
 
 #undef ORDER
-#define ORDER	lt
+#define ORDER		lt
+#undef STRICT_ORDER
+#define STRICT_ORDER	lt
 #include "isl_aff_lex_templ.c"
 
 #undef ORDER
-#define ORDER	ge
+#define ORDER		ge
+#undef STRICT_ORDER
+#define STRICT_ORDER	gt
 #include "isl_aff_lex_templ.c"
 
 #undef ORDER
-#define ORDER	gt
+#define ORDER		gt
+#undef STRICT_ORDER
+#define STRICT_ORDER	gt
 #include "isl_aff_lex_templ.c"
 
 /* Compare two isl_affs.
