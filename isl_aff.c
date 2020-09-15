@@ -7445,7 +7445,7 @@ __isl_give isl_map *isl_map_eq_at_multi_pw_aff(__isl_take isl_map *map,
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
  * "mpa1" lexicographically satisfies "base" compared to "mpa2"
- * if its i-th element satisfies "base" when compared to
+ * if, for some i, the i-th element of "mpa1" satisfies "base" when compared to
  * the i-th element of "mpa2" while all previous elements are
  * pairwise equal.
  */

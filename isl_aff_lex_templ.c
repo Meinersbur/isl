@@ -17,7 +17,7 @@
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
  * "mpa1" is in the given lexicographic order compared to "mpa2"
- * if its i-th element is in that order compared to
+ * if, for some i, the i-th element of "mpa1" is in that order compared to
  * the i-th element of "mpa2" while all previous elements are
  * pairwise equal.
  */
