@@ -570,6 +570,7 @@ EXTRA_DIST = \
 	isl_union_multi.c \
 	isl_union_eval.c \
 	isl_union_locals_templ.c \
+	isl_union_map_lex_templ.c \
 	isl_union_neg.c \
 	isl_union_pw_templ.c \
 	libisl-gdb.py \
