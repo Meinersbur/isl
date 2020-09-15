@@ -2448,7 +2448,9 @@ bool cpp_generator::is_implicit_conversion(const Method &cons)
 cpp_generator::function_kind cpp_generator::get_method_kind(
 	const isl_class &clazz, FunctionDecl *method)
 {
-	if (is_static(clazz, method))
+	if (is_constructor(method))
+		return function_kind_constructor;
+	else if (is_static(clazz, method))
 		return function_kind_static_method;
 	else
 		return function_kind_member_method;
