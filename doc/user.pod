@@ -7805,7 +7805,7 @@ where the function values satisfy the given relation.
 		__isl_take isl_multi_union_pw_aff *mupa);
 
 These functions select the subset of elements in the union map
-that have an equal or lexicographically smaller function value.
+that have an equal or lexicographically smaller or greater function value.
 
 =item * Cartesian Product
 
