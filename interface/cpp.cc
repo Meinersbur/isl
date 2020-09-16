@@ -761,10 +761,8 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
 void cpp_generator::class_printer::print_method_group(
 	const function_set &methods)
 {
-	function_set::const_iterator it;
-
-	for (it = methods.begin(); it != methods.end(); ++it)
-		print_method_variants(*it);
+	for (const auto &fd : methods)
+		print_method_variants(fd);
 }
 
 /* Print a declaration for a method called "name" derived from "fd".
