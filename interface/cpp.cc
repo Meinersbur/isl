@@ -1984,7 +1984,8 @@ ParmVarDecl *cpp_generator::get_param(FunctionDecl *fd, int pos,
  * For static functions and constructors all parameters of the original isl
  * function are exposed.
  *
- * Parameters that are defined as __isl_keep or are of type string, are passed
+ * Parameters that are defined as __isl_keep, are of type string or
+ * are callbacks, are passed
  * as const reference, which allows the compiler to optimize the parameter
  * transfer.
  *
