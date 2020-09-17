@@ -1088,7 +1088,8 @@ void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
 	print_method_header(method);
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
-	osprintf(os, "  return this->%s", method.name.c_str());
+	osprintf(os, "  return ");
+	method.print_call(os);
 	method.print_cpp_arg_list(os, [&] (int i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		std::string name = param->getName().str();
@@ -2433,6 +2434,14 @@ bool ConversionMethod::param_needs_copy(int pos) const
 clang::ParmVarDecl *ConversionMethod::get_param(int pos) const
 {
 	return get_param_fn(pos);
+}
+
+/* Print a call to the method (without the arguments).
+ */
+void ConversionMethod::print_call(std::ostream &os) const
+{
+	os << "this->";
+	os << name;
 }
 
 /* Construct an object representing a C++ method for setting an enum

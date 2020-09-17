@@ -57,6 +57,8 @@ struct ConversionMethod : Method {
 	virtual bool param_needs_copy(int pos) const override;
 	virtual clang::ParmVarDecl *get_param(int pos) const override;
 
+	void print_call(std::ostream &os) const;
+
 	const std::function<clang::ParmVarDecl *(int pos)> get_param_fn;
 };
 
