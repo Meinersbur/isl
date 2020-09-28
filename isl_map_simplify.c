@@ -5556,8 +5556,8 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 		bmap = isl_basic_map_detect_inequality_pairs(bmap, &progress);
 		if (progress) {
-			bmap = eliminate_divs_eq(bmap, &progress);
 			bmap = isl_basic_map_gauss(bmap, NULL);
+			bmap = eliminate_divs_eq(bmap, &progress);
 		}
 	}
 
