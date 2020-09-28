@@ -5457,6 +5457,15 @@ static __isl_give isl_basic_map *reduce_coefficients(
 	struct isl_reduce_coefficients_data *data)
 {
 	int i;
+	isl_size total;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
+		return isl_basic_map_free(bmap);
+	if (total != data->total)
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
+			"total dimensionality changed unexpectedly",
+			return isl_basic_map_free(bmap));
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
