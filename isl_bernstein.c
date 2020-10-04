@@ -99,10 +99,17 @@ error:
  * which is the case if we select exactly one vertex (i.e., one of the
  * exponents in "k" is exactly "d") and if that vertex
  * is integral for all values of the parameters.
+ *
+ * If the degree "d" is zero, then there are no exponents.
+ * Since the polynomial is a constant expression in this case,
+ * the bound is necessarily tight.
  */
 static isl_bool is_tight(int *k, int n, int d, isl_cell *cell)
 {
 	int i;
+
+	if (d == 0)
+		return isl_bool_true;
 
 	for (i = 0; i < n; ++i) {
 		int v;
