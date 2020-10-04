@@ -57,12 +57,30 @@ isl_stat isl_bound_add_tight(struct isl_bound *bound,
 	return isl_stat_non_null(bound->pwf);
 }
 
+/* Given a polynomial "poly" that is constant in terms
+ * of the domain variables and the domain "bset",
+ * construct the corresponding polynomial reduction and
+ * add it to the tight bounds of "bound".
+ */
+static isl_stat add_constant_poly(__isl_take isl_basic_set *bset,
+	__isl_take isl_qpolynomial *poly, struct isl_bound *bound)
+{
+	isl_pw_qpolynomial_fold *pwf;
+
+	pwf = isl_qpolynomial_cst_bound(bset, poly, bound->type, NULL);
+	return isl_bound_add_tight(bound, pwf);
+}
+
 /* Compute a bound on the polynomial defined over the parametric polytope
  * using either range propagation or bernstein expansion and
  * store the result in bound->pwf and bound->pwf_tight.
  * Since bernstein expansion requires bounded domains, we apply
  * range propagation on unbounded domains.  Otherwise, we respect the choice
  * of the user.
+ *
+ * If the polynomial does not depend on the set variables
+ * then the bound is equal to the polynomial and
+ * it can be added to "bound" directly.
  */
 static isl_stat compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, void *user)
@@ -70,9 +88,16 @@ static isl_stat compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	struct isl_bound *bound = (struct isl_bound *)user;
 	isl_ctx *ctx;
 	int bounded;
+	int degree;
 
 	if (!bset || !poly)
 		goto error;
+
+	degree = isl_qpolynomial_degree(poly);
+	if (degree < -1)
+		goto error;
+	if (degree <= 0)
+		return add_constant_poly(bset, poly, bound);
 
 	ctx = isl_basic_set_get_ctx(bset);
 	if (ctx->opt->bound == ISL_BOUND_RANGE)
