@@ -1,3 +1,6 @@
+#ifndef ISL_INTERFACE_CPP_H
+#define ISL_INTERFACE_CPP_H
+
 #include "generator.h"
 
 using namespace std;
@@ -167,3 +170,5 @@ public:
 	static string type2cpp(const isl_class &clazz);
 	static string type2cpp(string type_string);
 };
+
+#endif
