@@ -21,10 +21,10 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
 if HAVE_CPP_ISL_H
-  CPP_H = include/isl/cpp.h
+  CPP_H = include/isl/cpp.h include/isl/typed_cpp.h
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test_cpp
-  TESTS += isl_test_cpp
+  TESTS += isl_test_cpp isl_test_cpp_failed.sh
 endif
 endif
 if HAVE_CLANG
@@ -297,11 +297,24 @@ isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
 
+isl_test_cpp_CPPFLAGS = $(AM_CPPFLAGS) -UCOMPILE_ERROR
 isl_test_cpp_SOURCES = \
 	isl_test_cpp.cc \
 	include/isl/cpp.h
 isl_test_cpp_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_LDADD = libisl.la @MP_LIBS@
+
+# This program is not meant to be compiled by default.
+# In fact it is meant not to be compilable.
+# It is identical to isl_test_cpp, except that it gets compiled
+# with the COMPILE_ERROR flag set.
+EXTRA_PROGRAMS = isl_test_cpp_failed
+isl_test_cpp_failed_CPPFLAGS = $(AM_CPPFLAGS) -DCOMPILE_ERROR
+isl_test_cpp_failed_SOURCES = \
+	isl_test_cpp.cc \
+	include/isl/cpp.h
+isl_test_cpp_failed_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp_failed_LDADD = libisl.la @MP_LIBS@
 
 isl_test_cpp_checked_SOURCES = \
 	isl_test_cpp-checked.cc \
@@ -361,6 +374,16 @@ include/isl/cpp-checked-conversion.h: \
 			--language=cpp-checked-conversion \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \
+			> $@ || (rm $@ && false)
+
+include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
+		libdep.a cpp/typed_cpp.h.top cpp/typed_cpp.h.bot
+	$(MKDIR_P) "include/isl" && \
+	(cat $(srcdir)/cpp/typed_cpp.h.top && \
+		interface/extract_interface$(BUILD_EXEEXT) \
+			--language=template-cpp \
+			$(includes) $(srcdir)/all.h && \
+		cat $(srcdir)/cpp/typed_cpp.h.bot) \
 			> $@ || (rm $@ && false)
 endif
 endif
@@ -434,7 +457,8 @@ if HAVE_CXX11
     CPP_INTERFACES = \
 	include/isl/cpp.h \
 	include/isl/cpp-checked.h \
-	include/isl/cpp-checked-conversion.h
+	include/isl/cpp-checked-conversion.h \
+	include/isl/typed_cpp.h
 endif
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
@@ -594,6 +618,7 @@ EXTRA_DIST = \
 	cpp \
 	python \
 	isl_test_cpp-generic.cc \
+	isl_test_cpp_failed.sh \
 	isl_test_python.py \
 	test_inputs
 

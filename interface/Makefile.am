@@ -20,6 +20,8 @@ extract_interface_SOURCES = \
 	plain_cpp.h \
 	plain_cpp.cc \
 	set_lang_defaults_arg4.h \
+	template_cpp.h \
+	template_cpp.cc \
 	extract_interface.h \
 	extract_interface.cc
 extract_interface_LDFLAGS = $(CLANG_LDFLAGS) $(CLANG_RFLAG)
