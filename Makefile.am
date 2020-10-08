@@ -332,20 +332,17 @@ interface/isl.py: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 			> $@ || (rm $@ && false)
 
 include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
-		cpp/cpp.h.top cpp/cpp.h.pre cpp/cpp.h.bot
+		cpp/cpp.h.top cpp/cpp.h.bot
 	$(MKDIR_P) "include/isl/cpp" && \
-	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h \
-	    $(srcdir)/cpp/cpp.h.pre && \
+	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp.h.bot) \
 			> $@ || (rm $@ && false)
 
 include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
-		cpp/cpp-checked.h.top \
-		cpp/cpp-checked.h.pre cpp/cpp-checked.h.bot
-	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h \
-	    $(srcdir)/cpp/cpp-checked.h.pre && \
+		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
+	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
