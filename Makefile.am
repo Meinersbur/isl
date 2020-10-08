@@ -333,7 +333,7 @@ interface/isl.py: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 
 include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp.h.top cpp/cpp.h.bot
-	$(MKDIR_P) "include/isl/cpp" && \
+	$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
 			$(includes) $(srcdir)/all.h && \
