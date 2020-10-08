@@ -342,6 +342,7 @@ include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 
 include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
+	$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked \
@@ -354,6 +355,7 @@ include/isl/cpp-checked-conversion.h: \
 		libdep.a \
 		cpp/cpp-checked-conversion.h.top \
 		cpp/cpp-checked-conversion.h.bot
+	$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/cpp-checked-conversion.h.top && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked-conversion \
