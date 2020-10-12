@@ -601,8 +601,8 @@ void cpp_generator::print_persistent_callback_setter_prototype(ostream &os,
 		param->getName().str().c_str());
 }
 
-/* Given a function "method" for setting a "clazz" persistent callback,
- * print the fields that are needed for marshalling the callback to "os".
+/* Given a method "method" for setting a persistent callback,
+ * print the fields that are needed for marshalling the callback.
  *
  * In particular, print
  * - the declaration of a data structure for storing the C++ callback function
@@ -611,22 +611,23 @@ void cpp_generator::print_persistent_callback_setter_prototype(ostream &os,
  *   for use as the C callback function
  * - the declaration of a private method for setting the callback function
  */
-void cpp_generator::print_persistent_callback_data(ostream &os,
-	const isl_class &clazz, FunctionDecl *method)
+void cpp_generator::decl_printer::print_persistent_callback_data(
+	FunctionDecl *method)
 {
 	string callback_name;
-	ParmVarDecl *param = persistent_callback_arg(method);
+	ParmVarDecl *param = generator.persistent_callback_arg(method);
 
 	callback_name = clazz.persistent_callback_name(method);
-	print_callback_data_decl(os, param, callback_name);
+	generator.print_callback_data_decl(os, param, callback_name);
 	osprintf(os, ";\n");
 	osprintf(os, "  std::shared_ptr<%s_data> %s_data;\n",
 		callback_name.c_str(), callback_name.c_str());
 	osprintf(os, "  static inline ");
-	print_persistent_callback_prototype(os, clazz, method, true);
+	generator.print_persistent_callback_prototype(os, clazz, method, true);
 	osprintf(os, ";\n");
 	osprintf(os, "  inline ");
-	print_persistent_callback_setter_prototype(os, clazz, method, true);
+	generator.print_persistent_callback_setter_prototype(os, clazz, method,
+								true);
 	osprintf(os, ";\n");
 }
 
@@ -651,7 +652,7 @@ void cpp_generator::decl_printer::print_persistent_callbacks()
 	osprintf(os, "  inline %s &copy_callbacks(const %s &obj);\n",
 		cppname, cppname);
 	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		generator.print_persistent_callback_data(os, clazz, *in);
+		print_persistent_callback_data(*in);
 
 	osprintf(os, "public:\n");
 	for (in = callbacks.begin(); in != callbacks.end(); ++in)

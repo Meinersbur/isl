@@ -57,8 +57,6 @@ private:
 	void print_persistent_callback_setter_prototype(ostream &os,
 		const isl_class &clazz, FunctionDecl *method,
 		bool is_declaration);
-	void print_persistent_callback_data(ostream &os, const isl_class &clazz,
-		FunctionDecl *method);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -154,6 +152,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 			cpp_generator &generator) :
 		class_printer(os, clazz, generator, true) {}
 
+	void print_persistent_callback_data(FunctionDecl *method);
 	void print_persistent_callbacks();
 	void print_named_method(FunctionDecl *fd, const string &name,
 		function_kind kind,
