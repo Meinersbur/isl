@@ -826,7 +826,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	print_ptr_impl(os, clazz);
 	print_downcast_impl(os, clazz);
 	print_ctx_impl(os, clazz);
-	print_persistent_callbacks_impl(os, clazz);
+	printer.print_persistent_callbacks();
 	printer.print_methods();
 	printer.print_set_enums();
 	print_stream_insertion(os, clazz);
@@ -1374,12 +1374,10 @@ void cpp_generator::print_ctx_impl(ostream &os, const isl_class &clazz)
 }
 
 /* Print the implementations of the methods needed for the persistent callbacks
- * of "clazz".
+ * of the class.
  */
-void cpp_generator::print_persistent_callbacks_impl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::impl_printer::print_persistent_callbacks()
 {
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 	string classname = type2cpp(clazz);
 	set<FunctionDecl *>::const_iterator in;
@@ -1404,7 +1402,7 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
 	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
 		function_kind kind = function_kind_member_method;
 
-		print_set_persistent_callback(os, clazz, *in, kind);
+		generator.print_set_persistent_callback(os, clazz, *in, kind);
 	}
 }
 

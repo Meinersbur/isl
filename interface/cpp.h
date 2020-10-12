@@ -81,8 +81,6 @@ private:
 	void print_ptr_impl(ostream &os, const isl_class &clazz);
 	void print_downcast_impl(ostream &os, const isl_class &clazz);
 	void print_ctx_impl(ostream &os, const isl_class &clazz);
-	void print_persistent_callbacks_impl(ostream &os,
-		const isl_class &clazz);
 	void print_argument_validity_check(ostream &os, FunctionDecl *method,
 		function_kind kind);
 	void print_on_error_continue(ostream &os);
@@ -193,6 +191,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
 		const string &method_name) override;
+	void print_persistent_callbacks();
 	void print_save_ctx(FunctionDecl *method, function_kind kind);
 	void print_exceptional_execution_check(FunctionDecl *method,
 		function_kind kind);
