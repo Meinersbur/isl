@@ -69,8 +69,6 @@ private:
 	void print_ptr_impl(ostream &os, const isl_class &clazz);
 	void print_downcast_impl(ostream &os, const isl_class &clazz);
 	void print_ctx_impl(ostream &os, const isl_class &clazz);
-	void print_argument_validity_check(ostream &os, FunctionDecl *method,
-		function_kind kind);
 	void print_on_error_continue(ostream &os);
 	void print_method_return(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
@@ -178,6 +176,8 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_set_persistent_callback(FunctionDecl *method,
 		function_kind kind);
 	void print_persistent_callbacks();
+	void print_argument_validity_check(FunctionDecl *method,
+		function_kind kind);
 	void print_save_ctx(FunctionDecl *method, function_kind kind);
 	void print_exceptional_execution_check(FunctionDecl *method,
 		function_kind kind);

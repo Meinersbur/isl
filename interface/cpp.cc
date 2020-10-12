@@ -1115,7 +1115,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	osprintf(os, "\n");
 	print_method_header(method, kind);
 	osprintf(os, "{\n");
-	generator.print_argument_validity_check(os, method, kind);
+	print_argument_validity_check(method, kind);
 	print_save_ctx(method, kind);
 	generator.print_on_error_continue(os);
 
@@ -1424,7 +1424,7 @@ void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
 	print_method_header(fd, method_name, n - 1, kind);
 	osprintf(os, "{\n");
 
-	generator.print_argument_validity_check(os, fd, kind);
+	print_argument_validity_check(fd, kind);
 	print_save_ctx(fd, kind);
 	generator.print_on_error_continue(os);
 
@@ -1536,13 +1536,13 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
  * If checked bindings are being generated,
  * then no such check is performed.
  */
-void cpp_generator::print_argument_validity_check(ostream &os,
+void cpp_generator::impl_printer::print_argument_validity_check(
 	FunctionDecl *method, function_kind kind)
 {
 	int n;
 	bool first = true;
 
-	if (checked)
+	if (generator.checked)
 		return;
 
 	n = method->getNumParams();
