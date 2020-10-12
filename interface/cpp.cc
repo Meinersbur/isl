@@ -1123,7 +1123,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 		ParmVarDecl *param = method->getParamDecl(i);
 		if (is_callback(param->getType())) {
 			num_params -= 1;
-			generator.print_callback_local(os, param);
+			print_callback_local(param);
 		}
 	}
 
@@ -2319,7 +2319,7 @@ void cpp_generator::print_callback_body(ostream &os, int indent,
  * If the C callback does not take its arguments, then
  * manage_copy is used instead of manage.
  */
-void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
+void cpp_generator::impl_printer::print_callback_local(ParmVarDecl *param)
 {
 	string pname;
 	QualType ptype, rtype;
@@ -2329,17 +2329,17 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	pname = param->getName().str();
 	ptype = param->getType();
 
-	c_args = generate_callback_args(ptype, false);
+	c_args = generator.generate_callback_args(ptype, false);
 
 	callback = extract_prototype(ptype);
 	rtype = callback->getReturnType();
 	rettype = rtype.getAsString();
 
-	print_callback_data_decl(os, param, pname);
+	generator.print_callback_data_decl(os, param, pname);
 	osprintf(os, " %s_data = { %s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
-	print_callback_body(os, 4, param, pname);
+	generator.print_callback_body(os, 4, param, pname);
 	osprintf(os, "  };\n");
 }
 

@@ -98,7 +98,6 @@ private:
 		const string &name);
 	void print_callback_body(ostream &os, int indent, ParmVarDecl *param,
 		const string &name);
-	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
 	string isl_bool2cpp();
 	string isl_namespace();
@@ -194,6 +193,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_save_ctx(FunctionDecl *method, function_kind kind);
 	void print_exceptional_execution_check(FunctionDecl *method,
 		function_kind kind);
+	void print_callback_local(ParmVarDecl *param);
 };
 
 #endif
