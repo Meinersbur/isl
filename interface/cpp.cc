@@ -254,7 +254,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	print_downcast_decl(os, clazz);
 	print_ctx_decl(os);
 	osprintf(os, "\n");
-	print_persistent_callbacks_decl(os, clazz);
+	printer.print_persistent_callbacks();
 	printer.print_methods();
 	printer.print_set_enums();
 
@@ -631,7 +631,7 @@ void cpp_generator::print_persistent_callback_data(ostream &os,
 	osprintf(os, ";\n");
 }
 
-/* Print declarations needed for the persistent callbacks of "clazz".
+/* Print declarations needed for the persistent callbacks of the class.
  *
  * In particular, if there are any persistent callbacks, then
  * print a private method for copying callback data from
@@ -639,11 +639,9 @@ void cpp_generator::print_persistent_callback_data(ostream &os,
  * private data for keeping track of the persistent callbacks and
  * public methods for setting the persistent callbacks.
  */
-void cpp_generator::print_persistent_callbacks_decl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::decl_printer::print_persistent_callbacks()
 {
-	decl_printer printer(os, clazz, *this);
-	const char *cppname = printer.cppstring.c_str();
+	const char *cppname = cppstring.c_str();
 	set<FunctionDecl *>::const_iterator in;
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
@@ -654,11 +652,11 @@ void cpp_generator::print_persistent_callbacks_decl(ostream &os,
 	osprintf(os, "  inline %s &copy_callbacks(const %s &obj);\n",
 		cppname, cppname);
 	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		print_persistent_callback_data(os, clazz, *in);
+		generator.print_persistent_callback_data(os, clazz, *in);
 
 	osprintf(os, "public:\n");
 	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		printer.print_method(*in, function_kind_member_method);
+		print_method(*in, function_kind_member_method);
 }
 
 /* Print declarations or definitions for methods in the class.

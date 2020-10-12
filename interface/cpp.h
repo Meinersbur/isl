@@ -59,8 +59,6 @@ private:
 		bool is_declaration);
 	void print_persistent_callback_data(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
-	void print_persistent_callbacks_decl(ostream &os,
-		const isl_class &clazz);
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name, function_kind kind,
@@ -171,6 +169,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 			cpp_generator &generator) :
 		class_printer(os, clazz, generator) {}
 
+	void print_persistent_callbacks();
 	virtual void print_method(FunctionDecl *method, function_kind kind)
 		override;
 	virtual void print_method(FunctionDecl *method, function_kind kind,
