@@ -1147,7 +1147,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	if (kind == function_kind_constructor) {
 		osprintf(os, "  ptr = res;\n");
 	} else {
-		generator.print_method_return(os, clazz, method);
+		print_method_return(method);
 	}
 
 	osprintf(os, "}\n");
@@ -1441,7 +1441,7 @@ void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
 	osprintf(os, ");\n");
 
 	print_exceptional_execution_check(fd, kind);
-	generator.print_method_return(os, clazz, fd);
+	print_method_return(fd);
 
 	osprintf(os, "}\n");
 }
@@ -1799,7 +1799,7 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
 }
 
 /* Print the return statement of the C++ method corresponding
- * to the C function "method" in class "clazz" to "os".
+ * to the C function "method".
  *
  * The result of the isl function is returned as a new
  * object if the underlying isl function returns an isl_* ptr, as a bool
@@ -1818,15 +1818,14 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
  * if the return type corresponds to the superclass data type,
  * then it is replaced by the subclass data type.
  */
-void cpp_generator::print_method_return(ostream &os, const isl_class &clazz,
-	FunctionDecl *method)
+void cpp_generator::impl_printer::print_method_return(FunctionDecl *method)
 {
 	QualType return_type = method->getReturnType();
-	string rettype_str = get_return_type(clazz, method);
+	string rettype_str = generator.get_return_type(clazz, method);
 	bool returns_super = is_subclass_mutator(clazz, method);
 
 	if (is_isl_type(return_type) ||
-		    (checked && is_isl_neg_error(return_type))) {
+		    (generator.checked && is_isl_neg_error(return_type))) {
 		osprintf(os, "  return manage(res)");
 		if (is_mutator(clazz, method) &&
 		    clazz.has_persistent_callbacks())
