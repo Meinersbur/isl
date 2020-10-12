@@ -82,8 +82,6 @@ private:
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
-	void print_callback_data_decl(ostream &os, ParmVarDecl *param,
-		const string &name);
 	std::string rename_method(std::string name);
 	string isl_bool2cpp();
 	string isl_namespace();
@@ -139,6 +137,7 @@ struct cpp_generator::class_printer {
 	void print_named_method_header(FunctionDecl *method, string name,
 		function_kind kind, const std::vector<bool> &convert = {});
 	void print_method_header(FunctionDecl *method, function_kind kind);
+	void print_callback_data_decl(ParmVarDecl *param, const string &name);
 };
 
 /* A helper class for printing method declarations of a class.

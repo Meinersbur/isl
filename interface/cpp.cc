@@ -618,7 +618,7 @@ void cpp_generator::decl_printer::print_persistent_callback_data(
 	ParmVarDecl *param = generator.persistent_callback_arg(method);
 
 	callback_name = clazz.persistent_callback_name(method);
-	generator.print_callback_data_decl(os, param, callback_name);
+	print_callback_data_decl(param, callback_name);
 	osprintf(os, ";\n");
 	osprintf(os, "  std::shared_ptr<%s_data> %s_data;\n",
 		callback_name.c_str(), callback_name.c_str());
@@ -2192,16 +2192,16 @@ void cpp_generator::impl_printer::print_wrapped_call(int indent,
  * The std::exception_ptr object is not added to "prefix"_data
  * if checked C++ bindings are being generated.
  */
-void cpp_generator::print_callback_data_decl(ostream &os, ParmVarDecl *param,
+void cpp_generator::class_printer::print_callback_data_decl(ParmVarDecl *param,
 	const string &prefix)
 {
 	string cpp_args;
 
-	cpp_args = generate_callback_type(param->getType());
+	cpp_args = generator.generate_callback_type(param->getType());
 
 	osprintf(os, "  struct %s_data {\n", prefix.c_str());
 	osprintf(os, "    %s func;\n", cpp_args.c_str());
-	if (!checked)
+	if (!generator.checked)
 		osprintf(os, "    std::exception_ptr eptr;\n");
 	osprintf(os, "  }");
 }
@@ -2334,7 +2334,7 @@ void cpp_generator::impl_printer::print_callback_local(ParmVarDecl *param)
 	rtype = callback->getReturnType();
 	rettype = rtype.getAsString();
 
-	generator.print_callback_data_decl(os, param, pname);
+	print_callback_data_decl(param, pname);
 	osprintf(os, " %s_data = { %s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
