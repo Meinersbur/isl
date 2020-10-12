@@ -59,7 +59,6 @@ private:
 		bool is_declaration);
 	void print_persistent_callback_data(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
-	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -134,6 +133,7 @@ struct cpp_generator::class_printer {
 
 	void print_constructors();
 	void print_methods();
+	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_method_variants(FunctionDecl *fd);
 	void print_method_group(const function_set &methods);
 	virtual void print_method(FunctionDecl *method, function_kind kind) = 0;

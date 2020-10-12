@@ -736,7 +736,8 @@ void cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
  * for automatic conversion since this is the argument
  * from which the isl_ctx used in the conversion is extracted.
  */
-bool cpp_generator::next_variant(FunctionDecl *fd, std::vector<bool> &convert)
+bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
+	std::vector<bool> &convert)
 {
 	size_t n = convert.size();
 
@@ -744,7 +745,7 @@ bool cpp_generator::next_variant(FunctionDecl *fd, std::vector<bool> &convert)
 		ParmVarDecl *param = fd->getParamDecl(i);
 		const Type *type = param->getOriginalType().getTypePtr();
 
-		if (conversions.count(type) == 0)
+		if (generator.conversions.count(type) == 0)
 			continue;
 		if (convert[i])
 			continue;
@@ -777,7 +778,7 @@ void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
 	if (clazz.is_get_method(fd))
 		print_get_method(fd);
 	if (kind == function_kind_member_method)
-		while (generator.next_variant(fd, convert))
+		while (next_variant(fd, convert))
 			print_method(fd, kind, convert);
 }
 
