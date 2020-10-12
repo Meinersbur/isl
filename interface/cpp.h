@@ -91,15 +91,6 @@ private:
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
-	void print_method_header(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, const string &cname, int num_params,
-		bool is_declaration, function_kind kind,
-		const std::vector<bool> &convert = {});
-	void print_named_method_header(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, string name, bool is_declaration,
-		function_kind kind, const std::vector<bool> &convert = {});
-	void print_method_header(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, bool is_declaration, function_kind kind);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
 	void print_wrapped_call_checked(std::ostream &os, int indent,
@@ -131,15 +122,17 @@ public:
  * "clazz" describes the methods of the class.
  * "cppstring" is the C++ name of the class.
  * "generator" is the C++ interface generator printing the classes.
+ * "declarations" is set if this object is used to print declarations.
  */
 struct cpp_generator::class_printer {
 	std::ostream &os;
 	const isl_class &clazz;
 	const std::string cppstring;
 	cpp_generator &generator;
+	const bool declarations;
 
 	class_printer(std::ostream &os, const isl_class &clazz,
-			cpp_generator &generator);
+			cpp_generator &generator, bool declarations);
 
 	void print_constructors();
 	void print_methods();
@@ -153,6 +146,12 @@ struct cpp_generator::class_printer {
 		const string &method_name) = 0;
 	void print_set_enums(FunctionDecl *fd);
 	void print_set_enums();
+	void print_method_header(FunctionDecl *method, const string &cname,
+		int num_params, function_kind kind,
+		const std::vector<bool> &convert = {});
+	void print_named_method_header(FunctionDecl *method, string name,
+		function_kind kind, const std::vector<bool> &convert = {});
+	void print_method_header(FunctionDecl *method, function_kind kind);
 };
 
 /* A helper class for printing method declarations of a class.
@@ -160,7 +159,7 @@ struct cpp_generator::class_printer {
 struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	decl_printer(std::ostream &os, const isl_class &clazz,
 			cpp_generator &generator) :
-		class_printer(os, clazz, generator) {}
+		class_printer(os, clazz, generator, true) {}
 
 	void print_persistent_callbacks();
 	void print_named_method(FunctionDecl *fd, const string &name,
@@ -180,7 +179,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	impl_printer(std::ostream &os, const isl_class &clazz,
 			cpp_generator &generator) :
-		class_printer(os, clazz, generator) {}
+		class_printer(os, clazz, generator, false) {}
 
 	virtual void print_method(FunctionDecl *method, function_kind kind)
 		override;

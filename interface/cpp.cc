@@ -679,7 +679,7 @@ void cpp_generator::decl_printer::print_set_enum(FunctionDecl *fd,
 {
 	int n = fd->getNumParams();
 
-	generator.print_method_header(os, clazz, fd, method_name, n - 1, true,
+	print_method_header(fd, method_name, n - 1,
 				function_kind_member_method);
 }
 
@@ -803,8 +803,7 @@ void cpp_generator::decl_printer::print_named_method(
 	FunctionDecl *fd, const string &name, function_kind kind,
 	const std::vector<bool> &convert)
 {
-	generator.print_named_method_header(os, clazz, fd, name, true, kind,
-					convert);
+	print_named_method_header(fd, name, kind, convert);
 }
 
 /* Print implementations for class "clazz" to "os".
@@ -1113,7 +1112,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	int num_params = method->getNumParams();
 
 	osprintf(os, "\n");
-	generator.print_method_header(os, clazz, method, false, kind);
+	print_method_header(method, kind);
 	osprintf(os, "{\n");
 	generator.print_argument_validity_check(os, method, kind);
 	print_save_ctx(method, kind);
@@ -1182,8 +1181,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 		    "for object methods");
 
 	osprintf(os, "\n");
-	generator.print_named_method_header(os, clazz, method, name, false,
-				  kind, convert);
+	print_named_method_header(method, name, kind, convert);
 	osprintf(os, "{\n");
 	generator.print_check_ptr(os, "ptr");
 	osprintf(os, "  return this->%s(", name.c_str());
@@ -1422,8 +1420,7 @@ void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
 	function_kind kind = function_kind_member_method;
 
 	osprintf(os, "\n");
-	generator.print_method_header(os, clazz, fd, method_name, n - 1, false,
-					kind);
+	print_method_header(fd, method_name, n - 1, kind);
 	osprintf(os, "{\n");
 
 	generator.print_argument_validity_check(os, fd, kind);
@@ -1463,8 +1460,7 @@ void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
 	int num_params = fd->getNumParams();
 
 	osprintf(os, "\n");
-	generator.print_named_method_header(os, clazz, fd, get_name, false,
-						kind);
+	print_named_method_header(fd, get_name, kind);
 	osprintf(os, "{\n");
 	osprintf(os, "  return %s(", name.c_str());
 	for (int i = 1; i < num_params; ++i) {
@@ -1793,7 +1789,7 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
 	generator.print_check_ptr_end(os, "ptr");
 	osprintf(os, "}\n\n");
 
-	generator.print_method_header(os, clazz, method, false, kind);
+	print_method_header(method, kind);
 	osprintf(os, "{\n");
 	osprintf(os, "  auto copy = *this;\n");
 	osprintf(os, "  copy.set_%s_data(%s);\n",
@@ -1870,11 +1866,11 @@ ParmVarDecl *cpp_generator::get_param(FunctionDecl *fd, int pos,
 	return conversions[param->getOriginalType().getTypePtr()];
 }
 
-/* Print the header for "method" in class "clazz", with name "cname" and
- * "num_params" number of arguments, to "os".
+/* Print the header for "method", with name "cname" and
+ * "num_params" number of arguments.
  *
- * Print the header of a declaration if "is_declaration" is set, otherwise print
- * the header of a method definition.
+ * Print the header of a declaration if this->declarations is set,
+ * otherwise print the header of a method definition.
  *
  * "kind" specifies the kind of method that should be generated.
  *
@@ -1919,19 +1915,18 @@ ParmVarDecl *cpp_generator::get_param(FunctionDecl *fd, int pos,
  * The name of the argument is, however, derived from the original
  * function argument.
  */
-void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
+void cpp_generator::class_printer::print_method_header(
 	FunctionDecl *method, const string &cname, int num_params,
-	bool is_declaration, function_kind kind,
+	function_kind kind,
 	const std::vector<bool> &convert)
 {
-	string rettype_str = get_return_type(clazz, method);
-	string classname = type2cpp(clazz);
+	string rettype_str = generator.get_return_type(clazz, method);
 	int first_param = 0;
 
 	if (kind == function_kind_member_method)
 		first_param = 1;
 
-	if (is_declaration) {
+	if (declarations) {
 		osprintf(os, "  ");
 
 		if (kind == function_kind_static_method)
@@ -1940,7 +1935,7 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 		osprintf(os, "inline ");
 
 		if (kind == function_kind_constructor) {
-			if (is_implicit_conversion(clazz, method))
+			if (generator.is_implicit_conversion(clazz, method))
 				osprintf(os, "/* implicit */ ");
 			else
 				osprintf(os, "explicit ");
@@ -1950,21 +1945,21 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	if (kind != function_kind_constructor)
 		osprintf(os, "%s ", rettype_str.c_str());
 
-	if (!is_declaration)
-		osprintf(os, "%s::", classname.c_str());
+	if (!declarations)
+		osprintf(os, "%s::", cppstring.c_str());
 
 	if (kind != function_kind_constructor)
 		osprintf(os, "%s", cname.c_str());
 	else
-		osprintf(os, "%s", classname.c_str());
+		osprintf(os, "%s", cppstring.c_str());
 
 	osprintf(os, "(");
 
 	for (int i = first_param; i < num_params; ++i) {
 		std::string name = method->getParamDecl(i)->getName().str();
-		ParmVarDecl *param = get_param(method, i, convert);
+		ParmVarDecl *param = generator.get_param(method, i, convert);
 		QualType type = param->getOriginalType();
-		string cpptype = param2cpp(type);
+		string cpptype = generator.param2cpp(type);
 
 		if (is_callback(type))
 			num_params--;
@@ -1984,49 +1979,44 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	if (kind == function_kind_member_method)
 		osprintf(os, " const");
 
-	if (is_declaration)
+	if (declarations)
 		osprintf(os, ";");
 	osprintf(os, "\n");
 }
 
-/* Print the header for a method called "name" in class "clazz"
- * derived from "method" to "os".
+/* Print the header for a method called "name" derived from "method".
  *
- * Print the header of a declaration if "is_declaration" is set, otherwise print
- * the header of a method definition.
+ * Print the header of a declaration if this->declarations is set,
+ * otherwise print the header of a method definition.
  *
  * "kind" specifies the kind of method that should be generated.
  *
  * "convert" specifies which of the method arguments should
  * be automatically converted.
  */
-void cpp_generator::print_named_method_header(ostream &os,
-	const isl_class &clazz, FunctionDecl *method, string name,
-	bool is_declaration, function_kind kind,
+void cpp_generator::class_printer::print_named_method_header(
+	FunctionDecl *method, string name, function_kind kind,
 	const std::vector<bool> &convert)
 {
 	int num_params = method->getNumParams();
 
-	name = rename_method(name);
-	print_method_header(os, clazz, method, name, num_params,
-			    is_declaration, kind, convert);
+	name = generator.rename_method(name);
+	print_method_header(method, name, num_params, kind, convert);
 }
 
-/* Print the header for "method" in class "clazz" to "os"
- * using its default name.
+/* Print the header for "method" using its default name.
  *
- * Print the header of a declaration if "is_declaration" is set, otherwise print
- * the header of a method definition.
+ * Print the header of a declaration if this->declarations is set,
+ * otherwise print the header of a method definition.
  *
  * "kind" specifies the kind of method that should be generated.
  */
-void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, bool is_declaration, function_kind kind)
+void cpp_generator::class_printer::print_method_header(
+	FunctionDecl *method, function_kind kind)
 {
 	string name = clazz.method_name(method);
 
-	print_named_method_header(os, clazz, method, name, is_declaration,
-				  kind);
+	print_named_method_header(method, name, kind);
 }
 
 /* Generate the list of argument types for a callback function of
@@ -2511,7 +2501,9 @@ cpp_generator::function_kind cpp_generator::get_method_kind(
  * are printed, the class method description and the C++ interface generator.
  */
 cpp_generator::class_printer::class_printer(std::ostream &os,
-		const isl_class &clazz, cpp_generator &generator) :
-	os(os), clazz(clazz), cppstring(type2cpp(clazz)), generator(generator)
+		const isl_class &clazz, cpp_generator &generator,
+		bool declarations) :
+	os(os), clazz(clazz), cppstring(type2cpp(clazz)), generator(generator),
+	declarations(declarations)
 {
 }
