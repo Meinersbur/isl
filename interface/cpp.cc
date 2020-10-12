@@ -367,8 +367,7 @@ void cpp_generator::decl_printer::print_method(FunctionDecl *method,
 {
 	string name = clazz.method_name(method);
 
-	generator.print_named_method_decl(os, clazz, method, name, kind,
-					convert);
+	print_named_method(method, name, kind, convert);
 }
 
 /* Print declarations for "method",
@@ -718,7 +717,7 @@ void cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
 	function_kind kind = function_kind_member_method;
 	string base = clazz.base_method_name(fd);
 
-	generator.print_named_method_decl(os, clazz, fd, base, kind);
+	print_named_method(fd, base, kind);
 }
 
 /* Update "convert" to reflect the next combination of automatic conversions
@@ -793,19 +792,19 @@ void cpp_generator::class_printer::print_method_group(
 		print_method_variants(*it);
 }
 
-/* Print a declaration for a method called "name" in class "clazz"
- * derived from "fd" to "os".
+/* Print a declaration for a method called "name" derived from "fd".
  *
  * "kind" specifies the kind of method that should be generated.
  *
  * "convert" specifies which of the method arguments should
  * be automatically converted.
  */
-void cpp_generator::print_named_method_decl(ostream &os, const isl_class &clazz,
+void cpp_generator::decl_printer::print_named_method(
 	FunctionDecl *fd, const string &name, function_kind kind,
 	const std::vector<bool> &convert)
 {
-	print_named_method_header(os, clazz, fd, name, true, kind, convert);
+	generator.print_named_method_header(os, clazz, fd, name, true, kind,
+					convert);
 }
 
 /* Print implementations for class "clazz" to "os".

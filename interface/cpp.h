@@ -60,9 +60,6 @@ private:
 	void print_persistent_callback_data(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
-	void print_named_method_decl(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd, const string &name, function_kind kind,
-		const std::vector<bool> &convert = {});
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -166,6 +163,9 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 		class_printer(os, clazz, generator) {}
 
 	void print_persistent_callbacks();
+	void print_named_method(FunctionDecl *fd, const string &name,
+		function_kind kind,
+		const std::vector<bool> &convert = {});
 	virtual void print_method(FunctionDecl *method, function_kind kind)
 		override;
 	virtual void print_method(FunctionDecl *method, function_kind kind,
