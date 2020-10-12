@@ -12,6 +12,9 @@ using namespace clang;
  * that rely on the user to check for error conditions.
  */
 class cpp_generator : public generator {
+	struct class_printer;
+	struct decl_printer;
+	struct impl_printer;
 protected:
 	bool checked;
 public:
@@ -26,10 +29,6 @@ public:
 		function_kind_static_method,
 		function_kind_member_method,
 		function_kind_constructor,
-	};
-	enum method_part {
-		decl,
-		impl,
 	};
 
 	virtual void generate();
@@ -65,21 +64,11 @@ private:
 		const isl_class &clazz);
 	void print_methods_decl(ostream &os, const isl_class &clazz);
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
-	template <enum method_part>
-	void print_method_variants(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
 		const function_set &methods);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name, function_kind kind,
 		const std::vector<bool> &convert = {});
-	template <enum method_part>
-	void print_method(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, function_kind kind);
-	template <enum method_part>
-	void print_method(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, function_kind kind,
-		const std::vector<bool> &convert);
 	void print_set_enum_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name);
 	void print_set_enums_decl(ostream &os, const isl_class &clazz,
@@ -127,9 +116,6 @@ private:
 	void print_set_enums_impl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_set_enums_impl(ostream &os, const isl_class &clazz);
-	template <enum method_part>
-	void print_get_method(ostream &os, const isl_class &clazz,
-		FunctionDecl *fd);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
 	void print_stream_insertion(ostream &os, const isl_class &clazz);
@@ -169,6 +155,58 @@ private:
 public:
 	static string type2cpp(const isl_class &clazz);
 	static string type2cpp(string type_string);
+};
+
+/* A helper class for printing method declarations and definitions
+ * of a class.
+ *
+ * "os" is the stream onto which the methods are printed.
+ * "clazz" describes the methods of the class.
+ * "cppstring" is the C++ name of the class.
+ * "generator" is the C++ interface generator printing the classes.
+ */
+struct cpp_generator::class_printer {
+	std::ostream &os;
+	const isl_class &clazz;
+	const std::string cppstring;
+	cpp_generator &generator;
+
+	class_printer(std::ostream &os, const isl_class &clazz,
+			cpp_generator &generator);
+
+	void print_method_variants(FunctionDecl *fd);
+	virtual void print_method(FunctionDecl *method, function_kind kind) = 0;
+	virtual void print_method(FunctionDecl *method, function_kind kind,
+		const std::vector<bool> &convert) = 0;
+	virtual void print_get_method(FunctionDecl *fd) = 0;
+};
+
+/* A helper class for printing method declarations of a class.
+ */
+struct cpp_generator::decl_printer : public cpp_generator::class_printer {
+	decl_printer(std::ostream &os, const isl_class &clazz,
+			cpp_generator &generator) :
+		class_printer(os, clazz, generator) {}
+
+	virtual void print_method(FunctionDecl *method, function_kind kind)
+		override;
+	virtual void print_method(FunctionDecl *method, function_kind kind,
+		const std::vector<bool> &convert) override;
+	virtual void print_get_method(FunctionDecl *fd) override;
+};
+
+/* A helper class for printing method definitions of a class.
+ */
+struct cpp_generator::impl_printer : public cpp_generator::class_printer {
+	impl_printer(std::ostream &os, const isl_class &clazz,
+			cpp_generator &generator) :
+		class_printer(os, clazz, generator) {}
+
+	virtual void print_method(FunctionDecl *method, function_kind kind)
+		override;
+	virtual void print_method(FunctionDecl *method, function_kind kind,
+		const std::vector<bool> &convert) override;
+	virtual void print_get_method(FunctionDecl *fd) override;
 };
 
 #endif
