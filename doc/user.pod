@@ -3032,19 +3032,36 @@ using the following functions.
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_zero(
 		__isl_take isl_space *space);
+	__isl_give isl_multi_val *isl_space_zero_multi_val(
+		__isl_take isl_space *space);
 
 	#include <isl/aff.h>
 	__isl_give isl_multi_aff *isl_multi_aff_zero(
 		__isl_take isl_space *space);
+	__isl_give isl_multi_aff *isl_space_zero_multi_aff(
+		__isl_take isl_space *space);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_zero(
+		__isl_take isl_space *space);
+	__isl_give isl_multi_pw_aff *isl_space_zero_multi_pw_aff(
 		__isl_take isl_space *space);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_zero(
+		__isl_take isl_space *space);
+	__isl_give isl_multi_union_pw_aff *
+	isl_space_zero_multi_union_pw_aff(
 		__isl_take isl_space *space);
 
 Since there is no canonical way of representing a zero
 value of type C<isl_union_pw_aff>, the space passed
 to C<isl_multi_union_pw_aff_zero> needs to be zero-dimensional.
+C<isl_multi_val_zero> and C<isl_space_zero_multi_val>
+perform the same operation.
+Similarly
+for the pair C<isl_multi_aff_zero> and C<isl_space_zero_multi_aff>,
+for the pair C<isl_multi_pw_aff_zero> and C<isl_space_zero_multi_pw_aff> and
+for the pair C<isl_multi_union_pw_aff_zero> and
+C<isl_space_zero_multi_union_pw_aff>.
+
 
 An identity function can be created using the following
 functions.

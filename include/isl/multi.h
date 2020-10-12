@@ -145,6 +145,9 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_add_constant_multi_val(	\
 #define ISL_DECLARE_MULTI_ZERO(BASE)					\
 __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\
+	__isl_take isl_space *space);					\
+__isl_export								\
+__isl_give isl_multi_##BASE *isl_space_zero_multi_##BASE(		\
 	__isl_take isl_space *space);
 
 #define ISL_DECLARE_MULTI_NAN(BASE)					\

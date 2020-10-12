@@ -524,6 +524,7 @@ EXTRA_DIST = \
 	isl_multi_unbind_params_templ.c \
 	isl_multi_union_add_templ.c \
 	isl_multi_zero_templ.c \
+	isl_multi_zero_space_templ.c \
 	isl_opt_mpa_templ.c \
 	opt_type.h \
 	print_templ.c \

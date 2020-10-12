@@ -8590,6 +8590,7 @@ error:
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_union_add_templ.c>
+#include <isl_multi_zero_space_templ.c>
 
 /* Does "mupa" have a non-trivial explicit domain?
  *
