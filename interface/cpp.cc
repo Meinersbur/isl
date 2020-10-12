@@ -1402,7 +1402,7 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
 		function_kind kind = function_kind_member_method;
 
-		generator.print_set_persistent_callback(os, clazz, *in, kind);
+		print_set_persistent_callback(*in, kind);
 	}
 }
 
@@ -1763,8 +1763,8 @@ std::string cpp_generator::get_return_type(const isl_class &clazz,
  * - the definition of a private method for setting the callback function
  * - the public method for constructing a new object with the callback set.
  */
-void cpp_generator::print_set_persistent_callback(ostream &os,
-	const isl_class &clazz, FunctionDecl *method,
+void cpp_generator::impl_printer::print_set_persistent_callback(
+	FunctionDecl *method,
 	function_kind kind)
 {
 	string fullname = method->getName().str();
@@ -1773,27 +1773,28 @@ void cpp_generator::print_set_persistent_callback(ostream &os,
 	string callback_name = clazz.persistent_callback_name(method);
 
 	osprintf(os, "\n");
-	print_persistent_callback_prototype(os, clazz, method, false);
+	generator.print_persistent_callback_prototype(os, clazz, method, false);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
-	print_callback_body(os, 2, param, callback_name);
+	generator.print_callback_body(os, 2, param, callback_name);
 	osprintf(os, "}\n\n");
 
 	pname = param->getName().str();
-	print_persistent_callback_setter_prototype(os, clazz, method, false);
+	generator.print_persistent_callback_setter_prototype(os, clazz, method,
+								false);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
-	print_check_ptr_start(os, clazz, "ptr");
+	generator.print_check_ptr_start(os, clazz, "ptr");
 	osprintf(os, "  %s_data = std::make_shared<struct %s_data>();\n",
 		callback_name.c_str(), callback_name.c_str());
 	osprintf(os, "  %s_data->func = %s;\n",
 		callback_name.c_str(), pname.c_str());
 	osprintf(os, "  ptr = %s(ptr, &%s, %s_data.get());\n",
 		fullname.c_str(), callback_name.c_str(), callback_name.c_str());
-	print_check_ptr_end(os, "ptr");
+	generator.print_check_ptr_end(os, "ptr");
 	osprintf(os, "}\n\n");
 
-	print_method_header(os, clazz, method, false, kind);
+	generator.print_method_header(os, clazz, method, false, kind);
 	osprintf(os, "{\n");
 	osprintf(os, "  auto copy = *this;\n");
 	osprintf(os, "  copy.set_%s_data(%s);\n",

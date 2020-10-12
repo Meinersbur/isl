@@ -84,8 +84,6 @@ private:
 	void print_argument_validity_check(ostream &os, FunctionDecl *method,
 		function_kind kind);
 	void print_on_error_continue(ostream &os);
-	void print_set_persistent_callback(ostream &os, const isl_class &clazz,
-		FunctionDecl *method, function_kind kind);
 	void print_method_return(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
 	void print_invalid(ostream &os, int indent, const char *msg,
@@ -191,6 +189,8 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
 		const string &method_name) override;
+	void print_set_persistent_callback(FunctionDecl *method,
+		function_kind kind);
 	void print_persistent_callbacks();
 	void print_save_ctx(FunctionDecl *method, function_kind kind);
 	void print_exceptional_execution_check(FunctionDecl *method,
