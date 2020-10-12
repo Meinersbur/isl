@@ -1772,7 +1772,7 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
 	generator.print_persistent_callback_prototype(os, clazz, method, false);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
-	generator.print_callback_body(os, 2, param, callback_name);
+	print_callback_body(2, param, callback_name);
 	osprintf(os, "}\n\n");
 
 	pname = param->getName().str();
@@ -2097,7 +2097,7 @@ string cpp_generator::generate_callback_type(QualType type)
  *        auto ret = @call@;
  *        return ret.release();
  */
-void cpp_generator::print_wrapped_call_checked(ostream &os, int indent,
+void cpp_generator::impl_printer::print_wrapped_call_checked(int indent,
 	const string &call)
 {
 	osprintf(os, indent, "auto ret = %s;\n", call.c_str());
@@ -2142,11 +2142,11 @@ void cpp_generator::print_wrapped_call_checked(ostream &os, int indent,
  * If checked C++ bindings are being generated, then
  * the call is wrapped differently.
  */
-void cpp_generator::print_wrapped_call(ostream &os, int indent,
+void cpp_generator::impl_printer::print_wrapped_call(int indent,
 	const string &call, QualType rtype)
 {
-	if (checked)
-		return print_wrapped_call_checked(os, indent, call);
+	if (generator.checked)
+		return print_wrapped_call_checked(indent, call);
 
 	osprintf(os, indent, "ISL_CPP_TRY {\n");
 	if (is_isl_stat(rtype))
@@ -2235,7 +2235,7 @@ void cpp_generator::print_callback_data_decl(ostream &os, ParmVarDecl *param,
  *        stat ret = (data->func)(manage(arg_0));
  *        return isl_stat(ret);
  */
-void cpp_generator::print_callback_body(ostream &os, int indent,
+void cpp_generator::impl_printer::print_callback_body(int indent,
 	ParmVarDecl *param, const string &prefix)
 {
 	QualType ptype, rtype;
@@ -2253,7 +2253,7 @@ void cpp_generator::print_callback_body(ostream &os, int indent,
 
 	call = "(data->func)(";
 	for (long i = 0; i < num_params - 1; i++) {
-		if (!callback_takes_argument(param, i))
+		if (!generator.callback_takes_argument(param, i))
 			call += "manage_copy";
 		else
 			call += "manage";
@@ -2266,7 +2266,7 @@ void cpp_generator::print_callback_body(ostream &os, int indent,
 	osprintf(os, indent,
 		 "auto *data = static_cast<struct %s_data *>(arg_%s);\n",
 		 prefix.c_str(), last_idx.c_str());
-	print_wrapped_call(os, indent, call, rtype);
+	print_wrapped_call(indent, call, rtype);
 }
 
 /* Print the local variables that are needed for a callback argument,
@@ -2339,7 +2339,7 @@ void cpp_generator::impl_printer::print_callback_local(ParmVarDecl *param)
 	osprintf(os, " %s_data = { %s };\n", pname.c_str(), pname.c_str());
 	osprintf(os, "  auto %s_lambda = [](%s) -> %s {\n",
 		 pname.c_str(), c_args.c_str(), rettype.c_str());
-	generator.print_callback_body(os, 4, param, pname);
+	print_callback_body(4, param, pname);
 	osprintf(os, "  };\n");
 }
 

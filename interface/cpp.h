@@ -90,13 +90,7 @@ private:
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
-	void print_wrapped_call_checked(std::ostream &os, int indent,
-		const std::string &call);
-	void print_wrapped_call(std::ostream &os, int indent,
-		const std::string &call, QualType rtype);
 	void print_callback_data_decl(ostream &os, ParmVarDecl *param,
-		const string &name);
-	void print_callback_body(ostream &os, int indent, ParmVarDecl *param,
 		const string &name);
 	std::string rename_method(std::string name);
 	string isl_bool2cpp();
@@ -193,6 +187,11 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_save_ctx(FunctionDecl *method, function_kind kind);
 	void print_exceptional_execution_check(FunctionDecl *method,
 		function_kind kind);
+	void print_wrapped_call_checked(int indent, const std::string &call);
+	void print_wrapped_call(int indent, const std::string &call,
+		QualType rtype);
+	void print_callback_body(int indent, ParmVarDecl *param,
+		const string &name);
 	void print_callback_local(ParmVarDecl *param);
 };
 
