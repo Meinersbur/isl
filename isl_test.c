@@ -10095,6 +10095,48 @@ static isl_stat test_multi_pw_aff_3(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* String descriptions of boxes that
+ * are used for reconstructing box maps from their lower and upper bounds.
+ */
+static const char *multi_pw_aff_box_tests[] = {
+	"{ A[x, y] -> [] : x + y >= 0 }",
+	"[N] -> { A[x, y] -> [x] : x + y <= N }",
+	"[N] -> { A[x, y] -> [x : y] : x + y <= N }",
+};
+
+/* Check that map representations of boxes can be reconstructed
+ * from their lower and upper bounds.
+ */
+static isl_stat test_multi_pw_aff_box(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(multi_pw_aff_box_tests); ++i) {
+		const char *str;
+		isl_bool equal;
+		isl_map *map, *box;
+		isl_multi_pw_aff *min, *max;
+
+		str = multi_pw_aff_box_tests[i];
+		map = isl_map_read_from_str(ctx, str);
+		min = isl_map_min_multi_pw_aff(isl_map_copy(map));
+		max = isl_map_max_multi_pw_aff(isl_map_copy(map));
+		box = isl_map_universe(isl_map_get_space(map));
+		box = isl_map_lower_bound_multi_pw_aff(box, min);
+		box = isl_map_upper_bound_multi_pw_aff(box, max);
+		equal = isl_map_is_equal(map, box);
+		isl_map_free(map);
+		isl_map_free(box);
+		if (equal < 0)
+			return isl_stat_error;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform some tests on multi piecewise affine expressions.
  */
 static int test_multi_pw_aff(isl_ctx *ctx)
@@ -10104,6 +10146,8 @@ static int test_multi_pw_aff(isl_ctx *ctx)
 	if (test_multi_pw_aff_2(ctx) < 0)
 		return -1;
 	if (test_multi_pw_aff_3(ctx) < 0)
+		return -1;
+	if (test_multi_pw_aff_box(ctx) < 0)
 		return -1;
 	return 0;
 }
