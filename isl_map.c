@@ -6864,6 +6864,18 @@ __isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
 	return set_from_map(isl_map_upper_bound_val(map, type, pos, value));
 }
 
+/* If "mv" has an explicit domain, then intersect the domain of "map"
+ * with this explicit domain.
+ *
+ * An isl_multi_val object never has an explicit domain,
+ * so simply return "map".
+ */
+static __isl_give isl_map *isl_map_intersect_multi_val_explicit_domain(
+	__isl_take isl_map *map, __isl_keep isl_multi_val *mv)
+{
+	return map;
+}
+
 #undef BASE
 #define BASE	val
 #include "isl_map_bound_templ.c"

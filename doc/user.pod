@@ -5615,6 +5615,9 @@ symbolic constant expression.
 For functions taking a multi expression,
 this applies to all set dimensions.
 Those that bound a map, bound the range of that map.
+If the multi expression is zero-dimensional but has an explicit domain,
+then the (parameter) domain of the set or map is intersected
+with this explicit domain.
 
 	__isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 		enum isl_dim_type type1, int pos1,

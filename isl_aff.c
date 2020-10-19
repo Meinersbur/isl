@@ -6500,6 +6500,23 @@ error:
 #include <isl_multi_zero_templ.c>
 #include <isl_multi_unbind_params_templ.c>
 
+/* If "mpa" has an explicit domain, then intersect the domain of "map"
+ * with this explicit domain.
+ */
+__isl_give isl_map *isl_map_intersect_multi_pw_aff_explicit_domain(
+	__isl_take isl_map *map, __isl_keep isl_multi_pw_aff *mpa)
+{
+	isl_set *dom;
+
+	if (!isl_multi_pw_aff_has_explicit_domain(mpa))
+		return map;
+
+	dom = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(mpa));
+	map = isl_map_intersect_domain(map, dom);
+
+	return map;
+}
+
 /* Are all elements of "mpa" piecewise constants?
  */
 isl_bool isl_multi_pw_aff_is_cst(__isl_keep isl_multi_pw_aff *mpa)
