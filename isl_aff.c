@@ -7766,6 +7766,16 @@ __isl_give isl_multi_aff *isl_multi_aff_multi_val_on_space(
 	return isl_multi_aff_multi_val_on_domain_space(space, mv);
 }
 
+/* This function performs the same operation as
+ * isl_multi_aff_multi_val_on_domain_space,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_multi_aff *isl_space_multi_aff_on_domain_multi_val(
+	__isl_take isl_space *space, __isl_take isl_multi_val *mv)
+{
+	return isl_multi_aff_multi_val_on_domain_space(space, mv);
+}
+
 /* Return a piecewise multi-affine expression
  * that is equal to "mv" on "domain".
  */
