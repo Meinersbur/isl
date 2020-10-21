@@ -159,6 +159,14 @@ __isl_give isl_aff *isl_aff_zero_on_domain_space(__isl_take isl_space *space)
 	return isl_aff_zero_on_domain(isl_local_space_from_space(space));
 }
 
+/* This function performs the same operation as isl_aff_zero_on_domain_space,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_aff *isl_space_zero_aff_on_domain(__isl_take isl_space *space)
+{
+	return isl_aff_zero_on_domain_space(space);
+}
+
 /* Return a piecewise affine expression defined on the specified domain
  * that is equal to zero.
  */

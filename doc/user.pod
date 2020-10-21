@@ -2777,6 +2777,8 @@ a specified dimension on a given domain can be created using
 	#include <isl/aff.h>
 	__isl_give isl_aff *isl_aff_zero_on_domain_space(
 		__isl_take isl_space *space);
+	__isl_give isl_aff *isl_space_zero_aff_on_domain(
+		__isl_take isl_space *space);
 	__isl_give isl_aff *isl_aff_zero_on_domain(
 		__isl_take isl_local_space *ls);
 	__isl_give isl_aff *isl_aff_val_on_domain_space(
@@ -2798,6 +2800,9 @@ a specified dimension on a given domain can be created using
 
 The space passed to C<isl_aff_param_on_domain_space_id>
 is required to have a parameter with the given identifier.
+
+C<isl_aff_zero_on_domain_space> and C<isl_space_zero_aff_on_domain>
+perform the same operation.
 
 Quasi affine expressions can be copied and freed using
 
