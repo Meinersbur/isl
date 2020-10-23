@@ -6,6 +6,7 @@ changes:
 version: 0.22
 date: Fri Nov  1 18:39:30 CET 2019
 changes:
+	- require C++11 to generate bindings
 	- improved bindings
 	- scheduler fix involving fixed dimensions
 	- accept ranges in tuples during parsing
