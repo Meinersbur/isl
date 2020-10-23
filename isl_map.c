@@ -6921,15 +6921,6 @@ __isl_give isl_set *isl_set_lower_bound_multi_val(__isl_take isl_set *set,
 	return set_bound_multi_val(set, lower, &map_lower_bound_val);
 }
 
-/* Force the values of the output dimensions of "map"
- * to be no smaller than the corresponding values in "lower".
- */
-__isl_give isl_map *isl_map_lower_bound_multi_val(__isl_take isl_map *map,
-	__isl_take isl_multi_val *lower)
-{
-	return map_bound_multi_val(map, lower, &map_lower_bound_val);
-}
-
 /* Wrapper around isl_map_upper_bound_val for use in map_bound_multi_val,
  * setting a bound on the given output dimension.
  */
@@ -6946,15 +6937,6 @@ __isl_give isl_set *isl_set_upper_bound_multi_val(__isl_take isl_set *set,
 	__isl_take isl_multi_val *upper)
 {
 	return set_bound_multi_val(set, upper, &map_upper_bound_val);
-}
-
-/* Force the values of the set dimensions of "set"
- * to be no greater than the corresponding values in "upper".
- */
-__isl_give isl_map *isl_map_upper_bound_multi_val(__isl_take isl_map *map,
-	__isl_take isl_multi_val *upper)
-{
-	return map_bound_multi_val(map, upper, &map_upper_bound_val);
 }
 
 /* Force the symbolic constant expression "bound"

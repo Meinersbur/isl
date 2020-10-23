@@ -203,12 +203,6 @@ __isl_give isl_basic_map *isl_basic_map_upper_bound_si(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos, int value);
 __isl_overload
-__isl_give isl_map *isl_map_lower_bound_multi_val(__isl_take isl_map *map,
-	__isl_take isl_multi_val *lower);
-__isl_overload
-__isl_give isl_map *isl_map_upper_bound_multi_val(__isl_take isl_map *map,
-	__isl_take isl_multi_val *upper);
-__isl_overload
 __isl_give isl_map *isl_map_lower_bound_multi_pw_aff(__isl_take isl_map *map,
 	__isl_take isl_multi_pw_aff *lower);
 __isl_overload
