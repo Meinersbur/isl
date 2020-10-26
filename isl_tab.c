@@ -3884,7 +3884,8 @@ static isl_stat drop_bmap_div(struct isl_tab *tab, int pos)
 	if (n_div < 0)
 		return isl_stat_error;
 	off = tab->n_var - n_div;
-	if (isl_basic_map_drop_div(tab->bmap, pos - off) < 0)
+	tab->bmap = isl_basic_map_drop_div(tab->bmap, pos - off);
+	if (!tab->bmap)
 		return isl_stat_error;
 	if (tab->samples) {
 		tab->samples = isl_mat_drop_cols(tab->samples, 1 + pos, 1);
