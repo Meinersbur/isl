@@ -129,7 +129,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space_and_domain(
 	return isl_qpolynomial_fold_reset_domain_space(fold, domain);
 }
 
-int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
+static int isl_qpolynomial_fold_involves_dims(
+	__isl_keep isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
