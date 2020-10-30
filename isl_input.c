@@ -2599,24 +2599,28 @@ static struct isl_obj obj_read_poly(__isl_keep isl_stream *s,
 static struct isl_obj obj_read_poly_or_fold(__isl_keep isl_stream *s,
 	__isl_take isl_set *set, struct vars *v, int n)
 {
+	int min, max;
 	struct isl_obj obj = { isl_obj_pw_qpolynomial_fold, NULL };
 	isl_pw_qpolynomial *pwqp;
 	isl_pw_qpolynomial_fold *pwf = NULL;
+	enum isl_fold fold;
 
-	if (!isl_stream_eat_if_available(s, ISL_TOKEN_MAX))
+	max = isl_stream_eat_if_available(s, ISL_TOKEN_MAX);
+	min = !max && isl_stream_eat_if_available(s, ISL_TOKEN_MIN);
+	if (!min && !max)
 		return obj_read_poly(s, set, v, n);
+	fold = max ? isl_fold_max : isl_fold_min;
 
 	if (isl_stream_eat(s, '('))
 		goto error;
 
 	pwqp = read_term(s, set, v);
-	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max, pwqp);
+	pwf = isl_pw_qpolynomial_fold_from_pw_qpolynomial(fold, pwqp);
 
 	while (isl_stream_eat_if_available(s, ',')) {
 		isl_pw_qpolynomial_fold *pwf_i;
 		pwqp = read_term(s, set, v);
-		pwf_i = isl_pw_qpolynomial_fold_from_pw_qpolynomial(isl_fold_max,
-									pwqp);
+		pwf_i = isl_pw_qpolynomial_fold_from_pw_qpolynomial(fold, pwqp);
 		pwf = isl_pw_qpolynomial_fold_fold(pwf, pwf_i);
 	}
 
