@@ -148,16 +148,29 @@ int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
 	return 0;
 }
 
+/* Given a dimension type for an isl_qpolynomial_fold,
+ * return the corresponding type for the domain.
+ */
+static enum isl_dim_type domain_type(enum isl_dim_type type)
+{
+	if (type == isl_dim_in)
+		return isl_dim_set;
+	return type;
+}
+
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 	__isl_take isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_space_set_dim_name(fold->dim, type, pos, s);
+
+	set_type = domain_type(type);
+	fold->dim = isl_space_set_dim_name(fold->dim, set_type, pos, s);
 	if (!fold->dim)
 		goto error;
 
@@ -172,16 +185,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 error:
 	isl_qpolynomial_fold_free(fold);
 	return NULL;
-}
-
-/* Given a dimension type for an isl_qpolynomial_fold,
- * return the corresponding type for the domain.
- */
-static enum isl_dim_type domain_type(enum isl_dim_type type)
-{
-	if (type == isl_dim_in)
-		return isl_dim_set;
-	return type;
 }
 
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
@@ -223,6 +226,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	enum isl_dim_type set_type;
 
 	if (!fold)
 		return NULL;
@@ -232,7 +236,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_space_insert_dims(fold->dim, type, first, n);
+
+	set_type = domain_type(type);
+	fold->dim = isl_space_insert_dims(fold->dim, set_type, first, n);
 	if (!fold->dim)
 		goto error;
 

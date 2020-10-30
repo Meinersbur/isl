@@ -105,6 +105,24 @@ error:
 	return isl_stat_error;
 }
 
+/* Update bound->pwf and bound->pwf_tight with a bound
+ * of type bound->type on the polynomial "poly" over the domain "bset".
+ *
+ * If the original problem had a wrapped relation in the domain,
+ * meaning that the bound should be computed over the range
+ * of this relation, then temporarily treat the domain dimensions
+ * of this wrapped relation as parameters, compute a bound
+ * in terms of these and the original parameters,
+ * turn the parameters back into set dimensions and
+ * add the results to bound->pwf and bound->pwf_tight.
+ *
+ * Note that even though "bset" is known to live in the same space
+ * as the domain of "poly", the names of the set dimensions
+ * may be different (or missing).  Make sure the naming is exactly
+ * the same before turning these dimensions into parameters
+ * to ensure that the spaces are still the same after
+ * this operation.
+ */
 static isl_stat guarded_poly_bound(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, void *user)
 {
@@ -123,6 +141,9 @@ static isl_stat guarded_poly_bound(__isl_take isl_basic_set *bset,
 	n_in = isl_space_dim(bound->dim, isl_dim_in);
 	if (nparam < 0 || n_in < 0)
 		goto error;
+
+	space = isl_qpolynomial_get_domain_space(poly);
+	bset = isl_basic_set_reset_space(bset, space);
 
 	bset = isl_basic_set_move_dims(bset, isl_dim_param, nparam,
 					isl_dim_set, 0, n_in);

@@ -3947,6 +3947,27 @@ static int test_bound_unbounded_domain(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check that the bound computation can handle differences
+ * in domain dimension names of the input polynomial and its domain.
+ */
+static isl_stat test_bound_space(isl_ctx *ctx)
+{
+	const char *str;
+	isl_set *set;
+	isl_pw_qpolynomial *pwqp;
+	isl_pw_qpolynomial_fold *pwf;
+
+	str = "{ [[c] -> [c]] }";
+	set = isl_set_read_from_str(ctx, str);
+	str = "{ [[a] -> [b]] -> 1 }";
+	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+	pwqp = isl_pw_qpolynomial_intersect_domain(pwqp, set);
+	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
+	isl_pw_qpolynomial_fold_free(pwf);
+
+	return isl_stat_non_null(pwf);
+}
+
 static int test_bound(isl_ctx *ctx)
 {
 	const char *str;
@@ -3955,6 +3976,8 @@ static int test_bound(isl_ctx *ctx)
 	isl_pw_qpolynomial_fold *pwf;
 
 	if (test_bound_unbounded_domain(ctx) < 0)
+		return -1;
+	if (test_bound_space(ctx) < 0)
 		return -1;
 
 	str = "{ [[a, b, c, d] -> [e]] -> 0 }";
