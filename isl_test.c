@@ -3912,6 +3912,7 @@ static struct {
 	  "{ [a, b, c, d] -> max(0) }" },
 	{ 1, isl_fold_max, "{ [[x] -> [x]] -> 1 : exists a : x = 2 a }",
 	  "{ [x] -> max(1) : x mod 2 = 0 }" },
+	{ 1, isl_fold_min, "{ [x=5:10] -> (x + 2)^2 }", "{ min(49) }" },
 };
 
 /* Check that the bound computation can handle differences
