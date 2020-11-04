@@ -162,6 +162,7 @@ struct cpp_generator::class_printer {
 	void print_methods();
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_method_variants(FunctionDecl *fd, const std::string &name);
+	virtual bool want_descendent_overloads(const function_set &methods) = 0;
 	void print_descendent_overloads(FunctionDecl *fd,
 		const std::string &name);
 	void print_method_group(const function_set &methods,

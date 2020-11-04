@@ -457,13 +457,10 @@ void cpp_generator::class_printer::print_descendent_overloads(
 /* Print declarations or definitions for methods called "name"
  * derived from "methods".
  *
- * If the group of methods contains both methods originally defined
- * in the printed class
- * and methods that have been copied from an ancestor (meaning that there
- * are at least two methods in the group) and if only one of them
- * was originally defined in "clazz", then add variants that take
+ * If want_descendent_overloads signals that variants should be added that take
  * as arguments those types that can be converted to the original argument type
- * through a unary constructor.
+ * through a unary constructor and if only one of the methods in the group
+ * was originally defined in "clazz", then effectively add those variants.
  * Only do this for methods with a single (isl object) argument.
  */
 void cpp_generator::class_printer::print_method_group(
@@ -473,7 +470,7 @@ void cpp_generator::class_printer::print_method_group(
 
 	for (const auto &fd : methods)
 		print_method_variants(fd, name);
-	if (methods.size() <= 1)
+	if (!want_descendent_overloads(methods))
 		return;
 	local = single_local(clazz, methods);
 	if (!local)

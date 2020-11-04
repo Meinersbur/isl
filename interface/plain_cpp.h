@@ -79,6 +79,8 @@ struct plain_cpp_generator::plain_printer : public cpp_generator::class_printer 
 	void print_persistent_callback_setter_prototype(FunctionDecl *method);
 	void print_full_method_header(const Method &method);
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);
+	virtual bool want_descendent_overloads(const function_set &methods)
+		override;
 };
 
 /* A helper class for printing method declarations of a class.

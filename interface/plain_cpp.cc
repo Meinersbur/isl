@@ -1691,6 +1691,26 @@ void plain_cpp_generator::plain_printer::print_callback_data_decl(
 	osprintf(os, "  }");
 }
 
+/* Given a group of methods with the same name,
+ * should extra methods be added that take as arguments
+ * those types that can be converted to the original argument type
+ * through a unary constructor?
+ *
+ * Note that even if this method returns true,
+ * the extra methods are only printed by the caller
+ * if exactly one of the methods in the group was originally defined
+ * in the printed class.
+ * Signal that they should be printed if the group contains
+ * both methods originally defined in the printed class and
+ * methods that have been copied from an ancestor
+ * by checking whether there are at least two methods in the group.
+ */
+bool plain_cpp_generator::plain_printer::want_descendent_overloads(
+	const function_set &methods)
+{
+	return methods.size() > 1;
+}
+
 /* Print the body of C function callback with the given indentation
  * that can be use as an argument to "param" for marshalling
  * the corresponding C++ callback.
