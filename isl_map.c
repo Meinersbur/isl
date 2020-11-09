@@ -6295,6 +6295,14 @@ __isl_give isl_set *isl_set_universe(__isl_take isl_space *space)
 	return set;
 }
 
+/* This function performs the same operation as isl_set_universe,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_set *isl_space_universe_set(__isl_take isl_space *space)
+{
+	return isl_set_universe(space);
+}
+
 __isl_give isl_map *isl_map_dup(__isl_keep isl_map *map)
 {
 	int i;

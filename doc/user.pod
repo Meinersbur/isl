@@ -1955,6 +1955,8 @@ Similarly for the other pair of functions.
 		__isl_take isl_space *space);
 	__isl_give isl_set *isl_set_universe(
 		__isl_take isl_space *space);
+	__isl_give isl_set *isl_space_universe_set(
+		__isl_take isl_space *space);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_universe(
@@ -1969,6 +1971,9 @@ Similarly for the other pair of functions.
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_universe(
 		__isl_take isl_union_map *umap);
+
+C<isl_set_universe> and C<isl_space_universe_set>
+perform the same operation.
 
 The sets and relations constructed by the functions above
 contain all integer values, while those constructed by the
