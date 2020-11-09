@@ -3156,9 +3156,15 @@ then this space also needs to be a set space.
 	__isl_give isl_multi_id *isl_multi_id_from_id_list(
 		__isl_take isl_space *space,
 		__isl_take isl_id_list *list);
+	__isl_give isl_multi_id *isl_space_multi_id(
+		__isl_take isl_space *space,
+		__isl_take isl_id_list *list);
 
 	#include <isl/val.h>
 	__isl_give isl_multi_val *isl_multi_val_from_val_list(
+		__isl_take isl_space *space,
+		__isl_take isl_val_list *list);
+	__isl_give isl_multi_val *isl_space_multi_val(
 		__isl_take isl_space *space,
 		__isl_take isl_val_list *list);
 
@@ -3166,14 +3172,36 @@ then this space also needs to be a set space.
 	__isl_give isl_multi_aff *isl_multi_aff_from_aff_list(
 		__isl_take isl_space *space,
 		__isl_take isl_aff_list *list);
+	__isl_give isl_multi_aff *isl_space_multi_aff(
+		__isl_take isl_space *space,
+		__isl_take isl_aff_list *list);
 	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_from_pw_aff_list(
+		__isl_take isl_space *space,
+		__isl_take isl_pw_aff_list *list);
+	__isl_give isl_multi_pw_aff *
+	isl_space_multi_pw_aff(
 		__isl_take isl_space *space,
 		__isl_take isl_pw_aff_list *list);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_from_union_pw_aff_list(
 		__isl_take isl_space *space,
 		__isl_take isl_union_pw_aff_list *list);
+	__isl_give isl_multi_union_pw_aff *
+	isl_space_multi_union_pw_aff(
+		__isl_take isl_space *space,
+		__isl_take isl_union_pw_aff_list *list);
+
+C<isl_multi_id_from_id_list> and C<isl_space_multi_id> perform
+the same operation.
+Similarly for the pair C<isl_multi_val_from_val_list> and
+C<isl_space_multi_val>,
+for the pair C<isl_multi_aff_from_aff_list> and
+C<isl_space_multi_aff>,
+for the pair C<isl_multi_pw_aff_from_pw_aff_list> and
+C<isl_space_multi_pw_aff> and
+for the pair C<isl_multi_union_pw_aff_from_union_pw_aff_list> and
+C<isl_space_multi_union_pw_aff>.
 
 As a convenience, a multiple piecewise expression can
 also be created from a multiple expression,

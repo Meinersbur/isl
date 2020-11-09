@@ -24,6 +24,9 @@ __isl_give isl_##BASE##_list *isl_multi_##BASE##_get_list(		\
 __isl_constructor							\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_##BASE##_list(	\
 	__isl_take isl_space *space, __isl_take isl_##BASE##_list *list); \
+__isl_export								\
+__isl_give isl_multi_##BASE *isl_space_multi_##BASE(			\
+	__isl_take isl_space *space, __isl_take isl_##BASE##_list *list); \
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_copy(			\
 	__isl_keep isl_multi_##BASE *multi);				\
 __isl_null isl_multi_##BASE *isl_multi_##BASE##_free(			\
