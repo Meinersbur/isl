@@ -3539,6 +3539,9 @@ then create a piecewise expression over a universe domain.
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_identity_on_domain_space(
 		__isl_take isl_space *space)
+	__isl_give isl_pw_multi_aff *
+	isl_space_identity_pw_multi_aff_on_domain(
+		__isl_take isl_space *space)
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity(
 		__isl_take isl_space *space);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_domain_map(
@@ -3554,6 +3557,10 @@ then create a piecewise expression over a universe domain.
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_zero(
 		__isl_take isl_space *space);
+
+C<isl_pw_multi_aff_identity_on_domain_space> and
+C<isl_space_identity_pw_multi_aff_on_domain>
+perform the same operation.
 
 The following convenience functions first create a base expression and
 then create a piecewise expression over a given domain.

@@ -4228,6 +4228,16 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_identity_on_domain_space(
 	return isl_pw_multi_aff_from_multi_aff(ma);
 }
 
+/* This function performs the same operation as
+ * isl_pw_multi_aff_identity_on_domain_space,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_space_identity_pw_multi_aff_on_domain(
+	__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_identity_on_domain_space(space);
+}
+
 /* Exploit the equalities in "eq" to simplify the affine expressions.
  */
 static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
