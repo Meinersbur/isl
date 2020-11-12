@@ -4071,6 +4071,15 @@ error:
 	return NULL;
 }
 
+/* This function performs the same operation as isl_multi_aff_domain_map,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_multi_aff *isl_space_domain_map_multi_aff(
+	__isl_take isl_space *space)
+{
+	return isl_multi_aff_domain_map(space);
+}
+
 /* Given a map space, return an isl_multi_aff that maps a wrapped copy
  * of the space to its range.
  */

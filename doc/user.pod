@@ -3121,12 +3121,17 @@ projection operations in L</"Unary Operations">.
 	#include <isl/aff.h>
 	__isl_give isl_multi_aff *isl_multi_aff_domain_map(
 		__isl_take isl_space *space);
+	__isl_give isl_multi_aff *isl_space_domain_map_multi_aff(
+		__isl_take isl_space *space);
 	__isl_give isl_multi_aff *isl_multi_aff_range_map(
 		__isl_take isl_space *space);
 	__isl_give isl_multi_aff *isl_multi_aff_project_out_map(
 		__isl_take isl_space *space,
 		enum isl_dim_type type,
 		unsigned first, unsigned n);
+
+C<isl_multi_aff_domain_map> and C<isl_space_domain_map_multi_aff> perform
+the same operation.
 
 A multiple expression can be created from a single
 base expression using the following functions.

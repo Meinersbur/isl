@@ -498,6 +498,9 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
 __isl_export
 __isl_give isl_multi_aff *isl_multi_aff_domain_map(__isl_take isl_space *space);
 __isl_export
+__isl_give isl_multi_aff *isl_space_domain_map_multi_aff(
+	__isl_take isl_space *space);
+__isl_export
 __isl_give isl_multi_aff *isl_multi_aff_range_map(__isl_take isl_space *space);
 __isl_give isl_multi_aff *isl_multi_aff_project_out_map(
 	__isl_take isl_space *space, enum isl_dim_type type,
