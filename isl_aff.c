@@ -7791,6 +7791,16 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_multi_val_on_domain(
 	return isl_pw_multi_aff_alloc(domain, ma);
 }
 
+/* This function performs the same operation as
+ * isl_pw_multi_aff_multi_val_on_domain,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_set_pw_multi_aff_on_domain_multi_val(
+	__isl_take isl_set *domain, __isl_take isl_multi_val *mv)
+{
+	return isl_pw_multi_aff_multi_val_on_domain(domain, mv);
+}
+
 /* Internal data structure for isl_union_pw_multi_aff_multi_val_on_domain.
  * mv is the value that should be attained on each domain set
  * res collects the results
