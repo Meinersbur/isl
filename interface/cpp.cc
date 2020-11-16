@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1912,18 +1913,43 @@ bool Method::is_subclass_mutator() const
 	return clazz.is_type_subclass() && generator::is_mutator(clazz, fd);
 }
 
+/* Return a pointer to the appropriate type printer,
+ * i.e., the regular type printer or the checked type printer
+ * depending on the setting of this->checked.
+ */
+std::unique_ptr<cpp_type_printer> cpp_generator::type_printer()
+{
+	cpp_type_printer *printer;
+
+	if (checked)
+		printer = new checked_cpp_type_printer();
+	else
+		printer = new cpp_type_printer();
+
+	return std::unique_ptr<cpp_type_printer>(printer);
+}
+
 /* Return the C++ return type of the method "method".
  *
  * If the corresponding function modifies an object of a subclass, then return
  * the type of this subclass.
  * Otherwise, return the C++ counterpart of the actual return type.
  */
-std::string cpp_generator::get_return_type(const Method &method)
+std::string cpp_type_printer::return_type(const Method &method) const
 {
 	if (method.is_subclass_mutator())
-		return type2cpp(method.clazz);
+		return cpp_generator::type2cpp(method.clazz);
 	else
-		return param2cpp(method.fd->getReturnType());
+		return param(method.fd->getReturnType());
+}
+
+/* Return the C++ return type of the method "method".
+ *
+ * Use the appropriate type printer.
+ */
+std::string cpp_generator::get_return_type(const Method &method)
+{
+	return type_printer()->return_type(method);
 }
 
 /* Given a method "method" for setting a persistent callback of its class,
@@ -2140,13 +2166,14 @@ void cpp_generator::class_printer::print_method_header(const Method &method)
  *
  *      map
  */
-string cpp_generator::generate_callback_args(QualType type, bool cpp)
+std::string cpp_type_printer::generate_callback_args(QualType type,
+	bool cpp) const
 {
 	std::string type_str;
 	const FunctionProtoType *callback;
 	int num_params;
 
-	callback = extract_prototype(type);
+	callback = generator::extract_prototype(type);
 	num_params = callback->getNumArgs();
 	if (cpp)
 		num_params--;
@@ -2155,7 +2182,7 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
 		QualType type = callback->getArgType(i);
 
 		if (cpp)
-			type_str += param2cpp(type);
+			type_str += param(type);
 		else
 			type_str += type.getAsString();
 
@@ -2169,6 +2196,17 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
 	return type_str;
 }
 
+/* Generate the list of argument types for a callback function of
+ * type "type".  If "cpp" is set, then generate the C++ type list, otherwise
+ * the C type list.
+ *
+ * Use the appropriate type printer.
+ */
+string cpp_generator::generate_callback_args(QualType type, bool cpp)
+{
+	return type_printer()->generate_callback_args(type, cpp);
+}
+
 /* Generate the full cpp type of a callback function of type "type".
  *
  * For a callback of type
@@ -2179,12 +2217,12 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
  *
  *      std::function<stat(map)>
  */
-string cpp_generator::generate_callback_type(QualType type)
+std::string cpp_type_printer::generate_callback_type(QualType type) const
 {
 	std::string type_str;
-	const FunctionProtoType *callback = extract_prototype(type);
+	const FunctionProtoType *callback = generator::extract_prototype(type);
 	QualType return_type = callback->getReturnType();
-	string rettype_str = param2cpp(return_type);
+	string rettype_str = param(return_type);
 
 	type_str = "std::function<";
 	type_str += rettype_str;
@@ -2193,6 +2231,15 @@ string cpp_generator::generate_callback_type(QualType type)
 	type_str += ")>";
 
 	return type_str;
+}
+
+/* Generate the full cpp type of a callback function of type "type".
+ *
+ * Use the appropriate type printer.
+ */
+string cpp_generator::generate_callback_type(QualType type)
+{
+	return type_printer()->generate_callback_type(type);
 }
 
 /* Print the call to the C++ callback function "call",
@@ -2488,55 +2535,141 @@ string cpp_generator::type2cpp(string type_str)
 }
 
 /* Return the C++ counterpart to the isl_bool type.
- * If checked C++ bindings are being generated,
- * then this is "boolean".  Otherwise, it is simply "bool".
+ *
+ * By default, this is simply "bool" since
+ * the exceptional case is handled through exceptions.
+ */
+std::string cpp_type_printer::isl_bool() const
+{
+	return "bool";
+}
+
+/* Return the C++ counterpart to the isl_bool type.
+ *
+ * For the checked C++ bindings this is "boolean".
+ */
+std::string checked_cpp_type_printer::isl_bool() const
+{
+	return "boolean";
+}
+
+/* Return the C++ counterpart to the isl_bool type.
+ *
+ * Use the appropriate type printer.
  */
 string cpp_generator::isl_bool2cpp()
 {
-	return checked ? "boolean" : "bool";
+	return type_printer()->isl_bool();
+}
+
+/* Return the C++ counterpart to the isl_stat type.
+ *
+ * By default, this is simply "void" since
+ * the exceptional case is handled through exceptions.
+ */
+string cpp_type_printer::isl_stat() const
+{
+	return "void";
+}
+
+/* Return the C++ counterpart to the isl_stat type.
+ *
+ * For the checked C++ bindings this is "stat".
+ */
+string checked_cpp_type_printer::isl_stat() const
+{
+	return "stat";
+}
+
+/* Return the C++ counterpart to the isl_size type.
+ *
+ * By default, this is simply "unsigned" since
+ * the exceptional case is handled through exceptions.
+ */
+string cpp_type_printer::isl_size() const
+{
+	return "unsigned";
+}
+
+/* Return the C++ counterpart to the isl_size type.
+ *
+ * For the checked C++ bindings this is "class size".
+ */
+string checked_cpp_type_printer::isl_size() const
+{
+	return "class size";
 }
 
 /* Return the namespace of the generated C++ bindings.
+ *
+ * By default, this is "isl::".
+ */
+std::string cpp_type_printer::isl_namespace() const
+{
+	return "isl::";
+}
+
+/* Return the namespace of the generated C++ bindings.
+ *
+ * For the checked C++ bindings this is "isl::checked::".
+ */
+std::string checked_cpp_type_printer::isl_namespace() const
+{
+	return "isl::checked::";
+}
+
+/* Return the namespace of the generated C++ bindings.
+ *
+ * Use the appropriate type printer.
  */
 string cpp_generator::isl_namespace()
 {
-	return checked ? "isl::checked::" : "isl::";
+	return type_printer()->isl_namespace();
+}
+
+/* Return the C++ counterpart to the given isl type.
+ */
+std::string cpp_type_printer::isl_type(QualType type) const
+{
+	auto name = type->getPointeeType().getAsString();
+	return isl_namespace() + cpp_generator::type2cpp(name);
 }
 
 /* Translate parameter or return type "type" to its C++ name counterpart.
- *
- * An isl_bool return type is translated into "bool",
- * while an isl_stat is translated into "void" and
- * an isl_size is translated to "unsigned".
- * The exceptional cases are handled through exceptions.
- * If checked C++ bindings are being generated, then
- * C++ counterparts of isl_bool, isl_stat and isl_size need to be used instead.
  */
-string cpp_generator::param2cpp(QualType type)
+std::string cpp_type_printer::param(QualType type) const
 {
-	if (is_isl_type(type))
-		return isl_namespace() +
-				type2cpp(type->getPointeeType().getAsString());
+	if (cpp_generator::is_isl_type(type))
+		return isl_type(type);
 
-	if (is_isl_bool(type))
-		return isl_bool2cpp();
+	if (cpp_generator::is_isl_bool(type))
+		return isl_bool();
 
-	if (is_isl_stat(type))
-		return checked ? "stat" : "void";
+	if (cpp_generator::is_isl_stat(type))
+		return isl_stat();
 
-	if (is_isl_size(type))
-		return checked ? "class size" : "unsigned";
+	if (cpp_generator::is_isl_size(type))
+		return isl_size();
 
 	if (type->isIntegerType())
 		return type.getAsString();
 
-	if (is_string(type))
+	if (cpp_generator::is_string(type))
 		return "std::string";
 
-	if (is_callback(type))
+	if (cpp_generator::is_callback(type))
 		return generate_callback_type(type);
 
-	die("Cannot convert type to C++ type");
+	generator::die("Cannot convert type to C++ type");
+}
+
+/* Translate parameter or return type "type" to its C++ name counterpart.
+ *
+ * Use the appropriate type printer.
+ */
+string cpp_generator::param2cpp(QualType type)
+{
+	return type_printer()->param(type);
 }
 
 /* Check if "subclass_type" is a subclass of "class_type".

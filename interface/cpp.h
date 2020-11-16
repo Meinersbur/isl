@@ -2,6 +2,7 @@
 #define ISL_INTERFACE_CPP_H
 
 #include <functional>
+#include <memory>
 
 #include "generator.h"
 
@@ -83,6 +84,35 @@ struct EnumMethod : public Method {
 	std::string enum_name;
 };
 
+/* A type printer for converting argument and return types
+ * to string representations of the corresponding types
+ * in the C++ interface.
+ */
+struct cpp_type_printer {
+	cpp_type_printer() {}
+
+	virtual std::string isl_bool() const;
+	virtual std::string isl_stat() const;
+	virtual std::string isl_size() const;
+	virtual std::string isl_namespace() const;
+	std::string isl_type(QualType type) const;
+	std::string generate_callback_args(QualType type, bool cpp) const;
+	std::string generate_callback_type(QualType type) const;
+	std::string param(QualType type) const;
+	std::string return_type(const Method &method) const;
+};
+
+/* A type printer for converting argument and return types
+ * to string representations of the corresponding types
+ * in the checked C++ interface.
+ */
+struct checked_cpp_type_printer : public cpp_type_printer {
+	virtual std::string isl_bool() const override;
+	virtual std::string isl_stat() const override;
+	virtual std::string isl_size() const override;
+	virtual std::string isl_namespace() const override;
+};
+
 /* Generator for C++ bindings.
  *
  * "checked" is set if C++ bindings should be generated
@@ -121,6 +151,7 @@ private:
 		const char *checked_code);
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
 		bool load_from_this_ptr);
+	std::unique_ptr<cpp_type_printer> type_printer();
 	std::string get_return_type(const Method &method);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
