@@ -811,12 +811,19 @@ std::string cpp_type_printer::isl_namespace() const
 	return "isl::";
 }
 
+/* Return the qualified form of the given C++ isl type name.
+ */
+std::string cpp_type_printer::qualified(const std::string &cpp_type) const
+{
+	return isl_namespace() + cpp_type;
+}
+
 /* Return the C++ counterpart to the given isl type.
  */
 std::string cpp_type_printer::isl_type(QualType type) const
 {
 	auto name = type->getPointeeType().getAsString();
-	return isl_namespace() + cpp_generator::type2cpp(name);
+	return qualified(cpp_generator::type2cpp(name));
 }
 
 /* Translate parameter or return type "type" to its C++ name counterpart.
