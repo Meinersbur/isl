@@ -144,8 +144,11 @@ void plain_cpp_generator::set_construction_types()
  *
  * The classes and methods are extracted by the constructor
  * of the generator superclass.
+ *
  * Additionally extract information about types
- * that can be converted to a class.
+ * that can be converted to a class and copy all methods
+ * from superclasses that can be converted to a given class
+ * to that class.
  */
 plain_cpp_generator::plain_cpp_generator(SourceManager &SM,
 	set<RecordDecl *> &exported_types,
@@ -155,6 +158,7 @@ plain_cpp_generator::plain_cpp_generator(SourceManager &SM,
 		checked(checked)
 {
 	set_construction_types();
+	copy_super_methods();
 }
 
 /* Copy the method called "name" described by "fd" from "super" to "clazz"
@@ -332,10 +336,6 @@ void plain_cpp_generator::copy_super_methods()
 
 /* Generate a cpp interface based on the extracted types and functions.
  *
- * Before any printing is performed, first copy all methods
- * from superclasses that can be converted to a given class
- * to that class.
- *
  * Print first a set of forward declarations for all isl wrapper
  * classes, then the declarations of the classes, and at the end all
  * implementations.
@@ -352,8 +352,6 @@ void plain_cpp_generator::generate()
 	osprintf(os, "namespace isl {\n\n");
 	if (checked)
 		osprintf(os, "namespace checked {\n\n");
-
-	copy_super_methods();
 
 	print_forward_declarations(os);
 	osprintf(os, "\n");
