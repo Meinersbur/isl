@@ -1950,16 +1950,23 @@ Similarly for the other pair of functions.
 
 =item * Universe sets and relations
 
+	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_universe(
-		__isl_take isl_space *space);
-	__isl_give isl_basic_map *isl_basic_map_universe(
 		__isl_take isl_space *space);
 	__isl_give isl_set *isl_set_universe(
 		__isl_take isl_space *space);
+
+	#include <isl/map.h>
+	__isl_give isl_basic_map *isl_basic_map_universe(
+		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_universe(
 		__isl_take isl_space *space);
+
+	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_universe(
 		__isl_take isl_union_set *uset);
+
+	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_universe(
 		__isl_take isl_union_map *umap);
 
