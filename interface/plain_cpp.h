@@ -1,5 +1,5 @@
-#ifndef ISL_INTERFACE_CPP_H
-#define ISL_INTERFACE_CPP_H
+#ifndef ISL_INTERFACE_PLAIN_CPP_H
+#define ISL_INTERFACE_PLAIN_CPP_H
 
 #include <functional>
 #include <memory>

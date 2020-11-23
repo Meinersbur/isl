@@ -13,10 +13,10 @@ extract_interface_SOURCES = \
 	generator.cc \
 	python.h \
 	python.cc \
-	cpp.h \
-	cpp.cc \
 	cpp_conversion.h \
 	cpp_conversion.cc \
+	plain_cpp.h \
+	plain_cpp.cc \
 	set_lang_defaults_arg4.h \
 	extract_interface.h \
 	extract_interface.cc

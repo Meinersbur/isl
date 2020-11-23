@@ -40,7 +40,7 @@
 #include <string>
 #include <vector>
 
-#include "cpp.h"
+#include "plain_cpp.h"
 #include "isl_config.h"
 
 /* Print string formatted according to "fmt" to ostream "os".

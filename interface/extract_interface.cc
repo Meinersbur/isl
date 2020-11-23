@@ -82,7 +82,7 @@
 #include "extract_interface.h"
 #include "generator.h"
 #include "python.h"
-#include "cpp.h"
+#include "plain_cpp.h"
 #include "cpp_conversion.h"
 
 using namespace std;

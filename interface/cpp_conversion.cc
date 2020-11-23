@@ -10,8 +10,8 @@
 #include <map>
 #include <string>
 
-#include "cpp.h"
 #include "cpp_conversion.h"
+#include "plain_cpp.h"
 
 /* If "clazz" describes a subclass of a C type, then print code
  * for converting an object of the class derived from the C type
