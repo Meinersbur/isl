@@ -765,7 +765,7 @@ static string add_space_to_return_type(const string &type)
 /* Print the prototype of the static inline method that is used
  * as the C callback set by "method".
  */
-void plain_cpp_generator::class_printer::print_persistent_callback_prototype(
+void plain_cpp_generator::plain_printer::print_persistent_callback_prototype(
 	FunctionDecl *method)
 {
 	string callback_name, rettype, c_args;
@@ -794,7 +794,7 @@ void plain_cpp_generator::class_printer::print_persistent_callback_prototype(
  * set by "method".
  */
 void
-plain_cpp_generator::class_printer::print_persistent_callback_setter_prototype(
+plain_cpp_generator::plain_printer::print_persistent_callback_setter_prototype(
 	FunctionDecl *method)
 {
 	string classname, callback_name, cpptype;
@@ -2162,7 +2162,7 @@ void plain_cpp_generator::class_printer::print_method_header(
 /* Print the header for "method", including the terminating semicolon
  * in case of a declaration and a newline.
  */
-void plain_cpp_generator::class_printer::print_full_method_header(
+void plain_cpp_generator::plain_printer::print_full_method_header(
 	const Method &method)
 {
 	print_method_header(method);
@@ -2366,7 +2366,7 @@ void plain_cpp_generator::impl_printer::print_wrapped_call(int indent,
  * The std::exception_ptr object is not added to "prefix"_data
  * if checked C++ bindings are being generated.
  */
-void plain_cpp_generator::class_printer::print_callback_data_decl(
+void plain_cpp_generator::plain_printer::print_callback_data_decl(
 	ParmVarDecl *param,
 	const string &prefix)
 {
