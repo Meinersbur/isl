@@ -109,7 +109,7 @@ static std::string to_string(long l)
  * an isl type and add those types, along with the corresponding
  * constructor argument.
  */
-void plain_cpp_generator::set_class_construction_types(isl_class &clazz)
+void cpp_generator::set_class_construction_types(isl_class &clazz)
 {
 	for (const auto &cons : clazz.constructors) {
 		ParmVarDecl *param;
@@ -129,7 +129,7 @@ void plain_cpp_generator::set_class_construction_types(isl_class &clazz)
 /* Determine the isl types from which any (proper) class can be constructed
  * using a unary constructor.
  */
-void plain_cpp_generator::set_construction_types()
+void cpp_generator::set_construction_types()
 {
 	for (auto &kvp : classes) {
 		auto &clazz = kvp.second;
@@ -137,10 +137,7 @@ void plain_cpp_generator::set_construction_types()
 	}
 }
 
-/* Construct a generator for plain C++ bindings.
- *
- * "checked" is set if C++ bindings should be generated
- * that rely on the user to check for error conditions.
+/* Construct a generator for C++ bindings.
  *
  * The classes and methods are extracted by the constructor
  * of the generator superclass.
@@ -150,15 +147,28 @@ void plain_cpp_generator::set_construction_types()
  * from superclasses that can be converted to a given class
  * to that class.
  */
+cpp_generator::cpp_generator(SourceManager &SM,
+	set<RecordDecl *> &exported_types,
+	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions) :
+		generator(SM, exported_types, exported_functions, functions)
+{
+	set_construction_types();
+	copy_super_methods();
+}
+
+/* Construct a generator for plain C++ bindings.
+ *
+ * "checked" is set if C++ bindings should be generated
+ * that rely on the user to check for error conditions.
+ */
 plain_cpp_generator::plain_cpp_generator(SourceManager &SM,
 	set<RecordDecl *> &exported_types,
 	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions,
 	bool checked) :
-		generator(SM, exported_types, exported_functions, functions),
+		cpp_generator(SM, exported_types, exported_functions,
+			functions),
 		checked(checked)
 {
-	set_construction_types();
-	copy_super_methods();
 }
 
 /* Copy the method called "name" described by "fd" from "super" to "clazz"
@@ -247,8 +257,7 @@ static bool is_overridden(FunctionDecl *fd, isl_class &clazz,
  *
  * Methods that are static in their original class are not copied.
  */
-void plain_cpp_generator::copy_methods(isl_class &clazz,
-	const std::string &name,
+void cpp_generator::copy_methods(isl_class &clazz, const std::string &name,
 	const isl_class &super, const function_set &methods)
 {
 	for (auto fd : methods) {
@@ -268,8 +277,7 @@ void plain_cpp_generator::copy_methods(isl_class &clazz,
  *
  * Look through all groups of methods with the same name.
  */
-void plain_cpp_generator::copy_super_methods(isl_class &clazz,
-	const isl_class &super)
+void cpp_generator::copy_super_methods(isl_class &clazz, const isl_class &super)
 {
 	for (const auto &kvp : super.methods) {
 		const auto &name = kvp.first;
@@ -289,8 +297,7 @@ void plain_cpp_generator::copy_super_methods(isl_class &clazz,
  *
  * Consider the superclass that appears closest to the subclass first.
  */
-void plain_cpp_generator::copy_super_methods(isl_class &clazz,
-	set<string> &done)
+void cpp_generator::copy_super_methods(isl_class &clazz, set<string> &done)
 {
 	auto supers = find_superclasses(clazz.type);
 
@@ -319,7 +326,7 @@ void plain_cpp_generator::copy_super_methods(isl_class &clazz,
  * from their superclasses,
  * unless they have already been determined by a recursive call.
  */
-void plain_cpp_generator::copy_super_methods()
+void cpp_generator::copy_super_methods()
 {
 	set<string> done;
 
@@ -609,7 +616,7 @@ void plain_cpp_generator::decl_printer::print_method(const Method &method)
  * 	inline explicit val(ctx ctx, long i);
  * 	inline explicit val(ctx ctx, const std::string &str);
  */
-void plain_cpp_generator::class_printer::print_constructors()
+void cpp_generator::class_printer::print_constructors()
 {
 	for (const auto &cons : clazz.constructors)
 		print_method(Method(clazz, cons));
@@ -865,7 +872,7 @@ void plain_cpp_generator::decl_printer::print_persistent_callbacks()
 
 /* Print declarations or definitions for methods in the class.
  */
-void plain_cpp_generator::class_printer::print_methods()
+void cpp_generator::class_printer::print_methods()
 {
 	for (const auto &kvp : clazz.methods)
 		print_method_group(kvp.second, kvp.first);
@@ -877,7 +884,7 @@ void plain_cpp_generator::class_printer::print_methods()
  * A method is generated for each value in the enum, setting
  * the enum to that value.
  */
-void plain_cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
+void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 {
 	for (const auto &set : clazz.set_enums.at(fd)) {
 		EnumMethod method(clazz, fd, set.method_name, set.name);
@@ -889,7 +896,7 @@ void plain_cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 /* Print declarations or implementations for methods derived from functions
  * that set an enum.
  */
-void plain_cpp_generator::class_printer::print_set_enums()
+void cpp_generator::class_printer::print_set_enums()
 {
 	for (const auto &kvp : clazz.set_enums)
 		print_set_enums(kvp.first);
@@ -921,7 +928,7 @@ void plain_cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
  * for automatic conversion since this is the argument
  * from which the isl_ctx used in the conversion is extracted.
  */
-bool plain_cpp_generator::class_printer::next_variant(FunctionDecl *fd,
+bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
 	std::vector<bool> &convert)
 {
 	size_t n = convert.size();
@@ -965,7 +972,7 @@ bool plain_cpp_generator::class_printer::next_variant(FunctionDecl *fd,
  * call the corresponding method in this class, which
  * in turn will call the method in the superclass.
  */
-void plain_cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
+void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 	const std::string &name)
 {
 	Method method(clazz, fd, name);
@@ -1031,7 +1038,7 @@ static FunctionDecl *single_local(const isl_class &clazz,
  * converted to that of the original argument.
  * In particular, generate methods for converting this argument.
  */
-void plain_cpp_generator::class_printer::print_descendent_overloads(
+void cpp_generator::class_printer::print_descendent_overloads(
 	FunctionDecl *fd, const std::string &name)
 {
 	Method method(clazz, fd, name);
@@ -1059,7 +1066,7 @@ void plain_cpp_generator::class_printer::print_descendent_overloads(
  * through a unary constructor.
  * Only do this for methods with a single (isl object) argument.
  */
-void plain_cpp_generator::class_printer::print_method_group(
+void cpp_generator::class_printer::print_method_group(
 	const function_set &methods, const std::string &name)
 {
 	FunctionDecl *local;
@@ -1943,7 +1950,7 @@ std::unique_ptr<cpp_type_printer> plain_cpp_generator::type_printer()
 std::string cpp_type_printer::return_type(const Method &method) const
 {
 	if (method.is_subclass_mutator())
-		return plain_cpp_generator::type2cpp(method.clazz);
+		return cpp_generator::type2cpp(method.clazz);
 	else
 		return param(method.fd->getReturnType());
 }
@@ -2056,7 +2063,7 @@ void plain_cpp_generator::impl_printer::print_method_return(
  * by "convert", then return the second formal parameter
  * of the conversion function instead.
  */
-ParmVarDecl *plain_cpp_generator::class_printer::get_param(FunctionDecl *fd,
+ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd,
 	int pos, const std::vector<bool> &convert)
 {
 	ParmVarDecl *param = fd->getParamDecl(pos);
@@ -2109,7 +2116,7 @@ ParmVarDecl *plain_cpp_generator::class_printer::get_param(FunctionDecl *fd,
  * The name of the argument is, however, derived from the original
  * function argument.
  */
-void plain_cpp_generator::class_printer::print_method_header(
+void cpp_generator::class_printer::print_method_header(
 	const Method &method, const cpp_type_printer &type_printer)
 {
 	string rettype_str = type_printer.return_type(method);
@@ -2544,14 +2551,14 @@ static std::string rename_method(std::string name)
 /* Translate isl class "clazz" to its corresponding C++ type.
  * Use the name of the type based subclass, if any.
  */
-string plain_cpp_generator::type2cpp(const isl_class &clazz)
+string cpp_generator::type2cpp(const isl_class &clazz)
 {
 	return type2cpp(clazz.subclass_name);
 }
 
 /* Translate type string "type_str" to its C++ name counterpart.
 */
-string plain_cpp_generator::type2cpp(string type_str)
+string cpp_generator::type2cpp(string type_str)
 {
 	return type_str.substr(4);
 }
@@ -2654,32 +2661,32 @@ string plain_cpp_generator::isl_namespace()
 std::string cpp_type_printer::isl_type(QualType type) const
 {
 	auto name = type->getPointeeType().getAsString();
-	return isl_namespace() + plain_cpp_generator::type2cpp(name);
+	return isl_namespace() + cpp_generator::type2cpp(name);
 }
 
 /* Translate parameter or return type "type" to its C++ name counterpart.
  */
 std::string cpp_type_printer::param(QualType type) const
 {
-	if (plain_cpp_generator::is_isl_type(type))
+	if (cpp_generator::is_isl_type(type))
 		return isl_type(type);
 
-	if (plain_cpp_generator::is_isl_bool(type))
+	if (cpp_generator::is_isl_bool(type))
 		return isl_bool();
 
-	if (plain_cpp_generator::is_isl_stat(type))
+	if (cpp_generator::is_isl_stat(type))
 		return isl_stat();
 
-	if (plain_cpp_generator::is_isl_size(type))
+	if (cpp_generator::is_isl_size(type))
 		return isl_size();
 
 	if (type->isIntegerType())
 		return type.getAsString();
 
-	if (plain_cpp_generator::is_string(type))
+	if (cpp_generator::is_string(type))
 		return "std::string";
 
-	if (plain_cpp_generator::is_callback(type))
+	if (cpp_generator::is_callback(type))
 		return generate_callback_type(type);
 
 	generator::die("Cannot convert type to C++ type");
@@ -2696,7 +2703,7 @@ string plain_cpp_generator::param2cpp(QualType type)
 
 /* Check if "subclass_type" is a subclass of "class_type".
  */
-bool plain_cpp_generator::is_subclass(QualType subclass_type,
+bool cpp_generator::is_subclass(QualType subclass_type,
 	const isl_class &class_type)
 {
 	std::string type_str = subclass_type->getPointeeType().getAsString();
@@ -2732,7 +2739,7 @@ bool plain_cpp_generator::is_subclass(QualType subclass_type,
  * parameter, where the parameter type is a subclass of the class that is
  * currently being generated.
  */
-bool plain_cpp_generator::is_implicit_conversion(const Method &cons)
+bool cpp_generator::is_implicit_conversion(const Method &cons)
 {
 	const auto &clazz = cons.clazz;
 	ParmVarDecl *param = cons.fd->getParamDecl(0);
@@ -2970,7 +2977,7 @@ void ConversionMethod::print_call(std::ostream &os, const std::string &ns) const
 	if (clazz.name == this_type) {
 		os << "this->";
 	} else {
-		auto cpp_type = ns + plain_cpp_generator::type2cpp(this_type);
+		auto cpp_type = ns + cpp_generator::type2cpp(this_type);
 		os << cpp_type << "(*this).";
 	}
 	os << name;
@@ -3014,8 +3021,8 @@ int EnumMethod::num_params() const
 /* Initialize a class method printer from the stream onto which the methods
  * are printed, the class method description and the C++ interface generator.
  */
-plain_cpp_generator::class_printer::class_printer(std::ostream &os,
-		const isl_class &clazz, plain_cpp_generator &generator,
+cpp_generator::class_printer::class_printer(std::ostream &os,
+		const isl_class &clazz, cpp_generator &generator,
 		bool declarations) :
 	os(os), clazz(clazz), cppstring(type2cpp(clazz)), generator(generator),
 	declarations(declarations)

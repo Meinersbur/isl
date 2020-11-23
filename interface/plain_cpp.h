@@ -113,13 +113,36 @@ struct checked_cpp_type_printer : public cpp_type_printer {
 	virtual std::string isl_namespace() const override;
 };
 
+/* Generator for C++ bindings.
+ */
+class cpp_generator : public generator {
+protected:
+	struct class_printer;
+public:
+	cpp_generator(SourceManager &SM, set<RecordDecl *> &exported_types,
+		set<FunctionDecl *> exported_functions,
+		set<FunctionDecl *> functions);
+private:
+	void set_class_construction_types(isl_class &clazz);
+	void set_construction_types();
+	void copy_methods(isl_class &clazz, const std::string &name,
+		const isl_class &super, const function_set &methods);
+	void copy_super_methods(isl_class &clazz, const isl_class &super);
+	void copy_super_methods(isl_class &clazz, set<string> &done);
+	void copy_super_methods();
+	bool is_implicit_conversion(const Method &cons);
+	bool is_subclass(QualType subclass_type, const isl_class &class_type);
+public:
+	static string type2cpp(const isl_class &clazz);
+	static string type2cpp(string type_string);
+};
+
 /* Generator for plain C++ bindings.
  *
  * "checked" is set if C++ bindings should be generated
  * that rely on the user to check for error conditions.
  */
-class plain_cpp_generator : public generator {
-	struct class_printer;
+class plain_cpp_generator : public cpp_generator {
 	struct plain_printer;
 	struct decl_printer;
 	struct impl_printer;
@@ -134,13 +157,6 @@ public:
 
 	virtual void generate();
 private:
-	void set_class_construction_types(isl_class &clazz);
-	void set_construction_types();
-	void copy_methods(isl_class &clazz, const std::string &name,
-		const isl_class &super, const function_set &methods);
-	void copy_super_methods(isl_class &clazz, const isl_class &super);
-	void copy_super_methods(isl_class &clazz, set<string> &done);
-	void copy_super_methods();
 	void print_forward_declarations(ostream &os);
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
@@ -160,11 +176,6 @@ private:
 	string isl_bool2cpp();
 	string isl_namespace();
 	string param2cpp(QualType type);
-	bool is_implicit_conversion(const Method &cons);
-	bool is_subclass(QualType subclass_type, const isl_class &class_type);
-public:
-	static string type2cpp(const isl_class &clazz);
-	static string type2cpp(string type_string);
 };
 
 /* A helper class for printing method declarations and definitions
@@ -176,15 +187,15 @@ public:
  * "generator" is the C++ interface generator printing the classes.
  * "declarations" is set if this object is used to print declarations.
  */
-struct plain_cpp_generator::class_printer {
+struct cpp_generator::class_printer {
 	std::ostream &os;
 	const isl_class &clazz;
 	const std::string cppstring;
-	plain_cpp_generator &generator;
+	cpp_generator &generator;
 	const bool declarations;
 
 	class_printer(std::ostream &os, const isl_class &clazz,
-			plain_cpp_generator &generator, bool declarations);
+			cpp_generator &generator, bool declarations);
 
 	void print_constructors();
 	void print_methods();
@@ -210,9 +221,7 @@ struct plain_cpp_generator::class_printer {
  *
  * "generator" is the C++ interface generator printing the classes.
  */
-struct plain_cpp_generator::plain_printer :
-	public plain_cpp_generator::class_printer
-{
+struct plain_cpp_generator::plain_printer : public cpp_generator::class_printer {
 	plain_cpp_generator &generator;
 
 	plain_printer(std::ostream &os, const isl_class &clazz,
