@@ -509,10 +509,10 @@ static void generate(MyASTConsumer &consumer, SourceManager &SM)
 		gen = new python_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else if (OutputLanguage.compare("cpp") == 0) {
-		gen = new cpp_generator(SM, consumer.exported_types,
+		gen = new plain_cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else if (OutputLanguage.compare("cpp-checked") == 0) {
-		gen = new cpp_generator(SM, consumer.exported_types,
+		gen = new plain_cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions, true);
 	} else if (OutputLanguage.compare("cpp-checked-conversion") == 0) {
 		gen = new cpp_conversion_generator(SM, consumer.exported_types,

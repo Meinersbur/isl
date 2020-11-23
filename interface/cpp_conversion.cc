@@ -21,7 +21,7 @@
  */
 void cpp_conversion_generator::cast(const isl_class &clazz, const char *to)
 {
-	string name = cpp_generator::type2cpp(clazz);
+	string name = plain_cpp_generator::type2cpp(clazz);
 
 	if (!clazz.is_type_subclass())
 		return;
@@ -39,7 +39,7 @@ void cpp_conversion_generator::cast(const isl_class &clazz, const char *to)
 void cpp_conversion_generator::convert(const isl_class &clazz,
 	const char *from, const char *to, const char *function)
 {
-	string name = cpp_generator::type2cpp(clazz);
+	string name = plain_cpp_generator::type2cpp(clazz);
 
 	printf("%s%s %s(%s%s obj) {\n",
 		to, name.c_str(), function, from, name.c_str());

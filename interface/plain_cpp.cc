@@ -109,7 +109,7 @@ static std::string to_string(long l)
  * an isl type and add those types, along with the corresponding
  * constructor argument.
  */
-void cpp_generator::set_class_construction_types(isl_class &clazz)
+void plain_cpp_generator::set_class_construction_types(isl_class &clazz)
 {
 	for (const auto &cons : clazz.constructors) {
 		ParmVarDecl *param;
@@ -129,7 +129,7 @@ void cpp_generator::set_class_construction_types(isl_class &clazz)
 /* Determine the isl types from which any (proper) class can be constructed
  * using a unary constructor.
  */
-void cpp_generator::set_construction_types()
+void plain_cpp_generator::set_construction_types()
 {
 	for (auto &kvp : classes) {
 		auto &clazz = kvp.second;
@@ -137,7 +137,7 @@ void cpp_generator::set_construction_types()
 	}
 }
 
-/* Construct a generator for C++ bindings.
+/* Construct a generator for plain C++ bindings.
  *
  * "checked" is set if C++ bindings should be generated
  * that rely on the user to check for error conditions.
@@ -147,7 +147,7 @@ void cpp_generator::set_construction_types()
  * Additionally extract information about types
  * that can be converted to a class.
  */
-cpp_generator::cpp_generator(SourceManager &SM,
+plain_cpp_generator::plain_cpp_generator(SourceManager &SM,
 	set<RecordDecl *> &exported_types,
 	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions,
 	bool checked) :
@@ -243,7 +243,8 @@ static bool is_overridden(FunctionDecl *fd, isl_class &clazz,
  *
  * Methods that are static in their original class are not copied.
  */
-void cpp_generator::copy_methods(isl_class &clazz, const std::string &name,
+void plain_cpp_generator::copy_methods(isl_class &clazz,
+	const std::string &name,
 	const isl_class &super, const function_set &methods)
 {
 	for (auto fd : methods) {
@@ -263,7 +264,8 @@ void cpp_generator::copy_methods(isl_class &clazz, const std::string &name,
  *
  * Look through all groups of methods with the same name.
  */
-void cpp_generator::copy_super_methods(isl_class &clazz, const isl_class &super)
+void plain_cpp_generator::copy_super_methods(isl_class &clazz,
+	const isl_class &super)
 {
 	for (const auto &kvp : super.methods) {
 		const auto &name = kvp.first;
@@ -283,7 +285,8 @@ void cpp_generator::copy_super_methods(isl_class &clazz, const isl_class &super)
  *
  * Consider the superclass that appears closest to the subclass first.
  */
-void cpp_generator::copy_super_methods(isl_class &clazz, set<string> &done)
+void plain_cpp_generator::copy_super_methods(isl_class &clazz,
+	set<string> &done)
 {
 	auto supers = find_superclasses(clazz.type);
 
@@ -312,7 +315,7 @@ void cpp_generator::copy_super_methods(isl_class &clazz, set<string> &done)
  * from their superclasses,
  * unless they have already been determined by a recursive call.
  */
-void cpp_generator::copy_super_methods()
+void plain_cpp_generator::copy_super_methods()
 {
 	set<string> done;
 
@@ -341,7 +344,7 @@ void cpp_generator::copy_super_methods()
  * then wrap them in a namespace to avoid conflicts
  * with the default C++ bindings (with automatic checks using exceptions).
  */
-void cpp_generator::generate()
+void plain_cpp_generator::generate()
 {
 	ostream &os = cout;
 
@@ -365,7 +368,7 @@ void cpp_generator::generate()
 
 /* Print forward declarations for all classes to "os".
 */
-void cpp_generator::print_forward_declarations(ostream &os)
+void plain_cpp_generator::print_forward_declarations(ostream &os)
 {
 	map<string, isl_class>::iterator ci;
 
@@ -377,7 +380,7 @@ void cpp_generator::print_forward_declarations(ostream &os)
 
 /* Print all declarations to "os".
  */
-void cpp_generator::print_declarations(ostream &os)
+void plain_cpp_generator::print_declarations(ostream &os)
 {
 	map<string, isl_class>::iterator ci;
 	bool first = true;
@@ -394,7 +397,7 @@ void cpp_generator::print_declarations(ostream &os)
 
 /* Print all implementations to "os".
  */
-void cpp_generator::print_implementations(ostream &os)
+void plain_cpp_generator::print_implementations(ostream &os)
 {
 	map<string, isl_class>::iterator ci;
 	bool first = true;
@@ -418,7 +421,7 @@ void cpp_generator::print_implementations(ostream &os)
  * In case of the "isa" method, all instances are made friends
  * to avoid access right confusion.
  */
-void cpp_generator::decl_printer::print_subclass_type()
+void plain_cpp_generator::decl_printer::print_subclass_type()
 {
 	std::string super;
 	const char *cppname = cppstring.c_str();
@@ -451,7 +454,7 @@ void cpp_generator::decl_printer::print_subclass_type()
  * The pointer to the isl object is only added for classes that
  * are not subclasses, since subclasses refer to the same isl object.
  */
-void cpp_generator::print_class(ostream &os, const isl_class &clazz)
+void plain_cpp_generator::print_class(ostream &os, const isl_class &clazz)
 {
 	decl_printer printer(os, clazz, *this);
 	const char *name = clazz.name.c_str();
@@ -494,7 +497,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 
 /* Print forward declaration of class "clazz" to "os".
  */
-void cpp_generator::print_class_forward_decl(ostream &os,
+void plain_cpp_generator::print_class_forward_decl(ostream &os,
 	const isl_class &clazz)
 {
 	std::string cppstring = type2cpp(clazz);
@@ -522,7 +525,8 @@ void cpp_generator::print_class_forward_decl(ostream &os,
  * are introduced because they share the C object type with
  * the superclass.
  */
-void cpp_generator::decl_printer::print_class_factory(const std::string &prefix)
+void plain_cpp_generator::decl_printer::print_class_factory(
+	const std::string &prefix)
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -550,7 +554,7 @@ void cpp_generator::decl_printer::print_class_factory(const std::string &prefix)
  * The raw pointer constructor is kept protected. Object creation is only
  * possible through manage() or manage_copy().
  */
-void cpp_generator::decl_printer::print_protected_constructors()
+void plain_cpp_generator::decl_printer::print_protected_constructors()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -571,7 +575,7 @@ void cpp_generator::decl_printer::print_protected_constructors()
  *	set();
  *	set(const set &set);
  */
-void cpp_generator::decl_printer::print_public_constructors()
+void plain_cpp_generator::decl_printer::print_public_constructors()
 {
 	const char *cppname = cppstring.c_str();
 	osprintf(os, "  inline /* implicit */ %s();\n", cppname);
@@ -582,14 +586,15 @@ void cpp_generator::decl_printer::print_public_constructors()
 
 /* Print declarations for "method".
  */
-void cpp_generator::decl_printer::print_method(const ConversionMethod &method)
+void plain_cpp_generator::decl_printer::print_method(
+	const ConversionMethod &method)
 {
 	print_full_method_header(method);
 }
 
 /* Print declarations for "method".
  */
-void cpp_generator::decl_printer::print_method(const Method &method)
+void plain_cpp_generator::decl_printer::print_method(const Method &method)
 {
 	print_full_method_header(method);
 }
@@ -606,7 +611,7 @@ void cpp_generator::decl_printer::print_method(const Method &method)
  * 	inline explicit val(ctx ctx, long i);
  * 	inline explicit val(ctx ctx, const std::string &str);
  */
-void cpp_generator::class_printer::print_constructors()
+void plain_cpp_generator::class_printer::print_constructors()
 {
 	for (const auto &cons : clazz.constructors)
 		print_method(Method(clazz, cons));
@@ -619,7 +624,7 @@ void cpp_generator::class_printer::print_constructors()
  * 	isl:set &set::operator=(set obj)
  *
  */
-void cpp_generator::decl_printer::print_copy_assignment()
+void plain_cpp_generator::decl_printer::print_copy_assignment()
 {
 	const char *cppname = cppstring.c_str();
 
@@ -630,7 +635,7 @@ void cpp_generator::decl_printer::print_copy_assignment()
  *
  * No explicit destructor is needed for type based subclasses.
  */
-void cpp_generator::decl_printer::print_destructor()
+void plain_cpp_generator::decl_printer::print_destructor()
 {
 	const char *cppname = cppstring.c_str();
 
@@ -674,7 +679,7 @@ void cpp_generator::decl_printer::print_destructor()
  * Also generate a declaration to delete copy() for r-values, for
  * r-values release() should be used to avoid unnecessary copies.
  */
-void cpp_generator::decl_printer::print_ptr()
+void plain_cpp_generator::decl_printer::print_ptr()
 {
 	const char *name = clazz.name.c_str();
 
@@ -699,7 +704,7 @@ void cpp_generator::decl_printer::print_ptr()
  * The check ensures that this subclass is in fact a direct subclass
  * of "super".
  */
-void cpp_generator::decl_printer::print_isa_type_template(int indent,
+void plain_cpp_generator::decl_printer::print_isa_type_template(int indent,
 	const isl_class &super)
 {
 	osprintf(os, indent,
@@ -723,7 +728,7 @@ void cpp_generator::decl_printer::print_isa_type_template(int indent,
  * "as" tries to cast an object to a given subclass type, returning
  * an invalid object if the object is not of the given type.
  */
-void cpp_generator::decl_printer::print_downcast()
+void plain_cpp_generator::decl_printer::print_downcast()
 {
 	if (!clazz.fn_type)
 		return;
@@ -740,7 +745,7 @@ void cpp_generator::decl_printer::print_downcast()
 
 /* Print the declaration of the ctx method.
  */
-void cpp_generator::decl_printer::print_ctx()
+void plain_cpp_generator::decl_printer::print_ctx()
 {
 	std::string ns = generator.isl_namespace();
 
@@ -760,7 +765,7 @@ static string add_space_to_return_type(const string &type)
 /* Print the prototype of the static inline method that is used
  * as the C callback set by "method".
  */
-void cpp_generator::class_printer::print_persistent_callback_prototype(
+void plain_cpp_generator::class_printer::print_persistent_callback_prototype(
 	FunctionDecl *method)
 {
 	string callback_name, rettype, c_args;
@@ -788,7 +793,8 @@ void cpp_generator::class_printer::print_persistent_callback_prototype(
 /* Print the prototype of the method for setting the callback function
  * set by "method".
  */
-void cpp_generator::class_printer::print_persistent_callback_setter_prototype(
+void
+plain_cpp_generator::class_printer::print_persistent_callback_setter_prototype(
 	FunctionDecl *method)
 {
 	string classname, callback_name, cpptype;
@@ -814,7 +820,7 @@ void cpp_generator::class_printer::print_persistent_callback_setter_prototype(
  *   for use as the C callback function
  * - the declaration of a private method for setting the callback function
  */
-void cpp_generator::decl_printer::print_persistent_callback_data(
+void plain_cpp_generator::decl_printer::print_persistent_callback_data(
 	FunctionDecl *method)
 {
 	string callback_name;
@@ -841,7 +847,7 @@ void cpp_generator::decl_printer::print_persistent_callback_data(
  * private data for keeping track of the persistent callbacks and
  * public methods for setting the persistent callbacks.
  */
-void cpp_generator::decl_printer::print_persistent_callbacks()
+void plain_cpp_generator::decl_printer::print_persistent_callbacks()
 {
 	const char *cppname = cppstring.c_str();
 
@@ -861,7 +867,7 @@ void cpp_generator::decl_printer::print_persistent_callbacks()
 
 /* Print declarations or definitions for methods in the class.
  */
-void cpp_generator::class_printer::print_methods()
+void plain_cpp_generator::class_printer::print_methods()
 {
 	for (const auto &kvp : clazz.methods)
 		print_method_group(kvp.second, kvp.first);
@@ -873,7 +879,7 @@ void cpp_generator::class_printer::print_methods()
  * A method is generated for each value in the enum, setting
  * the enum to that value.
  */
-void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
+void plain_cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 {
 	for (const auto &set : clazz.set_enums.at(fd)) {
 		EnumMethod method(clazz, fd, set.method_name, set.name);
@@ -885,7 +891,7 @@ void cpp_generator::class_printer::print_set_enums(FunctionDecl *fd)
 /* Print declarations or implementations for methods derived from functions
  * that set an enum.
  */
-void cpp_generator::class_printer::print_set_enums()
+void plain_cpp_generator::class_printer::print_set_enums()
 {
 	for (const auto &kvp : clazz.set_enums)
 		print_set_enums(kvp.first);
@@ -894,7 +900,7 @@ void cpp_generator::class_printer::print_set_enums()
 /* Print a declaration for the "get" method "fd",
  * using a name that includes the "get_" prefix.
  */
-void cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
+void plain_cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
 {
 	string base = clazz.base_method_name(fd);
 
@@ -917,7 +923,7 @@ void cpp_generator::decl_printer::print_get_method(FunctionDecl *fd)
  * for automatic conversion since this is the argument
  * from which the isl_ctx used in the conversion is extracted.
  */
-bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
+bool plain_cpp_generator::class_printer::next_variant(FunctionDecl *fd,
 	std::vector<bool> &convert)
 {
 	size_t n = convert.size();
@@ -961,7 +967,7 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
  * call the corresponding method in this class, which
  * in turn will call the method in the superclass.
  */
-void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
+void plain_cpp_generator::class_printer::print_method_variants(FunctionDecl *fd,
 	const std::string &name)
 {
 	Method method(clazz, fd, name);
@@ -1027,8 +1033,8 @@ static FunctionDecl *single_local(const isl_class &clazz,
  * converted to that of the original argument.
  * In particular, generate methods for converting this argument.
  */
-void cpp_generator::class_printer::print_descendent_overloads(FunctionDecl *fd,
-	const std::string &name)
+void plain_cpp_generator::class_printer::print_descendent_overloads(
+	FunctionDecl *fd, const std::string &name)
 {
 	Method method(clazz, fd, name);
 	ParmVarDecl *param = fd->getParamDecl(1);
@@ -1055,7 +1061,7 @@ void cpp_generator::class_printer::print_descendent_overloads(FunctionDecl *fd,
  * through a unary constructor.
  * Only do this for methods with a single (isl object) argument.
  */
-void cpp_generator::class_printer::print_method_group(
+void plain_cpp_generator::class_printer::print_method_group(
 	const function_set &methods, const std::string &name)
 {
 	FunctionDecl *local;
@@ -1074,7 +1080,7 @@ void cpp_generator::class_printer::print_method_group(
 
 /* Print implementations for class "clazz" to "os".
  */
-void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
+void plain_cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 {
 	impl_printer printer(os, clazz, *this);
 	const char *cppname = printer.cppstring.c_str();
@@ -1128,8 +1134,8 @@ static void print_throw_NULL_input(ostream &os)
  * In the checked C++ bindings, isl_die is called instead with the code
  * in "checked_code".
  */
-void cpp_generator::print_invalid(ostream &os, int indent, const char *msg,
-	const char *checked_code)
+void plain_cpp_generator::print_invalid(ostream &os, int indent,
+	const char *msg, const char *checked_code)
 {
 	if (checked)
 		osprintf(os, indent,
@@ -1151,7 +1157,7 @@ void cpp_generator::print_invalid(ostream &os, int indent, const char *msg,
  * If checked C++ bindings are being generated and anything went wrong,
  * then record this failure in the output stream.
  */
-void cpp_generator::impl_printer::print_stream_insertion()
+void plain_cpp_generator::impl_printer::print_stream_insertion()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1182,7 +1188,7 @@ void cpp_generator::impl_printer::print_stream_insertion()
  *
  * Omit the check if checked C++ bindings are being generated.
  */
-void cpp_generator::impl_printer::print_check_ptr(const char *ptr)
+void plain_cpp_generator::impl_printer::print_check_ptr(const char *ptr)
 {
 	if (generator.checked)
 		return;
@@ -1196,7 +1202,7 @@ void cpp_generator::impl_printer::print_check_ptr(const char *ptr)
  *
  * Omit the check if checked C++ bindings are being generated.
  */
-void cpp_generator::impl_printer::print_check_ptr_start(const char *ptr)
+void plain_cpp_generator::impl_printer::print_check_ptr_start(const char *ptr)
 {
 	if (generator.checked)
 		return;
@@ -1213,7 +1219,7 @@ void cpp_generator::impl_printer::print_check_ptr_start(const char *ptr)
  *
  * Omit the check if checked C++ bindings are being generated.
  */
-void cpp_generator::impl_printer::print_check_ptr_end(const char *ptr)
+void plain_cpp_generator::impl_printer::print_check_ptr_end(const char *ptr)
 {
 	if (generator.checked)
 		return;
@@ -1240,7 +1246,7 @@ void cpp_generator::impl_printer::print_check_ptr_end(const char *ptr)
  * are introduced because they share the C object type with
  * the superclass.
  */
-void cpp_generator::impl_printer::print_class_factory()
+void plain_cpp_generator::impl_printer::print_class_factory()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1268,7 +1274,7 @@ void cpp_generator::impl_printer::print_class_factory()
  * The pointer to the isl object is either initialized directly or
  * through the (immediate) superclass.
  */
-void cpp_generator::impl_printer::print_protected_constructors()
+void plain_cpp_generator::impl_printer::print_protected_constructors()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1300,7 +1306,7 @@ void cpp_generator::impl_printer::print_protected_constructors()
  * No exceptions are thrown if checked C++ bindings
  * are being generated,
  */
-void cpp_generator::impl_printer::print_public_constructors()
+void plain_cpp_generator::impl_printer::print_public_constructors()
 {
 	std::string super;
 	const char *cppname = cppstring.c_str();
@@ -1351,7 +1357,7 @@ void cpp_generator::impl_printer::print_public_constructors()
  * During the function call, isl is made not to print any error message
  * because the error message is included in the exception.
  */
-void cpp_generator::impl_printer::print_method(const Method &method)
+void plain_cpp_generator::impl_printer::print_method(const Method &method)
 {
 	string methodname = method.fd->getName().str();
 	int num_params = method.c_num_params();
@@ -1392,7 +1398,7 @@ void cpp_generator::impl_printer::print_method(const Method &method)
  * or simply the argument name if the source type is an isl type.
  * This means this isl_ctx should be available.
  */
-void cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
+void plain_cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
 	ParmVarDecl *src)
 {
 	std::string name = dst->getName().str();
@@ -1423,7 +1429,8 @@ void cpp_generator::impl_printer::print_arg_conversion(ParmVarDecl *dst,
  * to valid.  The validity of other arguments is checked
  * by the called method.
  */
-void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
+void plain_cpp_generator::impl_printer::print_method(
+	const ConversionMethod &method)
 {
 	if (method.kind != Method::Kind::member_method)
 		die("Automatic conversion currently only supported "
@@ -1449,7 +1456,7 @@ void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
  * If the class has any persistent callbacks, then copy them
  * from the original object.
  */
-void cpp_generator::impl_printer::print_copy_assignment()
+void plain_cpp_generator::impl_printer::print_copy_assignment()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1468,7 +1475,7 @@ void cpp_generator::impl_printer::print_copy_assignment()
  *
  * No explicit destructor is needed for type based subclasses.
  */
-void cpp_generator::impl_printer::print_destructor()
+void plain_cpp_generator::impl_printer::print_destructor()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1487,7 +1494,7 @@ void cpp_generator::impl_printer::print_destructor()
  * is not set, throwing an exception (or printing an error message
  * and returning nullptr) if it is set.
  */
-void cpp_generator::print_check_no_persistent_callback(ostream &os,
+void plain_cpp_generator::print_check_no_persistent_callback(ostream &os,
 	const isl_class &clazz, FunctionDecl *fd)
 {
 	string callback_name = clazz.persistent_callback_name(fd);
@@ -1505,7 +1512,7 @@ void cpp_generator::print_check_no_persistent_callback(ostream &os,
  * C object pointer cannot be released because it references data
  * in the C++ object.
  */
-void cpp_generator::impl_printer::print_ptr()
+void plain_cpp_generator::impl_printer::print_ptr()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1549,7 +1556,7 @@ void cpp_generator::impl_printer::print_ptr()
  * If checked bindings are being generated,
  * then an invalid boolean or object is returned instead.
  */
-void cpp_generator::impl_printer::print_downcast()
+void plain_cpp_generator::impl_printer::print_downcast()
 {
 	const char *cppname = cppstring.c_str();
 
@@ -1592,7 +1599,7 @@ void cpp_generator::impl_printer::print_downcast()
 
 /* Print the implementation of the ctx method.
  */
-void cpp_generator::impl_printer::print_ctx()
+void plain_cpp_generator::impl_printer::print_ctx()
 {
 	const char *name = clazz.name.c_str();
 	const char *cppname = cppstring.c_str();
@@ -1607,7 +1614,7 @@ void cpp_generator::impl_printer::print_ctx()
 /* Print the implementations of the methods needed for the persistent callbacks
  * of the class.
  */
-void cpp_generator::impl_printer::print_persistent_callbacks()
+void plain_cpp_generator::impl_printer::print_persistent_callbacks()
 {
 	const char *cppname = cppstring.c_str();
 	string classname = type2cpp(clazz);
@@ -1639,7 +1646,7 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
  * returns its result.
  * Note that static methods are not considered to be "get" methods.
  */
-void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
+void plain_cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
 {
 	string get_name = clazz.base_method_name(fd);
 	string name = clazz.method_name(fd);
@@ -1724,7 +1731,7 @@ void Method::print_param_use(ostream &os, int pos) const
  * If checked bindings are being generated,
  * then no such check is performed.
  */
-void cpp_generator::impl_printer::print_argument_validity_check(
+void plain_cpp_generator::impl_printer::print_argument_validity_check(
 	const Method &method)
 {
 	int n;
@@ -1775,7 +1782,7 @@ void cpp_generator::impl_printer::print_argument_validity_check(
  * Otherwise, save a copy of the isl::ctx associated to the first argument
  * of isl object type.
  */
-void cpp_generator::impl_printer::print_save_ctx(const Method &method)
+void plain_cpp_generator::impl_printer::print_save_ctx(const Method &method)
 {
 	int n;
 	ParmVarDecl *param = method.fd->getParamDecl(0);
@@ -1819,7 +1826,7 @@ void cpp_generator::impl_printer::print_save_ctx(const Method &method)
  * in the "saved_ctx" variable,
  * e.g., through a prior call to print_save_ctx.
  */
-void cpp_generator::impl_printer::print_on_error_continue()
+void plain_cpp_generator::impl_printer::print_on_error_continue()
 {
 	if (generator.checked)
 		return;
@@ -1873,7 +1880,7 @@ static void print_persistent_callback_exceptional_execution_check(ostream &os,
  * Assume print_save_ctx has made sure that a valid isl::ctx
  * is available in the "ctx" variable.
  */
-void cpp_generator::impl_printer::print_exceptional_execution_check(
+void plain_cpp_generator::impl_printer::print_exceptional_execution_check(
 	const Method &method)
 {
 	bool check_null, check_neg;
@@ -1917,7 +1924,7 @@ bool Method::is_subclass_mutator() const
  * i.e., the regular type printer or the checked type printer
  * depending on the setting of this->checked.
  */
-std::unique_ptr<cpp_type_printer> cpp_generator::type_printer()
+std::unique_ptr<cpp_type_printer> plain_cpp_generator::type_printer()
 {
 	cpp_type_printer *printer;
 
@@ -1938,7 +1945,7 @@ std::unique_ptr<cpp_type_printer> cpp_generator::type_printer()
 std::string cpp_type_printer::return_type(const Method &method) const
 {
 	if (method.is_subclass_mutator())
-		return cpp_generator::type2cpp(method.clazz);
+		return plain_cpp_generator::type2cpp(method.clazz);
 	else
 		return param(method.fd->getReturnType());
 }
@@ -1947,7 +1954,7 @@ std::string cpp_type_printer::return_type(const Method &method) const
  *
  * Use the appropriate type printer.
  */
-std::string cpp_generator::get_return_type(const Method &method)
+std::string plain_cpp_generator::get_return_type(const Method &method)
 {
 	return type_printer()->return_type(method);
 }
@@ -1961,7 +1968,7 @@ std::string cpp_generator::get_return_type(const Method &method)
  * - the definition of a private method for setting the callback function
  * - the public method for constructing a new object with the callback set.
  */
-void cpp_generator::impl_printer::print_set_persistent_callback(
+void plain_cpp_generator::impl_printer::print_set_persistent_callback(
 	const Method &method)
 {
 	string fullname = method.fd->getName().str();
@@ -2018,7 +2025,8 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
  * if the return type corresponds to the superclass data type,
  * then it is replaced by the subclass data type.
  */
-void cpp_generator::impl_printer::print_method_return(const Method &method)
+void plain_cpp_generator::impl_printer::print_method_return(
+	const Method &method)
 {
 	QualType return_type = method.fd->getReturnType();
 	string rettype_str = generator.get_return_type(method);
@@ -2050,8 +2058,8 @@ void cpp_generator::impl_printer::print_method_return(const Method &method)
  * by "convert", then return the second formal parameter
  * of the conversion function instead.
  */
-ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
-	const std::vector<bool> &convert)
+ParmVarDecl *plain_cpp_generator::class_printer::get_param(FunctionDecl *fd,
+	int pos, const std::vector<bool> &convert)
 {
 	ParmVarDecl *param = fd->getParamDecl(pos);
 
@@ -2102,7 +2110,8 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  * The name of the argument is, however, derived from the original
  * function argument.
  */
-void cpp_generator::class_printer::print_method_header(const Method &method)
+void plain_cpp_generator::class_printer::print_method_header(
+	const Method &method)
 {
 	string rettype_str = generator.get_return_type(method);
 
@@ -2153,7 +2162,7 @@ void cpp_generator::class_printer::print_method_header(const Method &method)
 /* Print the header for "method", including the terminating semicolon
  * in case of a declaration and a newline.
  */
-void cpp_generator::class_printer::print_full_method_header(
+void plain_cpp_generator::class_printer::print_full_method_header(
 	const Method &method)
 {
 	print_method_header(method);
@@ -2211,7 +2220,7 @@ std::string cpp_type_printer::generate_callback_args(QualType type,
  *
  * Use the appropriate type printer.
  */
-string cpp_generator::generate_callback_args(QualType type, bool cpp)
+string plain_cpp_generator::generate_callback_args(QualType type, bool cpp)
 {
 	return type_printer()->generate_callback_args(type, cpp);
 }
@@ -2246,7 +2255,7 @@ std::string cpp_type_printer::generate_callback_type(QualType type) const
  *
  * Use the appropriate type printer.
  */
-string cpp_generator::generate_callback_type(QualType type)
+string plain_cpp_generator::generate_callback_type(QualType type)
 {
 	return type_printer()->generate_callback_type(type);
 }
@@ -2261,7 +2270,7 @@ string cpp_generator::generate_callback_type(QualType type)
  *        auto ret = @call@;
  *        return ret.release();
  */
-void cpp_generator::impl_printer::print_wrapped_call_checked(int indent,
+void plain_cpp_generator::impl_printer::print_wrapped_call_checked(int indent,
 	const string &call)
 {
 	osprintf(os, indent, "auto ret = %s;\n", call.c_str());
@@ -2306,7 +2315,7 @@ void cpp_generator::impl_printer::print_wrapped_call_checked(int indent,
  * If checked C++ bindings are being generated, then
  * the call is wrapped differently.
  */
-void cpp_generator::impl_printer::print_wrapped_call(int indent,
+void plain_cpp_generator::impl_printer::print_wrapped_call(int indent,
 	const string &call, QualType rtype)
 {
 	if (generator.checked)
@@ -2357,7 +2366,8 @@ void cpp_generator::impl_printer::print_wrapped_call(int indent,
  * The std::exception_ptr object is not added to "prefix"_data
  * if checked C++ bindings are being generated.
  */
-void cpp_generator::class_printer::print_callback_data_decl(ParmVarDecl *param,
+void plain_cpp_generator::class_printer::print_callback_data_decl(
+	ParmVarDecl *param,
 	const string &prefix)
 {
 	string cpp_args;
@@ -2399,7 +2409,7 @@ void cpp_generator::class_printer::print_callback_data_decl(ParmVarDecl *param,
  *        stat ret = (data->func)(manage(arg_0));
  *        return isl_stat(ret);
  */
-void cpp_generator::impl_printer::print_callback_body(int indent,
+void plain_cpp_generator::impl_printer::print_callback_body(int indent,
 	ParmVarDecl *param, const string &prefix)
 {
 	QualType ptype, rtype;
@@ -2483,7 +2493,7 @@ void cpp_generator::impl_printer::print_callback_body(int indent,
  * If the C callback does not take its arguments, then
  * manage_copy is used instead of manage.
  */
-void cpp_generator::impl_printer::print_callback_local(ParmVarDecl *param)
+void plain_cpp_generator::impl_printer::print_callback_local(ParmVarDecl *param)
 {
 	string pname;
 	QualType ptype, rtype;
@@ -2531,14 +2541,14 @@ static std::string rename_method(std::string name)
 /* Translate isl class "clazz" to its corresponding C++ type.
  * Use the name of the type based subclass, if any.
  */
-string cpp_generator::type2cpp(const isl_class &clazz)
+string plain_cpp_generator::type2cpp(const isl_class &clazz)
 {
 	return type2cpp(clazz.subclass_name);
 }
 
 /* Translate type string "type_str" to its C++ name counterpart.
 */
-string cpp_generator::type2cpp(string type_str)
+string plain_cpp_generator::type2cpp(string type_str)
 {
 	return type_str.substr(4);
 }
@@ -2566,7 +2576,7 @@ std::string checked_cpp_type_printer::isl_bool() const
  *
  * Use the appropriate type printer.
  */
-string cpp_generator::isl_bool2cpp()
+string plain_cpp_generator::isl_bool2cpp()
 {
 	return type_printer()->isl_bool();
 }
@@ -2631,7 +2641,7 @@ std::string checked_cpp_type_printer::isl_namespace() const
  *
  * Use the appropriate type printer.
  */
-string cpp_generator::isl_namespace()
+string plain_cpp_generator::isl_namespace()
 {
 	return type_printer()->isl_namespace();
 }
@@ -2641,32 +2651,32 @@ string cpp_generator::isl_namespace()
 std::string cpp_type_printer::isl_type(QualType type) const
 {
 	auto name = type->getPointeeType().getAsString();
-	return isl_namespace() + cpp_generator::type2cpp(name);
+	return isl_namespace() + plain_cpp_generator::type2cpp(name);
 }
 
 /* Translate parameter or return type "type" to its C++ name counterpart.
  */
 std::string cpp_type_printer::param(QualType type) const
 {
-	if (cpp_generator::is_isl_type(type))
+	if (plain_cpp_generator::is_isl_type(type))
 		return isl_type(type);
 
-	if (cpp_generator::is_isl_bool(type))
+	if (plain_cpp_generator::is_isl_bool(type))
 		return isl_bool();
 
-	if (cpp_generator::is_isl_stat(type))
+	if (plain_cpp_generator::is_isl_stat(type))
 		return isl_stat();
 
-	if (cpp_generator::is_isl_size(type))
+	if (plain_cpp_generator::is_isl_size(type))
 		return isl_size();
 
 	if (type->isIntegerType())
 		return type.getAsString();
 
-	if (cpp_generator::is_string(type))
+	if (plain_cpp_generator::is_string(type))
 		return "std::string";
 
-	if (cpp_generator::is_callback(type))
+	if (plain_cpp_generator::is_callback(type))
 		return generate_callback_type(type);
 
 	generator::die("Cannot convert type to C++ type");
@@ -2676,14 +2686,14 @@ std::string cpp_type_printer::param(QualType type) const
  *
  * Use the appropriate type printer.
  */
-string cpp_generator::param2cpp(QualType type)
+string plain_cpp_generator::param2cpp(QualType type)
 {
 	return type_printer()->param(type);
 }
 
 /* Check if "subclass_type" is a subclass of "class_type".
  */
-bool cpp_generator::is_subclass(QualType subclass_type,
+bool plain_cpp_generator::is_subclass(QualType subclass_type,
 	const isl_class &class_type)
 {
 	std::string type_str = subclass_type->getPointeeType().getAsString();
@@ -2719,7 +2729,7 @@ bool cpp_generator::is_subclass(QualType subclass_type,
  * parameter, where the parameter type is a subclass of the class that is
  * currently being generated.
  */
-bool cpp_generator::is_implicit_conversion(const Method &cons)
+bool plain_cpp_generator::is_implicit_conversion(const Method &cons)
 {
 	const auto &clazz = cons.clazz;
 	ParmVarDecl *param = cons.fd->getParamDecl(0);
@@ -2957,7 +2967,7 @@ void ConversionMethod::print_call(std::ostream &os, const std::string &ns) const
 	if (clazz.name == this_type) {
 		os << "this->";
 	} else {
-		auto cpp_type = ns + cpp_generator::type2cpp(this_type);
+		auto cpp_type = ns + plain_cpp_generator::type2cpp(this_type);
 		os << cpp_type << "(*this).";
 	}
 	os << name;
@@ -3001,8 +3011,8 @@ int EnumMethod::num_params() const
 /* Initialize a class method printer from the stream onto which the methods
  * are printed, the class method description and the C++ interface generator.
  */
-cpp_generator::class_printer::class_printer(std::ostream &os,
-		const isl_class &clazz, cpp_generator &generator,
+plain_cpp_generator::class_printer::class_printer(std::ostream &os,
+		const isl_class &clazz, plain_cpp_generator &generator,
 		bool declarations) :
 	os(os), clazz(clazz), cppstring(type2cpp(clazz)), generator(generator),
 	declarations(declarations)

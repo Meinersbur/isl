@@ -113,19 +113,20 @@ struct checked_cpp_type_printer : public cpp_type_printer {
 	virtual std::string isl_namespace() const override;
 };
 
-/* Generator for C++ bindings.
+/* Generator for plain C++ bindings.
  *
  * "checked" is set if C++ bindings should be generated
  * that rely on the user to check for error conditions.
  */
-class cpp_generator : public generator {
+class plain_cpp_generator : public generator {
 	struct class_printer;
 	struct decl_printer;
 	struct impl_printer;
 protected:
 	bool checked;
 public:
-	cpp_generator(SourceManager &SM, set<RecordDecl *> &exported_types,
+	plain_cpp_generator(SourceManager &SM,
+		set<RecordDecl *> &exported_types,
 		set<FunctionDecl *> exported_functions,
 		set<FunctionDecl *> functions,
 		bool checked = false);
@@ -174,15 +175,15 @@ public:
  * "generator" is the C++ interface generator printing the classes.
  * "declarations" is set if this object is used to print declarations.
  */
-struct cpp_generator::class_printer {
+struct plain_cpp_generator::class_printer {
 	std::ostream &os;
 	const isl_class &clazz;
 	const std::string cppstring;
-	cpp_generator &generator;
+	plain_cpp_generator &generator;
 	const bool declarations;
 
 	class_printer(std::ostream &os, const isl_class &clazz,
-			cpp_generator &generator, bool declarations);
+			plain_cpp_generator &generator, bool declarations);
 
 	void print_constructors();
 	void print_persistent_callback_prototype(FunctionDecl *method);
@@ -208,9 +209,11 @@ struct cpp_generator::class_printer {
 
 /* A helper class for printing method declarations of a class.
  */
-struct cpp_generator::decl_printer : public cpp_generator::class_printer {
+struct plain_cpp_generator::decl_printer :
+	public plain_cpp_generator::class_printer
+{
 	decl_printer(std::ostream &os, const isl_class &clazz,
-			cpp_generator &generator) :
+			plain_cpp_generator &generator) :
 		class_printer(os, clazz, generator, true) {}
 
 	void print_subclass_type();
@@ -232,9 +235,11 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 
 /* A helper class for printing method definitions of a class.
  */
-struct cpp_generator::impl_printer : public cpp_generator::class_printer {
+struct plain_cpp_generator::impl_printer :
+	public plain_cpp_generator::class_printer
+{
 	impl_printer(std::ostream &os, const isl_class &clazz,
-			cpp_generator &generator) :
+			plain_cpp_generator &generator) :
 		class_printer(os, clazz, generator, false) {}
 
 	void print_arg_conversion(ParmVarDecl *dst, ParmVarDecl *src);
