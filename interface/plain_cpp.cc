@@ -2068,7 +2068,8 @@ ParmVarDecl *plain_cpp_generator::class_printer::get_param(FunctionDecl *fd,
 	return generator.conversions[param->getOriginalType().getTypePtr()];
 }
 
-/* Print the header for "method", without newline or semicolon.
+/* Print the header for "method", without newline or semicolon,
+ * using "type_printer" to print argument and return types.
  *
  * Print the header of a declaration if this->declarations is set,
  * otherwise print the header of a method definition.
@@ -2111,9 +2112,9 @@ ParmVarDecl *plain_cpp_generator::class_printer::get_param(FunctionDecl *fd,
  * function argument.
  */
 void plain_cpp_generator::class_printer::print_method_header(
-	const Method &method)
+	const Method &method, const cpp_type_printer &type_printer)
 {
-	string rettype_str = generator.get_return_type(method);
+	string rettype_str = type_printer.return_type(method);
 
 	if (declarations) {
 		osprintf(os, "  ");
@@ -2146,7 +2147,7 @@ void plain_cpp_generator::class_printer::print_method_header(
 		std::string name = method.fd->getParamDecl(i)->getName().str();
 		ParmVarDecl *param = method.get_param(i);
 		QualType type = param->getOriginalType();
-		string cpptype = generator.param2cpp(type);
+		string cpptype = type_printer.param(type);
 
 		if (!method.param_needs_copy(i))
 			osprintf(os, "const %s &%s", cpptype.c_str(),
@@ -2161,11 +2162,15 @@ void plain_cpp_generator::class_printer::print_method_header(
 
 /* Print the header for "method", including the terminating semicolon
  * in case of a declaration and a newline.
+ *
+ * Use the appropriate type printer to print argument and return types.
  */
 void plain_cpp_generator::plain_printer::print_full_method_header(
 	const Method &method)
 {
-	print_method_header(method);
+	auto type_printer = generator.type_printer();
+
+	print_method_header(method, *type_printer);
 
 	if (declarations)
 		osprintf(os, ";");

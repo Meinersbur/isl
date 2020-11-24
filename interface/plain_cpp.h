@@ -201,7 +201,8 @@ struct plain_cpp_generator::class_printer {
 	void print_set_enums();
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
-	void print_method_header(const Method &method);
+	void print_method_header(const Method &method,
+		const cpp_type_printer &type_printer);
 };
 
 /* A helper class for printing method declarations and definitions
