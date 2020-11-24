@@ -1065,7 +1065,8 @@ clang::ParmVarDecl *Method::get_param(int pos) const
 ConversionMethod::ConversionMethod(const Method &method,
 	const std::string &this_type,
 	const std::function<clang::ParmVarDecl *(int pos)> &get_param) :
-		Method(method), this_type(this_type), get_param_fn(get_param)
+		NoCopyMethod(method), this_type(this_type),
+		get_param_fn(get_param)
 {
 }
 
@@ -1101,13 +1102,10 @@ ConversionMethod::ConversionMethod(const Method &method,
 /* Should the parameter at position "pos" be a copy (rather than
  * a const reference)?
  *
- * Unlike methods that call an isl C function,
- * a conversion method never calls release() on an isl type argument,
- * so they can all be passed as const references.
- *
+ * Parameters of isl type do not need to be a copy.
  * For other types, use the same defaults as Method.
  */
-bool ConversionMethod::param_needs_copy(int pos) const
+bool NoCopyMethod::param_needs_copy(int pos) const
 {
 	ParmVarDecl *param = get_param(pos);
 	QualType type = param->getOriginalType();
