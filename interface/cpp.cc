@@ -584,14 +584,14 @@ void cpp_generator::decl_printer::print_public_constructors()
  */
 void cpp_generator::decl_printer::print_method(const ConversionMethod &method)
 {
-	print_method_header(method);
+	print_full_method_header(method);
 }
 
 /* Print declarations for "method".
  */
 void cpp_generator::decl_printer::print_method(const Method &method)
 {
-	print_method_header(method);
+	print_full_method_header(method);
 }
 
 /* Print declarations or implementations of constructors.
@@ -1357,7 +1357,7 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 	int num_params = method.c_num_params();
 
 	osprintf(os, "\n");
-	print_method_header(method);
+	print_full_method_header(method);
 	osprintf(os, "{\n");
 	print_argument_validity_check(method);
 	print_save_ctx(method);
@@ -1430,7 +1430,7 @@ void cpp_generator::impl_printer::print_method(const ConversionMethod &method)
 		    "for object methods");
 
 	osprintf(os, "\n");
-	print_method_header(method);
+	print_full_method_header(method);
 	osprintf(os, "{\n");
 	print_check_ptr("ptr");
 	osprintf(os, "  return ");
@@ -1646,7 +1646,7 @@ void cpp_generator::impl_printer::print_get_method(FunctionDecl *fd)
 	int num_params = fd->getNumParams();
 
 	osprintf(os, "\n");
-	print_method_header(Method(clazz, fd, get_name));
+	print_full_method_header(Method(clazz, fd, get_name));
 	osprintf(os, "{\n");
 	osprintf(os, "  return %s(", name.c_str());
 	for (int i = 1; i < num_params; ++i) {
@@ -1990,7 +1990,7 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
 	print_check_ptr_end("ptr");
 	osprintf(os, "}\n\n");
 
-	print_method_header(method);
+	print_full_method_header(method);
 	osprintf(os, "{\n");
 	osprintf(os, "  auto copy = *this;\n");
 	osprintf(os, "  copy.set_%s_data(%s);\n",
@@ -2060,7 +2060,7 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
 	return generator.conversions[param->getOriginalType().getTypePtr()];
 }
 
-/* Print the header for "method".
+/* Print the header for "method", without newline or semicolon.
  *
  * Print the header of a declaration if this->declarations is set,
  * otherwise print the header of a method definition.
@@ -2081,7 +2081,7 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  *
  * is translated into:
  *
- * 	inline set intersect(set set2) const;
+ * 	inline set intersect(set set2) const
  *
  * For static functions and constructors all parameters of the original isl
  * function are exposed.
@@ -2148,6 +2148,15 @@ void cpp_generator::class_printer::print_method_header(const Method &method)
 
 	if (method.kind == Method::Kind::member_method)
 		osprintf(os, " const");
+}
+
+/* Print the header for "method", including the terminating semicolon
+ * in case of a declaration and a newline.
+ */
+void cpp_generator::class_printer::print_full_method_header(
+	const Method &method)
+{
+	print_method_header(method);
 
 	if (declarations)
 		osprintf(os, ";");

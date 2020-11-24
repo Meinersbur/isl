@@ -202,6 +202,7 @@ struct cpp_generator::class_printer {
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
 	void print_method_header(const Method &method);
+	void print_full_method_header(const Method &method);
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);
 };
 
