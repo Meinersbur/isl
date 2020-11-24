@@ -2122,31 +2122,31 @@ void cpp_generator::class_printer::print_method_header(
 	string rettype_str = type_printer.return_type(method);
 
 	if (declarations) {
-		osprintf(os, "  ");
+		os << "  ";
 
 		if (method.kind == Method::Kind::static_method)
-			osprintf(os, "static ");
+			os << "static ";
 
-		osprintf(os, "inline ");
+		os << "inline ";
 
 		if (method.kind == Method::Kind::constructor) {
 			if (generator.is_implicit_conversion(method))
-				osprintf(os, "/* implicit */ ");
+				os << "/* implicit */ ";
 			else
-				osprintf(os, "explicit ");
+				os << "explicit ";
 		}
 	}
 
 	if (method.kind != Method::Kind::constructor)
-		osprintf(os, "%s ", rettype_str.c_str());
+		os << rettype_str << " ";
 
 	if (!declarations)
-		osprintf(os, "%s::", cppstring.c_str());
+		os << cppstring << "::";
 
 	if (method.kind != Method::Kind::constructor)
-		osprintf(os, "%s", method.name.c_str());
+		os << method.name;
 	else
-		osprintf(os, "%s", cppstring.c_str());
+		os << cppstring;
 
 	method.print_cpp_arg_list(os, [&] (int i) {
 		std::string name = method.fd->getParamDecl(i)->getName().str();
@@ -2155,14 +2155,13 @@ void cpp_generator::class_printer::print_method_header(
 		string cpptype = type_printer.param(type);
 
 		if (!method.param_needs_copy(i))
-			osprintf(os, "const %s &%s", cpptype.c_str(),
-				 name.c_str());
+			os << "const " << cpptype << " &" << name;
 		else
-			osprintf(os, "%s %s", cpptype.c_str(), name.c_str());
+			os << cpptype << " " << name;
 	});
 
 	if (method.kind == Method::Kind::member_method)
-		osprintf(os, " const");
+		os << " const";
 }
 
 /* Print the header for "method", including the terminating semicolon
