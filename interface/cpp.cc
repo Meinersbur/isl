@@ -645,7 +645,7 @@ void cpp_generator::class_printer::print_method_header(
 		os << rettype_str << " ";
 
 	if (!declarations)
-		os << cppstring << "::";
+		os << type_printer.class_type(cppstring) << "::";
 
 	if (method.kind != Method::Kind::constructor)
 		os << method.name;
@@ -809,6 +809,15 @@ string cpp_type_printer::isl_size() const
 std::string cpp_type_printer::isl_namespace() const
 {
 	return "isl::";
+}
+
+/* Return the class type given the C++ name.
+ *
+ * By default, directly use the C++ name.
+ */
+std::string cpp_type_printer::class_type(const std::string &cpp_name) const
+{
+	return cpp_name;
 }
 
 /* Return the qualified form of the given C++ isl type name.

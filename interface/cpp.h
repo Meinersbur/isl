@@ -82,7 +82,8 @@ struct EnumMethod : public Method {
 	std::string enum_name;
 };
 
-/* A type printer for converting argument and return types
+/* A type printer for converting argument and return types,
+ * as well as the class type,
  * to string representations of the corresponding types
  * in the C++ interface.
  */
@@ -93,6 +94,7 @@ struct cpp_type_printer {
 	virtual std::string isl_stat() const;
 	virtual std::string isl_size() const;
 	virtual std::string isl_namespace() const;
+	virtual std::string class_type(const std::string &cpp_name) const;
 	virtual std::string qualified(const std::string &cpp_type) const;
 	std::string isl_type(QualType type) const;
 	std::string generate_callback_args(QualType type, bool cpp) const;
