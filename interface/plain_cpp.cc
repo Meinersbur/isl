@@ -1555,19 +1555,23 @@ void plain_cpp_generator::plain_printer::print_full_method_header(
  * the C type list.
  *
  * Use the appropriate type printer.
+ * For the plain C++ interface, the argument position is irrelevant,
+ * so simply pass in -1.
  */
 string plain_cpp_generator::generate_callback_args(QualType type, bool cpp)
 {
-	return type_printer()->generate_callback_args(type, cpp);
+	return type_printer()->generate_callback_args(-1, type, cpp);
 }
 
 /* Generate the full cpp type of a callback function of type "type".
  *
  * Use the appropriate type printer.
+ * For the plain C++ interface, the argument position is irrelevant,
+ * so simply pass in -1.
  */
 string plain_cpp_generator::generate_callback_type(QualType type)
 {
-	return type_printer()->generate_callback_type(type);
+	return type_printer()->generate_callback_type(-1, type);
 }
 
 /* Print the call to the C++ callback function "call",
@@ -1904,8 +1908,10 @@ string plain_cpp_generator::isl_namespace()
 /* Translate parameter or return type "type" to its C++ name counterpart.
  *
  * Use the appropriate type printer.
+ * For the plain C++ interface, the argument position is irrelevant,
+ * so simply pass in -1.
  */
 string plain_cpp_generator::param2cpp(QualType type)
 {
-	return type_printer()->param(type);
+	return type_printer()->param(-1, type);
 }

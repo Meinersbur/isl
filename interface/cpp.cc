@@ -556,7 +556,7 @@ std::string cpp_type_printer::return_type(const Method &method) const
 	if (method.is_subclass_mutator())
 		return cpp_generator::type2cpp(method.clazz);
 	else
-		return param(method.fd->getReturnType());
+		return param(-1, method.fd->getReturnType());
 }
 
 /* Return the formal parameter at position "pos" of "fd".
@@ -653,7 +653,7 @@ void cpp_generator::class_printer::print_method_header(
 		std::string name = method.fd->getParamDecl(i)->getName().str();
 		ParmVarDecl *param = method.get_param(i);
 		QualType type = param->getOriginalType();
-		string cpptype = type_printer.param(type);
+		string cpptype = type_printer.param(i, type);
 
 		if (!method.param_needs_copy(i))
 			os << "const " << cpptype << " &" << name;
@@ -666,7 +666,8 @@ void cpp_generator::class_printer::print_method_header(
 }
 
 /* Generate the list of argument types for a callback function of
- * type "type".  If "cpp" is set, then generate the C++ type list, otherwise
+ * type "type", appearing in argument position "arg".
+ * If "cpp" is set, then generate the C++ type list, otherwise
  * the C type list.
  *
  * For a callback of type
@@ -676,8 +677,11 @@ void cpp_generator::class_printer::print_method_header(
  * the following C++ argument list is generated:
  *
  *      map
+ *
+ * The arguments of the callback are considered to appear
+ * after the position of the callback itself.
  */
-std::string cpp_type_printer::generate_callback_args(QualType type,
+std::string cpp_type_printer::generate_callback_args(int arg, QualType type,
 	bool cpp) const
 {
 	std::string type_str;
@@ -693,7 +697,7 @@ std::string cpp_type_printer::generate_callback_args(QualType type,
 		QualType type = callback->getArgType(i);
 
 		if (cpp)
-			type_str += param(type);
+			type_str += param(arg + 1 + i, type);
 		else
 			type_str += type.getAsString();
 
@@ -707,7 +711,8 @@ std::string cpp_type_printer::generate_callback_args(QualType type,
 	return type_str;
 }
 
-/* Generate the full cpp type of a callback function of type "type".
+/* Generate the full cpp type of a callback function of type "type",
+ * appearing in argument position "arg".
  *
  * For a callback of type
  *
@@ -717,17 +722,18 @@ std::string cpp_type_printer::generate_callback_args(QualType type,
  *
  *      std::function<stat(map)>
  */
-std::string cpp_type_printer::generate_callback_type(QualType type) const
+std::string cpp_type_printer::generate_callback_type(int arg, QualType type)
+	const
 {
 	std::string type_str;
 	const FunctionProtoType *callback = generator::extract_prototype(type);
 	QualType return_type = callback->getReturnType();
-	string rettype_str = param(return_type);
+	string rettype_str = param(arg, return_type);
 
 	type_str = "std::function<";
 	type_str += rettype_str;
 	type_str += "(";
-	type_str += generate_callback_args(type, true);
+	type_str += generate_callback_args(arg, type, true);
 	type_str += ")>";
 
 	return type_str;
@@ -817,27 +823,35 @@ std::string cpp_type_printer::class_type(const std::string &cpp_name) const
 	return cpp_name;
 }
 
-/* Return the qualified form of the given C++ isl type name.
+/* Return the qualified form of the given C++ isl type name appearing
+ * in argument position "arg" (-1 for return type).
+ *
+ * By default, the argument position is ignored.
  */
-std::string cpp_type_printer::qualified(const std::string &cpp_type) const
+std::string cpp_type_printer::qualified(int arg, const std::string &cpp_type)
+	const
 {
 	return isl_namespace() + cpp_type;
 }
 
-/* Return the C++ counterpart to the given isl type.
+/* Return the C++ counterpart to the given isl type appearing
+ * in argument position "arg" (-1 for return type).
  */
-std::string cpp_type_printer::isl_type(QualType type) const
+std::string cpp_type_printer::isl_type(int arg, QualType type) const
 {
 	auto name = type->getPointeeType().getAsString();
-	return qualified(cpp_generator::type2cpp(name));
+	return qualified(arg, cpp_generator::type2cpp(name));
 }
 
 /* Translate parameter or return type "type" to its C++ name counterpart.
+ * "arg" is the position of the argument, or -1 in case of the return type.
+ * If any callback is involved, then the return type and arguments types
+ * of the callback are considered to start at the position of the callback.
  */
-std::string cpp_type_printer::param(QualType type) const
+std::string cpp_type_printer::param(int arg, QualType type) const
 {
 	if (cpp_generator::is_isl_type(type))
-		return isl_type(type);
+		return isl_type(arg, type);
 
 	if (cpp_generator::is_isl_bool(type))
 		return isl_bool();
@@ -855,7 +869,7 @@ std::string cpp_type_printer::param(QualType type) const
 		return "std::string";
 
 	if (cpp_generator::is_callback(type))
-		return generate_callback_type(type);
+		return generate_callback_type(arg, type);
 
 	generator::die("Cannot convert type to C++ type");
 }

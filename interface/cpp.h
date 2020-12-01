@@ -107,11 +107,13 @@ struct cpp_type_printer {
 	virtual std::string isl_size() const;
 	virtual std::string isl_namespace() const;
 	virtual std::string class_type(const std::string &cpp_name) const;
-	virtual std::string qualified(const std::string &cpp_type) const;
-	std::string isl_type(QualType type) const;
-	std::string generate_callback_args(QualType type, bool cpp) const;
-	std::string generate_callback_type(QualType type) const;
-	std::string param(QualType type) const;
+	virtual std::string qualified(int arg, const std::string &cpp_type)
+		const;
+	std::string isl_type(int arg, QualType type) const;
+	std::string generate_callback_args(int arg, QualType type, bool cpp)
+		const;
+	std::string generate_callback_type(int arg, QualType type) const;
+	std::string param(int arg, QualType type) const;
 	std::string return_type(const Method &method) const;
 };
 
