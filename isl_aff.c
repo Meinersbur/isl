@@ -4160,6 +4160,15 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(
 	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_range_map(space));
 }
 
+/* This function performs the same operation as isl_pw_multi_aff_range_map,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_space_range_map_pw_multi_aff(
+	__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_range_map(space);
+}
+
 /* Given the space of a set and a range of set dimensions,
  * construct an isl_multi_aff that projects out those dimensions.
  */
