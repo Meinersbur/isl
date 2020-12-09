@@ -3614,6 +3614,9 @@ then create a piecewise expression over a universe domain.
 		__isl_take isl_space *space);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_domain_map(
 		__isl_take isl_space *space);
+	__isl_give isl_pw_multi_aff *
+	isl_space_domain_map_pw_multi_aff(
+		__isl_take isl_space *space);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_map(
 		__isl_take isl_space *space);
 	__isl_give isl_pw_multi_aff *
@@ -3629,6 +3632,9 @@ then create a piecewise expression over a universe domain.
 C<isl_pw_multi_aff_identity_on_domain_space> and
 C<isl_space_identity_pw_multi_aff_on_domain>
 perform the same operation.
+Similarly
+for the pair C<isl_pw_multi_aff_domain_map> and
+C<isl_space_domain_map_pw_multi_aff>.
 
 The following convenience functions first create a base expression and
 then create a piecewise expression over a given domain.

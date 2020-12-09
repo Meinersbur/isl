@@ -4142,6 +4142,15 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_domain_map(
 	return isl_pw_multi_aff_from_multi_aff(isl_multi_aff_domain_map(space));
 }
 
+/* This function performs the same operation as isl_pw_multi_aff_domain_map,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_pw_multi_aff *isl_space_domain_map_pw_multi_aff(
+	__isl_take isl_space *space)
+{
+	return isl_pw_multi_aff_domain_map(space);
+}
+
 /* Given a map space, return an isl_pw_multi_aff that maps a wrapped copy
  * of the space to its range.
  */
