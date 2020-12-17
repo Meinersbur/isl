@@ -2876,6 +2876,9 @@ a specified dimension on a given domain can be created using
 	__isl_give isl_aff *isl_aff_param_on_domain_space_id(
 		__isl_take isl_space *space,
 		__isl_take isl_id *id);
+	__isl_give isl_aff *isl_space_param_aff_on_domain_id(
+		__isl_take isl_space *space,
+		__isl_take isl_id *id);
 	__isl_give isl_aff *isl_aff_var_on_domain(
 		__isl_take isl_local_space *ls,
 		enum isl_dim_type type, unsigned pos);
@@ -2886,6 +2889,8 @@ a specified dimension on a given domain can be created using
 
 The space passed to C<isl_aff_param_on_domain_space_id>
 is required to have a parameter with the given identifier.
+C<isl_aff_param_on_domain_space_id> and
+C<isl_space_param_aff_on_domain_id> perform the same operation.
 
 C<isl_aff_zero_on_domain_space> and C<isl_space_zero_aff_on_domain>
 perform the same operation.

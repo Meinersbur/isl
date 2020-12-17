@@ -555,6 +555,18 @@ static std::vector<Signature> anonymous_from_domain =
  */
 static Signature set_from_params = { { Domain }, { { }, { Domain } } };
 
+/* Signatures for creating an anonymous function from a domain,
+ * where the second argument is an identifier (with an anonymous tuple).
+ */
+static Signature anonymous_set_from_params_bin_anon =
+	{ { Anonymous }, { { }, { Anonymous } } };
+static Signature anonymous_map_from_domain_bin_anon =
+	{ { Domain, Anonymous }, { { Domain }, { Anonymous } } };
+static std::vector<Signature> anonymous_from_domain_bin_anon = {
+	  anonymous_set_from_params_bin_anon,
+	  anonymous_map_from_domain_bin_anon
+	};
+
 /* Signature for creating a map from a domain,
  * where the range tuple is equal to the domain tuple.
  */
@@ -816,6 +828,7 @@ member_methods {
 	{ "on_domain",		{ map_from_domain_and_range } },
 	{ "neg",		fn_un_op },
 	{ "offset",		fn_un_op },
+	{ "param_on_domain",	anonymous_from_domain_bin_anon },
 	{ "params",		{ set_params, map_params } },
 	{ "plain_multi_val_if_fixed",
 				{ un_set } },

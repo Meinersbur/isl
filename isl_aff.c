@@ -341,6 +341,16 @@ error:
 	return NULL;
 }
 
+/* This function performs the same operation as
+ * isl_aff_param_on_domain_space_id,
+ * but is considered as a function on an isl_space when exported.
+ */
+__isl_give isl_aff *isl_space_param_aff_on_domain_id(
+	__isl_take isl_space *space, __isl_take isl_id *id)
+{
+	return isl_aff_param_on_domain_space_id(space, id);
+}
+
 __isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff)
 {
 	if (!aff)

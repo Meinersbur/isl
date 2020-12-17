@@ -32,6 +32,9 @@ __isl_give isl_aff *isl_aff_nan_on_domain_space(__isl_take isl_space *space);
 __isl_give isl_aff *isl_aff_nan_on_domain(__isl_take isl_local_space *ls);
 __isl_give isl_aff *isl_aff_param_on_domain_space_id(
 	__isl_take isl_space *space, __isl_take isl_id *id);
+__isl_overload
+__isl_give isl_aff *isl_space_param_aff_on_domain_id(
+	__isl_take isl_space *space, __isl_take isl_id *id);
 
 __isl_give isl_aff *isl_aff_copy(__isl_keep isl_aff *aff);
 __isl_null isl_aff *isl_aff_free(__isl_take isl_aff *aff);
