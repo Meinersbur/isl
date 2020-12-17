@@ -34,6 +34,7 @@ isl_bool isl_space_is_params(__isl_keep isl_space *space);
 isl_bool isl_space_is_set(__isl_keep isl_space *space);
 isl_bool isl_space_is_map(__isl_keep isl_space *space);
 
+__isl_overload
 __isl_give isl_space *isl_space_add_param_id(__isl_take isl_space *space,
 	__isl_take isl_id *id);
 

@@ -762,6 +762,7 @@ member_methods {
 	{ "add",		bin_op },
 	{ "add_constant",	bin_val },
 	{ "add_named_tuple",	{ to_set_named, add_range_named } },
+	{ "add_param",		bin_op_anon },
 	{ "add_unnamed_tuple",	{ to_set, add_range } },
 	{ "apply",		{ set_forward, range_forward } },
 	{ "apply_domain",	{ domain_forward } },
