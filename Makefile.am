@@ -362,6 +362,14 @@ include/isl/cpp-checked-conversion.h: \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \
 			> $@ || (rm $@ && false)
+			
+trace.inc.cpp: \
+		interface/extract_interface$(BUILD_EXEEXT) \
+		libdep.a
+	(interface/extract_interface$(BUILD_EXEEXT) \
+			--language=trace \
+			$(includes) $(srcdir)/all.h) \
+			> $@ || (rm $@ && false)
 endif
 endif
 
