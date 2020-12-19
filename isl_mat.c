@@ -650,9 +650,6 @@ __isl_give isl_mat *isl_mat_left_hermite(__isl_take isl_mat *M, int neg,
 		*Q = NULL;
 	if (!M)
 		goto error;
-	M = isl_mat_cow(M);
-	if (!M)
-		goto error;
 	if (U) {
 		*U = isl_mat_identity(M->ctx, M->n_col);
 		if (!*U)
@@ -663,6 +660,13 @@ __isl_give isl_mat *isl_mat_left_hermite(__isl_take isl_mat *M, int neg,
 		if (!*Q)
 			goto error;
 	}
+
+	if (M->n_col == 0)
+		return M;
+
+	M = isl_mat_cow(M);
+	if (!M)
+		goto error;
 
 	col = 0;
 	isl_int_init(c);
