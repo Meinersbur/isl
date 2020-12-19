@@ -64,12 +64,14 @@ __isl_give isl_mat *isl_mat_alloc(isl_ctx *ctx,
 	mat->block = isl_blk_alloc(ctx, n_row * n_col);
 	if (isl_blk_is_error(mat->block))
 		goto error;
-	mat->row = isl_alloc_array(ctx, isl_int *, n_row);
+	mat->row = isl_calloc_array(ctx, isl_int *, n_row);
 	if (n_row && !mat->row)
 		goto error;
 
-	for (i = 0; i < n_row; ++i)
-		mat->row[i] = mat->block.data + i * n_col;
+	if (n_col != 0) {
+		for (i = 0; i < n_row; ++i)
+			mat->row[i] = mat->block.data + i * n_col;
+	}
 
 	mat->ctx = ctx;
 	isl_ctx_ref(ctx);
