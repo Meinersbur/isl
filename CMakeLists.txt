@@ -1,7 +1,8 @@
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.12)
 
-project("isl" C)
+project("isl" C CXX)
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
   set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
@@ -12,9 +13,11 @@ else ()
 endif ()
 set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
+#find_package(LLVM REQUIRED NO_DEFAULT_PATH)
+find_package(Clang QUIET)
+
 set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
 set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")
-
 
 ## Configure options
 set(ISL_INT "imath" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
@@ -384,6 +387,11 @@ add_isl_executable(isl_cat "${ISL_SOURCE_DIR}/cat.c")
 add_isl_executable(isl_closure "${ISL_SOURCE_DIR}/closure.c")
 add_isl_executable(isl_bound "${ISL_SOURCE_DIR}/bound.c")
 add_isl_executable(isl_codegen "${ISL_SOURCE_DIR}/codegen.c")
+
+if (Clang_FOUND)
+  add_subdirectory(interface)
+endif ()
+
 
 # Testing
 enable_testing()
