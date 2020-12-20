@@ -1,0 +1,67 @@
+From 574a867ccf6edf6298a35fd0855906b6cf621312 Mon Sep 17 00:00:00 2001
+From: Michael Kruse <isl@meinersbur.de>
+Date: Mon, 16 Nov 2020 22:00:16 +0000
+Subject: [PATCH 2/2] isl_mat_left_hermite: fix undefined null pointer arithmetic
+
+If isl_mat_left_hermite is called on matrix with zero columns, but at
+least one row, M->row will contain only NULL pointers as mentioned in
+the previous patch. The implementation advances the NULL pointer by col
+elements. However, arithmetic on null pointers is undefined behaviour,
+even if the resulting pointer is never dereferenced. 
+
+The call to isl_seq_abs_min_non_zero returns -1 if no element is found,
+including if there are no columns to search, which will then execute
+continue. To fix the problem, when no columns are to be searched,
+directly execute the continue statement.
+
+Signed-off-by: Michael Kruse <isl@meinersbur.de>
+---
+The is diagnosed by UndefinedBehaviourSanitizer, when running isl_test:
+
+$ UBSAN_OPTIONS=report_error_type=1,print_stacktrace=1 ./isl_test
+[...]
+schedule (whole component)
+/home/meinersbur/src/isl/isl_mat.c:671:47: runtime error: applying zero offset to null pointer
+    #0 0x7fcac6cc14ce in isl_mat_left_hermite /home/meinersbur/src/isl/isl_mat.c:671:47
+    #1 0x7fcac6d35f29 in node_update_vmap /home/meinersbur/src/isl/isl_scheduler.c:2491:6
+    #2 0x7fcac6d35bb1 in compute_maxvar /home/meinersbur/src/isl/isl_scheduler.c:3806:7
+    #3 0x7fcac6d35160 in compute_schedule_wcc /home/meinersbur/src/isl/isl_scheduler.c:7492:6
+    #4 0x7fcac6d3ed46 in compute_next_band /home/meinersbur/src/isl/isl_scheduler.c:4067:9
+    #5 0x7fcac6d31807 in isl_schedule_constraints_compute_schedule /home/meinersbur/src/isl/isl_scheduler.c:7633:10
+    #6 0x4404da in test_one_schedule /home/meinersbur/src/isl/isl_test.c:4391:10
+    #7 0x440b63 in test_schedule /home/meinersbur/src/isl/isl_test.c:5051:6
+    #8 0x448f73 in test_schedule_whole /home/meinersbur/src/isl/isl_test.c:5291:6
+    #9 0x450bcf in main /home/meinersbur/src/isl/isl_test.c:10930:7
+    #10 0x7fcac5a45349 in __libc_start_main (/lib64/libc.so.6+0x24349)
+    #11 0x411369 in _start /home/abuild/rpmbuild/BUILD/glibc-2.26/csu/../sysdeps/x86_64/start.S:120
+
+SUMMARY: UndefinedBehaviorSanitizer: nullptr-with-offset /home/meinersbur/src/isl/isl_mat.c:671:47 in
+
+$ ./isl_test --version
+isl-0.23-2-g4e72b588-IMath-32
+
+
+ isl_mat.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/isl_mat.c b/isl_mat.c
+index f5500045..89ea6c02 100644
+--- a/isl_mat.c
++++ b/isl_mat.c
+@@ -668,7 +668,12 @@ __isl_give isl_mat *isl_mat_left_hermite(__isl_take isl_mat *M, int neg,
+ 	isl_int_init(c);
+ 	for (row = 0; row < M->n_row; ++row) {
+ 		int first, i, off;
+-		first = isl_seq_abs_min_non_zero(M->row[row]+col, M->n_col-col);
++		unsigned len;
++
++		len = M->n_col - col;
++		if (len == 0)
++			continue;
++		first = isl_seq_abs_min_non_zero(M->row[row]+col, len);
+ 		if (first == -1)
+ 			continue;
+ 		first += col;
+-- 
+2.27.0
+
