@@ -5,6 +5,12 @@
 #include <assert.h>
 #include <type_traits>
 #include <unordered_map>
+#include <iostream>
+#include <iosfwd>
+#include <ostream>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <dlfcn.h>
 #include "../all.h"
 
@@ -28,7 +34,7 @@ struct ObjShortnameBase {
 
 
 template<typename T> struct ObjShortname : public  ObjShortnameBase<void> {
-	static constexpr const char *name = "arg";
+	static constexpr const char *name = "val";
 };
 
 
@@ -44,22 +50,22 @@ namespace {
 			getTheMap()[t] = c;
 		}
 
-		void print(FILE* f, const char* SName, T* t) {
+		void print(std::ostream &OS,const char* SName, T* t) {
 			if (t == nullptr) {
-				fputs("NULL", f);
+				OS << "NULL";
 				return;
 			}
 
 			auto& Map = getTheMap();
 			auto It = Map.find(t);
 			if (It == Map.end()) {
-				fprintf(f, "(%s*)%p", SName, t);
+				OS << " " << SName << ")" << t;
 				return;
 			}
 
 
 			auto num = It->second;
-			fprintf(f, "arg%i", num);
+			OS << ObjShortname<T>::name << num;
 		}
 	};
 }
@@ -101,9 +107,9 @@ template<> struct ObjCow<sname> { static sname* cow(sname*obj) { return CONCAT2(
 template<> struct ObjShortname<sname*> : public ObjShortnameBase<sname*> { static constexpr const char *name = STR(shortname);  }; \
 template<>                                      \
 struct Argprinter<sname*> {                     \
-void print(FILE* f, sname* t) {                 \
+void print(std::ostream &OS, sname* t) {                 \
 static ObjPrinter<sname> prn;                   \
-		prn.print(f, STR(sname), t);                \
+		prn.print(OS, STR(sname), t);                \
   }                                             \
 };
 
@@ -169,47 +175,46 @@ ISL_STRUCT(isl_args, args)
 
 
 
-
 template<>
 struct Argprinter<isl_error> {
-	void print(FILE* f, isl_error t) {
-		fprintf(f, "(isl_error)%i", t);
+	void print(std::ostream &OS, isl_error t) {
+		OS << "(isl_error)" << t;
 	}
 };
 
+
 template<>
 struct Argprinter<isl_stat> {
-	void print(FILE* f, isl_stat t) {
+	void print(std::ostream &OS,isl_stat t) {
 		switch (t) {
-		case 		isl_stat_error :
-			fputs("isl_stat_error",f);
+		case isl_stat_error :
+			OS << "isl_stat_error";
 			return;
-		case 				isl_stat_ok:
-			fputs("isl_stat_ok",f);
+		case isl_stat_ok:
+			OS << "isl_stat_ok";
 			return;
 		}
-
-		fprintf(f, "(isl_stat)%i", t);
+		OS << "(isl_stat)" << t;
 	}
 };
 
 
 template<>
 struct Argprinter<isl_bool> {
-	void print(FILE* f, isl_bool t) {
+	void print(std::ostream &OS, isl_bool t) {
 		switch (t) {
 		case 	isl_bool_error :
-			fputs("isl_bool_error",f);
+			OS << "isl_bool_error";
 			return;
 		case 		isl_bool_false :
-			fputs("isl_bool_false",f);
+			OS << "isl_bool_false";
 			return;
 		case 	isl_bool_true :
-			fputs("isl_bool_true",f);
+			OS << "isl_bool_true";
 			return;
 		}
 
-		fprintf(f, "(isl_bool)%i", t);
+		OS << "(isl_bool)" << t;
 	}
 };
 template<>
@@ -219,63 +224,64 @@ struct ObjShortname<isl_bool>: public ObjShortnameBase<isl_bool> {
 
 template<>
 struct Argprinter<isl_dim_type> {
-	void print(FILE* f, isl_dim_type t) {
+	void print(std::ostream &OS, isl_dim_type t) {
 		switch (t) {
 		case	isl_dim_cst:
-			fputs("isl_dim_cst",f);
+			OS << "isl_dim_cst";
 			return;
 		case		isl_dim_param:
-			fputs("isl_dim_param",f);
+			OS << "isl_dim_param";
 			return;
 		case		isl_dim_in:
-			fputs("isl_dim_in",f);
+			OS << "isl_dim_in";
 			return;
 		case		isl_dim_out:
-			fputs("isl_dim_out",f);
+			OS << "isl_dim_out";
 			return;
 		case		isl_dim_div:
-			fputs("isl_dim_div",f);
+			OS << "isl_dim_div";
 			return;
 		case		isl_dim_all:
-			fputs("isl_dim_all",f);
+			OS << "isl_dim_all";
 			return;
 		}
-		fprintf(f, "(isl_dim_type)%i", t);
+
+		OS << "(isl_dim_type)" << t;
 	}
 };
 
 template<>
 struct Argprinter<isl_ast_expr_op_type> {
-	void print(FILE* f, isl_ast_expr_op_type t) {
-		fprintf(f, "(isl_ast_expr_op_type)%i", t);
+	void print(std::ostream &OS,isl_ast_expr_op_type t) {
+		OS << "(isl_ast_expr_op_type)" << t;
 	}
 };
 
 template<>
 struct Argprinter<isl_fold> {
-	void print(FILE* f, isl_fold t) {
-		fprintf(f, "(isl_fold)%i", t);
+	void print(std::ostream &OS, isl_fold t) {
+		OS << "(isl_fold)" << t;
 	}
 };
 
 template<>
 struct Argprinter<isl_ast_loop_type> {
-	void print(FILE* f, isl_ast_loop_type t) {
-		fprintf(f, "(isl_ast_loop_type)%i", t);
+	void print(std::ostream &OS,isl_ast_loop_type t) {
+		OS << "(isl_ast_loop_type)" << t;
 	}
 };
 
 template<>
 struct Argprinter<double> {
-	void print(FILE* f, double t) {
-		fprintf(f, "%f", t);
+	void print(std::ostream &OS, double t) {
+		OS << t;
 	}
 };
 
 template<>
 struct Argprinter<int> {
-	void print(FILE* f, int t) {
-		fprintf(f, "%i", t);
+	void print(std::ostream &OS, int t) {
+		OS << t;
 	}
 };
 template<>
@@ -286,32 +292,33 @@ struct ObjShortname<int> : public ObjShortnameBase<int> {
 
 template<>
 struct Argprinter< unsigned int> {
-	void print(FILE* f,  unsigned int t) {
-		fprintf(f, "%u", t);
+	void print(std::ostream &OS, unsigned int t) {
+		OS << t << "u";
 	}
 };
 
 
 template<>
 struct Argprinter<long  > {
-	void print(FILE* f, long   t) {
-		fprintf(f, "%li", t);
+	void print(std::ostream &OS, long   t) {
+		OS << t;
 	}
 };
 
 
 template<>
 struct Argprinter<long unsigned int> {
-	void print(FILE* f, long unsigned int t) {
-		fprintf(f, "%lu", t);
+	void print(std::ostream &OS, long unsigned int t) {
+		OS << t << "u";
 	}
 };
 
 
 template<>
 struct Argprinter<const char*> {
-	void print(FILE* f, const char * t) {
-		fprintf(f, "\"%s\"", t);
+	void print(std::ostream &OS, const char * t) {
+		// TODO: escape
+		OS << "\n" << t << "\"";
 	}
 };
 template<>
@@ -323,10 +330,15 @@ struct ObjShortname<const char*>: public ObjShortnameBase<const char*> {
 
 template<typename T>
 struct Argprinter<T*> {
-	void print(FILE* f, T* t) {
-		fprintf(f, "(void*)%p", t);
+	void print(std::ostream &OS, T* t) {
+		OS << "(void)" << t;
 	}
 };
+
+
+
+
+
 
 
 
@@ -347,17 +359,7 @@ static void* openlibisl() {
 }
 
 
-static FILE* getOutfile() {
-	static	const char* path=nullptr;
-
-	FILE* handle;
-	if (!path) {
-		 path = getenv("ISLTRACE_OUTFILE");
-		if (!path)
-			path = "libisl.log";
-
-		handle = fopen(path, "w");
-		auto prologue = R"(
+static 	const char * prologue = R"(
 #include <isl/aff.h>
 #include <isl/aff_type.h>
 #include <isl/arg.h>
@@ -420,9 +422,22 @@ static FILE* getOutfile() {
 
 int main() {
 )";
+
+
+#if 0
+static FILE* getOutfile() {
+	static	const char* path=nullptr;
+
+	FILE* handle;
+	if (!path) {
+		 path = getenv("ISLTRACE_OUTFILE");
+		if (!path)
+			path = "libisl.log";
+		handle = fopen(path, "w");
+
 		fputs(prologue, handle);
 			typedef const char *(*VerFuncTy)(void);
-		auto  verfunc = (VerFuncTy) dlsym(openlibisl(), "isl_version");
+		auto verfunc = (VerFuncTy) dlsym(openlibisl(), "isl_version");
 		auto ver = (*verfunc) ();
 		fprintf(stderr, "ISL reports version %s\n",ver);
 		fprintf(handle, "  // ISL self-reported version: %s\n", ver);
@@ -433,6 +448,7 @@ int main() {
 	}
 	return handle;
 }
+#endif
 
 
 
@@ -443,6 +459,7 @@ void writeOutput(FILE *f) {
 
 
 
+#if 0
 static bool& get_within_recusion() {
 	static bool within_recursion = false;
 	return within_recursion;
@@ -464,7 +481,7 @@ static void exit_recursion() {
 	within_recrusion = false;
 }
 
-
+#endif
 
 
 
@@ -476,7 +493,7 @@ struct Argsprinter;
 
 template<>
 struct Argsprinter<> {
-	void printArgs(FILE* f) {
+	void printArgs(std::ostream &OS) {
 		// empty argument list
 	}
 };
@@ -484,7 +501,7 @@ struct Argsprinter<> {
 
 template<typename T>
 struct Argsprinter<T> {
-	void printArgs(FILE* f, T t) {
+	void printArgs(std::ostream &OS, T t) {
 		Argprinter<T>().print(f, t);
 	}
 };
@@ -492,7 +509,7 @@ struct Argsprinter<T> {
 
 template<typename T, typename S,	typename... Rest>
 struct Argsprinter<T,S,Rest...> {
-	void printArgs(FILE* f, T t, S s, Rest ...r) {
+	void printArgs(std::ostream &OS,T t, S s, Rest ...r) {
 		Argsprinter<T>().printArgs(f, t);
 		fputs(", ", f);
 		Argsprinter<S, Rest...>().printArgs(f, s, r...);
@@ -506,38 +523,80 @@ struct Argsprinter<T,S,Rest...> {
 
 
 template<typename... Rest>
-static void printArgs(FILE *f, Rest ...r) {
-	Argsprinter<Rest...>().printArgs(f, r...);
+static void printArgs(std::ostream &OS, Rest ...r) {
+	Argsprinter<Rest...>().printArgs(OS, r...);
 }
 
 
 
-#if 0
-template<typename T>
-static void printArgs(FILE* f, T t) {
-	Argprinter<T>().print(f, t);
+
+
+struct Level {
+	bool IsMain = false;
+	bool IsInternal = false;
+
+	static Level createMain() {
+		Level Result;
+		Result.IsMain = true;
+
+		Result.mainpath = getenv("ISLTRACE_OUTFILE");
+		if (!Result.mainpath)
+			Result.mainpath = "libisl.log";
+
+		return Result;
+	}
+
+	static Level createInternal() {
+		Level Result;
+		Result.IsInternal = true;
+		return Result;
+	}
+
+
+	const char* mainpath =nullptr;
+	std::ofstream* mainfile;
+
+
+
+	std::ostream &getOutput() {
+		if (IsMain) {
+			if (!mainfile) {
+				mainfile = new std::ofstream(mainpath,std:: ios_base::out);
+				*mainfile << prologue;
+				typedef const char *(*VerFuncTy)(void);
+				auto verfunc = (VerFuncTy) dlsym(openlibisl(), "isl_version");
+				auto ver = (*verfunc)();
+				*mainfile << "  // ISL self-reported version:" << ver << "\n";
+			} else if (!mainfile->is_open()) {
+				mainfile->open(mainpath, std::ios_base::ate);
+			}
+			return *mainfile;
+		}
+
+		assert(!"No output stream");
+	}
+
+	void flush() {
+		if (IsMain) {
+			// Need to completely close (and re-opened when needed again) the file because fflush does not ensure all data written so far will be in the file if the program crashes.
+			mainfile->close();
+		}
+	}
+};
+
+
+
+
+static std::vector<Level> &getLevelStack() {
+	std::vector<Level> stack;
+	if (stack.empty())
+		stack.push_back(Level::createMain());
+	return stack;
 }
 
 
-
-template<typename T, typename S,	typename... Rest>
-static void printArgs(FILE *f, T t, S s, Rest ...r) {
-	printArgs(f, t);
-	fputs(", ", f);
-	printArgs(f, s, r...);
-}
-
-
-
-static void printArgs(FILE* f) {
-	// empty argument list
-}
-#endif
-
-
-static int& get_argnum() {
-	static int v = 1;
-	return v;
+static Level& getLevel() {
+	getLevelStack().back();
 }
 
 
@@ -555,29 +614,29 @@ static RetTy trace(const char *fname, const char *rettyname, void*self, FuncTy *
 	assert(orig != self);
 
 
-	if (!try_enter_recursion()) {
+	auto& lvl = getLevel();
+	if (lvl.IsInternal) {
 		// fprintf(stderr, "Calling %s during recursion\n", fname);
 		return (*orig)(Params...);
 	}
-
 //	fprintf(stderr, "Calling %s\n", fname);
 
 
+
 	 // Write the line before calling the function to ensure the crashing command appears in the log in case it crashes.
-		FILE* f = getOutfile();
-		fputs("  ", f);
+	auto* OS = lvl.getOutput()
+		OS << "  ";
 
 		int c;
 		if constexpr (!std::is_void<RetTy>()) {
 			c = ObjShortname<RetTy>::getNextNum();
-			fprintf(f, "%s %s%i = ", rettyname, ObjShortname<RetTy>::name, c);
+			OS << rettyname << " " << ObjShortname<RetTy>::name << c;
 		}
 
-		fputs(fname, f);
-		fputs("(", f);
-		printArgs<ParamTy...>(f, Params...);
-		fputs(");\n", f);
-		writeOutput(f);
+		OS << fname << "(";
+		printArgs<ParamTy...>(OS, Params...);
+		OS << ");\n";
+		lvl.flush();
 
 
 		if constexpr (std::is_void<RetTy>()) {
