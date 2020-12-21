@@ -1,8 +1,9 @@
 
-add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc)
-
-target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${CLANG_INCLUDE_DIRS})
-target_compile_options(extract_interface PUBLIC -fno-rtti)
+add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc trace.cc)
+target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+if (NOT MSVC)
+  target_compile_options(extract_interface PUBLIC -fno-rtti)
+endif ()
 target_compile_definitions(extract_interface PRIVATE 
   ADDPATH_TAKES_4_ARGUMENTS
   "CLANG_PREFIX=\"${CLANG_INSTALL_PREFIX}\"" 
@@ -36,18 +37,46 @@ target_compile_definitions(extract_interface PRIVATE
 target_link_libraries(extract_interface PRIVATE clangBasic clangAnalysis clangAST clangLex clangEdit clangParse clangSema clangFrontend clangSerialization)
 
 
-add_custom_target(interface-python ALL
-  COMMAND extract_interface --language=python "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > python.h
-)
 
-add_custom_target(interface-cpp ALL
-  COMMAND extract_interface --language=cpp "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > cpp.h
-)
+function(gen_interface TARGET GENERATOR OUTFILE)
+  if (Python_FOUND)
+    add_custom_command(
+      OUTPUT "${OUTFILE}"
+      COMMAND ${Python_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${OUTFILE}" $<TARGET_FILE:extract_interface> --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
+      DEPENDS extract_interface
+      IMPLICIT_DEPENDS C "${ISL_SOURCE_DIR}/all.h"
+    )
+  else ()
+    add_custom_command(
+      OUTPUT "${OUTFILE}"
+      COMMAND extract_interface --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > "${OUTFILE}"
+      DEPENDS extract_interface
+      IMPLICIT_DEPENDS C "${ISL_SOURCE_DIR}/all.h"
+    )
+  endif ()
+  add_custom_target(${TARGET} ALL
+    DEPENDS "${OUTFILE}"
+  )
+endfunction()
 
-add_custom_target(interface-cpp-checked ALL
-  COMMAND extract_interface --language=cpp-checked "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > cpp-checked.h
-)
 
-add_custom_target(interface-cpp-checked-conversion ALL
-  COMMAND extract_interface --language=cpp-checked-conversion "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > cpp-checked-conversion.h
-)
+
+
+
+gen_interface(interface-python python python.h)
+gen_interface(interface-cpp cpp cpp.h)
+gen_interface(interface-cpp-checked cpp-checked cpp-checked.h)
+gen_interface(interface-cpp-checked-conversion cpp-checked-conversion cpp-checked-conversion.h)
+gen_interface(interface-trace trace libtrace.inc.cpp)
+
+
+add_library(trace SHARED libtrace.cpp)
+set_property(TARGET trace PROPERTY CXX_STANDARD 17)
+add_dependencies(trace interface-trace)
+if (NOT MSVC)
+  target_compile_options(trace PUBLIC -Wno-deprecated-declarations)
+endif ()
+target_include_directories(trace PRIVATE "${CMAKE_CURRENT_BINARY_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_BINARY_DIR}/include")
+
+
+

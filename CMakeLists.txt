@@ -13,8 +13,8 @@ else ()
 endif ()
 set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
-#find_package(LLVM REQUIRED NO_DEFAULT_PATH)
 find_package(Clang QUIET)
+find_package(Python QUIET)
 
 set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
 set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")

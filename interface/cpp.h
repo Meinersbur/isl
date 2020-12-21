@@ -62,7 +62,7 @@ private:
 		const isl_class &clazz);
 	void print_methods_decl(ostream &os, const isl_class &clazz);
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
-	template <enum method_part>
+	template <enum cpp_generator::method_part part>
 	void print_method_variants(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
