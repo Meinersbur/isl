@@ -53,10 +53,9 @@ void trace_generator::generate()
 		if (!FName.startswith("isl_"))
 			continue;
 
-		//Printer.TraverseDecl(FD);
+
+
 		PrintingPolicy Policy(FD->getASTContext().getLangOpts());
-
-
 
 		std::string FStr;
 		llvm::raw_string_ostream FOS(FStr);
@@ -74,6 +73,61 @@ void trace_generator::generate()
 		FD->getReturnType().print(OS, Policy, /* placeholder */FOS.str(), /*Indentation=*/0);
 		OS << " {\n";
 
+		auto FuncCall = [&](const char*MacroName) {
+			OS << "  " << MacroName;
+			if (FD->getReturnType()->isVoidType()) {
+				OS << "_VOID";
+			} else {
+				OS << "_NONVOID";
+			}
+			OS << "(" << FName << ", ";
+			FD->getReturnType().print(OS, Policy, "");
+			for (auto Parm : FD->parameters()) {
+				OS << ", " << Parm->getName();
+			}
+			OS << ")\n";
+		};
+
+		auto ParamCalls = [&](const char* MacroName) {
+			int i = 0;
+			while (i < FD->getNumParams()) {
+				auto Parm = FD->getParamDecl(i);
+				auto ParmTy = Parm->getType();
+				if (ParmTy->isPointerType() && ParmTy->getPointeeType()->isFunctionType()) {
+					// A callback
+					auto UserParm = FD->getParamDecl(i + 1);
+					assert(UserParm->getType()->isVoidPointerType());
+					auto CbTy = Parm->getType()->getPointeeType()->castAs<FunctionProtoType>();
+					auto CbRetTy = CbTy->getReturnType();
+					OS << "  " << MacroName << "_CB(" << Parm->getName() << ", " << UserParm->getName() << ", ";
+					CbRetTy.print(OS, Policy, "");
+					for (auto CbParmTy : CbTy->param_types()) {
+						OS << ", ";
+						CbParmTy.print(OS, Policy, "");
+					}
+					OS << ")\n";
+					i += 2;
+					return;
+				}
+
+				// A "normal" parameter
+				OS << "  " << MacroName << "_ARG(" << Parm->getName(); OS << ", ";  ParmTy.print(OS, Policy, ""); OS << ")\n";
+				i += 1;
+			}
+		};
+
+		// Things that we cannot handle for now
+		if (FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" || FName == "isl_id_set_free_user") {
+			OS << "  ISL_CALL_UNSUPPORTED(" << FName << ")\n";
+		} else {
+			FuncCall("ISL_PRECALL");
+			ParamCalls("ISL_PREPARE");
+			FuncCall("ISL_CALL");
+			ParamCalls("ISL_POSTPARE");
+			FuncCall("ISL_POSTCALL");
+		}
+
+#if 0
 		OS << "  ";
 		if (!FD->getReturnType()->isVoidType()) {
 			OS << "CALL_ORIG";
@@ -96,6 +150,7 @@ void trace_generator::generate()
 			OS << "," << Param->getName();
 		}
 		OS << ")\n";
+#endif
 
 		OS << "}\n\n";
 	}
