@@ -12,8 +12,15 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <string>
 #include <functional>
+#ifdef _MSC_VER
+#define RTLD_NOW 0
+void* dlopen(const char* filename, int flag) { return nullptr; }
+void* dlsym(void* handle, const char* symbol) { return nullptr; }
+#else
 #include <dlfcn.h>
+#endif
 #include "../all.h"
 
 #define __isl_give
@@ -316,6 +323,15 @@ struct Argprinter<long unsigned int> {
 
 
 template<>
+struct Argprinter<long long unsigned int> {
+	void print(std::ostream &OS, long long unsigned int t) {
+		OS << t << "u";
+	}
+};
+
+
+
+template<>
 struct Argprinter<const char*> {
 	void print(std::ostream &OS, const char * t) {
 		// TODO: escape
@@ -515,13 +531,13 @@ static 	const char * prologue = R"(
 #include <isl/union_set.h>
 #include <isl/union_set_type.h>
 #include <isl/val.h>
-#include <isl/val_gmp.h>
+//#include <isl/val_gmp.h>
 #include <isl/val_type.h>
 #include <isl/vec.h>
 #include <isl/version.h>
 #include <isl/vertices.h>
 
-#include "callbacks.inc.c"
+#include \"callbacks.inc.c\"
 
 int main() {
 	const char *dynIslVersion = isl_version();
@@ -635,28 +651,32 @@ struct Level {
 	bool IsInternal = false;
 	bool IsCallback = false;
 
-	static Level createMain() {
-		Level Result;
-		Result.IsMain = true;
+	static Level *createMain() {
+		Level* Result = new Level();
+		Result->IsMain = true;
 
-		Result.mainpath = getenv("ISLTRACE_OUTFILE");
-		if (!Result.mainpath)
-			Result.mainpath = "libisl.log";
+		Result->mainpath = getenv("ISLTRACE_OUTFILE");
+		if (!Result->mainpath)
+			Result->mainpath = "libisl.log";
 
 		return Result;
 	}
 
-	static Level createInternal() {
-		Level Result;
-		Result.IsInternal = true;
+	static Level *createInternal() {
+		Level* Result = new Level();
+		Result->IsInternal = true;
 		return Result;
+	}
+
+	bool isInternal() {
+		return IsInternal;
 	}
 
 	CallbackBase* callbacker = nullptr;
-	static Level createCallback(CallbackBase *Callbacker) {
-		Level Result;
-		Result.IsCallback = true;
-		Result.callbacker = Callbacker;
+	static Level *createCallback(CallbackBase *Callbacker) {
+		Level* Result = new Level();
+		Result->IsCallback = true;
+		Result->callbacker = Callbacker;
 		return Result;
 	}
 
@@ -687,6 +707,7 @@ struct Level {
 		}
 
 		assert(!"No output stream");
+		abort();
 	}
 
 	void flush() {
@@ -707,15 +728,15 @@ struct Level {
 
 
 
-static std::vector<Level> &getLevelStack() {
-	static std::vector<Level> stack;
+static std::vector<Level*> &getLevelStack() {
+	static std::vector<Level*> stack;
 	if (stack.empty())
 		stack.push_back(Level::createMain());
 	return stack;
 }
 
 
-static Level& getLevel() {
+static Level* getTopmostLevel() {
 	return getLevelStack().back();
 }
 
@@ -724,20 +745,20 @@ static void pushInternalLevel() {
 }
 
 static void popInternalLevel() {
-	assert(getLevel().IsInternal);
+	assert(getTopmostLevel()->IsInternal);
 	getLevelStack().pop_back();
 }
 
 
 static void pushCallbackLevel(CallbackBase*Cb) {
-	assert(getLevel().IsInternal);
+	assert(getTopmostLevel()->IsInternal);
 	getLevelStack().push_back(Level::createCallback(Cb));
 }
 
 
 
 static void writeCallbackFileOutput() {
-	auto path = getenv("ISLTRACE_CBFILE");
+	const char* path = getenv("ISLTRACE_CBFILE");
 	if (!path)
 		path = "callbacks.inc.c";
 
@@ -750,11 +771,10 @@ static void writeCallbackFileOutput() {
 	}
 
 	OS.close();
-
 }
 
 static void popCallbackLevel() {
-	assert(getLevel().IsCallback);
+	assert(getTopmostLevel()->IsCallback);
 	writeCallbackFileOutput();
 	getLevelStack().pop_back();
 }
@@ -765,30 +785,29 @@ RetTy Callbacker<RetTy(ParamTy...)>::callback(ParamTy... Params) {
 	auto Cb = Callbacker<RetTy(ParamTy...)>::get();
 	Cb->newInvocation();
 	pushCallbackLevel( Cb );
-	auto& lvl = getLevel();
+	auto* lvl = getTopmostLevel();
 
-	if constexpr (std::is_void<RetTy>()) {
-		(*Cb->mostrecent)(Params...);
+	if constexpr (!std::is_void<RetTy>()) {
+		auto result =	(*Cb->mostrecent)(Params...);
 
-		auto& OS = lvl.getOutput();
+		auto& OS = lvl->getOutput();
 		OS << "  return ";
 		Argprinter<RetTy>().print(OS, result);
 		OS << ";\n";
 
 		Cb->doneInvocation();
 		popCallbackLevel();
-		return;
+		return result;
 	} else {
-		auto result = (*Cb->mostrecent)(Params...);
+		(*Cb->mostrecent)(Params...);
 		Cb->doneInvocation();
 		popCallbackLevel();
-		return result;
+		return ;
 	}
 }
 
 
-
-
+#if 0
 template<typename RetTy, typename FuncTy, typename ...ParamTy>
 static RetTy trace(const char *fname, const char *rettyname, void*self, FuncTy *&orig, int dummy, ParamTy... Params) {
 	if (!orig) {
@@ -800,7 +819,7 @@ static RetTy trace(const char *fname, const char *rettyname, void*self, FuncTy *
 	assert(orig);
 	assert(orig != self);
 
-	auto& lvl = getLevel();
+	auto& lvl = getTopmostLevel();
 	if (lvl.IsInternal) {
 		// fprintf(stderr, "Calling %s during recursion\n", fname);
 		return (*orig)(Params...);
@@ -839,9 +858,102 @@ static RetTy trace(const char *fname, const char *rettyname, void*self, FuncTy *
 		return result;
 	}
 }
+#endif
+
+
+template<typename T>
+static void trace_arg(std::ostream& OS, T t) {
+	Argprinter<T>().print(OS, t);
+}
+
+
+static std::unordered_map<std::string, int>& getCountMap() {
+	static std::unordered_map<std::string, int> map;
+	return map;
+}
+
+//template<typename RetTy>
+static std::string trace_new_result(const char* shortname) {
+	auto &map = getCountMap();
+	auto c = ++map[shortname];
+	return shortname + std::to_string(c);
+}
 
 
 
+template<typename T>
+static std::unordered_map<std::string, T*>& getResultMap() {
+	static std::unordered_map<std::string, T*> map;
+	return map;
+}
+
+template<typename T>
+void trace_register_result(const std::string& retname, T* &retval) {
+	// Uniquify retval
+	retval = ObjCow<T>::cow(retval);
+
+	auto &map = getResultMap<T>();
+	map[retname] = retval;
+}
+
+
+
+
+template<typename CallTy>
+static CallTy*  getsym(const char *fname) {
+	void* handle = openlibisl();
+	auto* orig = (CallTy*)dlsym(handle, fname);
+	fprintf(stderr, "Address of %s: %p\n", fname, orig);
+	assert(orig);
+	return orig;
+}
+
+
+template<typename RetTy, typename FuncTy, typename ...ParamTy>
+static void trace_precall1(const char* fname, const char* rettyname, void* self, FuncTy*& orig, int dummy, ParamTy... Params) {
+	if (!orig) {
+		// fprintf(stderr, "Calling %s for the first time\n", fname);
+		void* handle = openlibisl();
+		orig = (std::remove_reference_t<decltype(orig)>)dlsym(handle, fname);
+		fprintf(stderr, "Address of %s: %p\n", fname, orig);
+	}
+	assert(orig);
+	assert(orig != self);
+}
+
+
+template<typename RetTy, typename FuncTy, typename ...ParamTy>
+static void trace_precall2(const char* fname, const char* rettyname, void* self, FuncTy* orig, Level *lvl, std::ostream *OS,  int &c, int dummy, ParamTy... Params) {
+	pushInternalLevel();
+	OS = &lvl->getOutput();
+	*OS << "  ";
+	if constexpr (!std::is_void<RetTy>()) {
+		c = ObjShortname<RetTy>::getNextNum();
+		*OS << rettyname << " " << ObjShortname<RetTy>::name << c << " = ";
+	}
+	*OS << fname << "(";
+}
+
+
+template<typename RetTy, typename FuncTy, typename ...ParamTy>
+static RetTy direct_call(const char *fname, const char *rettyname, void*self, FuncTy *&orig, int dummy, ParamTy... Params) {
+	return (*orig)(Params...);
+}
+
+
+
+template<typename RetTy, typename FuncTy, typename ...ParamTy>
+static RetTy trace_call(const char *fname, const char *rettyname, void*self, FuncTy *&orig,  std::ostream &OS,  int dummy, ParamTy... Params) {
+	printArgs<ParamTy...>(OS, Params...);
+	return (*orig)(Params...);
+}
+
+
+
+template<typename RetTy, typename FuncTy, typename ...ParamTy>
+static void trace_postcall(const char* fname, const char* rettyname, void* self, FuncTy* orig, Level* lvl, std::ostream& OS, int dummy, ParamTy... Params) {
+	popInternalLevel();
+}
 
 
 
@@ -861,30 +973,69 @@ static RetTy trace(const char *fname, const char *rettyname, void*self, FuncTy *
 
 
 
-#define ISL_PRECALL(...)
-#define ISL_CALL(...)
-#define ISL_POSTCALL(...)
+#define ISL_PRECALL_NONVOID(FNAME, RETTY, ...)     ISL_PRECALL(FNAME, RETTY, __VA_ARGS__)
+#define ISL_PRECALL_VOID(FNAME, RETTY, ...)        ISL_PRECALL(FNAME, RETTY, __VA_ARGS__)
+#define ISL_PRECALL(FNAME, RETTY, ...)                                                           \
+	  static decltype(FNAME) *orig = nullptr;                                                      \
+    int c = -1;                                                                                  \
+    std::ostream *OS=nullptr;                                                                    \
+		trace_precall1<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig, __VA_ARGS__);             \
+		Level *lvl = getTopmostLevel();                                                                     \
+		if (lvl->IsInternal)                                                                         \
+			return direct_call<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig, __VA_ARGS__);       \
+	  trace_precall2<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig, lvl, OS, c, __VA_ARGS__);
 
-#define ISL_PRECALL_NONVOID ISL_PRECALL
-#define ISL_PRECALL_VOID ISL_PRECALL
-#define ISL_CALL_NONVOID ISL_CALL
-#define ISL_CALL_VOID ISL_CALL
-#define ISL_POSTCALL_NONVOID ISL_POSTCALL
-#define ISL_POSTCALL_VOID ISL_POSTCALL
 
 
 
-#define ISL_PREPARE_ARG(...)
+#define ISL_PREPARE_ARG(PNAME, PTY)                 \
+	Argprinter<decltype(PNAME)>().print(*OS, PNAME);
 #define ISL_PREPARE_CB(...)
-#define ISL_POSTPARE_ARG(...)
+
+
+#define ISL_CALL_NONVOID(FNAME, RETTY, ...) \
+  *OS << ");" ;                               \
+  lvl->flush();                              \
+	auto retval = trace_call<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig,*OS, __VA_ARGS__); \
+  *OS << "\n";
+
+#define ISL_CALL_VOID(FNAME, RETTY, ...) \
+  *OS << ");" ;                           \
+  lvl->flush();                           \
+	trace_call<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig, *OS, __VA_ARGS__); \
+  *OS << "\n";
+
+
+#define ISL_POSTPARE_ARG(PNAME, PTY)
 #define ISL_POSTPARE_CB(...)
 
 
+#define ISL_POSTCALL_NONVOID(FNAME, RETTY, ...)                                             \
+if constexpr (std::is_pointer<RETTY>::value) {  \
+  	using BaseTy = typename std::remove_pointer<RETTY>::type;                                 \
+  retval = ObjCow<BaseTy>::cow(retval);                                                     \
+  ObjPrinter<BaseTy>::registerResult(retval, c);                                            \
+} \
+  trace_postcall<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig, lvl, *OS, __VA_ARGS__); \
+	return retval;
+#define ISL_POSTCALL_VOID(FNAME, RETTY, ...)                                                \
+  trace_postcall<RETTY>(STR(FNAME), STR(RETTY), (void*)&FNAME, orig, lvl, *OS, __VA_ARGS__); \
+	return;
+
+
+
+
+
+
 #define ISL_CALL_UNSUPPORTED(FNAME, ...) \
-fprintf(stderr, "Unsupported call %s\n", STR(FNAME)); \
-abort();
+	fprintf(stderr, "Unsupported call %s\n", STR(FNAME)); \
+	abort();
 
 #include "libtrace.inc.cpp"
+
+
+
+
 
 
 

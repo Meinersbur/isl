@@ -20,6 +20,43 @@
 
 
 
+static bool isIslObjTy(QualType ty) {
+	if (!ty->isPointerType())
+		return false;
+	auto pyty =  ty->getPointeeType();
+	if (!pyty->isRecordType())
+		return false;
+	auto structty = pyty->getAsRecordDecl();
+	auto SName = structty->getName();
+	return SName.startswith("isl_");
+}
+
+
+static const char* getShortname(StringRef longname) {
+	static llvm::DenseMap<StringRef, const char*> map{
+		{"isl_ctx", "ctx"},
+		{"isl_map", "map"},
+		{"isl_set", "set"},
+	};
+	auto It = map.find(longname);
+	if (It == map.end())
+		return "obj";
+	return It->second;
+}
+
+static const char* getShortname(QualType ty) {
+	if (!ty->isPointerType())
+		return "val";
+	auto pyty =  ty->getPointeeType();
+	if (!pyty->isRecordType())
+		return "obj";
+	auto structty = pyty->getAsRecordDecl();
+	auto SName = structty->getName();
+	return getShortname(SName);
+}
+
+
+
 /* Generate conversion functions for converting objects between
  * the default and the checked C++ bindings.
  * Do this for each exported class.
@@ -56,22 +93,127 @@ void trace_generator::generate()
 
 
 		PrintingPolicy Policy(FD->getASTContext().getLangOpts());
+		auto getTy = [&](QualType ty, const Twine& placeholser = {}) -> std::string {
+			llvm::SmallString<128> buf;
+			llvm::raw_svector_ostream sstream(buf);
+			ty.print(sstream, Policy, placeholser);
+			return sstream.str().str();
+		};
 
-		std::string FStr;
-		llvm::raw_string_ostream FOS(FStr);
-		FOS << FName << "(";
-		bool First = true;
-		for (auto Param : FD->parameters()) {
-			if (!First)
-				FOS << ", ";
 
-			auto Ty = Param->getType();
-			Ty.print(FOS, Policy, Param->getName());
-			First = false;
+		std::string arglist;
+		std::string paramlist;
+		std::string tylist;
+		{
+			llvm::SmallString<128> argbuf;
+			llvm::SmallString<128> parambuf;
+			llvm::SmallString<128> tybuf;
+			llvm::raw_svector_ostream OSarg(argbuf);
+			llvm::raw_svector_ostream OSparam(parambuf);
+			llvm::raw_svector_ostream OSty(tybuf);
+			bool First = true;
+			for (auto Param : FD->parameters()) {
+				if (!First) {
+					OSarg << ", ";
+					OSparam << ", ";
+					OSty << ", ";
+				}
+
+				OSarg << Param->getName();
+
+				auto Ty = Param->getType();
+				Ty.print(OSparam, Policy, Param->getName());
+
+				Ty.print(OSty, Policy);
+
+				First = false;
+			}
+			arglist = OSarg.str().str();
+			paramlist = OSparam.str().str();
+			tylist = OSty.str().str();
 		}
-		FOS << ")";
-		FD->getReturnType().print(OS, Policy, /* placeholder */FOS.str(), /*Indentation=*/0);
-		OS << " {\n";
+		OS << getTy(	FD->getReturnType() ) << " " << FName << "(" << paramlist << ") {\n";
+
+
+		if (FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" || FName == "isl_id_set_free_user") {
+			OS << "  ISL_CALL_UNSUPPORTED(" << FName << ")\n";
+			OS << "}\n\n";
+			continue;
+		}
+
+
+
+		auto RetTy = FD->getReturnType();
+		bool hasRetVal = !RetTy->isVoidType();
+		bool hasRetPtr = RetTy->isPointerType();
+
+		OS << "  using FuncTy = " << getTy(FD->getReturnType()) << "(" << tylist << ");\n";
+		OS << "  using RetTy = " << getTy(RetTy) << ";\n";
+		if (hasRetPtr) {
+			OS << "  using RetObjTy = " << getTy(RetTy->getPointeeType()) << ";\n";
+		}
+		OS << "\n";
+		OS << "  static FuncTy *orig = getsym<FuncTy>(\"" << FName << "\");\n";
+		OS << "  Level *lvl = getTopmostLevel();\n";
+		OS << "  if (lvl->isInternal())\n";
+	  OS << "    return (*orig)(" << arglist << ");\n";
+		OS << "  pushInternalLevel();\n";
+		OS << "\n";
+		OS << "  std::ostream &OS = lvl->getOutput();\n";
+		if (hasRetPtr) {
+			OS << "  std::string retname = trace_new_result(\"" << getShortname(RetTy) << "\");\n";
+			OS << "  OS << \"  RetTy \" << retname << \" = " << FName << "(\";\n";
+		} else {
+			OS << "  OS << \"  " << FName << "(\";\n";
+		}
+		bool First = true;
+		for (ParmVarDecl* Param : FD->parameters()) {
+			auto PName = Param->getName();
+			if (!First)
+				OS << "  OS << \", \";\n";
+			OS << "  trace_arg(OS, " <<PName<< ");\n";
+		}
+		OS << "  OS << \");\\n\";\n";
+		OS << "  lvl->flush();\n";
+
+		OS << "\n";
+
+		if (hasRetVal) {
+			OS << "  RetTy retval = (*orig)(" << arglist << ");\n";
+		}	else {
+			OS << "  (*orig)(" << arglist << ");\n";
+		}
+
+		if (hasRetPtr) {
+			OS << "\n";
+			OS << "  trace_register_result<RetObjTy>(retname, retval);\n";
+		}
+
+		OS << "  popInternalLevel();\n";
+
+		if (hasRetVal) {
+			OS << "\n";
+			OS << "  return retval;\n";
+		}
+
+		OS << "}\n\n";
+		continue;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		auto FuncCall = [&](const char*MacroName) {
 			OS << "  " << MacroName;
@@ -82,6 +224,7 @@ void trace_generator::generate()
 			}
 			OS << "(" << FName << ", ";
 			FD->getReturnType().print(OS, Policy, "");
+			OS << ", 0";
 			for (auto Parm : FD->parameters()) {
 				OS << ", " << Parm->getName();
 			}

@@ -1,7 +1,8 @@
 
 add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc trace.cc)
 target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
-if (NOT MSVC)
+if (MSVC)
+else ()
   target_compile_options(extract_interface PUBLIC -fno-rtti)
 endif ()
 target_compile_definitions(extract_interface PRIVATE 
@@ -73,10 +74,18 @@ gen_interface(interface-trace trace libtrace.inc.cpp)
 add_library(trace SHARED libtrace.cpp)
 set_property(TARGET trace PROPERTY CXX_STANDARD 17)
 add_dependencies(trace interface-trace)
-if (NOT MSVC)
+if (MSVC)
+  target_compile_options(trace PUBLIC /bigobj)
+else ()
   target_compile_options(trace PUBLIC -Wno-deprecated-declarations)
 endif ()
 target_include_directories(trace PRIVATE "${CMAKE_CURRENT_BINARY_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_BINARY_DIR}/include")
+
+
+
+
+
+
 
 
 

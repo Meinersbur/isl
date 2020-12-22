@@ -52,7 +52,7 @@
 #include <isl/union_set.h>
 #include <isl/union_set_type.h>
 #include <isl/val.h>
-#include <isl/val_gmp.h>
+//#include <isl/val_gmp.h>
 #include <isl/val_type.h>
 #include <isl/vec.h>
 #include <isl/version.h>
