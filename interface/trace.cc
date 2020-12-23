@@ -35,8 +35,20 @@ static bool isIslObjTy(QualType ty) {
 static const char* getShortname(StringRef longname) {
 	static llvm::DenseMap<StringRef, const char*> map{
 		{"isl_ctx", "ctx"},
+		{"isl_space", "space"},
+		{"isl_local_space", "ls"},
 		{"isl_map", "map"},
 		{"isl_set", "set"},
+		{"isl_union_map", "umap"},
+		{"isl_union_set", "uset"},
+		{"isl_schedule", "sched"},
+		{"isl_aff", "aff"},
+		{"isl_pw_aff", "pa"},
+		{"isl_val", "val"},
+		{"isl_constraint", "constr"},
+		{"isl_id", "id"},
+		{"isl_union_access_info", "accesses"},
+		{"isl_union_flow", "flow"},
 	};
 	auto It = map.find(longname);
 	if (It == map.end())
@@ -101,9 +113,24 @@ void trace_generator::generate()
 		};
 
 
+		llvm::StringSet<> localvars{"orig", "lvl","OS","retname","retval"};
+		auto getLocalVarName = [&localvars](const char* base) -> std::string {
+			int i = 0;
+			while (true) {
+				i += 1;
+				auto candidate = base + to_string(i);
+				if (localvars.contains(candidate))
+					continue;
+				localvars.insert(candidate);
+				return candidate;
+			}
+		};
+
+
 		std::string arglist;
 		std::string paramlist;
 		std::string tylist;
+		SmallVector<QualType, 4> ParmTypes;
 		{
 			llvm::SmallString<128> argbuf;
 			llvm::SmallString<128> parambuf;
@@ -118,34 +145,37 @@ void trace_generator::generate()
 					OSparam << ", ";
 					OSty << ", ";
 				}
-
-				OSarg << Param->getName();
-
-				auto Ty = Param->getType();
-				Ty.print(OSparam, Policy, Param->getName());
-
-				Ty.print(OSty, Policy);
-
 				First = false;
+
+				auto PName = Param->getName();
+				QualType ParmTy = Param->getType();
+				ParmTy.removeLocalConst();
+				ParmTypes.push_back(ParmTy);
+				assert(!ParmTy.isConstQualified());
+
+				OSarg << PName;
+				ParmTy.print(OSparam, Policy, PName);
+				ParmTy.print(OSty, Policy);
 			}
 			arglist = OSarg.str().str();
 			paramlist = OSparam.str().str();
 			tylist = OSty.str().str();
 		}
 		OS << getTy(	FD->getReturnType() ) << " " << FName << "(" << paramlist << ") {\n";
-
-
-		if (FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" || FName == "isl_id_set_free_user") {
-			OS << "  ISL_CALL_UNSUPPORTED(" << FName << ")\n";
-			OS << "}\n\n";
-			continue;
-		}
-
-
-
 		auto RetTy = FD->getReturnType();
-		bool hasRetVal = !RetTy->isVoidType();
-		bool hasRetPtr = RetTy->isPointerType();
+
+
+
+		bool isFreeFunc = FName.endswith("_free");
+		bool isUnsupported = FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" || FName == "isl_id_set_free_user";
+		bool hasRetVal = !RetTy->isVoidType() ;
+		bool hasRetPtr = hasRetVal && RetTy->isPointerType() && !isFreeFunc;
+
+
+		SmallVector<std::string, 8> Preargs;
+		Preargs.clear();
+		Preargs.resize(FD->getNumParams());
+
 
 		OS << "  using FuncTy = " << getTy(FD->getReturnType()) << "(" << tylist << ");\n";
 		OS << "  using RetTy = " << getTy(RetTy) << ";\n";
@@ -157,43 +187,96 @@ void trace_generator::generate()
 		OS << "  Level *lvl = getTopmostLevel();\n";
 		OS << "  if (lvl->isInternal())\n";
 	  OS << "    return (*orig)(" << arglist << ");\n";
-		OS << "  pushInternalLevel();\n";
-		OS << "\n";
-		OS << "  std::ostream &OS = lvl->getOutput();\n";
-		if (hasRetPtr) {
-			OS << "  std::string retname = trace_new_result(\"" << getShortname(RetTy) << "\");\n";
-			OS << "  OS << \"  RetTy \" << retname << \" = " << FName << "(\";\n";
-		} else {
-			OS << "  OS << \"  " << FName << "(\";\n";
-		}
-		bool First = true;
-		for (ParmVarDecl* Param : FD->parameters()) {
-			auto PName = Param->getName();
-			if (!First)
-				OS << "  OS << \", \";\n";
-			OS << "  trace_arg(OS, " <<PName<< ");\n";
-		}
-		OS << "  OS << \");\\n\";\n";
-		OS << "  lvl->flush();\n";
 
-		OS << "\n";
-
-		if (hasRetVal) {
-			OS << "  RetTy retval = (*orig)(" << arglist << ");\n";
+		if (isUnsupported) {
+			OS << "  ISL_CALL_UNSUPPORTED(" << FName << ")\n";
 		}	else {
-			OS << "  (*orig)(" << arglist << ");\n";
-		}
-
-		if (hasRetPtr) {
+			OS << "  pushInternalLevel();\n";
 			OS << "\n";
-			OS << "  trace_register_result<RetObjTy>(retname, retval);\n";
-		}
+			OS << "  std::ostream &OS = lvl->getOutput();\n";
+			if (FName == "isl_ctx_parse_options") {
+				auto countarg = FD->getParamDecl(1);
+				auto ppchararg = FD->getParamDecl(2);
+				OS << "  std::string argname = trace_new_result(\"optlist\");\n";
+				OS << "  trace_pre_ppchar(OS, argname, " << countarg->getName() << ", " << ppchararg->getName() << ");\n";
+				Preargs[2] = "argname";
+			} else if (FName == "isl_val_int_from_chunks") {
+				auto narg = FD->getParamDecl(1);
+				auto sizearg = FD->getParamDecl(2);
+				auto chunksarg = FD->getParamDecl(3);
+				OS << "  std::string argname = trace_new_result(\"chunks\");\n";
+				OS << "  trace_pre_chunks(OS, argname, " << narg->getName() << ", " << sizearg->getName() << ", "  << chunksarg->getName() << ");\n";
+				Preargs[3] = "argname";
+			} else {
+				// Look for callback arguments
+				for (auto p: llvm::enumerate(FD->parameters())) {
+					ParmVarDecl* Parm = p.value();
+					auto i = p.index();
+					auto PName = Parm->getName();
+					auto ParmTy = Parm->getType();
+					auto isCallback = ParmTy->isPointerType() && ParmTy->getPointeeType()->isFunctionType();
+					if (!isCallback)
+						continue;
 
-		OS << "  popInternalLevel();\n";
+					auto UserParm = FD->getParamDecl(i + 1);
+					assert(UserParm->getType()->isVoidPointerType());
+					assert(Preargs[i].empty());
+					assert(Preargs[i+1].empty());
+					auto CbTy = Parm->getType()->getPointeeType()->castAs<FunctionProtoType>();
+					auto CbRetTy = CbTy->getReturnType();
 
-		if (hasRetVal) {
+					auto cbname = getLocalVarName("cb");
+					auto username = getLocalVarName("user");
+
+					OS << "  std::string " << cbname << " = trace_new_result(\"cb\");\n";
+					OS << "  std::string "<<username<<" = trace_new_result(\"user\");\n";
+					OS << "  trace_callback(OS, " << cbname << ", "<<username<<", " << PName << ", " << UserParm->getName() << ");\n";
+					Preargs[i] = cbname;
+					Preargs[i+1] = username;
+				}
+			}
+			if (hasRetPtr) {
+				OS << "  std::string retname = trace_new_result(\"" << getShortname(RetTy) << "\");\n";
+				OS << "  OS << \"  " <<  getTy(RetTy) << " \" << retname << \" = " << FName << "(\";\n";
+			} else {
+				OS << "  OS << \"  " << FName << "(\";\n";
+			}
+			bool First = true;
+			for (auto p: llvm::enumerate(FD->parameters())) {
+				ParmVarDecl* Param = p.value();
+				auto i = p.index();
+				auto PName = Param->getName();
+				if (!First)
+					OS << "  OS << \", \";\n";
+				if (!Preargs[i].empty()) {
+					OS << "  OS << " << Preargs[i] << ";\n";
+				}	else {
+					OS << "  trace_arg(OS, " << PName << ");\n";
+				}
+				First = false;
+			}
+			OS << "  OS << \");\\n\";\n";
+			OS << "  lvl->flush();\n";
+
 			OS << "\n";
-			OS << "  return retval;\n";
+
+			if (hasRetVal)
+				OS << "  " << getTy(RetTy) << " retval = (*orig)(" << arglist << ");\n";
+			 else
+				OS << "  (*orig)(" << arglist << ");\n";
+
+			if (hasRetPtr) {
+				OS << "\n";
+				OS << "  trace_register_result<RetObjTy>(retname, retval);\n";
+			}
+
+			OS << "\n";
+			OS << "  popInternalLevel();\n";
+
+			if (hasRetVal) {
+				OS << "\n";
+				OS << "  return retval;\n";
+			}
 		}
 
 		OS << "}\n\n";

@@ -13,6 +13,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <functional>
 #ifdef _MSC_VER
 #define RTLD_NOW 0
@@ -47,17 +48,26 @@ template<typename T> struct ObjShortname : public  ObjShortnameBase<void> {
 };
 
 
+template<typename T>
+static std::unordered_map<T*, std::string >& getResultMap() {
+	static std::unordered_map< T*,std::string> map;
+	return map;
+}
+
+
+
 namespace {
 	template<typename T>
 	struct ObjPrinter {
-		static std::unordered_map<T*, int>& getTheMap() {
-			static std::unordered_map<T*, int> Map;
-			return Map;
-		}
+	//	static std::unordered_map<T*, int>& getTheMap() {
+	//		static std::unordered_map<T*, int> Map;
+	//		return Map;
+	//	}
 
-		static void registerResult(T* t, int c) {
-			getTheMap()[t] = c;
-		}
+
+		//static void registerResult(T* t, int c) {
+	//		getTheMap()[t] = c;
+	//	}
 
 		void print(std::ostream &OS,const char* SName, T* t) {
 			if (t == nullptr) {
@@ -65,14 +75,13 @@ namespace {
 				return;
 			}
 
-			auto& Map = getTheMap();
+			auto& Map = getResultMap<T>();
 			auto It = Map.find(t);
 			if (It == Map.end()) {
-				OS << " " << SName << ")" << t;
+				OS << "(" << SName << "*)" << t;
 				return;
 			}
-			auto num = It->second;
-			OS << ObjShortname<T>::name << num;
+			OS <<  It->second;
 		}
 	};
 }
@@ -180,7 +189,7 @@ ISL_STRUCT(isl_union_set_list, usetlist)
 ISL_STRUCT(isl_val, val)
 ISL_STRUCT(isl_val_list, vallist)
 ISL_STRUCT(isl_args, args)
-
+ISL_STRUCT(isl_constraint, constr)
 
 
 template<>
@@ -308,7 +317,7 @@ struct Argprinter< unsigned int> {
 
 template<>
 struct Argprinter<long  > {
-	void print(std::ostream &OS, long   t) {
+	void print(std::ostream &OS, long t) {
 		OS << t;
 	}
 };
@@ -330,12 +339,11 @@ struct Argprinter<long long unsigned int> {
 };
 
 
-
 template<>
 struct Argprinter<const char*> {
 	void print(std::ostream &OS, const char * t) {
 		// TODO: escape
-		OS << "\n" << t << "\"";
+		OS << "\"" << t << "\"";
 	}
 };
 template<>
@@ -345,11 +353,43 @@ struct ObjShortname<const char*>: public ObjShortnameBase<const char*> {
 
 
 
+
+template<>
+struct Argprinter<char**> {
+	void print(std::ostream &OS, char** t) {
+		// TODO: print before, probably invalid syntax
+		OS << "(char*[]){";
+		bool First = true;
+		while (t[0]) {
+			if (!First)
+				OS << ", ";
+			OS <<  "\"" << t[0] << "\"";
+			++t;
+			First = false;
+		}
+		OS << "}";
+	}
+};
+
+
 // Any other pointer
 template<typename T>
 struct Argprinter<T*> {
 	void print(std::ostream &OS, T* t) {
-		OS << "(void*)" << t;
+		//OS << "(void*)" << t;
+
+		if (t == nullptr) {
+			OS << "NULL";
+			return;
+		}
+
+		auto& Map = getResultMap<T>();
+		auto It = Map.find(t);
+		if (It == Map.end()) {
+			OS << "(void*)" << t;
+			return;
+		}
+		OS <<  It->second;
 	}
 };
 
@@ -540,7 +580,7 @@ static 	const char * prologue = R"(
 #include \"callbacks.inc.c\"
 
 int main() {
-	const char *dynIslVersion = isl_version();
+  const char *dynIslVersion = isl_version();
 )";
 
 
@@ -644,7 +684,11 @@ static void printArgs(std::ostream &OS, Rest& ...r) {
 
 
 
-
+static inline void rtrim(std::string &s) {
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+		return !std::isspace(ch);
+		}).base(), s.end());
+}
 
 struct Level {
 	bool IsMain = false;
@@ -693,8 +737,10 @@ struct Level {
 				typedef const char *(*VerFuncTy)(void);
 				auto verfunc = (VerFuncTy) dlsym(openlibisl(), "isl_version");
 				auto ver = (*verfunc)();
-				*mainfile << "  const char *genIslVersion = \"" << ver << "\";\n";
-				*mainfile << "  printf(\"### ISL version: %s (%s at generation-time)\\n\",  dynIslVersion, genIslVersion);\n\n";
+				std::string verstr = ver;
+				rtrim(verstr);
+				*mainfile << "  const char *genIslVersion = \"" << verstr << "\";\n";
+				*mainfile << "  printf(\"### ISL version: %s (%s at generation)\\n\",  dynIslVersion, genIslVersion);\n\n";
 				//*mainfile << "  // ISL self-reported version when generation:" << ver << "\n";
 			} else if (!mainfile->is_open()) {
 				mainfile->open(mainpath,std::ios_base::in | std::ios_base::out | std::ios_base::ate);
@@ -866,6 +912,76 @@ static void trace_arg(std::ostream& OS, T t) {
 	Argprinter<T>().print(OS, t);
 }
 
+static void trace_pre_ppchar(std::ostream &OS, const  std::string &vname, size_t c, char**p) {
+	OS << "  char* " << vname << "[] = {";
+	bool First = true;
+	for (int i = 0; i < c; i += 1) {
+		if (!First)
+			OS << ", ";
+		OS << "\"" << p[i] << "\"";
+		First = false;
+	}
+	OS << "};\n";
+}
+
+
+static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, size_t n, size_t size, const void *p) {
+	if (size == 8) {
+		const uint64_t* b = (const uint64_t*)p;
+		OS << "  uint64_t " << chunkvname << "[] = {";
+		bool First = true;
+		for (int i = 0; i < n; i += 1) {
+			if (!First)
+				OS << ", ";
+			OS << "0x" << std::hex << b[i] << std::dec;
+			First = false;
+		}
+		OS << "};\n";
+	} else if (size == 4) {
+			const uint32_t* b = (const uint32_t*)p;
+			OS << "  uint32_t " << chunkvname << "[] = {";
+			bool First = true;
+			for (int i = 0; i < n; i += 1) {
+				if (!First)
+					OS << ", ";
+				OS << "0x" << std::hex << b[i] << std::dec;
+				First = false;
+			}
+			OS << "};\n";
+	} else if (size == 2) {
+		const uint16_t* b = (const uint16_t*)p;
+		OS << "  uint16_t " << chunkvname << "[] = {";
+		bool First = true;
+		for (int i = 0; i < n; i += 1) {
+			if (!First)
+				OS << ", ";
+			OS << "0x" << std::hex << b[i] << std::dec;
+			First = false;
+		}
+		OS << "};\n";
+	} else {
+		auto c = n * size;
+		const char* b = (const char*)p;
+		OS << "  char " << chunkvname << "[] = {";
+		bool First = true;
+		for (int i = 0; i < c; i += 1) {
+			if (!First)
+				OS << ", ";
+			OS << "0x" << std::hex << (int)b[i] << std::dec;
+			First = false;
+		}
+		OS << "};\n";
+	}
+}
+
+template<typename CallbackTy, typename VoidTy>
+static void trace_callback(std::ostream &OS, const std::string &cbname, const std::string &username, CallbackTy *&Cb, VoidTy* &user) {
+	// VoidTy might be 'void' or 'const void'
+	abort();
+}
+
+
+
 
 static std::unordered_map<std::string, int>& getCountMap() {
 	static std::unordered_map<std::string, int> map;
@@ -881,20 +997,16 @@ static std::string trace_new_result(const char* shortname) {
 
 
 
-template<typename T>
-static std::unordered_map<std::string, T*>& getResultMap() {
-	static std::unordered_map<std::string, T*> map;
-	return map;
-}
 
 template<typename T>
-void trace_register_result(const std::string& retname, T* &retval) {
+static void trace_register_result(const std::string& retname, T* &retval) {
 	// Uniquify retval
 	retval = ObjCow<T>::cow(retval);
 
 	auto &map = getResultMap<T>();
-	map[retname] = retval;
+	map[retval] = retname;
 }
+
 
 
 
