@@ -582,11 +582,9 @@ isl_stat isl_qpolynomial_bound_on_domain_bernstein(
 		pwf = bernstein_coefficients_base(bset, poly, &data, tp);
 
 	if (tight)
-		bound->pwf_tight = isl_pw_qpolynomial_fold_fold(bound->pwf_tight, pwf);
+		return isl_bound_add_tight(bound, pwf);
 	else
-		bound->pwf = isl_pw_qpolynomial_fold_fold(bound->pwf, pwf);
-
-	return isl_stat_ok;
+		return isl_bound_add(bound, pwf);
 error:
 	isl_basic_set_free(bset);
 	isl_qpolynomial_free(poly);

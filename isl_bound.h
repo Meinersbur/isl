@@ -17,4 +17,9 @@ struct isl_bound {
 	isl_pw_qpolynomial_fold *pwf_tight;
 };
 
+isl_stat isl_bound_add(struct isl_bound *bound,
+	__isl_take isl_pw_qpolynomial_fold *pwf);
+isl_stat isl_bound_add_tight(struct isl_bound *bound,
+	__isl_take isl_pw_qpolynomial_fold *pwf);
+
 #endif

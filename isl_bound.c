@@ -16,6 +16,26 @@
 #include <isl_polynomial_private.h>
 #include <isl_options_private.h>
 
+/* Add the bound "pwf", which is not known to be tight,
+ * to the output of "bound".
+ */
+isl_stat isl_bound_add(struct isl_bound *bound,
+	__isl_take isl_pw_qpolynomial_fold *pwf)
+{
+	bound->pwf = isl_pw_qpolynomial_fold_fold(bound->pwf, pwf);
+	return isl_stat_non_null(bound->pwf);
+}
+
+/* Add the bound "pwf", which is known to be tight,
+ * to the output of "bound".
+ */
+isl_stat isl_bound_add_tight(struct isl_bound *bound,
+	__isl_take isl_pw_qpolynomial_fold *pwf)
+{
+	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(bound->pwf_tight, pwf);
+	return isl_stat_non_null(bound->pwf);
+}
+
 /* Compute a bound on the polynomial defined over the parametric polytope
  * using either range propagation or bernstein expansion and
  * store the result in bound->pwf and bound->pwf_tight.
@@ -96,9 +116,8 @@ static isl_stat unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	bound->pwf_tight = isl_pw_qpolynomial_fold_morph_domain(
 						bound->pwf_tight, morph);
 
-	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
-	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
-							bound->pwf_tight);
+	isl_bound_add(bound, top_pwf);
+	isl_bound_add_tight(bound, top_pwf_tight);
 
 	return r;
 error:
@@ -171,9 +190,8 @@ static isl_stat guarded_poly_bound(__isl_take isl_basic_set *bset,
 	bound->pwf_tight = isl_pw_qpolynomial_fold_reset_space(bound->pwf_tight,
 						    isl_space_copy(bound->dim));
 
-	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
-	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
-							bound->pwf_tight);
+	isl_bound_add(bound, top_pwf);
+	isl_bound_add_tight(bound, top_pwf_tight);
 
 	return r;
 error:
