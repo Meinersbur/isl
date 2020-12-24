@@ -16,6 +16,27 @@
 #include <isl_polynomial_private.h>
 #include <isl_options_private.h>
 
+/* Given a polynomial "poly" that is constant in terms
+ * of the domain variables, construct a polynomial reduction
+ * of type "type" that is equal to "poly" on "bset",
+ * with the domain projected onto the parameters.
+ */
+__isl_give isl_pw_qpolynomial_fold *isl_qpolynomial_cst_bound(
+	__isl_take isl_basic_set *bset, __isl_take isl_qpolynomial *poly,
+	enum isl_fold type, isl_bool *tight)
+{
+	isl_set *dom;
+	isl_qpolynomial_fold *fold;
+	isl_pw_qpolynomial_fold *pwf;
+
+	fold = isl_qpolynomial_fold_alloc(type, poly);
+	dom = isl_set_from_basic_set(bset);
+	if (tight)
+		*tight = isl_bool_true;
+	pwf = isl_pw_qpolynomial_fold_alloc(type, dom, fold);
+	return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
+}
+
 /* Add the bound "pwf", which is not known to be tight,
  * to the output of "bound".
  */

@@ -367,35 +367,17 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 {
 	isl_size nvar;
 	isl_space *space;
-	isl_pw_qpolynomial_fold *pwf;
 	isl_vertices *vertices;
 	isl_bool covers;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	if (nvar < 0)
 		bset = isl_basic_set_free(bset);
-	if (nvar == 0) {
-		isl_set *dom;
-		isl_qpolynomial_fold *fold;
+	if (nvar == 0)
+		return isl_qpolynomial_cst_bound(bset, poly, data->type, tight);
 
-		fold = isl_qpolynomial_fold_alloc(data->type, poly);
-		dom = isl_set_from_basic_set(bset);
-		if (tight)
-			*tight = isl_bool_true;
-		pwf = isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
-		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
-	}
-
-	if (isl_qpolynomial_is_zero(poly)) {
-		isl_set *dom;
-		isl_qpolynomial_fold *fold;
-		fold = isl_qpolynomial_fold_alloc(data->type, poly);
-		dom = isl_set_from_basic_set(bset);
-		pwf = isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
-		if (tight)
-			*tight = isl_bool_true;
-		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
-	}
+	if (isl_qpolynomial_is_zero(poly))
+		return isl_qpolynomial_cst_bound(bset, poly, data->type, tight);
 
 	space = isl_basic_set_get_space(bset);
 	space = isl_space_params(space);
