@@ -359,12 +359,18 @@ error:
  * We compute the chamber decomposition of the parametric polytope "bset"
  * and then perform bernstein expansion on the parametric vertices
  * that are active on each chamber.
+ *
+ * If the polynomial does not depend on the set variables
+ * (and in particular if the number of set variables is zero)
+ * then the bound is equal to the polynomial and
+ * no actual bernstein expansion needs to be performed.
  */
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, struct bernstein_data *data,
 	isl_bool *tight)
 {
+	int degree;
 	isl_size nvar;
 	isl_space *space;
 	isl_vertices *vertices;
@@ -376,7 +382,10 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	if (nvar == 0)
 		return isl_qpolynomial_cst_bound(bset, poly, data->type, tight);
 
-	if (isl_qpolynomial_is_zero(poly))
+	degree = isl_qpolynomial_degree(poly);
+	if (degree < -1)
+		bset = isl_basic_set_free(bset);
+	if (degree <= 0)
 		return isl_qpolynomial_cst_bound(bset, poly, data->type, tight);
 
 	space = isl_basic_set_get_space(bset);
