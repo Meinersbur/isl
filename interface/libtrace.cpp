@@ -745,8 +745,10 @@ struct Level {
 			mainfile->close();
 			assert(!mainfile->is_open());
 
-			varfile->close();
-			assert(!varfile->is_open());
+			if (varfile) {
+				varfile->close();
+				assert(!varfile->is_open());
+			}
 		}
 
 	}
