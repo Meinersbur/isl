@@ -39,21 +39,40 @@ static const char* getShortname(StringRef longname) {
 		{"isl_local_space", "ls"},
 		{"isl_map", "map"},
 		{"isl_set", "set"},
+		{"isl_basic_map", "bmap"},
+		{"isl_basic_set", "bset"},
 		{"isl_union_map", "umap"},
 		{"isl_union_set", "uset"},
 		{"isl_schedule", "sched"},
 		{"isl_aff", "aff"},
-		{"isl_pw_aff", "pa"},
+		{"isl_multi_aff", "ma"},
+	{"isl_multi_pw_aff", "mpwa"},
+	{"isl_multi_union_pw_aff", "mupwa"},
+	{"isl_pw_aff", "pwaff"},
+	{"isl_pw_multi_aff", "pwma"},
+	{"isl_union_pw_aff", "upwa"},
+	{"isl_union_pw_multi_aff", "upwma"},
 		{"isl_val", "val"},
+		{"isl_multi_val", "mval"},
+		{"isl_point", "point"},
+		{"isl_int", "i"},
 		{"isl_constraint", "constr"},
 		{"isl_id", "id"},
+		{"isl_multi_id", "mid"},
 		{"isl_union_access_info", "accesses"},
 		{"isl_union_flow", "flow"},
+		{"isl_schedule_node", "node"},
+		{"isl_ast_node", "node"},
+		{"isl_ast_build", "build"},
+		{"isl_vec", "vec"},
+		{"isl_mat", "mat"},
 	};
 	auto It = map.find(longname);
-	if (It == map.end())
-		return "obj";
-	return It->second;
+	if (It != map.end())
+		return It->second;
+	if (longname.endswith("_list"))
+		return "list";
+	return "obj";
 }
 
 static const char* getShortname(QualType ty) {
@@ -167,7 +186,7 @@ void trace_generator::generate()
 
 
 		bool isFreeFunc = FName.endswith("_free");
-		bool isUnsupported = FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" || FName == "isl_id_set_free_user";
+		bool isUnsupported = FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call";
 		bool hasRetVal = !RetTy->isVoidType() ;
 		bool hasRetPtr = hasRetVal && RetTy->isPointerType() && !isFreeFunc;
 
@@ -176,13 +195,11 @@ void trace_generator::generate()
 		Preargs.clear();
 		Preargs.resize(FD->getNumParams());
 
-
 		OS << "  using FuncTy = " << getTy(FD->getReturnType()) << "(" << tylist << ");\n";
 		OS << "  using RetTy = " << getTy(RetTy) << ";\n";
 		if (hasRetPtr) {
 			OS << "  using RetObjTy = " << getTy(RetTy->getPointeeType()) << ";\n";
 		}
-		OS << "\n";
 		OS << "  static FuncTy *orig = getsym<FuncTy>(\"" << FName << "\");\n";
 		OS << "  Level *lvl = getTopmostLevel();\n";
 		OS << "  if (lvl->isInternal())\n";
@@ -194,6 +211,9 @@ void trace_generator::generate()
 			OS << "  pushInternalLevel();\n";
 			OS << "\n";
 			OS << "  std::ostream &OS = lvl->getOutput();\n";
+			if (hasRetPtr) {
+				OS << "  std::ostream &VarsOS = getVarfile();\n";
+			}
 			if (FName == "isl_ctx_parse_options") {
 				auto countarg = FD->getParamDecl(1);
 				auto ppchararg = FD->getParamDecl(2);
@@ -218,26 +238,60 @@ void trace_generator::generate()
 					if (!isCallback)
 						continue;
 
-					auto UserParm = FD->getParamDecl(i + 1);
-					assert(UserParm->getType()->isVoidPointerType());
-					assert(Preargs[i].empty());
-					assert(Preargs[i+1].empty());
 					auto CbTy = Parm->getType()->getPointeeType()->castAs<FunctionProtoType>();
 					auto CbRetTy = CbTy->getReturnType();
+					// Assume the last parameter of the callback is the user pointer.
+					auto CbUserArg = CbTy->getNumParams() - 1;
+					auto CbUserArgTy = CbTy->getParamType(CbUserArg);
+					assert(CbUserArgTy->isVoidPointerType());
+					assert(Preargs[i].empty());
+
+					ParmVarDecl* UserParm = nullptr;
+					if (FName != "isl_id_set_free_user") {
+						UserParm = FD->getParamDecl(i + 1);
+						auto UserName = UserParm->getName();
+						assert(UserParm->getType()->isVoidPointerType());
+						assert(Preargs[i + 1].empty());
+					}
 
 					auto cbname = getLocalVarName("cb");
-					auto username = getLocalVarName("user");
+					//auto username = getLocalVarName("user");
 
-					OS << "  std::string " << cbname << " = trace_new_result(\"cb\");\n";
-					OS << "  std::string "<<username<<" = trace_new_result(\"user\");\n";
-					OS << "  trace_callback(OS, " << cbname << ", "<<username<<", " << PName << ", " << UserParm->getName() << ");\n";
-					Preargs[i] = cbname;
-					Preargs[i+1] = username;
+					OS << "  std::string " << cbname << " = trace_new_result(\"cb_" << FName << "_" << PName << "\");\n";
+					//OS << "  std::string "<<username<<" = trace_new_result(\"user\");\n";
+
+					llvm::SmallString<128> cbtybuf;
+					llvm::raw_svector_ostream OScbarg(cbtybuf);
+					bool CbFirst = true;
+					for (auto p : llvm::enumerate( CbTy->param_types())) {
+						auto CbArg = p.value();
+						auto i = p.index();
+						if (!CbFirst)
+							OScbarg << ", " ;
+						OScbarg << getTy(CbArg, Twine("param") + Twine(i));
+						CbFirst = false;
+					}
+					auto Cbargtylist = OScbarg.str().str();
+
+					for (auto p : llvm::enumerate( CbTy->param_types())) {
+						auto CbArg = p.value();
+						auto i = p.index();
+						// bool takes_ownership = generator::callback_takes_argument(Parm, i);
+						// TODO: use takes_ownership information
+					}
+					OS << "  trace_callback<" << CbUserArg << ">(OS, " << cbname << ", \"" << getTy(CbRetTy) << "\", \"" << Cbargtylist << "\", " << PName;
+					if (UserParm) {
+						OS	<< ", " << UserParm->getName();
+						Preargs[i + 1] = "\"NULL\"";
+					}
+						OS << ");\n";
+					Preargs[i] = (Twine("&") + cbname).str();
 				}
 			}
 			if (hasRetPtr) {
 				OS << "  std::string retname = trace_new_result(\"" << getShortname(RetTy) << "\");\n";
-				OS << "  OS << \"  " <<  getTy(RetTy) << " \" << retname << \" = " << FName << "(\";\n";
+				OS << "  VarsOS <<  \"" << getTy(RetTy) << " \" << retname << \" = NULL;\\n\";\n";
+				OS << "  OS << retname << \" = " << FName << "(\";\n";
 			} else {
 				OS << "  OS << \"  " << FName << "(\";\n";
 			}
@@ -267,16 +321,15 @@ void trace_generator::generate()
 
 			if (hasRetPtr) {
 				OS << "\n";
-				OS << "  trace_register_result<RetObjTy>(retname, retval);\n";
+				OS << "  trace_register_result<RetObjTy>(retname, retval, true);\n";
+				OS << "  trace_print_result<RetObjTy>(OS, retval);\n";
 			}
 
 			OS << "\n";
 			OS << "  popInternalLevel();\n";
 
-			if (hasRetVal) {
-				OS << "\n";
+			if (hasRetVal)
 				OS << "  return retval;\n";
-			}
 		}
 
 		OS << "}\n\n";

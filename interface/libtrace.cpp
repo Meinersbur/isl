@@ -69,7 +69,7 @@ namespace {
 	//		getTheMap()[t] = c;
 	//	}
 
-		void print(std::ostream &OS,const char* SName, T* t) {
+		void print(std::ostream &OS,  const char* SName, T* t) {
 			if (t == nullptr) {
 				OS << "NULL";
 				return;
@@ -78,10 +78,10 @@ namespace {
 			auto& Map = getResultMap<T>();
 			auto It = Map.find(t);
 			if (It == Map.end()) {
-				OS << "(" << SName << "*)" << t;
+				OS << "(" << SName << "*)" << (void*)t;
 				return;
 			}
-			OS <<  It->second;
+			OS << It->second;
 		}
 	};
 }
@@ -124,7 +124,7 @@ template<> struct ObjCow<sname> { static sname* cow(sname*obj) { return CONCAT2(
 template<> struct ObjShortname<sname*> : public ObjShortnameBase<sname*> { static constexpr const char *name = STR(shortname);  }; \
 template<>                                      \
 struct Argprinter<sname*> {                     \
-void print(std::ostream &OS, sname* t) {                 \
+void print(std::ostream &OS,   sname* t) {                 \
 static ObjPrinter<sname> prn;                   \
 		prn.print(OS, STR(sname), t);                \
   }                                             \
@@ -153,8 +153,6 @@ ISL_STRUCT(isl_vec, vec)
 ISL_STRUCT(isl_set_list, setlist)
 ISL_STRUCT(isl_union_map_list, umaplist)
 ISL_STRUCT(isl_union_pw_multi_aff_list, upwmalust)
-ISL_STRUCT(isl_aff, aff)
-ISL_STRUCT(isl_aff_list, afflist)
 ISL_STRUCT(isl_ast_build, astbuild)
 ISL_STRUCT(isl_ast_expr, astexpr)
 ISL_STRUCT(isl_ast_node, astnode)
@@ -164,6 +162,8 @@ ISL_STRUCT(isl_basic_set, bset)
 ISL_STRUCT(isl_fixed_box, fixedbox)
 ISL_STRUCT(isl_id, id)
 ISL_STRUCT(isl_id_list, idlist)
+ISL_STRUCT(isl_aff, aff)
+ISL_STRUCT(isl_aff_list, afflist)
 ISL_STRUCT(isl_multi_aff, maff)
 ISL_STRUCT(isl_multi_id, mid)
 ISL_STRUCT(isl_multi_pw_aff, mpwa)
@@ -174,6 +174,9 @@ ISL_STRUCT(isl_pw_aff, pwaff)
 ISL_STRUCT(isl_pw_aff_list, pwafflist)
 ISL_STRUCT(isl_pw_multi_aff, pwma)
 ISL_STRUCT(isl_pw_multi_aff_list, pwmalist)
+ISL_STRUCT(isl_union_pw_aff, upwa)
+ISL_STRUCT(isl_union_pw_aff_list, upwafflist)
+ISL_STRUCT(isl_union_pw_multi_aff, upwma)
 ISL_STRUCT(isl_schedule, sched)
 ISL_STRUCT(isl_schedule_constraints, schedconstraints)
 ISL_STRUCT(isl_schedule_node, schednode)
@@ -181,9 +184,6 @@ ISL_STRUCT(isl_space, space)
 ISL_STRUCT(isl_union_access_info, uaccess)
 ISL_STRUCT(isl_union_flow, uflow)
 ISL_STRUCT(isl_union_map, umap)
-ISL_STRUCT(isl_union_pw_aff, upwa)
-ISL_STRUCT(isl_union_pw_aff_list, upwafflist)
-ISL_STRUCT(isl_union_pw_multi_aff, upwma)
 ISL_STRUCT(isl_union_set, uset)
 ISL_STRUCT(isl_union_set_list, usetlist)
 ISL_STRUCT(isl_val, val)
@@ -409,21 +409,20 @@ static std::vector<CallbackBase*>& getCallbackerList() {
 
 
 struct CallbackBase {
+	std::string name;
+	void* origUser;
+	std::string cbretty;
+	std::string cbparamty;
 	int callbackidx;
 	std::vector<std::ostringstream*> code;
 	int inprogress = -1;
 
-	CallbackBase() {
-		auto& vec = getCallbackerList();
-		callbackidx = vec.size();
-		vec.push_back(this);
+	CallbackBase(const std::string &name, void *origUser, const std::string &cbretty, const std::string &cbparamty) : name(name), origUser(origUser), cbretty(cbretty), cbparamty(cbparamty) {
 	}
 
-	std::string getName() {
-		return "callback" +std:: to_string(callbackidx);
+	std::string getName()const {
+		return name;
 	}
-
-
 
 	std::ostringstream& getLastCode() {
 		return *code.back();
@@ -431,27 +430,21 @@ struct CallbackBase {
 };
 
 
-
-
-template<typename CallbackT>
+template<int N, typename CallbackT>
 struct Callbacker;
 
 
-template<typename RetTy, typename ...ParamTy >
-struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
+template<int N, typename RetTy, typename ...ParamTy>
+struct Callbacker<N, RetTy(ParamTy...)> : public CallbackBase {
 	using CallbackT = RetTy(ParamTy...);
+	CallbackT* origCb;
 
-	CallbackT* mostrecent = nullptr;
+	explicit Callbacker(const std::string& name,CallbackT* origCb, const std::string &cbretty, const std::string &cbparamty, void *origUser) : CallbackBase(name, origUser,cbretty,cbparamty), origCb(origCb) {}
 
 	static RetTy callback(ParamTy... Params);
 
 	CallbackT* getAddr() {
 		return &callback;
-	}
-
-	static Callbacker* get() {
-		static Callbacker self;
-		return &self;
 	}
 
 	void newInvocation() {
@@ -471,16 +464,8 @@ struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
 
 
 
-template<typename CallbackT>
-static Callbacker<CallbackT>* getCallbacker() {
-	static Callbacker<CallbackT> callbacker;
-	return callbacker;
-}
 
-
-
-
-
+#if 0
 template<typename RetTy, typename ...ParamTy >
 struct Argprinter<RetTy(*)(ParamTy...)> {
 	using T = RetTy(ParamTy...);
@@ -493,6 +478,7 @@ struct Argprinter<RetTy(*)(ParamTy...)> {
 		t = Cb->getAddr();
 	}
 };
+#endif
 
 
 
@@ -577,38 +563,15 @@ static 	const char * prologue = R"(
 #include <isl/version.h>
 #include <isl/vertices.h>
 
-#include \"callbacks.inc.c\"
+#include "isltrace_vars.inc"
+#include "isltrace_callbacks.inc"
 
 int main() {
   const char *dynIslVersion = isl_version();
 )";
 
 
-#if 0
-static FILE* getOutfile() {
-	static	const char* path=nullptr;
 
-	FILE* handle;
-	if (!path) {
-		 path = getenv("ISLTRACE_OUTFILE");
-		if (!path)
-			path = "libisl.log";
-		handle = fopen(path, "w");
-
-		fputs(prologue, handle);
-			typedef const char *(*VerFuncTy)(void);
-		auto verfunc = (VerFuncTy) dlsym(openlibisl(), "isl_version");
-		auto ver = (*verfunc) ();
-		fprintf(stderr, "ISL reports version %s\n",ver);
-		fprintf(handle, "  // ISL self-reported version: %s\n", ver);
-
-		fprintf(stderr, "Opened file %s\n",path);
-	} else {
-		handle = fopen(path, "a");
-	}
-	return handle;
-}
-#endif
 
 
 
@@ -701,7 +664,9 @@ struct Level {
 
 		Result->mainpath = getenv("ISLTRACE_OUTFILE");
 		if (!Result->mainpath)
-			Result->mainpath = "libisl.log";
+			Result->mainpath = "isltrace.c";
+
+		Result->mainpath = "isltrace_vars.inc";
 
 		return Result;
 	}
@@ -727,7 +692,24 @@ struct Level {
 
 
 	const char* mainpath =nullptr;
+	const char* varpath = nullptr;
 	std::ofstream* mainfile;
+	std::ofstream* varfile;
+
+	std::ostream& getVarfile() {
+		assert(IsMain);
+		if (!varfile){
+			varfile = new std::ofstream(varpath,std:: ios_base::out);
+			*varfile << "// Global variable declarions\n";
+		} else if (!varfile->is_open()) {
+			varfile->open(varpath,std::ios_base::in | std::ios_base::out | std::ios_base::ate);
+		}
+
+		assert(varfile);
+		assert(varfile->is_open());
+
+		return *varfile;
+	}
 
 	std::ostream &getOutput() {
 		if (IsMain) {
@@ -745,6 +727,7 @@ struct Level {
 			} else if (!mainfile->is_open()) {
 				mainfile->open(mainpath,std::ios_base::in | std::ios_base::out | std::ios_base::ate);
 			}
+
 			assert(mainfile);
 			assert(mainfile->is_open());
 			return *mainfile;
@@ -761,14 +744,12 @@ struct Level {
 			// Need to completely close (and re-opened when needed again) the file because fflush does not ensure all data written so far will be in the file if the program crashes.
 			mainfile->close();
 			assert(!mainfile->is_open());
+
+			varfile->close();
+			assert(!varfile->is_open());
 		}
+
 	}
-
-
-
-
-
-
 };
 
 
@@ -779,6 +760,10 @@ static std::vector<Level*> &getLevelStack() {
 	if (stack.empty())
 		stack.push_back(Level::createMain());
 	return stack;
+}
+
+static std::ostream& getVarfile() {
+	return getLevelStack().front()->getVarfile();
 }
 
 
@@ -802,22 +787,34 @@ static void pushCallbackLevel(CallbackBase*Cb) {
 }
 
 
-
 static void writeCallbackFileOutput() {
 	const char* path = getenv("ISLTRACE_CBFILE");
 	if (!path)
-		path = "callbacks.inc.c";
+		path = "isltrace_callbacks.inc";
 
 	std::ofstream OS(path);
 
 	for (auto Cb : getCallbackerList()) {
 		auto cbName = Cb->getName();
 
-
+		OS << "\n";
+		OS << Cb->cbretty << " " << cbName << "(" << Cb->cbparamty << ") {\n";
+		OS << "static int invoke_num=0;\n";
+		OS << "switch(invoke_num++) {\n";
+		for (int i = 0; i < Cb->code.size(); i += 1) {
+			OS << "case " << i << ": {\n";
+			OS << Cb->code[i]->str();
+			OS << "} break;\n";
+		}
+		OS << "default:\n";
+		OS << "  abort();\n";
+		OS << "};\n";
+		OS << "}\n";
 	}
 
 	OS.close();
 }
+
 
 static void popCallbackLevel() {
 	assert(getTopmostLevel()->IsCallback);
@@ -826,91 +823,11 @@ static void popCallbackLevel() {
 }
 
 
-template<typename RetTy, typename ...ParamTy >
-RetTy Callbacker<RetTy(ParamTy...)>::callback(ParamTy... Params) {
-	auto Cb = Callbacker<RetTy(ParamTy...)>::get();
-	Cb->newInvocation();
-	pushCallbackLevel( Cb );
-	auto* lvl = getTopmostLevel();
-
-	if constexpr (!std::is_void<RetTy>()) {
-		auto result =	(*Cb->mostrecent)(Params...);
-
-		auto& OS = lvl->getOutput();
-		OS << "  return ";
-		Argprinter<RetTy>().print(OS, result);
-		OS << ";\n";
-
-		Cb->doneInvocation();
-		popCallbackLevel();
-		return result;
-	} else {
-		(*Cb->mostrecent)(Params...);
-		Cb->doneInvocation();
-		popCallbackLevel();
-		return ;
-	}
-}
-
-
-#if 0
-template<typename RetTy, typename FuncTy, typename ...ParamTy>
-static RetTy trace(const char *fname, const char *rettyname, void*self, FuncTy *&orig, int dummy, ParamTy... Params) {
-	if (!orig) {
-		// fprintf(stderr, "Calling %s for the first time\n", fname);
-		void* handle = openlibisl();
-		orig = (std::remove_reference_t<decltype(orig)>)dlsym(handle, fname);
-		fprintf(stderr, "Address of %s: %p\n", fname, orig);
-	}
-	assert(orig);
-	assert(orig != self);
-
-	auto& lvl = getTopmostLevel();
-	if (lvl.IsInternal) {
-		// fprintf(stderr, "Calling %s during recursion\n", fname);
-		return (*orig)(Params...);
-	}
-	// fprintf(stderr, "Calling %s\n", fname);
-
-	pushInternalLevel();
-
-	 // Write the line before calling the function to ensure the crashing command appears in the log in case it crashes.
-	auto& OS = lvl.getOutput();
-	OS << "  ";
-
-	int c;
-	if constexpr (!std::is_void<RetTy>()) {
-		c = ObjShortname<RetTy>::getNextNum();
-		OS << rettyname << " " << ObjShortname<RetTy>::name << c << " = ";
-	}
-
-	OS << fname << "(";
-	printArgs<ParamTy...>(OS, Params...);
-	OS << ");\n";
-	lvl.flush();
-
-	if constexpr (std::is_void<RetTy>()) {
-		(*orig)(Params...);
-		popInternalLevel();
-		return;
-	} else {
-		auto result = (*orig)(Params...);
-		if constexpr (std::is_pointer<RetTy>::value) {
-			using BaseTy = typename std::remove_pointer<RetTy>::type;
-			result = ObjCow<BaseTy>::cow(result);
-			ObjPrinter<BaseTy>::registerResult(result, c);
-		}
-		popInternalLevel();
-		return result;
-	}
-}
-#endif
-
-
 template<typename T>
-static void trace_arg(std::ostream& OS, T t) {
-	Argprinter<T>().print(OS, t);
+static void trace_arg(std::ostream& OS,  T t) {
+	Argprinter<T>().print(OS,  t);
 }
+
 
 static void trace_pre_ppchar(std::ostream &OS, const  std::string &vname, size_t c, char**p) {
 	OS << "  char* " << vname << "[] = {";
@@ -974,12 +891,6 @@ static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, s
 	}
 }
 
-template<typename CallbackTy, typename VoidTy>
-static void trace_callback(std::ostream &OS, const std::string &cbname, const std::string &username, CallbackTy *&Cb, VoidTy* &user) {
-	// VoidTy might be 'void' or 'const void'
-	abort();
-}
-
 
 
 
@@ -999,14 +910,74 @@ static std::string trace_new_result(const char* shortname) {
 
 
 template<typename T>
-static void trace_register_result(const std::string& retname, T* &retval) {
-	// Uniquify retval
-	retval = ObjCow<T>::cow(retval);
+static void trace_register_result(const std::string& retname, T* &retval, bool uniquify) {
+	if (uniquify)
+		retval = ObjCow<T>::cow(retval);
 
 	auto &map = getResultMap<T>();
 	map[retval] = retname;
 }
 
+
+
+template< typename... Rest>
+struct Argsregister;
+
+template<>
+struct Argsregister<> {
+	static void registerArgs(int i) {
+		// empty argument list
+	}
+};
+
+template<typename T, 	typename... Rest>
+struct Argsregister<T,Rest...> {
+	static void registerArgs( int i, T &t, Rest&... r) {
+		if constexpr (std::is_pointer_v<T>) {
+			// We could uniquify __isl_take paramters, but not __isl_keep parameters (cow removing a reference is indistinguishable from freeing one).
+			// Unifortunately, clang does not remember annotations for the function types of callbacks.
+			trace_register_result("param" + std::to_string(i), t, false);
+		}
+		Argsregister< Rest...>().registerArgs(i+1,r...);
+	}
+};
+
+
+
+
+template<int N, typename RetTy, typename ...ParamTy >
+RetTy Callbacker<N, RetTy(ParamTy...)>::callback(ParamTy... Params) {
+	// Calls isl functions (*_dup), so do it in an internal stack context.
+	// TODO: actually, use generator::callback_takes_argument
+	Argsregister<ParamTy...>::registerArgs(0, Params...);
+
+	std::tuple<ParamTy...> args{Params...};
+	auto* user = std::get<N>(args);
+	Callbacker* Cb = reinterpret_cast<Callbacker*>(const_cast<void*>(user));
+	Cb->newInvocation();
+	pushCallbackLevel( Cb );
+	auto* lvl = getTopmostLevel();
+	std::get<N>(args) = Cb->origUser;
+
+	if constexpr (!std::is_void<RetTy>()) {
+		RetTy result = std::apply(*Cb->origCb, args); //(*Cb->origCb)(Params...);
+
+		auto& OS = lvl->getOutput();
+		OS << "  return ";
+		trace_arg(OS, result);
+		OS << ";\n";
+
+		Cb->doneInvocation();
+		popCallbackLevel();
+		return result;
+	} else {
+		std::apply(*Cb->origCb, args);
+
+		Cb->doneInvocation();
+		popCallbackLevel();
+		return ;
+	}
+}
 
 
 
@@ -1019,6 +990,51 @@ static CallTy*  getsym(const char *fname) {
 	assert(orig);
 	return orig;
 }
+
+
+
+
+
+
+
+
+template<int N, typename CallbackTy, typename VoidTy>
+static void trace_callback(std::ostream &OS, const std::string &cbname, const char* cbreturnty, const char*cbparamtys,  CallbackTy *&Cb, VoidTy* &user) {
+	// VoidTy might be 'void' or 'const void'
+
+	auto& list = getCallbackerList();
+	auto callbacker = new Callbacker<N, CallbackTy>(cbname, Cb,  cbreturnty, cbparamtys, (void*)user);
+	list.push_back(callbacker);
+
+	//OS << "  CallbackStruct " << username << "{";
+	//trace_arg(OS, user);
+	//OS << "}";
+
+	// replace
+	Cb = callbacker->callback;
+	user = callbacker;
+}
+
+
+
+
+
+
+template<int N, typename CallbackTy>
+static void trace_callback(std::ostream& OS, const std::string& cbname, const char* cbreturnty, const char* cbparamtys, CallbackTy*& Cb){
+void* dummy;
+	trace_callback<N,CallbackTy>(OS, cbname, cbreturnty, cbparamtys, Cb,dummy);
+}
+
+
+
+
+
+
+
+
+
+
 
 
 template<typename RetTy, typename FuncTy, typename ...ParamTy>
@@ -1142,6 +1158,34 @@ if constexpr (std::is_pointer<RETTY>::value) {  \
 #define ISL_CALL_UNSUPPORTED(FNAME, ...) \
 	fprintf(stderr, "Unsupported call %s\n", STR(FNAME)); \
 	abort();
+
+
+
+template<typename ObjT>
+struct ResultObjPrinter {
+	static void printResult(std::ostream& OS, ObjT* obj) {}
+};
+
+template<>
+struct ResultObjPrinter<isl_map> {
+	static void printResult(std::ostream& OS, isl_map* obj) {
+		OS << " // ";
+		auto p = isl_printer_to_str(isl_map_get_ctx(obj));
+		p = isl_printer_print_map(p, obj);
+	auto c=	isl_printer_get_str(p);
+	OS << c;
+	free(c);
+	isl_printer_free(p);
+	}
+};
+
+
+template<typename T>
+static void trace_print_result(std::ostream &OS, T* obj) {
+	if (!obj) return;
+	ResultObjPrinter<T>::printResult(OS,obj);
+}
+
 
 #include "libtrace.inc.cpp"
 
