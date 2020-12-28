@@ -290,7 +290,7 @@ void trace_generator::generate()
 			}
 			if (hasRetPtr) {
 				OS << "  std::string retname = trace_new_result(\"" << getShortname(RetTy) << "\");\n";
-				OS << "  VarsOS <<  \"" << getTy(RetTy) << " \" << retname << \" = NULL;\\n\";\n";
+				OS << "  VarsOS <<  \"" << getTy(RetTy) << " \" << retname << \";\\n\";\n";
 				OS << "  OS << retname << \" = " << FName << "(\";\n";
 			} else {
 				OS << "  OS << \"  " << FName << "(\";\n";
@@ -309,7 +309,7 @@ void trace_generator::generate()
 				}
 				First = false;
 			}
-			OS << "  OS << \");\\n\";\n";
+			OS << "  OS << \");\";\n";
 			OS << "  lvl->flush();\n";
 
 			OS << "\n";
@@ -324,6 +324,7 @@ void trace_generator::generate()
 				OS << "  trace_register_result<RetObjTy>(retname, retval, true);\n";
 				OS << "  trace_print_result<RetObjTy>(OS, retval);\n";
 			}
+			OS << "  OS << \"\\n\";";
 
 			OS << "\n";
 			OS << "  popInternalLevel();\n";

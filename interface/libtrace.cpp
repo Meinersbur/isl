@@ -666,7 +666,7 @@ struct Level {
 		if (!Result->mainpath)
 			Result->mainpath = "isltrace.c";
 
-		Result->mainpath = "isltrace_vars.inc";
+		Result->varpath = "isltrace_vars.inc";
 
 		return Result;
 	}
@@ -700,7 +700,7 @@ struct Level {
 		assert(IsMain);
 		if (!varfile){
 			varfile = new std::ofstream(varpath,std:: ios_base::out);
-			*varfile << "// Global variable declarions\n";
+			*varfile << "// Global variable declarations\n";
 		} else if (!varfile->is_open()) {
 			varfile->open(varpath,std::ios_base::in | std::ios_base::out | std::ios_base::ate);
 		}
@@ -739,19 +739,7 @@ struct Level {
 		abort();
 	}
 
-	void flush() {
-		if (IsMain) {
-			// Need to completely close (and re-opened when needed again) the file because fflush does not ensure all data written so far will be in the file if the program crashes.
-			mainfile->close();
-			assert(!mainfile->is_open());
-
-			if (varfile) {
-				varfile->close();
-				assert(!varfile->is_open());
-			}
-		}
-
-	}
+	void flush();
 };
 
 
@@ -768,6 +756,22 @@ static std::ostream& getVarfile() {
 	return getLevelStack().front()->getVarfile();
 }
 
+
+void Level::flush() {
+	if (IsMain) {
+		// Need to completely close (and re-opened when needed again) the file because fflush does not ensure all data written so far will be in the file if the program crashes.
+		mainfile->close();
+		assert(!mainfile->is_open());
+	}		else {
+		getLevelStack().front()->flush();
+	}
+
+	if (varfile) {
+		assert(IsMain);
+		varfile->close();
+		assert(!varfile->is_open());
+	}
+}
 
 static Level* getTopmostLevel() {
 	return getLevelStack().back();
