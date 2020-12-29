@@ -406,8 +406,6 @@ static std::vector<CallbackBase*>& getCallbackerList() {
 
 
 
-
-
 struct CallbackBase {
 	std::string name;
 	void* origUser;
@@ -417,8 +415,8 @@ struct CallbackBase {
 	std::vector<std::ostringstream*> code;
 	int inprogress = -1;
 
-	CallbackBase(const std::string &name, void *origUser, const std::string &cbretty, const std::string &cbparamty) : name(name), origUser(origUser), cbretty(cbretty), cbparamty(cbparamty) {
-	}
+	CallbackBase(const std::string &name, void *origUser, const std::string &cbretty, const std::string &cbparamty)
+		: name(name), origUser(origUser), cbretty(cbretty), cbparamty(cbparamty) {}
 
 	std::string getName()const {
 		return name;
@@ -430,22 +428,18 @@ struct CallbackBase {
 };
 
 
-template<int N, typename CallbackT>
+template<typename CallbackT>
 struct Callbacker;
 
 
-template<int N, typename RetTy, typename ...ParamTy>
-struct Callbacker<N, RetTy(ParamTy...)> : public CallbackBase {
+template<typename RetTy, typename ...ParamTy>
+struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
 	using CallbackT = RetTy(ParamTy...);
 	CallbackT* origCb;
+	CallbackT* replCb;
 
-	explicit Callbacker(const std::string& name,CallbackT* origCb, const std::string &cbretty, const std::string &cbparamty, void *origUser) : CallbackBase(name, origUser,cbretty,cbparamty), origCb(origCb) {}
-
-	static RetTy callback(ParamTy... Params);
-
-	CallbackT* getAddr() {
-		return &callback;
-	}
+	explicit Callbacker(const std::string& name,CallbackT* origCb,CallbackT* replCb, const std::string &cbretty, const std::string &cbparamty, void *origUser)
+		: CallbackBase(name, origUser,cbretty,cbparamty), origCb(origCb), replCb(replCb) {}
 
 	void newInvocation() {
 		assert(inprogress==-1);
@@ -459,30 +453,6 @@ struct Callbacker<N, RetTy(ParamTy...)> : public CallbackBase {
 		inprogress = -1;
 	}
 };
-
-
-
-
-
-
-#if 0
-template<typename RetTy, typename ...ParamTy >
-struct Argprinter<RetTy(*)(ParamTy...)> {
-	using T = RetTy(ParamTy...);
-	void print(std::ostream &OS, T* &t) {
-		auto Cb = Callbacker<T>::get();
-		OS << Cb->getName();
-
-		// Intercept the callback
-		Cb->mostrecent = t;
-		t = Cb->getAddr();
-	}
-};
-#endif
-
-
-
-
 
 
 
@@ -574,44 +544,14 @@ int main() {
 
 
 
-
 void writeOutput(FILE *f) {
 	// Need to completely close (and re-opened when needed again) the file because fflush does not ensure all data written so far will be in the file if the program crashes.
 	fclose(f);
 }
 
 
-
-#if 0
-static bool& get_within_recusion() {
-	static bool within_recursion = false;
-	return within_recursion;
-}
-
-
-static bool try_enter_recursion() {
-	bool& within_recrusion = get_within_recusion();
-	if (within_recrusion)
-		return false;
-	within_recrusion = true;
-	return true;
-}
-
-
-static void exit_recursion() {
-	bool& within_recrusion = get_within_recusion();
-	assert(within_recrusion);
-	within_recrusion = false;
-}
-
-#endif
-
-
-
-
 template< typename... Rest>
 struct Argsprinter;
-
 
 
 template<>
@@ -916,13 +856,19 @@ static std::string trace_new_result(const char* shortname) {
 
 
 template<typename T>
-static void trace_register_result(const std::string& retname, T* &retval, bool uniquify) {
-	if (uniquify)
-		retval = ObjCow<T>::cow(retval);
-
+static void trace_register_result(const std::string& retname, T* retval) {
 	auto &map = getResultMap<T>();
 	map[retval] = retname;
 }
+
+
+template<typename T>
+static void trace_register_result_uniquify(const std::string& retname, T* &retval) {
+	retval = ObjCow<T>::cow(retval);
+	auto &map = getResultMap<T>();
+	map[retval] = retname;
+}
+
 
 
 
@@ -938,11 +884,28 @@ struct Argsregister<> {
 
 template<typename T, 	typename... Rest>
 struct Argsregister<T,Rest...> {
-	static void registerArgs( int i, T &t, Rest&... r) {
+	static void registerArgs(std::ostream& OS,std::ostream& OSvars, int i, T &t, Rest&... r) {
+#if 0
+		std::string paramstr{ param };
+		auto loc = paramstr.find_first_of(',');
+		const char *next;
+		std::string self;
+		if (loc != string::npos) {
+			self = paramstr.substr(0, loc);
+			next = param + loc+1;
+		} else {
+			self = paramstr;
+			next = "";
+		}
+#endif
+
 		if constexpr (std::is_pointer_v<T>) {
 			// We could uniquify __isl_take paramters, but not __isl_keep parameters (cow removing a reference is indistinguishable from freeing one).
 			// Unifortunately, clang does not remember annotations for the function types of callbacks.
-			trace_register_result("param" + std::to_string(i), t, false);
+			std::string parmname = trace_new_result("p");
+			OSvars << "void *" << parmname << ";\n";
+			OS << parmname << " = param" << i ;
+			trace_register_result_uniquify(parmname, t);
 		}
 		Argsregister< Rest...>().registerArgs(i+1,r...);
 	}
@@ -950,25 +913,29 @@ struct Argsregister<T,Rest...> {
 
 
 
-
-template<int N, typename RetTy, typename ...ParamTy >
-RetTy Callbacker<N, RetTy(ParamTy...)>::callback(ParamTy... Params) {
+#if 0
+template< typename RetTy, typename ...ParamTy >
+RetTy Callbacker<RetTy(ParamTy...)>::callback(ParamTy... Params) {
 	// Calls isl functions (*_dup), so do it in an internal stack context.
 	// TODO: actually, use generator::callback_takes_argument
-	Argsregister<ParamTy...>::registerArgs(0, Params...);
+	//Argsregister<ParamTy...>::registerArgs(OS1, OSvars, 0, Params...);
+
 
 	std::tuple<ParamTy...> args{Params...};
 	auto* user = std::get<N>(args);
 	Callbacker* Cb = reinterpret_cast<Callbacker*>(const_cast<void*>(user));
 	Cb->newInvocation();
-	pushCallbackLevel( Cb );
-	auto* lvl = getTopmostLevel();
+	pushCallbackLevel(Cb);
+	Level* lvl = getTopmostLevel();
 	std::get<N>(args) = Cb->origUser;
 
-	if constexpr (!std::is_void<RetTy>()) {
-		RetTy result = std::apply(*Cb->origCb, args); //(*Cb->origCb)(Params...);
+	std::ostream& OS1 = lvl->getOutput();
+	std::ostream& OSvars = getVarfile();
 
-		auto& OS = lvl->getOutput();
+	if constexpr (!std::is_void<RetTy>()) {
+		RetTy result = std::apply(*Cb->origCb, args); // (*Cb->origCb)(Params...);
+
+		std::ostream& OS = lvl->getOutput();
 		OS << "  return ";
 		trace_arg(OS, result);
 		OS << ";\n";
@@ -984,6 +951,7 @@ RetTy Callbacker<N, RetTy(ParamTy...)>::callback(ParamTy... Params) {
 		return ;
 	}
 }
+#endif
 
 
 
@@ -1004,12 +972,12 @@ static CallTy*  getsym(const char *fname) {
 
 
 
-template<int N, typename CallbackTy, typename VoidTy>
-static void trace_callback(std::ostream &OS, const std::string &cbname, const char* cbreturnty, const char*cbparamtys,  CallbackTy *&Cb, VoidTy* &user) {
+template<typename CallbackTy, typename VoidTy>
+static void trace_callback(std::ostream &OS, const std::string &cbname, const char* cbreturnty, const char*cbparamtys,  CallbackTy *&origCb, CallbackTy *replCb,VoidTy* &user) {
 	// VoidTy might be 'void' or 'const void'
 
 	auto& list = getCallbackerList();
-	auto callbacker = new Callbacker<N, CallbackTy>(cbname, Cb,  cbreturnty, cbparamtys, (void*)user);
+	auto callbacker = new Callbacker<CallbackTy>(cbname, origCb, replCb,cbreturnty, cbparamtys, (void*)user);
 	list.push_back(callbacker);
 
 	//OS << "  CallbackStruct " << username << "{";
@@ -1017,7 +985,7 @@ static void trace_callback(std::ostream &OS, const std::string &cbname, const ch
 	//OS << "}";
 
 	// replace
-	Cb = callbacker->callback;
+	origCb = replCb;
 	user = callbacker;
 }
 
