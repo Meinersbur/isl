@@ -440,7 +440,16 @@ void trace_generator::generate() {
 				getTy(narg->getType())+"\", \""+	getTy(sizearg->getType())+"\", \""+	getTy(chunksarg->getType())+"\", "+
 				narg->getName()+", "+sizearg->getName()+", "+chunksarg->getName()+");\n").str();
 		}
+#if 0
+		else if (FName == "isl_val_get_abs_num_chunks") {
+			auto v = FD->getParamDecl(0);
+			auto size =  FD->getParamDecl(1);
+			auto chunks = FD->getParamDecl(2);
 
+			// chunks is written to, but we don't care about the result; set to NULL so it's an error
+			OS << "  call.trace_arg<2, "<< getTy(chunks->getType()) <<">(\"" << chunks->getName() << "\", \""<< getTy(chunks->getType()) <<"\", "<<chunks->getName()<<");\n";
+		}
+#endif
 
 
 		for (auto p : llvm::enumerate(FD->parameters())) {

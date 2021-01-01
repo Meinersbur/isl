@@ -279,6 +279,9 @@ def parse_call(hasret,fname,rettype,numargs,**kwargs):
 
         parse_arg(**popts)
 
+    if fname=="isl_val_get_abs_num_chunks":
+        call.args[2] = IslValArg(name="chunks",ty="void*",val="/*don't write to memory*/NULL")
+
     getToplevel().addCall(call)
 
 
