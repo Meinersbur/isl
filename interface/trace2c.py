@@ -505,9 +505,9 @@ def gen_globvars():
 
 def gen_callbacker(callbacker:Callbacker,genbody:bool):
     if genbody:
-        params = ', '.join(argtype for i,argtype in enumerate(callbacker.paramtys))
-    else:
         params = ', '.join(f"{argtype} param{i}" for i,argtype in enumerate(callbacker.paramtys))
+    else:
+        params = ', '.join(argtype for i,argtype in enumerate(callbacker.paramtys))
     decl = f"static {callbacker.retty} {callbacker.name}({params})"
     if not genbody:
         yield f"{decl};"

@@ -397,7 +397,7 @@ void trace_generator::generate() {
 
 				Preargs[i] = cbOS.str().str();
 				if (UserParmIdx != -1)
-					Preargs[UserParmIdx] = "/*none*/";
+					Preargs[UserParmIdx] = "  /* skip user*/\n"; // Do not have a trace_arg line for the user arg.
 			}
 		}
 

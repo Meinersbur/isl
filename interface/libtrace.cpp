@@ -1730,7 +1730,7 @@ struct IslCallImpl<RetTy(ParmTy...)> : public IslCallBase {
 			std::get<UserIdx>(realArgs) = origUser;
 			argsParmname[UserIdx] = username;
 			argsTystr[UserIdx] = userty;
-			valArgs[UserIdx] = to_hex(origUser);
+			valArgs[UserIdx] = std::string("(") + userty + ")" + to_hex(origUser);
 		}
 
 		auto& OS = openLogfile();
