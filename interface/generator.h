@@ -170,6 +170,8 @@ private:
 	void extract_class_automatic_conversions(const isl_class &clazz);
 	void extract_automatic_conversions();
 public:
+	static std::string drop_suffix(const std::string &s,
+		const std::string &suffix);
 	static void die(const char *msg) __attribute__((noreturn));
 	static void die(string msg) __attribute__((noreturn));
 	static vector<string> find_superclasses(Decl *decl);

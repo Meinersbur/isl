@@ -803,7 +803,8 @@ static std::string type_suffix(ParmVarDecl *param)
 /* If "suffix" is a suffix of "s", then return "s" with the suffix removed.
  * Otherwise, simply return "s".
  */
-static std::string drop_suffix(const std::string &s, const std::string &suffix)
+std::string generator::drop_suffix(const std::string &s,
+	const std::string &suffix)
 {
 	size_t len, suffix_len;
 
@@ -840,7 +841,7 @@ string isl_class::name_without_type_suffixes(FunctionDecl *method)
 		param = method->getParamDecl(i);
 		type = type_suffix(param);
 
-		name = drop_suffix(name, type);
+		name = generator::drop_suffix(name, type);
 	}
 
 	return name;
