@@ -13,9 +13,8 @@
 #include "trace.h"
 #include <clang/AST/PrettyPrinter.h>
 #include <clang/AST/ASTContext.h>
-//#include <llvm/ADT/DenseSet.h>
 #include <llvm/ADT/StringSet.h>
-
+#include <llvm/ADT/SmallBitVector.h>
 
 
 
@@ -46,12 +45,12 @@ static const char* getShortname(StringRef longname) {
 		{"isl_schedule", "sched"},
 		{"isl_aff", "aff"},
 		{"isl_multi_aff", "ma"},
-	{"isl_multi_pw_aff", "mpwa"},
-	{"isl_multi_union_pw_aff", "mupwa"},
-	{"isl_pw_aff", "pwaff"},
-	{"isl_pw_multi_aff", "pwma"},
-	{"isl_union_pw_aff", "upwa"},
-	{"isl_union_pw_multi_aff", "upwma"},
+	  {"isl_multi_pw_aff", "mpwa"},
+	  {"isl_multi_union_pw_aff", "mupwa"},
+  	{"isl_pw_aff", "pwaff"},
+	  {"isl_pw_multi_aff", "pwma"},
+	  {"isl_union_pw_aff", "upwa"},
+	  {"isl_union_pw_multi_aff", "upwma"},
 		{"isl_val", "val"},
 		{"isl_multi_val", "mval"},
 		{"isl_point", "point"},
@@ -138,8 +137,7 @@ static auto getParamTyList(ASTContext&ASTCtx,const FunctionProtoType *FTy, bool 
 
 
 
-
-static void emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int CallbackFnArg, int UserPtrArg) {
+static std::string emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int CallbackFnArg, int UserPtrArg, const FunctionProtoType *&CbTy) {
 	PrintingPolicy Policy(FD->getASTContext().getLangOpts());
 	auto getTy = [&](QualType ty, const Twine& placeholder = {}) -> std::string {
 		llvm::SmallString<128> buf;
@@ -159,7 +157,7 @@ static void emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int Callba
 		UserParm = FD->getParamDecl(UserPtrArg);
 	}
 
-	auto CbTy = FuncParm->getType()->getPointeeType()->castAs<FunctionProtoType>();
+	CbTy = FuncParm->getType()->getPointeeType()->castAs<FunctionProtoType>();
 	auto CbRetTy = CbTy->getReturnType();
 	auto CbHasRet = !CbRetTy->isVoidType();
 	// Assume the last parameter of the callback is the user pointer.
@@ -188,11 +186,11 @@ static void emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int Callba
 			if (!First) {
 				OS << ", ";
 			}
-			OS << getTy( CbParamTy, "param" + Twine(i));
+			OS << getTy(CbParamTy, "param" + Twine(i));
 			First = false;
 		}
 	}
-		OS << ") {\n";
+	OS << ") {\n";
 
 #if 0
 		SmallVector<std::string, 4> ForwardArgs;
@@ -208,109 +206,70 @@ static void emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int Callba
 
 		//std::tuple<ParamTy...> args{Params...};
 		//auto* user = std::get<N>(args);
-		OS << "  using CallbackerTy = Callbacker<" << getTy(CbRetTy) << "(" << getParamTyList(CbTy, true, false) << ")>;\n";
+		OS << "  using CbTy = " << getTy(CbRetTy) << "(" << getParamTyList(CbTy, true, false)  << ");\n";
+		//OS << "  typedef " << getTy(CbRetTy, );
+		OS << "  using CallbackerTy = Callbacker<CbTy>;\n";
 		if (CbHasRet) {
 			OS << "  using RetTy = " << getTy(CbRetTy) << ";\n";
 		}
 		OS << "  CallbackerTy* Cb = (CallbackerTy*)(param" << CbUserArg << ");\n";
-		OS << "  Cb->newInvocation();\n";
-		OS << "  pushCallbackLevel(Cb);\n";
-		OS << "  Level* lvl = getTopmostLevel();\n";
+
+
+		OS << "\n";
+		OS << "  CbCall<"<< CbUserArg << ", CbTy> call(Cb);\n";
+
+	//	OS << "  Cb->newInvocation();\n";
+	//	OS << "  pushCallbackLevel(Cb);\n";
+		//OS << "  Level* lvl = getTopmostLevel();\n";
 		//std::get<N>(args) = Cb->origUser;
 
-		OS << "  std::ostream& OS1 = lvl->getOutput();\n";
-		OS << "  std::ostream& OSvars = getVarfile();\n";
-		OS << "\n";
+		//OS << "  std::ostream& OS1 = lvl->getOutput();\n";
+		//OS << "  std::ostream& OSvars = getVarfile();\n";
+		//OS << "\n";
+
+	//	if (CbUserArg>=0)
+	//	OS << "  call.trace_user<" << CbUserArg << ">(param"<< CbUserArg <<");\n";
 
 		for (auto p : llvm::enumerate(CbTy->param_types())) {
 			auto CbParamTy = p.value();
 			auto i = p.index();
 
-			if (i == CbUserArg) {
-				OS << "  param" << i << " = Cb->origUser;\n";
-			} else if (isIslObjTy(CbParamTy)) {
-				OS << "  std::string param" << i << "name = trace_new_result(\"" << getShortname(CbParamTy) << "\");\n";
-				OS << "  OSvars << \"  " << getTy(CbParamTy) << "\" << param" << i << "name;\n";
-				OS << "  OS1 << \"  \" << param" << i << "name << \"= param" << i << "\";\n";
-				OS << "  trace_register_result(param" << i << "name, param" << i << ");\n";
-			} else
+			if (i == CbUserArg)
 				continue;
-			OS << "\n";
+
+			OS << "  call.trace_arg<" << i << ">(param"<< i <<");\n";
+
+				//OS << "  param" << i << " = Cb->origUser;\n";
+			//} else if (isIslObjTy(CbParamTy)) {
+			//	OS << "  std::string param" << i << "name = trace_new_result(\"" << getShortname(CbParamTy) << "\");\n";
+				//OS << "  OSvars << \"  " << getTy(CbParamTy) << "\" << param" << i << "name;\n";
+				//OS << "  OS1 << \"  \" << param" << i << "name << \"= param" << i << "\";\n";
+				//OS << "  trace_register_result(param" << i << "name, param" << i << ");\n";
+			//} else
+			//	continue;
+			//OS << "\n";
 		}
 
-		if (CbHasRet) {
-			OS << "  RetTy retval = (*Cb->origCb)(" << getParamTyList(CbTy, false, true) << ");\n";
-			OS << "  std::ostream& OS2 = lvl->getOutput();\n";
-			OS << "  OS2 << \"  return \";\n";
-			OS << "  trace_arg(OS2, retval);\n";
-			OS << "  OS2 << \"\\n\";\n";
-		} else {
-			OS << "  (*Cb->origCb)(" << getParamTyList(CbTy,false, true) << ");\n";
-		}
+	//	if (CbHasRet) {
+		//	OS << "  RetTy retval = (*Cb->origCb)(" << getParamTyList(CbTy, false, true) << ");\n";
+			//OS << "  std::ostream& OS2 = lvl->getOutput();\n";
+			//OS << "  OS2 << \"  return \";\n";
+			//OS << "  trace_arg(OS2, retval);\n";
+			//OS << "  OS2 << \"\\n\";\n";
+	//	} else {
+	//		OS << "  (*Cb->origCb)(" << getParamTyList(CbTy,false, true) << ");\n";
+	//	}
 
-		OS << "  Cb->doneInvocation();\n";
-		OS << "  popCallbackLevel();\n";
+	//	OS << "  Cb->doneInvocation();\n";
+		//OS << "  popCallbackLevel();\n";
 
-		if (CbHasRet) {
-			OS << "  return retval;\n";
-		}
-
-#if 0
-		if constexpr (!std::is_void<RetTy>()) {
-			RetTy result = std::apply(*Cb->origCb, args); // (*Cb->origCb)(Params...);
-
-			std::ostream& OS = lvl->getOutput();
-			OS << "  return ";
-			trace_arg(OS, result);
-			OS << ";\n";
-
-			Cb->doneInvocation();
-			popCallbackLevel();
-			return result;
-		} else {
-			std::apply(*Cb->origCb, args);
-
-			Cb->doneInvocation();
-			popCallbackLevel();
-			return ;
-		}
-#endif
+		OS << "  ";
+		if (CbHasRet)
+			OS << "return ";
+		OS << "call.apply();\n";
 
 		OS << "}\n\n";
-
-
-#if 0
-	//auto cbname = getLocalVarName("cb");
-
-	OS << "  std::string " << cbname << " = trace_new_result(\"cb_" << FName << "_" << PName << "\");\n";
-
-	llvm::SmallString<128> cbtybuf;
-	llvm::raw_svector_ostream OScbarg(cbtybuf);
-	bool CbFirst = true;
-	for (auto p : llvm::enumerate(CbTy->param_types())) {
-		auto CbArg = p.value();
-		auto i = p.index();
-		if (!CbFirst)
-			OScbarg << ", " ;
-		OScbarg << getTy(CbArg, Twine("param") + Twine(i));
-		CbFirst = false;
-	}
-	std::string Cbargtylist = OScbarg.str().str();
-
-	for (auto p : llvm::enumerate(CbTy->param_types())) {
-		auto CbArg = p.value();
-		auto i = p.index();
-		// bool takes_ownership = generator::callback_takes_argument(Parm, i);
-		// TODO: use takes_ownership information
-	}
-	OS << "  trace_callback<" << CbUserArg << ">(OS, " << cbname << ", \"" << getTy(CbRetTy) << "\", \"" << Cbargtylist << "\", " << PName;
-	if (UserParm) {
-		OS	<< ", " << UserParm->getName();
-		Preargs[i + 1] = "\"NULL\"";
-	}
-	OS << ");\n";
-	Preargs[i] = (Twine("&") + cbname).str();
-#endif
+		return cbname;
 }
 
 
@@ -319,27 +278,10 @@ static void emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int Callba
  * the default and the checked C++ bindings.
  * Do this for each exported class.
  */
-void trace_generator::generate()
-{
+void trace_generator::generate() {
 	std::string InitCode;
 	llvm::raw_string_ostream InitOS(InitCode);
-
-
 	auto &OS = llvm::outs();
-
-#if 0
-	OS << "// ISL structs\n";
-	llvm::StringSet<> Visited;
-	for (auto P : classes) {
-		isl_class *C =& P.second;
-		auto Name = C->name;
-		if (Visited.contains(Name)) continue;
-
-		OS << "ISL_STRUCT(" << Name << ")\n";
-		Visited.insert(Name);
-	}
-	OS << "\n\n";
-#endif
 
 
 	OS << "// ISL functions\n";
@@ -349,13 +291,15 @@ void trace_generator::generate()
 		if (!FName.startswith("isl_"))
 			continue;
 
-
 		PrintingPolicy Policy(FD->getASTContext().getLangOpts());
-		auto getTy = [&](QualType ty, const Twine& placeholser = {}) -> std::string {
+		auto getTy = [&](QualType ty, const Twine& placeholder = {}) -> std::string {
 			llvm::SmallString<128> buf;
 			llvm::raw_svector_ostream sstream(buf);
-			ty.print(sstream, Policy, placeholser);
+			ty.print(sstream, Policy, placeholder);
 			return sstream.str().str();
+		};
+		auto getParamTyList = [&](const FunctionProtoType * FTy, bool PrintType, bool PrintName) -> std::string {
+			return ::getParamTyList(FD->getASTContext(), FTy, PrintType, PrintName);
 		};
 
 
@@ -415,6 +359,10 @@ void trace_generator::generate()
 		bool hasRetVal = !RetTy->isVoidType() ;
 		bool hasRetPtr = hasRetVal && RetTy->isPointerType() && !isFreeFunc;
 
+		SmallVector<std::string, 8> Preargs;
+		Preargs.clear();
+		Preargs.resize(FD->getNumParams());
+
 		if (!isUnsupported) {
 			for (auto p : llvm::enumerate(FD->parameters())) {
 				ParmVarDecl* Parm = p.value();
@@ -430,65 +378,100 @@ void trace_generator::generate()
 					UserParmIdx = i + 1;
 				}
 
-				emitCallbackFunc(OS, FD, i, UserParmIdx);
+				const FunctionProtoType* CbTy=nullptr;
+				auto cbname = emitCallbackFunc(OS, FD, i, UserParmIdx,CbTy);
+				llvm::SmallString<256> buf;
+				llvm::raw_svector_ostream cbOS(buf);
+				std::string username = "NULL";
+				std::string userty = "NULL";
+				if (UserParmIdx >= 0) {
+					username = (Twine("\"") + FD->getParamDecl(UserParmIdx)->getName() + "\"").str();
+					userty = (Twine("\"") + getTy(FD->getParamDecl(UserParmIdx)->getType()) + Twine("\"")).str();
+				}
+				std::string cbty =   (Twine("\"") + getTy(ParmTy) + Twine("\"") ).str();
+
+				if (UserParmIdx==-1)
+					cbOS << "  call.trace_cb<" << i << "," << UserParmIdx << ">(\"" << FName << "\", \"" << PName <<"\", " << username << ", " <<  cbty  << ", " << userty << ", \"" << getTy(CbTy->getReturnType()) << "\", \"" << getParamTyList(CbTy,true,false) << "\", "<< PName <<", &"<< cbname <<", (void*)nullptr);\n";
+				else
+					cbOS << "  call.trace_cb<" << i << "," << UserParmIdx << ">(\"" << FName << "\", \"" << PName <<"\", " << username << ", " <<  cbty  << ", " << userty << ", \"" << getTy(CbTy->getReturnType()) << "\", \"" << getParamTyList(CbTy,true,false) << "\", "<< PName <<", &"<< cbname <<", "<< FD->getParamDecl(UserParmIdx)->getName() <<");\n";
+
+				Preargs[i] = cbOS.str().str();
+				if (UserParmIdx != -1)
+					Preargs[UserParmIdx] = "/*none*/";
 			}
 		}
 
-
-
-		OS << getTy(	FD->getReturnType() ) << " " << FName << "(" << paramlist << ") {\n";
-
-
-		SmallVector<std::string, 8> Preargs;
-		Preargs.clear();
-		Preargs.resize(FD->getNumParams());
-
+		OS << getTy(FD->getReturnType()) << " " << FName << "(" << paramlist << ") {\n";
 		OS << "  using FuncTy = " << getTy(FD->getReturnType()) << "(" << tylist << ");\n";
-		OS << "  using RetTy = " << getTy(RetTy) << ";\n";
+		//OS << "  using RetTy = " << getTy(RetTy) << ";\n";
 		if (hasRetPtr) {
-			OS << "  using RetObjTy = " << getTy(RetTy->getPointeeType()) << ";\n";
+		//	OS << "  using RetObjTy = " << getTy(RetTy->getPointeeType()) << ";\n";
 		}
 		OS << "  static FuncTy *orig = getsym<FuncTy>(\"" << FName << "\");\n";
-		OS << "  Level *lvl = getTopmostLevel();\n";
-		OS << "  if (lvl->isInternal())\n";
+	//	OS << "  Level *lvl = getTopmostLevel();\n";
+		OS << "  if (getIsInternal())\n";
 	  OS << "    return (*orig)(" << arglist << ");\n";
 
 		if (isUnsupported) {
 			OS << "  ISL_CALL_UNSUPPORTED(" << FName << ")\n";
-		}	else {
-			OS << "  pushInternalLevel();\n";
-			OS << "\n";
-			OS << "  std::ostream &OS = lvl->getOutput();\n";
-			if (hasRetPtr) {
-				OS << "  std::ostream &VarsOS = getVarfile();\n";
-			}
-			if (FName == "isl_ctx_parse_options") {
-				auto countarg = FD->getParamDecl(1);
-				auto ppchararg = FD->getParamDecl(2);
-				OS << "  std::string argname = trace_new_result(\"optlist\");\n";
-				OS << "  trace_pre_ppchar(OS, argname, " << countarg->getName() << ", " << ppchararg->getName() << ");\n";
-				Preargs[2] = "argname";
-			} else if (FName == "isl_val_int_from_chunks") {
-				auto narg = FD->getParamDecl(1);
-				auto sizearg = FD->getParamDecl(2);
-				auto chunksarg = FD->getParamDecl(3);
-				OS << "  std::string argname = trace_new_result(\"chunks\");\n";
-				OS << "  trace_pre_chunks(OS, argname, " << narg->getName() << ", " << sizearg->getName() << ", "  << chunksarg->getName() << ");\n";
-				Preargs[3] = "argname";
-			} else {
-				// Look for callback arguments
-				for (auto p: llvm::enumerate(FD->parameters())) {
-					ParmVarDecl* Parm = p.value();
-					auto i = p.index();
-					auto PName = Parm->getName();
-					auto ParmTy = Parm->getType();
-					auto isCallback = ParmTy->isPointerType() && ParmTy->getPointeeType()->isFunctionType();
-					if (!isCallback)
-						continue;
+			OS << "}\n\n";
+			continue;
+		}
+
+		OS << "\n";
+		OS << "  IslCall<FuncTy> call(\""<< FName <<"\", \"" << getTy(RetTy) << "\", orig);\n";
+
+		if (FName == "isl_ctx_parse_options") {
+			auto countarg = FD->getParamDecl(1);
+			auto ppchararg = FD->getParamDecl(2);
+			//OS << "  std::string argname = trace_new_result(\"optlist\");\n";
+			//OS << "  trace_pre_ppchar(OS, argname, " << countarg->getName() << ", " << ppchararg->getName() << ");\n";
+			//Preargs[2] = "argname";
+			Preargs[2] = (Twine( "  call.trace_argv<1,2>(\"") + ppchararg->getName() + "\", \"" +  getTy(ppchararg->getType()) + "\", " + countarg->getName() + ", " + ppchararg->getName() + ");\n" ).str();
+		} else if (FName == "isl_val_int_from_chunks") {
+			auto narg = FD->getParamDecl(1);
+			auto sizearg = FD->getParamDecl(2);
+			auto chunksarg = FD->getParamDecl(3);
+			//OS << "  std::string argname = trace_new_result(\"chunks\");\n";
+			//OS << "  trace_pre_chunks(OS, argname, " << narg->getName() << ", " << sizearg->getName() << ", "  << chunksarg->getName() << ");\n";
+			//Preargs[3] = "argname";
+			Preargs[3] = (Twine("  call.trace_chunks<1,2,3>(\"")+
+				narg->getName()+"\", \""+sizearg->getName()+"\", \""+chunksarg->getName()+"\", \""+
+				getTy(narg->getType())+"\", \""+	getTy(sizearg->getType())+"\", \""+	getTy(chunksarg->getType())+"\", "+
+				narg->getName()+", "+sizearg->getName()+", "+chunksarg->getName()+");\n").str();
+		}
 
 
-				}
+
+		for (auto p : llvm::enumerate(FD->parameters())) {
+			auto i = p.index();
+			if (!Preargs[i].empty()) {
+				OS << Preargs[i];
+				continue;
 			}
+			ParmVarDecl* Parm = p.value();
+			QualType ParmTy = Parm->getType();
+			auto PName = Parm->getName();
+
+			//bool isCallback = ParmTy->isPointerType() && ParmTy->getPointeeType()->isFunctionType();
+			//if (isCallback) {
+			//	continue;
+			//}
+			OS << "  call.trace_arg<" << i << ", "<< getTy(ParmTy) <<">(\"" << PName << "\", \""<< getTy(ParmTy) <<"\", "<<PName<<");\n";
+			Preargs[i] = FName.str();
+		}
+
+		//OS << "  call->endPrepareIslCall();\n";
+		//	OS << "\n";
+			// OS << "  std::ostream &OS = lvl->getOutput();\n";
+			//if (hasRetPtr) {
+			//	OS << "  std::ostream &VarsOS = getVarfile();\n";
+			//}
+
+			if (hasRetVal) {
+			}
+
+#if 0
 			if (hasRetPtr) {
 				OS << "  std::string retname = trace_new_result(\"" << getShortname(RetTy) << "\");\n";
 				OS << "  VarsOS <<  \"" << getTy(RetTy) << " \" << retname << \";\\n\";\n";
@@ -496,6 +479,9 @@ void trace_generator::generate()
 			} else {
 				OS << "  OS << \"  " << FName << "(\";\n";
 			}
+#endif
+
+#if 0
 			bool First = true;
 			for (auto p: llvm::enumerate(FD->parameters())) {
 				ParmVarDecl* Param = p.value();
@@ -514,11 +500,28 @@ void trace_generator::generate()
 			OS << "  lvl->flush();\n";
 
 			OS << "\n";
+#endif
 
+			OS << "  ";
+			if (hasRetVal)
+				OS << "return ";
+			OS << "call.apply();\n";
+#if 0
+			bool First = true;
+			for (auto arg : Preargs) {
+				if (!First)
+					OS << ", ";
+				OS << arg;
+			}
+			OS << ");\n";
+#endif
+
+#if 0
 			if (hasRetVal)
 				OS << "  " << getTy(RetTy) << " retval = (*orig)(" << arglist << ");\n";
 			 else
 				OS << "  (*orig)(" << arglist << ");\n";
+
 
 			OS << "  std::ostream &OS2 = lvl->getOutput();\n";
 			if (hasRetPtr) {
@@ -529,112 +532,17 @@ void trace_generator::generate()
 			OS << "  OS2 << \"\\n\";";
 
 			OS << "\n";
+#endif
+
+#if 0
 			OS << "  popInternalLevel();\n";
 
 			if (hasRetVal)
 				OS << "  return retval;\n";
-		}
-
-		OS << "}\n\n";
-		continue;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		auto FuncCall = [&](const char*MacroName) {
-			OS << "  " << MacroName;
-			if (FD->getReturnType()->isVoidType()) {
-				OS << "_VOID";
-			} else {
-				OS << "_NONVOID";
-			}
-			OS << "(" << FName << ", ";
-			FD->getReturnType().print(OS, Policy, "");
-			OS << ", 0";
-			for (auto Parm : FD->parameters()) {
-				OS << ", " << Parm->getName();
-			}
-			OS << ")\n";
-		};
-
-		auto ParamCalls = [&](const char* MacroName) {
-			int i = 0;
-			while (i < FD->getNumParams()) {
-				auto Parm = FD->getParamDecl(i);
-				auto ParmTy = Parm->getType();
-				if (ParmTy->isPointerType() && ParmTy->getPointeeType()->isFunctionType()) {
-					// A callback
-					auto UserParm = FD->getParamDecl(i + 1);
-					assert(UserParm->getType()->isVoidPointerType());
-					auto CbTy = Parm->getType()->getPointeeType()->castAs<FunctionProtoType>();
-					auto CbRetTy = CbTy->getReturnType();
-					OS << "  " << MacroName << "_CB(" << Parm->getName() << ", " << UserParm->getName() << ", ";
-					CbRetTy.print(OS, Policy, "");
-					for (auto CbParmTy : CbTy->param_types()) {
-						OS << ", ";
-						CbParmTy.print(OS, Policy, "");
-					}
-					OS << ")\n";
-					i += 2;
-					return;
-				}
-
-				// A "normal" parameter
-				OS << "  " << MacroName << "_ARG(" << Parm->getName(); OS << ", ";  ParmTy.print(OS, Policy, ""); OS << ")\n";
-				i += 1;
-			}
-		};
-
-		// Things that we cannot handle for now
-		if (FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" || FName == "isl_id_set_free_user") {
-			OS << "  ISL_CALL_UNSUPPORTED(" << FName << ")\n";
-		} else {
-			FuncCall("ISL_PRECALL");
-			ParamCalls("ISL_PREPARE");
-			FuncCall("ISL_CALL");
-			ParamCalls("ISL_POSTPARE");
-			FuncCall("ISL_POSTCALL");
-		}
-
-#if 0
-		OS << "  ";
-		if (!FD->getReturnType()->isVoidType()) {
-			OS << "CALL_ORIG";
-		} else {
-			OS << "CALL_ORIG_VOID";
-		}
-		OS << "(" << FName << ", ";
-		FD->getReturnType().print(OS, Policy, "");
-		OS << ", (";
-		First = true;
-		for (auto Param : FD->parameters()) {
-			if (!First)
-				OS << ",";
-			auto Ty = Param->getType();
-			Ty.print(OS, Policy, "", 0);
-			First = false;
-		}
-		OS << "), 0";
-		for (auto Param : FD->parameters()) {
-			OS << "," << Param->getName();
-		}
-		OS << ")\n";
 #endif
 
 		OS << "}\n\n";
+
 	}
 }
 

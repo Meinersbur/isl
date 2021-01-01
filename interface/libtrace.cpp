@@ -30,7 +30,9 @@ void* dlsym(void* handle, const char* symbol) { return nullptr; }
 
 
 template<typename T>
-struct Argprinter;
+struct Argprinter {
+	static void print(std::ostream& OS, T t) { OS << "/*Argprinter*/";  }
+};
 
 
 
@@ -43,9 +45,11 @@ struct ObjShortnameBase {
 };
 
 
+
 template<typename T> struct ObjShortname : public  ObjShortnameBase<void> {
 	static constexpr const char *name = "val";
 };
+
 
 
 template<typename T>
@@ -59,16 +63,6 @@ static std::unordered_map<T*, std::string >& getResultMap() {
 namespace {
 	template<typename T>
 	struct ObjPrinter {
-	//	static std::unordered_map<T*, int>& getTheMap() {
-	//		static std::unordered_map<T*, int> Map;
-	//		return Map;
-	//	}
-
-
-		//static void registerResult(T* t, int c) {
-	//		getTheMap()[t] = c;
-	//	}
-
 		void print(std::ostream &OS,  const char* SName, T* t) {
 			if (t == nullptr) {
 				OS << "NULL";
@@ -87,19 +81,27 @@ namespace {
 }
 
 
-// TODO: better if the generator emits which object have a _cow function
+// TODO: better if the generator emits which objects have a _copy/_cow function
 template<typename T>
 struct ObjCow {
 	static T* cow(T*obj) { return obj; }
 };
 extern "C" {
+	isl_ctx* isl_ctx_copy(isl_ctx* ctx) { return ctx; }
+	isl_printer* isl_printer_copy(isl_printer* obj) { return obj; }
+	isl_access_info* isl_access_info_copy(isl_access_info* obj) { return obj; }
+//	isl_union_access_info* isl_union_access_info_copy(isl_union_access_info* obj) { return obj; }
+	isl_flow* isl_flow_copy(isl_flow* obj) { return obj; }
+	isl_restriction* isl_restriction_copy(isl_restriction* obj) { return obj; }
+	isl_args *isl_args_copy(isl_args* obj) { return obj; }
+	isl_obj *isl_obj_copy(isl_obj* obj) { return obj; }
+
 	isl_ctx* isl_ctx_cow(isl_ctx* ctx) { return ctx; }
 	isl_id* isl_id_cow(isl_id* id) { return id; }
 	isl_union_access_info* isl_union_access_info_cow(isl_union_access_info* obj) { return obj; }
 	isl_union_flow* isl_union_flow_cow(isl_union_flow* obj) { return obj; }
 	isl_schedule_constraints* isl_schedule_constraints_cow(isl_schedule_constraints* obj) { return obj; }
 	isl_printer* isl_printer_cow(isl_printer* obj) { return obj; }
-
 	isl_union_map* isl_union_map_cow(isl_union_map* umap);
 	isl_union_set* isl_union_set_cow(isl_union_set* uset) { return (isl_union_set*)isl_union_map_cow((isl_union_map*)uset); }
 }
@@ -120,11 +122,11 @@ extern "C" {
 #define ISL_STRUCT(sname, shortname)            \
 	struct sname;                                 \
   extern "C" sname *CONCAT2(sname,_cow) (sname *obj);  \
-template<> struct ObjCow<sname> { static sname* cow(sname*obj) { return CONCAT2(sname,_cow)(obj); } }; \
+template<> struct ObjCow<sname> { static sname* cow(sname*obj) {   /* if(!obj) return NULL; obj = CONCAT2(sname,_copy)(obj);*/ return CONCAT2(sname,_cow)(obj); } }; \
 template<> struct ObjShortname<sname*> : public ObjShortnameBase<sname*> { static constexpr const char *name = STR(shortname);  }; \
 template<>                                      \
 struct Argprinter<sname*> {                     \
-void print(std::ostream &OS,   sname* t) {                 \
+static void print(std::ostream &OS,   sname* t) {                 \
 static ObjPrinter<sname> prn;                   \
 		prn.print(OS, STR(sname), t);                \
   }                                             \
@@ -140,7 +142,7 @@ ISL_STRUCT(isl_restriction, restriction)
 ISL_STRUCT(isl_map, map)
 ISL_STRUCT(isl_set, set)
 ISL_STRUCT(isl_local_space, ls)
-ISL_STRUCT(isl_ast_expr_list, aelist)
+ISL_STRUCT(isl_ast_expr_list, list)
 ISL_STRUCT(isl_printer, printer)
 ISL_STRUCT(isl_id_to_ast_expr, itamap)
 ISL_STRUCT(isl_ast_print_options, astprintoptions)
@@ -148,15 +150,15 @@ ISL_STRUCT(isl_mat, map)
 ISL_STRUCT(isl_basic_map_list, bmaplist)
 ISL_STRUCT(isl_basic_set_list, bsetlist)
 ISL_STRUCT(isl_stride_info, stride)
-ISL_STRUCT(isl_map_list, maplist)
+ISL_STRUCT(isl_map_list, list)
 ISL_STRUCT(isl_vec, vec)
-ISL_STRUCT(isl_set_list, setlist)
-ISL_STRUCT(isl_union_map_list, umaplist)
-ISL_STRUCT(isl_union_pw_multi_aff_list, upwmalust)
+ISL_STRUCT(isl_set_list, list)
+ISL_STRUCT(isl_union_map_list, list)
+ISL_STRUCT(isl_union_pw_multi_aff_list, list)
 ISL_STRUCT(isl_ast_build, astbuild)
 ISL_STRUCT(isl_ast_expr, astexpr)
 ISL_STRUCT(isl_ast_node, astnode)
-ISL_STRUCT(isl_ast_node_list, nodelist)
+ISL_STRUCT(isl_ast_node_list, list)
 ISL_STRUCT(isl_basic_map, bmap)
 ISL_STRUCT(isl_basic_set, bset)
 ISL_STRUCT(isl_fixed_box, fixedbox)
@@ -171,11 +173,11 @@ ISL_STRUCT(isl_multi_union_pw_aff, mupwa)
 ISL_STRUCT(isl_multi_val, mval)
 ISL_STRUCT(isl_point, point)
 ISL_STRUCT(isl_pw_aff, pwaff)
-ISL_STRUCT(isl_pw_aff_list, pwafflist)
+ISL_STRUCT(isl_pw_aff_list, list)
 ISL_STRUCT(isl_pw_multi_aff, pwma)
-ISL_STRUCT(isl_pw_multi_aff_list, pwmalist)
+ISL_STRUCT(isl_pw_multi_aff_list, list)
 ISL_STRUCT(isl_union_pw_aff, upwa)
-ISL_STRUCT(isl_union_pw_aff_list, upwafflist)
+ISL_STRUCT(isl_union_pw_aff_list, list)
 ISL_STRUCT(isl_union_pw_multi_aff, upwma)
 ISL_STRUCT(isl_schedule, sched)
 ISL_STRUCT(isl_schedule_constraints, schedconstraints)
@@ -185,24 +187,48 @@ ISL_STRUCT(isl_union_access_info, uaccess)
 ISL_STRUCT(isl_union_flow, uflow)
 ISL_STRUCT(isl_union_map, umap)
 ISL_STRUCT(isl_union_set, uset)
-ISL_STRUCT(isl_union_set_list, usetlist)
+ISL_STRUCT(isl_union_set_list, list)
 ISL_STRUCT(isl_val, val)
 ISL_STRUCT(isl_val_list, vallist)
 ISL_STRUCT(isl_args, args)
 ISL_STRUCT(isl_constraint, constr)
+ISL_STRUCT(isl_obj, obj)
 
 
 template<>
 struct Argprinter<isl_error> {
-	void print(std::ostream &OS, isl_error t) {
+	static void print(std::ostream &OS, isl_error t) {
 		OS << "(isl_error)" << t;
 	}
 };
 
 
 template<>
+struct Argprinter<isl_token_type> {
+	static void print(std::ostream &OS, isl_token_type t) {
+		OS << "(isl_token_type)" << t;
+	}
+};
+
+
+template<>
+struct Argprinter<isl_ast_node_type> {
+	static void print(std::ostream &OS, isl_ast_node_type t) {
+		OS << "(isl_ast_node_type)" << t;
+	}
+};
+
+
+template<>
+struct Argprinter<isl_ast_expr_type> {
+	static void print(std::ostream &OS, isl_ast_expr_type t) {
+		OS << "(isl_ast_expr_type)" << t;
+	}
+};
+
+template<>
 struct Argprinter<isl_stat> {
-	void print(std::ostream &OS,isl_stat t) {
+	static void print(std::ostream &OS,isl_stat t) {
 		switch (t) {
 		case isl_stat_error :
 			OS << "isl_stat_error";
@@ -218,7 +244,7 @@ struct Argprinter<isl_stat> {
 
 template<>
 struct Argprinter<isl_bool> {
-	void print(std::ostream &OS, isl_bool t) {
+	static void print(std::ostream &OS, isl_bool t) {
 		switch (t) {
 		case 	isl_bool_error :
 			OS << "isl_bool_error";
@@ -241,7 +267,7 @@ struct ObjShortname<isl_bool>: public ObjShortnameBase<isl_bool> {
 
 template<>
 struct Argprinter<isl_dim_type> {
-	void print(std::ostream &OS, isl_dim_type t) {
+	static	void print(std::ostream &OS, isl_dim_type t) {
 		switch (t) {
 		case	isl_dim_cst:
 			OS << "isl_dim_cst";
@@ -269,35 +295,35 @@ struct Argprinter<isl_dim_type> {
 
 template<>
 struct Argprinter<isl_ast_expr_op_type> {
-	void print(std::ostream &OS,isl_ast_expr_op_type t) {
+	static void print(std::ostream &OS,isl_ast_expr_op_type t) {
 		OS << "(isl_ast_expr_op_type)" << t;
 	}
 };
 
 template<>
 struct Argprinter<isl_fold> {
-	void print(std::ostream &OS, isl_fold t) {
+	static void print(std::ostream &OS, isl_fold t) {
 		OS << "(isl_fold)" << t;
 	}
 };
 
 template<>
 struct Argprinter<isl_ast_loop_type> {
-	void print(std::ostream &OS,isl_ast_loop_type t) {
+static	void print(std::ostream &OS,isl_ast_loop_type t) {
 		OS << "(isl_ast_loop_type)" << t;
 	}
 };
 
 template<>
 struct Argprinter<double> {
-	void print(std::ostream &OS, double t) {
+	static	void print(std::ostream &OS, double t) {
 		OS << t;
 	}
 };
 
 template<>
 struct Argprinter<int> {
-	void print(std::ostream &OS, int t) {
+	static	void print(std::ostream &OS, int t) {
 		OS << t;
 	}
 };
@@ -309,7 +335,7 @@ struct ObjShortname<int> : public ObjShortnameBase<int> {
 
 template<>
 struct Argprinter< unsigned int> {
-	void print(std::ostream &OS, unsigned int t) {
+	static	void print(std::ostream &OS, unsigned int t) {
 		OS << t << "u";
 	}
 };
@@ -317,7 +343,7 @@ struct Argprinter< unsigned int> {
 
 template<>
 struct Argprinter<long  > {
-	void print(std::ostream &OS, long t) {
+	static void print(std::ostream &OS, long t) {
 		OS << t;
 	}
 };
@@ -325,7 +351,7 @@ struct Argprinter<long  > {
 
 template<>
 struct Argprinter<long unsigned int> {
-	void print(std::ostream &OS, long unsigned int t) {
+	static void print(std::ostream &OS, long unsigned int t) {
 		OS << t << "u";
 	}
 };
@@ -333,7 +359,7 @@ struct Argprinter<long unsigned int> {
 
 template<>
 struct Argprinter<long long unsigned int> {
-	void print(std::ostream &OS, long long unsigned int t) {
+	static	void print(std::ostream &OS, long long unsigned int t) {
 		OS << t << "u";
 	}
 };
@@ -341,7 +367,7 @@ struct Argprinter<long long unsigned int> {
 
 template<>
 struct Argprinter<const char*> {
-	void print(std::ostream &OS, const char * t) {
+	static	void print(std::ostream &OS, const char * t) {
 		// TODO: escape
 		OS << "\"" << t << "\"";
 	}
@@ -356,7 +382,7 @@ struct ObjShortname<const char*>: public ObjShortnameBase<const char*> {
 
 template<>
 struct Argprinter<char**> {
-	void print(std::ostream &OS, char** t) {
+	static void print(std::ostream &OS, char** t) {
 		// TODO: print before, probably invalid syntax
 		OS << "(char*[]){";
 		bool First = true;
@@ -375,7 +401,7 @@ struct Argprinter<char**> {
 // Any other pointer
 template<typename T>
 struct Argprinter<T*> {
-	void print(std::ostream &OS, T* t) {
+	static	void print(std::ostream &OS, T* t) {
 		//OS << "(void*)" << t;
 
 		if (t == nullptr) {
@@ -407,7 +433,8 @@ static std::vector<CallbackBase*>& getCallbackerList() {
 
 
 struct CallbackBase {
-	std::string name;
+	std::string fname;
+	std::string pname;
 	void* origUser;
 	std::string cbretty;
 	std::string cbparamty;
@@ -415,11 +442,11 @@ struct CallbackBase {
 	std::vector<std::ostringstream*> code;
 	int inprogress = -1;
 
-	CallbackBase(const std::string &name, void *origUser, const std::string &cbretty, const std::string &cbparamty)
-		: name(name), origUser(origUser), cbretty(cbretty), cbparamty(cbparamty) {}
+	CallbackBase(const std::string &fname, const std::string &pname, void *origUser, const std::string &cbretty, const std::string &cbparamty)
+		: fname{ fname }, pname(pname), origUser(origUser), cbretty{ cbretty }, cbparamty(cbparamty) {}
 
 	std::string getName()const {
-		return name;
+		return pname;
 	}
 
 	std::ostringstream& getLastCode() {
@@ -438,8 +465,12 @@ struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
 	CallbackT* origCb;
 	CallbackT* replCb;
 
-	explicit Callbacker(const std::string& name,CallbackT* origCb,CallbackT* replCb, const std::string &cbretty, const std::string &cbparamty, void *origUser)
-		: CallbackBase(name, origUser,cbretty,cbparamty), origCb(origCb), replCb(replCb) {}
+	explicit Callbacker(const std::string &fname, const std::string& pname,CallbackT* origCb,CallbackT* replCb, const std::string &cbretty, const std::string &cbparamty, void *origUser)
+		: CallbackBase(fname, pname, origUser,cbretty,cbparamty), origCb(origCb), replCb(replCb) {}
+
+	constexpr int getNumArgs() {
+		return sizeof...(ParamTy);
+	}
 
 	void newInvocation() {
 		assert(inprogress==-1);
@@ -593,6 +624,112 @@ static inline void rtrim(std::string &s) {
 		}).base(), s.end());
 }
 
+static void escape(std::ostream &OS, const std::string& name, const std::string& val) {
+	OS << ' ' << name << '=';
+	if (val.find_first_of(" \"\'\t\r\n\\") == std::string::npos) {
+		OS << val;
+		return;
+	}
+
+	OS << '\"';
+	for (auto c : val) {
+		switch (c) {
+		case '\"':
+			OS << "\\\""; break;
+		case '\'':
+			OS << "\\\'"; break;
+		case '\t':
+			OS << "\\t"; break;
+		case '\r':
+			OS << "\\r"; break;
+		case '\n':
+			OS << "\\n"; break;
+		case '\\':
+			OS << "\\\\"; break;
+		default:
+			OS << c;
+		}
+	}
+	OS << '\"';
+}
+
+
+static std::string to_hex(const void* ptr) {
+	std::ostringstream buf;
+	buf << ptr;
+	return buf.str();
+}
+
+
+
+static void escape(std::ostream& OS, const std::string& name, void *val) {
+	OS << ' ' << name << '=';
+	if (val)
+		OS << val;
+	else
+		OS << "0x0";
+}
+
+
+static void escape(std::ostream& OS, const std::string& name, int val) {
+	OS << ' ' << name << '=' << val;
+}
+
+
+static const char* getLogpath() {
+	static const char* logpath = nullptr;
+	if (!logpath)
+		logpath = getenv("ISLTRACE_OUTFILE");
+		if (!logpath)
+			logpath = "isltrace.log";
+	return logpath;
+}
+
+
+static std::ofstream &getLogfile() {
+	static std::ofstream *logfile;
+
+	if (!logfile) {
+		auto logpath = getLogpath();
+		logfile = new std::ofstream(logpath, std::ios_base::out);
+		typedef const char *(*VerFuncTy)(void);
+		auto verfunc = (VerFuncTy) dlsym(openlibisl(), "isl_version");
+		auto ver = (*verfunc)();
+		std::string verstr = ver;
+		rtrim(verstr);
+		*logfile << "isltrace";
+		escape(*logfile, "gentime", verstr);
+
+		//*logfile << ""
+		//*mainfile << "  const char *genIslVersion = \"" << verstr << "\";\n";
+		//*mainfile << "  printf(\"### ISL version: %s (%s at generation)\\n\",  dynIslVersion, genIslVersion);\n\n";
+	}
+	return *logfile;
+}
+
+
+static std::ostream& openLogfile() {
+	auto& logfile = getLogfile();
+	if (!logfile.is_open()) {
+		auto logpath = getLogpath();
+		logfile.open(logpath,std::ios_base::in | std::ios_base::out | std::ios_base::ate);
+	}
+	return logfile;
+}
+
+static void flushLogfile() {
+	auto& logfile = getLogfile();
+	logfile.close();
+}
+
+
+static bool &getIsInternal() {
+	static bool IsInternal = false;
+	return IsInternal;
+}
+
+
+#if 0
 struct Level {
 	bool IsMain = false;
 	bool IsInternal = false;
@@ -602,11 +739,13 @@ struct Level {
 		Level* Result = new Level();
 		Result->IsMain = true;
 
+#if 0
 		Result->mainpath = getenv("ISLTRACE_OUTFILE");
 		if (!Result->mainpath)
-			Result->mainpath = "isltrace.c";
+			Result->mainpath = "isltrace.log";
 
-		Result->varpath = "isltrace_vars.inc";
+		//Result->varpath = "isltrace_vars.inc";
+#endif
 
 		return Result;
 	}
@@ -630,7 +769,7 @@ struct Level {
 	}
 
 
-
+#if 0
 	const char* mainpath =nullptr;
 	const char* varpath = nullptr;
 	std::ofstream* mainfile;
@@ -679,12 +818,15 @@ struct Level {
 		abort();
 	}
 
+
 	void flush();
+#endif
 };
+#endif
 
 
 
-
+#if 0
 static std::vector<Level*> &getLevelStack() {
 	static std::vector<Level*> stack;
 	if (stack.empty())
@@ -712,27 +854,39 @@ void Level::flush() {
 		assert(!varfile->is_open());
 	}
 }
+#endif
 
+#if 0
 static Level* getTopmostLevel() {
 	return getLevelStack().back();
 }
+#endif
 
 static void pushInternalLevel() {
-	getLevelStack().push_back(Level::createInternal());
+	auto& IsInternal = getIsInternal();
+	assert(!IsInternal);
+	IsInternal = true;
+	//getLevelStack().push_back(Level::createInternal());
 }
 
 static void popInternalLevel() {
-	assert(getTopmostLevel()->IsInternal);
-	getLevelStack().pop_back();
+	auto& IsInternal = getIsInternal();
+	assert(IsInternal);
+	IsInternal = false;
+	//assert(getTopmostLevel()->IsInternal);
+	//getLevelStack().pop_back();
 }
 
 
 static void pushCallbackLevel(CallbackBase*Cb) {
-	assert(getTopmostLevel()->IsInternal);
-	getLevelStack().push_back(Level::createCallback(Cb));
+	auto& IsInternal = getIsInternal();
+	assert(IsInternal);
+	IsInternal = false;
+	//assert(getTopmostLevel()->IsInternal);
+	//getLevelStack().push_back(Level::createCallback(Cb));
 }
 
-
+#if 0
 static void writeCallbackFileOutput() {
 	const char* path = getenv("ISLTRACE_CBFILE");
 	if (!path)
@@ -760,12 +914,16 @@ static void writeCallbackFileOutput() {
 
 	OS.close();
 }
+#endif
 
 
 static void popCallbackLevel() {
-	assert(getTopmostLevel()->IsCallback);
-	writeCallbackFileOutput();
-	getLevelStack().pop_back();
+	auto& IsInternal = getIsInternal();
+	assert(!IsInternal);
+	IsInternal = true;
+	//assert(getTopmostLevel()->IsCallback);
+	//writeCallbackFileOutput();
+	//getLevelStack().pop_back();
 }
 
 
@@ -791,7 +949,7 @@ static void trace_pre_ppchar(std::ostream &OS, const  std::string &vname, size_t
 static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, size_t n, size_t size, const void *p) {
 	if (size == 8) {
 		const uint64_t* b = (const uint64_t*)p;
-		OS << "  uint64_t " << chunkvname << "[] = {";
+		OS << "uint64_t " << chunkvname << "[] = {";
 		bool First = true;
 		for (int i = 0; i < n; i += 1) {
 			if (!First)
@@ -799,10 +957,10 @@ static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, s
 			OS << "0x" << std::hex << b[i] << std::dec;
 			First = false;
 		}
-		OS << "};\n";
+		OS << "};";
 	} else if (size == 4) {
 			const uint32_t* b = (const uint32_t*)p;
-			OS << "  uint32_t " << chunkvname << "[] = {";
+			OS << "uint32_t " << chunkvname << "[] = {";
 			bool First = true;
 			for (int i = 0; i < n; i += 1) {
 				if (!First)
@@ -810,10 +968,10 @@ static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, s
 				OS << "0x" << std::hex << b[i] << std::dec;
 				First = false;
 			}
-			OS << "};\n";
+			OS << "};";
 	} else if (size == 2) {
 		const uint16_t* b = (const uint16_t*)p;
-		OS << "  uint16_t " << chunkvname << "[] = {";
+		OS << "uint16_t " << chunkvname << "[] = {";
 		bool First = true;
 		for (int i = 0; i < n; i += 1) {
 			if (!First)
@@ -821,11 +979,11 @@ static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, s
 			OS << "0x" << std::hex << b[i] << std::dec;
 			First = false;
 		}
-		OS << "};\n";
+		OS << "};";
 	} else {
 		auto c = n * size;
 		const char* b = (const char*)p;
-		OS << "  char " << chunkvname << "[] = {";
+		OS << "uint8_t " << chunkvname << "[] = {";
 		bool First = true;
 		for (int i = 0; i < c; i += 1) {
 			if (!First)
@@ -833,7 +991,7 @@ static void trace_pre_chunks(std::ostream &OS, const  std::string &chunkvname, s
 			OS << "0x" << std::hex << (int)b[i] << std::dec;
 			First = false;
 		}
-		OS << "};\n";
+		OS << "};";
 	}
 }
 
@@ -900,7 +1058,7 @@ struct Argsregister<T,Rest...> {
 #endif
 
 		if constexpr (std::is_pointer_v<T>) {
-			// We could uniquify __isl_take paramters, but not __isl_keep parameters (cow removing a reference is indistinguishable from freeing one).
+			// We could uniquify __isl_take parameters, but not __isl_keep parameters (cow removing a reference is indistinguishable from freeing one).
 			// Unifortunately, clang does not remember annotations for the function types of callbacks.
 			std::string parmname = trace_new_result("p");
 			OSvars << "void *" << parmname << ";\n";
@@ -957,7 +1115,7 @@ RetTy Callbacker<RetTy(ParamTy...)>::callback(ParamTy... Params) {
 
 
 template<typename CallTy>
-static CallTy*  getsym(const char *fname) {
+static CallTy*getsym(const char *fname) {
 	void* handle = openlibisl();
 	auto* orig = (CallTy*)dlsym(handle, fname);
 	fprintf(stderr, "Address of %s: %p\n", fname, orig);
@@ -1009,8 +1167,7 @@ void* dummy;
 
 
 
-
-
+#if 0
 template<typename RetTy, typename FuncTy, typename ...ParamTy>
 static void trace_precall1(const char* fname, const char* rettyname, void* self, FuncTy*& orig, int dummy, ParamTy... Params) {
 	if (!orig) {
@@ -1056,7 +1213,7 @@ template<typename RetTy, typename FuncTy, typename ...ParamTy>
 static void trace_postcall(const char* fname, const char* rettyname, void* self, FuncTy* orig, Level* lvl, std::ostream& OS, int dummy, ParamTy... Params) {
 	popInternalLevel();
 }
-
+#endif
 
 
 
@@ -1137,21 +1294,221 @@ if constexpr (std::is_pointer<RETTY>::value) {  \
 
 template<typename ObjT>
 struct ResultObjPrinter {
-	static void printResult(std::ostream& OS, ObjT* obj) {}
+	static void printResult(std::ostream& OS, ObjT obj) {}
 };
 
 template<>
-struct ResultObjPrinter<isl_map> {
-	static void printResult(std::ostream& OS, isl_map* obj) {
-		OS << " // ";
-		auto p = isl_printer_to_str(isl_map_get_ctx(obj));
-		p = isl_printer_print_map(p, obj);
-	auto c=	isl_printer_get_str(p);
-	OS << c;
-	free(c);
-	isl_printer_free(p);
+struct ResultObjPrinter<int> {
+	static void printResult(std::ostream& OS, int val) {
+		OS << val;
 	}
 };
+
+template<>
+struct ResultObjPrinter<unsigned> {
+	static void printResult(std::ostream& OS, unsigned  val) {
+		OS << val;
+	}
+};
+
+template<>
+struct ResultObjPrinter<long> {
+	static void printResult(std::ostream& OS, long  val) {
+		OS << val;
+	}
+};
+
+template<>
+struct ResultObjPrinter<unsigned long> {
+	static void printResult(std::ostream& OS, unsigned long val) {
+		OS << val;
+	}
+};
+
+template<>
+struct ResultObjPrinter<char*> {
+	static void printResult(std::ostream& OS, char* val) {
+		OS << "\"" << val << "\"";
+	}
+};
+
+template<>
+struct ResultObjPrinter<const char*> {
+	static void printResult(std::ostream& OS,const char* val) {
+		OS << "\"" << val << "\"";
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_stat> {
+	static void printResult(std::ostream& OS,isl_stat val) {
+		Argprinter<isl_stat>::print(OS,val);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_bool> {
+	static void printResult(std::ostream& OS,isl_bool val) {
+		Argprinter<isl_bool>::print(OS,val);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_dim_type> {
+	static void printResult(std::ostream& OS,isl_dim_type val) {
+		Argprinter<isl_dim_type>::print(OS,val);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_constraint*> {
+	static void printResult(std::ostream& OS, isl_constraint* obj) {
+		auto p = isl_printer_to_str(isl_constraint_get_ctx(obj));
+		p = isl_printer_print_constraint(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_basic_map*> {
+	static void printResult(std::ostream& OS, isl_basic_map* obj) {
+		auto p = isl_printer_to_str(isl_basic_map_get_ctx(obj));
+		p = isl_printer_print_basic_map(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_map*> {
+	static void printResult(std::ostream& OS, isl_map* obj) {
+		auto p = isl_printer_to_str(isl_map_get_ctx(obj));
+		p = isl_printer_print_map(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_union_map*> {
+	static void printResult(std::ostream& OS, isl_union_map* obj) {
+		auto p = isl_printer_to_str(isl_union_map_get_ctx(obj));
+		p = isl_printer_print_union_map(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_basic_set*> {
+	static void printResult(std::ostream& OS, isl_basic_set* obj) {
+		auto p = isl_printer_to_str(isl_basic_set_get_ctx(obj));
+		p = isl_printer_print_basic_set(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_set*> {
+	static void printResult(std::ostream& OS, isl_set* obj) {
+		auto p = isl_printer_to_str(isl_set_get_ctx(obj));
+		p = isl_printer_print_set(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_union_set*> {
+	static void printResult(std::ostream& OS, isl_union_set* obj) {
+		auto p = isl_printer_to_str(isl_union_set_get_ctx(obj));
+		p = isl_printer_print_union_set(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_aff*> {
+	static void printResult(std::ostream& OS, isl_aff* obj) {
+		auto p = isl_printer_to_str(isl_aff_get_ctx(obj));
+		p = isl_printer_print_aff(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_pw_aff*> {
+	static void printResult(std::ostream& OS, isl_pw_aff* obj) {
+		auto p = isl_printer_to_str(isl_pw_aff_get_ctx(obj));
+		p = isl_printer_print_pw_aff(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+
+template<>
+struct ResultObjPrinter<isl_space*> {
+	static void printResult(std::ostream& OS, isl_space* obj) {
+		auto p = isl_printer_to_str(isl_space_get_ctx(obj));
+		p = isl_printer_print_space(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+template<>
+struct ResultObjPrinter<isl_val*> {
+	static void printResult(std::ostream& OS, isl_val* obj) {
+		auto p = isl_printer_to_str(isl_val_get_ctx(obj));
+		p = isl_printer_print_val(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+
+template<>
+struct ResultObjPrinter<isl_id*> {
+	static void printResult(std::ostream& OS, isl_id* obj) {
+		auto p = isl_printer_to_str(isl_id_get_ctx(obj));
+		p = isl_printer_print_id(p, obj);
+		auto c=	isl_printer_get_str(p);
+		OS << c;
+		free(c);
+		isl_printer_free(p);
+	}
+};
+
+
+
+
 
 
 template<typename T>
@@ -1159,6 +1516,438 @@ static void trace_print_result(std::ostream &OS, T* obj) {
 	if (!obj) return;
 	ResultObjPrinter<T>::printResult(OS,obj);
 }
+
+
+
+
+template<typename T>
+struct PredefArg {
+static	bool predef(std::string& parmname, std::string& parmty, std::string& valArg, std::string& ptrArg,  T &val) { return false; }
+};
+
+
+#if 0
+template<>
+struct PredefArg<char**> {
+static	bool predef(std::string& parmname, std::string& parmty, std::string& valArg, std::string& ptrArg, char** &val) {
+		auto& OS = openLogfile();
+
+		OS << "\npredef";
+		escape(OS, "type", parmty);
+
+		std::ostringstream buf;
+		buf << "char* %name%[] = {";
+		auto t = val;
+		bool First = true;
+		while (t[0]) {
+			if (!First)
+				buf << ", ";
+			buf <<  "\"" << t[0] << "\""; // TODO: escape
+			++t;
+			First = false;
+		}
+		buf << "}";
+		escape(OS, "code", buf.str());
+		return true;
+	}
+};
+#endif
+
+
+
+namespace {
+
+struct IslCallBase {
+	const char* name;
+	const char* rettystr;
+	std::vector<std::string> argsParmname;
+	std::vector<std::string> argsTystr;
+	std::vector<std::string> valArgs;
+	std::vector<std::string> ptrArgs;
+	//std::vector<std::string> predefArgs;
+	std::vector<CallbackBase*> cbArgs;
+
+	explicit IslCallBase(const char* name, const char* rettystr, int nargs) : rettystr{rettystr}, name{name}  {
+		argsParmname.resize(nargs);
+		argsTystr.resize(nargs);
+		valArgs.resize(nargs);
+		ptrArgs.resize(nargs);
+	//	predefArgs.resize(nargs);
+		cbArgs.resize(nargs);
+		pushInternalLevel();
+	}
+
+	~IslCallBase() {
+		popInternalLevel();
+	}
+
+	int getNumArgs() {
+		return (int)valArgs.size();
+	}
+
+	void beforeCall(const char *cmd) {
+		auto &OS = openLogfile();
+		OS << "\n" << cmd;
+		escape(OS, "fname", name);
+		if (rettystr)
+			escape(OS, "rettype", rettystr);
+		escape(OS, "numargs", getNumArgs());
+		for (int i = 0; i < getNumArgs(); i += 1) {
+			escape(OS, "parm" + std::to_string(i) + "name", argsParmname[i]);
+			escape(OS, "parm" + std::to_string(i) + "type", argsTystr[i]);
+			//if (!predefArgs[i].empty()) {
+			//	escape(OS, "parm" + std::to_string(i) + "predef", predefArgs[i]);
+			//}
+			if (!valArgs[i].empty()) {
+				escape(OS, "parm" + std::to_string(i) + "val", valArgs[i]);
+			}
+			if (!ptrArgs[i].empty()) {
+				escape(OS, "parm" +std:: to_string(i) + "ptr", ptrArgs[i]);
+			}
+			if (cbArgs[i]) {
+				escape(OS, "parm" + std::to_string(i) + "cb", cbArgs[i]);
+			}
+		}
+		flushLogfile();
+	}
+};
+
+
+
+
+
+template<typename T>
+struct IslCallImpl;
+
+
+template<typename RetTy, typename... ParmTy>
+struct IslCallImpl<RetTy(ParmTy...)> : public IslCallBase {
+	using FuncTy = RetTy(ParmTy...);
+
+	FuncTy* orig;
+	std::tuple<ParmTy...> realArgs;
+	std::tuple<ParmTy...> args;
+
+	explicit IslCallImpl(const char* name, const char* rettystr, FuncTy* orig) : IslCallBase(name, rettystr, sizeof...(ParmTy)), orig{orig} {}
+
+	template<int N, typename ArgT>
+	void trace_arg(const char *parmname, const char *parmtystr, ArgT arg) {
+		argsParmname[N] = parmname;
+		argsTystr[N] = parmtystr;
+
+		std::get<N>(realArgs) = arg;
+		if (PredefArg<ArgT>::predef(argsParmname[N], argsTystr[N], valArgs[N], ptrArgs[N], arg)) {
+			// has been handled
+		} else if constexpr (std::is_pointer_v<ArgT> && !std::is_same_v<ArgT,char*>&& !std::is_same_v<ArgT,const char*>) {
+			using PointerT = std::remove_pointer_t<ArgT>;
+			//arg = ObjCow<PointerT>::cow(arg);
+
+			std::ostringstream OS;
+			OS << arg;
+			//auto uniqued = ObjCow<PointerT>::cow(arg);
+			ptrArgs[N] = OS.str();
+		} else {
+			std::ostringstream OS;
+			Argprinter<ArgT>::print(OS, arg);
+			valArgs[N] = OS.str();
+		}
+		std::get<N>(args) = arg;
+	}
+
+	template<int ArgcIdx, int ArgvIdx>
+	void trace_argv(const char *argvname, const char *argvtype, int argc, char *argv[]) {
+		argsParmname[ArgvIdx] = argvname;
+		argsTystr[ArgvIdx] = argvtype;
+
+		auto name = trace_new_result("argv");
+		auto& OS = openLogfile();
+		OS << "\npredef";
+		escape(OS, "name", name);
+		escape(OS, "ty", argvtype);
+		escape(OS, "ptr", argv);
+		std::ostringstream buf;
+		buf << "char* " << name << "[] = { ";
+		for (int i = 0; i < argc; i += 1) {
+			if (i)
+				buf << ", ";
+			buf << "\"" << argv[i] << "\""; // TODO: escape
+		}
+		buf << " };";
+		escape(OS, "code", buf.str());
+		ptrArgs[ArgvIdx] = to_hex(argv);
+		valArgs[ArgcIdx] = std::to_string(argc);
+
+		std::get<ArgcIdx>(args) = argc;
+		std::get<ArgcIdx>(realArgs) = argc;
+
+		std::get<ArgvIdx>(args) = argv;
+		std::get<ArgvIdx>(realArgs) = argv;
+	}
+
+	template<int CountIdx, int SizeIdx, int ChunksIdx>
+	void trace_chunks(const char* countname, const char* sizename, const char* chunksname,
+		const char* countty, const char* sizety, const char* chunkty,
+		size_t count, size_t size, const void* chunks) {
+		auto name = trace_new_result("chunks");
+
+		auto& OS = openLogfile();
+		OS << "\npredef";
+		escape(OS, "name", name);
+		escape(OS, "ty", chunkty);
+		escape(OS, "ptr", (void*)chunks);
+		std::ostringstream buf;
+		trace_pre_chunks(buf, name, count, size, chunks);
+		escape(OS, "code", buf.str());
+		valArgs[CountIdx] = std::to_string(count);
+		valArgs[SizeIdx] = std::to_string(size);
+		ptrArgs[ChunksIdx] = to_hex(chunks);
+
+		std::get<CountIdx>(args) = count;
+		std::get<SizeIdx>(args) = size;
+		std::get<ChunksIdx>(args) = chunks;
+		argsTystr[CountIdx] = countty;
+		argsTystr[SizeIdx] = sizety;
+		argsTystr[ChunksIdx] = chunkty;
+		argsParmname[CountIdx] = countname;
+		argsParmname[SizeIdx] = sizename;
+		argsParmname[ChunksIdx] = chunksname;
+	}
+
+	template<int CbIdx, int UserIdx, typename CallbackT, typename VoidT>
+	void trace_cb(const char *fname, const char* parmname, const char* username, const char*cbty, const char *userty, const char *retty, const char* paramtys, CallbackT *origFn, CallbackT *replFn, VoidT *origUser) {
+		auto* callbacker = new Callbacker<CallbackT>(fname, parmname, origFn, replFn, retty, paramtys, (void*)origUser);
+
+		std::get<CbIdx>(args) = replFn;
+		std::get<CbIdx>(realArgs) = origFn;
+		argsParmname[CbIdx] = parmname;
+		argsTystr[CbIdx] = cbty;
+		//ptrArgs[CbIdx] =(void*) replFn;
+		//valArgs[CbIdx] = std::string{ "&" }  + fname;
+		ptrArgs[CbIdx] = to_hex(callbacker);
+
+		if constexpr (UserIdx >= 0) {
+			std::get<UserIdx>(args) = callbacker;
+			std::get<UserIdx>(realArgs) = origUser;
+			argsParmname[UserIdx] = username;
+			argsTystr[UserIdx] = userty;
+			valArgs[UserIdx] = to_hex(origUser);
+		}
+
+		auto& OS = openLogfile();
+		OS << "\ncallback";
+		escape(OS,"callbacker",(void*)callbacker);
+		escape(OS,"fname",fname);
+		escape(OS,"pname",parmname);
+		escape(OS,"retty",retty);
+		escape(OS,"numargs", callbacker->getNumArgs());
+		escape(OS,"paramtys",paramtys);
+	}
+};
+
+
+
+
+
+
+
+
+
+template<typename T>
+struct IslCall;
+
+template<typename... ParmTy>
+struct IslCall<void(ParmTy...)>: public IslCallImpl<void(ParmTy...)> {
+	using FuncTy = void(ParmTy...);
+	IslCallImpl<FuncTy>& getBase() { return *this;  }
+
+	explicit IslCall(const char* name, const char *tystr, FuncTy* orig) : IslCallImpl<void(ParmTy...)>(name,tystr,orig) {}
+
+	void apply() {
+		getBase().beforeCall("call_proc");
+		std::apply(getBase().orig, getBase().args);
+	}
+};
+
+
+
+
+template<typename RetTy, typename... ParmTy>
+struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
+	using FuncTy = RetTy(ParmTy...);
+	IslCallImpl<FuncTy>& getBase() { return *this;  }
+
+	explicit IslCall(const char* name, const char *tystr, FuncTy* orig) : IslCallImpl<RetTy(ParmTy...)>(name,tystr,orig) {}
+
+	RetTy apply() {
+	  getBase().beforeCall("call_func");
+		RetTy retval = std::apply(getBase().orig, getBase().args);
+
+		if constexpr (std::is_pointer_v<RetTy>) {
+			using PointerT = std::remove_pointer_t<RetTy>;
+			retval = ObjCow<PointerT>::cow(retval);
+		}
+
+			auto& OS = openLogfile();
+			OS << "\nreturn";
+			escape(OS, "fname", getBase().name);
+			escape(OS, "rettype", getBase().rettystr);
+			if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>) {
+				escape(OS, "retptr", retval);
+			}	else {
+				std::ostringstream kOS;
+				Argprinter<RetTy>::print(kOS, retval);
+				escape(OS, "retval", kOS.str());
+			}
+
+			//if constexpr (std::is_pointer_v<RetTy>  && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>) {
+			//	using PointerT = std::remove_pointer_t<RetTy>;
+				std::ostringstream dOS;
+				ResultObjPrinter<RetTy>::printResult(dOS, retval);
+				auto desc = dOS.str();
+				if (!desc.empty())
+					escape(OS, "desc", desc);
+			//}
+
+			return retval;
+	}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct CbCallBase {
+	CallbackBase* callbacker;
+	std::vector<std::string> ptrArgs;
+
+	explicit CbCallBase(CallbackBase* callbacker, int numargs) : callbacker{callbacker} {
+		ptrArgs.resize(numargs);
+		pushCallbackLevel(callbacker);
+
+	}
+	~CbCallBase() {
+		popCallbackLevel();
+	}
+};
+
+
+
+
+template<int UserIdx, typename FuncTy>
+struct CbCallImpl;
+
+template<int UserIdx, typename RetTy, typename... ParmTy>
+struct CbCallImpl<UserIdx, RetTy(ParmTy...)> : public CbCallBase {
+	using FuncTy = RetTy(ParmTy...);
+	CbCallBase& getBase() { return *this;  }
+
+	Callbacker<FuncTy>* callbacker;
+	std::tuple<ParmTy...> args;
+
+	explicit CbCallImpl(Callbacker<FuncTy>* callbacker) : CbCallBase(callbacker, sizeof...(ParmTy)),callbacker{callbacker} {	}
+
+	template<int N, typename ArgT>
+	void trace_arg(ArgT arg) {
+		if constexpr (std::is_pointer_v<ArgT> && !std::is_same_v<ArgT,char*>&& !std::is_same_v<ArgT,const char*>) {
+			using PointerT = std::remove_pointer_t<ArgT>;
+			std::ostringstream OS;
+			OS << arg;
+			ptrArgs[N] = OS.str();
+		} else {
+			// not interesting
+		}
+		std::get<N>(args) = arg;
+	}
+
+	void beforeApply() {
+		std::get<UserIdx>(args) = callbacker->origUser;
+		auto& OS = openLogfile();
+		OS << "\ncallback_enter";
+	  escape(OS, "callbacker", (void*)callbacker);
+		escape(OS, "numargs", sizeof...(ParmTy));
+		for (int i = 0; i < sizeof...(ParmTy); i += 1) {
+			if (!ptrArgs[i].empty())
+				escape(OS, "arg" + std::to_string(i) + "ptr", ptrArgs[i]);
+		}
+		flushLogfile();
+	}
+};
+
+
+
+
+
+template<int UserIdx, typename FuncTy>
+struct CbCall;
+
+template<int UserIdx, typename... ParmTy>
+struct CbCall<UserIdx, void(ParmTy...)> : public CbCallImpl<UserIdx, void(ParmTy...)>  {
+	using FuncTy = void(ParmTy...);
+	CbCallImpl<UserIdx, void(ParmTy...)>& getBase() { return *this;  }
+
+	 CbCall(Callbacker<FuncTy>* callbacker) : CbCallImpl<UserIdx, void(ParmTy...)>(callbacker) {}
+
+	void apply() {
+		getBase().	beforeApply();
+		std::apply(getBase().callbacker->origCb,getBase(). args);
+		{
+			auto& OS = openLogfile();
+			OS << "\ncallback_exit";
+			escape(OS, "callbacker", (void*)getBase().callbacker);
+			flushLogfile();
+		}
+	}
+};
+
+
+template<int UserIdx, typename RetTy, typename... ParmTy>
+struct CbCall<UserIdx, RetTy(ParmTy...)> : public CbCallImpl<UserIdx, RetTy(ParmTy...)>  {
+	using FuncTy = RetTy(ParmTy...);
+	CbCallImpl<UserIdx, RetTy(ParmTy...)>& getBase() { return *this;  }
+
+	 CbCall(Callbacker<FuncTy>* callbacker) : CbCallImpl<UserIdx, RetTy(ParmTy...)>(callbacker) {}
+
+	RetTy apply() {
+		getBase().	beforeApply();
+		auto retval = std::apply(getBase().callbacker->origCb,getBase(). args);
+
+		if constexpr (std::is_pointer_v<RetTy>) {
+			using PointerT = std::remove_pointer_t<RetTy>;
+			retval = ObjCow<PointerT>::cow(retval);
+		}
+
+
+			auto& OS = openLogfile();
+			OS << "\ncallback_exit";
+			escape(OS, "callbacker", (void*)getBase().callbacker);
+			escape(OS, "retty", getBase().callbacker->cbretty);
+			if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy, char*> && !std::is_same_v<RetTy, const char*>) {
+				using PointerT = std::remove_pointer_t<RetTy>;
+				escape(OS, "retptr", (void*)retval);
+			}	else {
+				std::ostringstream buf;
+				Argprinter<RetTy>::print(buf, retval);
+				escape(OS, "retval" , buf.str() );
+			}
+			flushLogfile();
+
+		return retval;
+	}
+};
+
+}
+
+
 
 
 #include "libtrace.inc.cpp"
