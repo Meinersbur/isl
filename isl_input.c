@@ -3382,7 +3382,7 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
 	return pwqp;
 }
 
-/* Is the next token an identifer not in "v"?
+/* Is the next token an identifier not in "v"?
  */
 static int next_is_fresh_ident(__isl_keep isl_stream *s, struct vars *v)
 {

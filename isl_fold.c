@@ -44,13 +44,15 @@ enum isl_fold isl_fold_type_negate(enum isl_fold type)
 static __isl_give isl_qpolynomial_fold *qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_space *space, int n)
 {
+	isl_ctx *ctx;
 	isl_qpolynomial_fold *fold;
 
 	if (!space)
 		goto error;
 
-	isl_assert(space->ctx, n >= 0, goto error);
-	fold = isl_calloc(space->ctx, struct isl_qpolynomial_fold,
+	ctx = isl_space_get_ctx(space);
+	isl_assert(ctx, n >= 0, goto error);
+	fold = isl_calloc(ctx, struct isl_qpolynomial_fold,
 			sizeof(struct isl_qpolynomial_fold) +
 			(n - 1) * sizeof(struct isl_qpolynomial *));
 	if (!fold)
@@ -73,10 +75,72 @@ isl_ctx *isl_qpolynomial_fold_get_ctx(__isl_keep isl_qpolynomial_fold *fold)
 	return fold ? fold->dim->ctx : NULL;
 }
 
+/* Return the domain space of "fold".
+ */
+static __isl_keep isl_space *isl_qpolynomial_fold_peek_domain_space(
+	__isl_keep isl_qpolynomial_fold *fold)
+{
+	return fold ? fold->dim : NULL;
+}
+
 __isl_give isl_space *isl_qpolynomial_fold_get_domain_space(
 	__isl_keep isl_qpolynomial_fold *fold)
 {
-	return fold ? isl_space_copy(fold->dim) : NULL;
+	return isl_space_copy(isl_qpolynomial_fold_peek_domain_space(fold));
+}
+
+/* Return the space of the domain of "fold".
+ * This may be either a copy or the space itself
+ * if there is only one reference to "fold".
+ * This allows the space to be modified inplace
+ * if both the expression and its space have only a single reference.
+ * The caller is not allowed to modify "fold" between this call and
+ * a subsequent call to isl_qpolynomial_fold_restore_domain_space.
+ * The only exception is that isl_qpolynomial_fold_free can be called instead.
+ */
+static __isl_give isl_space *isl_qpolynomial_fold_take_domain_space(
+	__isl_keep isl_qpolynomial_fold *fold)
+{
+	isl_space *space;
+
+	if (!fold)
+		return NULL;
+	if (fold->ref != 1)
+		return isl_qpolynomial_fold_get_domain_space(fold);
+	space = fold->dim;
+	fold->dim = NULL;
+	return space;
+}
+
+/* Set the space of the domain of "fold" to "space",
+ * where the space of "fold" may be missing
+ * due to a preceding call to isl_qpolynomial_fold_take_domain_space.
+ * However, in this case, "fold" only has a single reference and
+ * then the call to isl_qpolynomial_fold_cow has no effect.
+ */
+static
+__isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_restore_domain_space(
+	__isl_keep isl_qpolynomial_fold *fold, __isl_take isl_space *space)
+{
+	if (!fold || !space)
+		goto error;
+
+	if (fold->dim == space) {
+		isl_space_free(space);
+		return fold;
+	}
+
+	fold = isl_qpolynomial_fold_cow(fold);
+	if (!fold)
+		goto error;
+	isl_space_free(fold->dim);
+	fold->dim = space;
+
+	return fold;
+error:
+	isl_qpolynomial_fold_free(fold);
+	isl_space_free(space);
+	return NULL;
 }
 
 __isl_give isl_space *isl_qpolynomial_fold_get_space(
@@ -107,8 +171,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_domain_space(
 			goto error;
 	}
 
-	isl_space_free(fold->dim);
-	fold->dim = space;
+	isl_space_free(isl_qpolynomial_fold_take_domain_space(fold));
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	return fold;
 error:
@@ -129,23 +193,24 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_reset_space_and_domain(
 	return isl_qpolynomial_fold_reset_domain_space(fold, domain);
 }
 
-int isl_qpolynomial_fold_involves_dims(__isl_keep isl_qpolynomial_fold *fold,
+static isl_bool isl_qpolynomial_fold_involves_dims(
+	__isl_keep isl_qpolynomial_fold *fold,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
 
 	if (!fold)
-		return -1;
+		return isl_bool_error;
 	if (fold->n == 0 || n == 0)
-		return 0;
+		return isl_bool_false;
 
 	for (i = 0; i < fold->n; ++i) {
-		int involves = isl_qpolynomial_involves_dims(fold->qp[i],
+		isl_bool involves = isl_qpolynomial_involves_dims(fold->qp[i],
 							    type, first, n);
 		if (involves < 0 || involves)
 			return involves;
 	}
-	return 0;
+	return isl_bool_false;
 }
 
 /* Given a dimension type for an isl_qpolynomial_fold,
@@ -164,15 +229,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 {
 	int i;
 	enum isl_dim_type set_type;
+	isl_space *space;
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-
-	set_type = domain_type(type);
-	fold->dim = isl_space_set_dim_name(fold->dim, set_type, pos, s);
-	if (!fold->dim)
-		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_set_dim_name(fold->qp[i],
@@ -180,6 +241,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_set_dim_name(
 		if (!fold->qp[i])
 			goto error;
 	}
+
+	set_type = domain_type(type);
+	space = isl_qpolynomial_fold_take_domain_space(fold);
+	space = isl_space_set_dim_name(space, set_type, pos, s);
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	return fold;
 error:
@@ -193,6 +259,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 {
 	int i;
 	enum isl_dim_type set_type;
+	isl_space *space;
 
 	if (!fold)
 		return NULL;
@@ -204,9 +271,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
 		return NULL;
-	fold->dim = isl_space_drop_dims(fold->dim, set_type, first, n);
-	if (!fold->dim)
-		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_drop_dims(fold->qp[i],
@@ -214,6 +278,10 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_drop_dims(
 		if (!fold->qp[i])
 			goto error;
 	}
+
+	space = isl_qpolynomial_fold_take_domain_space(fold);
+	space = isl_space_drop_dims(space, set_type, first, n);
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	return fold;
 error:
@@ -227,6 +295,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 {
 	int i;
 	enum isl_dim_type set_type;
+	isl_space *space;
 
 	if (!fold)
 		return NULL;
@@ -237,17 +306,17 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_insert_dims(
 	if (!fold)
 		return NULL;
 
-	set_type = domain_type(type);
-	fold->dim = isl_space_insert_dims(fold->dim, set_type, first, n);
-	if (!fold->dim)
-		goto error;
-
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_insert_dims(fold->qp[i],
 							    type, first, n);
 		if (!fold->qp[i])
 			goto error;
 	}
+
+	set_type = domain_type(type);
+	space = isl_qpolynomial_fold_take_domain_space(fold);
+	space = isl_space_insert_dims(space, set_type, first, n);
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	return fold;
 error:
@@ -429,6 +498,44 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 	return sgn;
 }
 
+/* Check that "fold1" and "fold2" have the same type.
+ */
+static isl_stat isl_qpolynomial_fold_check_equal_type(
+	__isl_keep isl_qpolynomial_fold *fold1,
+	__isl_keep isl_qpolynomial_fold *fold2)
+{
+	enum isl_fold type1, type2;
+
+	type1 = isl_qpolynomial_fold_get_type(fold1);
+	type2 = isl_qpolynomial_fold_get_type(fold2);
+	if (type1 < 0 || type2 < 0)
+		return isl_stat_error;
+	if (type1 != type2)
+		isl_die(isl_qpolynomial_fold_get_ctx(fold1), isl_error_invalid,
+			"fold types don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Check that "fold1" and "fold2" have the same (domain) space.
+ */
+static isl_stat isl_qpolynomial_fold_check_equal_space(
+	__isl_keep isl_qpolynomial_fold *fold1,
+	__isl_keep isl_qpolynomial_fold *fold2)
+{
+	isl_bool equal;
+	isl_space *space1, *space2;
+
+	space1 = isl_qpolynomial_fold_peek_domain_space(fold1);
+	space2 = isl_qpolynomial_fold_peek_domain_space(fold2);
+	equal = isl_space_is_equal(space1, space2);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_qpolynomial_fold_get_ctx(fold1), isl_error_invalid,
+			"spaces don't match", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Combine "fold1" and "fold2" into a single reduction, eliminating
  * those elements of one reduction that are already covered by the other
  * reduction on "set".
@@ -447,12 +554,10 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	struct isl_qpolynomial_fold *res = NULL;
 	int better;
 
-	if (!fold1 || !fold2)
+	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
 		goto error;
-
-	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
-	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
-			goto error);
+	if (isl_qpolynomial_fold_check_equal_space(fold1, fold2) < 0)
+		goto error;
 
 	better = fold1->type == isl_fold_max ? -1 : 1;
 
@@ -484,7 +589,9 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold_on_domain(
 	for (i = 0; i < fold2->n; ++i) {
 		for (j = n1 - 1; j >= 0; --j) {
 			isl_qpolynomial *d;
-			int sgn, equal;
+			int sgn;
+			isl_bool equal;
+
 			equal = isl_qpolynomial_plain_is_equal(res->qp[j],
 								fold2->qp[i]);
 			if (equal < 0)
@@ -730,12 +837,11 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_empty(enum isl_fold type,
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_qpolynomial *qp)
 {
+	isl_space *space;
 	isl_qpolynomial_fold *fold;
 
-	if (!qp)
-		return NULL;
-
-	fold = qpolynomial_fold_alloc(type, isl_space_copy(qp->dim), 1);
+	space = isl_qpolynomial_get_domain_space(qp);
+	fold = qpolynomial_fold_alloc(type, space, 1);
 	if (!fold)
 		goto error;
 
@@ -841,12 +947,10 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_fold(
 	int i;
 	struct isl_qpolynomial_fold *res = NULL;
 
-	if (!fold1 || !fold2)
+	if (isl_qpolynomial_fold_check_equal_type(fold1, fold2) < 0)
 		goto error;
-
-	isl_assert(fold1->dim->ctx, fold1->type == fold2->type, goto error);
-	isl_assert(fold1->dim->ctx, isl_space_is_equal(fold1->dim, fold2->dim),
-			goto error);
+	if (isl_qpolynomial_fold_check_equal_space(fold1, fold2) < 0)
+		goto error;
 
 	if (isl_qpolynomial_fold_is_empty(fold1)) {
 		isl_qpolynomial_fold_free(fold1);
@@ -1088,25 +1192,28 @@ int isl_qpolynomial_fold_plain_cmp(__isl_keep isl_qpolynomial_fold *fold1,
 	return 0;
 }
 
-int isl_qpolynomial_fold_plain_is_equal(__isl_keep isl_qpolynomial_fold *fold1,
+isl_bool isl_qpolynomial_fold_plain_is_equal(
+	__isl_keep isl_qpolynomial_fold *fold1,
 	__isl_keep isl_qpolynomial_fold *fold2)
 {
 	int i;
 
 	if (!fold1 || !fold2)
-		return -1;
+		return isl_bool_error;
 
 	if (fold1->n != fold2->n)
-		return 0;
+		return isl_bool_false;
 
 	/* We probably want to sort the qps first... */
 	for (i = 0; i < fold1->n; ++i) {
-		int eq = isl_qpolynomial_plain_is_equal(fold1->qp[i], fold2->qp[i]);
+		isl_bool eq;
+
+		eq = isl_qpolynomial_plain_is_equal(fold1->qp[i], fold2->qp[i]);
 		if (eq < 0 || !eq)
 			return eq;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 __isl_give isl_val *isl_qpolynomial_fold_eval(
@@ -1294,21 +1401,14 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_morph *morph)
 {
 	int i;
-	isl_ctx *ctx;
+	isl_space *space;
 
-	if (!fold || !morph)
+	space = isl_qpolynomial_fold_peek_domain_space(fold);
+	if (isl_morph_check_applies(morph, space) < 0)
 		goto error;
-
-	ctx = fold->dim->ctx;
-	isl_assert(ctx, isl_space_is_equal(fold->dim, morph->dom->dim), goto error);
 
 	fold = isl_qpolynomial_fold_cow(fold);
 	if (!fold)
-		goto error;
-
-	isl_space_free(fold->dim);
-	fold->dim = isl_space_copy(morph->ran->dim);
-	if (!fold->dim)
 		goto error;
 
 	for (i = 0; i < fold->n; ++i) {
@@ -1317,6 +1417,10 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_morph_domain(
 		if (!fold->qp[i])
 			goto error;
 	}
+
+	space = isl_morph_get_ran_space(morph);
+	isl_space_free(isl_qpolynomial_fold_take_domain_space(fold));
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	isl_morph_free(morph);
 
@@ -1369,11 +1473,6 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 	if (!fold)
 		goto error;
 
-	isl_space_free(fold->dim);
-	fold->dim = isl_space_copy(space);
-	if (!fold->dim)
-		goto error;
-
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_lift(fold->qp[i],
 						isl_space_copy(space));
@@ -1381,7 +1480,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 			goto error;
 	}
 
-	isl_space_free(space);
+	isl_space_free(isl_qpolynomial_fold_take_domain_space(fold));
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	return fold;
 error:
@@ -1413,6 +1513,7 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 {
 	int i;
 	enum isl_dim_type set_src_type, set_dst_type;
+	isl_space *space;
 
 	if (n == 0)
 		return fold;
@@ -1424,17 +1525,17 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_move_dims(
 	set_src_type = domain_type(src_type);
 	set_dst_type = domain_type(dst_type);
 
-	fold->dim = isl_space_move_dims(fold->dim, set_dst_type, dst_pos,
-						set_src_type, src_pos, n);
-	if (!fold->dim)
-		goto error;
-
 	for (i = 0; i < fold->n; ++i) {
 		fold->qp[i] = isl_qpolynomial_move_dims(fold->qp[i],
 				dst_type, dst_pos, src_type, src_pos, n);
 		if (!fold->qp[i])
 			goto error;
 	}
+
+	space = isl_qpolynomial_fold_take_domain_space(fold);
+	space = isl_space_move_dims(space, set_dst_type, dst_pos,
+						set_src_type, src_pos, n);
+	fold = isl_qpolynomial_fold_restore_domain_space(fold, space);
 
 	return fold;
 error:
