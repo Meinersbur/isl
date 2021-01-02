@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.12)
 
 project("isl" C CXX)
 
+# TODO: Extract from configure.ac
+set(ISL_VERSION_MAJOR 0 CACHE STRING "major version" FORCE)
+set(ISL_VERSION_MINOR 23 CACHE STRING "minor version" FORCE)
+
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
   set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
@@ -15,6 +20,9 @@ set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 find_package(Clang QUIET)
 find_package(Python QUIET)
+
+# See https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
+include(GNUInstallDirs)
 
 set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
 set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")
@@ -348,13 +356,13 @@ add_library(isl ${libisl_sources})
 set_target_properties(isl PROPERTIES FOLDER "Integer Set Library")
 
 target_include_directories(isl PRIVATE "${ISL_BINARY_DIR}" "${ISL_SOURCE_DIR}" ${PIPLIB_INCLUDE_DIRS})
-target_include_directories(isl PUBLIC "${ISL_BINARY_DIR}/include" "${ISL_SOURCE_DIR}/include")
+target_include_directories(isl PUBLIC "$<BUILD_INTERFACE:${ISL_BINARY_DIR}/include>" "$<BUILD_INTERFACE:${ISL_SOURCE_DIR}/include>")
 if (USE_GMP_FOR_MP)
   target_include_directories(isl PUBLIC ${GMP_INCLUDE_DIRS})
-  target_link_libraries(isl PUBLIC ${GMP_LIBRARIES})
+  target_link_libraries(isl PRIVATE ${GMP_LIBRARIES})
 endif ()
 if (USE_IMATH_FOR_MP)
-  target_include_directories(isl PUBLIC "${ISL_SOURCE_DIR}/imath")
+  target_include_directories(isl PRIVATE "${ISL_SOURCE_DIR}/imath")
 endif ()
 
 # General compiler options
@@ -409,4 +417,86 @@ add_test(NAME isl_test
 )
 add_test(NAME codegen_test
   COMMAND "${ISL_BINARY_DIR}/codegen_test.sh"
+)
+
+
+
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
+
+set(Upstream_VERSION 3.4.1)
+
+include(GenerateExportHeader)
+
+#add_library(ClimbingStats SHARED climbingstats.cpp)
+generate_export_header(isl)
+set_property(TARGET isl PROPERTY VERSION ${Upstream_VERSION})
+set_property(TARGET isl PROPERTY SOVERSION 3)
+set_property(TARGET isl PROPERTY INTERFACE_ClimbingStats_MAJOR_VERSION 3)
+set_property(TARGET isl APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING isl_MAJOR_VERSION
+)
+
+install(TARGETS isl EXPORT islTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+install(
+  FILES
+    include/isl/ctx.h
+    include/isl/aff.h
+    "${CMAKE_CURRENT_BINARY_DIR}/isl_export.h"
+  DESTINATION
+    include
+#  COMPONENT
+#    Devel
+)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
+  VERSION ${Upstream_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT islTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/islTargets.cmake"
+#  NAMESPACE Upstream::
+)
+
+
+# See https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
+set(ConfigPackageLocation lib/cmake/isl)
+set(targets_export_name "islTargets")
+#configure_file(cmake/islConfig.cmake
+#  "${CMAKE_CURRENT_BINARY_DIR}/islConfig.cmake"
+#  @ONLY
+#)
+configure_package_config_file(
+  "cmake/islConfig.cmake.in"
+  "islConfig.cmake"
+  INSTALL_DESTINATION  "${ConfigPackageLocation}"
+  PATH_VARS CMAKE_INSTALL_LIBDIR
+)
+
+
+install(EXPORT islTargets
+  FILE
+    islTargets.cmake
+#  NAMESPACE
+#    Upstream::
+  DESTINATION
+    ${ConfigPackageLocation}
+)
+install(
+  FILES
+    cmake/ClimbingStatsConfig.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
+  DESTINATION
+    ${ConfigPackageLocation}
+#  COMPONENT
+#    Devel
 )

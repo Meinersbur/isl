@@ -4,17 +4,12 @@
 import argparse
 import pathlib
 import shlex
+import tempfile
+import tool.invoke as invoke
+from tool.support import *
 from pathlib import Path
 from typing import Dict,List
 
-def mkpath(path):
-  if path == None:
-    return None
-  if isinstance(path,pathlib.Path):
-    return path
-  return pathlib.Path(path)
-
-shsplit = shlex.split
 
 
 
@@ -488,13 +483,13 @@ def gen_call(call: Stmt, level: Level):
         assert False
 
 
-def gen_version():
+def gen_version(mainlevel):
     yield "const char *dynIslVersion = isl_version();" # for some reason isl_version has a trailing newline
-    yield f"const char *genIslVersion = \"{getToplevel().gentime}\";"
+    yield f"const char *genIslVersion = \"{mainlevel.gentime}\";"
     yield "printf(\"### ISL version  : %s### at generation: %s\\n\",  dynIslVersion, genIslVersion);"
 
 
-def gen_globvars():
+def gen_globvars(mainlevel):
     global memory,allobjs
     for obj in allobjs:
         if obj.name=='name2': 
@@ -542,7 +537,7 @@ def gen_callbacker(callbacker:Callbacker,genbody:bool):
     yield "}"
 
 
-def gen_callbacks():
+def gen_callbacks(mainlevel):
     # Forward declarations
     for cb in callbackers.values():
         yield from gen_callbacker(callbacker=cb,genbody=False)
@@ -554,51 +549,97 @@ def gen_callbacks():
         yield ""
 
 
-def gen_main():
-    assert len(callstack)==1
-    toplevel = callstack[0]
-    for call in toplevel.calls:
-        yield from gen_call(call,level=toplevel)
+def gen_main(mainlevel):    
+    for call in mainlevel.calls:
+        yield from gen_call(call,level=mainlevel)
+
+
+
+def writeoutput(out,mainlevel):
+    print(prologue,file=out)
+
+    print("// variables used accross callbacks",file=out)
+    for line in gen_globvars(mainlevel=mainlevel):
+        print(line,file=out)
+    print("",file=out)
+
+    for line in gen_callbacks(mainlevel=mainlevel):
+        print(line,file=out)
+
+    print("int main() {",file=out)
+    for line in gen_version(mainlevel=mainlevel):
+        print(f"  {line}",file=out)
+    print("",file=out)
+    for line in gen_main(mainlevel=mainlevel):
+        print(f"  {line}",file=out)
+    print("  return EXIT_SUCCESS;",file=out)
+    print("}",file=out)
+
+
+
+def check_trace(mainlevel):
+    workdir = mkpath(tempfile.mkdtemp(prefix='isltrace'))
+    cfile = workdir / 'isltrace.c'   
+
+    cmakefile = workdir / 'CMakeLists.txt'
+    cmakecontent="""project(isltrace)
+
+find_package(isl)
+add_executable(isltrace isltrace.c)
+"""
+    with cmakefile.open(mode='w') as out:
+        out.write(cmakecontent)
+
+    with cfile.open(mode='w') as out:
+        writeoutput(out=out,mainlevel=mainlevel)
+
+
+
+    cmakeresult = invoke.execute('cmake', '-GNinja', '-S', '.',
+        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True)
+
+    buildresult = invoke.execute('cmake', '--build', '.',
+        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True)
+
+    exefile = workdir / 'isltrace.exe'
+    ccresult = invoke.execute(r'C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe', cfile,  r'-IC:\Users\meinersbur\src\isl\include', r'-IC:\Users\meinersbur\build\isl\relese\include', r'-IC:\Users\meinersbur\src\isl\imath', '/O2', r'C:\Users\meinersbur\build\isl\release\isl.lib', '/out:' +str(exefile),
+        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True)
+
+    execresult = invoke.query(exefile)
+    return execresult
+
+
+
 
 
 def main():
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('logfile')
     parser.add_argument('--outfile', '-o')
+    parser.add_argument('--reduce', action='store_true')
 
     args = parser.parse_args()
     logfile = mkpath(args.logfile)
     outfile = mkpath(args.outfile)
+    reduce = args.reduce
     if not outfile:
         outfile = logfile.with_suffix('.c')
 
+    mainlevel = MainLevel()
     global callstack
-    callstack = [MainLevel()]
+    callstack = [mainlevel]
 
-    with logfile.open(mode='r') as log:
+    with logfile.open(mode='r') as log:        
         for line in log:
             parse(line)
-    
+    assert len(callstack)==1
+
     with outfile.open(mode='w') as out:
-        print(prologue,file=out)
+        writeoutput(out,mainlevel=mainlevel)
 
-        print("// variables used accross callbacks",file=out)
-        for line in gen_globvars():
-            print(line,file=out)
-        print("",file=out)
-
-        for line in gen_callbacks():
-            print(line,file=out)
-
-        print("int main() {",file=out)
-        for line in gen_version():
-            print(f"  {line}",file=out)
-        print("",file=out)
-        for line in gen_main():
-            print(f"  {line}",file=out)
-        print("  return EXIT_SUCCESS;",file=out)
-        print("}",file=out)
-
+    if reduce:
+        interesting = check_trace(mainlevel=mainlevel)
+        pass
 
 
 if __name__ == '__main__':
