@@ -5,11 +5,12 @@ import argparse
 import pathlib
 import shlex
 import tempfile
+import copy
 import tool.invoke as invoke
 from tool.support import *
 from pathlib import Path
 from typing import Dict,List
-
+from concurrent import futures
 
 
 
@@ -38,13 +39,13 @@ class IslMemObj(IslObj):
         self.name=name
         self.ty=ty
         self.ptr=ptr
-        self.definition=None
+        #self.definition=None
         self.deflvl=deflvl
         self.islocal=(deflvl is not None)
-        self.hasuse=False
+        #self.hasuse=False
 
     def use(self,lvl):
-        self.hasuse=True
+        #self.hasuse=True
         if lvl and lvl!=self.deflvl:
             self.islocal=False
 
@@ -55,9 +56,11 @@ class IslMemObj(IslObj):
 class IslArg:
     IsVal = False
     IsPtr = False
+    IsCb=False
     def __init__(self,name,ty):
         self.name=name
         self.ty=ty
+
 
 class IslValArg(IslArg):
     IsVal = True
@@ -72,18 +75,29 @@ class IslPtrArg(IslArg):
         super().__init__(name,ty)
         self.obj=obj
 
+    def clone(self):
+        return copy.copy(self)
+
+class IslCbArg(IslArg):
+    IsCb = True
+    def __init__(self,name,ty,callbacker):
+        super().__init__(name,ty)
+        assert callbacker
+        self.callbacker=callbacker
+
 
 
 class Stmt:
-    IsCall = False
+    IsCall = False 
     IsPredef = False
 
 
 class IslCall(Stmt):
     IsCall=True
-    def __init__(self,funcname,hasret,retty):
+    def __init__(self,funcname,hasret,retty,isspecial=None):
         self.funcname=funcname
         self.args =[]
+        self.isspecial = isspecial
         self.hasret=hasret
         if hasret:
             #self.retarg=None
@@ -102,13 +116,14 @@ class Predef(Stmt):
         self.name=name
         self.ty=ty
         self.ptr=ptr
+        self.hasret=True
         self.code=code
-        self.obj=obj
+        self.retobj=obj
 
 
 class Level:
     def __init__(self):
-        self.calls =[]
+        self.calls = []
 
     def addCall(self, call):
         self.calls.append(call)
@@ -124,6 +139,8 @@ class MainLevel(Level):
     def __init__(self):
         super().__init__()
         self.gentime=None
+        self.allcalls = []
+        #self.callbackers=[]
 
 
 class CallbackLevel(Level):
@@ -172,8 +189,25 @@ def getShortname(ty: str)->str:
         if sn := shortnames.get(pointee):
             return sn
         return 'ptr'
-    
+    assert False
     return '???'
+
+
+def get_getctx_func(ty:str) -> str:
+    if ty.endswith('*'):
+        # is a pointer
+        pointee = ty[:-1].strip()
+        return f'{pointee}_get_ctx'
+    return None
+
+def get_readfromstr_func(ty:str) -> str:
+    if ty.endswith('*'):
+        # is a pointer
+        pointee = ty[:-1].strip()
+        if pointee =='isl_space' or pointee=='isl_constraint':
+            return None
+        return f'{pointee}_read_from_str'
+    return None
 
 
 nullobj = IslNullObj()
@@ -213,8 +247,6 @@ def registerObj(ptr:int,ty:str,lvl:Level,name=None):
     shortname = getShortname(ty)
     if name==None:
         name = nextName(shortname)
-    if name =='node2':
-        a=3
     obj = IslMemObj(name=name,ty=ty,ptr=ptr,deflvl=lvl)
     memory[ptr] = obj
     allobjs.append(obj)
@@ -235,13 +267,18 @@ def parse_predef(name,ty,ptr,code):
     obj = registerObj(ptr=ptr,ty=ty,lvl=getToplevel(),name=name)
     predef = Predef(name=name,ty=ty,ptr=ptr,code=code,obj=obj)
     getToplevel().addCall(predef)
+    callstack[0].allcalls.append(predef)
 
 
-def make_arg(ty,name=None,val=None,ptr=None,uselvl=None):
+def make_arg(ty,name=None,val=None,ptr=None,cb=None,uselvl=None):
     global callbackers
     assert val==None or ptr==None
 
-    if val != None:
+    if cb != None:
+        cbptr=  int(cb,0)
+        callbacker = getCallbacker(cbptr)
+        arg = IslCbArg(name=name,ty=ty,callbacker=callbacker)
+    elif val != None:
         arg = IslValArg(name=name,ty=ty,val=val)
     elif ptr!=None:
         ptr=int(ptr, 0)
@@ -268,8 +305,8 @@ def parse_call(hasret,fname,rettype,numargs,**kwargs):
         prefix = 'parm'+str(i)
         popts = { k.removeprefix(prefix) : v for k,v in kwargs.items() if k.startswith(prefix) }
 
-        def parse_arg(name,type,val=None,ptr=None):
-            arg= make_arg(ty=type,name=name,val=val,ptr=ptr)
+        def parse_arg(name,type,val=None,ptr=None,cb=None):
+            arg= make_arg(ty=type,name=name,val=val,ptr=ptr,cb=cb)
             call.addArg(arg)
 
         parse_arg(**popts)
@@ -278,6 +315,7 @@ def parse_call(hasret,fname,rettype,numargs,**kwargs):
         call.args[2] = IslValArg(name="chunks",ty="void*",val="/*don't write to memory*/NULL")
 
     getToplevel().addCall(call)
+    callstack[0].allcalls.append(call)
 
 
 def parse_return(rettype,fname,retval=None,retptr=None,desc=None):
@@ -304,7 +342,6 @@ def getCallbacker(ptr:int):
     assert False
     
 
-
 def parse_callback(callbacker,fname,pname,retty,numargs,paramtys):
     global callbackers
     backerptr=int(callbacker,0)
@@ -316,6 +353,7 @@ def parse_callback(callbacker,fname,pname,retty,numargs,paramtys):
     assert len(paras) == numargs
     backer = Callbacker(backerptr=backerptr,name=name,fname=fname,pname=pname,retty=retty,paramtys=paras)  
     callbackers[backerptr]=backer
+    #callstack[0].callbackers.append(backer)
 
 
 def isPtr(ty:str):
@@ -337,8 +375,7 @@ def parse_callback_enter(callbacker,numargs,**kwargs):
             ptr=int(parmptr,0)
             argobj = registerObj(ptr, aty, lvl=cb)
             cb.args[i] = argobj
-            
-
+        
 
 def parse_callback_exit(callbacker,retty,retval=None,retptr=None):
     global callstack
@@ -348,7 +385,7 @@ def parse_callback_exit(callbacker,retty,retval=None,retptr=None):
     assert cblevel.callbacker.retty==retty
     assert cblevel.retarg==None
 
-    cblevel.retarg= make_arg(ty=retty,val=retval,ptr=retptr,uselvl=cblevel)
+    cblevel.retarg = make_arg(ty=retty,val=retval,ptr=retptr,uselvl=cblevel)
 
     callstack.pop()
 
@@ -438,7 +475,23 @@ prologue="""#include <stdio.h>
 """
 
 
-def gen_arg(arg, call: Stmt, level: Level):
+def gen_arg(arg, call: Stmt, level: Level, mutations):
+    origarg=arg
+    while True:
+        if not arg.IsPtr:
+            break
+        obj = arg.obj
+        if obj not in mutations.objs_replaced:
+            break
+        arg = mutations.objs_replaced[obj]
+    if origarg!=arg:
+        arg=arg.clone()
+        arg.name=origarg.name
+
+    if arg.IsCb:
+        callbacker = arg.callbacker
+        return callbacker.name
+
     if arg.IsVal:
         return arg.val
 
@@ -454,27 +507,42 @@ def gen_arg(arg, call: Stmt, level: Level):
 
     assert False, "implement this case" 
 
+def get_repl_obj(obj,mutations):
+    while obj in mutations.objs_replaced:
+        obj = mutations.objs_replaced[obj].obj
+    return obj
 
-def gen_call(call: Stmt, level: Level):
+def gen_call(call: Stmt, level: Level, mutations, reachability):
+    if call.hasret and call.retobj and call.retobj.IsObj  and call.retobj.name == 'umap28':
+                c=4
+    if call in mutations.calls_removed:
+        return
+    if call in mutations.calls_replaced:
+        replcall = mutations.calls_replaced[call]
+        yield from gen_call(call=replcall,level=level,mutations=mutations,reachability=reachability)
+        return
+
     if call.IsCall:
         funcname = call.funcname
         
         argstr = []
         for arg in call.args:
-            argstr.append(gen_arg(arg,call,level))
+            argstr.append(gen_arg(arg,call,level,mutations=mutations))
+        if call.isspecial!=None:
+            argstr[call.isspecial] += ')'
 
         callstr = f"{funcname}({', '.join(argstr)});"
 
         if call.hasret:
-            retobj = call.retobj
+            retobj = call.retobj # get_repl_obj(call.retobj,mutations=mutations)
             descstr = f" // {call.desc}" if call.desc else ""
-            if retobj!=None and not retobj.IsNull and retobj.hasuse:
-                if retobj.islocal:
+            if retobj!=None and not retobj.IsNull and retobj in reachability.reachable_objs:
+                if  retobj not in reachability.globobjs: #retobj.islocal:
                     yield f"{retobj.ty} {retobj.name} = {callstr}{descstr}"
                 else:
                     yield f"{retobj.name} = {callstr}{descstr}"   
             else:
-                 yield f"{callstr}{descstr}"
+                yield f"{callstr}{descstr}"
         else:
             yield callstr
     elif call.IsPredef:
@@ -489,19 +557,22 @@ def gen_version(mainlevel):
     yield "printf(\"### ISL version  : %s### at generation: %s\\n\",  dynIslVersion, genIslVersion);"
 
 
-def gen_globvars(mainlevel):
+def gen_globvars(mainlevel,reachability):
     global memory,allobjs
     for obj in allobjs:
-        if obj.name=='name2': 
-                b =4
-        if not obj.hasuse:
+        if obj not in reachability.reachable_objs:
             continue
-        if obj.islocal:
+        #if not obj.hasuse:
+        #    continue
+        if obj not in reachability.globobjs: #.islocal:
             continue
         yield f"{obj.ty} {obj.name};"
 
 
-def gen_callbacker(callbacker:Callbacker,genbody:bool):
+def gen_callbacker(callbacker:Callbacker,genbody:bool,mutations,reachability):
+    if callbacker not in reachability.reachable_callbackers:
+        return
+
     if genbody:
         params = ', '.join(f"{argtype} param{i}" for i,argtype in enumerate(callbacker.paramtys))
     else:
@@ -517,17 +588,20 @@ def gen_callbacker(callbacker:Callbacker,genbody:bool):
     for i,invok in enumerate(callbacker.invocations):
         yield f"    case {i}: {{"
         for i,argtype in enumerate(callbacker.paramtys):
-           argobj = invok.args[i] # should be an IslArg?
-           if not argobj:
+            argobj = invok.args[i] # should be an IslArg?
+            if not argobj:
                continue
-           if not argobj.islocal:
-               yield f"      {argobj.name} = param{i};"
+            if argobj not in reachability.reachable_objs:
+               continue
+            if argobj not in reachability.globobjs : # argobj.islocal:
+               continue
+            yield f"      {argobj.name} = param{i};"
 
         for call in invok.calls:
-            for line in gen_call(call,level=invok):
+            for line in gen_call(call,level=invok,mutations=mutations,reachability=reachability):
                 yield f"      {line}"
         if callbacker.hasret:
-            retstr = gen_arg(invok.retarg, None, level=invok)
+            retstr = gen_arg(invok.retarg, None, level=invok, mutations=mutations)
             yield f"      return {retstr};"
         yield "    } break;"
     yield "    default:"
@@ -537,79 +611,428 @@ def gen_callbacker(callbacker:Callbacker,genbody:bool):
     yield "}"
 
 
-def gen_callbacks(mainlevel):
+def gen_callbacks(mainlevel,mutations,reachability):
+    global callbackers
+
     # Forward declarations
     for cb in callbackers.values():
-        yield from gen_callbacker(callbacker=cb,genbody=False)
+        yield from gen_callbacker(callbacker=cb,genbody=False,mutations=mutations,reachability=reachability)
     yield ""
 
-    # Definiition
+    # Definitions
     for cb in callbackers.values():
-        yield from gen_callbacker(callbacker=cb,genbody=True)
+        yield from gen_callbacker(callbacker=cb,genbody=True,mutations=mutations,reachability=reachability)
         yield ""
 
 
-def gen_main(mainlevel):    
+def gen_main(mainlevel,mutations,reachability):      
     for call in mainlevel.calls:
-        yield from gen_call(call,level=mainlevel)
+        yield from gen_call(call,level=mainlevel,mutations=mutations,reachability=reachability)
 
 
 
-def writeoutput(out,mainlevel):
+def writeoutput(out,mainlevel,mutations,reachability=None):
+    if not reachability:
+        reachability=update_uses(mainlevel,mutations=mutations)
+
     print(prologue,file=out)
-
     print("// variables used accross callbacks",file=out)
-    for line in gen_globvars(mainlevel=mainlevel):
+    for line in gen_globvars(mainlevel=mainlevel,reachability=reachability):
         print(line,file=out)
     print("",file=out)
 
-    for line in gen_callbacks(mainlevel=mainlevel):
+    for line in gen_callbacks(mainlevel=mainlevel,mutations=mutations,reachability=reachability):
         print(line,file=out)
 
     print("int main() {",file=out)
     for line in gen_version(mainlevel=mainlevel):
         print(f"  {line}",file=out)
     print("",file=out)
-    for line in gen_main(mainlevel=mainlevel):
+    for line in gen_main(mainlevel=mainlevel,mutations=mutations,reachability=reachability):
         print(f"  {line}",file=out)
     print("  return EXIT_SUCCESS;",file=out)
     print("}",file=out)
 
 
+def check_validity(mainlevel,mutations,reachability):
+    for obj,replarg in mutations.objs_replaced.items():
+        if not replarg.IsPtr:
+            continue
+        if not replarg.obj.IsObj:
+            continue
+        if obj in reachability.defined_objs:
+            continue
+        if replarg.obj in mutations.objs_replaced:
+            continue
+        return False
+    return True
 
-def check_trace(mainlevel):
+SKIP = NamedSentinel("SKIP")
+
+def check_trace(mainlevel,mutations):
+    reachability = update_uses(mainlevel,mutations=mutations) 
+    #if not check_validity(mainlevel,mutations,reachability=reachability):
+    #    return SKIP
+
     workdir = mkpath(tempfile.mkdtemp(prefix='isltrace'))
     cfile = workdir / 'isltrace.c'   
 
     cmakefile = workdir / 'CMakeLists.txt'
-    cmakecontent="""project(isltrace)
+    cmakecontent="""cmake_minimum_required(VERSION 3.12)
+project(isltrace C)
 
-find_package(isl)
+find_package(isl REQUIRED)
 add_executable(isltrace isltrace.c)
+target_link_libraries(isltrace PRIVATE isl)
 """
+
     with cmakefile.open(mode='w') as out:
         out.write(cmakecontent)
 
     with cfile.open(mode='w') as out:
-        writeoutput(out=out,mainlevel=mainlevel)
+        writeoutput(out=out,mainlevel=mainlevel,mutations=mutations,reachability=reachability)
 
-
-
-    cmakeresult = invoke.execute('cmake', '-GNinja', '-S', '.',
-        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True)
+    cmakeresult = invoke.execute('cmake', '-GNinja', '-S', '.', '-DCMAKE_BUILD_TYPE=Release', '-Disl_DIR=C:/Users/meinersbur/build/isl/release',
+        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True,std_prefixed=[workdir/'output_cmake.txt'])
+    if not cmakeresult.success:
+        return False
 
     buildresult = invoke.execute('cmake', '--build', '.',
-        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True)
+        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True,std_prefixed=[workdir/'output_ninja.txt'])
+    if not buildresult.success:
+        return False
 
     exefile = workdir / 'isltrace.exe'
-    ccresult = invoke.execute(r'C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe', cfile,  r'-IC:\Users\meinersbur\src\isl\include', r'-IC:\Users\meinersbur\build\isl\relese\include', r'-IC:\Users\meinersbur\src\isl\imath', '/O2', r'C:\Users\meinersbur\build\isl\release\isl.lib', '/out:' +str(exefile),
-        cwd=workdir,onerror=invoke.Invoke.IGNORE,print_stdout=True,print_stderr=None,print_command=True)
-
-    execresult = invoke.query(exefile)
-    return execresult
+    execresult = invoke.execute(exefile,
+        cwd=workdir,onerror=invoke.Invoke.IGNORE,return_stdout=True,return_stderr=True,print_prefixed=True,print_command=True,std_prefixed=[workdir/'output_exe.txt'])
+    return (execresult.exitcode, execresult.stdout, execresult.stderr)
 
 
 
+class Reachability:
+    def __init__(self,reachable_levels,reachable_callbackers,reachable_objs,defined_objs,globobjs):
+        self.reachable_levels=reachable_levels
+        self.reachable_callbackers=reachable_callbackers
+        self.reachable_objs=reachable_objs
+        self.defined_objs=defined_objs
+        self.globobjs=globobjs
+
+
+def update_uses(mainlevel,mutations):
+    levels=set()
+    callbackers=set()
+    objs=set()
+    defined=set()
+    globobjs=set()
+    def update_uses_arg(call,arg,lvl):        
+        if arg.IsCb:
+            cb = arg.callbacker
+            callbackers.add(cb)
+            for invok in cb.invocations:
+                for arg in invok.args:
+                    if not arg:
+                        continue
+
+                update_uses_level(invok)
+                update_uses_arg(None,invok.retarg,invok)
+        elif arg.IsVal:
+            pass
+        elif arg.IsPtr:
+            obj = arg.obj
+            if obj.IsObj and obj.name == 'node2':
+                d=4
+
+            if obj in mutations.objs_replaced:
+                repl = mutations.objs_replaced[obj]
+                update_uses_arg(call, repl,lvl)  
+                return
+
+            if obj and obj.IsObj:
+                objs.add(obj)
+                if obj.deflvl!=lvl:
+                    globobjs.add(obj)
+            #    obj.islocal=True
+            #    obj.used=False
+            #obj.use(lvl)
+    def update_uses_level(lvl):
+        for call in lvl.calls:
+            if call.hasret and call.retobj and call.retobj.IsObj  and  call.retobj.name == 'umap28':
+                c=3
+            if False:
+                abort()
+
+            if call in mutations.calls_removed:
+                continue
+            while call in mutations.calls_replaced: 
+                call = mutations.calls_replaced[call]
+
+            if call.IsCall:
+                for arg in call.args:
+                    update_uses_arg(call,arg,lvl)
+            if call.hasret:
+                retobj = call.retobj
+                if retobj and retobj.IsObj:
+                    if retobj in mutations.objs_replaced:
+                        continue
+                    objs.add(retobj)
+                    defined.add(retobj)
+                    assert retobj.deflvl==lvl
+                    
+
+    update_uses_level(mainlevel)    
+    return Reachability(reachable_levels=levels,reachable_callbackers=callbackers,reachable_objs=objs,defined_objs=defined,globobjs=globobjs)
+
+
+
+class Mutations:
+    def __init__(self):
+        self.calls_removed=set()
+        self.calls_replaced=dict()
+        #self.args_replaced=dict()
+        self.objs_replaced=dict()
+
+
+    def clone(self):
+        result = Mutations()
+        result.calls_removed=self.calls_removed.copy()
+        result.calls_replaced=self.calls_replaced.copy()
+        #result.args_replaced=self.args_replaced.copy()
+        result.objs_replaced=self.objs_replaced.copy()
+        return result
+
+
+def make_remove_call_closure(i,call):
+    def mut_remove_call(mutations):
+        result = mutations
+        result.calls_removed.add(call)
+        if call.hasret and call.retobj and call.retobj.IsObj:
+            result.objs_replaced[call.retobj] = IslPtrArg(name=None,ty=call.retobj.ty,obj=nullobj)
+        return result
+    return mut_remove_call
+
+def mut_remove_calls(mainlevel):    
+    for i,call in enumerate(mainlevel.allcalls):        
+        if call.IsCall:
+            yield make_remove_call_closure(i,call)
+
+
+def make_forward_arg_closure(call,arg):
+    def mut_forward_arg(mutations):
+        #mutations.calls_removed.add(call)
+        mutations.objs_replaced[call.retobj] = arg
+        return mutations
+    return mut_forward_arg
+
+def mut_forward_arg(mainlevel): 
+    for i,call in enumerate(mainlevel.allcalls):
+        if call.IsCall:
+            if not (call.hasret and call.retobj and call.retobj.IsObj):
+                continue
+            retobj = call.retobj  
+            for arg in call.args:
+                if not arg.IsPtr:
+                    continue
+                obj = arg.obj
+                if not obj.IsObj:
+                    continue
+                if retobj.ty != obj.ty:
+                    continue
+                yield make_forward_arg_closure(call,arg)
+
+        
+
+def make_replace_from_string_closure(call,read_fnname,ctx_argidx,ctx_fname,str): 
+    def mut_replace_call(mutations):
+        retobj = call.retobj
+        if ctx_fname:
+            replcall = IslCall(funcname=f'{read_fnname}({ctx_fname}',hasret=True,retty=call.retty,isspecial=0)
+        else:
+            replcall = IslCall(funcname=read_fnname,hasret=True,retty=call.retty)
+        replcall.args.append(call.args[0])
+        replcall.args.append(IslValArg(name='str',ty= 'char *', val=f'"{str}"' ))
+        replcall.retobj = retobj # IslMemObj(name=retobj.name,ty=retobj.ty,ptr=retobj.ptr,deflvl=retobj.deflvl)
+
+        mutations.calls_replaced[call] = replcall
+        #mutations.objs_replaced[retobj] = IslPtrArg( name=None,ty=retobj.ty,obj=  replcall.retobj)
+        return mutations
+    return mut_replace_call
+
+
+
+def mut_replace_from_string(mainlevel): 
+    for i,call in enumerate(mainlevel.allcalls):
+        if call.IsCall:
+            if not (call.hasret and call.retobj and call.retobj.IsObj):
+                continue
+            if not call.desc:
+                continue
+            if call.funcname.endswith("_copy") or call.funcname.endswith("_read_from_str") :
+                continue
+            retobj = call.retobj
+            callname = get_readfromstr_func(retobj.ty)
+            if not callname:
+                continue
+            ctxargi = -1
+            ctxargcallname = None
+            for i, arg in enumerate(call.args):
+                if arg.ty=='isl_ctx *' or arg.ty=='isl_ctx*':
+                    ctxargi = i
+                    break
+                ctxargcallname = get_getctx_func(arg.ty)
+                if ctxargcallname:
+                    ctxargi = i
+                    break
+            if ctxargi==-1:
+                continue            
+            yield make_replace_from_string_closure(call,callname,ctxargi,ctxargcallname,call.desc)
+
+
+def get_mutators(mainlevel):
+    #yield from mut_remove_calls(mainlevel)
+    yield from mut_forward_arg(mainlevel)
+    yield from mut_replace_from_string(mainlevel)
+
+
+# def bisect(data, avail, combinefn, testfn):
+#     l = max(1, len(avail)//8)  
+#     while l > 0:
+#         pos = 0
+#         changed=False
+#         while pos < len(avail):           
+#             select = avail[pos:pos+l]
+#             testme = combinefn(data, select)
+#             result = testfn(testme)
+#             if result == True:
+#                 # still interesting: make permanent
+#                 del avail[pos:pos+l]
+#                 data=testme
+#                 changed=True
+#             else:
+#                 # invalid: skip
+#                 pos+=l
+#         if changed:
+#             # Restart to ensure fixpoint
+#             l = len(avail)//2   
+#             continue
+#         if l <= 1:
+#             # Cannot go any smaller: reduction done
+#             break
+#         l = (l+1) // 2
+
+#     print("Bisection done", file=sys.stderr)
+#     return data
+
+
+
+
+
+
+class TaskResult:
+    def __init__(self,result,pos,testme):
+        self.result=result
+        self.pos=pos
+        self.testme=testme
+
+def make_task(data,avail,combinefn,testfn,l,pos):
+    select = avail[pos:pos+l]
+    testme = combinefn(data, select)
+    result = testfn(testme)
+    return TaskResult(result,pos,testme)
+
+
+def bisect_concurrent(data, avail, combinefn, testfn):
+    l = max(1, len(avail) // 32)
+    #l = 603
+    while l > 0:
+        print(f"### Trying size {l}", file=sys.stderr)
+        def run_tasks(startpos):
+            if True:
+                ex = futures.ThreadPoolExecutor(max_workers=os.cpu_count()-1) # os.cpu_count()
+                tasks = [ex.submit(make_task, data,avail, combinefn, testfn, l, pos) for pos in range(startpos, len(avail), l)]
+                fut = futures.as_completed(tasks)
+                results = (f.result() for f in fut)
+            else:
+                ex = None
+                results = (make_task(data,avail, combinefn, testfn, l, pos) for pos in  range(startpos, len(avail), l))
+            for result in results:
+                if not result.result:
+                    # not interesting anymore: discard and wait for next
+                    continue
+
+                # still interesting: stop all other tasks
+                print(f"### Mutating {result.pos}..{result.pos}+{l} remains interesting", file=sys.stderr)
+                if ex:
+                    ex.shutdown(wait=False,cancel_futures=True)
+                return result
+            return None
+
+        changed = False
+        startpos = 0
+        while startpos < len(avail):
+            if startpos > 0:
+                print(f"### Restarting at pos {startpos}", file=sys.stderr)
+
+            result = run_tasks(startpos)
+            if result == None:
+                # nothing more to explore
+                break
+
+            # make permanent and continue at same pos (assuming all previous pos have failed)
+            pos = result.pos
+            del avail[pos:pos+l]
+            data=result.testme
+            startpos = pos
+            changed =True
+             
+        #if changed:
+        #    # Restart to ensure fixpoint
+        #    l = len(avail)//32
+        #    continue
+        if l <= 1 and not changed:
+            # Cannot go any smaller: reduction done
+            break
+        l = max(1, (l+1) // 2)
+
+    print("Bisection done", file=sys.stderr)
+    return data
+
+
+def reduce_trace(mainlevel):
+    mutators = [mut for mut in get_mutators(mainlevel=mainlevel)]
+    if False:
+        for i in range(0,len(mutators)):
+            select = mutators[i:1]
+            data= Mutations()
+            for mut in select:
+                data=mut(data)
+            check_trace(mainlevel,mutations=data)
+
+    mutations = Mutations()
+    interesting = check_trace(mainlevel=mainlevel,mutations=mutations)
+    if interesting==False or interesting==SKIP:
+        print("Something went wrong: reference is not interesting/does not compile", file=sys.stderr)
+        sys.exit(1)
+
+    
+    def combinefn(last,new):
+        last = last.clone()
+        for mut in new:
+            last = mut(last)
+        return last
+    def testfn(trial):
+        result = check_trace(mainlevel=mainlevel, mutations=trial)
+        if result == False:
+            print("Invalid", file=sys.stderr)
+        return result == interesting
+    cur = bisect_concurrent(data=mutations,avail=mutators,combinefn=combinefn,testfn=testfn)
+
+    with outfile.with_suffix('_reduced.c').open(mode='w') as out:
+        writeoutput(out,mainlevel=mainlevel,mutations=cur)
+
+    if changes:
+        print("changes apply. Retry from the beginning?",file=sys.stderr)
+    else:
+        print("fixpoint reached",file=sys.stderr)
 
 
 def main():
@@ -634,12 +1057,15 @@ def main():
             parse(line)
     assert len(callstack)==1
 
-    with outfile.open(mode='w') as out:
-        writeoutput(out,mainlevel=mainlevel)
 
     if reduce:
-        interesting = check_trace(mainlevel=mainlevel)
-        pass
+        reduce_trace(mainlevel)
+    else:
+        with outfile.open(mode='w') as out:
+            writeoutput(out,mainlevel=mainlevel,mutations=Mutations())
+
+
+
 
 
 if __name__ == '__main__':

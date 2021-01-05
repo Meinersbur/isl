@@ -1564,15 +1564,15 @@ struct IslCallBase {
 	std::vector<std::string> argsTystr;
 	std::vector<std::string> valArgs;
 	std::vector<std::string> ptrArgs;
-	//std::vector<std::string> predefArgs;
 	std::vector<CallbackBase*> cbArgs;
+	//std::vector<std::string> predefArgs;
 
 	explicit IslCallBase(const char* name, const char* rettystr, int nargs) : rettystr{rettystr}, name{name}  {
 		argsParmname.resize(nargs);
 		argsTystr.resize(nargs);
 		valArgs.resize(nargs);
 		ptrArgs.resize(nargs);
-	//	predefArgs.resize(nargs);
+	  // predefArgs.resize(nargs);
 		cbArgs.resize(nargs);
 		pushInternalLevel();
 	}
@@ -1598,14 +1598,12 @@ struct IslCallBase {
 			//if (!predefArgs[i].empty()) {
 			//	escape(OS, "parm" + std::to_string(i) + "predef", predefArgs[i]);
 			//}
-			if (!valArgs[i].empty()) {
-				escape(OS, "parm" + std::to_string(i) + "val", valArgs[i]);
-			}
-			if (!ptrArgs[i].empty()) {
-				escape(OS, "parm" +std:: to_string(i) + "ptr", ptrArgs[i]);
-			}
 			if (cbArgs[i]) {
 				escape(OS, "parm" + std::to_string(i) + "cb", cbArgs[i]);
+			} else if (!valArgs[i].empty()) {
+				escape(OS, "parm" + std::to_string(i) + "val", valArgs[i]);
+			} else if (!ptrArgs[i].empty()) {
+				escape(OS, "parm" +std:: to_string(i) + "ptr", ptrArgs[i]);
 			}
 		}
 		flushLogfile();
@@ -1723,7 +1721,8 @@ struct IslCallImpl<RetTy(ParmTy...)> : public IslCallBase {
 		argsTystr[CbIdx] = cbty;
 		//ptrArgs[CbIdx] =(void*) replFn;
 		//valArgs[CbIdx] = std::string{ "&" }  + fname;
-		ptrArgs[CbIdx] = to_hex(callbacker);
+		//ptrArgs[CbIdx] = to_hex(callbacker);
+		cbArgs[CbIdx] = callbacker;
 
 		if constexpr (UserIdx >= 0) {
 			std::get<UserIdx>(args) = callbacker;

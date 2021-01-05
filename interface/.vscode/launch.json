@@ -11,7 +11,8 @@
             "program": "trace2c.py",
             "console": "integratedTerminal",
             "args": ["C:/Users/meinersbur/build/llvm-project/isltrace.log", "--reduce" ], //"-o", "C:/Users/meinersbur/build/isl/traceresult/isltrace.c"],
-            "python": "${command:python.interpreterPath}"
+            "python": "${command:python.interpreterPath}",
+            "justMyCode": true
         }
     ]
 }

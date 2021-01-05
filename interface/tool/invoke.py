@@ -8,6 +8,7 @@ import io
 import threading
 import datetime
 import contextlib
+import pathlib
 from tool.support import *
 
 
@@ -197,7 +198,7 @@ class Invoke:
                 prefixedhandles.append(result_prefixed)
 
             def open_or_handle(arg):
-                if isinstance(arg, str):
+                if isinstance(arg, str) or isinstance(arg, pathlib.Path):
                     return stack.enter_context(open(file, 'w')) # Finally close
                 return arg
 
@@ -223,7 +224,7 @@ class Invoke:
             for h in prefixedhandles:
                 print('$',command, file=h)
             if print_command:
-                for h in stderrhandles:
+                for h in prefixedhandles:
                     print('$',command, file=h)
                     h.flush()
 
@@ -332,7 +333,7 @@ class Invoke:
                     raise subprocess.CalledProcessError(returncode=exitcode, cmd=shjoin(cmdline))
 
             if print_exitcode:
-                for h in stderrhandles:
+                for h in prefixedhandles:
                     exitmsg = "Exit with code {exitcode} in {walltime}".format(exitcode=exitcode, walltime=walltime)
                     print(exitmsg, file=h)
 

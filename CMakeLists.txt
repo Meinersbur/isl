@@ -362,7 +362,7 @@ if (USE_GMP_FOR_MP)
   target_link_libraries(isl PRIVATE ${GMP_LIBRARIES})
 endif ()
 if (USE_IMATH_FOR_MP)
-  target_include_directories(isl PRIVATE "${ISL_SOURCE_DIR}/imath")
+  target_include_directories(isl PUBLIC "$<BUILD_INTERFACE:${ISL_SOURCE_DIR}/imath>")
 endif ()
 
 # General compiler options
