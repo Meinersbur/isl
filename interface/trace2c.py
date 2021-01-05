@@ -11,7 +11,7 @@ from tool.support import *
 from pathlib import Path
 from typing import Dict,List
 from concurrent import futures
-
+import random
 
 
 class IslObj:
@@ -888,41 +888,9 @@ def mut_replace_from_string(mainlevel):
 
 
 def get_mutators(mainlevel):
-    #yield from mut_remove_calls(mainlevel)
+    yield from mut_remove_calls(mainlevel)
     yield from mut_forward_arg(mainlevel)
     yield from mut_replace_from_string(mainlevel)
-
-
-# def bisect(data, avail, combinefn, testfn):
-#     l = max(1, len(avail)//8)  
-#     while l > 0:
-#         pos = 0
-#         changed=False
-#         while pos < len(avail):           
-#             select = avail[pos:pos+l]
-#             testme = combinefn(data, select)
-#             result = testfn(testme)
-#             if result == True:
-#                 # still interesting: make permanent
-#                 del avail[pos:pos+l]
-#                 data=testme
-#                 changed=True
-#             else:
-#                 # invalid: skip
-#                 pos+=l
-#         if changed:
-#             # Restart to ensure fixpoint
-#             l = len(avail)//2   
-#             continue
-#         if l <= 1:
-#             # Cannot go any smaller: reduction done
-#             break
-#         l = (l+1) // 2
-
-#     print("Bisection done", file=sys.stderr)
-#     return data
-
-
 
 
 
@@ -941,11 +909,9 @@ def make_task(data,avail,combinefn,testfn,l,pos):
 
 
 def bisect_concurrent(data, avail, combinefn, testfn):
-    l = max(1, len(avail) // 32)
-    #l = 603
-    while l > 0:
-        print(f"### Trying size {l}", file=sys.stderr)
-        def run_tasks(startpos):
+    length = max(1, len(avail) // 32)
+    while length > 0:
+        def run_tasks(choose,startpos,l):
             if True:
                 ex = futures.ThreadPoolExecutor(max_workers=os.cpu_count()-1) # os.cpu_count()
                 tasks = [ex.submit(make_task, data,avail, combinefn, testfn, l, pos) for pos in range(startpos, len(avail), l)]
@@ -953,45 +919,80 @@ def bisect_concurrent(data, avail, combinefn, testfn):
                 results = (f.result() for f in fut)
             else:
                 ex = None
-                results = (make_task(data,avail, combinefn, testfn, l, pos) for pos in  range(startpos, len(avail), l))
+                results = (make_task(data, choose, combinefn, testfn, l, pos) for pos in  range(startpos, len(avail), l))
             for result in results:
                 if not result.result:
                     # not interesting anymore: discard and wait for next
                     continue
 
+                #for i in range(result.pos,result.pos+l):
+                #    mut = choose[i]
+                #    result.testme = mut(result.testme)
+
                 # still interesting: stop all other tasks
-                print(f"### Mutating {result.pos}..{result.pos}+{l} remains interesting", file=sys.stderr)
+                print(f"### Mutating {result.pos}..{result.pos}+{l} (of {len(choose)}) remains interesting", file=sys.stderr)
+                print(f"### Contains {len(result.testme.calls_removed)} removed calls", file=sys.stderr)
+                print(f"### Contains {len(result.testme.calls_replaced)} replaced calls", file=sys.stderr)
+                print(f"### Contains {len(result.testme.objs_replaced)} replaced objects", file=sys.stderr)
                 if ex:
                     ex.shutdown(wait=False,cancel_futures=True)
                 return result
             return None
 
-        changed = False
-        startpos = 0
-        while startpos < len(avail):
-            if startpos > 0:
-                print(f"### Restarting at pos {startpos}", file=sys.stderr)
+        def run_with_length(l,shuffle):
+            if shuffle:
+                print(f"### Trying shuffled size {l}", file=sys.stderr)
+            else:
+                print(f"### Trying sequential size {l}", file=sys.stderr)
+            nonlocal avail,data
 
-            result = run_tasks(startpos)
-            if result == None:
-                # nothing more to explore
-                break
+            choose=avail
+            if shuffle:
+                choose=choose.copy()
+                random.shuffle(choose)
 
-            # make permanent and continue at same pos (assuming all previous pos have failed)
-            pos = result.pos
-            del avail[pos:pos+l]
-            data=result.testme
-            startpos = pos
-            changed =True
+            changed = False
+            startpos = 0
+            while startpos < len(choose):
+                if startpos > 0:
+                    print(f"### Restarting at pos {startpos}", file=sys.stderr)
+
+                result = run_tasks(choose=choose,startpos=startpos,l=l)
+                if result == None:
+                    # nothing more to explore
+                    break
+
+                # make permanent and continue at same pos (assuming all previous pos have failed)
+                pos = result.pos
+                del choose[pos:pos+l]
+                data=result.testme
+                startpos = pos
+                changed = True
+
+            if shuffle:
+                # Reconstruct original order
+                newavail=[]
+                s={*choose}
+                for d in avail:
+                    if d in s:
+                        newavail.append(d)
+                avail=newavail
+
+            return changed
              
+
+        changed1 = run_with_length(length,shuffle=False)
+        changed2 = run_with_length(length,shuffle=True)
+        changed = changed1 or changed2
+
         #if changed:
         #    # Restart to ensure fixpoint
         #    l = len(avail)//32
         #    continue
-        if l <= 1 and not changed:
+        if length <= 1 and not changed:
             # Cannot go any smaller: reduction done
             break
-        l = max(1, (l+1) // 2)
+        length = max(1, (length+1) // 2)
 
     print("Bisection done", file=sys.stderr)
     return data
