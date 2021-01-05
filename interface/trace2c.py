@@ -894,6 +894,7 @@ def make_replace_id_alloc_closure(call):
         replcall.args = call.args[:]
         replcall.args[2] = IslValArg(name=call.args[2].name,ty=call.args[2].ty,val='NULL')
         replcall.retobj = call.retobj
+        mutations.calls_replaced[call] = replcall
         return mutations
     return mut_replace_call
 
