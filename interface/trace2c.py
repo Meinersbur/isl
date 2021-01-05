@@ -887,7 +887,38 @@ def mut_replace_from_string(mainlevel):
             yield make_replace_from_string_closure(call,callname,ctxargi,ctxargcallname,call.desc)
 
 
+
+def make_replace_id_alloc_closure(call): 
+    def mut_replace_call(mutations):
+        replcall = IslCall(funcname=call.funcname,hasret=True,retty=call.retty)
+        replcall.args = call.args[:]
+        replcall.args[2] = IslValArg(name=call.args[2].name,ty=call.args[2].ty,val='NULL')
+        replcall.retobj = call.retobj
+        return mutations
+    return mut_replace_call
+
+
+def mut_id_alloc(mainlevel): 
+    for i,call in enumerate(mainlevel.allcalls):
+        if not call.IsCall:
+            continue
+        if not call.funcname == 'isl_id_alloc':
+            continue
+        yield make_replace_id_alloc_closure(call)
+
+
+def make_replace_all_id_alloc_closure(mainlevel): 
+    def mut_replace_call(mutations):
+        for mut in mut_id_alloc(mainlevel):
+            mutations=mut(mutations)
+        return mutations
+    return mut_replace_call
+
+
+
 def get_mutators(mainlevel):
+    yield make_replace_all_id_alloc_closure(mainlevel)
+    yield from mut_id_alloc(mainlevel)
     yield from mut_remove_calls(mainlevel)
     yield from mut_forward_arg(mainlevel)
     yield from mut_replace_from_string(mainlevel)
