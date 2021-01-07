@@ -39,7 +39,7 @@ if (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
 endif ()
 
-if (ISL_SMALL_INT_OPT)
+if (ISL_SMALL_INT_OPT AND (NOT USE_GMP_FOR_MP))
   set(USE_SMALL_INT_OPT ON)
 else ()
   set(USE_SMALL_INT_OPT OFF)
@@ -409,4 +409,15 @@ add_test(NAME isl_test
 )
 add_test(NAME codegen_test
   COMMAND "${ISL_BINARY_DIR}/codegen_test.sh"
+)
+
+include(GNUInstallDirs)
+install(TARGETS isl
+  EXPORT islTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY include/isl
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
