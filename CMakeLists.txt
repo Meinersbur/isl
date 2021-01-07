@@ -39,7 +39,7 @@ if (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
 endif ()
 
-if (ISL_SMALL_INT_OPT)
+if (ISL_SMALL_INT_OPT AND (NOT USE_GMP_FOR_MP))
   set(USE_SMALL_INT_OPT ON)
 else ()
   set(USE_SMALL_INT_OPT OFF)
