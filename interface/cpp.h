@@ -51,12 +51,6 @@ private:
 		const isl_class &super);
 	void print_downcast_decl(ostream &os, const isl_class &clazz);
 	void print_ctx_decl(ostream &os);
-	void print_persistent_callback_prototype(ostream &os,
-		const isl_class &clazz, FunctionDecl *method,
-		bool is_declaration);
-	void print_persistent_callback_setter_prototype(ostream &os,
-		const isl_class &clazz, FunctionDecl *method,
-		bool is_declaration);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -123,6 +117,8 @@ struct cpp_generator::class_printer {
 			cpp_generator &generator, bool declarations);
 
 	void print_constructors();
+	void print_persistent_callback_prototype(FunctionDecl *method);
+	void print_persistent_callback_setter_prototype(FunctionDecl *method);
 	void print_methods();
 	bool next_variant(FunctionDecl *fd, std::vector<bool> &convert);
 	void print_method_variants(FunctionDecl *fd);

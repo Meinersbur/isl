@@ -555,10 +555,10 @@ static string add_space_to_return_type(const string &type)
 }
 
 /* Print the prototype of the static inline method that is used
- * as the C callback of "clazz" set by "method" to "os".
+ * as the C callback set by "method".
  */
-void cpp_generator::print_persistent_callback_prototype(ostream &os,
-	const isl_class &clazz, FunctionDecl *method, bool is_declaration)
+void cpp_generator::class_printer::print_persistent_callback_prototype(
+	FunctionDecl *method)
 {
 	string callback_name, rettype, c_args;
 	ParmVarDecl *param = persistent_callback_arg(method);
@@ -572,9 +572,9 @@ void cpp_generator::print_persistent_callback_prototype(ostream &os,
 	rettype = callback->getReturnType().getAsString();
 	rettype = add_space_to_return_type(rettype);
 	callback_name = clazz.persistent_callback_name(method);
-	c_args = generate_callback_args(ptype, false);
+	c_args = generator.generate_callback_args(ptype, false);
 
-	if (!is_declaration)
+	if (!declarations)
 		classname = type2cpp(clazz) + "::";
 
 	osprintf(os, "%s%s%s(%s)",
@@ -583,18 +583,18 @@ void cpp_generator::print_persistent_callback_prototype(ostream &os,
 }
 
 /* Print the prototype of the method for setting the callback function
- * of "clazz" set by "method" to "os".
+ * set by "method".
  */
-void cpp_generator::print_persistent_callback_setter_prototype(ostream &os,
-	const isl_class &clazz, FunctionDecl *method, bool is_declaration)
+void cpp_generator::class_printer::print_persistent_callback_setter_prototype(
+	FunctionDecl *method)
 {
 	string classname, callback_name, cpptype;
 	ParmVarDecl *param = persistent_callback_arg(method);
 
-	if (!is_declaration)
+	if (!declarations)
 		classname = type2cpp(clazz) + "::";
 
-	cpptype = param2cpp(param->getOriginalType());
+	cpptype = generator.param2cpp(param->getOriginalType());
 	callback_name = clazz.persistent_callback_name(method);
 	osprintf(os, "void %sset_%s_data(const %s &%s)",
 		classname.c_str(), callback_name.c_str(), cpptype.c_str(),
@@ -623,11 +623,10 @@ void cpp_generator::decl_printer::print_persistent_callback_data(
 	osprintf(os, "  std::shared_ptr<%s_data> %s_data;\n",
 		callback_name.c_str(), callback_name.c_str());
 	osprintf(os, "  static inline ");
-	generator.print_persistent_callback_prototype(os, clazz, method, true);
+	print_persistent_callback_prototype(method);
 	osprintf(os, ";\n");
 	osprintf(os, "  inline ");
-	generator.print_persistent_callback_setter_prototype(os, clazz, method,
-								true);
+	print_persistent_callback_setter_prototype(method);
 	osprintf(os, ";\n");
 }
 
@@ -1770,15 +1769,14 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
 	string callback_name = clazz.persistent_callback_name(method);
 
 	osprintf(os, "\n");
-	generator.print_persistent_callback_prototype(os, clazz, method, false);
+	print_persistent_callback_prototype(method);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
 	print_callback_body(2, param, callback_name);
 	osprintf(os, "}\n\n");
 
 	pname = param->getName().str();
-	generator.print_persistent_callback_setter_prototype(os, clazz, method,
-								false);
+	print_persistent_callback_setter_prototype(method);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
 	generator.print_check_ptr_start(os, clazz, "ptr");
