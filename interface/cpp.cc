@@ -598,7 +598,7 @@ void cpp_generator::print_persistent_callback_setter_prototype(ostream &os,
 	if (!is_declaration)
 		classname = type2cpp(clazz) + "::";
 
-	cpptype = type2cpp(param->getOriginalType());
+	cpptype = param2cpp(param->getOriginalType());
 	callback_name = clazz.persistent_callback_name(method);
 	osprintf(os, "void %sset_%s_data(const %s &%s)",
 		classname.c_str(), callback_name.c_str(), cpptype.c_str(),
@@ -1209,7 +1209,7 @@ void cpp_generator::print_method<cpp_generator::impl>(ostream &os,
 			osprintf(os, ", ");
 		if (convert[i]) {
 			QualType type = param->getOriginalType();
-			string cpptype = type2cpp(type);
+			string cpptype = param2cpp(type);
 			osprintf(os, "%s(ctx(), %s)",
 				cpptype.c_str(), name.c_str());
 		} else {
@@ -1831,7 +1831,7 @@ std::string cpp_generator::get_return_type(const isl_class &clazz,
 	if (is_subclass_mutator(clazz, fd))
 		return type2cpp(clazz);
 	else
-		return type2cpp(fd->getReturnType());
+		return param2cpp(fd->getReturnType());
 }
 
 /* Given a function "method" for setting a "clazz" persistent callback,
@@ -2044,7 +2044,7 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 		std::string name = method->getParamDecl(i)->getName().str();
 		ParmVarDecl *param = get_param(method, i, convert);
 		QualType type = param->getOriginalType();
-		string cpptype = type2cpp(type);
+		string cpptype = param2cpp(type);
 
 		if (is_callback(type))
 			num_params--;
@@ -2136,7 +2136,7 @@ string cpp_generator::generate_callback_args(QualType type, bool cpp)
 		QualType type = callback->getArgType(i);
 
 		if (cpp)
-			type_str += type2cpp(type);
+			type_str += param2cpp(type);
 		else
 			type_str += type.getAsString();
 
@@ -2165,7 +2165,7 @@ string cpp_generator::generate_callback_type(QualType type)
 	std::string type_str;
 	const FunctionProtoType *callback = extract_prototype(type);
 	QualType return_type = callback->getReturnType();
-	string rettype_str = type2cpp(return_type);
+	string rettype_str = param2cpp(return_type);
 
 	type_str = "std::function<";
 	type_str += rettype_str;
@@ -2484,7 +2484,7 @@ string cpp_generator::isl_namespace()
 	return checked ? "isl::checked::" : "isl::";
 }
 
-/* Translate QualType "type" to its C++ name counterpart.
+/* Translate parameter or return type "type" to its C++ name counterpart.
  *
  * An isl_bool return type is translated into "bool",
  * while an isl_stat is translated into "void" and
@@ -2493,7 +2493,7 @@ string cpp_generator::isl_namespace()
  * If checked C++ bindings are being generated, then
  * C++ counterparts of isl_bool, isl_stat and isl_size need to be used instead.
  */
-string cpp_generator::type2cpp(QualType type)
+string cpp_generator::param2cpp(QualType type)
 {
 	if (is_isl_type(type))
 		return isl_namespace() +

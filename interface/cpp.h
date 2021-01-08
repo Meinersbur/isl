@@ -161,7 +161,7 @@ private:
 	std::string rename_method(std::string name);
 	string isl_bool2cpp();
 	string isl_namespace();
-	string type2cpp(QualType type);
+	string param2cpp(QualType type);
 	bool is_implicit_conversion(const isl_class &clazz, FunctionDecl *cons);
 	bool is_subclass(QualType subclass_type, const isl_class &class_type);
 	function_kind get_method_kind(const isl_class &clazz,
