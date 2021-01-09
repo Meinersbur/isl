@@ -181,12 +181,46 @@ __isl_give isl_multi_aff *isl_morph_get_var_multi_aff(
 
 /* Return the domain space of "morph".
  */
-__isl_give isl_space *isl_morph_get_dom_space(__isl_keep isl_morph *morph)
+static __isl_keep isl_space *isl_morph_peek_dom_space(
+	__isl_keep isl_morph *morph)
 {
 	if (!morph)
 		return NULL;
 
-	return isl_basic_set_get_space(morph->dom);
+	return isl_basic_set_peek_space(morph->dom);
+}
+
+/* Return a copy of the domain space of "morph".
+ */
+__isl_give isl_space *isl_morph_get_dom_space(__isl_keep isl_morph *morph)
+{
+	return isl_space_copy(isl_morph_peek_dom_space(morph));
+}
+
+/* Check that the match against "space" with result "match" was successful.
+ */
+static isl_stat check_space_match(__isl_keep isl_space *space, isl_bool match)
+{
+	if (match < 0)
+		return isl_stat_error;
+	if (!match)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"spaces don't match", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
+/* Check that "morph" can be applied to the "space".
+ */
+isl_stat isl_morph_check_applies(__isl_keep isl_morph *morph,
+	__isl_keep isl_space *space)
+{
+	isl_space *dom_space;
+	isl_bool applies;
+
+	dom_space = isl_morph_peek_dom_space(morph);
+	applies = isl_space_is_equal(dom_space, space);
+	return check_space_match(space, applies);
 }
 
 __isl_give isl_space *isl_morph_get_ran_space(__isl_keep isl_morph *morph)
