@@ -49,10 +49,6 @@ private:
 	void print_ctx_decl(ostream &os);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
-	void print_check_ptr(ostream &os, const char *ptr);
-	void print_check_ptr_start(ostream &os, const isl_class &clazz,
-		const char *ptr);
-	void print_check_ptr_end(ostream &os, const char *ptr);
 	void print_protected_constructors_impl(ostream &os,
 		const isl_class &clazz);
 	void print_copy_assignment_impl(ostream &os, const isl_class &clazz);
@@ -165,6 +161,9 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	virtual void print_get_method(FunctionDecl *fd) override;
 	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
 		const string &method_name) override;
+	void print_check_ptr(const char *ptr);
+	void print_check_ptr_start(const char *ptr);
+	void print_check_ptr_end(const char *ptr);
 	void print_class_factory();
 	void print_public_constructors();
 	void print_set_persistent_callback(FunctionDecl *method,

@@ -894,9 +894,9 @@ void cpp_generator::impl_printer::print_stream_insertion()
 	osprintf(os, "inline std::ostream &operator<<(std::ostream &os, ");
 	osprintf(os, "const %s &obj)\n", cppname);
 	osprintf(os, "{\n");
-	generator.print_check_ptr_start(os, clazz, "obj.get()");
+	print_check_ptr_start("obj.get()");
 	osprintf(os, "  char *str = %s_to_str(obj.get());\n", name);
-	generator.print_check_ptr_end(os, "str");
+	print_check_ptr_end("str");
 	if (generator.checked) {
 		osprintf(os, "  if (!str) {\n");
 		osprintf(os, "    os.setstate(std::ios_base::badbit);\n");
@@ -913,9 +913,9 @@ void cpp_generator::impl_printer::print_stream_insertion()
  *
  * Omit the check if checked C++ bindings are being generated.
  */
-void cpp_generator::print_check_ptr(ostream &os, const char *ptr)
+void cpp_generator::impl_printer::print_check_ptr(const char *ptr)
 {
-	if (checked)
+	if (generator.checked)
 		return;
 
 	osprintf(os, "  if (!%s)\n", ptr);
@@ -927,16 +927,15 @@ void cpp_generator::print_check_ptr(ostream &os, const char *ptr)
  *
  * Omit the check if checked C++ bindings are being generated.
  */
-void cpp_generator::print_check_ptr_start(ostream &os, const isl_class &clazz,
-	const char *ptr)
+void cpp_generator::impl_printer::print_check_ptr_start(const char *ptr)
 {
-	if (checked)
+	if (generator.checked)
 		return;
 
-	print_check_ptr(os, ptr);
+	print_check_ptr(ptr);
 	osprintf(os, "  auto saved_ctx = %s_get_ctx(%s);\n",
 		clazz.name.c_str(), ptr);
-	print_on_error_continue(os);
+	generator.print_on_error_continue(os);
 }
 
 /* Print code that checks that "ptr" is not NULL at the end.
@@ -945,9 +944,9 @@ void cpp_generator::print_check_ptr_start(ostream &os, const isl_class &clazz,
  *
  * Omit the check if checked C++ bindings are being generated.
  */
-void cpp_generator::print_check_ptr_end(ostream &os, const char *ptr)
+void cpp_generator::impl_printer::print_check_ptr_end(const char *ptr)
 {
-	if (checked)
+	if (generator.checked)
 		return;
 
 	osprintf(os, "  if (!%s)\n", ptr);
@@ -982,15 +981,15 @@ void cpp_generator::impl_printer::print_class_factory()
 
 	osprintf(os, "\n");
 	osprintf(os, "%s manage(__isl_take %s *ptr) {\n", cppname, name);
-	generator.print_check_ptr(os, "ptr");
+	print_check_ptr("ptr");
 	osprintf(os, "  return %s(ptr);\n", cppname);
 	osprintf(os, "}\n");
 
 	osprintf(os, "%s manage_copy(__isl_keep %s *ptr) {\n", cppname,
 		name);
-	generator.print_check_ptr_start(os, clazz, "ptr");
+	print_check_ptr_start("ptr");
 	osprintf(os, "  ptr = %s_copy(ptr);\n", name);
-	generator.print_check_ptr_end(os, "ptr");
+	print_check_ptr_end("ptr");
 	osprintf(os, "  return %s(ptr);\n", cppname);
 	osprintf(os, "}\n");
 }
@@ -1055,11 +1054,11 @@ void cpp_generator::impl_printer::print_public_constructors()
 		osprintf(os, "    : ptr(nullptr)\n");
 	osprintf(os, "{\n");
 	if (!subclass) {
-		generator.print_check_ptr_start(os, clazz, "obj.ptr");
+		print_check_ptr_start("obj.ptr");
 		osprintf(os, "  ptr = obj.copy();\n");
 		if (clazz.has_persistent_callbacks())
 			osprintf(os, "  copy_callbacks(obj);\n");
-		generator.print_check_ptr_end(os, "ptr");
+		print_check_ptr_end("ptr");
 	}
 	osprintf(os, "}\n");
 }
@@ -1175,7 +1174,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	osprintf(os, "\n");
 	print_named_method_header(method, name, kind, convert);
 	osprintf(os, "{\n");
-	generator.print_check_ptr(os, "ptr");
+	print_check_ptr("ptr");
 	osprintf(os, "  return this->%s(", name.c_str());
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
@@ -1770,14 +1769,14 @@ void cpp_generator::impl_printer::print_set_persistent_callback(
 	print_persistent_callback_setter_prototype(method);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
-	generator.print_check_ptr_start(os, clazz, "ptr");
+	print_check_ptr_start("ptr");
 	osprintf(os, "  %s_data = std::make_shared<struct %s_data>();\n",
 		callback_name.c_str(), callback_name.c_str());
 	osprintf(os, "  %s_data->func = %s;\n",
 		callback_name.c_str(), pname.c_str());
 	osprintf(os, "  ptr = %s(ptr, &%s, %s_data.get());\n",
 		fullname.c_str(), callback_name.c_str(), callback_name.c_str());
-	generator.print_check_ptr_end(os, "ptr");
+	print_check_ptr_end("ptr");
 	osprintf(os, "}\n\n");
 
 	print_method_header(method, kind);
