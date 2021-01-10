@@ -3000,7 +3000,7 @@ EnumMethod::EnumMethod(const isl_class &clazz, FunctionDecl *fd,
 void EnumMethod::print_param_use(ostream &os, int pos) const
 {
 	if (pos == num_params())
-		osprintf(os, "%s", enum_name.c_str());
+		os << enum_name;
 	else
 		Method::print_param_use(os, pos);
 }
