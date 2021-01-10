@@ -1119,7 +1119,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	generator.print_method_header(os, clazz, method, false, kind);
 	osprintf(os, "{\n");
 	generator.print_argument_validity_check(os, method, kind);
-	generator.print_save_ctx(os, method, kind);
+	print_save_ctx(method, kind);
 	generator.print_on_error_continue(os);
 
 	for (int i = 0; i < num_params; ++i) {
@@ -1432,7 +1432,7 @@ void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
 	osprintf(os, "{\n");
 
 	generator.print_argument_validity_check(os, fd, kind);
-	generator.print_save_ctx(os, fd, kind);
+	print_save_ctx(fd, kind);
 	generator.print_on_error_continue(os);
 
 	osprintf(os, "  auto res = %s(", c_name.c_str());
@@ -1596,14 +1596,14 @@ void cpp_generator::print_argument_validity_check(ostream &os,
  * Otherwise, save a copy of the isl::ctx associated to the first argument
  * of isl object type.
  */
-void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
+void cpp_generator::impl_printer::print_save_ctx(FunctionDecl *method,
 	function_kind kind)
 {
 	int n;
 	ParmVarDecl *param = method->getParamDecl(0);
 	QualType type = param->getOriginalType();
 
-	if (checked)
+	if (generator.checked)
 		return;
 	if (kind == function_kind_member_method) {
 		osprintf(os, "  auto saved_ctx = ctx();\n");
