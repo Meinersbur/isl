@@ -1698,35 +1698,34 @@ void Method::print_param_use(ostream &os, int pos) const
 	ParmVarDecl *param = fd->getParamDecl(pos);
 	bool load_from_this_ptr = pos == 0 && kind == member_method;
 	string name = param->getName().str();
-	const char *name_str = name.c_str();
 	QualType type = param->getOriginalType();
 
 	if (type->isIntegerType()) {
-		osprintf(os, "%s", name_str);
+		os << name;
 		return;
 	}
 
 	if (generator::is_string(type)) {
-		osprintf(os, "%s.c_str()", name_str);
+		os << name << ".c_str()";
 		return;
 	}
 
 	if (generator::is_callback(type)) {
-		osprintf(os, "%s_lambda, ", name_str);
-		osprintf(os, "&%s_data", name_str);
+		os << name << "_lambda, ";
+		os << "&" << name << "_data";
 		return;
 	}
 
 	if (!load_from_this_ptr)
-		osprintf(os, "%s.", name_str);
+		os << name << ".";
 
 	if (generator::keeps(param)) {
-		osprintf(os, "get()");
+		os << "get()";
 	} else {
 		if (load_from_this_ptr)
-			osprintf(os, "copy()");
+			os << "copy()";
 		else
-			osprintf(os, "release()");
+			os << "release()";
 	}
 }
 
