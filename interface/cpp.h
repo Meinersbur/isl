@@ -72,7 +72,6 @@ private:
 	void print_on_error_continue(ostream &os);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
-	void print_stream_insertion(ostream &os, const isl_class &clazz);
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
 		bool load_from_this_ptr);
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
@@ -180,6 +179,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_exceptional_execution_check(FunctionDecl *method,
 		function_kind kind);
 	void print_method_return(FunctionDecl *method);
+	void print_stream_insertion();
 	void print_wrapped_call_checked(int indent, const std::string &call);
 	void print_wrapped_call(int indent, const std::string &call,
 		QualType rtype);

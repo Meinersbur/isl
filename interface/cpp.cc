@@ -828,7 +828,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	printer.print_persistent_callbacks();
 	printer.print_methods();
 	printer.print_set_enums();
-	print_stream_insertion(os, clazz);
+	printer.print_stream_insertion();
 }
 
 /* Print code for throwing an exception corresponding to the last error
@@ -874,7 +874,7 @@ void cpp_generator::print_invalid(ostream &os, int indent, const char *msg,
 		print_throw_invalid(os, indent, msg);
 }
 
-/* Print an operator for inserting objects of "class"
+/* Print an operator for inserting objects of the class
  * into an output stream.
  *
  * Unless checked C++ bindings are being generated,
@@ -886,10 +886,9 @@ void cpp_generator::print_invalid(ostream &os, int indent, const char *msg,
  * If checked C++ bindings are being generated and anything went wrong,
  * then record this failure in the output stream.
  */
-void cpp_generator::print_stream_insertion(ostream &os, const isl_class &clazz)
+void cpp_generator::impl_printer::print_stream_insertion()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (!clazz.fn_to_str)
@@ -899,10 +898,10 @@ void cpp_generator::print_stream_insertion(ostream &os, const isl_class &clazz)
 	osprintf(os, "inline std::ostream &operator<<(std::ostream &os, ");
 	osprintf(os, "const %s &obj)\n", cppname);
 	osprintf(os, "{\n");
-	print_check_ptr_start(os, clazz, "obj.get()");
+	generator.print_check_ptr_start(os, clazz, "obj.get()");
 	osprintf(os, "  char *str = %s_to_str(obj.get());\n", name);
-	print_check_ptr_end(os, "str");
-	if (checked) {
+	generator.print_check_ptr_end(os, "str");
+	if (generator.checked) {
 		osprintf(os, "  if (!str) {\n");
 		osprintf(os, "    os.setstate(std::ios_base::badbit);\n");
 		osprintf(os, "    return os;\n");
