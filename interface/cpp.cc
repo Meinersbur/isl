@@ -1146,7 +1146,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	}
 	osprintf(os, ");\n");
 
-	generator.print_exceptional_execution_check(os, clazz, method, kind);
+	print_exceptional_execution_check(method, kind);
 	if (kind == function_kind_constructor) {
 		osprintf(os, "  ptr = res;\n");
 	} else {
@@ -1447,7 +1447,7 @@ void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
 	osprintf(os, ", %s", enum_name.c_str());
 	osprintf(os, ");\n");
 
-	generator.print_exceptional_execution_check(os, clazz, fd, kind);
+	print_exceptional_execution_check(fd, kind);
 	generator.print_method_return(os, clazz, fd);
 
 	osprintf(os, "}\n");
@@ -1699,14 +1699,14 @@ static void print_persistent_callback_exceptional_execution_check(ostream &os,
  * Assume print_save_ctx has made sure that a valid isl::ctx
  * is available in the "ctx" variable.
  */
-void cpp_generator::print_exceptional_execution_check(ostream &os,
-	const isl_class &clazz, FunctionDecl *method, function_kind kind)
+void cpp_generator::impl_printer::print_exceptional_execution_check(
+	FunctionDecl *method, function_kind kind)
 {
 	int n;
 	bool check_null, check_neg;
 	QualType return_type = method->getReturnType();
 
-	if (checked)
+	if (generator.checked)
 		return;
 
 	print_persistent_callback_exceptional_execution_check(os, clazz, kind);
