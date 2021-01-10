@@ -9512,6 +9512,16 @@ static int find_div(__isl_keep isl_basic_map *dst,
 /* Align the divs of "dst" to those of "src", adding divs from "src"
  * if needed.  That is, make sure that the first src->n_div divs
  * of the result are equal to those of src.
+ * The integer division of "src" are assumed to be ordered.
+ *
+ * The integer divisions are swapped into the right position
+ * (possibly after adding them first).  This may result
+ * in the remaining integer divisions appearing in the wrong order,
+ * i.e., with some integer division appearing before
+ * some other integer division on which it depends.
+ * The integer divisions therefore need to be ordered.
+ * This will not affect the integer divisions aligned to those of "src",
+ * since "src" is assumed to have ordered integer divisions.
  *
  * The result is not finalized as by design it will have redundant
  * divs if any divs from "src" were copied.
@@ -9543,10 +9553,6 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	if (v_div < 0)
 		return isl_basic_map_free(dst);
 
-	src = isl_basic_map_order_divs(isl_basic_map_copy(src));
-	if (!src)
-		return isl_basic_map_free(dst);
-
 	extended = 0;
 	dst_n_div = isl_basic_map_dim(dst, isl_dim_div);
 	if (dst_n_div < 0)
@@ -9560,32 +9566,27 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 				int extra = src->n_div - i;
 				dst = isl_basic_map_cow(dst);
 				if (!dst)
-					goto error;
+					return isl_basic_map_free(dst);
 				dst = isl_basic_map_extend(dst,
 						extra, 0, 2 * extra);
 				extended = 1;
 			}
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
-				goto error;
+				return isl_basic_map_free(dst);
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+v_div+i);
 			isl_seq_clr(dst->div[j]+1+1+v_div+i, dst->n_div - i);
 			dst_n_div++;
 			dst = isl_basic_map_add_div_constraints(dst, j);
 			if (!dst)
-				goto error;
+				return isl_basic_map_free(dst);
 		}
 		if (j != i)
 			dst = isl_basic_map_swap_div(dst, i, j);
 		if (!dst)
-			goto error;
+			return isl_basic_map_free(dst);
 	}
-	isl_basic_map_free(src);
-	return dst;
-error:
-	isl_basic_map_free(src);
-	isl_basic_map_free(dst);
-	return NULL;
+	return isl_basic_map_order_divs(dst);
 }
 
 __isl_give isl_map *isl_map_align_divs_internal(__isl_take isl_map *map)
@@ -9597,6 +9598,7 @@ __isl_give isl_map *isl_map_align_divs_internal(__isl_take isl_map *map)
 	if (map->n == 0)
 		return map;
 	map = isl_map_compute_divs(map);
+	map = isl_map_order_divs(map);
 	map = isl_map_cow(map);
 	if (!map)
 		return NULL;
@@ -9645,6 +9647,7 @@ __isl_give isl_map *isl_map_align_divs_to_basic_map_list(
 		isl_basic_map *bmap;
 
 		bmap = isl_basic_map_list_get_basic_map(list, i);
+		bmap = isl_basic_map_order_divs(bmap);
 		map->p[0] = isl_basic_map_align_divs(map->p[0], bmap);
 		isl_basic_map_free(bmap);
 	}

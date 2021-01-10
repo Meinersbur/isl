@@ -1402,76 +1402,47 @@ static isl_stat test_plain_unshifted_simple_hull_special(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
-/* Pairs of maps and the corresponding expected results of
- * isl_map_plain_unshifted_simple_hull.
+/* Inputs for simple hull tests, consisting of
+ * the specific simple hull function, the input set and the expected result.
  */
 struct {
-	const char *map;
-	const char *hull;
-} plain_unshifted_simple_hull_tests[] = {
-	{ "{ [i] -> [j] : i >= 1 and j >= 1 or i >= 2 and j <= 10 }",
-	  "{ [i] -> [j] : i >= 1 }" },
-	{ "{ [n] -> [i,j,k] : (i mod 3 = 2 and j mod 4 = 2) or "
-		"(j mod 4 = 2 and k mod 6 = n) }",
-	  "{ [n] -> [i,j,k] : j mod 4 = 2 }" },
-};
-
-/* Basic tests for isl_map_plain_unshifted_simple_hull.
- */
-static int test_plain_unshifted_simple_hull(isl_ctx *ctx)
-{
-	int i;
-	isl_map *map;
-	isl_basic_map *hull, *expected;
-	isl_bool equal;
-
-	for (i = 0; i < ARRAY_SIZE(plain_unshifted_simple_hull_tests); ++i) {
-		const char *str;
-		str = plain_unshifted_simple_hull_tests[i].map;
-		map = isl_map_read_from_str(ctx, str);
-		str = plain_unshifted_simple_hull_tests[i].hull;
-		expected = isl_basic_map_read_from_str(ctx, str);
-		hull = isl_map_plain_unshifted_simple_hull(map);
-		equal = isl_basic_map_is_equal(hull, expected);
-		isl_basic_map_free(hull);
-		isl_basic_map_free(expected);
-		if (equal < 0)
-			return -1;
-		if (!equal)
-			isl_die(ctx, isl_error_unknown, "unexpected hull",
-				return -1);
-	}
-
-	return 0;
-}
-
-/* Pairs of sets and the corresponding expected results of
- * isl_set_unshifted_simple_hull.
- */
-struct {
+	__isl_give isl_basic_set *(*fn)(__isl_take isl_set *set);
 	const char *set;
 	const char *hull;
-} unshifted_simple_hull_tests[] = {
-	{ "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
+} simple_hull_tests[] = {
+	{ &isl_set_plain_unshifted_simple_hull,
+	  "{ [i,j] : i >= 1 and j >= 1 or i >= 2 and j <= 10 }",
+	  "{ [i,j] : i >= 1 }" },
+	{ &isl_set_plain_unshifted_simple_hull,
+	  "{ [n,i,j,k] : (i mod 3 = 2 and j mod 4 = 2) or "
+		"(j mod 4 = 2 and k mod 6 = n) }",
+	  "{ [n,i,j,k] : j mod 4 = 2 }" },
+	{ &isl_set_unshifted_simple_hull,
+	  "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
 	  "{ [t,x,y] : 0 <= t <= 2 and x <= 1 }" },
+	{ &isl_set_simple_hull,
+	  "{ [a, b] : b <= 0 and "
+			"2*floor((-2*floor((b)/2))/5) >= a - floor((b)/2); "
+	    "[a, b] : a mod 2 = 0 }",
+	  "{ [a, b] }" },
 };
 
-/* Basic tests for isl_set_unshifted_simple_hull.
+/* Basic tests for various simple hull functions.
  */
-static int test_unshifted_simple_hull(isl_ctx *ctx)
+static int test_various_simple_hull(isl_ctx *ctx)
 {
 	int i;
 	isl_set *set;
 	isl_basic_set *hull, *expected;
 	isl_bool equal;
 
-	for (i = 0; i < ARRAY_SIZE(unshifted_simple_hull_tests); ++i) {
+	for (i = 0; i < ARRAY_SIZE(simple_hull_tests); ++i) {
 		const char *str;
-		str = unshifted_simple_hull_tests[i].set;
+		str = simple_hull_tests[i].set;
 		set = isl_set_read_from_str(ctx, str);
-		str = unshifted_simple_hull_tests[i].hull;
+		str = simple_hull_tests[i].hull;
 		expected = isl_basic_set_read_from_str(ctx, str);
-		hull = isl_set_unshifted_simple_hull(set);
+		hull = simple_hull_tests[i].fn(set);
 		equal = isl_basic_set_is_equal(hull, expected);
 		isl_basic_set_free(hull);
 		isl_basic_set_free(expected);
@@ -1508,9 +1479,7 @@ static int test_simple_hull(struct isl_ctx *ctx)
 
 	if (test_plain_unshifted_simple_hull_special(ctx) < 0)
 		return -1;
-	if (test_plain_unshifted_simple_hull(ctx) < 0)
-		return -1;
-	if (test_unshifted_simple_hull(ctx) < 0)
+	if (test_various_simple_hull(ctx) < 0)
 		return -1;
 
 	return 0;
