@@ -1854,7 +1854,7 @@ void cpp_generator::print_method_return(ostream &os, const isl_class &clazz,
  * If "convert" is empty, then it is assumed that
  * none of the arguments should be converted.
  */
-ParmVarDecl *cpp_generator::get_param(FunctionDecl *fd, int pos,
+ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
 	const std::vector<bool> &convert)
 {
 	ParmVarDecl *param = fd->getParamDecl(pos);
@@ -1863,7 +1863,7 @@ ParmVarDecl *cpp_generator::get_param(FunctionDecl *fd, int pos,
 		return param;
 	if (!convert[pos])
 		return param;
-	return conversions[param->getOriginalType().getTypePtr()];
+	return generator.conversions[param->getOriginalType().getTypePtr()];
 }
 
 /* Print the header for "method", with name "cname" and
@@ -1957,7 +1957,7 @@ void cpp_generator::class_printer::print_method_header(
 
 	for (int i = first_param; i < num_params; ++i) {
 		std::string name = method->getParamDecl(i)->getName().str();
-		ParmVarDecl *param = generator.get_param(method, i, convert);
+		ParmVarDecl *param = get_param(method, i, convert);
 		QualType type = param->getOriginalType();
 		string cpptype = generator.param2cpp(type);
 

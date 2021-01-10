@@ -89,8 +89,6 @@ private:
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
 		bool load_from_this_ptr);
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
-	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
-		const std::vector<bool> &convert);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
 	void print_wrapped_call_checked(std::ostream &os, int indent,
@@ -146,6 +144,8 @@ struct cpp_generator::class_printer {
 		const string &method_name) = 0;
 	void print_set_enums(FunctionDecl *fd);
 	void print_set_enums();
+	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
+		const std::vector<bool> &convert);
 	void print_method_header(FunctionDecl *method, const string &cname,
 		int num_params, function_kind kind,
 		const std::vector<bool> &convert = {});
