@@ -58,7 +58,6 @@ private:
 	void print_ptr_impl(ostream &os, const isl_class &clazz);
 	void print_downcast_impl(ostream &os, const isl_class &clazz);
 	void print_ctx_impl(ostream &os, const isl_class &clazz);
-	void print_on_error_continue(ostream &os);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
@@ -172,6 +171,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_argument_validity_check(FunctionDecl *method,
 		function_kind kind);
 	void print_save_ctx(FunctionDecl *method, function_kind kind);
+	void print_on_error_continue();
 	void print_exceptional_execution_check(FunctionDecl *method,
 		function_kind kind);
 	void print_method_return(FunctionDecl *method);

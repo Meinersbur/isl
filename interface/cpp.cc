@@ -935,7 +935,7 @@ void cpp_generator::impl_printer::print_check_ptr_start(const char *ptr)
 	print_check_ptr(ptr);
 	osprintf(os, "  auto saved_ctx = %s_get_ctx(%s);\n",
 		clazz.name.c_str(), ptr);
-	generator.print_on_error_continue(os);
+	print_on_error_continue();
 }
 
 /* Print code that checks that "ptr" is not NULL at the end.
@@ -1107,7 +1107,7 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	osprintf(os, "{\n");
 	print_argument_validity_check(method, kind);
 	print_save_ctx(method, kind);
-	generator.print_on_error_continue(os);
+	print_on_error_continue();
 
 	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
@@ -1416,7 +1416,7 @@ void cpp_generator::impl_printer::print_set_enum(FunctionDecl *fd,
 
 	print_argument_validity_check(fd, kind);
 	print_save_ctx(fd, kind);
-	generator.print_on_error_continue(os);
+	print_on_error_continue();
 
 	osprintf(os, "  auto res = %s(", c_name.c_str());
 
@@ -1623,9 +1623,9 @@ void cpp_generator::impl_printer::print_save_ctx(FunctionDecl *method,
  * in the "saved_ctx" variable,
  * e.g., through a prior call to print_save_ctx.
  */
-void cpp_generator::print_on_error_continue(ostream &os)
+void cpp_generator::impl_printer::print_on_error_continue()
 {
-	if (checked)
+	if (generator.checked)
 		return;
 	osprintf(os, "  options_scoped_set_on_error saved_on_error(saved_ctx, "
 		     "exception::on_error);\n");
