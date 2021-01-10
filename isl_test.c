@@ -1420,6 +1420,11 @@ struct {
 	{ &isl_set_unshifted_simple_hull,
 	  "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
 	  "{ [t,x,y] : 0 <= t <= 2 and x <= 1 }" },
+	{ &isl_set_simple_hull,
+	  "{ [a, b] : b <= 0 and "
+			"2*floor((-2*floor((b)/2))/5) >= a - floor((b)/2); "
+	    "[a, b] : a mod 2 = 0 }",
+	  "{ [a, b] }" },
 };
 
 /* Basic tests for various simple hull functions.
