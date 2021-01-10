@@ -228,7 +228,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 
 	osprintf(os, "// declarations for isl::%s\n", cppname);
 
-	print_class_factory_decl(os, clazz);
+	printer.print_class_factory();
 	osprintf(os, "\n");
 	osprintf(os, "class %s ", cppname);
 	if (clazz.is_type_subclass())
@@ -236,7 +236,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 			type2cpp(clazz.superclass_name).c_str());
 	osprintf(os, "{\n");
 	print_subclass_type(os, clazz);
-	print_class_factory_decl(os, clazz, "  friend ");
+	printer.print_class_factory("  friend ");
 	osprintf(os, "\n");
 	osprintf(os, "protected:\n");
 	if (!clazz.is_type_subclass()) {
@@ -272,7 +272,7 @@ void cpp_generator::print_class_forward_decl(ostream &os,
 	osprintf(os, "class %s;\n", cppname);
 }
 
-/* Print global factory functions to "os".
+/* Print global factory functions.
  *
  * Each class has two global factory functions:
  *
@@ -291,11 +291,9 @@ void cpp_generator::print_class_forward_decl(ostream &os,
  * are introduced because they share the C object type with
  * the superclass.
  */
-void cpp_generator::print_class_factory_decl(ostream &os,
-	const isl_class &clazz, const std::string &prefix)
+void cpp_generator::decl_printer::print_class_factory(const std::string &prefix)
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (clazz.is_type_subclass())
@@ -816,7 +814,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 
 	osprintf(os, "// implementations for isl::%s", cppname);
 
-	print_class_factory_impl(os, clazz);
+	printer.print_class_factory();
 	print_public_constructors_impl(os, clazz);
 	print_protected_constructors_impl(os, clazz);
 	printer.print_constructors();
@@ -958,7 +956,7 @@ void cpp_generator::print_check_ptr_end(ostream &os, const char *ptr)
 	print_throw_last_error(os);
 }
 
-/* Print implementation of global factory functions to "os".
+/* Print implementation of global factory functions.
  *
  * Each class has two global factory functions:
  *
@@ -976,11 +974,9 @@ void cpp_generator::print_check_ptr_end(ostream &os, const char *ptr)
  * are introduced because they share the C object type with
  * the superclass.
  */
-void cpp_generator::print_class_factory_impl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::impl_printer::print_class_factory()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (clazz.is_type_subclass())
@@ -988,15 +984,15 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 
 	osprintf(os, "\n");
 	osprintf(os, "%s manage(__isl_take %s *ptr) {\n", cppname, name);
-	print_check_ptr(os, "ptr");
+	generator.print_check_ptr(os, "ptr");
 	osprintf(os, "  return %s(ptr);\n", cppname);
 	osprintf(os, "}\n");
 
 	osprintf(os, "%s manage_copy(__isl_keep %s *ptr) {\n", cppname,
 		name);
-	print_check_ptr_start(os, clazz, "ptr");
+	generator.print_check_ptr_start(os, clazz, "ptr");
 	osprintf(os, "  ptr = %s_copy(ptr);\n", name);
-	print_check_ptr_end(os, "ptr");
+	generator.print_check_ptr_end(os, "ptr");
 	osprintf(os, "  return %s(ptr);\n", cppname);
 	osprintf(os, "}\n");
 }
