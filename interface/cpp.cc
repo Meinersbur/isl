@@ -246,7 +246,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	print_protected_constructors_decl(os, clazz);
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
-	print_public_constructors_decl(os, clazz);
+	printer.print_public_constructors();
 	printer.print_constructors();
 	print_copy_assignment_decl(os, clazz);
 	print_destructor_decl(os, clazz);
@@ -330,7 +330,7 @@ void cpp_generator::print_protected_constructors_decl(ostream &os,
 		 name);
 }
 
-/* Print declarations of public constructors for class "clazz" to "os".
+/* Print declarations of public constructors.
  *
  * Each class currently has two public constructors:
  *
@@ -342,10 +342,8 @@ void cpp_generator::print_protected_constructors_decl(ostream &os,
  *	set();
  *	set(const set &set);
  */
-void cpp_generator::print_public_constructors_decl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::decl_printer::print_public_constructors()
 {
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 	osprintf(os, "  inline /* implicit */ %s();\n", cppname);
 
@@ -815,7 +813,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "// implementations for isl::%s", cppname);
 
 	printer.print_class_factory();
-	print_public_constructors_impl(os, clazz);
+	printer.print_public_constructors();
 	print_protected_constructors_impl(os, clazz);
 	printer.print_constructors();
 	print_copy_assignment_impl(os, clazz);
@@ -1019,7 +1017,7 @@ void cpp_generator::print_protected_constructors_impl(ostream &os,
 		osprintf(os, "    : ptr(ptr) {}\n");
 }
 
-/* Print implementations of public constructors for class "clazz" to "os".
+/* Print implementations of public constructors.
  *
  * The pointer to the isl object is either initialized directly or
  * through the (immediate) superclass.
@@ -1036,10 +1034,8 @@ void cpp_generator::print_protected_constructors_impl(ostream &os,
  * No exceptions are thrown if checked C++ bindings
  * are being generated,
  */
-void cpp_generator::print_public_constructors_impl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::impl_printer::print_public_constructors()
 {
-	std::string cppstring = type2cpp(clazz);
 	std::string super;
 	const char *cppname = cppstring.c_str();
 	bool subclass = clazz.is_type_subclass();
@@ -1059,11 +1055,11 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 		osprintf(os, "    : ptr(nullptr)\n");
 	osprintf(os, "{\n");
 	if (!subclass) {
-		print_check_ptr_start(os, clazz, "obj.ptr");
+		generator.print_check_ptr_start(os, clazz, "obj.ptr");
 		osprintf(os, "  ptr = obj.copy();\n");
 		if (clazz.has_persistent_callbacks())
 			osprintf(os, "  copy_callbacks(obj);\n");
-		print_check_ptr_end(os, "ptr");
+		generator.print_check_ptr_end(os, "ptr");
 	}
 	osprintf(os, "}\n");
 }

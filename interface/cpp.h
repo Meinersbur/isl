@@ -41,8 +41,6 @@ private:
 	void print_protected_constructors_decl(ostream &os,
 		const isl_class &clazz);
 	void print_copy_assignment_decl(ostream &os, const isl_class &clazz);
-	void print_public_constructors_decl(ostream &os,
-		const isl_class &clazz);
 	void print_destructor_decl(ostream &os, const isl_class &clazz);
 	void print_ptr_decl(ostream &os, const isl_class &clazz);
 	void print_isa_type_template(ostream &os, int indent,
@@ -56,8 +54,6 @@ private:
 		const char *ptr);
 	void print_check_ptr_end(ostream &os, const char *ptr);
 	void print_protected_constructors_impl(ostream &os,
-		const isl_class &clazz);
-	void print_public_constructors_impl(ostream &os,
 		const isl_class &clazz);
 	void print_copy_assignment_impl(ostream &os, const isl_class &clazz);
 	void print_destructor_impl(ostream &os, const isl_class &clazz);
@@ -140,6 +136,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 		class_printer(os, clazz, generator, true) {}
 
 	void print_class_factory(const std::string &prefix = std::string());
+	void print_public_constructors();
 	void print_persistent_callback_data(FunctionDecl *method);
 	void print_persistent_callbacks();
 	void print_named_method(FunctionDecl *fd, const string &name,
@@ -169,6 +166,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	virtual void print_set_enum(FunctionDecl *fd, const string &enum_name,
 		const string &method_name) override;
 	void print_class_factory();
+	void print_public_constructors();
 	void print_set_persistent_callback(FunctionDecl *method,
 		function_kind kind);
 	void print_persistent_callbacks();
