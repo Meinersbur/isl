@@ -1849,7 +1849,6 @@ void cpp_generator::print_set_persistent_callback(ostream &os,
 {
 	string fullname = method->getName().str();
 	ParmVarDecl *param = persistent_callback_arg(method);
-	string classname = type2cpp(clazz);
 	string pname;
 	string callback_name = clazz.persistent_callback_name(method);
 
