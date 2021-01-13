@@ -243,7 +243,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 		osprintf(os, "  %s *ptr = nullptr;\n", name);
 		osprintf(os, "\n");
 	}
-	print_protected_constructors_decl(os, clazz);
+	printer.print_protected_constructors();
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
 	printer.print_public_constructors();
@@ -306,7 +306,7 @@ void cpp_generator::decl_printer::print_class_factory(const std::string &prefix)
 		cppname, name);
 }
 
-/* Print declarations of protected constructors for class "clazz" to "os".
+/* Print declarations of protected constructors.
  *
  * Each class has currently one protected constructor:
  *
@@ -319,11 +319,9 @@ void cpp_generator::decl_printer::print_class_factory(const std::string &prefix)
  * The raw pointer constructor is kept protected. Object creation is only
  * possible through manage() or manage_copy().
  */
-void cpp_generator::print_protected_constructors_decl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::decl_printer::print_protected_constructors()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	osprintf(os, "  inline explicit %s(__isl_take %s *ptr);\n", cppname,
@@ -814,7 +812,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 
 	printer.print_class_factory();
 	printer.print_public_constructors();
-	print_protected_constructors_impl(os, clazz);
+	printer.print_protected_constructors();
 	printer.print_constructors();
 	print_copy_assignment_impl(os, clazz);
 	print_destructor_impl(os, clazz);
@@ -994,16 +992,14 @@ void cpp_generator::impl_printer::print_class_factory()
 	osprintf(os, "}\n");
 }
 
-/* Print implementations of protected constructors for class "clazz" to "os".
+/* Print implementations of protected constructors.
  *
  * The pointer to the isl object is either initialized directly or
  * through the (immediate) superclass.
  */
-void cpp_generator::print_protected_constructors_impl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::impl_printer::print_protected_constructors()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 	bool subclass = clazz.is_type_subclass();
 
