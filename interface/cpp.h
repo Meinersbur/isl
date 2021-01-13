@@ -36,7 +36,6 @@ private:
 	void print_forward_declarations(ostream &os);
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
-	void print_subclass_type(ostream &os, const isl_class &clazz);
 	void print_class_forward_decl(ostream &os, const isl_class &clazz);
 	void print_ptr_decl(ostream &os, const isl_class &clazz);
 	void print_isa_type_template(ostream &os, int indent,
@@ -122,6 +121,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 			cpp_generator &generator) :
 		class_printer(os, clazz, generator, true) {}
 
+	void print_subclass_type();
 	void print_class_factory(const std::string &prefix = std::string());
 	void print_protected_constructors();
 	void print_copy_assignment();

@@ -177,7 +177,7 @@ void cpp_generator::print_implementations(ostream &os)
 	}
 }
 
-/* If "clazz" is a subclass that is based on a type function,
+/* If the printed class is a subclass that is based on a type function,
  * then introduce a "type" field that holds the value of the type
  * corresponding to the subclass and make the fields of the class
  * accessible to the "isa" and "as" methods of the (immediate) superclass.
@@ -186,9 +186,8 @@ void cpp_generator::print_implementations(ostream &os)
  * In case of the "isa" method, all instances are made friends
  * to avoid access right confusion.
  */
-void cpp_generator::print_subclass_type(ostream &os, const isl_class &clazz)
+void cpp_generator::decl_printer::print_subclass_type()
 {
-	std::string cppstring = type2cpp(clazz);
 	std::string super;
 	const char *cppname = cppstring.c_str();
 	const char *supername;
@@ -200,7 +199,7 @@ void cpp_generator::print_subclass_type(ostream &os, const isl_class &clazz)
 	supername = super.c_str();
 	osprintf(os, "  template <class T>\n");
 	osprintf(os, "  friend %s %s::isa() const;\n",
-		isl_bool2cpp().c_str(), supername);
+		generator.isl_bool2cpp().c_str(), supername);
 	osprintf(os, "  friend %s %s::as<%s>() const;\n",
 		cppname, supername, cppname);
 	osprintf(os, "  static const auto type = %s;\n",
@@ -235,7 +234,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 		osprintf(os, ": public %s ",
 			type2cpp(clazz.superclass_name).c_str());
 	osprintf(os, "{\n");
-	print_subclass_type(os, clazz);
+	printer.print_subclass_type();
 	printer.print_class_factory("  friend ");
 	osprintf(os, "\n");
 	osprintf(os, "protected:\n");
