@@ -37,12 +37,10 @@ private:
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
 	void print_class_forward_decl(ostream &os, const isl_class &clazz);
-	void print_ctx_decl(ostream &os);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_no_persistent_callback(ostream &os,
 		const isl_class &clazz, FunctionDecl *fd);
-	void print_ctx_impl(ostream &os, const isl_class &clazz);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
@@ -124,6 +122,7 @@ struct cpp_generator::decl_printer : public cpp_generator::class_printer {
 	void print_ptr();
 	void print_isa_type_template(int indent, const isl_class &super);
 	void print_downcast();
+	void print_ctx();
 	void print_persistent_callback_data(FunctionDecl *method);
 	void print_persistent_callbacks();
 	void print_named_method(FunctionDecl *fd, const string &name,
@@ -162,6 +161,7 @@ struct cpp_generator::impl_printer : public cpp_generator::class_printer {
 	void print_destructor();
 	void print_ptr();
 	void print_downcast();
+	void print_ctx();
 	void print_set_persistent_callback(FunctionDecl *method,
 		function_kind kind);
 	void print_persistent_callbacks();

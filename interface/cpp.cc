@@ -251,7 +251,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	printer.print_destructor();
 	printer.print_ptr();
 	printer.print_downcast();
-	print_ctx_decl(os);
+	printer.print_ctx();
 	osprintf(os, "\n");
 	printer.print_persistent_callbacks();
 	printer.print_methods();
@@ -526,9 +526,9 @@ void cpp_generator::decl_printer::print_downcast()
 
 /* Print the declaration of the ctx method.
  */
-void cpp_generator::print_ctx_decl(ostream &os)
+void cpp_generator::decl_printer::print_ctx()
 {
-	std::string ns = isl_namespace();
+	std::string ns = generator.isl_namespace();
 
 	osprintf(os, "  inline %sctx ctx() const;\n", ns.c_str());
 }
@@ -813,7 +813,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	printer.print_destructor();
 	printer.print_ptr();
 	printer.print_downcast();
-	print_ctx_impl(os, clazz);
+	printer.print_ctx();
 	printer.print_persistent_callbacks();
 	printer.print_methods();
 	printer.print_set_enums();
@@ -1334,12 +1334,11 @@ void cpp_generator::impl_printer::print_downcast()
 
 /* Print the implementation of the ctx method.
  */
-void cpp_generator::print_ctx_impl(ostream &os, const isl_class &clazz)
+void cpp_generator::impl_printer::print_ctx()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
-	std::string ns = isl_namespace();
+	std::string ns = generator.isl_namespace();
 
 	osprintf(os, "\n");
 	osprintf(os, "%sctx %s::ctx() const {\n", ns.c_str(), cppname);
