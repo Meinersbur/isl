@@ -248,7 +248,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	osprintf(os, "public:\n");
 	printer.print_public_constructors();
 	printer.print_constructors();
-	print_copy_assignment_decl(os, clazz);
+	printer.print_copy_assignment();
 	print_destructor_decl(os, clazz);
 	print_ptr_decl(os, clazz);
 	print_downcast_decl(os, clazz);
@@ -399,18 +399,15 @@ void cpp_generator::class_printer::print_constructors()
 	}
 }
 
-/* Print declarations of copy assignment operator for class "clazz"
- * to "os".
+/* Print declarations of copy assignment operator.
  *
  * Each class has one assignment operator.
  *
  * 	isl:set &set::operator=(set obj)
  *
  */
-void cpp_generator::print_copy_assignment_decl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::decl_printer::print_copy_assignment()
 {
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	osprintf(os, "  inline %s &operator=(%s obj);\n", cppname, cppname);
@@ -814,7 +811,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	printer.print_public_constructors();
 	printer.print_protected_constructors();
 	printer.print_constructors();
-	print_copy_assignment_impl(os, clazz);
+	printer.print_copy_assignment();
 	print_destructor_impl(os, clazz);
 	print_ptr_impl(os, clazz);
 	print_downcast_impl(os, clazz);
@@ -1191,16 +1188,14 @@ void cpp_generator::impl_printer::print_method(FunctionDecl *method,
 	osprintf(os, "}\n");
 }
 
-/* Print implementation of copy assignment operator for class "clazz" to "os".
+/* Print implementation of copy assignment operator.
  *
  * If the class has any persistent callbacks, then copy them
  * from the original object.
  */
-void cpp_generator::print_copy_assignment_impl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::impl_printer::print_copy_assignment()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	osprintf(os, "\n");
