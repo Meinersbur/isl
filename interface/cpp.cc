@@ -250,7 +250,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	printer.print_copy_assignment();
 	printer.print_destructor();
 	printer.print_ptr();
-	print_downcast_decl(os, clazz);
+	printer.print_downcast();
 	print_ctx_decl(os);
 	osprintf(os, "\n");
 	printer.print_persistent_callbacks();
@@ -485,7 +485,7 @@ void cpp_generator::decl_printer::print_ptr()
  * The check ensures that this subclass is in fact a direct subclass
  * of "super".
  */
-void cpp_generator::print_isa_type_template(ostream &os, int indent,
+void cpp_generator::decl_printer::print_isa_type_template(int indent,
 	const isl_class &super)
 {
 	osprintf(os, indent,
@@ -499,7 +499,7 @@ void cpp_generator::print_isa_type_template(ostream &os, int indent,
 		"                const T>::value>::type>\n");
 }
 
-/* Print declarations for the "as" and "isa" methods, if "clazz"
+/* Print declarations for the "as" and "isa" methods, if the printed class
  * is a superclass with a type function.
  *
  * "isa" checks whether an object is of a given subclass type.
@@ -509,18 +509,18 @@ void cpp_generator::print_isa_type_template(ostream &os, int indent,
  * "as" tries to cast an object to a given subclass type, returning
  * an invalid object if the object is not of the given type.
  */
-void cpp_generator::print_downcast_decl(ostream &os, const isl_class &clazz)
+void cpp_generator::decl_printer::print_downcast()
 {
 	if (!clazz.fn_type)
 		return;
 
 	osprintf(os, "private:\n");
-	print_isa_type_template(os, 2, clazz);
+	print_isa_type_template(2, clazz);
 	osprintf(os, "  inline %s isa_type(T subtype) const;\n",
-		isl_bool2cpp().c_str());
+		generator.isl_bool2cpp().c_str());
 	osprintf(os, "public:\n");
 	osprintf(os, "  template <class T> inline %s isa() const;\n",
-		isl_bool2cpp().c_str());
+		generator.isl_bool2cpp().c_str());
 	osprintf(os, "  template <class T> inline T as() const;\n");
 }
 
@@ -812,7 +812,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	printer.print_copy_assignment();
 	printer.print_destructor();
 	printer.print_ptr();
-	print_downcast_impl(os, clazz);
+	printer.print_downcast();
 	print_ctx_impl(os, clazz);
 	printer.print_persistent_callbacks();
 	printer.print_methods();
@@ -1276,7 +1276,7 @@ void cpp_generator::impl_printer::print_ptr()
 	osprintf(os, "}\n");
 }
 
-/* Print implementations for the "as" and "isa" methods, if "clazz"
+/* Print implementations for the "as" and "isa" methods, if the printed class
  * is a superclass with a type function.
  *
  * "isa" checks whether an object is of a given subclass type.
@@ -1291,9 +1291,8 @@ void cpp_generator::impl_printer::print_ptr()
  * If checked bindings are being generated,
  * then an invalid boolean or object is returned instead.
  */
-void cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
+void cpp_generator::impl_printer::print_downcast()
 {
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (!clazz.fn_type)
@@ -1302,10 +1301,10 @@ void cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	osprintf(os, "template <typename T, typename>\n");
 	osprintf(os, "%s %s::isa_type(T subtype) const\n",
-		isl_bool2cpp().c_str(), cppname);
+		generator.isl_bool2cpp().c_str(), cppname);
 	osprintf(os, "{\n");
 	osprintf(os, "  if (is_null())\n");
-	if (checked)
+	if (generator.checked)
 		osprintf(os, "    return boolean();\n");
 	else
 		print_throw_NULL_input(os);
@@ -1314,7 +1313,8 @@ void cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "}\n");
 
 	osprintf(os, "template <class T>\n");
-	osprintf(os, "%s %s::isa() const\n", isl_bool2cpp().c_str(), cppname);
+	osprintf(os, "%s %s::isa() const\n",
+		generator.isl_bool2cpp().c_str(), cppname);
 	osprintf(os, "{\n");
 	osprintf(os, "  return isa_type<decltype(T::type)>(T::type);\n");
 	osprintf(os, "}\n");
@@ -1322,11 +1322,11 @@ void cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "template <class T>\n");
 	osprintf(os, "T %s::as() const\n", cppname);
 	osprintf(os, "{\n");
-	if (checked)
+	if (generator.checked)
 		osprintf(os, " if (isa<T>().is_false())\n");
 	else
 		osprintf(os, " if (!isa<T>())\n");
-	print_invalid(os, 4, "not an object of the requested subtype",
+	generator.print_invalid(os, 4, "not an object of the requested subtype",
 		    "return T()");
 	osprintf(os, "  return T(copy());\n");
 	osprintf(os, "}\n");
