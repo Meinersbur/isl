@@ -249,7 +249,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	printer.print_constructors();
 	printer.print_copy_assignment();
 	printer.print_destructor();
-	print_ptr_decl(os, clazz);
+	printer.print_ptr();
 	print_downcast_decl(os, clazz);
 	print_ctx_decl(os);
 	osprintf(os, "\n");
@@ -426,7 +426,7 @@ void cpp_generator::decl_printer::print_destructor()
 	osprintf(os, "  inline ~%s();\n", cppname);
 }
 
-/* Print declaration of pointer functions for class "clazz" to "os".
+/* Print declaration of pointer functions.
  * Since type based subclasses share the pointer with their superclass,
  * they can also reuse these functions from the superclass.
  *
@@ -460,7 +460,7 @@ void cpp_generator::decl_printer::print_destructor()
  * Also generate a declaration to delete copy() for r-values, for
  * r-values release() should be used to avoid unnecessary copies.
  */
-void cpp_generator::print_ptr_decl(ostream &os, const isl_class &clazz)
+void cpp_generator::decl_printer::print_ptr()
 {
 	const char *name = clazz.name.c_str();
 
@@ -811,7 +811,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	printer.print_constructors();
 	printer.print_copy_assignment();
 	printer.print_destructor();
-	print_ptr_impl(os, clazz);
+	printer.print_ptr();
 	print_downcast_impl(os, clazz);
 	print_ctx_impl(os, clazz);
 	printer.print_persistent_callbacks();
@@ -1239,7 +1239,7 @@ void cpp_generator::print_check_no_persistent_callback(ostream &os,
 			    "return nullptr");
 }
 
-/* Print implementation of ptr() functions for class "clazz" to "os".
+/* Print implementation of ptr() functions.
  * Since type based subclasses share the pointer with their superclass,
  * they can also reuse these functions from the superclass.
  *
@@ -1247,10 +1247,9 @@ void cpp_generator::print_check_no_persistent_callback(ostream &os,
  * C object pointer cannot be released because it references data
  * in the C++ object.
  */
-void cpp_generator::print_ptr_impl(ostream &os, const isl_class &clazz)
+void cpp_generator::impl_printer::print_ptr()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 	set<FunctionDecl *>::const_iterator in;
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
@@ -1267,7 +1266,7 @@ void cpp_generator::print_ptr_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "}\n\n");
 	osprintf(os, "__isl_give %s *%s::release() {\n", name, cppname);
 	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		print_check_no_persistent_callback(os, clazz, *in);
+		generator.print_check_no_persistent_callback(os, clazz, *in);
 	osprintf(os, "  %s *tmp = ptr;\n", name);
 	osprintf(os, "  ptr = nullptr;\n");
 	osprintf(os, "  return tmp;\n");
