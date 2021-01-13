@@ -249,7 +249,7 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	printer.print_public_constructors();
 	printer.print_constructors();
 	printer.print_copy_assignment();
-	print_destructor_decl(os, clazz);
+	printer.print_destructor();
 	print_ptr_decl(os, clazz);
 	print_downcast_decl(os, clazz);
 	print_ctx_decl(os);
@@ -413,13 +413,12 @@ void cpp_generator::decl_printer::print_copy_assignment()
 	osprintf(os, "  inline %s &operator=(%s obj);\n", cppname, cppname);
 }
 
-/* Print declaration of destructor for class "clazz" to "os".
+/* Print declaration of destructor.
  *
  * No explicit destructor is needed for type based subclasses.
  */
-void cpp_generator::print_destructor_decl(ostream &os, const isl_class &clazz)
+void cpp_generator::decl_printer::print_destructor()
 {
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (clazz.is_type_subclass())
@@ -812,7 +811,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	printer.print_protected_constructors();
 	printer.print_constructors();
 	printer.print_copy_assignment();
-	print_destructor_impl(os, clazz);
+	printer.print_destructor();
 	print_ptr_impl(os, clazz);
 	print_downcast_impl(os, clazz);
 	print_ctx_impl(os, clazz);
@@ -1208,15 +1207,13 @@ void cpp_generator::impl_printer::print_copy_assignment()
 	osprintf(os, "}\n");
 }
 
-/* Print implementation of destructor for class "clazz" to "os".
+/* Print implementation of destructor.
  *
  * No explicit destructor is needed for type based subclasses.
  */
-void cpp_generator::print_destructor_impl(ostream &os,
-	const isl_class &clazz)
+void cpp_generator::impl_printer::print_destructor()
 {
 	const char *name = clazz.name.c_str();
-	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (clazz.is_type_subclass())
