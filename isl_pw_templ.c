@@ -954,6 +954,8 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
  * then nothing can be simplified.
  * If "pw" has a single domain and it is equal to "context",
  * then simply replace the domain by the universe.
+ * Combine duplicate function value expressions first
+ * to increase the chance of "pw" having a single domain.
  */
 static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 	__isl_take isl_set *context,
@@ -966,6 +968,7 @@ static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 	int is_universe;
 	isl_basic_set *hull = NULL;
 
+	pw = FN(PW,sort_unique)(pw);
 	if (!pw || !context)
 		goto error;
 
