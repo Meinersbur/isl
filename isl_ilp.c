@@ -696,6 +696,10 @@ static __isl_give isl_val *isl_pw_aff_opt_val(__isl_take isl_pw_aff *pa,
 }
 
 #undef TYPE
+#define TYPE isl_pw_aff
+#include "isl_ilp_opt_fn_val_templ.c"
+
+#undef TYPE
 #define TYPE isl_pw_multi_aff
 #include "isl_ilp_opt_multi_val_templ.c"
 

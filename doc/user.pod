@@ -6577,6 +6577,10 @@ there is one, negative infinity or infinity if the problem is unbounded and
 NaN if the problem is empty.
 
 	#include <isl/ilp.h>
+	__isl_give isl_val *isl_pw_aff_min_val(
+		__isl_take isl_pw_aff *pa);
+	__isl_give isl_val *isl_pw_aff_max_val(
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_multi_val *
 	isl_pw_multi_aff_min_multi_val(
 		__isl_take isl_pw_multi_aff *pma);
