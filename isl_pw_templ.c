@@ -898,6 +898,8 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
  *
  * If the piecewise expression is empty or the context is the universe,
  * then nothing can be simplified.
+ * If "pw" has a single domain and it is equal to "context",
+ * then simply replace the domain by the universe.
  */
 static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 	__isl_take isl_set *context,
