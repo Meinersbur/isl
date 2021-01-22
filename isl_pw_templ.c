@@ -899,7 +899,7 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
  * If the piecewise expression is empty or the context is the universe,
  * then nothing can be simplified.
  */
-static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
+static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 	__isl_take isl_set *context,
 	__isl_give EL *(*fn_el)(__isl_take EL *el,
 				    __isl_take isl_set *set),
@@ -908,7 +908,6 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 {
 	int i;
 	int is_universe;
-	isl_bool aligned;
 	isl_basic_set *hull = NULL;
 
 	if (!pw || !context)
@@ -927,13 +926,7 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		return pw;
 	}
 
-	aligned = isl_set_space_has_equal_params(context, pw->dim);
-	if (aligned < 0)
-		goto error;
-	if (!aligned) {
-		pw = FN(PW,align_params)(pw, isl_set_get_space(context));
-		context = isl_set_align_params(context, FN(PW,get_space)(pw));
-	}
+	FN(PW,align_params_set)(&pw, &context);
 
 	pw = FN(PW,cow)(pw);
 	if (!pw)
@@ -995,16 +988,14 @@ error:
 
 __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 {
-	FN(PW,align_params_set)(&pw, &context);
-	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist),
+	return FN(PW,gist_fn)(pw, context, &FN(EL,gist),
 					&isl_set_gist_basic_set);
 }
 
 __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
-	FN(PW,align_params_set)(&pw, &context);
-	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist_params),
+	return FN(PW,gist_fn)(pw, context, &FN(EL,gist_params),
 					&isl_set_gist_params_basic_set);
 }
 
