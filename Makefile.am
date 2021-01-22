@@ -506,6 +506,7 @@ EXTRA_DIST = \
 	isl_copy_tuple_id_templ.c \
 	isl_domain_factor_templ.c \
 	extract_key.c \
+	isl_ilp_opt_fn_val_templ.c \
 	isl_ilp_opt_multi_val_templ.c \
 	isl_ilp_opt_val_templ.c \
 	has_single_reference_templ.c \
