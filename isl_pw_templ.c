@@ -1024,7 +1024,7 @@ static int FN(PW,sort_field_cmp)(const void *p1, const void *p2, void *arg)
  * taken not to change any possible other copies of "pw"
  * in case anything goes wrong.
  */
-static __isl_give PW *FN(PW,sort)(__isl_take PW *pw)
+static __isl_give PW *FN(PW,sort_unique)(__isl_take PW *pw)
 {
 	int i, j;
 	isl_set *set;
@@ -1066,7 +1066,7 @@ __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)
 {
 	int i;
 
-	pw = FN(PW,sort)(pw);
+	pw = FN(PW,sort_unique)(pw);
 	if (!pw)
 		return NULL;
 
@@ -1981,7 +1981,7 @@ __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 	int i;
 	isl_set *set;
 
-	pw = FN(PW,sort)(pw);
+	pw = FN(PW,sort_unique)(pw);
 	if (!pw)
 		return NULL;
 	for (i = 0; i < pw->n; ++i) {
