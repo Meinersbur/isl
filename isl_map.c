@@ -13470,7 +13470,7 @@ __isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
 	return isl_basic_map_get_div(bset, pos);
 }
 
-/* Plug in "subs" for dimension "type", "pos" of "bset".
+/* Plug in "subs" for set dimension "pos" of "bset".
  *
  * Let i be the dimension to replace and let "subs" be of the form
  *
@@ -13498,7 +13498,7 @@ __isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
  */
 static __isl_give isl_basic_set *isl_basic_set_substitute(
 	__isl_take isl_basic_set *bset,
-	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
+	unsigned pos, __isl_keep isl_aff *subs)
 {
 	int i;
 	isl_int v;
@@ -13526,7 +13526,7 @@ static __isl_give isl_basic_set *isl_basic_set_substitute(
 		isl_die(ctx, isl_error_invalid,
 			"can only substitute integer expressions", goto error);
 
-	pos += isl_basic_set_offset(bset, type);
+	pos += isl_basic_set_offset(bset, isl_dim_set);
 
 	isl_int_init(v);
 
@@ -13568,10 +13568,10 @@ error:
 	return NULL;
 }
 
-/* Plug in "subs" for dimension "type", "pos" of "set".
+/* Plug in "subs" for set dimension "pos" of "set".
  */
 __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
-	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
+	unsigned pos, __isl_keep isl_aff *subs)
 {
 	int i;
 
@@ -13583,7 +13583,7 @@ __isl_give isl_set *isl_set_substitute(__isl_take isl_set *set,
 		goto error;
 
 	for (i = set->n - 1; i >= 0; --i) {
-		set->p[i] = isl_basic_set_substitute(set->p[i], type, pos, subs);
+		set->p[i] = isl_basic_set_substitute(set->p[i], pos, subs);
 		set = set_from_map(remove_if_empty(set_to_map(set), i));
 		if (!set)
 			return NULL;
