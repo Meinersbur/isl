@@ -176,7 +176,7 @@ isl_stat isl_seq_preimage(isl_int *dst, isl_int *src,
 __isl_give isl_aff *isl_aff_substitute_equalities(__isl_take isl_aff *aff,
 	__isl_take isl_basic_set *eq);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
-	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type, unsigned pos,
+	__isl_take isl_pw_multi_aff *pma, unsigned pos,
 	__isl_keep isl_pw_aff *subs);
 
 isl_stat isl_pw_aff_check_named_params(__isl_keep isl_pw_aff *pa);

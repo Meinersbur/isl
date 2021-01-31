@@ -5715,7 +5715,7 @@ __isl_give isl_multi_aff *isl_multi_aff_substitute(
 	return maff;
 }
 
-/* Plug in "subs" for dimension "type", "pos" of "pma".
+/* Plug in "subs" for input dimension "pos" of "pma".
  *
  * pma is of the form
  *
@@ -5734,7 +5734,7 @@ __isl_give isl_multi_aff *isl_multi_aff_substitute(
  * and this contribution should simply be discarded.
  */
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
-	__isl_take isl_pw_multi_aff *pma, enum isl_dim_type type, unsigned pos,
+	__isl_take isl_pw_multi_aff *pma, unsigned pos,
 	__isl_keep isl_pw_aff *subs)
 {
 	int i, j, n;
@@ -5756,7 +5756,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
 					isl_set_copy(pma->p[i].set),
 					isl_set_copy(subs->p[j].set));
 			common = isl_set_substitute(common,
-					type, pos, subs->p[j].aff);
+					isl_dim_set, pos, subs->p[j].aff);
 			empty = isl_set_plain_is_empty(common);
 			if (empty < 0 || empty) {
 				isl_set_free(common);
@@ -5767,7 +5767,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_substitute(
 
 			res_ij = isl_multi_aff_substitute(
 					isl_multi_aff_copy(pma->p[i].maff),
-					type, pos, subs->p[j].aff);
+					isl_dim_in, pos, subs->p[j].aff);
 
 			res = isl_pw_multi_aff_add_piece(res, common, res_ij);
 		}
