@@ -79,6 +79,21 @@ FunctionDecl *generator::find_by_name(const string &name, bool required)
 	return NULL;
 }
 
+/* Add a class derived from "decl" to the set of classes,
+ * keeping track of the _to_str, _copy and _free functions, if any, separately.
+ */
+void generator::add_class(RecordDecl *decl)
+{
+	string name = decl->getName();
+
+	classes[name].name = name;
+	classes[name].type = decl;
+	classes[name].fn_to_str = find_by_name(name + "_to_str", false);
+	classes[name].fn_copy = find_by_name(name + "_copy", true);
+	classes[name].fn_free = find_by_name(name + "_free", true);
+	classes[name].fn_dump = find_by_name(name + "_dump", false);
+}
+
 /* Collect all functions that belong to a certain type, separating
  * constructors from regular methods and keeping track of the _to_str,
  * _copy and _free functions, if any, separately.  If there are any overloaded
@@ -97,16 +112,8 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		functions_by_name[decl->getName()] = decl;
 	}
 
-	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
-		RecordDecl *decl = *it;
-		string name = decl->getName();
-		classes[name].name = name;
-		classes[name].type = decl;
-		classes[name].fn_to_str = find_by_name(name + "_to_str", false);
-		classes[name].fn_copy = find_by_name(name + "_copy", true);
-		classes[name].fn_free = find_by_name(name + "_free", true);
-		classes[name].fn_dump = find_by_name(name + "_dump", false);
-	}
+	for (it = exported_types.begin(); it != exported_types.end(); ++it)
+		add_class(*it);
 
 	for (in = exported_functions.begin(); in != exported_functions.end();
 	     ++in) {

@@ -54,6 +54,7 @@ public:
 	virtual ~generator() {};
 
 protected:
+	void add_class(RecordDecl *decl);
 	isl_class *method2class(FunctionDecl *fd);
 	bool callback_takes_argument(ParmVarDecl *param, int pos);
 	FunctionDecl *find_by_name(const string &name, bool required);
