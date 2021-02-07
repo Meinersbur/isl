@@ -684,7 +684,7 @@ static __isl_give isl_pw_aff_list *upper_bounds(
  * If the list contains more than one element, then we sort it
  * using a fairly arbitrary but hopefully reasonably stable order.
  */
-static __isl_give isl_ast_expr *reduce_list(enum isl_ast_op_type type,
+static __isl_give isl_ast_expr *reduce_list(enum isl_ast_expr_op_type type,
 	__isl_keep isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
 {
 	int i;
@@ -1028,7 +1028,7 @@ static __isl_give isl_ast_graft *set_for_cond_from_list(
 {
 	int neg;
 	isl_ast_expr *bound, *iterator, *cond;
-	enum isl_ast_op_type type = isl_ast_op_le;
+	enum isl_ast_expr_op_type type = isl_ast_expr_op_le;
 
 	if (!graft || !list)
 		return isl_ast_graft_free(graft);
@@ -1039,10 +1039,10 @@ static __isl_give isl_ast_graft *set_for_cond_from_list(
 	list = isl_pw_aff_list_copy(list);
 	if (neg) {
 		list = list_add_one(list, build);
-		type = isl_ast_op_lt;
+		type = isl_ast_expr_op_lt;
 	}
 
-	bound = reduce_list(isl_ast_op_min, list, build);
+	bound = reduce_list(isl_ast_expr_op_min, list, build);
 	iterator = isl_ast_expr_copy(graft->node->u.f.iterator);
 	cond = isl_ast_expr_alloc_binary(type, iterator, bound);
 	graft->node->u.f.cond = cond;
@@ -1142,7 +1142,7 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
 	build = isl_ast_build_copy(build);
 
 	node = graft->node;
-	node->u.f.init = reduce_list(isl_ast_op_max, lower, build);
+	node->u.f.init = reduce_list(isl_ast_expr_op_max, lower, build);
 	node->u.f.inc = for_inc(build);
 
 	if (!node->u.f.init || !node->u.f.inc)
