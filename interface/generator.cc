@@ -50,6 +50,8 @@ static int prefixcmp(const char *s, const char *prefix)
 	return strncmp(s, prefix, strlen(prefix));
 }
 
+const char *isl_class::set_callback_prefix = "set_";
+
 /* Should "method" be considered to be a static method?
  * That is, is the first argument something other than
  * an instance of the class?
@@ -167,6 +169,37 @@ void generator::add_type_subclasses(FunctionDecl *fn_type)
 	}
 }
 
+/* Return the callback argument of a function setting
+ * a persistent callback.
+ * This callback is in the second argument (position 1).
+ */
+ParmVarDecl *generator::persistent_callback_arg(FunctionDecl *fd)
+{
+	return fd->getParamDecl(1);
+}
+
+/* Does the given function set a persistent callback?
+ * The following heuristics are used to determine this property:
+ * - the function returns an object of the same type
+ * - its name starts with "set_"
+ * - it has exactly three arguments
+ * - the second (position 1) of which is a callback
+ */
+static bool sets_persistent_callback(isl_class *c, FunctionDecl *fd)
+{
+	ParmVarDecl *param;
+
+	if (!generator::is_mutator(*c, fd))
+		return false;
+	if (fd->getNumParams() != 3)
+		return false;
+	param = generator::persistent_callback_arg(fd);
+	if (!generator::is_callback(param->getType()))
+		return false;
+	return prefixcmp(c->method_name(fd).c_str(),
+			 c->set_callback_prefix) == 0;
+}
+
 /* Sorting function that places declaration of functions
  * with a shorter name first.
  */
@@ -176,7 +209,8 @@ static bool less_name(const FunctionDecl *a, const FunctionDecl *b)
 }
 
 /* Collect all functions that belong to a certain type, separating
- * constructors from regular methods and keeping track of the _to_str,
+ * constructors from methods that set persistent callback and
+ * from regular methods, while keeping track of the _to_str,
  * _copy and _free functions, if any, separately.  If there are any overloaded
  * functions, then they are grouped based on their name after removing the
  * argument type suffix.
@@ -226,6 +260,8 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 			continue;
 		if (is_constructor(method)) {
 			c->constructors.insert(method);
+		} else if (sets_persistent_callback(c, method)) {
+			c->persistent_callbacks.insert(method);
 		} else {
 			string fullname = c->name_without_type_suffix(method);
 			c->methods[fullname].insert(method);

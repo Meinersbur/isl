@@ -17,6 +17,8 @@ using namespace clang;
  * is the name of the immediate superclass of that subclass.  Otherwise,
  * "subclass_name" is equal to "name" and "superclass_name" is undefined.
  * "type" is the declaration that introduces the type.
+ * "persistent_callbacks" contains the set of functions that
+ * set a persistent callback.
  * "methods" contains the set of methods, grouped by method name.
  * "fn_to_str" is a reference to the *_to_str method of this class, if any.
  * "fn_copy" is a reference to the *_copy method of this class, if any.
@@ -31,6 +33,7 @@ struct isl_class {
 	string subclass_name;
 	RecordDecl *type;
 	set<FunctionDecl *> constructors;
+	set<FunctionDecl *> persistent_callbacks;
 	map<string, set<FunctionDecl *> > methods;
 	map<int, string> type_subclasses;
 	FunctionDecl *fn_type;
@@ -47,6 +50,19 @@ struct isl_class {
 	string method_name(FunctionDecl *fd) const {
 		string m_name = name_without_type_suffix(fd);
 		return m_name.substr(subclass_name.length() + 1);
+	}
+	/* The prefix of any method that may set a (persistent) callback. */
+	static const char *set_callback_prefix;
+	/* Given a function that sets a persistent callback,
+	 * return the name of the callback.
+	 */
+	string persistent_callback_name(FunctionDecl *fd) const {
+		return method_name(fd).substr(strlen(set_callback_prefix));
+	}
+	/* Does this class have any functions that set a persistent callback?
+	 */
+	bool has_persistent_callbacks() const {
+		return persistent_callbacks.size() != 0;
 	}
 };
 
@@ -98,6 +114,7 @@ public:
 	static bool is_mutator(const isl_class &clazz, FunctionDecl *fd);
 	static string extract_type(QualType type);
 	static const FunctionProtoType *extract_prototype(QualType type);
+	static ParmVarDecl *persistent_callback_arg(FunctionDecl *fd);
 };
 
 #endif /* ISL_INTERFACE_GENERATOR_H */

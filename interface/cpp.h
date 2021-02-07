@@ -46,12 +46,19 @@ private:
 		const isl_class &super);
 	void print_downcast_decl(ostream &os, const isl_class &clazz);
 	void print_get_ctx_decl(ostream &os);
-	void print_str_decl(ostream &os, const isl_class &clazz);
-	void print_dump_decl(ostream &os, const isl_class &clazz);
+	void print_persistent_callback_prototype(ostream &os,
+		const isl_class &clazz, FunctionDecl *method,
+		bool is_declaration);
+	void print_persistent_callback_setter_prototype(ostream &os,
+		const isl_class &clazz, FunctionDecl *method,
+		bool is_declaration);
+	void print_persistent_callback_data(ostream &os, const isl_class &clazz,
+		FunctionDecl *method);
+	void print_persistent_callbacks_decl(ostream &os,
+		const isl_class &clazz);
 	void print_methods_decl(ostream &os, const isl_class &clazz);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
 		const set<FunctionDecl *> &methods);
-	void print_dump(ostream &os, const isl_class &clazz);
 	void print_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
 	void print_implementations(ostream &os);
@@ -68,11 +75,13 @@ private:
 	void print_constructors_impl(ostream &os, const isl_class &clazz);
 	void print_copy_assignment_impl(ostream &os, const isl_class &clazz);
 	void print_destructor_impl(ostream &os, const isl_class &clazz);
+	void print_check_no_persistent_callback(ostream &os,
+		const isl_class &clazz, FunctionDecl *fd);
 	void print_ptr_impl(ostream &os, const isl_class &clazz);
 	bool print_downcast_impl(ostream &os, const isl_class &clazz);
 	void print_get_ctx_impl(ostream &os, const isl_class &clazz);
-	void print_str_impl(ostream &os, const isl_class &clazz);
-	void print_dump_impl(ostream &os, const isl_class &clazz);
+	void print_persistent_callbacks_impl(ostream &os,
+		const isl_class &clazz);
 	void print_methods_impl(ostream &os, const isl_class &clazz);
 	void print_method_group_impl(ostream &os, const isl_class &clazz,
 		const set<FunctionDecl *> &methods);
@@ -82,7 +91,10 @@ private:
 		function_kind kind);
 	void print_on_error_continue(ostream &os);
 	void print_exceptional_execution_check(ostream &os,
-		FunctionDecl *method);
+		const isl_class &clazz, FunctionDecl *method,
+		function_kind kind);
+	void print_set_persistent_callback(ostream &os, const isl_class &clazz,
+		FunctionDecl *method, function_kind kind);
 	void print_method_return(ostream &os, const isl_class &clazz,
 		FunctionDecl *method);
 	void print_method_impl(ostream &os, const isl_class &clazz,
