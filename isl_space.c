@@ -26,29 +26,29 @@ isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space)
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out)
 {
-	isl_space *dim;
+	isl_space *space;
 
-	dim = isl_alloc_type(ctx, struct isl_space);
-	if (!dim)
+	space = isl_alloc_type(ctx, struct isl_space);
+	if (!space)
 		return NULL;
 
-	dim->ctx = ctx;
+	space->ctx = ctx;
 	isl_ctx_ref(ctx);
-	dim->ref = 1;
-	dim->nparam = nparam;
-	dim->n_in = n_in;
-	dim->n_out = n_out;
+	space->ref = 1;
+	space->nparam = nparam;
+	space->n_in = n_in;
+	space->n_out = n_out;
 
-	dim->tuple_id[0] = NULL;
-	dim->tuple_id[1] = NULL;
+	space->tuple_id[0] = NULL;
+	space->tuple_id[1] = NULL;
 
-	dim->nested[0] = NULL;
-	dim->nested[1] = NULL;
+	space->nested[0] = NULL;
+	space->nested[1] = NULL;
 
-	dim->n_id = 0;
-	dim->ids = NULL;
+	space->n_id = 0;
+	space->ids = NULL;
 
-	return dim;
+	return space;
 }
 
 /* Mark the space as being that of a set, by setting the domain tuple
@@ -74,6 +74,21 @@ isl_bool isl_space_is_set(__isl_keep isl_space *space)
 	if (space->tuple_id[0] != &isl_id_none)
 		return isl_bool_false;
 	return isl_bool_true;
+}
+
+/* Check that "space" is a set space.
+ */
+isl_stat isl_space_check_is_set(__isl_keep isl_space *space)
+{
+	isl_bool is_set;
+
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_stat_error;
+	if (!is_set)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"space is not a set", return isl_stat_error);
+	return isl_stat_ok;
 }
 
 /* Is the given space that of a map?
@@ -1220,7 +1235,7 @@ isl_stat isl_space_check_equal_params(__isl_keep isl_space *space1,
 __isl_give isl_space *isl_space_join(__isl_take isl_space *left,
 	__isl_take isl_space *right)
 {
-	isl_space *dim;
+	isl_space *space;
 
 	if (isl_space_check_equal_params(left, right) < 0)
 		goto error;
@@ -1229,31 +1244,32 @@ __isl_give isl_space *isl_space_join(__isl_take isl_space *left,
 		isl_space_tuple_is_equal(left, isl_dim_out, right, isl_dim_in),
 		goto error);
 
-	dim = isl_space_alloc(left->ctx, left->nparam, left->n_in, right->n_out);
-	if (!dim)
+	space = isl_space_alloc(left->ctx,
+				left->nparam, left->n_in, right->n_out);
+	if (!space)
 		goto error;
 
-	dim = copy_ids(dim, isl_dim_param, 0, left, isl_dim_param);
-	dim = copy_ids(dim, isl_dim_in, 0, left, isl_dim_in);
-	dim = copy_ids(dim, isl_dim_out, 0, right, isl_dim_out);
+	space = copy_ids(space, isl_dim_param, 0, left, isl_dim_param);
+	space = copy_ids(space, isl_dim_in, 0, left, isl_dim_in);
+	space = copy_ids(space, isl_dim_out, 0, right, isl_dim_out);
 
-	if (dim && left->tuple_id[0] &&
-	    !(dim->tuple_id[0] = isl_id_copy(left->tuple_id[0])))
+	if (space && left->tuple_id[0] &&
+	    !(space->tuple_id[0] = isl_id_copy(left->tuple_id[0])))
 		goto error;
-	if (dim && right->tuple_id[1] &&
-	    !(dim->tuple_id[1] = isl_id_copy(right->tuple_id[1])))
+	if (space && right->tuple_id[1] &&
+	    !(space->tuple_id[1] = isl_id_copy(right->tuple_id[1])))
 		goto error;
-	if (dim && left->nested[0] &&
-	    !(dim->nested[0] = isl_space_copy(left->nested[0])))
+	if (space && left->nested[0] &&
+	    !(space->nested[0] = isl_space_copy(left->nested[0])))
 		goto error;
-	if (dim && right->nested[1] &&
-	    !(dim->nested[1] = isl_space_copy(right->nested[1])))
+	if (space && right->nested[1] &&
+	    !(space->nested[1] = isl_space_copy(right->nested[1])))
 		goto error;
 
 	isl_space_free(left);
 	isl_space_free(right);
 
-	return dim;
+	return space;
 error:
 	isl_space_free(left);
 	isl_space_free(right);
@@ -1889,13 +1905,14 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div)
 {
 	int i;
+	isl_bool is_set;
 
-	if (!space)
-		return NULL;
-	if (n_div == 0 &&
+	is_set = isl_space_is_set(space);
+	if (is_set < 0)
+		return isl_space_free(space);
+	if (n_div == 0 && is_set &&
 	    space->nparam == 0 && space->n_in == 0 && space->n_id == 0)
-		return isl_space_reset(isl_space_reset(space, isl_dim_in),
-					isl_dim_out);
+		return isl_space_reset(space, isl_dim_out);
 	space = isl_space_cow(space);
 	if (!space)
 		return NULL;
@@ -1908,6 +1925,7 @@ __isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	space->n_id = 0;
 	space = isl_space_reset(space, isl_dim_in);
 	space = isl_space_reset(space, isl_dim_out);
+	space = mark_as_set(space);
 
 	return space;
 }
@@ -2360,18 +2378,19 @@ error:
 __isl_give isl_space *isl_space_lift(__isl_take isl_space *space,
 	unsigned n_local)
 {
-	isl_space *local_dim;
+	isl_space *local_space;
 
 	if (!space)
 		return NULL;
 
-	local_dim = isl_space_dup(space);
-	local_dim = isl_space_drop_dims(local_dim, isl_dim_set, 0,
+	local_space = isl_space_dup(space);
+	local_space = isl_space_drop_dims(local_space, isl_dim_set, 0,
 					space->n_out);
-	local_dim = isl_space_add_dims(local_dim, isl_dim_set, n_local);
-	local_dim = isl_space_set_tuple_name(local_dim, isl_dim_set, "local");
+	local_space = isl_space_add_dims(local_space, isl_dim_set, n_local);
+	local_space = isl_space_set_tuple_name(local_space,
+						isl_dim_set, "local");
 	space = isl_space_join(isl_space_from_domain(space),
-			    isl_space_from_range(local_dim));
+			    isl_space_from_range(local_space));
 	space = isl_space_wrap(space);
 	space = isl_space_set_tuple_name(space, isl_dim_set, "lifted");
 

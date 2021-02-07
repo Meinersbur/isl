@@ -3366,11 +3366,8 @@ int isl_inequality_negate(struct isl_basic_map *bmap, unsigned pos)
 __isl_give isl_set *isl_set_alloc_space(__isl_take isl_space *space, int n,
 	unsigned flags)
 {
-	if (!space)
-		return NULL;
-	if (isl_space_dim(space, isl_dim_in) != 0)
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"set cannot have input dimensions", goto error);
+	if (isl_space_check_is_set(space) < 0)
+		goto error;
 	return isl_map_alloc_space(space, n, flags);
 error:
 	isl_space_free(space);
@@ -7024,9 +7021,9 @@ static __isl_give isl_pw_aff *map_dim_opt(__isl_take isl_map *map, int pos,
 		return NULL;
 
 	if (map->n == 0) {
-		isl_space *dim = isl_map_get_space(map);
+		isl_space *space = isl_map_get_space(map);
 		isl_map_free(map);
-		return isl_pw_aff_empty(dim);
+		return isl_pw_aff_empty(space);
 	}
 
 	pwaff = basic_map_dim_opt(map->p[0], max);
@@ -8040,17 +8037,17 @@ __isl_give isl_map *isl_map_apply_domain(__isl_take isl_map *map1,
 static __isl_give isl_map *map_apply_range(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
-	isl_space *dim_result;
+	isl_space *space;
 	struct isl_map *result;
 	int i, j;
 
 	if (!map1 || !map2)
 		goto error;
 
-	dim_result = isl_space_join(isl_space_copy(map1->dim),
+	space = isl_space_join(isl_space_copy(map1->dim),
 				  isl_space_copy(map2->dim));
 
-	result = isl_map_alloc_space(dim_result, map1->n * map2->n, 0);
+	result = isl_map_alloc_space(space, map1->n * map2->n, 0);
 	if (!result)
 		goto error;
 	for (i = 0; i < map1->n; ++i)
@@ -10614,7 +10611,7 @@ error:
 __isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	unsigned n_div;
 
 	set = set_from_map(isl_map_align_divs_internal(set_to_map(set)));
@@ -10627,12 +10624,12 @@ __isl_give isl_set *isl_set_lift(__isl_take isl_set *set)
 		return NULL;
 
 	n_div = set->p[0]->n_div;
-	dim = isl_set_get_space(set);
-	dim = isl_space_lift(dim, n_div);
-	if (!dim)
+	space = isl_set_get_space(set);
+	space = isl_space_lift(space, n_div);
+	if (!space)
 		goto error;
 	isl_space_free(set->dim);
-	set->dim = dim;
+	set->dim = space;
 
 	for (i = 0; i < set->n; ++i) {
 		set->p[i] = isl_basic_set_lift(set->p[i]);
@@ -11648,12 +11645,13 @@ __isl_give isl_set *isl_set_flatten(__isl_take isl_set *set)
 
 __isl_give isl_map *isl_set_flatten_map(__isl_take isl_set *set)
 {
-	isl_space *dim, *flat_dim;
+	isl_space *space, *flat_space;
 	isl_map *map;
 
-	dim = isl_set_get_space(set);
-	flat_dim = isl_space_flatten(isl_space_copy(dim));
-	map = isl_map_identity(isl_space_join(isl_space_reverse(dim), flat_dim));
+	space = isl_set_get_space(set);
+	flat_space = isl_space_flatten(isl_space_copy(space));
+	map = isl_map_identity(isl_space_join(isl_space_reverse(space),
+						flat_space));
 	map = isl_map_intersect_domain(map, set);
 
 	return map;
