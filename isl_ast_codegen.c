@@ -3083,7 +3083,7 @@ static __isl_give isl_basic_set_list *compute_domains(
 	isl_space *space;
 	int n_param;
 	enum isl_ast_loop_type type;
-	int empty;
+	isl_bool empty;
 
 	if (!executed)
 		return NULL;
@@ -4270,7 +4270,7 @@ static int after_in_band(__isl_keep isl_union_map *umap,
 	isl_union_map *partial, *test, *gt, *universe, *umap1, *umap2;
 	isl_union_set *domain, *range;
 	isl_space *space;
-	int empty;
+	isl_bool empty;
 	int after;
 
 	if (isl_schedule_node_band_n_member(node) == 0)
@@ -4468,7 +4468,8 @@ static int after_in_sequence(__isl_keep isl_union_map *umap,
 {
 	int i, j, n;
 	isl_union_map *umap_i;
-	int empty, after = 0;
+	isl_bool empty;
+	int after = 0;
 
 	n = isl_schedule_node_n_children(node);
 	for (i = 1; i < n; ++i) {
@@ -4527,7 +4528,7 @@ error:
 static int after_in_tree(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
-	int empty;
+	isl_bool empty;
 	enum isl_schedule_node_type type;
 
 	empty = isl_union_map_is_empty(umap);

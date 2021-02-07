@@ -1222,7 +1222,7 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 {
 	int i, j;
 	isl_set *dom1, *dom2;
-	int is_subset;
+	isl_bool is_subset;
 
 	if (!pwf1 || !pwf2)
 		return -1;
@@ -1243,7 +1243,7 @@ int isl_pw_qpolynomial_fold_covers(__isl_keep isl_pw_qpolynomial_fold *pwf1,
 
 	for (i = 0; i < pwf2->n; ++i) {
 		for (j = 0; j < pwf1->n; ++j) {
-			int is_empty;
+			isl_bool is_empty;
 			isl_set *common;
 			int covers;
 

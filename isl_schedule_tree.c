@@ -1752,7 +1752,7 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 		isl_union_set *dom;
 		isl_schedule_tree *child;
 		int dim_i;
-		int empty;
+		isl_bool empty;
 
 		child = isl_schedule_tree_list_get_schedule_tree(
 							tree->children, i);

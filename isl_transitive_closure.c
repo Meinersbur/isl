@@ -707,7 +707,7 @@ error:
 static int is_acyclic(__isl_take isl_map *path)
 {
 	int i;
-	int acyclic;
+	isl_bool acyclic;
 	unsigned dim;
 	struct isl_set *delta;
 
@@ -2333,7 +2333,7 @@ static int check_exactness_omega(__isl_keep isl_map *map,
 {
 	isl_set *delta;
 	int i;
-	int is_empty, is_exact;
+	isl_bool is_empty, is_exact;
 	unsigned d;
 	isl_map *test;
 

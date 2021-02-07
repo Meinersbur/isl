@@ -1295,7 +1295,7 @@ static __isl_give isl_basic_set *convex_hull_pair(
 	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	isl_basic_set *lin, *aff;
-	int bounded1, bounded2;
+	isl_bool bounded1, bounded2;
 
 	if (bset1->ctx->opt->convex == ISL_CONVEX_HULL_FM)
 		return convex_hull_pair_elim(bset1, bset2);

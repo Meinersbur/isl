@@ -952,7 +952,7 @@ isl_bool isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node)
 int isl_schedule_node_get_child_position(__isl_keep isl_schedule_node *node)
 {
 	int n;
-	int has_parent;
+	isl_bool has_parent;
 
 	if (!node)
 		return -1;
@@ -2763,7 +2763,7 @@ struct isl_schedule_group_data {
 static int locally_covered_by_domain(__isl_keep isl_union_set *domain,
 	struct isl_schedule_group_data *data)
 {
-	int is_subset;
+	isl_bool is_subset;
 	isl_union_set *test;
 
 	test = isl_union_set_copy(domain);
@@ -2795,7 +2795,8 @@ static __isl_give isl_schedule_tree *group_band(
 	isl_multi_aff *ma;
 	isl_multi_union_pw_aff *mupa, *partial;
 	int is_covered;
-	int depth, n, has_id;
+	int depth, n;
+	isl_bool has_id;
 
 	domain = isl_schedule_node_get_domain(pos);
 	is_covered = locally_covered_by_domain(domain, data);
@@ -2861,7 +2862,7 @@ static __isl_give isl_schedule_tree *group_context(
 	isl_space *space;
 	isl_union_set *domain;
 	int n1, n2;
-	int involves;
+	isl_bool involves;
 
 	if (isl_schedule_node_get_tree_depth(pos) == 1)
 		return tree;
@@ -2930,7 +2931,7 @@ static __isl_give isl_schedule_tree *group_domain(
 	struct isl_schedule_group_data *data)
 {
 	isl_union_set *domain;
-	int is_subset;
+	isl_bool is_subset;
 
 	domain = isl_schedule_tree_domain_get_domain(tree);
 	is_subset = isl_union_set_is_subset(data->domain, domain);
@@ -3114,7 +3115,7 @@ __isl_give isl_schedule_node *isl_schedule_node_group(
 	isl_union_set *domain;
 	isl_union_pw_multi_aff *contraction;
 	isl_union_map *expansion;
-	int disjoint;
+	isl_bool disjoint;
 
 	if (!node || !group_id)
 		goto error;
@@ -4059,7 +4060,7 @@ static __isl_give isl_schedule_node *extend_extension(
 	__isl_take isl_schedule_node *node, __isl_take isl_union_map *extension)
 {
 	int pos;
-	int disjoint;
+	isl_bool disjoint;
 	isl_union_map *node_extension;
 
 	node = isl_schedule_node_parent(node);
@@ -4267,7 +4268,7 @@ static __isl_give isl_schedule_node *extension_from_domain(
 	isl_union_set *domain;
 	isl_union_map *ext;
 	int depth;
-	int anchored;
+	isl_bool anchored;
 	isl_space *space;
 	isl_schedule_node *res;
 	isl_schedule_tree *tree;

@@ -2377,7 +2377,7 @@ static __isl_give isl_ast_expr *isl_ast_build_from_multi_pw_aff(
 	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
 	__isl_take isl_multi_pw_aff *mpa)
 {
-	int is_domain;
+	isl_bool is_domain;
 	isl_ast_expr *expr;
 	isl_space *space_build, *space_mpa;
 
