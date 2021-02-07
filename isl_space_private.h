@@ -22,9 +22,9 @@ struct isl_space {
 	isl_id **ids;
 };
 
-__isl_give isl_space *isl_space_cow(__isl_take isl_space *dim);
+__isl_give isl_space *isl_space_cow(__isl_take isl_space *space);
 
-__isl_give isl_space *isl_space_underlying(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_underlying(__isl_take isl_space *space,
 	unsigned n_div);
 
 uint32_t isl_space_get_tuple_hash(__isl_keep isl_space *space);
@@ -49,14 +49,15 @@ isl_bool isl_space_has_named_params(__isl_keep isl_space *space);
 isl_stat isl_space_check_named_params(__isl_keep isl_space *space);
 isl_stat isl_space_check_equal_params(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
-__isl_give isl_space *isl_space_reset(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_reset(__isl_take isl_space *space,
 	enum isl_dim_type type);
-__isl_give isl_space *isl_space_flatten(__isl_take isl_space *dim);
+__isl_give isl_space *isl_space_flatten(__isl_take isl_space *space);
 
 __isl_give isl_space *isl_space_replace_params(__isl_take isl_space *dst,
 	__isl_keep isl_space *src);
 
-__isl_give isl_space *isl_space_lift(__isl_take isl_space *dim, unsigned n_local);
+__isl_give isl_space *isl_space_lift(__isl_take isl_space *space,
+	unsigned n_local);
 
 __isl_give isl_space *isl_space_extend_domain_with_range(
 	__isl_take isl_space *domain, __isl_take isl_space *model);

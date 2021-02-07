@@ -45,28 +45,28 @@ uint32_t isl_local_space_get_hash(__isl_keep isl_local_space *ls)
 	return hash;
 }
 
-__isl_give isl_local_space *isl_local_space_alloc_div(__isl_take isl_space *dim,
-	__isl_take isl_mat *div)
+__isl_give isl_local_space *isl_local_space_alloc_div(
+	__isl_take isl_space *space, __isl_take isl_mat *div)
 {
 	isl_ctx *ctx;
 	isl_local_space *ls = NULL;
 
-	if (!dim || !div)
+	if (!space || !div)
 		goto error;
 
-	ctx = isl_space_get_ctx(dim);
+	ctx = isl_space_get_ctx(space);
 	ls = isl_calloc_type(ctx, struct isl_local_space);
 	if (!ls)
 		goto error;
 
 	ls->ref = 1;
-	ls->dim = dim;
+	ls->dim = space;
 	ls->div = div;
 
 	return ls;
 error:
 	isl_mat_free(div);
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_local_space_free(ls);
 	return NULL;
 }

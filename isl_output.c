@@ -2182,7 +2182,7 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 }
 
 static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim, __isl_keep isl_basic_set *bset)
+	__isl_keep isl_space *space, __isl_keep isl_basic_set *bset)
 {
 	int i, j;
 	int first = 1;
@@ -2192,13 +2192,13 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	for (i = 0; i < bset->n_eq; ++i) {
 		j = isl_seq_last_non_zero(bset->eq[i] + 1 + total, n_div);
 		if (j < 0)
-			p = print_constraint_c(p, dim, bset,
+			p = print_constraint_c(p, space, bset,
 						bset->eq[i], "==", &first);
 		else {
 			if (i)
 				p = isl_printer_print_str(p, " && ");
 			p = isl_printer_print_str(p, "(");
-			p = print_partial_affine_c(p, dim, bset, bset->eq[i],
+			p = print_partial_affine_c(p, space, bset, bset->eq[i],
 						   1 + total + j);
 			p = isl_printer_print_str(p, ") % ");
 			p = isl_printer_print_isl_int(p,
@@ -2208,7 +2208,7 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i)
-		p = print_constraint_c(p, dim, bset, bset->ineq[i], ">=",
+		p = print_constraint_c(p, space, bset, bset->ineq[i], ">=",
 					&first);
 	return p;
 }
