@@ -164,6 +164,79 @@ static void test_exception(isl::ctx ctx)
 	assert(strstr(copy.what(), "without explicit domain"));
 }
 
+/* Test basic schedule tree functionality.
+ *
+ * In particular, create a simple schedule tree and
+ * - perform some generic tests
+ * - test map_descendant_bottom_up in the failing case
+ * - test foreach_descendant_top_down
+ * - test every_descendant
+ */
+static void test_schedule_tree(isl::ctx ctx)
+{
+	auto root = test_schedule_tree_generic(ctx);
+
+	auto fail_map = [](isl::schedule_node node) {
+		throw "fail";
+		return node;
+	};
+	auto caught = false;
+	try {
+		root.map_descendant_bottom_up(fail_map);
+		die("no exception raised");
+	} catch (char const *s) {
+		caught = true;
+	}
+	assert(caught);
+
+	int count = 0;
+	auto inc_count = [&count](isl::schedule_node node) {
+		count++;
+		return true;
+	};
+	root.foreach_descendant_top_down(inc_count);
+	assert(count == 8);
+
+	count = 0;
+	auto inc_count_once = [&count](isl::schedule_node node) {
+		count++;
+		return false;
+	};
+	root.foreach_descendant_top_down(inc_count_once);
+	assert(count == 1);
+
+	auto is_not_domain = [](isl::schedule_node node) {
+		return !node.isa<isl::schedule_node_domain>();
+	};
+	assert(root.child(0).every_descendant(is_not_domain));
+	assert(!root.every_descendant(is_not_domain));
+
+	auto fail = [](isl::schedule_node node) {
+		throw "fail";
+		return true;
+	};
+	caught = false;
+	try {
+		root.every_descendant(fail);
+		die("no exception raised");
+	} catch (char const *s) {
+		caught = true;
+	}
+	assert(caught);
+
+	auto domain = root.as<isl::schedule_node_domain>().get_domain();
+	auto filters = isl::union_set(ctx, "{}");
+	auto collect_filters = [&filters](isl::schedule_node node) {
+		if (node.isa<isl::schedule_node_filter>()) {
+			auto filter = node.as<isl::schedule_node_filter>();
+			filters = filters.unite(filter.get_filter());
+		}
+		return true;
+	};
+	root.every_descendant(collect_filters);
+	assert(domain.is_equal(filters));
+}
+
 /* Test the (unchecked) isl C++ interface
  *
  * This includes:
@@ -173,6 +246,7 @@ static void test_exception(isl::ctx ctx)
  *  - Different return types
  *  - Foreach functions
  *  - Exceptions
+ *  - Schedule trees
  */
 int main()
 {
@@ -187,6 +261,7 @@ int main()
 	test_foreach(ctx);
 	test_every(ctx);
 	test_exception(ctx);
+	test_schedule_tree(ctx);
 
 	isl_ctx_free(ctx);
 
