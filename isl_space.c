@@ -148,13 +148,11 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
 	return space;
 }
 
-static unsigned global_pos(__isl_keep isl_space *space,
+static int global_pos(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	struct isl_ctx *ctx = space->ctx;
-
 	if (isl_space_check_range(space, type, pos, 1) < 0)
-		return isl_space_dim(space, isl_dim_all);
+		return -1;
 
 	switch (type) {
 	case isl_dim_param:
@@ -164,9 +162,9 @@ static unsigned global_pos(__isl_keep isl_space *space,
 	case isl_dim_out:
 		return pos + space->nparam + space->n_in;
 	default:
-		isl_assert(ctx, 0, return isl_space_dim(space, isl_dim_all));
+		isl_assert(isl_space_get_ctx(space), 0, return -1);
 	}
-	return isl_space_dim(space, isl_dim_all);
+	return -1;
 }
 
 /* Extend length of ids array to the total number of dimensions.
@@ -205,16 +203,15 @@ error:
 static __isl_give isl_space *set_id(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
+	int gpos;
+
 	space = isl_space_cow(space);
 
-	if (!space)
+	gpos = global_pos(space, type, pos);
+	if (gpos < 0)
 		goto error;
 
-	pos = global_pos(space, type, pos);
-	if (pos == isl_space_dim(space, isl_dim_all))
-		goto error;
-
-	if (pos >= space->n_id) {
+	if (gpos >= space->n_id) {
 		if (!id)
 			return space;
 		space = extend_ids(space);
@@ -222,7 +219,7 @@ static __isl_give isl_space *set_id(__isl_take isl_space *space,
 			goto error;
 	}
 
-	space->ids[pos] = id;
+	space->ids[gpos] = id;
 
 	return space;
 error:
@@ -234,15 +231,14 @@ error:
 static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	if (!space)
-		return NULL;
+	int gpos;
 
-	pos = global_pos(space, type, pos);
-	if (pos == isl_space_dim(space, isl_dim_all))
+	gpos = global_pos(space, type, pos);
+	if (gpos < 0)
 		return NULL;
-	if (pos >= space->n_id)
+	if (gpos >= space->n_id)
 		return NULL;
-	return space->ids[pos];
+	return space->ids[gpos];
 }
 
 static unsigned offset(__isl_keep isl_space *space, enum isl_dim_type type)

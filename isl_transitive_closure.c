@@ -417,7 +417,7 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
 	return div_purity;
 }
 
-/* Given a path with the as yet unconstrained length at position "pos",
+/* Given a path with the as yet unconstrained length at div position "pos",
  * check if setting the length to zero results in only the identity
  * mapping.
  */
@@ -426,25 +426,15 @@ static isl_bool empty_path_is_identity(__isl_keep isl_basic_map *path,
 {
 	isl_basic_map *test = NULL;
 	isl_basic_map *id = NULL;
-	int k;
 	isl_bool is_id;
 
 	test = isl_basic_map_copy(path);
-	test = isl_basic_map_extend_constraints(test, 1, 0);
-	k = isl_basic_map_alloc_equality(test);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(test->eq[k], 1 + isl_basic_map_total_dim(test));
-	isl_int_set_si(test->eq[k][pos], 1);
-	test = isl_basic_map_gauss(test, NULL);
+	test = isl_basic_map_fix_si(test, isl_dim_div, pos, 0);
 	id = isl_basic_map_identity(isl_basic_map_get_space(path));
 	is_id = isl_basic_map_is_equal(test, id);
 	isl_basic_map_free(test);
 	isl_basic_map_free(id);
 	return is_id;
-error:
-	isl_basic_map_free(test);
-	return isl_bool_error;
 }
 
 /* If any of the constraints is found to be impure then this function
@@ -628,7 +618,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 		path = isl_basic_map_gauss(path, NULL);
 	}
 
-	is_id = empty_path_is_identity(path, off + d);
+	is_id = empty_path_is_identity(path, n_div + d);
 	if (is_id < 0)
 		goto error;
 
@@ -705,7 +695,7 @@ error:
  * does not contain any element with positive last coordinate (positive length)
  * and zero remaining coordinates (cycle).
  */
-static int is_acyclic(__isl_take isl_map *path)
+static isl_bool is_acyclic(__isl_take isl_map *path)
 {
 	int i;
 	isl_bool acyclic;
@@ -964,15 +954,15 @@ error:
 /* Check whether qc has any elements of length at least one
  * with domain and/or range outside of dom and ran.
  */
-static int has_spurious_elements(__isl_keep isl_map *qc,
+static isl_bool has_spurious_elements(__isl_keep isl_map *qc,
 	__isl_keep isl_set *dom, __isl_keep isl_set *ran)
 {
 	isl_set *s;
-	int subset;
+	isl_bool subset;
 	unsigned d;
 
 	if (!qc || !dom || !ran)
-		return -1;
+		return isl_bool_error;
 
 	d = isl_map_dim(qc, isl_dim_in);
 
@@ -988,17 +978,17 @@ static int has_spurious_elements(__isl_keep isl_map *qc,
 		goto error;
 	if (!subset) {
 		isl_map_free(qc);
-		return 1;
+		return isl_bool_true;
 	}
 
 	s = isl_map_range(qc);
 	subset = isl_set_is_subset(s, ran);
 	isl_set_free(s);
 
-	return subset < 0 ? -1 : !subset;
+	return isl_bool_not(subset);
 error:
 	isl_map_free(qc);
-	return -1;
+	return isl_bool_error;
 }
 
 #define LEFT	2
@@ -1212,7 +1202,7 @@ error:
  * after computing the integer divisions, is smaller than the number
  * of basic maps in the input map.
  */
-static int incremental_on_entire_domain(__isl_keep isl_space *space,
+static isl_bool incremental_on_entire_domain(__isl_keep isl_space *space,
 	__isl_keep isl_map *map,
 	isl_set **dom, isl_set **ran, int *left, int *right,
 	__isl_give isl_map **res)
@@ -1227,17 +1217,18 @@ static int incremental_on_entire_domain(__isl_keep isl_space *space,
 			  isl_map_range(isl_map_copy(map)));
 	C = isl_set_from_basic_set(isl_set_simple_hull(C));
 	if (!C)
-		return -1;
+		return isl_bool_error;
 	if (C->n != 1) {
 		isl_set_free(C);
-		return 0;
+		return isl_bool_false;
 	}
 
 	d = isl_map_dim(map, isl_dim_in);
 
 	for (i = 0; i < map->n; ++i) {
 		isl_map *qc;
-		int exact_i, spurious;
+		int exact_i;
+		isl_bool spurious;
 		int j;
 		dom[i] = isl_set_from_basic_set(isl_basic_map_domain(
 					isl_basic_map_copy(map->p[i])));
@@ -1285,7 +1276,7 @@ static int incremental_on_entire_domain(__isl_keep isl_space *space,
 	return *res != NULL;
 error:
 	isl_set_free(C);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Try and compute the transitive closure of "map" as
@@ -1333,7 +1324,8 @@ static __isl_give isl_map *incremental_closure(__isl_take isl_space *space,
 
 	for (i = 0; !res && i < map->n; ++i) {
 		isl_map *qc;
-		int exact_i, spurious, comp;
+		int exact_i, comp;
+		isl_bool spurious;
 		if (!dom[i])
 			dom[i] = isl_set_from_basic_set(
 					isl_basic_map_domain(
@@ -1471,40 +1463,44 @@ error:
 	return -1;
 }
 
+/* Construct a map [x] -> [x+1], with parameters prescribed by "space".
+ */
+static __isl_give isl_map *increment(__isl_take isl_space *space)
+{
+	int k;
+	isl_basic_map *bmap;
+
+	space = isl_space_set_from_params(space);
+	space = isl_space_add_dims(space, isl_dim_set, 1);
+	space = isl_space_map_from_set(space);
+	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
+	k = isl_basic_map_alloc_equality(bmap);
+	if (k < 0)
+		goto error;
+	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
+	isl_int_set_si(bmap->eq[k][0], 1);
+	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
+	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
+	return isl_map_from_basic_map(bmap);
+error:
+	isl_basic_map_free(bmap);
+	return NULL;
+}
+
 /* Replace each entry in the n by n grid of maps by the cross product
  * with the relation { [i] -> [i + 1] }.
  */
-static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
+static isl_stat add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 {
-	int i, j, k;
+	int i, j;
 	isl_space *space;
-	isl_basic_map *bstep;
 	isl_map *step;
-	unsigned nparam;
 
-	if (!map)
-		return -1;
+	space = isl_space_params(isl_map_get_space(map));
+	step = increment(space);
 
-	space = isl_map_get_space(map);
-	nparam = isl_space_dim(space, isl_dim_param);
-	space = isl_space_drop_dims(space, isl_dim_in, 0,
-					isl_space_dim(space, isl_dim_in));
-	space = isl_space_drop_dims(space, isl_dim_out, 0,
-					isl_space_dim(space, isl_dim_out));
-	space = isl_space_add_dims(space, isl_dim_in, 1);
-	space = isl_space_add_dims(space, isl_dim_out, 1);
-	bstep = isl_basic_map_alloc_space(space, 0, 1, 0);
-	k = isl_basic_map_alloc_equality(bstep);
-	if (k < 0) {
-		isl_basic_map_free(bstep);
-		return -1;
-	}
-	isl_seq_clr(bstep->eq[k], 1 + isl_basic_map_total_dim(bstep));
-	isl_int_set_si(bstep->eq[k][0], 1);
-	isl_int_set_si(bstep->eq[k][1 + nparam], 1);
-	isl_int_set_si(bstep->eq[k][1 + nparam + 1], -1);
-	bstep = isl_basic_map_finalize(bstep);
-	step = isl_map_from_basic_map(bstep);
+	if (!step)
+		return isl_stat_error;
 
 	for (i = 0; i < n; ++i)
 		for (j = 0; j < n; ++j)
@@ -1513,7 +1509,7 @@ static int add_length(__isl_keep isl_map *map, isl_map ***grid, int n)
 
 	isl_map_free(step);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* The core of the Floyd-Warshall algorithm.
@@ -2005,21 +2001,13 @@ static __isl_give isl_map *map_power(__isl_take isl_map *map,
 	if (exact)
 		*exact = 1;
 
-	if (!map)
-		return NULL;
-
-	isl_assert(map->ctx,
-		isl_map_dim(map, isl_dim_in) == isl_map_dim(map, isl_dim_out),
-		goto error);
+	if (isl_map_check_equal_tuples(map) < 0)
+		return isl_map_free(map);
 
 	app = construct_power(map, exact, project);
 
 	isl_map_free(map);
 	return app;
-error:
-	isl_map_free(map);
-	isl_map_free(app);
-	return NULL;
 }
 
 /* Compute the positive powers of "map", or an overapproximation.
@@ -2329,7 +2317,7 @@ static __isl_give isl_map *box_closure_with_identity(__isl_take isl_map *map,
  *
  *	app \subset (map \cup (map \circ app))
  */
-static int check_exactness_omega(__isl_keep isl_map *map,
+static isl_bool check_exactness_omega(__isl_keep isl_map *map,
 	__isl_keep isl_map *app)
 {
 	isl_set *delta;
@@ -2344,10 +2332,8 @@ static int check_exactness_omega(__isl_keep isl_map *map,
 		delta = isl_set_fix_si(delta, isl_dim_set, i, 0);
 	is_empty = isl_set_is_empty(delta);
 	isl_set_free(delta);
-	if (is_empty < 0)
-		return -1;
-	if (!is_empty)
-		return 0;
+	if (is_empty < 0 || !is_empty)
+		return is_empty;
 
 	test = isl_map_apply_range(isl_map_copy(app), isl_map_copy(map));
 	test = isl_map_union(test, isl_map_copy(map));
@@ -2457,8 +2443,14 @@ static __isl_give isl_map *box_closure_with_check(__isl_take isl_map *map,
 	isl_map *app;
 
 	app = box_closure(isl_map_copy(map));
-	if (exact)
-		*exact = check_exactness_omega(map, app);
+	if (exact) {
+		isl_bool is_exact = check_exactness_omega(map, app);
+
+		if (is_exact < 0)
+			app = isl_map_free(app);
+		else
+			*exact = is_exact;
+	}
 
 	isl_map_free(map);
 	return app;
@@ -2486,7 +2478,7 @@ static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
 	int *exact)
 {
 	int i, j;
-	int exact_i;
+	isl_bool exact_i;
 	isl_map *app;
 
 	if (!map)
@@ -2517,7 +2509,7 @@ static __isl_give isl_map *transitive_closure_omega(__isl_take isl_map *map,
 
 		app = isl_map_union(tc, transitive_closure_omega(app, NULL));
 		exact_i = check_exactness_omega(map, app);
-		if (exact_i == 1) {
+		if (exact_i == isl_bool_true) {
 			if (exact)
 				*exact = exact_i;
 			isl_map_free(map);
@@ -2878,29 +2870,6 @@ static isl_stat power(__isl_take isl_map *map, void *user)
 	return isl_stat_error;
 }
 
-/* Construct a map [x] -> [x+1], with parameters prescribed by "space".
- */
-static __isl_give isl_union_map *increment(__isl_take isl_space *space)
-{
-	int k;
-	isl_basic_map *bmap;
-
-	space = isl_space_add_dims(space, isl_dim_in, 1);
-	space = isl_space_add_dims(space, isl_dim_out, 1);
-	bmap = isl_basic_map_alloc_space(space, 0, 1, 0);
-	k = isl_basic_map_alloc_equality(bmap);
-	if (k < 0)
-		goto error;
-	isl_seq_clr(bmap->eq[k], 1 + isl_basic_map_total_dim(bmap));
-	isl_int_set_si(bmap->eq[k][0], 1);
-	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_in)], 1);
-	isl_int_set_si(bmap->eq[k][isl_basic_map_offset(bmap, isl_dim_out)], -1);
-	return isl_union_map_from_map(isl_map_from_basic_map(bmap));
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
 /* Construct a map [[x]->[y]] -> [y-x], with parameters prescribed by "dim".
  */
 static __isl_give isl_union_map *deltas_map(__isl_take isl_space *dim)
@@ -2937,7 +2906,7 @@ __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
 		isl_union_map_free(umap);
 		return up.pow;
 	}
-	inc = increment(isl_union_map_get_space(umap));
+	inc = isl_union_map_from_map(increment(isl_union_map_get_space(umap)));
 	umap = isl_union_map_product(inc, umap);
 	umap = isl_union_map_transitive_closure(umap, exact);
 	umap = isl_union_map_zip(umap);

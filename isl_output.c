@@ -217,28 +217,28 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 	return p;
 }
 
-static enum isl_dim_type pos2type(__isl_keep isl_space *space, unsigned *pos)
+static isl_stat pos2type(__isl_keep isl_space *space,
+	enum isl_dim_type *type, unsigned *pos)
 {
-	enum isl_dim_type type;
 	unsigned n_in = isl_space_dim(space, isl_dim_in);
 	unsigned n_out = isl_space_dim(space, isl_dim_out);
 	unsigned nparam = isl_space_dim(space, isl_dim_param);
 
 	if (*pos < 1 + nparam) {
-		type = isl_dim_param;
+		*type = isl_dim_param;
 		*pos -= 1;
 	} else if (*pos < 1 + nparam + n_in) {
-		type = isl_dim_in;
+		*type = isl_dim_in;
 		*pos -= 1 + nparam;
 	} else if (*pos < 1 + nparam + n_in + n_out) {
-		type = isl_dim_out;
+		*type = isl_dim_out;
 		*pos -= 1 + nparam + n_in;
 	} else {
-		type = isl_dim_div;
+		*type = isl_dim_div;
 		*pos -= 1 + nparam + n_in + n_out;
 	}
 
-	return type;
+	return isl_stat_ok;
 }
 
 /* Can the div expression of the integer division at position "row" of "div"
@@ -274,7 +274,8 @@ static __isl_give isl_printer *print_term(__isl_keep isl_space *space,
 	if (pos == 0)
 		return isl_printer_print_isl_int(p, c);
 
-	type = pos2type(space, &pos);
+	if (pos2type(space, &type, &pos) < 0)
+		return isl_printer_free(p);
 	print_div_def = type == isl_dim_div && can_print_div_expr(p, div, pos);
 
 	if (isl_int_is_one(c))
@@ -466,23 +467,24 @@ static __isl_give isl_printer *print_omega_parameters(
  * If the next constraint is a div constraint, then it is ignored
  * since div constraints are not printed.
  */
-static int next_is_opposite(__isl_keep isl_basic_map *bmap, int i, int last)
+static isl_bool next_is_opposite(__isl_keep isl_basic_map *bmap, int i,
+	int last)
 {
 	unsigned total = isl_basic_map_total_dim(bmap);
 	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
 	if (i + 1 >= bmap->n_ineq)
-		return 0;
+		return isl_bool_false;
 	if (isl_seq_last_non_zero(bmap->ineq[i + 1], 1 + total) != last)
-		return 0;
+		return isl_bool_false;
 	if (last >= o_div) {
 		isl_bool is_div;
 		is_div = isl_basic_map_is_div_constraint(bmap,
 					    bmap->ineq[i + 1], last - o_div);
 		if (is_div < 0)
-			return -1;
+			return isl_bool_error;
 		if (is_div)
-			return 0;
+			return isl_bool_false;
 	}
 	return isl_int_abs_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]) &&
 		!isl_int_eq(bmap->ineq[i][last], bmap->ineq[i + 1][last]);
@@ -612,7 +614,8 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 	n_div = isl_mat_rows(div);
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
-	type = pos2type(space, &pos);
+	if (pos2type(space, &type, &pos) < 0)
+		return -1;
 	if (type != isl_dim_div)
 		return n_div;
 	can_print = can_print_div_expr(p, div, pos);
@@ -775,6 +778,7 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 		first = 0;
 	}
 	for (i = 0; i < bmap->n_ineq; ++i) {
+		isl_bool combine;
 		int l = isl_seq_last_non_zero(bmap->ineq[i], 1 + total);
 		int strict;
 		int s;
@@ -801,7 +805,10 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 			isl_seq_neg(c->el, bmap->ineq[i], 1 + total);
 		if (strict)
 			isl_int_set_si(c->el[0], 0);
-		if (!dump && next_is_opposite(bmap, i, l)) {
+		combine = dump ? isl_bool_false : next_is_opposite(bmap, i, l);
+		if (combine < 0)
+			goto error;
+		if (combine) {
 			op = constraint_op(-s, strict, latex);
 			p = print_half_constraint(p, space, div, c->el, l,
 						op, latex);
@@ -2072,91 +2079,8 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 	return p;
 }
 
-static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *space, __isl_keep isl_basic_set *bset,
-	isl_int *c);
-
-static __isl_give isl_printer *print_name_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim,
-	__isl_keep isl_basic_set *bset, enum isl_dim_type type, unsigned pos)
-{
-	if (type == isl_dim_div) {
-		p = isl_printer_print_str(p, "floord(");
-		p = print_affine_c(p, dim, bset, bset->div[pos] + 1);
-		p = isl_printer_print_str(p, ", ");
-		p = isl_printer_print_isl_int(p, bset->div[pos][0]);
-		p = isl_printer_print_str(p, ")");
-	} else {
-		const char *name;
-
-		name = isl_space_get_dim_name(dim, type, pos);
-		if (!name)
-			name = "UNNAMED";
-		p = isl_printer_print_str(p, name);
-	}
-	return p;
-}
-
-static __isl_give isl_printer *print_term_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *space,
-	__isl_keep isl_basic_set *bset, isl_int c, unsigned pos)
-{
-	enum isl_dim_type type;
-
-	if (!p || !space)
-		return isl_printer_free(p);
-
-	if (pos == 0)
-		return isl_printer_print_isl_int(p, c);
-
-	if (isl_int_is_one(c))
-		;
-	else if (isl_int_is_negone(c))
-		p = isl_printer_print_str(p, "-");
-	else {
-		p = isl_printer_print_isl_int(p, c);
-		p = isl_printer_print_str(p, "*");
-	}
-	type = pos2type(space, &pos);
-	p = print_name_c(p, space, bset, type, pos);
-	return p;
-}
-
-static __isl_give isl_printer *print_partial_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim,
-	__isl_keep isl_basic_set *bset, isl_int *c, unsigned len)
-{
-	int i;
-	int first;
-
-	for (i = 0, first = 1; i < len; ++i) {
-		int flip = 0;
-		if (isl_int_is_zero(c[i]))
-			continue;
-		if (!first) {
-			if (isl_int_is_neg(c[i])) {
-				flip = 1;
-				isl_int_neg(c[i], c[i]);
-				p = isl_printer_print_str(p, " - ");
-			} else 
-				p = isl_printer_print_str(p, " + ");
-		}
-		first = 0;
-		p = print_term_c(p, dim, bset, c[i], i);
-		if (flip)
-			isl_int_neg(c[i], c[i]);
-	}
-	if (first)
-		p = isl_printer_print_str(p, "0");
-	return p;
-}
-
-static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *space, __isl_keep isl_basic_set *bset, isl_int *c)
-{
-	unsigned len = 1 + isl_basic_set_total_dim(bset);
-	return print_partial_affine_c(p, space, bset, c, len);
-}
+static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
+	__isl_keep isl_local_space *ls, isl_int *c);
 
 /* We skip the constraint if it is implied by the div expression.
  *
@@ -2164,18 +2088,17 @@ static __isl_give isl_printer *print_affine_c(__isl_take isl_printer *p,
  * is updated if the constraint is actually printed.
  */
 static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim,
-	__isl_keep isl_basic_set *bset, isl_int *c, const char *op, int *first)
+	__isl_keep isl_local_space *ls, isl_int *c, const char *op, int *first)
 {
 	unsigned o_div;
 	unsigned n_div;
 	int div;
 
-	o_div = isl_basic_set_offset(bset, isl_dim_div);
-	n_div = isl_basic_set_dim(bset, isl_dim_div);
+	o_div = isl_local_space_offset(ls, isl_dim_div);
+	n_div = isl_local_space_dim(ls, isl_dim_div);
 	div = isl_seq_last_non_zero(c + o_div, n_div);
 	if (div >= 0) {
-		isl_bool is_div = isl_basic_set_is_div_constraint(bset, c, div);
+		isl_bool is_div = isl_local_space_is_div_constraint(ls, c, div);
 		if (is_div < 0)
 			return isl_printer_free(p);
 		if (is_div)
@@ -2185,7 +2108,7 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 	if (!*first)
 		p = isl_printer_print_str(p, " && ");
 
-	p = print_affine_c(p, dim, bset, c);
+	p = print_ls_affine_c(p, ls, c);
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_str(p, op);
 	p = isl_printer_print_str(p, " 0");
@@ -2195,6 +2118,10 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 	return p;
 }
 
+static __isl_give isl_printer *print_ls_partial_affine_c(
+	__isl_take isl_printer *p, __isl_keep isl_local_space *ls,
+	isl_int *c, unsigned len);
+
 static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_basic_set *bset)
 {
@@ -2202,17 +2129,21 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 	int first = 1;
 	unsigned n_div = isl_basic_set_dim(bset, isl_dim_div);
 	unsigned total = isl_basic_set_total_dim(bset) - n_div;
+	isl_mat *div;
+	isl_local_space *ls;
 
+	div = isl_basic_set_get_divs(bset);
+	ls = isl_local_space_alloc_div(isl_space_copy(space), div);
 	for (i = 0; i < bset->n_eq; ++i) {
 		j = isl_seq_last_non_zero(bset->eq[i] + 1 + total, n_div);
 		if (j < 0)
-			p = print_constraint_c(p, space, bset,
+			p = print_constraint_c(p, ls,
 						bset->eq[i], "==", &first);
 		else {
 			if (i)
 				p = isl_printer_print_str(p, " && ");
 			p = isl_printer_print_str(p, "(");
-			p = print_partial_affine_c(p, space, bset, bset->eq[i],
+			p = print_ls_partial_affine_c(p, ls, bset->eq[i],
 						   1 + total + j);
 			p = isl_printer_print_str(p, ") % ");
 			p = isl_printer_print_isl_int(p,
@@ -2222,8 +2153,8 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i)
-		p = print_constraint_c(p, space, bset, bset->ineq[i], ">=",
-					&first);
+		p = print_constraint_c(p, ls, bset->ineq[i], ">=", &first);
+	isl_local_space_free(ls);
 	return p;
 }
 
@@ -2711,9 +2642,6 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
-	__isl_keep isl_local_space *ls, isl_int *c);
-
 static __isl_give isl_printer *print_ls_name_c(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls, enum isl_dim_type type, unsigned pos)
 {
@@ -2753,7 +2681,8 @@ static __isl_give isl_printer *print_ls_term_c(__isl_take isl_printer *p,
 		p = isl_printer_print_isl_int(p, c);
 		p = isl_printer_print_str(p, "*");
 	}
-	type = pos2type(ls->dim, &pos);
+	if (pos2type(ls->dim, &type, &pos) < 0)
+		return isl_printer_free(p);
 	p = print_ls_name_c(p, ls, type, pos);
 	return p;
 }

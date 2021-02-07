@@ -698,6 +698,37 @@ isl_stat isl_union_set_foreach_set(__isl_keep isl_union_set *uset,
 		(isl_stat(*)(__isl_take isl_map *, void*))fn, user);
 }
 
+/* Internal data structure for isl_union_set_every_set.
+ *
+ * "test" is the user-specified callback function.
+ * "user" is the user-specified callback function argument.
+ */
+struct isl_test_set_from_map_data {
+	isl_bool (*test)(__isl_keep isl_set *set, void *user);
+	void *user;
+};
+
+/* Call data->test on "map", which is part of an isl_union_set and
+ * therefore known to be an isl_set.
+ */
+static isl_bool test_set_from_map(__isl_keep isl_map *map, void *user)
+{
+	struct isl_test_set_from_map_data *data = user;
+
+	return data->test(set_from_map(map), data->user);
+}
+
+/* Does "test" succeed on every set in "uset"?
+ */
+isl_bool isl_union_set_every_set(__isl_keep isl_union_set *uset,
+	isl_bool (*test)(__isl_keep isl_set *set, void *user), void *user)
+{
+	struct isl_test_set_from_map_data data = { test, user };
+
+	return isl_union_map_every_map(uset_to_umap(uset),
+					&test_set_from_map, &data);
+}
+
 struct isl_union_set_foreach_point_data {
 	isl_stat (*fn)(__isl_take isl_point *pnt, void *user);
 	void *user;

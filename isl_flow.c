@@ -162,7 +162,7 @@ struct isl_labeled_map {
 	int		must;
 };
 
-typedef int (*isl_access_coscheduled)(void *first, void *second);
+typedef isl_bool (*isl_access_coscheduled)(void *first, void *second);
 
 /* A structure containing the input for dependence analysis:
  * - a sink
@@ -990,10 +990,16 @@ static __isl_give isl_flow *handle_coscheduled(__isl_keep isl_access_info *acc,
 		move = isl_map_empty(isl_map_get_space(must_rel[i]));
 		for (j = i - 1; j >= 0; --j) {
 			int depth;
+			isl_bool coscheduled;
 			isl_map *map, *factor;
 
-			if (!acc->coscheduled(acc->source[i].data,
-						acc->source[j].data))
+			coscheduled = acc->coscheduled(acc->source[i].data,
+							acc->source[j].data);
+			if (coscheduled < 0) {
+				isl_map_free(move);
+				return isl_flow_free(flow);
+			}
+			if (!coscheduled)
 				continue;
 			depth = acc->level_before(acc->source[i].data,
 						acc->source[j].data) / 2;
@@ -1005,11 +1011,17 @@ static __isl_give isl_flow *handle_coscheduled(__isl_keep isl_access_info *acc,
 		}
 		for (j = 0; j < acc->n_may; ++j) {
 			int depth, pos;
+			isl_bool coscheduled;
 			isl_map *map, *factor;
 
 			pos = acc->n_must + j;
-			if (!acc->coscheduled(acc->source[i].data,
-						acc->source[pos].data))
+			coscheduled = acc->coscheduled(acc->source[i].data,
+							acc->source[pos].data);
+			if (coscheduled < 0) {
+				isl_map_free(move);
+				return isl_flow_free(flow);
+			}
+			if (!coscheduled)
 				continue;
 			depth = acc->level_before(acc->source[i].data,
 						acc->source[pos].data) / 2;
@@ -1213,7 +1225,9 @@ static __isl_give isl_flow *compute_val_based_dependences(
 				goto error;
 		}
 
-		handle_coscheduled(acc, must_rel, may_rel, res);
+		res = handle_coscheduled(acc, must_rel, may_rel, res);
+		if (!res)
+			goto error;
 
 		for (j = 0; j < acc->n_may; ++j) {
 			int plevel;
@@ -2427,12 +2441,12 @@ static int before(void *first, void *second)
 }
 
 /* Check if the given two accesses may be coscheduled.
- * If so, return 1.  Otherwise return 0.
+ * If so, return isl_bool_true.  Otherwise return isl_bool_false.
  *
  * Two accesses may only be coscheduled if the fixed schedule
  * coordinates have the same values.
  */
-static int coscheduled(void *first, void *second)
+static isl_bool coscheduled(void *first, void *second)
 {
 	struct isl_sched_info *info1 = first;
 	struct isl_sched_info *info2 = second;
@@ -2454,10 +2468,10 @@ static int coscheduled(void *first, void *second)
 			continue;
 		cmp = isl_vec_cmp_element(info1->cst, info2->cst, i);
 		if (cmp != 0)
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 /* Given a sink access, look for all the source accesses that access
@@ -2967,11 +2981,11 @@ static int before_node(void *first, void *second)
 }
 
 /* Check if the given two accesses may be coscheduled.
- * If so, return 1.  Otherwise return 0.
+ * If so, return isl_bool_true.  Otherwise return isl_bool_false.
  *
  * Two accesses may only be coscheduled if they appear in the same leaf.
  */
-static int coscheduled_node(void *first, void *second)
+static isl_bool coscheduled_node(void *first, void *second)
 {
 	isl_schedule_node *node1 = first;
 	isl_schedule_node *node2 = second;

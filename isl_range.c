@@ -26,14 +26,14 @@ static isl_stat propagate_on_domain(__isl_take isl_basic_set *bset,
  * is non-negative and if sign == -1, check that the upper bound on
  * the polynomial is non-positive.
  */
-static int has_sign(__isl_keep isl_basic_set *bset,
+static isl_bool has_sign(__isl_keep isl_basic_set *bset,
 	__isl_keep isl_qpolynomial *poly, int sign, int *signs)
 {
 	struct range_data data_m;
 	unsigned nparam;
 	isl_space *space;
 	isl_val *opt;
-	int r;
+	isl_bool r;
 	enum isl_fold type;
 
 	nparam = isl_basic_set_dim(bset, isl_dim_param);
@@ -68,11 +68,11 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 		opt = isl_pw_qpolynomial_fold_max(data_m.pwf);
 
 	if (!opt)
-		r = -1;
+		r = isl_bool_error;
 	else if (isl_val_is_nan(opt) ||
 		 isl_val_is_infty(opt) ||
 		 isl_val_is_neginfty(opt))
-		r = 0;
+		r = isl_bool_false;
 	else
 		r = sign * isl_val_sgn(opt) >= 0;
 
@@ -81,7 +81,7 @@ static int has_sign(__isl_keep isl_basic_set *bset,
 	return r;
 error:
 	isl_pw_qpolynomial_fold_free(data_m.pwf);
-	return -1;
+	return isl_bool_error;
 }
 
 /* Return  1 if poly is monotonically increasing in the last set variable,
@@ -99,7 +99,7 @@ static int monotonicity(__isl_keep isl_basic_set *bset,
 	isl_qpolynomial *sub = NULL;
 	isl_qpolynomial *diff = NULL;
 	int result = 0;
-	int s;
+	isl_bool s;
 	unsigned nvar;
 
 	ctx = isl_qpolynomial_get_ctx(poly);

@@ -2789,9 +2789,8 @@ static isl_stat fix_constant_divs(struct isl_coalesce_info *info,
 		if (!expanded[i].cst) {
 			info->bmap = isl_basic_map_extend_constraints(
 						info->bmap, 0, 2);
-			if (isl_basic_map_add_div_constraints(info->bmap,
-						expanded[i].pos - o_div) < 0)
-				break;
+			info->bmap = isl_basic_map_add_div_constraints(
+					info->bmap, expanded[i].pos - o_div);
 		} else {
 			isl_int_set_si(ineq->el[1 + expanded[i].pos], -1);
 			isl_int_set(ineq->el[0], expanded[i].val);
@@ -3444,10 +3443,11 @@ static isl_stat add_sub_vars(struct isl_coalesce_info *info,
 		if (d < 0)
 			return isl_stat_error;
 		info->bmap = isl_basic_map_mark_div_unknown(info->bmap, d);
+		for (j = d; j > i; --j)
+			info->bmap = isl_basic_map_swap_div(info->bmap,
+							    j - 1, j);
 		if (!info->bmap)
 			return isl_stat_error;
-		for (j = d; j > i; --j)
-			isl_basic_map_swap_div(info->bmap, j - 1, j);
 	}
 
 	return isl_stat_ok;
@@ -3461,7 +3461,7 @@ static isl_stat add_sub_vars(struct isl_coalesce_info *info,
  * This function assumes that a sufficient number of rows and
  * elements in the constraint array are available in the tableau.
  */
-static int add_sub_equalities(struct isl_tab *tab,
+static isl_stat add_sub_equalities(struct isl_tab *tab,
 	__isl_keep isl_aff_list *list, int dim)
 {
 	int i, n;
@@ -3474,7 +3474,7 @@ static int add_sub_equalities(struct isl_tab *tab,
 	ctx = isl_tab_get_ctx(tab);
 	sub = isl_vec_alloc(ctx, 1 + dim + n);
 	if (!sub)
-		return -1;
+		return isl_stat_error;
 	isl_seq_clr(sub->el + 1 + dim, n);
 
 	for (i = 0; i < n; ++i) {
@@ -3494,11 +3494,11 @@ static int add_sub_equalities(struct isl_tab *tab,
 	}
 
 	isl_vec_free(sub);
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_aff_free(aff);
 	isl_vec_free(sub);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Add variables to info->tab and info->bmap corresponding to the elements
@@ -3509,24 +3509,24 @@ error:
  * When this function returns, the total number of variables in info->tab
  * is equal to "dim" plus the number of elements in "list".
  */
-static int add_subs(struct isl_coalesce_info *info,
+static isl_stat add_subs(struct isl_coalesce_info *info,
 	__isl_keep isl_aff_list *list, int dim)
 {
 	int extra_var;
 	int n;
 
 	if (!list)
-		return -1;
+		return isl_stat_error;
 
 	n = isl_aff_list_n_aff(list);
 	extra_var = n - (info->tab->n_var - dim);
 
 	if (isl_tab_extend_vars(info->tab, extra_var) < 0)
-		return -1;
+		return isl_stat_error;
 	if (isl_tab_extend_cons(info->tab, 2 * extra_var) < 0)
-		return -1;
+		return isl_stat_error;
 	if (add_sub_vars(info, list, dim, extra_var) < 0)
-		return -1;
+		return isl_stat_error;
 
 	return add_sub_equalities(info->tab, list, dim);
 }

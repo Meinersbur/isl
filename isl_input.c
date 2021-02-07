@@ -961,34 +961,34 @@ static int next_is_tuple(__isl_keep isl_stream *s)
  * of "n" expressions.  The final dimensions of "pa" correspond to
  * these "n" expressions.
  */
-static int pw_aff_is_expr(__isl_keep isl_pw_aff *pa, int i, int n)
+static isl_bool pw_aff_is_expr(__isl_keep isl_pw_aff *pa, int i, int n)
 {
 	isl_aff *aff;
 
 	if (!pa)
-		return -1;
+		return isl_bool_error;
 	if (pa->n != 1)
-		return 1;
+		return isl_bool_true;
 	if (!isl_set_plain_is_universe(pa->p[0].set))
-		return 1;
+		return isl_bool_true;
 
 	aff = pa->p[0].aff;
 	if (isl_int_is_zero(aff->v->el[aff->v->size - n + i]))
-		return 1;
-	return 0;
+		return isl_bool_true;
+	return isl_bool_false;
 }
 
 /* Does the tuple contain any dimensions that are defined
  * in terms of earlier dimensions?
  */
-static int tuple_has_expr(__isl_keep isl_multi_pw_aff *tuple)
+static isl_bool tuple_has_expr(__isl_keep isl_multi_pw_aff *tuple)
 {
 	int i, n;
-	int has_expr = 0;
+	isl_bool has_expr = isl_bool_false;
 	isl_pw_aff *pa;
 
 	if (!tuple)
-		return -1;
+		return isl_bool_error;
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
 	for (i = 0; i < n; ++i) {
 		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
@@ -3644,7 +3644,7 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
 		isl_set *set;
 		isl_space *space;
-		int has_expr;
+		isl_bool has_expr;
 
 		has_expr = tuple_has_expr(tuple);
 		if (has_expr < 0)

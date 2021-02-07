@@ -103,17 +103,17 @@ __isl_null isl_morph *isl_morph_free(__isl_take isl_morph *morph)
 
 /* Is "morph" an identity on the parameters?
  */
-static int identity_on_parameters(__isl_keep isl_morph *morph)
+static isl_bool identity_on_parameters(__isl_keep isl_morph *morph)
 {
-	int is_identity;
+	isl_bool is_identity;
 	unsigned nparam;
 	isl_mat *sub;
 
 	nparam = isl_morph_dom_dim(morph, isl_dim_param);
 	if (nparam != isl_morph_ran_dim(morph, isl_dim_param))
-		return 0;
+		return isl_bool_false;
 	if (nparam == 0)
-		return 1;
+		return isl_bool_true;
 	sub = isl_mat_sub_alloc(morph->map, 0, 1 + nparam, 0, 1 + nparam);
 	is_identity = isl_mat_is_scaled_identity(sub);
 	isl_mat_free(sub);
@@ -135,7 +135,7 @@ __isl_give isl_multi_aff *isl_morph_get_var_multi_aff(
 	isl_multi_aff *ma;
 	unsigned nparam, nvar;
 	int i;
-	int is_identity;
+	isl_bool is_identity;
 
 	if (!morph)
 		return NULL;

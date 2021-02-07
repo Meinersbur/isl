@@ -2112,19 +2112,24 @@ error:
 	return -1;
 }
 
+/* Return the position of the integer division that is equal to div/denom
+ * if there is one.  Otherwise, return a position beyond the integer divisions.
+ */
 static int find_div(struct isl_tab *tab, isl_int *div, isl_int denom)
 {
 	int i;
 	unsigned total = isl_basic_map_total_dim(tab->bmap);
+	unsigned n_div;
 
-	for (i = 0; i < tab->bmap->n_div; ++i) {
+	n_div = isl_basic_map_dim(tab->bmap, isl_dim_div);
+	for (i = 0; i < n_div; ++i) {
 		if (isl_int_ne(tab->bmap->div[i][0], denom))
 			continue;
 		if (!isl_seq_eq(tab->bmap->div[i] + 1, div, 1 + total))
 			continue;
 		return i;
 	}
-	return -1;
+	return n_div;
 }
 
 /* Return the index of a div that corresponds to "div".
@@ -2135,12 +2140,16 @@ static int get_div(struct isl_tab *tab, struct isl_context *context,
 {
 	int d;
 	struct isl_tab *context_tab = context->op->peek_tab(context);
+	unsigned n_div;
 
 	if (!context_tab)
 		return -1;
 
+	n_div = isl_basic_map_dim(context_tab->bmap, isl_dim_div);
 	d = find_div(context_tab, div->el + 1, div->el[0]);
-	if (d != -1)
+	if (d < 0)
+		return -1;
+	if (d < n_div)
 		return d;
 
 	return add_div(tab, context, div);
@@ -4273,30 +4282,36 @@ error:
 
 /* Check if integer division "div" of "dom" also occurs in "bmap".
  * If so, return its position within the divs.
- * If not, return -1.
+ * Otherwise, return a position beyond the integer divisions.
  */
 static int find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
-	unsigned b_dim = isl_space_dim(bmap->dim, isl_dim_all);
-	unsigned d_dim = isl_space_dim(dom->dim, isl_dim_all);
+	unsigned b_dim, d_dim, n_div;
+
+	if (!bmap || !dom)
+		return -1;
+
+	b_dim = isl_space_dim(bmap->dim, isl_dim_all);
+	d_dim = isl_space_dim(dom->dim, isl_dim_all);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 
 	if (isl_int_is_zero(dom->div[div][0]))
-		return -1;
+		return n_div;
 	if (isl_seq_first_non_zero(dom->div[div] + 2 + d_dim, dom->n_div) != -1)
-		return -1;
+		return n_div;
 
-	for (i = 0; i < bmap->n_div; ++i) {
+	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
 		if (isl_seq_first_non_zero(bmap->div[i] + 2 + d_dim,
-					   (b_dim - d_dim) + bmap->n_div) != -1)
+					   (b_dim - d_dim) + n_div) != -1)
 			continue;
 		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_dim))
 			return i;
 	}
-	return -1;
+	return n_div;
 }
 
 /* The correspondence between the variables in the main tableau,
@@ -4319,11 +4334,20 @@ static __isl_give isl_basic_map *align_context_divs(
 	int i;
 	int common = 0;
 	int other;
+	unsigned bmap_n_div;
 
-	for (i = 0; i < dom->n_div; ++i)
-		if (find_context_div(bmap, dom, i) != -1)
+	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
+
+	for (i = 0; i < dom->n_div; ++i) {
+		int pos;
+
+		pos = find_context_div(bmap, dom, i);
+		if (pos < 0)
+			return isl_basic_map_free(bmap);
+		if (pos < bmap_n_div)
 			common++;
-	other = bmap->n_div - common;
+	}
+	other = bmap_n_div - common;
 	if (dom->n_div - common > 0) {
 		bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
 				dom->n_div - common, 0, 0);
@@ -4332,14 +4356,17 @@ static __isl_give isl_basic_map *align_context_divs(
 	}
 	for (i = 0; i < dom->n_div; ++i) {
 		int pos = find_context_div(bmap, dom, i);
-		if (pos < 0) {
+		if (pos < 0)
+			bmap = isl_basic_map_free(bmap);
+		if (pos >= bmap_n_div) {
 			pos = isl_basic_map_alloc_div(bmap);
 			if (pos < 0)
 				goto error;
 			isl_int_set_si(bmap->div[pos][0], 0);
+			bmap_n_div++;
 		}
 		if (pos != other + i)
-			isl_basic_map_swap_div(bmap, pos, other + i);
+			bmap = isl_basic_map_swap_div(bmap, pos, other + i);
 	}
 	return bmap;
 error:
@@ -5200,7 +5227,7 @@ static void update_outer_levels(struct isl_lexmin_data *data, int level)
 /* Initialize "local" to refer to region "region" and
  * to initiate processing at this level.
  */
-static void init_local_region(struct isl_local_region *local, int region,
+static isl_stat init_local_region(struct isl_local_region *local, int region,
 	struct isl_lexmin_data *data)
 {
 	local->n = isl_mat_rows(data->region[region].trivial);
@@ -5208,6 +5235,8 @@ static void init_local_region(struct isl_local_region *local, int region,
 	local->side = 0;
 	local->update = 0;
 	local->n_zero = 0;
+
+	return isl_stat_ok;
 }
 
 /* What to do next after entering a level of the backtracking procedure.
@@ -5290,7 +5319,8 @@ static enum isl_next enter_level(int level, int init,
 			isl_die(isl_vec_get_ctx(data->v), isl_error_internal,
 				"nesting level too deep",
 				return isl_next_error);
-		init_local_region(local, r, data);
+		if (init_local_region(local, r, data) < 0)
+			return isl_next_error;
 		if (isl_tab_extend_cons(data->tab,
 				    2 * local->n + 2 * data->n_op) < 0)
 			return isl_next_error;

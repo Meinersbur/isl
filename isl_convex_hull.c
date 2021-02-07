@@ -113,7 +113,7 @@ __isl_give isl_set *isl_set_remove_redundancies(__isl_take isl_set *set)
  * constraint c and if so, set the constant term such that the
  * resulting constraint is a bounding constraint for the set.
  */
-static int uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
+static isl_bool uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
 {
 	int first;
 	int j;
@@ -154,7 +154,7 @@ static int uset_is_bound(__isl_keep isl_set *set, isl_int *c, unsigned len)
 error:
 	isl_int_clear(opt);
 	isl_int_clear(opt_denom);
-	return -1;
+	return isl_bool_error;
 }
 
 static __isl_give isl_set *isl_set_add_basic_set_equality(
@@ -388,7 +388,7 @@ static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 	struct isl_basic_set *face = NULL;
 	int i;
 	unsigned dim = isl_set_n_dim(set);
-	int is_bound;
+	isl_bool is_bound;
 	isl_mat *bounds = NULL;
 
 	isl_assert(set->ctx, set->n > 0, goto error);
@@ -1596,7 +1596,7 @@ static __isl_give isl_basic_set *common_constraints(
 	if (isl_hash_table_init(hull->ctx, table, min_constraints))
 		goto error;
 
-	total = isl_space_dim(set->dim, isl_dim_all);
+	total = isl_set_dim(set, isl_dim_all);
 	for (i = 0; i < set->p[best]->n_ineq; ++i) {
 		constraints[i].c = isl_mat_sub_alloc6(hull->ctx,
 			set->p[best]->ineq + i, 0, 1, 0, 1 + total);
@@ -1988,7 +1988,7 @@ static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,
  * Equalities are added as two inequalities.
  * The value in the hash table is a pointer to the (in)equality of "bset".
  */
-static int hash_basic_set(struct isl_hash_table *table,
+static isl_stat hash_basic_set(struct isl_hash_table *table,
 	__isl_keep isl_basic_set *bset)
 {
 	int i, j;
@@ -1998,14 +1998,14 @@ static int hash_basic_set(struct isl_hash_table *table,
 		for (j = 0; j < 2; ++j) {
 			isl_seq_neg(bset->eq[i], bset->eq[i], 1 + dim);
 			if (hash_ineq(bset->ctx, table, bset->eq[i], dim) < 0)
-				return -1;
+				return isl_stat_error;
 		}
 	}
 	for (i = 0; i < bset->n_ineq; ++i) {
 		if (hash_ineq(bset->ctx, table, bset->ineq[i], dim) < 0)
-			return -1;
+			return isl_stat_error;
 	}
-	return 0;
+	return isl_stat_ok;
 }
 
 static struct sh_data *sh_data_alloc(__isl_keep isl_set *set, unsigned n_ineq)

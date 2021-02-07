@@ -38,7 +38,7 @@ struct bernstein_data {
 	isl_pw_qpolynomial_fold *pwf_tight;
 };
 
-static int vertex_is_integral(__isl_keep isl_basic_set *vertex)
+static isl_bool vertex_is_integral(__isl_keep isl_basic_set *vertex)
 {
 	unsigned nvar;
 	unsigned nparam;
@@ -50,10 +50,10 @@ static int vertex_is_integral(__isl_keep isl_basic_set *vertex)
 		int r = nvar - 1 - i;
 		if (!isl_int_is_one(vertex->eq[r][1 + nparam + i]) &&
 		    !isl_int_is_negone(vertex->eq[r][1 + nparam + i]))
-			return 0;
+			return isl_bool_false;
 	}
 
-	return 1;
+	return isl_bool_true;
 }
 
 static __isl_give isl_qpolynomial *vertex_coordinate(
@@ -90,40 +90,47 @@ error:
 }
 
 /* Check whether the bound associated to the selection "k" is tight,
- * which is the case if we select exactly one vertex and if that vertex
+ * which is the case if we select exactly one vertex (i.e., one of the
+ * exponents in "k" is exactly "d") and if that vertex
  * is integral for all values of the parameters.
  */
-static int is_tight(int *k, int n, int d, isl_cell *cell)
+static isl_bool is_tight(int *k, int n, int d, isl_cell *cell)
 {
 	int i;
 
 	for (i = 0; i < n; ++i) {
 		int v;
-		if (k[i] != d) {
-			if (k[i])
-				return 0;
+		if (!k[i])
 			continue;
-		}
+		if (k[i] != d)
+			return isl_bool_false;
 		v = cell->ids[n - 1 - i];
 		return vertex_is_integral(cell->vertices->v[v].vertex);
 	}
 
-	return 0;
+	return isl_bool_false;
 }
 
-static void add_fold(__isl_take isl_qpolynomial *b, __isl_keep isl_set *dom,
+static isl_stat add_fold(__isl_take isl_qpolynomial *b, __isl_keep isl_set *dom,
 	int *k, int n, int d, struct bernstein_data *data)
 {
 	isl_qpolynomial_fold *fold;
+	isl_bool tight;
 
 	fold = isl_qpolynomial_fold_alloc(data->type, b);
 
-	if (data->check_tight && is_tight(k, n, d, data->cell))
+	tight = isl_bool_false;
+	if (data->check_tight)
+		tight = is_tight(k, n, d, data->cell);
+	if (tight < 0)
+		return isl_stat_error;
+	if (tight)
 		data->fold_tight = isl_qpolynomial_fold_fold_on_domain(dom,
 							data->fold_tight, fold);
 	else
 		data->fold = isl_qpolynomial_fold_fold_on_domain(dom,
 							data->fold, fold);
+	return isl_stat_ok;
 }
 
 /* Extract the coefficients of the Bernstein base polynomials and store
@@ -188,7 +195,8 @@ static isl_stat extract_coefficients(isl_qpolynomial *poly,
 					multinom->el[i]);
 				b = isl_qpolynomial_mul(b, f);
 				k[n - 1] = left[n - 2];
-				add_fold(b, dom, k, n, d, data);
+				if (add_fold(b, dom, k, n, d, data) < 0)
+					goto error;
 				--i;
 				continue;
 			}
@@ -345,7 +353,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	isl_space *space;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_vertices *vertices;
-	int covers;
+	isl_bool covers;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	if (nvar == 0) {

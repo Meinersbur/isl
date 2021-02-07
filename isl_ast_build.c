@@ -562,12 +562,12 @@ static void isl_ast_build_reset_schedule_map(__isl_keep isl_ast_build *build)
  * if code has been generated for the entire schedule and if none
  * of the loops have been eliminated.
  */
-int isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
+isl_bool isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
 {
 	int dim;
 
 	if (!build)
-		return -1;
+		return isl_bool_error;
 
 	dim = isl_ast_build_dim(build, isl_dim_set);
 	return build->depth != dim || any_eliminated(build);
@@ -594,6 +594,7 @@ int isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
 __isl_give isl_multi_aff *isl_ast_build_get_schedule_map_multi_aff(
 	__isl_keep isl_ast_build *build)
 {
+	isl_bool needs_map;
 	isl_space *space;
 	isl_multi_aff *ma;
 
@@ -601,11 +602,14 @@ __isl_give isl_multi_aff *isl_ast_build_get_schedule_map_multi_aff(
 		return NULL;
 	if (build->schedule_map)
 		return isl_multi_aff_copy(build->schedule_map);
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0)
+		return NULL;
 
 	space = isl_ast_build_get_space(build, 1);
 	space = isl_space_map_from_set(space);
 	ma = isl_multi_aff_identity(space);
-	if (isl_ast_build_need_schedule_map(build)) {
+	if (needs_map) {
 		int i;
 		int dim = isl_ast_build_dim(build, isl_dim_set);
 		ma = isl_multi_aff_drop_dims(ma, isl_dim_out,
@@ -992,15 +996,24 @@ __isl_give isl_ast_build *isl_ast_build_replace_pending_by_guard(
 __isl_give isl_ast_build *isl_ast_build_restrict(
 	__isl_take isl_ast_build *build, __isl_take isl_set *set)
 {
+	isl_bool needs_map;
+
 	if (isl_set_is_params(set))
 		return isl_ast_build_restrict_generated(build, set);
 
-	if (isl_ast_build_need_schedule_map(build)) {
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0)
+		goto error;
+	if (needs_map) {
 		isl_multi_aff *ma;
 		ma = isl_ast_build_get_schedule_map_multi_aff(build);
 		set = isl_set_preimage_multi_aff(set, ma);
 	}
 	return isl_ast_build_restrict_generated(build, set);
+error:
+	isl_ast_build_free(build);
+	isl_set_free(set);
+	return NULL;
 }
 
 /* Replace build->executed by "executed".
@@ -1168,6 +1181,7 @@ __isl_give isl_space *isl_ast_build_get_space(__isl_keep isl_ast_build *build,
 {
 	int i;
 	int dim;
+	isl_bool needs_map;
 	isl_space *space;
 
 	if (!build)
@@ -1177,7 +1191,10 @@ __isl_give isl_space *isl_ast_build_get_space(__isl_keep isl_ast_build *build,
 	if (internal)
 		return space;
 
-	if (!isl_ast_build_need_schedule_map(build))
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0)
+		return isl_space_free(space);
+	if (!needs_map)
 		return space;
 
 	dim = isl_ast_build_dim(build, isl_dim_set);
@@ -1232,14 +1249,16 @@ __isl_give isl_space *isl_ast_build_get_schedule_space(
 __isl_give isl_union_map *isl_ast_build_get_schedule(
 	__isl_keep isl_ast_build *build)
 {
+	isl_bool needs_map;
 	isl_union_map *executed;
 	isl_union_map *schedule;
 
-	if (!build)
+	needs_map = isl_ast_build_need_schedule_map(build);
+	if (needs_map < 0)
 		return NULL;
 
 	executed = isl_union_map_copy(build->executed);
-	if (isl_ast_build_need_schedule_map(build)) {
+	if (needs_map) {
 		isl_map *proj = isl_ast_build_get_schedule_map(build);
 		executed = isl_union_map_apply_domain(executed,
 					isl_union_map_from_map(proj));

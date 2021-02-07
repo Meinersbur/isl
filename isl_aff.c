@@ -2016,7 +2016,7 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	__isl_take isl_aff *aff, __isl_take isl_basic_set *eq)
 {
 	int i, j;
-	unsigned total;
+	unsigned o_div;
 	unsigned n_div;
 
 	if (!eq)
@@ -2036,14 +2036,14 @@ static __isl_give isl_aff *isl_aff_substitute_equalities_lifted(
 	if (!aff->ls || !aff->v)
 		goto error;
 
-	total = 1 + isl_space_dim(eq->dim, isl_dim_all);
+	o_div = isl_basic_set_offset(eq, isl_dim_div);
 	n_div = eq->n_div;
 	for (i = 0; i < eq->n_eq; ++i) {
-		j = isl_seq_last_non_zero(eq->eq[i], total + n_div);
-		if (j < 0 || j == 0 || j >= total)
+		j = isl_seq_last_non_zero(eq->eq[i], o_div + n_div);
+		if (j < 0 || j == 0 || j >= o_div)
 			continue;
 
-		isl_seq_elim(aff->v->el + 1, eq->eq[i], j, total,
+		isl_seq_elim(aff->v->el + 1, eq->eq[i], j, o_div,
 				&aff->v->el[0]);
 	}
 
@@ -5410,7 +5410,7 @@ error:
  * The multiplication factor f also needs to be multiplied by c_1
  * for the next x_j, j > i.
  */
-void isl_seq_preimage(isl_int *dst, isl_int *src,
+isl_stat isl_seq_preimage(isl_int *dst, isl_int *src,
 	__isl_keep isl_multi_aff *ma, int n_before, int n_after,
 	int n_div_ma, int n_div_bmap,
 	isl_int f, isl_int c1, isl_int c2, isl_int g, int has_denom)
@@ -5471,6 +5471,8 @@ void isl_seq_preimage(isl_int *dst, isl_int *src,
 		if (has_denom)
 			isl_int_mul(dst[0], dst[0], c1);
 	}
+
+	return isl_stat_ok;
 }
 
 /* Compute the pullback of "aff" by the function represented by "ma".
@@ -5518,8 +5520,9 @@ __isl_give isl_aff *isl_aff_pullback_multi_aff(__isl_take isl_aff *aff,
 	isl_int_init(c2);
 	isl_int_init(g);
 
-	isl_seq_preimage(res->v->el, aff->v->el, ma, 0, 0, n_div_ma, n_div_aff,
-			f, c1, c2, g, 1);
+	if (isl_seq_preimage(res->v->el, aff->v->el, ma, 0, 0,
+			    n_div_ma, n_div_aff, f, c1, c2, g, 1) < 0)
+		res = isl_aff_free(res);
 
 	isl_int_clear(f);
 	isl_int_clear(c1);

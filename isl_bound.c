@@ -207,7 +207,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 {
 	unsigned nvar;
 	struct isl_bound bound;
-	int covers;
+	isl_bool covers;
 
 	if (!pwf)
 		return NULL;

@@ -571,18 +571,30 @@ __isl_give isl_union_set *isl_schedule_band_get_ast_build_options(
 	return options;
 }
 
-/* Does "uset" contain any set that satisfies "is"?
- * "is" is assumed to set its integer argument to 1 if it is satisfied.
+/* Internal data structure for not().
  */
-static int has_any(__isl_keep isl_union_set *uset,
-	isl_stat (*is)(__isl_take isl_set *set, void *user))
+struct isl_not_data {
+	isl_bool (*is)(__isl_keep isl_set *set);
+};
+
+/* Does "set" not satisfy data->is()?
+ */
+static isl_bool not(__isl_keep isl_set *set, void *user)
 {
-	int found = 0;
+	struct isl_not_data *data = user;
 
-	if (isl_union_set_foreach_set(uset, is, &found) < 0 && !found)
-		return -1;
+	return isl_bool_not(data->is(set));
+}
 
-	return found;
+/* Does "uset" contain any set that satisfies "is"?
+ * In other words, is it not the case that all of them do not satisfy "is"?
+ */
+static isl_bool has_any(__isl_keep isl_union_set *uset,
+	isl_bool (*is)(__isl_keep isl_set *set))
+{
+	struct isl_not_data data = { is };
+
+	return isl_bool_not(isl_union_set_every_set(uset, &not, &data));
 }
 
 /* Does "set" live in a space of the form
@@ -590,22 +602,17 @@ static int has_any(__isl_keep isl_union_set *uset,
  *	isolate[[...] -> [...]]
  *
  * ?
- *
- * If so, set *found and abort the search.
  */
-static isl_stat is_isolate(__isl_take isl_set *set, void *user)
+static isl_bool is_isolate(__isl_keep isl_set *set)
 {
-	int *found = user;
-
 	if (isl_set_has_tuple_name(set)) {
 		const char *name;
 		name = isl_set_get_tuple_name(set);
 		if (isl_set_is_wrapping(set) && !strcmp(name, "isolate"))
-			*found = 1;
+			return isl_bool_true;
 	}
-	isl_set_free(set);
 
-	return *found ? isl_stat_error : isl_stat_ok;
+	return isl_bool_false;
 }
 
 /* Does "options" include an option of the ofrm
@@ -614,17 +621,15 @@ static isl_stat is_isolate(__isl_take isl_set *set, void *user)
  *
  * ?
  */
-static int has_isolate_option(__isl_keep isl_union_set *options)
+static isl_bool has_isolate_option(__isl_keep isl_union_set *options)
 {
 	return has_any(options, &is_isolate);
 }
 
 /* Does "set" encode a loop AST generation option?
  */
-static isl_stat is_loop_type_option(__isl_take isl_set *set, void *user)
+static isl_bool is_loop_type_option(__isl_keep isl_set *set)
 {
-	int *found = user;
-
 	if (isl_set_dim(set, isl_dim_set) == 1 &&
 	    isl_set_has_tuple_name(set)) {
 		const char *name;
@@ -634,13 +639,11 @@ static isl_stat is_loop_type_option(__isl_take isl_set *set, void *user)
 		    type <= isl_ast_loop_separate; ++type) {
 			if (strcmp(name, option_str[type]))
 				continue;
-			*found = 1;
-			break;
+			return isl_bool_true;
 		}
 	}
-	isl_set_free(set);
 
-	return *found ? isl_stat_error : isl_stat_ok;
+	return isl_bool_false;
 }
 
 /* Does "set" encode a loop AST generation option for the isolated part?
@@ -650,22 +653,19 @@ static isl_stat is_loop_type_option(__isl_take isl_set *set, void *user)
  *
  * with t equal to "atomic", "unroll" or "separate"?
  */
-static isl_stat is_isolate_loop_type_option(__isl_take isl_set *set, void *user)
+static isl_bool is_isolate_loop_type_option(__isl_keep isl_set *set)
 {
-	int *found = user;
 	const char *name;
 	enum isl_ast_loop_type type;
 	isl_map *map;
 
-	if (!isl_set_is_wrapping(set)) {
-		isl_set_free(set);
-		return isl_stat_ok;
-	}
-	map = isl_set_unwrap(set);
+	if (!isl_set_is_wrapping(set))
+		return isl_bool_false;
+	map = isl_set_unwrap(isl_set_copy(set));
 	if (!isl_map_has_tuple_name(map, isl_dim_in) ||
 	    !isl_map_has_tuple_name(map, isl_dim_out)) {
 		isl_map_free(map);
-		return isl_stat_ok;
+		return isl_bool_false;
 	}
 	name = isl_map_get_tuple_name(map, isl_dim_in);
 	if (!strcmp(name, "isolate")) {
@@ -674,26 +674,26 @@ static isl_stat is_isolate_loop_type_option(__isl_take isl_set *set, void *user)
 		    type <= isl_ast_loop_separate; ++type) {
 			if (strcmp(name, option_str[type]))
 				continue;
-			*found = 1;
-			break;
+			isl_map_free(map);
+			return isl_bool_true;
 		}
 	}
 	isl_map_free(map);
 
-	return *found ? isl_stat_error : isl_stat_ok;
+	return isl_bool_false;
 }
 
 /* Does "options" encode any loop AST generation options
  * for the isolated part?
  */
-static int has_isolate_loop_type_options(__isl_keep isl_union_set *options)
+static isl_bool has_isolate_loop_type_options(__isl_keep isl_union_set *options)
 {
 	return has_any(options, &is_isolate_loop_type_option);
 }
 
 /* Does "options" encode any loop AST generation options?
  */
-static int has_loop_type_options(__isl_keep isl_union_set *options)
+static isl_bool has_loop_type_options(__isl_keep isl_union_set *options)
 {
 	return has_any(options, &is_loop_type_option);
 }
@@ -859,7 +859,7 @@ static __isl_give isl_union_set *clear_isolate_loop_types(
 __isl_give isl_schedule_band *isl_schedule_band_set_ast_build_options(
 	__isl_take isl_schedule_band *band, __isl_take isl_union_set *options)
 {
-	int has_isolate, has_loop_type, has_isolate_loop_type;
+	isl_bool has_isolate, has_loop_type, has_isolate_loop_type;
 
 	band = isl_schedule_band_cow(band);
 	if (!band || !options)

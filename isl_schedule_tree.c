@@ -1596,7 +1596,7 @@ static __isl_give isl_union_map *append_range(__isl_take isl_union_map *umap,
  * from an extension node, but extension nodes are not supported
  * by the caller and it will error out on them.
  */
-static int domain_less(__isl_keep isl_schedule_tree *tree)
+static isl_bool domain_less(__isl_keep isl_schedule_tree *tree)
 {
 	enum isl_schedule_node_type type;
 
@@ -1607,7 +1607,7 @@ static int domain_less(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_context:
 	case isl_schedule_node_guard:
 	case isl_schedule_node_mark:
-		return 1;
+		return isl_bool_true;
 	case isl_schedule_node_leaf:
 	case isl_schedule_node_error:
 	case isl_schedule_node_domain:
@@ -1616,11 +1616,11 @@ static int domain_less(__isl_keep isl_schedule_tree *tree)
 	case isl_schedule_node_filter:
 	case isl_schedule_node_set:
 	case isl_schedule_node_sequence:
-		return 0;
+		return isl_bool_false;
 	}
 
 	isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-		"unhandled case", return 0);
+		"unhandled case", return isl_bool_error);
 }
 
 /* Move down to the first descendant of "tree" that contains any schedule
@@ -1629,13 +1629,18 @@ static int domain_less(__isl_keep isl_schedule_tree *tree)
 __isl_give isl_schedule_tree *isl_schedule_tree_first_schedule_descendant(
 	__isl_take isl_schedule_tree *tree, __isl_keep isl_schedule_tree *leaf)
 {
-	while (domain_less(tree)) {
+	isl_bool down;
+
+	while ((down = domain_less(tree)) == isl_bool_true) {
 		if (!isl_schedule_tree_has_children(tree)) {
 			isl_schedule_tree_free(tree);
 			return isl_schedule_tree_copy(leaf);
 		}
 		tree = isl_schedule_tree_child(tree, 0);
 	}
+
+	if (down < 0)
+		return isl_schedule_tree_free(tree);
 
 	return tree;
 }

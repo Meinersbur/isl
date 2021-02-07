@@ -100,7 +100,7 @@ void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
 	if (!dim_map || !bmap)
 		return;
 	
-	src_pos = 1 + isl_space_dim(bmap->dim, isl_dim_all);
+	src_pos = isl_basic_map_offset(bmap, isl_dim_div);
 	for (i = 0; i < bmap->n_div; ++i) {
 		dim_map->m[1 + dst_pos + i].pos = src_pos + i;
 		dim_map->m[1 + dst_pos + i].sgn = 1;
