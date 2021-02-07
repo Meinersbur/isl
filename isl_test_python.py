@@ -318,6 +318,17 @@ def test_schedule_tree():
 	root.every_descendant(collect_filters)
 	assert(domain.is_equal(filters[0]))
 
+# Test basic AST generation from a schedule tree.
+#
+# In particular, create a simple schedule tree and
+# - generate an AST from the schedule tree
+#
+def test_ast_build():
+	schedule = construct_schedule_tree()
+
+	build = isl.ast_build()
+	ast = build.node_from(schedule)
+
 # Test the isl Python interface
 #
 # This includes:
@@ -327,6 +338,7 @@ def test_schedule_tree():
 #  - Foreach functions
 #  - Every functions
 #  - Schedule trees
+#  - AST generation
 #
 test_constructors()
 test_parameters()
@@ -334,3 +346,4 @@ test_return()
 test_foreach()
 test_every()
 test_schedule_tree()
+test_ast_build()
