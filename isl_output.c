@@ -1684,25 +1684,33 @@ error:
 	return NULL;
 }
 
-static int upoly_rec_n_non_zero(__isl_keep struct isl_upoly_rec *rec)
+static int poly_rec_n_non_zero(__isl_keep isl_poly_rec *rec)
 {
 	int i;
 	int n;
 
-	for (i = 0, n = 0; i < rec->n; ++i)
-		if (!isl_upoly_is_zero(rec->p[i]))
+	if (!rec)
+		return -1;
+
+	for (i = 0, n = 0; i < rec->n; ++i) {
+		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
+
+		if (is_zero < 0)
+			return -1;
+		if (!is_zero)
 			++n;
+	}
 
 	return n;
 }
 
-static __isl_give isl_printer *upoly_print_cst(__isl_keep struct isl_upoly *up,
+static __isl_give isl_printer *poly_print_cst(__isl_keep isl_poly *poly,
 	__isl_take isl_printer *p, int first)
 {
-	struct isl_upoly_cst *cst;
+	isl_poly_cst *cst;
 	int neg;
 
-	cst = isl_upoly_as_cst(up);
+	cst = isl_poly_as_cst(poly);
 	if (!cst)
 		goto error;
 	neg = !first && isl_int_is_neg(cst->n);
@@ -1760,55 +1768,62 @@ static __isl_give isl_printer *print_pow(__isl_take isl_printer *p,
 	return p;
 }
 
-/* Print the polynomial "up" defined over the domain space "space" and
+/* Print the polynomial "poly" defined over the domain space "space" and
  * local variables defined by "div" to "p".
  */
-static __isl_give isl_printer *upoly_print(__isl_keep struct isl_upoly *up,
+static __isl_give isl_printer *poly_print(__isl_keep isl_poly *poly,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div,
 	__isl_take isl_printer *p)
 {
 	int i, n, first, print_parens;
-	struct isl_upoly_rec *rec;
+	isl_bool is_cst;
+	isl_poly_rec *rec;
 
-	if (!p || !up || !space || !div)
+	is_cst = isl_poly_is_cst(poly);
+	if (!p || is_cst < 0 || !space || !div)
 		goto error;
 
-	if (isl_upoly_is_cst(up))
-		return upoly_print_cst(up, p, 1);
+	if (is_cst)
+		return poly_print_cst(poly, p, 1);
 
-	rec = isl_upoly_as_rec(up);
-	if (!rec)
-		goto error;
-	n = upoly_rec_n_non_zero(rec);
+	rec = isl_poly_as_rec(poly);
+	n = poly_rec_n_non_zero(rec);
+	if (n < 0)
+		return isl_printer_free(p);
 	print_parens = n > 1;
 	if (print_parens)
 		p = isl_printer_print_str(p, "(");
 	for (i = 0, first = 1; i < rec->n; ++i) {
-		if (isl_upoly_is_zero(rec->p[i]))
+		isl_bool is_zero = isl_poly_is_zero(rec->p[i]);
+		isl_bool is_one = isl_poly_is_one(rec->p[i]);
+		isl_bool is_negone = isl_poly_is_negone(rec->p[i]);
+		isl_bool is_cst = isl_poly_is_cst(rec->p[i]);
+
+		if (is_zero < 0 || is_one < 0 || is_negone < 0)
+			return isl_printer_free(p);
+		if (is_zero)
 			continue;
-		if (isl_upoly_is_negone(rec->p[i])) {
+		if (is_negone) {
 			if (!i)
 				p = isl_printer_print_str(p, "-1");
 			else if (first)
 				p = isl_printer_print_str(p, "-");
 			else
 				p = isl_printer_print_str(p, " - ");
-		} else if (isl_upoly_is_cst(rec->p[i]) &&
-				!isl_upoly_is_one(rec->p[i]))
-			p = upoly_print_cst(rec->p[i], p, first);
+		} else if (is_cst && !is_one)
+			p = poly_print_cst(rec->p[i], p, first);
 		else {
 			if (!first)
 				p = isl_printer_print_str(p, " + ");
-			if (i == 0 || !isl_upoly_is_one(rec->p[i]))
-				p = upoly_print(rec->p[i], space, div, p);
+			if (i == 0 || !is_one)
+				p = poly_print(rec->p[i], space, div, p);
 		}
 		first = 0;
 		if (i == 0)
 			continue;
-		if (!isl_upoly_is_one(rec->p[i]) &&
-		    !isl_upoly_is_negone(rec->p[i]))
+		if (!is_one && !is_negone)
 			p = isl_printer_print_str(p, " * ");
-		p = print_pow(p, space, div, rec->up.var, i);
+		p = print_pow(p, space, div, rec->poly.var, i);
 	}
 	if (print_parens)
 		p = isl_printer_print_str(p, ")");
@@ -1823,7 +1838,7 @@ static __isl_give isl_printer *print_qpolynomial(__isl_take isl_printer *p,
 {
 	if (!p || !qp)
 		goto error;
-	p = upoly_print(qp->upoly, qp->dim, qp->div, p);
+	p = poly_print(qp->poly, qp->dim, qp->div, p);
 	return p;
 error:
 	isl_printer_free(p);
@@ -1858,28 +1873,27 @@ error:
 static __isl_give isl_printer *print_qpolynomial_c(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_qpolynomial *qp)
 {
-	isl_int den;
+	isl_bool is_one;
+	isl_val *den;
 
-	isl_int_init(den);
-	isl_qpolynomial_get_den(qp, &den);
-	if (!isl_int_is_one(den)) {
-		isl_qpolynomial *f;
+	den = isl_qpolynomial_get_den(qp);
+	qp = isl_qpolynomial_copy(qp);
+	qp = isl_qpolynomial_scale_val(qp, isl_val_copy(den));
+	is_one = isl_val_is_one(den);
+	if (is_one < 0)
+		p = isl_printer_free(p);
+	if (!is_one)
 		p = isl_printer_print_str(p, "(");
-		qp = isl_qpolynomial_copy(qp);
-		f = isl_qpolynomial_rat_cst_on_domain(isl_space_copy(qp->dim),
-						den, qp->dim->ctx->one);
-		qp = isl_qpolynomial_mul(qp, f);
-	}
 	if (qp)
-		p = upoly_print(qp->upoly, space, qp->div, p);
+		p = poly_print(qp->poly, space, qp->div, p);
 	else
 		p = isl_printer_free(p);
-	if (!isl_int_is_one(den)) {
+	if (!is_one) {
 		p = isl_printer_print_str(p, ")/");
-		p = isl_printer_print_isl_int(p, den);
-		isl_qpolynomial_free(qp);
+		p = isl_printer_print_val(p, den);
 	}
-	isl_int_clear(den);
+	isl_qpolynomial_free(qp);
+	isl_val_free(den);
 	return p;
 }
 

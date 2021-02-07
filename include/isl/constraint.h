@@ -111,7 +111,8 @@ __isl_give isl_aff *isl_constraint_get_div(__isl_keep isl_constraint *constraint
 struct isl_constraint *isl_constraint_negate(struct isl_constraint *constraint);
 
 isl_bool isl_constraint_is_equality(__isl_keep isl_constraint *constraint);
-int isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint);
+isl_bool isl_constraint_is_div_constraint(
+	__isl_keep isl_constraint *constraint);
 
 isl_bool isl_constraint_is_lower_bound(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type, unsigned pos);

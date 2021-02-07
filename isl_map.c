@@ -3846,7 +3846,7 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type,
 	unsigned pos, unsigned n)
 {
-	isl_bool rational;
+	isl_bool rational, is_empty;
 	isl_space *res_space;
 	struct isl_basic_map *res;
 	struct isl_dim_map *dim_map;
@@ -3856,10 +3856,17 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 	if (n == 0)
 		return basic_map_space_reset(bmap, type);
 
+	is_empty = isl_basic_map_plain_is_empty(bmap);
+	if (is_empty < 0)
+		return isl_basic_map_free(bmap);
 	res_space = isl_space_insert_dims(isl_basic_map_get_space(bmap),
 					type, pos, n);
 	if (!res_space)
 		return isl_basic_map_free(bmap);
+	if (is_empty) {
+		isl_basic_map_free(bmap);
+		return isl_basic_map_empty(res_space);
+	}
 
 	total = isl_basic_map_total_dim(bmap) + n;
 	dim_map = isl_dim_map_alloc(bmap->ctx, total);
@@ -3885,11 +3892,6 @@ __isl_give isl_basic_map *isl_basic_map_insert_dims(
 		res = isl_basic_map_free(res);
 	if (rational)
 		res = isl_basic_map_set_rational(res);
-	if (isl_basic_map_plain_is_empty(bmap)) {
-		isl_basic_map_free(bmap);
-		free(dim_map);
-		return isl_basic_map_set_to_empty(res);
-	}
 	res = isl_basic_map_add_constraints_dim_map(res, bmap, dim_map);
 	return isl_basic_map_finalize(res);
 }
@@ -11616,7 +11618,7 @@ __isl_give isl_basic_map *isl_basic_map_realign(__isl_take isl_basic_map *bmap,
 	res = isl_basic_map_finalize(res);
 	return res;
 error:
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	isl_basic_map_free(bmap);
 	isl_space_free(space);
 	return NULL;
@@ -11652,10 +11654,10 @@ __isl_give isl_map *isl_map_realign(__isl_take isl_map *map,
 	map = isl_map_unmark_normalized(map);
 
 	isl_reordering_free(r);
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	return map;
 error:
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	isl_map_free(map);
 	isl_reordering_free(r);
 	return NULL;
@@ -11740,7 +11742,7 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 				    isl_reordering_get_space(exp),
 				    isl_dim_map_extend(dim_map, bmap));
 		isl_reordering_free(exp);
-		free(dim_map);
+		isl_dim_map_free(dim_map);
 	}
 
 	isl_space_free(model);

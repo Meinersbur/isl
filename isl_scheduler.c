@@ -1555,7 +1555,6 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 	isl_space *space;
 	isl_basic_set *bounds;
 	int i;
-	unsigned nparam;
 
 	if (node->bounds)
 		return isl_basic_set_copy(node->bounds);
@@ -1564,8 +1563,7 @@ static __isl_give isl_basic_set *get_size_bounds(struct isl_sched_node *node)
 		space = isl_multi_aff_get_domain_space(node->decompress);
 	else
 		space = isl_space_copy(node->space);
-	nparam = isl_space_dim(space, isl_dim_param);
-	space = isl_space_drop_dims(space, isl_dim_param, 0, nparam);
+	space = isl_space_drop_all_params(space);
 	bounds = isl_basic_set_universe(space);
 
 	for (i = 0; i < node->nvar; ++i) {
@@ -4915,17 +4913,6 @@ static __isl_give isl_union_map *collect_validity(struct isl_sched_graph *graph,
 	return umap;
 }
 
-/* Project out all parameters from "uset" and return the result.
- */
-static __isl_give isl_union_set *union_set_drop_parameters(
-	__isl_take isl_union_set *uset)
-{
-	unsigned nparam;
-
-	nparam = isl_union_set_dim(uset, isl_dim_param);
-	return isl_union_set_project_out(uset, isl_dim_param, 0, nparam);
-}
-
 /* For each dependence relation on a (conditional) validity edge
  * from a node to itself,
  * construct the set of coefficients of valid constraints for elements
@@ -4972,7 +4959,7 @@ static __isl_give isl_basic_set_list *collect_intra_validity(isl_ctx *ctx,
 
 	intra = collect_validity(graph, &add_intra, coincidence);
 	delta = isl_union_map_deltas(intra);
-	delta = union_set_drop_parameters(delta);
+	delta = isl_union_set_project_out_all_params(delta);
 	delta = isl_union_set_remove_divs(delta);
 	if (isl_options_get_schedule_treat_coalescing(ctx))
 		delta = union_drop_coalescing_constraints(ctx, graph, delta);

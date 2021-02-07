@@ -421,12 +421,13 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
  * check if setting the length to zero results in only the identity
  * mapping.
  */
-static int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
+static isl_bool empty_path_is_identity(__isl_keep isl_basic_map *path,
+	unsigned pos)
 {
 	isl_basic_map *test = NULL;
 	isl_basic_map *id = NULL;
 	int k;
-	int is_id;
+	isl_bool is_id;
 
 	test = isl_basic_map_copy(path);
 	test = isl_basic_map_extend_constraints(test, 1, 0);
@@ -443,7 +444,7 @@ static int empty_path_is_identity(__isl_keep isl_basic_map *path, unsigned pos)
 	return is_id;
 error:
 	isl_basic_map_free(test);
-	return -1;
+	return isl_bool_error;
 }
 
 /* If any of the constraints is found to be impure then this function
@@ -572,7 +573,7 @@ static __isl_give isl_map *path_along_delta(__isl_take isl_space *space,
 	unsigned nparam;
 	unsigned off;
 	int i, k;
-	int is_id;
+	isl_bool is_id;
 	int *div_purity = NULL;
 	int impurity = 0;
 

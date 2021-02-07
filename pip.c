@@ -95,6 +95,23 @@ static __isl_give isl_basic_set *to_parameter_domain(
 	return context;
 }
 
+/* If "context" has more parameters than "bset", then reinterpret
+ * the last dimensions of "bset" as parameters.
+ */
+static __isl_give isl_basic_set *move_parameters(__isl_take isl_basic_set *bset,
+	__isl_keep isl_basic_set *context)
+{
+	int nparam, dim;
+
+	nparam = isl_basic_set_dim(context, isl_dim_param);
+	if (nparam == isl_basic_set_dim(bset, isl_dim_param))
+		return bset;
+	dim = isl_basic_set_dim(bset, isl_dim_set);
+	bset = isl_basic_set_move_dims(bset, isl_dim_param, 0,
+					    isl_dim_set, dim - nparam, nparam);
+	return bset;
+}
+
 /* Plug in the initial values of "params" for the parameters in "bset" and
  * return the result.  The remaining entries in "params", if any,
  * correspond to the existentially quantified variables in the description
@@ -306,7 +323,6 @@ int main(int argc, char **argv)
 	int max = 0;
 	int rational = 0;
 	int n;
-	int nparam;
 	struct options *options;
 
 	options = options_new_with_defaults();
@@ -338,12 +354,7 @@ int main(int argc, char **argv)
 		context = isl_basic_set_intersect(context,
 		isl_basic_set_positive_orthant(isl_basic_set_get_space(context)));
 	context = to_parameter_domain(context);
-	nparam = isl_basic_set_dim(context, isl_dim_param);
-	if (nparam != isl_basic_set_dim(bset, isl_dim_param)) {
-		int dim = isl_basic_set_dim(bset, isl_dim_set);
-		bset = isl_basic_set_move_dims(bset, isl_dim_param, 0,
-					    isl_dim_set, dim - nparam, nparam);
-	}
+	bset = move_parameters(bset, context);
 	if (!urs_unknowns)
 		bset = isl_basic_set_intersect(bset,
 		isl_basic_set_positive_orthant(isl_basic_set_get_space(bset)));

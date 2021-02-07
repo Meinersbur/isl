@@ -42,6 +42,14 @@ __isl_give isl_dim_map *isl_dim_map_alloc(isl_ctx *ctx, unsigned len)
 	return dim_map;
 }
 
+/* Free "dim_map" and return NULL.
+ */
+__isl_null isl_dim_map *isl_dim_map_free(__isl_take isl_dim_map *dim_map)
+{
+	free(dim_map);
+	return NULL;
+}
+
 void isl_dim_map_range(__isl_keep isl_dim_map *dim_map,
 	unsigned dst_pos, int dst_stride, unsigned src_pos, int src_stride,
 	unsigned n, int sign)
@@ -161,12 +169,12 @@ __isl_give isl_basic_map *isl_basic_map_add_constraints_dim_map(
 		copy_div_dim_map(dst->div[i1], src->div[i], dim_map);
 	}
 
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	isl_basic_map_free(src);
 
 	return dst;
 error:
-	free(dim_map);
+	isl_dim_map_free(dim_map);
 	isl_basic_map_free(src);
 	isl_basic_map_free(dst);
 	return NULL;

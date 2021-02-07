@@ -803,10 +803,10 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),factor_range)(
 			"not a product", return FN(MULTI(BASE),free)(multi));
 
 	space = FN(MULTI(BASE),get_space)(multi);
-	total = isl_space_dim(space, isl_dim_out);
+	total = isl_space_dim(space, isl_dim_set);
 	space = isl_space_factor_range(space);
-	keep = isl_space_dim(space, isl_dim_out);
-	multi = FN(MULTI(BASE),drop_dims)(multi, isl_dim_out, 0, total - keep);
+	keep = isl_space_dim(space, isl_dim_set);
+	multi = FN(MULTI(BASE),drop_dims)(multi, isl_dim_set, 0, total - keep);
 	multi = FN(MULTI(BASE),reset_space)(multi, space);
 
 	return multi;

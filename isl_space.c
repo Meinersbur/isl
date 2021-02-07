@@ -1798,6 +1798,16 @@ __isl_give isl_space *isl_space_drop_outputs(__isl_take isl_space *dim,
 	return isl_space_drop_dims(dim, isl_dim_out, first, n);
 }
 
+/* Remove all parameters from "space".
+ */
+__isl_give isl_space *isl_space_drop_all_params(__isl_take isl_space *space)
+{
+	unsigned nparam;
+
+	nparam = isl_space_dim(space, isl_dim_param);
+	return isl_space_drop_dims(space, isl_dim_param, 0, nparam);
+}
+
 __isl_give isl_space *isl_space_domain(__isl_take isl_space *space)
 {
 	if (!space)
