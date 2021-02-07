@@ -17,22 +17,29 @@
 extern "C" {
 #endif
 
-#define ISL_DECLARE_LIST_TYPE(EL)					\
+#define ISL_DECLARE_LIST_TYPE2(EL,EXPORT)				\
 struct isl_##EL;							\
-struct __isl_export isl_##EL##_list;							\
+struct __isl_export isl_##EL##_list;						\
 typedef struct isl_##EL##_list isl_##EL##_list;
-#define ISL_DECLARE_LIST_FN(EL)						\
+#define ISL_DECLARE_LIST_TYPE(EL)					\
+	ISL_DECLARE_LIST_TYPE2(EL,)
+#define ISL_DECLARE_EXPORTED_LIST_TYPE(EL)				\
+	ISL_DECLARE_LIST_TYPE2(EL,__isl_export)
+#define ISL_DECLARE_LIST_FN3(EL,CONSTRUCTOR,EXPORT)			\
 isl_ctx *isl_##EL##_list_get_ctx(__isl_keep isl_##EL##_list *list);	\
+								\
 __isl_give isl_##EL##_list *isl_##EL##_list_from_##EL(			\
-	__isl_take isl_##EL *el);				\
+	__isl_take isl_##EL *el);					\
+								\
 __isl_give isl_##EL##_list *isl_##EL##_list_alloc(isl_ctx *ctx, int n);	\
 __isl_give isl_##EL##_list *isl_##EL##_list_copy(			\
 	__isl_keep isl_##EL##_list *list);				\
 __isl_null isl_##EL##_list *isl_##EL##_list_free(			\
 	__isl_take isl_##EL##_list *list);				\
+EXPORT									\
 __isl_give isl_##EL##_list *isl_##EL##_list_add(			\
 	__isl_take isl_##EL##_list *list,				\
-	__isl_take isl_##EL *el);				\
+	__isl_take isl_##EL *el);					\
 __isl_give isl_##EL##_list *isl_##EL##_list_insert(			\
 	__isl_take isl_##EL##_list *list, unsigned pos,			\
 	__isl_take isl_##EL *el);				\
@@ -43,11 +50,14 @@ __isl_give isl_##EL##_list *isl_##EL##_list_swap(			\
 	unsigned pos2);							\
 __isl_give isl_##EL##_list *isl_##EL##_list_reverse(			\
 	__isl_take isl_##EL##_list *list);				\
+EXPORT									\
 __isl_give isl_##EL##_list *isl_##EL##_list_concat(			\
 	__isl_take isl_##EL##_list *list1,				\
 	__isl_take isl_##EL##_list *list2);				\
+EXPORT									\
 isl_size isl_##EL##_list_size(__isl_keep isl_##EL##_list *list);	\
 isl_size isl_##EL##_list_n_##EL(__isl_keep isl_##EL##_list *list);	\
+EXPORT									\
 __isl_give isl_##EL *isl_##EL##_list_get_at(				\
 	__isl_keep isl_##EL##_list *list, int index);			\
 __isl_give isl_##EL *isl_##EL##_list_get_##EL(			\
@@ -55,8 +65,9 @@ __isl_give isl_##EL *isl_##EL##_list_get_##EL(			\
 __isl_give isl_##EL##_list *isl_##EL##_list_set_##EL(		\
 	__isl_take isl_##EL##_list *list, int index,		\
 	__isl_take isl_##EL *el);				\
+EXPORT									\
 isl_stat isl_##EL##_list_foreach(__isl_keep isl_##EL##_list *list,	\
-	isl_stat (*fn)(__isl_take isl_##EL *el, void *user),	\
+	isl_stat (*fn)(__isl_take isl_##EL *el, void *user),		\
 	void *user);							\
 __isl_give isl_##EL##_list *isl_##EL##_list_map(			\
 	__isl_take isl_##EL##_list *list,				\
@@ -77,10 +88,17 @@ isl_stat isl_##EL##_list_foreach_scc(__isl_keep isl_##EL##_list *list,	\
 __isl_give isl_printer *isl_printer_print_##EL##_list(			\
 	__isl_take isl_printer *p, __isl_keep isl_##EL##_list *list);	\
 void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);
+#define ISL_DECLARE_LIST_FN(EL)						\
+	ISL_DECLARE_LIST_FN3(EL,,)
+#define ISL_DECLARE_EXPORTED_LIST_FN(EL)				\
+	ISL_DECLARE_LIST_FN3(EL,__isl_constructor,__isl_export)
 
 #define ISL_DECLARE_LIST(EL)						\
 	ISL_DECLARE_LIST_TYPE(EL)					\
 	ISL_DECLARE_LIST_FN(EL)
+#define ISL_DECLARE_EXPORTED_LIST(EL)					\
+	ISL_DECLARE_EXPORTED_LIST_TYPE(EL)				\
+	ISL_DECLARE_EXPORTED_LIST_FN(EL)
 
 #if defined(__cplusplus)
 }
