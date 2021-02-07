@@ -33,7 +33,9 @@
 
 #include "isl_config.h"
 
+#include <stdarg.h>
 #include <stdio.h>
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -225,8 +227,20 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 	}
 }
 
+/* Print formatted output with the given indentation.
+ */
+static void print_indent(int indent, const char *format, ...)
+{
+	va_list args;
+
+	printf("%*s", indent, " ");
+	va_start(args, format);
+	vprintf(format, args);
+	va_end(args);
+}
+
 /* Print the return statement of the python method corresponding
- * to the C function "method".
+ * to the C function "method" with the given indentation.
  *
  * If the return type is a (const) char *, then convert the result
  * to a Python string, raising an error on NULL and freeing
@@ -240,7 +254,7 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  * a Python boolean.
  * In case of isl_size, the result is converted to a Python int.
  */
-void python_generator::print_method_return(FunctionDecl *method)
+void python_generator::print_method_return(int indent, FunctionDecl *method)
 {
 	QualType return_type = method->getReturnType();
 
@@ -248,26 +262,27 @@ void python_generator::print_method_return(FunctionDecl *method)
 		string type;
 
 		type = type2python(extract_type(return_type));
-		printf("        return %s(ctx=ctx, ptr=res)\n", type.c_str());
+		print_indent(indent,
+			"return %s(ctx=ctx, ptr=res)\n", type.c_str());
 	} else if (is_string(return_type)) {
-		printf("        if res == 0:\n");
-		printf("            raise\n");
-		printf("        string = "
+		print_indent(indent, "if res == 0:\n");
+		print_indent(indent, "    raise\n");
+		print_indent(indent, "string = "
 		       "cast(res, c_char_p).value.decode('ascii')\n");
 
 		if (gives(method))
-			printf("        libc.free(res)\n");
+			print_indent(indent, "libc.free(res)\n");
 
-		printf("        return string\n");
+		print_indent(indent, "return string\n");
 	} else if (is_isl_neg_error(return_type)) {
-		printf("        if res < 0:\n");
-		printf("            raise\n");
+		print_indent(indent, "if res < 0:\n");
+		print_indent(indent, "    raise\n");
 		if (is_isl_bool(return_type))
-			printf("        return bool(res)\n");
+			print_indent(indent, "return bool(res)\n");
 		else if (is_isl_size(return_type))
-			printf("        return int(res)\n");
+			print_indent(indent, "return int(res)\n");
 	} else {
-		printf("        return res\n");
+		print_indent(indent, "return res\n");
 	}
 }
 
@@ -361,7 +376,7 @@ void python_generator::print_method(const isl_class &clazz,
 			"exc_info[0][1], exc_info[0][2])\n");
 	}
 
-	print_method_return(method);
+	print_method_return(8, method);
 }
 
 /* Print part of an overloaded python method corresponding to the C function
@@ -377,7 +392,6 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
 	int first;
-	string type;
 
 	first = is_static(clazz, method) ? 0 : 1;
 
@@ -402,8 +416,8 @@ void python_generator::print_method_overload(const isl_class &clazz,
 		print_arg_in_call(method, i, 0);
 	}
 	printf(")\n");
-	type = type2python(extract_type(method->getReturnType()));
-	printf("            return %s(ctx=arg0.ctx, ptr=res)\n", type.c_str());
+	printf("            ctx = arg0.ctx\n");
+	print_method_return(12, method);
 }
 
 /* Print a python method with a name derived from "fullname"

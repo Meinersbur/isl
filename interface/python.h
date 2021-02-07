@@ -28,7 +28,7 @@ private:
 	void print_callback(ParmVarDecl *param, int arg);
 	void print_arg_in_call(FunctionDecl *fd, int arg, int skip);
 	void print_argtypes(FunctionDecl *fd);
-	void print_method_return(FunctionDecl *method);
+	void print_method_return(int indent, FunctionDecl *method);
 	void print_restype(FunctionDecl *fd);
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(const isl_class &clazz, FunctionDecl *method);
