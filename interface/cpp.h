@@ -101,6 +101,8 @@ private:
 		const std::string &call);
 	void print_wrapped_call(std::ostream &os, const std::string &call,
 		QualType rtype);
+	void print_callback_data_decl(ostream &os, ParmVarDecl *param,
+		const string &name);
 	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
 	string isl_bool2cpp();
