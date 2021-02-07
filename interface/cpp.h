@@ -97,11 +97,13 @@ private:
 		FunctionDecl *method, bool is_declaration, function_kind kind);
 	string generate_callback_args(QualType type, bool cpp);
 	string generate_callback_type(QualType type);
-	void print_wrapped_call_checked(std::ostream &os,
+	void print_wrapped_call_checked(std::ostream &os, int indent,
 		const std::string &call);
-	void print_wrapped_call(std::ostream &os, const std::string &call,
-		QualType rtype);
+	void print_wrapped_call(std::ostream &os, int indent,
+		const std::string &call, QualType rtype);
 	void print_callback_data_decl(ostream &os, ParmVarDecl *param,
+		const string &name);
+	void print_callback_body(ostream &os, int indent, ParmVarDecl *param,
 		const string &name);
 	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
