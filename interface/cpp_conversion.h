@@ -1,6 +1,7 @@
 #include "generator.h"
 
 class cpp_conversion_generator : public generator {
+	void cast(const isl_class &clazz, const char *to);
 	void convert(const isl_class &clazz, const char *from, const char *to,
 		const char *function);
 	void print(const isl_class &clazz);

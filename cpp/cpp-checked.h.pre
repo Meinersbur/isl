@@ -5,6 +5,7 @@
 #include <functional>
 #include <ostream>
 #include <string>
+#include <type_traits>
 
 namespace isl {
 inline namespace noexceptions {

@@ -12,28 +12,41 @@ using namespace clang;
 
 /* isl_class collects all constructors and methods for an isl "class".
  * "name" is the name of the class.
+ * If this object describes a subclass of a C type, then
+ * "subclass_name" is the name of that subclass and "superclass_name"
+ * is the name of the immediate superclass of that subclass.  Otherwise,
+ * "subclass_name" is equal to "name" and "superclass_name" is undefined.
  * "type" is the declaration that introduces the type.
  * "methods" contains the set of methods, grouped by method name.
  * "fn_to_str" is a reference to the *_to_str method of this class, if any.
  * "fn_copy" is a reference to the *_copy method of this class, if any.
  * "fn_free" is a reference to the *_free method of this class, if any.
+ * "fn_type" is a reference to a function that described subclasses, if any.
+ * If "fn_type" is set, then "type_subclasses" maps the values returned
+ * by that function to the names of the corresponding subclasses.
  */
 struct isl_class {
 	string name;
+	string superclass_name;
+	string subclass_name;
 	RecordDecl *type;
 	set<FunctionDecl *> constructors;
 	map<string, set<FunctionDecl *> > methods;
+	map<int, string> type_subclasses;
+	FunctionDecl *fn_type;
 	FunctionDecl *fn_to_str;
 	FunctionDecl *fn_copy;
 	FunctionDecl *fn_dump;
 	FunctionDecl *fn_free;
 
+	/* Is this class a subclass based on a type function? */
+	bool is_type_subclass() const { return name != subclass_name; }
 	/* Return name of "fd" without type suffix, if any. */
 	static string name_without_type_suffix(FunctionDecl *fd);
 	/* Extract the method name corresponding to "fd". */
 	string method_name(FunctionDecl *fd) const {
 		string m_name = name_without_type_suffix(fd);
-		return m_name.substr(name.length() + 1);
+		return m_name.substr(subclass_name.length() + 1);
 	}
 };
 
@@ -54,7 +67,10 @@ public:
 	virtual ~generator() {};
 
 protected:
+	void add_subclass(RecordDecl *decl, const string &name,
+		const string &sub_name);
 	void add_class(RecordDecl *decl);
+	void add_type_subclasses(FunctionDecl *method);
 	isl_class *method2class(FunctionDecl *fd);
 	bool callback_takes_argument(ParmVarDecl *param, int pos);
 	FunctionDecl *find_by_name(const string &name, bool required);
@@ -62,6 +78,7 @@ public:
 	static void die(const char *msg) __attribute__((noreturn));
 	static void die(string msg) __attribute__((noreturn));
 	static vector<string> find_superclasses(Decl *decl);
+	static bool is_subclass(FunctionDecl *decl);
 	static bool is_overload(Decl *decl);
 	static bool is_constructor(Decl *decl);
 	static bool takes(Decl *decl);
