@@ -351,23 +351,6 @@ static enum isl_lp_result basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 	return res;
 }
 
-static __isl_give isl_mat *extract_divs(__isl_keep isl_basic_set *bset)
-{
-	int i;
-	isl_ctx *ctx = isl_basic_set_get_ctx(bset);
-	isl_mat *div;
-
-	div = isl_mat_alloc(ctx, bset->n_div,
-			    1 + 1 + isl_basic_set_total_dim(bset));
-	if (!div)
-		return NULL;
-
-	for (i = 0; i < bset->n_div; ++i)
-		isl_seq_cpy(div->row[i], bset->div[i], div->n_col);
-
-	return div;
-}
-
 enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 	__isl_keep isl_aff *obj, isl_int *opt)
 {
@@ -399,7 +382,7 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 	bset = isl_basic_set_copy(bset);
 	obj = isl_aff_copy(obj);
 
-	bset_div = extract_divs(bset);
+	bset_div = isl_basic_set_get_divs(bset);
 	exp1 = isl_alloc_array(ctx, int, bset_n_div);
 	exp2 = isl_alloc_array(ctx, int, obj_n_div);
 	if (!bset_div || (bset_n_div && !exp1) || (obj_n_div && !exp2))

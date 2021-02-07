@@ -41,6 +41,10 @@ isl_bool isl_local_space_div_is_marked_unknown(__isl_keep isl_local_space *ls,
 isl_bool isl_local_space_div_is_known(__isl_keep isl_local_space *ls, int div);
 isl_bool isl_local_space_divs_known(__isl_keep isl_local_space *ls);
 
+__isl_give isl_basic_set *isl_local_space_lift_basic_set(
+	__isl_take isl_local_space *ls, __isl_take isl_basic_set *bset);
+__isl_give isl_set *isl_local_space_lift_set(__isl_take isl_local_space *ls,
+	__isl_take isl_set *set);
 __isl_give isl_local_space *isl_local_space_substitute_equalities(
 	__isl_take isl_local_space *ls, __isl_take isl_basic_set *eq);
 

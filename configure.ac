@@ -64,6 +64,7 @@ gmp|imath|imath-32)
 esac
 
 AC_SUBST(MP_CPPFLAGS)
+AC_SUBST(MP_CFLAGS)
 AC_SUBST(MP_LDFLAGS)
 AC_SUBST(MP_LIBS)
 case "$with_int" in
@@ -75,7 +76,7 @@ imath|imath-32)
 	;;
 esac
 if test "x$with_int" = "ximath-32" -a "x$GCC" = "xyes"; then
-	MP_CPPFLAGS="-std=gnu99 $MP_CPPFLAGS"
+	MP_CFLAGS="-std=gnu99 $MP_CFLAGS"
 fi
 
 AM_CONDITIONAL(IMATH_FOR_MP, test x$with_int = ximath -o x$with_int = ximath-32)

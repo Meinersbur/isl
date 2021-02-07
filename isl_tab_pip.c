@@ -4753,7 +4753,7 @@ static isl_bool need_split_set(__isl_keep isl_set *set, __isl_keep isl_mat *cst)
 	return isl_bool_false;
 }
 
-/* Given a set of which the last set variable is the minimum
+/* Given a map of which the last input variable is the minimum
  * of the bounds in "cst", split each basic set in the set
  * in pieces where one of the bounds is (strictly) smaller than the others.
  * This subdivision is given in "min_expr".
@@ -4765,56 +4765,6 @@ static isl_bool need_split_set(__isl_keep isl_set *set, __isl_keep isl_mat *cst)
  * i.e., l <= m = min(a,b), then we can simply project out m
  * to obtain l <= a and l <= b, without having to split on whether
  * m is equal to a or b.
- */
-static __isl_give isl_set *split(__isl_take isl_set *empty,
-	__isl_take isl_set *min_expr, __isl_take isl_mat *cst)
-{
-	int n_in;
-	int i;
-	isl_space *dim;
-	isl_set *res;
-
-	if (!empty || !min_expr || !cst)
-		goto error;
-
-	n_in = isl_set_dim(empty, isl_dim_set);
-	dim = isl_set_get_space(empty);
-	dim = isl_space_drop_dims(dim, isl_dim_set, n_in - 1, 1);
-	res = isl_set_empty(dim);
-
-	for (i = 0; i < empty->n; ++i) {
-		isl_bool split;
-		isl_set *set;
-
-		set = isl_set_from_basic_set(isl_basic_set_copy(empty->p[i]));
-		split = need_split_basic_set(empty->p[i], cst);
-		if (split < 0)
-			set = isl_set_free(set);
-		else if (split)
-			set = isl_set_intersect(set, isl_set_copy(min_expr));
-		set = isl_set_remove_dims(set, isl_dim_set, n_in - 1, 1);
-
-		res = isl_set_union_disjoint(res, set);
-	}
-
-	isl_set_free(empty);
-	isl_set_free(min_expr);
-	isl_mat_free(cst);
-	return res;
-error:
-	isl_set_free(empty);
-	isl_set_free(min_expr);
-	isl_mat_free(cst);
-	return NULL;
-}
-
-/* Given a map of which the last input variable is the minimum
- * of the bounds in "cst", split each basic set in the set
- * in pieces where one of the bounds is (strictly) smaller than the others.
- * This subdivision is given in "min_expr".
- * The variable is subsequently projected out.
- *
- * The implementation is essentially the same as that of "split".
  */
 static __isl_give isl_map *split_domain(__isl_take isl_map *opt,
 	__isl_take isl_set *min_expr, __isl_take isl_mat *cst)
@@ -4857,6 +4807,24 @@ error:
 	isl_set_free(min_expr);
 	isl_mat_free(cst);
 	return NULL;
+}
+
+/* Given a set of which the last set variable is the minimum
+ * of the bounds in "cst", split each basic set in the set
+ * in pieces where one of the bounds is (strictly) smaller than the others.
+ * This subdivision is given in "min_expr".
+ * The variable is subsequently projected out.
+ */
+static __isl_give isl_set *split(__isl_take isl_set *empty,
+	__isl_take isl_set *min_expr, __isl_take isl_mat *cst)
+{
+	isl_map *map;
+
+	map = isl_map_from_domain(empty);
+	map = split_domain(map, min_expr, cst);
+	empty = isl_map_domain(map);
+
+	return empty;
 }
 
 static __isl_give isl_map *basic_map_partial_lexopt(

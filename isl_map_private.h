@@ -120,9 +120,6 @@ struct isl_map {
 __isl_give isl_basic_set *isl_basic_set_alloc(isl_ctx *ctx,
 	unsigned nparam, unsigned dim, unsigned extra,
 	unsigned n_eq, unsigned n_ineq);
-__isl_give isl_basic_set *isl_basic_set_extend(__isl_take isl_basic_set *base,
-	unsigned nparam, unsigned dim, unsigned extra,
-	unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_set *isl_basic_set_extend_constraints(
 	__isl_take isl_basic_set *base, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_set *isl_basic_set_finalize(
@@ -170,6 +167,7 @@ __isl_keep isl_space *isl_basic_map_peek_space(
 	__isl_keep const isl_basic_map *bmap);
 __isl_keep isl_space *isl_basic_set_peek_space(__isl_keep isl_basic_set *bset);
 __isl_keep isl_space *isl_map_peek_space(__isl_keep const isl_map *map);
+__isl_keep isl_space *isl_set_peek_space(__isl_keep isl_set *set);
 
 __isl_give isl_basic_set *isl_basic_set_reset_space(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *dim);
