@@ -242,3 +242,43 @@ error:
 	isl_printer_free(p);
 	return NULL;
 }
+
+/* Read an isl_id from "s" based on its name.
+ */
+__isl_give isl_id *isl_stream_read_id(__isl_keep isl_stream *s)
+{
+	struct isl_token *tok;
+	char *str;
+	isl_ctx *ctx;
+	isl_id *id;
+
+	if (!s)
+		return NULL;
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	ctx = isl_stream_get_ctx(s);
+	str = isl_token_get_str(ctx, tok);
+	isl_token_free(tok);
+	if (!str)
+		return NULL;
+	id = isl_id_alloc(ctx, str, NULL);
+	free(str);
+
+	return id;
+}
+
+/* Read an isl_id object from the string "str".
+ */
+__isl_give isl_id *isl_id_read_from_str(isl_ctx *ctx, const char *str)
+{
+	isl_id *id;
+	isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	id = isl_stream_read_id(s);
+	isl_stream_free(s);
+	return id;
+}

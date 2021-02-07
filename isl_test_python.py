@@ -370,6 +370,15 @@ def test_ast_build():
 	ast = build.node_from(schedule)
 	assert(count_ast_fail[0] == 2)
 
+# Test basic AST expression generation from an affine expression.
+#
+def test_ast_build_expr():
+	pa = isl.pw_aff("[n] -> { [n + 1] }")
+	build = isl.ast_build.from_context(pa.domain())
+
+	op = build.expr_from(pa)
+	assert(op.get_n_arg() == 2)
+
 # Test the isl Python interface
 #
 # This includes:
@@ -380,6 +389,7 @@ def test_ast_build():
 #  - Every functions
 #  - Schedule trees
 #  - AST generation
+#  - AST expression generation
 #
 test_constructors()
 test_parameters()
@@ -388,3 +398,4 @@ test_foreach()
 test_every()
 test_schedule_tree()
 test_ast_build()
+test_ast_build_expr();

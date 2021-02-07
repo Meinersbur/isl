@@ -3595,6 +3595,10 @@ dimensions is zero.
 
 Objects can be read from input using the following functions.
 
+	#include <isl/id.h>
+	__isl_give isl_id *isl_id_read_from_str(isl_ctx *ctx,
+		const char *str);
+
 	#include <isl/val.h>
 	__isl_give isl_val *isl_val_read_from_str(isl_ctx *ctx,
 		const char *str);
@@ -10070,9 +10074,14 @@ An C<isl_ast_expr_int> represents an integer value.
 Each type of expression has its own additional properties.
 
 	#include <isl/ast.h>
+	enum isl_ast_op_type isl_ast_expr_op_get_type(
+		__isl_keep isl_ast_expr *expr);
 	enum isl_ast_op_type isl_ast_expr_get_op_type(
 		__isl_keep isl_ast_expr *expr);
+	isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr);
 	isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
+	__isl_give isl_ast_expr *isl_ast_expr_op_get_arg(
+		__isl_keep isl_ast_expr *expr, int pos);
 	__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(
 		__isl_keep isl_ast_expr *expr, int pos);
 	isl_stat isl_ast_expr_foreach_ast_op_type(
@@ -10084,10 +10093,18 @@ Each type of expression has its own additional properties.
 		isl_stat (*fn)(enum isl_ast_op_type type,
 			void *user), void *user);
 
-C<isl_ast_expr_get_op_type> returns the type of the operation
-performed.  C<isl_ast_expr_get_op_n_arg> returns the number of
+C<isl_ast_expr_op_get_type> returns the type of the operation
+performed.  C<isl_ast_expr_op_get_n_arg> returns the number of
 arguments.  C<isl_ast_expr_get_op_arg> returns the specified
 argument.
+C<isl_ast_expr_get_op_type> is an alternative name for
+C<isl_ast_expr_op_get_type>.
+Similarly,
+C<isl_ast_expr_get_op_n_arg> is an alternative name for
+C<isl_ast_expr_op_get_n_arg> and
+C<isl_ast_expr_get_op_arg> is an alternative name for
+C<isl_ast_expr_op_get_arg>.
+
 C<isl_ast_expr_foreach_ast_op_type> calls C<fn> for each distinct
 C<isl_ast_op_type> that appears in C<expr>.
 C<isl_ast_node_foreach_ast_op_type> does the same for each distinct
@@ -10228,10 +10245,14 @@ the member of the structure being accessed.
 =back
 
 	#include <isl/ast.h>
+	__isl_give isl_id *isl_ast_expr_id_get_id(
+		__isl_keep isl_ast_expr *expr);
 	__isl_give isl_id *isl_ast_expr_get_id(
 		__isl_keep isl_ast_expr *expr);
 
 Return the identifier represented by the AST expression.
+C<isl_ast_expr_get_id> is an alternative name for
+C<isl_ast_expr_id_get_id>.
 
 	#include <isl/ast.h>
 	__isl_give isl_val *isl_ast_expr_int_get_val(
