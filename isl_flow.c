@@ -2975,21 +2975,27 @@ static int before_node(void *first, void *second)
 	isl_schedule_node *node1 = first;
 	isl_schedule_node *node2 = second;
 	isl_schedule_node *shared;
-	int depth;
+	isl_size depth;
 	int before = 0;
 
 	shared = isl_schedule_node_get_shared_ancestor(node1, node2);
-	if (!shared)
-		return -1;
-
 	depth = isl_schedule_node_get_schedule_depth(shared);
+	if (depth < 0) {
+		isl_schedule_node_free(shared);
+		return -1;
+	}
+
 	if (isl_schedule_node_get_type(shared) == isl_schedule_node_sequence) {
-		int pos1, pos2;
+		isl_size pos1, pos2;
 
 		pos1 = isl_schedule_node_get_ancestor_child_position(node1,
 								    shared);
 		pos2 = isl_schedule_node_get_ancestor_child_position(node2,
 								    shared);
+		if (pos1 < 0 || pos2 < 0) {
+			isl_schedule_node_free(shared);
+			return -1;
+		}
 		before = pos1 < pos2;
 	}
 
@@ -3008,7 +3014,7 @@ static isl_bool coscheduled_node(void *first, void *second)
 	isl_schedule_node *node1 = first;
 	isl_schedule_node *node2 = second;
 
-	return node1 == node2;
+	return isl_bool_ok(node1 == node2);
 }
 
 /* Add the scheduled sources from "data" that access

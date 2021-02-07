@@ -1,6 +1,9 @@
 #include "generator.h"
 
 class cpp_conversion_generator : public generator {
+	void convert(const isl_class &clazz, const char *from, const char *to,
+		const char *function);
+	void print(const isl_class &clazz);
 public:
 	cpp_conversion_generator(SourceManager &SM,
 		set<RecordDecl *> &exported_types,

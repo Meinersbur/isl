@@ -1113,8 +1113,7 @@ static isl_stat extract_node(__isl_take isl_set *set, void *user)
 	}
 
 	id = construct_compressed_id(set, &graph->node[graph->n]);
-	morph = isl_basic_set_variable_compression_with_id(hull,
-							    isl_dim_set, id);
+	morph = isl_basic_set_variable_compression_with_id(hull, id);
 	isl_id_free(id);
 	nvar = isl_morph_ran_dim(morph, isl_dim_set);
 	if (nvar < 0)
@@ -6463,7 +6462,7 @@ static isl_bool ok_to_merge_coincident(struct isl_clustering *c,
 
 	n_coincident = get_n_coincident(merge_graph);
 
-	return n_coincident >= max_coincident;
+	return isl_bool_ok(n_coincident >= max_coincident);
 }
 
 /* Return the transformation on "node" expressed by the current (and only)

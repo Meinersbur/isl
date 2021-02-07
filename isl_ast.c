@@ -278,13 +278,13 @@ enum isl_ast_op_type isl_ast_expr_get_op_type(__isl_keep isl_ast_expr *expr)
 	return expr->u.op.op;
 }
 
-int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
+isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
-		return -1;
+		return isl_size_error;
 	if (expr->type != isl_ast_expr_op)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"expression not an operation", return -1);
+			"expression not an operation", return isl_size_error);
 	return expr->u.op.n_arg;
 }
 
@@ -345,7 +345,7 @@ isl_bool isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 	case isl_ast_expr_int:
 		return isl_val_eq(expr1->u.v, expr2->u.v);
 	case isl_ast_expr_id:
-		return expr1->u.id == expr2->u.id;
+		return isl_bool_ok(expr1->u.id == expr2->u.id);
 	case isl_ast_expr_op:
 		if (expr1->u.op.op != expr2->u.op.op)
 			return isl_bool_false;
@@ -1130,7 +1130,7 @@ isl_bool isl_ast_node_for_is_degenerate(__isl_keep isl_ast_node *node)
 	if (node->type != isl_ast_node_for)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not a for node", return isl_bool_error);
-	return node->u.f.degenerate;
+	return isl_bool_ok(node->u.f.degenerate);
 }
 
 __isl_give isl_ast_expr *isl_ast_node_for_get_iterator(
@@ -1237,7 +1237,7 @@ isl_bool isl_ast_node_if_has_else(
 	if (node->type != isl_ast_node_if)
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not an if node", return isl_bool_error);
-	return node->u.i.else_node != NULL;
+	return isl_bool_ok(node->u.i.else_node != NULL);
 }
 
 __isl_give isl_ast_node *isl_ast_node_if_get_else(
@@ -1919,7 +1919,8 @@ static __isl_give isl_printer *print_ast_expr_isl(__isl_take isl_printer *p,
 static __isl_give isl_printer *print_arguments(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_ast_expr_get_op_n_arg(expr);
 	if (n < 0)

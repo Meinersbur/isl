@@ -2073,7 +2073,7 @@ static isl_bool context_tab_insert_div(struct isl_tab *tab, int pos,
 	if (!tab->samples)
 		return isl_bool_error;
 
-	return nonneg;
+	return isl_bool_ok(nonneg);
 }
 
 /* Add a div specified by "div" to both the main tableau and
@@ -4317,7 +4317,7 @@ static int find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
 	int i;
-	int b_v_div, d_v_div;
+	isl_size b_v_div, d_v_div;
 	isl_size n_div;
 
 	b_v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
@@ -4640,7 +4640,7 @@ static isl_bool parallel_constraints(__isl_keep isl_basic_map *bmap,
 	isl_hash_table_free(ctx, table);
 	free(occurrences);
 
-	return i < bmap->n_ineq;
+	return isl_bool_ok(i < bmap->n_ineq);
 error:
 	isl_hash_table_free(ctx, table);
 	free(occurrences);

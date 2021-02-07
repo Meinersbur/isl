@@ -27,14 +27,13 @@ public:
 
 	virtual void generate();
 private:
-	void print_file(ostream &os, std::string filename);
 	void print_forward_declarations(ostream &os);
 	void print_declarations(ostream &os);
 	void print_class(ostream &os, const isl_class &clazz);
 	void print_class_forward_decl(ostream &os, const isl_class &clazz);
 	void print_class_factory_decl(ostream &os, const isl_class &clazz,
 		const std::string &prefix = std::string());
-	void print_private_constructors_decl(ostream &os,
+	void print_protected_constructors_decl(ostream &os,
 		const isl_class &clazz);
 	void print_copy_assignment_decl(ostream &os, const isl_class &clazz);
 	void print_public_constructors_decl(ostream &os,
@@ -58,7 +57,7 @@ private:
 		const char *ptr);
 	void print_check_ptr_end(ostream &os, const char *ptr);
 	void print_class_factory_impl(ostream &os, const isl_class &clazz);
-	void print_private_constructors_impl(ostream &os,
+	void print_protected_constructors_impl(ostream &os,
 		const isl_class &clazz);
 	void print_public_constructors_impl(ostream &os,
 		const isl_class &clazz);
@@ -92,15 +91,16 @@ private:
 	string generate_callback_type(QualType type);
 	void print_wrapped_call_checked(std::ostream &os,
 		const std::string &call);
-	void print_wrapped_call(std::ostream &os, const std::string &call);
+	void print_wrapped_call(std::ostream &os, const std::string &call,
+		QualType rtype);
 	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
-	string type2cpp(const isl_class &clazz);
 	string type2cpp(QualType type);
 	bool is_implicit_conversion(const isl_class &clazz, FunctionDecl *cons);
 	bool is_subclass(QualType subclass_type, const isl_class &class_type);
 	function_kind get_method_kind(const isl_class &clazz,
 		FunctionDecl *method);
 public:
+	static string type2cpp(const isl_class &clazz);
 	static string type2cpp(string type_string);
 };

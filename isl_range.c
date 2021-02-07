@@ -76,7 +76,7 @@ static isl_bool has_sign(__isl_keep isl_basic_set *bset,
 		 isl_val_is_neginfty(opt))
 		r = isl_bool_false;
 	else
-		r = sign * isl_val_sgn(opt) >= 0;
+		r = isl_bool_ok(sign * isl_val_sgn(opt) >= 0);
 
 	isl_val_free(opt);
 

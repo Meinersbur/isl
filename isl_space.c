@@ -95,10 +95,13 @@ isl_stat isl_space_check_is_set(__isl_keep isl_space *space)
  */
 isl_bool isl_space_is_map(__isl_keep isl_space *space)
 {
+	int r;
+
 	if (!space)
 		return isl_bool_error;
-	return space->tuple_id[0] != &isl_id_none &&
-		space->tuple_id[1] != &isl_id_none;
+	r = space->tuple_id[0] != &isl_id_none &&
+	    space->tuple_id[1] != &isl_id_none;
+	return isl_bool_ok(r);
 }
 
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
@@ -148,11 +151,11 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
 	return space;
 }
 
-static int global_pos(__isl_keep isl_space *space,
+static isl_size global_pos(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
 	if (isl_space_check_range(space, type, pos, 1) < 0)
-		return -1;
+		return isl_size_error;
 
 	switch (type) {
 	case isl_dim_param:
@@ -162,9 +165,9 @@ static int global_pos(__isl_keep isl_space *space,
 	case isl_dim_out:
 		return pos + space->nparam + space->n_in;
 	default:
-		isl_assert(isl_space_get_ctx(space), 0, return -1);
+		isl_assert(isl_space_get_ctx(space), 0, return isl_size_error);
 	}
-	return -1;
+	return isl_size_error;
 }
 
 /* Extend length of ids array to the total number of dimensions.
@@ -205,7 +208,7 @@ error:
 static __isl_give isl_space *set_id(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
-	int gpos;
+	isl_size gpos;
 
 	space = isl_space_cow(space);
 
@@ -233,7 +236,7 @@ error:
 static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	int gpos;
+	isl_size gpos;
 
 	gpos = global_pos(space, type, pos);
 	if (gpos < 0)
@@ -424,7 +427,7 @@ isl_bool isl_space_has_tuple_id(__isl_keep isl_space *space,
 {
 	if (!space_can_have_id(space, type))
 		return isl_bool_error;
-	return space->tuple_id[type - isl_dim_in] != NULL;
+	return isl_bool_ok(space->tuple_id[type - isl_dim_in] != NULL);
 }
 
 __isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *space,
@@ -556,7 +559,7 @@ isl_bool isl_space_has_dim_id(__isl_keep isl_space *space,
 {
 	if (!space)
 		return isl_bool_error;
-	return get_id(space, type, pos) != NULL;
+	return isl_bool_ok(get_id(space, type, pos) != NULL);
 }
 
 __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
@@ -601,7 +604,7 @@ isl_bool isl_space_has_tuple_name(__isl_keep isl_space *space,
 	if (!space_can_have_id(space, type))
 		return isl_bool_error;
 	id = space->tuple_id[type - isl_dim_in];
-	return id && id->name;
+	return isl_bool_ok(id && id->name);
 }
 
 __isl_keep const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
@@ -645,7 +648,7 @@ isl_bool isl_space_has_dim_name(__isl_keep isl_space *space,
 	if (!space)
 		return isl_bool_error;
 	id = get_id(space, type, pos);
-	return id && id->name;
+	return isl_bool_ok(id && id->name);
 }
 
 __isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,
@@ -2165,7 +2168,7 @@ isl_bool isl_space_is_wrapping(__isl_keep isl_space *space)
 	if (!isl_space_is_set(space))
 		return isl_bool_false;
 
-	return space->nested[1] != NULL;
+	return isl_bool_ok(space->nested[1] != NULL);
 }
 
 /* Is "space" the space of a map where the domain is a wrapped map space?
@@ -2178,7 +2181,7 @@ isl_bool isl_space_domain_is_wrapping(__isl_keep isl_space *space)
 	if (isl_space_is_set(space))
 		return isl_bool_false;
 
-	return space->nested[0] != NULL;
+	return isl_bool_ok(space->nested[0] != NULL);
 }
 
 /* Is "space" the space of a map where the range is a wrapped map space?
@@ -2191,7 +2194,7 @@ isl_bool isl_space_range_is_wrapping(__isl_keep isl_space *space)
 	if (isl_space_is_set(space))
 		return isl_bool_false;
 
-	return space->nested[1] != NULL;
+	return isl_bool_ok(space->nested[1] != NULL);
 }
 
 /* Is "space" a product of two spaces?

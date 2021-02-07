@@ -30,6 +30,9 @@ private:
   friend boolean manage(isl_bool val);
   boolean(isl_bool val): val(val) {}
 public:
+  static boolean error() {
+    return boolean(isl_bool_error);
+  }
   boolean()
       : val(isl_bool_error) {}
   ~boolean() {
@@ -38,6 +41,13 @@ public:
 
   /* implicit */ boolean(bool val)
       : val(val ? isl_bool_true : isl_bool_false) {}
+
+  isl_bool release() {
+    auto tmp = val;
+    val = isl_bool_error;
+    checked = true;
+    return tmp;
+  }
 
   bool is_error() const { checked = true; return val == isl_bool_error; }
   bool is_false() const { checked = true; return val == isl_bool_false; }

@@ -178,9 +178,9 @@ __isl_give isl_map *isl_map_reset_space(__isl_take isl_map *map,
 __isl_give isl_map *isl_map_reset_equal_dim_space(__isl_take isl_map *map,
 	__isl_take isl_space *space);
 
-int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
+isl_size isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type);
-int isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
+isl_size isl_basic_set_var_offset(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type);
 unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
 					enum isl_dim_type type);
@@ -225,12 +225,16 @@ __isl_give isl_map *isl_map_alloc_space(__isl_take isl_space *dim, int n,
 
 int isl_basic_map_alloc_equality(struct isl_basic_map *bmap);
 int isl_basic_set_alloc_equality(struct isl_basic_set *bset);
-int isl_basic_set_free_inequality(struct isl_basic_set *bset, unsigned n);
-int isl_basic_map_free_equality(struct isl_basic_map *bmap, unsigned n);
-int isl_basic_set_free_equality(struct isl_basic_set *bset, unsigned n);
+__isl_give isl_basic_set *isl_basic_set_free_inequality(
+	__isl_take isl_basic_set *bset, unsigned n);
+__isl_give isl_basic_map *isl_basic_map_free_equality(
+	__isl_take isl_basic_map *bmap, unsigned n);
+__isl_give isl_basic_set *isl_basic_set_free_equality(
+	__isl_take isl_basic_set *bset, unsigned n);
 int isl_basic_set_alloc_inequality(__isl_keep isl_basic_set *bset);
 int isl_basic_map_alloc_inequality(__isl_keep isl_basic_map *bmap);
-int isl_basic_map_free_inequality(struct isl_basic_map *bmap, unsigned n);
+__isl_give isl_basic_map *isl_basic_map_free_inequality(
+	__isl_take isl_basic_map *bmap, unsigned n);
 int isl_basic_map_alloc_div(struct isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_insert_div(
 	__isl_take isl_basic_map *bmap, int pos, __isl_keep isl_vec *div);
@@ -258,6 +262,7 @@ __isl_give isl_basic_set *isl_basic_set_tighten_outward(
 __isl_give isl_basic_map *isl_inequality_negate(__isl_take isl_basic_map *bmap,
 	unsigned pos);
 
+isl_bool isl_basic_map_has_single_reference(__isl_keep isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_set_cow(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_map *isl_basic_map_cow(__isl_take isl_basic_map *bmap);
 __isl_give isl_set *isl_set_cow(__isl_take isl_set *set);
@@ -290,6 +295,10 @@ __isl_give isl_basic_set *isl_basic_set_sort_divs(
 __isl_give isl_basic_map *isl_basic_map_sort_divs(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_sort_divs(__isl_take isl_map *map);
+__isl_give isl_basic_map *isl_basic_map_gauss5(__isl_take isl_basic_map *bmap,
+	int *progress,
+	isl_stat (*swap)(unsigned a, unsigned b, void *user),
+	isl_stat (*drop)(unsigned n, void *user), void *user);
 __isl_give isl_basic_map *isl_basic_map_gauss(__isl_take isl_basic_map *bmap,
 	int *progress);
 __isl_give isl_basic_set *isl_basic_set_gauss(

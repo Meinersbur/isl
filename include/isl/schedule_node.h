@@ -49,15 +49,16 @@ __isl_give isl_schedule_node *isl_schedule_node_map_descendant_bottom_up(
 	__isl_give isl_schedule_node *(*fn)(__isl_take isl_schedule_node *node,
 		void *user), void *user);
 
-int isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node);
+isl_size isl_schedule_node_get_tree_depth(__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_parent(__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_children(__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_previous_sibling(
 	__isl_keep isl_schedule_node *node);
 isl_bool isl_schedule_node_has_next_sibling(__isl_keep isl_schedule_node *node);
 isl_size isl_schedule_node_n_children(__isl_keep isl_schedule_node *node);
-int isl_schedule_node_get_child_position(__isl_keep isl_schedule_node *node);
-int isl_schedule_node_get_ancestor_child_position(
+isl_size isl_schedule_node_get_child_position(
+	__isl_keep isl_schedule_node *node);
+isl_size isl_schedule_node_get_ancestor_child_position(
 	__isl_keep isl_schedule_node *node,
 	__isl_keep isl_schedule_node *ancestor);
 __isl_give isl_schedule_node *isl_schedule_node_get_child(
@@ -115,7 +116,7 @@ __isl_give isl_schedule_node *isl_schedule_node_band_set_ast_build_options(
 	__isl_take isl_schedule_node *node, __isl_take isl_union_set *options);
 __isl_give isl_set *isl_schedule_node_band_get_ast_isolate_option(
 	__isl_keep isl_schedule_node *node);
-unsigned isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node);
+isl_size isl_schedule_node_band_n_member(__isl_keep isl_schedule_node *node);
 __isl_export
 isl_bool isl_schedule_node_band_member_get_coincident(
 	__isl_keep isl_schedule_node *node, int pos);
@@ -165,7 +166,8 @@ __isl_give isl_set *isl_schedule_node_guard_get_guard(
 __isl_give isl_id *isl_schedule_node_mark_get_id(
 	__isl_keep isl_schedule_node *node);
 
-int isl_schedule_node_get_schedule_depth(__isl_keep isl_schedule_node *node);
+isl_size isl_schedule_node_get_schedule_depth(
+	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_get_domain(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_set *isl_schedule_node_get_universe_domain(

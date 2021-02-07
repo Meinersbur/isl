@@ -223,9 +223,9 @@ isl_bool isl_schedule_band_plain_is_equal(__isl_keep isl_schedule_band *band1,
 
 /* Return the number of scheduling dimensions in the band.
  */
-int isl_schedule_band_n_member(__isl_keep isl_schedule_band *band)
+isl_size isl_schedule_band_n_member(__isl_keep isl_schedule_band *band)
 {
-	return band ? band->n : 0;
+	return band ? band->n : isl_size_error;
 }
 
 /* Is the given scheduling dimension coincident within the band and
@@ -241,7 +241,7 @@ isl_bool isl_schedule_band_member_get_coincident(
 		isl_die(isl_schedule_band_get_ctx(band), isl_error_invalid,
 			"invalid member position", return isl_bool_error);
 
-	return band->coincident[pos];
+	return isl_bool_ok(band->coincident[pos]);
 }
 
 /* Mark the given scheduling dimension as being coincident or not
@@ -274,7 +274,7 @@ isl_bool isl_schedule_band_get_permutable(__isl_keep isl_schedule_band *band)
 {
 	if (!band)
 		return isl_bool_error;
-	return band->permutable;
+	return isl_bool_ok(band->permutable);
 }
 
 /* Mark the schedule band permutable or not according to "permutable"?

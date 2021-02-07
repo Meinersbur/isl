@@ -187,6 +187,40 @@ def test_foreach():
 		caught = True
 	assert(caught)
 
+# Test the functionality of "every" functions.
+#
+# In particular, test the generic functionality and
+# test that exceptions are properly propagated.
+#
+def test_every():
+	us = isl.union_set("{ A[i]; B[j] }")
+
+	def is_empty(s):
+		return s.is_empty()
+	assert(not us.every_set(is_empty))
+
+	def is_non_empty(s):
+		return not s.is_empty()
+	assert(us.every_set(is_non_empty))
+
+	def in_A(s):
+		return s.is_subset(isl.set("{ A[x] }"))
+	assert(not us.every_set(in_A))
+
+	def not_in_A(s):
+		return not s.is_subset(isl.set("{ A[x] }"))
+	assert(not us.every_set(not_in_A))
+
+	def fail(s):
+		raise "fail"
+
+	caught = False
+	try:
+		us.ever_set(fail)
+	except:
+		caught = True
+	assert(caught)
+
 # Test the isl Python interface
 #
 # This includes:
@@ -194,8 +228,10 @@ def test_foreach():
 #  - Different parameter types
 #  - Different return types
 #  - Foreach functions
+#  - Every functions
 #
 test_constructors()
 test_parameters()
 test_return()
 test_foreach()
+test_every()

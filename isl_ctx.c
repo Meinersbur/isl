@@ -19,7 +19,11 @@
  */
 isl_bool isl_bool_not(isl_bool b)
 {
-	return b < 0 ? isl_bool_error : !b;
+	if (b < 0)
+		return isl_bool_error;
+	if (b == isl_bool_false)
+		return isl_bool_true;
+	return isl_bool_false;
 }
 
 /* Create an isl_bool from an integer.

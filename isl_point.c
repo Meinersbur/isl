@@ -141,7 +141,7 @@ isl_bool isl_point_is_void(__isl_keep isl_point *pnt)
 	if (!pnt)
 		return isl_bool_error;
 
-	return pnt->vec->size == 0;
+	return isl_bool_ok(pnt->vec->size == 0);
 }
 
 /* Return the space of "pnt".
@@ -271,10 +271,10 @@ static isl_size isl_point_dim(__isl_keep isl_point *pnt, enum isl_dim_type type)
 /* Return the position of the coordinates of the given type
  * within the sequence of coordinates of "pnt".
  */
-static int isl_point_var_offset(__isl_keep isl_point *pnt,
+static isl_size isl_point_var_offset(__isl_keep isl_point *pnt,
 	enum isl_dim_type type)
 {
-	return pnt ? isl_space_offset(pnt->dim, type) : -1;
+	return pnt ? isl_space_offset(pnt->dim, type) : isl_size_error;
 }
 
 #undef TYPE
@@ -289,7 +289,7 @@ __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
 {
 	isl_ctx *ctx;
 	isl_val *v;
-	int off;
+	isl_size off;
 
 	if (!pnt)
 		return NULL;
@@ -327,6 +327,7 @@ __isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"expecting rational value", goto error);
 
+	pos += isl_space_offset(isl_point_peek_space(pnt), type);
 	if (isl_int_eq(pnt->vec->el[1 + pos], v->n) &&
 	    isl_int_eq(pnt->vec->el[0], v->d)) {
 		isl_val_free(v);
@@ -365,7 +366,7 @@ error:
 __isl_give isl_point *isl_point_add_ui(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, unsigned val)
 {
-	int off;
+	isl_size off;
 
 	if (!pnt || isl_point_is_void(pnt))
 		return pnt;
@@ -393,7 +394,7 @@ error:
 __isl_give isl_point *isl_point_sub_ui(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, unsigned val)
 {
-	int off;
+	isl_size off;
 
 	if (!pnt || isl_point_is_void(pnt))
 		return pnt;
@@ -679,6 +680,7 @@ static __isl_give isl_printer *print_coordinate(__isl_take isl_printer *p,
 {
 	isl_point *pnt = data->user;
 
+	pos += isl_space_offset(data->space, data->type);
 	p = isl_printer_print_isl_int(p, pnt->vec->el[1 + pos]);
 	if (!isl_int_is_one(pnt->vec->el[0])) {
 		p = isl_printer_print_str(p, "/");

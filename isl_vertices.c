@@ -247,7 +247,7 @@ static isl_bool is_independent(__isl_keep isl_mat *facets, int n, isl_int *f)
 	if (rank < 0)
 		return isl_bool_error;
 
-	return rank == n + 1;
+	return isl_bool_ok(rank == n + 1);
 }
 
 /* Check whether we can select constraint "level", given the current selection
@@ -977,9 +977,9 @@ isl_ctx *isl_vertex_get_ctx(__isl_keep isl_vertex *vertex)
 	return vertex ? isl_vertices_get_ctx(vertex->vertices) : NULL;
 }
 
-int isl_vertex_get_id(__isl_keep isl_vertex *vertex)
+isl_size isl_vertex_get_id(__isl_keep isl_vertex *vertex)
 {
-	return vertex ? vertex->id : -1;
+	return vertex ? vertex->id : isl_size_error;
 }
 
 /* Return the activity domain of the vertex "vertex".
@@ -1330,9 +1330,9 @@ isl_ctx *isl_vertices_get_ctx(__isl_keep isl_vertices *vertices)
 	return vertices ? vertices->bset->ctx : NULL;
 }
 
-int isl_vertices_get_n_vertices(__isl_keep isl_vertices *vertices)
+isl_size isl_vertices_get_n_vertices(__isl_keep isl_vertices *vertices)
 {
-	return vertices ? vertices->n_vertices : -1;
+	return vertices ? vertices->n_vertices : isl_size_error;
 }
 
 __isl_give isl_vertices *isl_morph_vertices(__isl_take isl_morph *morph,

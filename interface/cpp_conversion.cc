@@ -14,12 +14,15 @@
 #include "cpp_conversion.h"
 
 /* Print a function called "function" for converting objects of
- * type "name" from the "from" bindings to the "to" bindings.
+ * "clazz" from the "from" bindings to the "to" bindings.
  */
-static void convert(const char *name, const char *from, const char *to,
-	const char *function)
+void cpp_conversion_generator::convert(const isl_class &clazz,
+	const char *from, const char *to, const char *function)
 {
-	printf("%s%s %s(%s%s obj) {\n", to, name, function, from, name);
+	string name = cpp_generator::type2cpp(clazz);
+
+	printf("%s%s %s(%s%s obj) {\n",
+		to, name.c_str(), function, from, name.c_str());
 	printf("\t""return %s""manage(obj.copy());\n", to);
 	printf("}\n");
 	printf("\n");
@@ -40,12 +43,10 @@ static void convert(const char *name, const char *from, const char *to,
  *		return manage(obj.copy());
  *	}
  */
-static void print(const isl_class &clazz)
+void cpp_conversion_generator::print(const isl_class &clazz)
 {
-	string name = cpp_generator::type2cpp(clazz.name);
-
-	convert(name.c_str(), "", "checked::", "check");
-	convert(name.c_str(), "checked::", "", "uncheck");
+	convert(clazz, "", "checked::", "check");
+	convert(clazz, "checked::", "", "uncheck");
 }
 
 /* Generate conversion functions for converting objects between

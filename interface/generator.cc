@@ -89,15 +89,14 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions) :
 	SM(SM)
 {
-	map<string, isl_class>::iterator ci;
-
 	set<FunctionDecl *>::iterator in;
+	set<RecordDecl *>::iterator it;
+
 	for (in = functions.begin(); in != functions.end(); ++in) {
 		FunctionDecl *decl = *in;
 		functions_by_name[decl->getName()] = decl;
 	}
 
-	set<RecordDecl *>::iterator it;
 	for (it = exported_types.begin(); it != exported_types.end(); ++it) {
 		RecordDecl *decl = *it;
 		string name = decl->getName();
@@ -147,7 +146,7 @@ void generator::die(string msg)
  * is the one that is closest to the annotated type and the corresponding
  * type is then also the first that will appear in the sequence of types.
  */
-std::vector<string> generator::find_superclasses(RecordDecl *decl)
+std::vector<string> generator::find_superclasses(Decl *decl)
 {
 	vector<string> super;
 
@@ -206,7 +205,7 @@ bool generator::gives(Decl *decl)
 	return has_annotation(decl, "isl_give");
 }
 
-/* Return the class that has a name that matches the initial part
+/* Return the class that has a name that best matches the initial part
  * of the name of function "fd" or NULL if no such class could be found.
  */
 isl_class *generator::method2class(FunctionDecl *fd)
@@ -216,7 +215,8 @@ isl_class *generator::method2class(FunctionDecl *fd)
 	string name = fd->getNameAsString();
 
 	for (ci = classes.begin(); ci != classes.end(); ++ci) {
-		if (name.substr(0, ci->first.length()) == ci->first)
+		size_t len = ci->first.length();
+		if (len > best.length() && name.substr(0, len) == ci->first)
 			best = ci->first;
 	}
 

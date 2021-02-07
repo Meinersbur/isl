@@ -266,7 +266,7 @@ isl_bool FN(PW,IS_ZERO)(__isl_keep PW *pw)
 	if (!pw)
 		return isl_bool_error;
 
-	return pw->n == 0;
+	return isl_bool_ok(pw->n == 0);
 }
 
 #ifndef NO_REALIGN
@@ -2037,7 +2037,7 @@ isl_bool FN(PW,plain_is_equal)(__isl_keep PW *pw1, __isl_keep PW *pw2)
 	if (!pw1 || !pw2)
 		goto error;
 
-	equal = pw1->n == pw2->n;
+	equal = isl_bool_ok(pw1->n == pw2->n);
 	for (i = 0; equal && i < pw1->n; ++i) {
 		equal = isl_set_plain_is_equal(pw1->p[i].set, pw2->p[i].set);
 		if (equal < 0)

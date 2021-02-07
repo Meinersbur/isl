@@ -122,16 +122,29 @@ void python_generator::print_copy(QualType type)
  * The wrapper converts the arguments of the callback to python types,
  * taking a copy if the C callback does not take its arguments.
  * If any exception is thrown, the wrapper keeps track of it in exc_info[0]
- * and returns -1.  Otherwise the wrapper returns 0.
+ * and returns a value indicating an error.  Otherwise the wrapper
+ * returns a value indicating success.
+ * In case the C callback is expected to return an isl_stat,
+ * the error value is -1 and the success value is 0.
+ * In case the C callback is expected to return an isl_bool,
+ * the error value is -1 and the success value is 1 or 0 depending
+ * on the result of the Python callback.
+ * Otherwise, None is returned to indicate an error and
+ * a copy of the object in case of success.
  */
 void python_generator::print_callback(ParmVarDecl *param, int arg)
 {
 	QualType type = param->getOriginalType();
 	const FunctionProtoType *fn = extract_prototype(type);
+	QualType return_type = fn->getReturnType();
 	unsigned n_arg = fn->getNumArgs();
 
 	printf("        exc_info = [None]\n");
-	printf("        fn = CFUNCTYPE(c_int");
+	printf("        fn = CFUNCTYPE(");
+	if (is_isl_stat(return_type) || is_isl_bool(return_type))
+		printf("c_int");
+	else
+		printf("c_void_p");
 	for (unsigned i = 0; i < n_arg - 1; ++i) {
 		if (!is_isl_type(fn->getArgType(i)))
 			die("Argument has non-isl type");
@@ -155,7 +168,10 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 		printf("(cb_arg%d))\n", i);
 	}
 	printf("            try:\n");
-	printf("                arg%d(", arg);
+	if (is_isl_stat(return_type))
+		printf("                arg%d(", arg);
+	else
+		printf("                res = arg%d(", arg);
 	for (unsigned i = 0; i < n_arg - 1; ++i) {
 		if (i)
 			printf(", ");
@@ -165,8 +181,19 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 	printf("            except:\n");
 	printf("                import sys\n");
 	printf("                exc_info[0] = sys.exc_info()\n");
-	printf("                return -1\n");
-	printf("            return 0\n");
+	if (is_isl_stat(return_type) || is_isl_bool(return_type))
+		printf("                return -1\n");
+	else
+		printf("                return None\n");
+	if (is_isl_stat(return_type)) {
+		printf("            return 0\n");
+	} else if (is_isl_bool(return_type)) {
+		printf("            return 1 if res else 0\n");
+	} else {
+		printf("            return ");
+		print_copy(return_type);
+		printf("(res.ptr)\n");
+	}
 	printf("        cb = fn(cb_func)\n");
 }
 

@@ -8204,14 +8204,14 @@ and then iterating over all vertices that are active on the chamber.
 Other operations that can be performed on an C<isl_vertices> object are
 the following.
 
-	int isl_vertices_get_n_vertices(
+	isl_size isl_vertices_get_n_vertices(
 		__isl_keep isl_vertices *vertices);
 	__isl_null isl_vertices *isl_vertices_free(
 		__isl_take isl_vertices *vertices);
 
 Vertices can be inspected and destroyed using the following functions.
 
-	int isl_vertex_get_id(__isl_keep isl_vertex *vertex);
+	isl_size isl_vertex_get_id(__isl_keep isl_vertex *vertex);
 	__isl_give isl_basic_set *isl_vertex_get_domain(
 		__isl_keep isl_vertex *vertex);
 	__isl_give isl_multi_aff *isl_vertex_get_expr(
@@ -8644,11 +8644,11 @@ shared ancestor can be obtained using
 C<isl_schedule_node_get_shared_ancestor>.
 
 	#include <isl/schedule_node.h>
-	int isl_schedule_node_get_tree_depth(
+	isl_size isl_schedule_node_get_tree_depth(
 		__isl_keep isl_schedule_node *node);
-	int isl_schedule_node_get_child_position(
+	isl_size isl_schedule_node_get_child_position(
 		__isl_keep isl_schedule_node *node);
-	int isl_schedule_node_get_ancestor_child_position(
+	isl_size isl_schedule_node_get_ancestor_child_position(
 		__isl_keep isl_schedule_node *node,
 		__isl_keep isl_schedule_node *ancestor);
 	__isl_give isl_schedule_node *isl_schedule_node_get_child(
@@ -8790,7 +8790,7 @@ Several node types have their own functions for querying
 	__isl_give isl_union_map *
 	isl_schedule_node_band_get_partial_schedule_union_map(
 		__isl_keep isl_schedule_node *node);
-	unsigned isl_schedule_node_band_n_member(
+	isl_size isl_schedule_node_band_n_member(
 		__isl_keep isl_schedule_node *node);
 	isl_bool isl_schedule_node_band_member_get_coincident(
 		__isl_keep isl_schedule_node *node, int pos);
@@ -8957,7 +8957,7 @@ of C<isl_schedule_node_get_prefix_schedule_union_map> can be obtained
 using the following function.
 
 	#include <isl/schedule_node.h>
-	int isl_schedule_node_get_schedule_depth(
+	isl_size isl_schedule_node_get_schedule_depth(
 		__isl_keep isl_schedule_node *node);
 
 The following functions return the elements that reach the given node
@@ -10072,7 +10072,7 @@ Each type of expression has its own additional properties.
 	#include <isl/ast.h>
 	enum isl_ast_op_type isl_ast_expr_get_op_type(
 		__isl_keep isl_ast_expr *expr);
-	int isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
+	isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
 	__isl_give isl_ast_expr *isl_ast_expr_get_op_arg(
 		__isl_keep isl_ast_expr *expr, int pos);
 	isl_stat isl_ast_expr_foreach_ast_op_type(

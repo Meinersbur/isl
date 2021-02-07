@@ -164,9 +164,10 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	osprintf(os, "class %s {\n", cppname);
 	print_class_factory_decl(os, clazz, "  friend ");
 	osprintf(os, "\n");
+	osprintf(os, "protected:\n");
 	osprintf(os, "  %s *ptr = nullptr;\n", name);
 	osprintf(os, "\n");
-	print_private_constructors_decl(os, clazz);
+	print_protected_constructors_decl(os, clazz);
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
 	print_public_constructors_decl(os, clazz);
@@ -223,9 +224,9 @@ void cpp_generator::print_class_factory_decl(ostream &os,
 		cppname, name);
 }
 
-/* Print declarations of private constructors for class "clazz" to "os".
+/* Print declarations of protected constructors for class "clazz" to "os".
  *
- * Each class has currently one private constructor:
+ * Each class has currently one protected constructor:
  *
  * 	1) Constructor from a plain isl_* C pointer
  *
@@ -233,10 +234,10 @@ void cpp_generator::print_class_factory_decl(ostream &os,
  *
  * 	set(__isl_take isl_set *ptr);
  *
- * The raw pointer constructor is kept private. Object creation is only
+ * The raw pointer constructor is kept protected. Object creation is only
  * possible through manage() or manage_copy().
  */
-void cpp_generator::print_private_constructors_decl(ostream &os,
+void cpp_generator::print_protected_constructors_decl(ostream &os,
 	const isl_class &clazz)
 {
 	const char *name = clazz.name.c_str();
@@ -436,7 +437,7 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	print_public_constructors_impl(os, clazz);
 	osprintf(os, "\n");
-	print_private_constructors_impl(os, clazz);
+	print_protected_constructors_impl(os, clazz);
 	osprintf(os, "\n");
 	print_constructors_impl(os, clazz);
 	osprintf(os, "\n");
@@ -591,17 +592,17 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 	osprintf(os, "}\n");
 }
 
-/* Print implementations of private constructors for class "clazz" to "os".
+/* Print implementations of protected constructors for class "clazz" to "os".
  */
-void cpp_generator::print_private_constructors_impl(ostream &os,
+void cpp_generator::print_protected_constructors_impl(ostream &os,
 	const isl_class &clazz)
 {
 	const char *name = clazz.name.c_str();
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "%s::%s(__isl_take %s *ptr)\n    : ptr(ptr) {}\n",
-		 cppname, cppname, name);
+	osprintf(os, "%s::%s(__isl_take %s *ptr)\n", cppname, cppname, name);
+	osprintf(os, "    : ptr(ptr) {}\n");
 }
 
 /* Print implementations of public constructors for class "clazz" to "os".
@@ -619,9 +620,10 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "%s::%s()\n    : ptr(nullptr) {}\n\n", cppname, cppname);
-	osprintf(os, "%s::%s(const %s &obj)\n    : ptr(nullptr)\n",
-		 cppname, cppname, cppname);
+	osprintf(os, "%s::%s()\n", cppname, cppname);
+	osprintf(os, "    : ptr(nullptr) {}\n\n");
+	osprintf(os, "%s::%s(const %s &obj)\n", cppname, cppname, cppname);
+	osprintf(os, "    : ptr(nullptr)\n");
 	osprintf(os, "{\n");
 	print_check_ptr_start(os, clazz, "obj.ptr");
 	osprintf(os, "  ptr = obj.copy();\n");
@@ -832,7 +834,7 @@ void cpp_generator::print_method_param_use(ostream &os, ParmVarDecl *param,
 		return;
 	}
 
-	if (!load_from_this_ptr && !is_callback(type))
+	if (!load_from_this_ptr)
 		osprintf(os, "%s.", name_str);
 
 	if (keeps(param)) {
@@ -1304,17 +1306,18 @@ string cpp_generator::generate_callback_type(QualType type)
  *
  * In particular, print
  *
- *        stat ret = @call@;
+ *        auto ret = @call@;
  *        return ret.release();
  */
 void cpp_generator::print_wrapped_call_checked(ostream &os,
 	const string &call)
 {
-	osprintf(os, "    stat ret = %s;\n", call.c_str());
+	osprintf(os, "    auto ret = %s;\n", call.c_str());
 	osprintf(os, "    return ret.release();\n");
 }
 
-/* Print the call to the C++ callback function "call", wrapped
+/* Print the call to the C++ callback function "call",
+ * with return type "rtype", wrapped
  * for use inside the lambda function that is used as the C callback function.
  *
  * In particular, print
@@ -1326,6 +1329,24 @@ void cpp_generator::print_wrapped_call_checked(ostream &os,
  *          data->eptr = std::current_exception();
  *          return isl_stat_error;
  *        }
+ * or
+ *        ISL_CPP_TRY {
+ *          auto ret = @call@;
+ *          return ret ? isl_bool_true : isl_bool_false;
+ *        } ISL_CPP_CATCH_ALL {
+ *          data->eptr = std::current_exception();
+ *          return isl_bool_error;
+ *        }
+ * or
+ *        ISL_CPP_TRY {
+ *          auto ret = @call@;
+ *          return ret.release();
+ *        } ISL_CPP_CATCH_ALL {
+ *          data->eptr = std::current_exception();
+ *          return NULL;
+ *        }
+ *
+ * depending on the return type.
  *
  * where ISL_CPP_TRY is defined to "try" and ISL_CPP_CATCH_ALL to "catch (...)"
  * (if exceptions are available).
@@ -1333,17 +1354,32 @@ void cpp_generator::print_wrapped_call_checked(ostream &os,
  * If checked C++ bindings are being generated, then
  * the call is wrapped differently.
  */
-void cpp_generator::print_wrapped_call(ostream &os, const string &call)
+void cpp_generator::print_wrapped_call(ostream &os, const string &call,
+	QualType rtype)
 {
 	if (checked)
 		return print_wrapped_call_checked(os, call);
 
 	osprintf(os, "    ISL_CPP_TRY {\n");
-	osprintf(os, "      %s;\n", call.c_str());
-	osprintf(os, "      return isl_stat_ok;\n");
+	if (is_isl_stat(rtype))
+		osprintf(os, "      %s;\n", call.c_str());
+	else
+		osprintf(os, "      auto ret = %s;\n", call.c_str());
+	if (is_isl_stat(rtype))
+		osprintf(os, "      return isl_stat_ok;\n");
+	else if (is_isl_bool(rtype))
+		osprintf(os,
+			"      return ret ? isl_bool_true : isl_bool_false;\n");
+	else
+		osprintf(os, "      return ret.release();\n");
 	osprintf(os, "    } ISL_CPP_CATCH_ALL {\n"
 		     "      data->eptr = std::current_exception();\n");
-	osprintf(os, "      return isl_stat_error;\n");
+	if (is_isl_stat(rtype))
+		osprintf(os, "      return isl_stat_error;\n");
+	else if (is_isl_bool(rtype))
+		osprintf(os, "      return isl_bool_error;\n");
+	else
+		osprintf(os, "      return NULL;\n");
 	osprintf(os, "    }\n");
 }
 
@@ -1400,7 +1436,7 @@ void cpp_generator::print_wrapped_call(ostream &os, const string &call)
 void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 {
 	string pname;
-	QualType ptype;
+	QualType ptype, rtype;
 	string call, c_args, cpp_args, rettype, last_idx;
 	const FunctionProtoType *callback;
 	int num_params;
@@ -1412,7 +1448,8 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	cpp_args = generate_callback_type(ptype);
 
 	callback = extract_prototype(ptype);
-	rettype = callback->getReturnType().getAsString();
+	rtype = callback->getReturnType();
+	rettype = rtype.getAsString();
 	num_params = callback->getNumArgs();
 
 	last_idx = ::to_string(num_params - 1);
@@ -1439,7 +1476,7 @@ void cpp_generator::print_callback_local(ostream &os, ParmVarDecl *param)
 	osprintf(os,
 		 "    auto *data = static_cast<struct %s_data *>(arg_%s);\n",
 		 pname.c_str(), last_idx.c_str());
-	print_wrapped_call(os, call);
+	print_wrapped_call(os, call, rtype);
 	osprintf(os, "  };\n");
 }
 

@@ -443,7 +443,7 @@ isl_bool isl_constraint_is_lower_bound(__isl_keep isl_constraint *constraint,
 		return isl_bool_error;
 
 	pos += isl_local_space_offset(constraint->ls, type);
-	return isl_int_is_pos(constraint->v->el[pos]);
+	return isl_bool_ok(isl_int_is_pos(constraint->v->el[pos]));
 }
 
 /* Does the given constraint represent an upper bound on the given
@@ -456,7 +456,7 @@ isl_bool isl_constraint_is_upper_bound(__isl_keep isl_constraint *constraint,
 		return isl_bool_error;
 
 	pos += isl_local_space_offset(constraint->ls, type);
-	return isl_int_is_neg(constraint->v->el[pos]);
+	return isl_bool_ok(isl_int_is_neg(constraint->v->el[pos]));
 }
 
 const char *isl_constraint_get_dim_name(__isl_keep isl_constraint *constraint,
@@ -659,7 +659,7 @@ isl_bool isl_constraint_is_equality(struct isl_constraint *constraint)
 {
 	if (!constraint)
 		return isl_bool_error;
-	return constraint->eq;
+	return isl_bool_ok(constraint->eq);
 }
 
 isl_bool isl_constraint_is_div_constraint(__isl_keep isl_constraint *constraint)
@@ -1158,7 +1158,7 @@ isl_stat isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
 	isl_basic_set *context = NULL;
 	unsigned abs_pos;
 	int n_lower, n_upper;
-	int off;
+	isl_size off;
 
 	if (isl_basic_set_check_range(bset, type, pos, 1) < 0)
 		return isl_stat_error;

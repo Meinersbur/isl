@@ -682,7 +682,7 @@ static __isl_give isl_pw_aff_list *upper_bounds(
  * If the list contains exactly one element, then the returned isl_ast_expr
  * simply computes that affine expression.
  * If the list contains more than one element, then we sort it
- * using a fairly abitrary but hopefully reasonably stable order.
+ * using a fairly arbitrary but hopefully reasonably stable order.
  */
 static __isl_give isl_ast_expr *reduce_list(enum isl_ast_op_type type,
 	__isl_keep isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
@@ -2383,7 +2383,7 @@ static __isl_give isl_constraint *at_offset(int depth, __isl_keep isl_aff *aff,
 	return isl_equality_from_aff(aff);
 }
 
-/* Update *user to the number of integer divsions in the first element
+/* Update *user to the number of integer divisions in the first element
  * of "ma", if it is larger than the current value.
  */
 static isl_stat update_n_div(__isl_take isl_set *set,
@@ -4331,8 +4331,12 @@ static isl_bool after_in_band(__isl_keep isl_union_map *umap,
 	isl_space *space;
 	isl_bool empty;
 	isl_bool after;
+	isl_size n;
 
-	if (isl_schedule_node_band_n_member(node) == 0)
+	n = isl_schedule_node_band_n_member(node);
+	if (n < 0)
+		return isl_bool_error;
+	if (n == 0)
 		return after_in_child(umap, node);
 
 	mupa = isl_schedule_node_band_get_partial_schedule(node);
@@ -4736,7 +4740,7 @@ static isl_bool any_scheduled_after(int i, int j, void *user)
 			return after;
 	}
 
-	return data->group_coscheduled;
+	return isl_bool_ok(data->group_coscheduled);
 }
 
 /* Look for independent components at the current depth and generate code
@@ -5192,11 +5196,13 @@ static __isl_give isl_ast_graft_list *build_ast_from_band(
 	isl_union_map *extra_umap;
 	isl_ast_graft_list *list;
 	isl_size n1, n2;
+	isl_size n;
 
-	if (!build || !node || !executed)
+	n = isl_schedule_node_band_n_member(node);
+	if (!build || n < 0 || !executed)
 		goto error;
 
-	if (isl_schedule_node_band_n_member(node) == 0)
+	if (n == 0)
 		return build_ast_from_child(build, node, executed);
 
 	extra = isl_schedule_node_band_get_partial_schedule(node);
@@ -5316,9 +5322,12 @@ static __isl_give isl_ast_graft_list *build_ast_from_context(
 	isl_multi_aff *internal2input;
 	isl_ast_build *sub_build;
 	isl_ast_graft_list *list;
-	int n, depth;
+	isl_size n;
+	isl_size depth;
 
 	depth = isl_schedule_node_get_tree_depth(node);
+	if (depth < 0)
+		build = isl_ast_build_free(build);
 	space = isl_ast_build_get_space(build, 1);
 	context = isl_schedule_node_context_get_context(node);
 	context = isl_set_align_params(context, space);
