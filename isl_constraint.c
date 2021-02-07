@@ -385,7 +385,7 @@ __isl_give isl_local_space *isl_constraint_get_local_space(
 	return constraint ? isl_local_space_copy(constraint->ls) : NULL;
 }
 
-int isl_constraint_dim(struct isl_constraint *constraint,
+int isl_constraint_dim(__isl_keep isl_constraint *constraint,
 	enum isl_dim_type type)
 {
 	if (!constraint)
@@ -600,10 +600,6 @@ __isl_give isl_constraint *isl_constraint_set_coefficient(
 			"position out of bounds",
 			return isl_constraint_free(constraint));
 
-	constraint = isl_constraint_cow(constraint);
-	if (!constraint)
-		return NULL;
-
 	constraint->v = isl_vec_cow(constraint->v);
 	if (!constraint->v)
 		return isl_constraint_free(constraint);
@@ -654,10 +650,6 @@ __isl_give isl_constraint *isl_constraint_set_coefficient_si(
 		isl_die(constraint->v->ctx, isl_error_invalid,
 			"position out of bounds",
 			return isl_constraint_free(constraint));
-
-	constraint = isl_constraint_cow(constraint);
-	if (!constraint)
-		return NULL;
 
 	constraint->v = isl_vec_cow(constraint->v);
 	if (!constraint->v)

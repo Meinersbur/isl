@@ -29,50 +29,50 @@ __isl_give isl_space *isl_point_get_space(__isl_keep isl_point *pnt)
 	return isl_space_copy(isl_point_peek_space(pnt));
 }
 
-__isl_give isl_point *isl_point_alloc(__isl_take isl_space *dim,
+__isl_give isl_point *isl_point_alloc(__isl_take isl_space *space,
 	__isl_take isl_vec *vec)
 {
 	struct isl_point *pnt;
 
-	if (!dim || !vec)
+	if (!space || !vec)
 		goto error;
 
-	if (vec->size > 1 + isl_space_dim(dim, isl_dim_all)) {
+	if (vec->size > 1 + isl_space_dim(space, isl_dim_all)) {
 		vec = isl_vec_cow(vec);
 		if (!vec)
 			goto error;
-		vec->size = 1 + isl_space_dim(dim, isl_dim_all);
+		vec->size = 1 + isl_space_dim(space, isl_dim_all);
 	}
 
-	pnt = isl_alloc_type(dim->ctx, struct isl_point);
+	pnt = isl_alloc_type(space->ctx, struct isl_point);
 	if (!pnt)
 		goto error;
 
 	pnt->ref = 1;
-	pnt->dim = dim;
+	pnt->dim = space;
 	pnt->vec = vec;
 
 	return pnt;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_vec_free(vec);
 	return NULL;
 }
 
-__isl_give isl_point *isl_point_zero(__isl_take isl_space *dim)
+__isl_give isl_point *isl_point_zero(__isl_take isl_space *space)
 {
 	isl_vec *vec;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	vec = isl_vec_alloc(dim->ctx, 1 + isl_space_dim(dim, isl_dim_all));
+	vec = isl_vec_alloc(space->ctx, 1 + isl_space_dim(space, isl_dim_all));
 	if (!vec)
 		goto error;
 	isl_int_set_si(vec->el[0], 1);
 	isl_seq_clr(vec->el + 1, vec->size - 1);
-	return isl_point_alloc(dim, vec);
+	return isl_point_alloc(space, vec);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -123,12 +123,12 @@ __isl_null isl_point *isl_point_free(__isl_take isl_point *pnt)
 	return NULL;
 }
 
-__isl_give isl_point *isl_point_void(__isl_take isl_space *dim)
+__isl_give isl_point *isl_point_void(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	return isl_point_alloc(dim, isl_vec_alloc(dim->ctx, 0));
+	return isl_point_alloc(space, isl_vec_alloc(space->ctx, 0));
 }
 
 isl_bool isl_point_is_void(__isl_keep isl_point *pnt)

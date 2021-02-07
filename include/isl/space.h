@@ -60,8 +60,8 @@ isl_bool isl_space_has_dim_id(__isl_keep isl_space *dim,
 __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *dim,
 	enum isl_dim_type type, unsigned pos);
 
-int isl_space_find_dim_by_id(__isl_keep isl_space *dim, enum isl_dim_type type,
-	__isl_keep isl_id *id);
+int isl_space_find_dim_by_id(__isl_keep isl_space *space,
+	enum isl_dim_type type, __isl_keep isl_id *id);
 int isl_space_find_dim_by_name(__isl_keep isl_space *space,
 	enum isl_dim_type type, const char *name);
 
@@ -105,7 +105,7 @@ __isl_give isl_space *isl_space_map_from_set(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_map_from_domain_and_range(
 	__isl_take isl_space *domain, __isl_take isl_space *range);
 __isl_give isl_space *isl_space_reverse(__isl_take isl_space *dim);
-__isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned first, unsigned num);
 ISL_DEPRECATED
 __isl_give isl_space *isl_space_drop_inputs(__isl_take isl_space *dim,
@@ -160,15 +160,15 @@ isl_bool isl_space_tuple_is_equal(__isl_keep isl_space *space1,
 ISL_DEPRECATED
 isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2);
-unsigned isl_space_dim(__isl_keep isl_space *dim, enum isl_dim_type type);
+unsigned isl_space_dim(__isl_keep isl_space *space, enum isl_dim_type type);
 
 __isl_give isl_space *isl_space_flatten_domain(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *space);
 
 __isl_give char *isl_space_to_str(__isl_keep isl_space *space);
 __isl_give isl_printer *isl_printer_print_space(__isl_take isl_printer *p,
-	__isl_keep isl_space *dim);
-void isl_space_dump(__isl_keep isl_space *dim);
+	__isl_keep isl_space *space);
+void isl_space_dump(__isl_keep isl_space *space);
 
 #if defined(__cplusplus)
 }

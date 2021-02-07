@@ -593,119 +593,6 @@ error:
 	return NULL;
 }
 
-#ifndef NO_IDENTITY
-/* Create a multi expression in the given space that maps each
- * input dimension to the corresponding output dimension.
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),identity)(__isl_take isl_space *space)
-{
-	int i, n;
-	isl_local_space *ls;
-	MULTI(BASE) *multi;
-
-	if (!space)
-		return NULL;
-
-	if (isl_space_is_set(space))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"expecting map space", goto error);
-
-	n = isl_space_dim(space, isl_dim_out);
-	if (n != isl_space_dim(space, isl_dim_in))
-		isl_die(isl_space_get_ctx(space), isl_error_invalid,
-			"number of input and output dimensions needs to be "
-			"the same", goto error);
-
-	multi = FN(MULTI(BASE),alloc)(isl_space_copy(space));
-
-	if (!n) {
-		isl_space_free(space);
-		return multi;
-	}
-
-	space = isl_space_domain(space);
-	ls = isl_local_space_from_space(space);
-
-	for (i = 0; i < n; ++i) {
-		EL *el;
-		el = FN(EL,var_on_domain)(isl_local_space_copy(ls),
-						isl_dim_set, i);
-		multi = FN(FN(MULTI(BASE),set),BASE)(multi, i, el);
-	}
-
-	isl_local_space_free(ls);
-
-	return multi;
-error:
-	isl_space_free(space);
-	return NULL;
-}
-#endif
-
-#ifndef NO_ZERO
-/* Construct a multi expression in the given space with value zero in
- * each of the output dimensions.
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
-{
-	int n;
-	MULTI(BASE) *multi;
-
-	if (!space)
-		return NULL;
-
-	n = isl_space_dim(space , isl_dim_out);
-	multi = FN(MULTI(BASE),alloc)(isl_space_copy(space));
-
-	if (!n)
-		isl_space_free(space);
-	else {
-		int i;
-		isl_local_space *ls;
-		EL *el;
-
-		space = isl_space_domain(space);
-		ls = isl_local_space_from_space(space);
-		el = FN(EL,zero_on_domain)(ls);
-
-		for (i = 0; i < n; ++i)
-			multi = FN(FN(MULTI(BASE),set),BASE)(multi, i,
-							    FN(EL,copy)(el));
-
-		FN(EL,free)(el);
-	}
-
-	return multi;
-}
-#endif
-
-#ifndef NO_FROM_BASE
-/* Create a multiple expression with a single output/set dimension
- * equal to "el".
- * For most multiple expression types, the base type has a single
- * output/set dimension and the space of the result is therefore
- * the same as the space of the input.
- * In the case of isl_multi_union_pw_aff, however, the base type
- * lives in a parameter space and we therefore need to add
- * a single set dimension.
- */
-__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),BASE)(__isl_take EL *el)
-{
-	isl_space *space;
-	MULTI(BASE) *multi;
-
-	space = FN(EL,get_space(el));
-	if (isl_space_is_params(space)) {
-		space = isl_space_set_from_params(space);
-		space = isl_space_add_dims(space, isl_dim_set, 1);
-	}
-	multi = FN(MULTI(BASE),alloc)(space);
-	multi = FN(FN(MULTI(BASE),set),BASE)(multi, 0, el);
-
-	return multi;
-}
-#endif
-
 __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)
@@ -931,69 +818,6 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),factor_range)(
 	return multi;
 }
 
-#ifndef NO_PRODUCT
-/* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) [A -> C] -> [B -> D].
- *
- * The parameters are assumed to have been aligned.
- *
- * If "multi1" and/or "multi2" has an explicit domain, then
- * intersect the domain of the result with these explicit domains.
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),product_aligned)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
-{
-	int i;
-	EL *el;
-	isl_space *space;
-	MULTI(BASE) *res;
-	int in1, in2, out1, out2;
-
-	in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
-	in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
-	out1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
-	out2 = FN(MULTI(BASE),dim)(multi2, isl_dim_out);
-	space = isl_space_product(FN(MULTI(BASE),get_space)(multi1),
-				  FN(MULTI(BASE),get_space)(multi2));
-	res = FN(MULTI(BASE),alloc)(isl_space_copy(space));
-	space = isl_space_domain(space);
-
-	for (i = 0; i < out1; ++i) {
-		el = FN(FN(MULTI(BASE),get),BASE)(multi1, i);
-		el = FN(EL,insert_dims)(el, isl_dim_in, in1, in2);
-		el = FN(EL,reset_domain_space)(el, isl_space_copy(space));
-		res = FN(FN(MULTI(BASE),set),BASE)(res, i, el);
-	}
-
-	for (i = 0; i < out2; ++i) {
-		el = FN(FN(MULTI(BASE),get),BASE)(multi2, i);
-		el = FN(EL,insert_dims)(el, isl_dim_in, 0, in1);
-		el = FN(EL,reset_domain_space)(el, isl_space_copy(space));
-		res = FN(FN(MULTI(BASE),set),BASE)(res, out1 + i, el);
-	}
-
-	if (FN(MULTI(BASE),has_explicit_domain)(multi1) ||
-	    FN(MULTI(BASE),has_explicit_domain)(multi2))
-		res = FN(MULTI(BASE),intersect_explicit_domain_product)(res,
-								multi1, multi2);
-
-	isl_space_free(space);
-	FN(MULTI(BASE),free)(multi1);
-	FN(MULTI(BASE),free)(multi2);
-	return res;
-}
-
-/* Given two MULTI(BASE)s A -> B and C -> D,
- * construct a MULTI(BASE) [A -> C] -> [B -> D].
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),product)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
-{
-	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
-					&FN(MULTI(BASE),product_aligned));
-}
-#endif
-
 __isl_give MULTI(BASE) *FN(MULTI(BASE),flatten_range)(
 	__isl_take MULTI(BASE) *multi)
 {
@@ -1068,60 +892,6 @@ error:
 	return NULL;
 }
 
-#ifndef NO_SPLICE
-/* Given two multi expressions, "multi1"
- *
- *	[A1 A2] -> [B1 B2]
- *
- * where A2 starts at position "in_pos" and B2 starts at position "out_pos",
- * and "multi2"
- *
- *	[C] -> [D]
- *
- * return the multi expression
- *
- *	[A1 C A2] -> [B1 D B2]
- *
- * We first insert input dimensions to obtain
- *
- *	[A1 C A2] -> [B1 B2]
- *
- * and
- *
- *	[A1 C A2] -> [D]
- *
- * and then apply range_splice.
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),splice)(
-	__isl_take MULTI(BASE) *multi1, unsigned in_pos, unsigned out_pos,
-	__isl_take MULTI(BASE) *multi2)
-{
-	unsigned n_in1;
-	unsigned n_in2;
-
-	if (!multi1 || !multi2)
-		goto error;
-
-	n_in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
-	if (in_pos > n_in1)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi1), isl_error_invalid,
-			"index out of bounds", goto error);
-
-	n_in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
-
-	multi1 = FN(MULTI(BASE),insert_dims)(multi1, isl_dim_in, in_pos, n_in2);
-	multi2 = FN(MULTI(BASE),insert_dims)(multi2, isl_dim_in, n_in2,
-						n_in1 - in_pos);
-	multi2 = FN(MULTI(BASE),insert_dims)(multi2, isl_dim_in, 0, in_pos);
-
-	return FN(MULTI(BASE),range_splice)(multi1, out_pos, multi2);
-error:
-	FN(MULTI(BASE),free)(multi1);
-	FN(MULTI(BASE),free)(multi2);
-	return NULL;
-}
-#endif
-
 /* Check that "multi1" and "multi2" live in the same space,
  * reporting an error if they do not.
  */
@@ -1185,7 +955,7 @@ error:
 	return NULL;
 }
 
-/* Add "multi2" from "multi1" and return the result.
+/* Add "multi2" to "multi1" and return the result.
  *
  * The parameters of "multi1" and "multi2" are assumed to have been aligned.
  */
@@ -1195,7 +965,7 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),add_aligned)(
 	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,add));
 }
 
-/* Add "multi2" from "multi1" and return the result.
+/* Add "multi2" to "multi1" and return the result.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),add)(__isl_take MULTI(BASE) *multi1,
 	__isl_take MULTI(BASE) *multi2)
@@ -1408,69 +1178,6 @@ error:
 	return FN(MULTI(BASE),free)(multi);
 }
 
-#ifndef NO_MOVE_DIMS
-/* Move the "n" dimensions of "src_type" starting at "src_pos" of "multi"
- * to dimensions of "dst_type" at "dst_pos".
- *
- * We only support moving input dimensions to parameters and vice versa.
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
-	enum isl_dim_type dst_type, unsigned dst_pos,
-	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
-{
-	int i;
-
-	if (!multi)
-		return NULL;
-
-	if (n == 0 &&
-	    !isl_space_is_named_or_nested(multi->space, src_type) &&
-	    !isl_space_is_named_or_nested(multi->space, dst_type))
-		return multi;
-
-	if (dst_type == isl_dim_out || src_type == isl_dim_out)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"cannot move output/set dimension",
-			return FN(MULTI(BASE),free)(multi));
-	if (dst_type == isl_dim_div || src_type == isl_dim_div)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"cannot move divs",
-			return FN(MULTI(BASE),free)(multi));
-	if (src_pos + n > isl_space_dim(multi->space, src_type))
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"range out of bounds",
-			return FN(MULTI(BASE),free)(multi));
-	if (dst_type == src_type)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_unsupported,
-			"moving dims within the same type not supported",
-			return FN(MULTI(BASE),free)(multi));
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	multi->space = isl_space_move_dims(multi->space, dst_type, dst_pos,
-						src_type, src_pos, n);
-	if (!multi->space)
-		return FN(MULTI(BASE),free)(multi);
-	if (FN(MULTI(BASE),has_explicit_domain)(multi))
-		multi = FN(MULTI(BASE),move_explicit_domain_dims)(multi,
-				dst_type, dst_pos, src_type, src_pos, n);
-	if (!multi)
-		return NULL;
-
-	for (i = 0; i < multi->n; ++i) {
-		multi->u.p[i] = FN(EL,move_dims)(multi->u.p[i],
-						dst_type, dst_pos,
-						src_type, src_pos, n);
-		if (!multi->u.p[i])
-			return FN(MULTI(BASE),free)(multi);
-	}
-
-	return multi;
-}
-#endif
-
 /* Convert a multiple expression defined over a parameter domain
  * into one that is defined over a zero-dimensional set.
  */
@@ -1545,39 +1252,6 @@ isl_bool FN(MULTI(BASE),involves_nan)(__isl_keep MULTI(BASE) *multi)
 	return isl_bool_false;
 }
 
-#ifndef NO_DOMAIN
-/* Return the shared domain of the elements of "multi".
- *
- * If "multi" has an explicit domain, then return this domain.
- */
-__isl_give isl_set *FN(MULTI(BASE),domain)(__isl_take MULTI(BASE) *multi)
-{
-	int i;
-	isl_set *dom;
-
-	if (!multi)
-		return NULL;
-
-	if (FN(MULTI(BASE),has_explicit_domain)(multi)) {
-		dom = FN(MULTI(BASE),get_explicit_domain)(multi);
-		FN(MULTI(BASE),free)(multi);
-		return dom;
-	}
-
-	dom = isl_set_universe(FN(MULTI(BASE),get_domain_space)(multi));
-	for (i = 0; i < multi->n; ++i) {
-		isl_set *dom_i;
-
-		dom_i = FN(EL,domain)(FN(FN(MULTI(BASE),get),BASE)(multi, i));
-		dom = isl_set_intersect(dom, dom_i);
-	}
-
-	FN(MULTI(BASE),free)(multi);
-	return dom;
-}
-#endif
-
-#ifndef NO_NEG
 /* Return the opposite of "multi".
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),neg)(__isl_take MULTI(BASE) *multi)
@@ -1596,4 +1270,3 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),neg)(__isl_take MULTI(BASE) *multi)
 
 	return multi;
 }
-#endif

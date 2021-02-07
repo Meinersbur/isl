@@ -1720,16 +1720,16 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	isl_union_map *umap;
 
 	if (!tree)
-		return NULL;
+		return isl_union_map_free(outer);
 
 	ctx = isl_schedule_tree_get_ctx(tree);
 	if (!tree->children)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return NULL);
+			"missing children", return isl_union_map_free(outer));
 	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return NULL);
+			"missing children", return isl_union_map_free(outer));
 
 	separate = n > 1 && (tree->type == isl_schedule_node_sequence ||
 			    isl_options_get_schedule_separate_components(ctx));
@@ -2618,16 +2618,20 @@ error:
 
 /* Are any members in "band" marked coincident?
  */
-static int any_coincident(__isl_keep isl_schedule_band *band)
+static isl_bool any_coincident(__isl_keep isl_schedule_band *band)
 {
 	int i, n;
 
 	n = isl_schedule_band_n_member(band);
-	for (i = 0; i < n; ++i)
-		if (isl_schedule_band_member_get_coincident(band, i))
-			return 1;
+	for (i = 0; i < n; ++i) {
+		isl_bool coincident;
 
-	return 0;
+		coincident = isl_schedule_band_member_get_coincident(band, i);
+		if (coincident < 0 || coincident)
+			return coincident;
+	}
+
+	return isl_bool_false;
 }
 
 /* Print the band node "band" to "p".
@@ -2641,6 +2645,7 @@ static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 {
 	isl_union_set *options;
 	int empty;
+	isl_bool coincident;
 
 	p = isl_printer_print_str(p, "schedule");
 	p = isl_printer_yaml_next(p);
@@ -2653,7 +2658,10 @@ static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_int(p, 1);
 	}
-	if (any_coincident(band)) {
+	coincident = any_coincident(band);
+	if (coincident < 0)
+		return isl_printer_free(p);
+	if (coincident) {
 		int i, n;
 		int style;
 

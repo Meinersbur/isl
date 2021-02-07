@@ -313,7 +313,8 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 			*progress = 1;
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
 		isl_seq_normalize(bmap->ctx, bmap->ineq[k], 1 + total);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	}
 
 	for (k = 0; k < bmap->n_div; ++k) {
@@ -336,7 +337,6 @@ static void eliminate_var_using_equality(struct isl_basic_map *bmap,
 			normalize_div_expression(bmap, k);
 		} else
 			isl_seq_clr(bmap->div[k], 1 + total);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	}
 }
 
@@ -536,7 +536,6 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
 	isl_int_set(bmap->div[div][0], bmap->eq[eq][o_div + div]);
 	if (progress)
 		*progress = 1;
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 
 	return bmap;
 }
@@ -1620,7 +1619,6 @@ __isl_give isl_basic_map *isl_basic_map_eliminate_vars(
 				break;
 		}
 	}
-	ISL_F_CLR(bmap, ISL_BASIC_MAP_NORMALIZED);
 	if (need_gauss)
 		bmap = isl_basic_map_gauss(bmap, NULL);
 	return bmap;
@@ -3897,7 +3895,7 @@ static int is_zero_or_one(isl_int v)
  * If so, we return b so that "a + m b" can be replaced by
  * a single div "c = a + m b".
  */
-static int div_find_coalesce(struct isl_basic_map *bmap, int *pairs,
+static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	unsigned div, unsigned l, unsigned u)
 {
 	int i, j;

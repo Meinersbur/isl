@@ -1127,36 +1127,36 @@ __isl_give struct isl_upoly *isl_upoly_pow(__isl_take struct isl_upoly *up,
 	return res;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *space,
 	unsigned n_div, __isl_take struct isl_upoly *up)
 {
 	struct isl_qpolynomial *qp = NULL;
 	unsigned total;
 
-	if (!dim || !up)
+	if (!space || !up)
 		goto error;
 
-	if (!isl_space_is_set(dim))
-		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"domain of polynomial should be a set", goto error);
 
-	total = isl_space_dim(dim, isl_dim_all);
+	total = isl_space_dim(space, isl_dim_all);
 
-	qp = isl_calloc_type(dim->ctx, struct isl_qpolynomial);
+	qp = isl_calloc_type(space->ctx, struct isl_qpolynomial);
 	if (!qp)
 		goto error;
 
 	qp->ref = 1;
-	qp->div = isl_mat_alloc(dim->ctx, n_div, 1 + 1 + total + n_div);
+	qp->div = isl_mat_alloc(space->ctx, n_div, 1 + 1 + total + n_div);
 	if (!qp->div)
 		goto error;
 
-	qp->dim = dim;
+	qp->dim = space;
 	qp->upoly = up;
 
 	return qp;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_upoly_free(up);
 	isl_qpolynomial_free(qp);
 	return NULL;
@@ -1760,56 +1760,57 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(
-	__isl_take isl_space *dim)
+	__isl_take isl_space *domain)
 {
-	if (!dim)
+	if (!domain)
 		return NULL;
-	return isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
+	return isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(
-	__isl_take isl_space *dim)
+	__isl_take isl_space *domain)
 {
-	if (!dim)
+	if (!domain)
 		return NULL;
-	return isl_qpolynomial_alloc(dim, 0, isl_upoly_one(dim->ctx));
+	return isl_qpolynomial_alloc(domain, 0, isl_upoly_one(domain->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(
-	__isl_take isl_space *dim)
+	__isl_take isl_space *domain)
 {
-	if (!dim)
+	if (!domain)
 		return NULL;
-	return isl_qpolynomial_alloc(dim, 0, isl_upoly_infty(dim->ctx));
+	return isl_qpolynomial_alloc(domain, 0, isl_upoly_infty(domain->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(
-	__isl_take isl_space *dim)
+	__isl_take isl_space *domain)
 {
-	if (!dim)
+	if (!domain)
 		return NULL;
-	return isl_qpolynomial_alloc(dim, 0, isl_upoly_neginfty(dim->ctx));
+	return isl_qpolynomial_alloc(domain, 0,
+					isl_upoly_neginfty(domain->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(
-	__isl_take isl_space *dim)
+	__isl_take isl_space *domain)
 {
-	if (!dim)
+	if (!domain)
 		return NULL;
-	return isl_qpolynomial_alloc(dim, 0, isl_upoly_nan(dim->ctx));
+	return isl_qpolynomial_alloc(domain, 0, isl_upoly_nan(domain->ctx));
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_cst_on_domain(
-	__isl_take isl_space *dim,
+	__isl_take isl_space *domain,
 	isl_int v)
 {
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
-	if (!dim)
+	if (!domain)
 		return NULL;
 
-	qp = isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
+	qp = isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
 	if (!qp)
 		return NULL;
 
@@ -2081,33 +2082,35 @@ void isl_qpolynomial_get_den(__isl_keep isl_qpolynomial *qp, isl_int *d)
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_var_pow_on_domain(
-	__isl_take isl_space *dim, int pos, int power)
+	__isl_take isl_space *domain, int pos, int power)
 {
 	struct isl_ctx *ctx;
 
-	if (!dim)
+	if (!domain)
 		return NULL;
 
-	ctx = dim->ctx;
+	ctx = domain->ctx;
 
-	return isl_qpolynomial_alloc(dim, 0, isl_upoly_var_pow(ctx, pos, power));
+	return isl_qpolynomial_alloc(domain, 0,
+					isl_upoly_var_pow(ctx, pos, power));
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(__isl_take isl_space *dim,
-	enum isl_dim_type type, unsigned pos)
+__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
+	__isl_take isl_space *domain, enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!domain)
 		return NULL;
 
-	isl_assert(dim->ctx, isl_space_dim(dim, isl_dim_in) == 0, goto error);
-	isl_assert(dim->ctx, pos < isl_space_dim(dim, type), goto error);
+	isl_assert(domain->ctx,
+		isl_space_dim(domain, isl_dim_in) == 0, goto error);
+	isl_assert(domain->ctx, pos < isl_space_dim(domain, type), goto error);
 
 	if (type == isl_dim_set)
-		pos += isl_space_dim(dim, isl_dim_param);
+		pos += isl_space_dim(domain, isl_dim_param);
 
-	return isl_qpolynomial_var_pow_on_domain(dim, pos, 1);
+	return isl_qpolynomial_var_pow_on_domain(domain, pos, 1);
 error:
-	isl_space_free(dim);
+	isl_space_free(domain);
 	return NULL;
 }
 
@@ -2439,15 +2442,15 @@ error:
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_rat_cst_on_domain(
-	__isl_take isl_space *dim, const isl_int n, const isl_int d)
+	__isl_take isl_space *domain, const isl_int n, const isl_int d)
 {
 	struct isl_qpolynomial *qp;
 	struct isl_upoly_cst *cst;
 
-	if (!dim)
+	if (!domain)
 		return NULL;
 
-	qp = isl_qpolynomial_alloc(dim, 0, isl_upoly_zero(dim->ctx));
+	qp = isl_qpolynomial_alloc(domain, 0, isl_upoly_zero(domain->ctx));
 	if (!qp)
 		return NULL;
 
@@ -3332,19 +3335,19 @@ error:
 	return NULL;
 }
 
-__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_space *dim,
-	isl_int *f, isl_int denom)
+__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(
+	__isl_take isl_space *space, isl_int *f, isl_int denom)
 {
 	struct isl_upoly *up;
 
-	dim = isl_space_domain(dim);
-	if (!dim)
+	space = isl_space_domain(space);
+	if (!space)
 		return NULL;
 
-	up = isl_upoly_from_affine(dim->ctx, f, denom,
-					1 + isl_space_dim(dim, isl_dim_all));
+	up = isl_upoly_from_affine(space->ctx, f, denom,
+					1 + isl_space_dim(space, isl_dim_all));
 
-	return isl_qpolynomial_alloc(dim, 0, up);
+	return isl_qpolynomial_alloc(space, 0, up);
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_from_aff(__isl_take isl_aff *aff)
@@ -3724,31 +3727,31 @@ error:
 	return NULL;
 }
 
-__isl_give isl_term *isl_term_alloc(__isl_take isl_space *dim,
+__isl_give isl_term *isl_term_alloc(__isl_take isl_space *space,
 	__isl_take isl_mat *div)
 {
 	isl_term *term;
 	int n;
 
-	if (!dim || !div)
+	if (!space || !div)
 		goto error;
 
-	n = isl_space_dim(dim, isl_dim_all) + div->n_row;
+	n = isl_space_dim(space, isl_dim_all) + div->n_row;
 
-	term = isl_calloc(dim->ctx, struct isl_term,
+	term = isl_calloc(space->ctx, struct isl_term,
 			sizeof(struct isl_term) + (n - 1) * sizeof(int));
 	if (!term)
 		goto error;
 
 	term->ref = 1;
-	term->dim = dim;
+	term->dim = space;
 	term->div = div;
 	isl_int_init(term->n);
 	isl_int_init(term->d);
 	
 	return term;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_mat_free(div);
 	return NULL;
 }
@@ -3797,19 +3800,21 @@ __isl_give isl_term *isl_term_cow(__isl_take isl_term *term)
 	return isl_term_dup(term);
 }
 
-void isl_term_free(__isl_take isl_term *term)
+__isl_null isl_term *isl_term_free(__isl_take isl_term *term)
 {
 	if (!term)
-		return;
+		return NULL;
 
 	if (--term->ref > 0)
-		return;
+		return NULL;
 
 	isl_space_free(term->dim);
 	isl_mat_free(term->div);
 	isl_int_clear(term->n);
 	isl_int_clear(term->d);
 	free(term);
+
+	return NULL;
 }
 
 unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type)
@@ -3999,17 +4004,17 @@ error:
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
-	__isl_take isl_space *dim)
+	__isl_take isl_space *space)
 {
 	int i;
 	int extra;
 	unsigned total;
 
-	if (!qp || !dim)
+	if (!qp || !space)
 		goto error;
 
-	if (isl_space_is_equal(qp->dim, dim)) {
-		isl_space_free(dim);
+	if (isl_space_is_equal(qp->dim, space)) {
+		isl_space_free(space);
 		return qp;
 	}
 
@@ -4017,7 +4022,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 	if (!qp)
 		goto error;
 
-	extra = isl_space_dim(dim, isl_dim_set) -
+	extra = isl_space_dim(space, isl_dim_set) -
 			isl_space_dim(qp->dim, isl_dim_set);
 	total = isl_space_dim(qp->dim, isl_dim_all);
 	if (qp->div->n_row) {
@@ -4040,11 +4045,11 @@ __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
 		isl_seq_clr(qp->div->row[i] + 2 + total, extra);
 
 	isl_space_free(qp->dim);
-	qp->dim = dim;
+	qp->dim = space;
 
 	return qp;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_qpolynomial_free(qp);
 	return NULL;
 }
@@ -4303,18 +4308,18 @@ struct isl_split_periods_data {
  *	f - m v >= 0
  *	-f + m v + (m - 1) >= 0
  */
-static __isl_give isl_set *set_div_slice(__isl_take isl_space *dim,
+static __isl_give isl_set *set_div_slice(__isl_take isl_space *space,
 	__isl_keep isl_qpolynomial *qp, int div, isl_int v)
 {
 	int total;
 	isl_basic_set *bset = NULL;
 	int k;
 
-	if (!dim || !qp)
+	if (!space || !qp)
 		goto error;
 
-	total = isl_space_dim(dim, isl_dim_all);
-	bset = isl_basic_set_alloc_space(isl_space_copy(dim), 0, 0, 2);
+	total = isl_space_dim(space, isl_dim_all);
+	bset = isl_basic_set_alloc_space(isl_space_copy(space), 0, 0, 2);
 
 	k = isl_basic_set_alloc_inequality(bset);
 	if (k < 0)
@@ -4330,11 +4335,11 @@ static __isl_give isl_set *set_div_slice(__isl_take isl_space *dim,
 	isl_int_add(bset->ineq[k][0], bset->ineq[k][0], qp->div->row[div][0]);
 	isl_int_sub_ui(bset->ineq[k][0], bset->ineq[k][0], 1);
 
-	isl_space_free(dim);
+	isl_space_free(space);
 	return isl_set_from_basic_set(bset);
 error:
 	isl_basic_set_free(bset);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 

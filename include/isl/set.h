@@ -95,7 +95,8 @@ __isl_null isl_basic_set *isl_basic_set_free(__isl_take isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_copy(__isl_keep isl_basic_set *bset);
 __isl_give isl_basic_set *isl_basic_set_empty(__isl_take isl_space *space);
 __isl_give isl_basic_set *isl_basic_set_universe(__isl_take isl_space *space);
-__isl_give isl_basic_set *isl_basic_set_nat_universe(__isl_take isl_space *dim);
+__isl_give isl_basic_set *isl_basic_set_nat_universe(
+	__isl_take isl_space *space);
 __isl_give isl_basic_set *isl_basic_set_positive_orthant(
 	__isl_take isl_space *space);
 void isl_basic_set_print_internal(__isl_keep isl_basic_set *bset,
@@ -212,8 +213,8 @@ __isl_give isl_set *isl_basic_set_union(
 		__isl_take isl_basic_set *bset1,
 		__isl_take isl_basic_set *bset2);
 
-int isl_basic_set_compare_at(struct isl_basic_set *bset1,
-	struct isl_basic_set *bset2, int pos);
+int isl_basic_set_compare_at(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2, int pos);
 int isl_set_follows_at(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2, int pos);
 

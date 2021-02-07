@@ -115,7 +115,7 @@ static void delete_row(struct isl_basic_set *bset, unsigned row)
  *		A[i][col] = B[i][col] = a * old(B[i][col])
  */
 static void construct_column(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
+	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	int r;
@@ -151,7 +151,7 @@ static void construct_column(
  *	A[i][col] = B[i][col] = old(A[t][col]*B[i][col]-A[i][col]*B[t][col])
  */
 static int transform_column(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2,
+	__isl_keep isl_basic_set *bset1, __isl_keep isl_basic_set *bset2,
 	unsigned row, unsigned col)
 {
 	int i, t;
@@ -192,8 +192,8 @@ static int transform_column(
  * except that the echelon form we use starts from the last column
  * and that we are dealing with integer coefficients.
  */
-static struct isl_basic_set *affine_hull(
-	struct isl_basic_set *bset1, struct isl_basic_set *bset2)
+static __isl_give isl_basic_set *affine_hull(
+	__isl_take isl_basic_set *bset1, __isl_take isl_basic_set *bset2)
 {
 	unsigned total;
 	int col;
@@ -476,7 +476,8 @@ static __isl_give isl_basic_set *initialize_hull(__isl_keep isl_basic_set *bset,
  * we check if there is any point on a hyperplane parallel to the
  * corresponding hyperplane shifted by at least one (in either direction).
  */
-static struct isl_basic_set *uset_affine_hull_bounded(struct isl_basic_set *bset)
+static __isl_give isl_basic_set *uset_affine_hull_bounded(
+	__isl_take isl_basic_set *bset)
 {
 	struct isl_vec *sample = NULL;
 	struct isl_basic_set *hull;

@@ -133,104 +133,104 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam)
 	return space;
 }
 
-static unsigned global_pos(__isl_keep isl_space *dim,
+static unsigned global_pos(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	struct isl_ctx *ctx = dim->ctx;
+	struct isl_ctx *ctx = space->ctx;
 
 	switch (type) {
 	case isl_dim_param:
-		isl_assert(ctx, pos < dim->nparam,
-			    return isl_space_dim(dim, isl_dim_all));
+		isl_assert(ctx, pos < space->nparam,
+			    return isl_space_dim(space, isl_dim_all));
 		return pos;
 	case isl_dim_in:
-		isl_assert(ctx, pos < dim->n_in,
-			    return isl_space_dim(dim, isl_dim_all));
-		return pos + dim->nparam;
+		isl_assert(ctx, pos < space->n_in,
+			    return isl_space_dim(space, isl_dim_all));
+		return pos + space->nparam;
 	case isl_dim_out:
-		isl_assert(ctx, pos < dim->n_out,
-			    return isl_space_dim(dim, isl_dim_all));
-		return pos + dim->nparam + dim->n_in;
+		isl_assert(ctx, pos < space->n_out,
+			    return isl_space_dim(space, isl_dim_all));
+		return pos + space->nparam + space->n_in;
 	default:
-		isl_assert(ctx, 0, return isl_space_dim(dim, isl_dim_all));
+		isl_assert(ctx, 0, return isl_space_dim(space, isl_dim_all));
 	}
-	return isl_space_dim(dim, isl_dim_all);
+	return isl_space_dim(space, isl_dim_all);
 }
 
 /* Extend length of ids array to the total number of dimensions.
  */
-static __isl_give isl_space *extend_ids(__isl_take isl_space *dim)
+static __isl_give isl_space *extend_ids(__isl_take isl_space *space)
 {
 	isl_id **ids;
 	int i;
 
-	if (isl_space_dim(dim, isl_dim_all) <= dim->n_id)
-		return dim;
+	if (isl_space_dim(space, isl_dim_all) <= space->n_id)
+		return space;
 
-	if (!dim->ids) {
-		dim->ids = isl_calloc_array(dim->ctx,
-				isl_id *, isl_space_dim(dim, isl_dim_all));
-		if (!dim->ids)
+	if (!space->ids) {
+		space->ids = isl_calloc_array(space->ctx,
+				isl_id *, isl_space_dim(space, isl_dim_all));
+		if (!space->ids)
 			goto error;
 	} else {
-		ids = isl_realloc_array(dim->ctx, dim->ids,
-				isl_id *, isl_space_dim(dim, isl_dim_all));
+		ids = isl_realloc_array(space->ctx, space->ids,
+				isl_id *, isl_space_dim(space, isl_dim_all));
 		if (!ids)
 			goto error;
-		dim->ids = ids;
-		for (i = dim->n_id; i < isl_space_dim(dim, isl_dim_all); ++i)
-			dim->ids[i] = NULL;
+		space->ids = ids;
+		for (i = space->n_id; i < isl_space_dim(space, isl_dim_all); ++i)
+			space->ids[i] = NULL;
 	}
 
-	dim->n_id = isl_space_dim(dim, isl_dim_all);
+	space->n_id = isl_space_dim(space, isl_dim_all);
 
-	return dim;
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
-static __isl_give isl_space *set_id(__isl_take isl_space *dim,
+static __isl_give isl_space *set_id(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
-	dim = isl_space_cow(dim);
+	space = isl_space_cow(space);
 
-	if (!dim)
+	if (!space)
 		goto error;
 
-	pos = global_pos(dim, type, pos);
-	if (pos == isl_space_dim(dim, isl_dim_all))
+	pos = global_pos(space, type, pos);
+	if (pos == isl_space_dim(space, isl_dim_all))
 		goto error;
 
-	if (pos >= dim->n_id) {
+	if (pos >= space->n_id) {
 		if (!id)
-			return dim;
-		dim = extend_ids(dim);
-		if (!dim)
+			return space;
+		space = extend_ids(space);
+		if (!space)
 			goto error;
 	}
 
-	dim->ids[pos] = id;
+	space->ids[pos] = id;
 
-	return dim;
+	return space;
 error:
 	isl_id_free(id);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
-static __isl_keep isl_id *get_id(__isl_keep isl_space *dim,
+static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	pos = global_pos(dim, type, pos);
-	if (pos == isl_space_dim(dim, isl_dim_all))
+	pos = global_pos(space, type, pos);
+	if (pos == isl_space_dim(space, isl_dim_all))
 		return NULL;
-	if (pos >= dim->n_id)
+	if (pos >= space->n_id)
 		return NULL;
-	return dim->ids[pos];
+	return space->ids[pos];
 }
 
 static unsigned offset(__isl_keep isl_space *dim, enum isl_dim_type type)
@@ -243,22 +243,23 @@ static unsigned offset(__isl_keep isl_space *dim, enum isl_dim_type type)
 	}
 }
 
-static unsigned n(__isl_keep isl_space *dim, enum isl_dim_type type)
+static unsigned n(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	switch (type) {
-	case isl_dim_param:	return dim->nparam;
-	case isl_dim_in:	return dim->n_in;
-	case isl_dim_out:	return dim->n_out;
-	case isl_dim_all:	return dim->nparam + dim->n_in + dim->n_out;
+	case isl_dim_param:	return space->nparam;
+	case isl_dim_in:	return space->n_in;
+	case isl_dim_out:	return space->n_out;
+	case isl_dim_all:
+		return space->nparam + space->n_in + space->n_out;
 	default:		return 0;
 	}
 }
 
-unsigned isl_space_dim(__isl_keep isl_space *dim, enum isl_dim_type type)
+unsigned isl_space_dim(__isl_keep isl_space *space, enum isl_dim_type type)
 {
-	if (!dim)
+	if (!space)
 		return 0;
-	return n(dim, type);
+	return n(space, type);
 }
 
 unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type)
@@ -641,20 +642,20 @@ __isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *dim,
 	return id ? id->name : NULL;
 }
 
-int isl_space_find_dim_by_id(__isl_keep isl_space *dim, enum isl_dim_type type,
-	__isl_keep isl_id *id)
+int isl_space_find_dim_by_id(__isl_keep isl_space *space,
+	enum isl_dim_type type, __isl_keep isl_id *id)
 {
 	int i;
 	int offset;
 	int n;
 
-	if (!dim || !id)
+	if (!space || !id)
 		return -1;
 
-	offset = isl_space_offset(dim, type);
-	n = isl_space_dim(dim, type);
-	for (i = 0; i < n && offset + i < dim->n_id; ++i)
-		if (dim->ids[offset + i] == id)
+	offset = isl_space_offset(space, type);
+	n = isl_space_dim(space, type);
+	for (i = 0; i < n && offset + i < space->n_id; ++i)
+		if (space->ids[offset + i] == id)
 			return i;
 
 	return -1;
@@ -1702,67 +1703,67 @@ error:
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_drop_dims(__isl_take isl_space *space,
 	enum isl_dim_type type, unsigned first, unsigned num)
 {
 	int i;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
 	if (num == 0)
-		return isl_space_reset(dim, type);
+		return isl_space_reset(space, type);
 
 	if (!valid_dim_type(type))
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"cannot drop dimensions of specified type", goto error);
 
-	if (first + num > n(dim, type) || first + num < first)
-		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
-			"index out of bounds", return isl_space_free(dim));
-	dim = isl_space_cow(dim);
-	if (!dim)
+	if (first + num > n(space, type) || first + num < first)
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
+			"index out of bounds", return isl_space_free(space));
+	space = isl_space_cow(space);
+	if (!space)
 		goto error;
-	if (dim->ids) {
-		dim = extend_ids(dim);
-		if (!dim)
+	if (space->ids) {
+		space = extend_ids(space);
+		if (!space)
 			goto error;
 		for (i = 0; i < num; ++i)
-			isl_id_free(get_id(dim, type, first + i));
-		for (i = first+num; i < n(dim, type); ++i)
-			set_id(dim, type, i - num, get_id(dim, type, i));
+			isl_id_free(get_id(space, type, first + i));
+		for (i = first+num; i < n(space, type); ++i)
+			set_id(space, type, i - num, get_id(space, type, i));
 		switch (type) {
 		case isl_dim_param:
-			get_ids(dim, isl_dim_in, 0, dim->n_in,
-				dim->ids + offset(dim, isl_dim_in) - num);
+			get_ids(space, isl_dim_in, 0, space->n_in,
+				space->ids + offset(space, isl_dim_in) - num);
 		case isl_dim_in:
-			get_ids(dim, isl_dim_out, 0, dim->n_out,
-				dim->ids + offset(dim, isl_dim_out) - num);
+			get_ids(space, isl_dim_out, 0, space->n_out,
+				space->ids + offset(space, isl_dim_out) - num);
 		default:
 			;
 		}
-		dim->n_id -= num;
+		space->n_id -= num;
 	}
 	switch (type) {
-	case isl_dim_param:	dim->nparam -= num; break;
-	case isl_dim_in:	dim->n_in -= num; break;
-	case isl_dim_out:	dim->n_out -= num; break;
+	case isl_dim_param:	space->nparam -= num; break;
+	case isl_dim_in:	space->n_in -= num; break;
+	case isl_dim_out:	space->n_out -= num; break;
 	default:		;
 	}
-	dim = isl_space_reset(dim, type);
+	space = isl_space_reset(space, type);
 	if (type == isl_dim_param) {
-		if (dim && dim->nested[0] &&
-		    !(dim->nested[0] = isl_space_drop_dims(dim->nested[0],
+		if (space && space->nested[0] &&
+		    !(space->nested[0] = isl_space_drop_dims(space->nested[0],
 						    isl_dim_param, first, num)))
 			goto error;
-		if (dim && dim->nested[1] &&
-		    !(dim->nested[1] = isl_space_drop_dims(dim->nested[1],
+		if (space && space->nested[1] &&
+		    !(space->nested[1] = isl_space_drop_dims(space->nested[1],
 						    isl_dim_param, first, num)))
 			goto error;
 	}
-	return dim;
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 

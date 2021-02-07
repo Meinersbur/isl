@@ -660,8 +660,9 @@ static __isl_give isl_basic_set *return_with_identity(
  * the new variables x2' back to the original variables x, while T2
  * maps the original variables to the new variables.
  */
-static struct isl_basic_set *compress_variables(
-	struct isl_basic_set *bset, struct isl_mat **T, struct isl_mat **T2)
+static __isl_give isl_basic_set *compress_variables(
+	__isl_take isl_basic_set *bset,
+	__isl_give isl_mat **T, __isl_give isl_mat **T2)
 {
 	struct isl_mat *B, *TC;
 	unsigned dim;

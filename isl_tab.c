@@ -2208,7 +2208,8 @@ int isl_tab_add_eq(struct isl_tab *tab, isl_int *eq)
  *
  *	m d <= e
  */
-static struct isl_vec *ineq_for_div(struct isl_basic_map *bmap, unsigned div)
+static __isl_give isl_vec *ineq_for_div(__isl_keep isl_basic_map *bmap,
+	unsigned div)
 {
 	unsigned total;
 	unsigned div_pos;

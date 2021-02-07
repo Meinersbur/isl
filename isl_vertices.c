@@ -710,7 +710,7 @@ static struct isl_facet_todo *create_todo(struct isl_tab *tab, int con)
 	todo->bset = isl_basic_set_sort_constraints(todo->bset);
 	if (!todo->bset)
 		goto error;
-	ISL_F_SET(todo->bset, ISL_BASIC_SET_NORMALIZED);
+	ISL_F_SET(todo->bset, ISL_BASIC_SET_NO_REDUNDANT);
 	todo->tab = isl_tab_dup(tab);
 	if (!todo->tab)
 		goto error;
@@ -1040,12 +1040,14 @@ error:
 	return NULL;
 }
 
-void isl_vertex_free(__isl_take isl_vertex *vertex)
+__isl_null isl_vertex *isl_vertex_free(__isl_take isl_vertex *vertex)
 {
 	if (!vertex)
-		return;
+		return NULL;
 	isl_vertices_free(vertex->vertices);
 	free(vertex);
+
+	return NULL;
 }
 
 isl_ctx *isl_cell_get_ctx(__isl_keep isl_cell *cell)
@@ -1088,15 +1090,17 @@ error:
 	return NULL;
 }
 
-void isl_cell_free(__isl_take isl_cell *cell)
+__isl_null isl_cell *isl_cell_free(__isl_take isl_cell *cell)
 {
 	if (!cell)
-		return;
+		return NULL;
 
 	isl_vertices_free(cell->vertices);
 	free(cell->ids);
 	isl_basic_set_free(cell->dom);
 	free(cell);
+
+	return NULL;
 }
 
 /* Create a tableau of the cone obtained by first homogenizing the given

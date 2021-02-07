@@ -473,10 +473,17 @@ EXTRA_DIST = \
 	isl_multi_cmp.c \
 	isl_multi_coalesce.c \
 	isl_multi_dims.c \
+	isl_multi_domain_templ.c \
 	isl_multi_floor.c \
+	isl_multi_from_base_templ.c \
 	isl_multi_gist.c \
 	isl_multi_hash.c \
 	isl_multi_intersect.c \
+	isl_multi_identity_templ.c \
+	isl_multi_move_dims_templ.c \
+	isl_multi_product_templ.c \
+	isl_multi_splice_templ.c \
+	isl_multi_zero_templ.c \
 	print_templ.c \
 	print_templ_yaml.c \
 	isl_power_templ.c \

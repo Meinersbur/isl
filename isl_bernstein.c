@@ -57,7 +57,7 @@ static int vertex_is_integral(__isl_keep isl_basic_set *vertex)
 }
 
 static __isl_give isl_qpolynomial *vertex_coordinate(
-	__isl_keep isl_basic_set *vertex, int i, __isl_take isl_space *dim)
+	__isl_keep isl_basic_set *vertex, int i, __isl_take isl_space *space)
 {
 	unsigned nvar;
 	unsigned nparam;
@@ -79,12 +79,12 @@ static __isl_give isl_qpolynomial *vertex_coordinate(
 	else
 		isl_int_neg(denom, denom);
 
-	v = isl_qpolynomial_from_affine(dim, vertex->eq[r], denom);
+	v = isl_qpolynomial_from_affine(space, vertex->eq[r], denom);
 	isl_int_clear(denom);
 
 	return v;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	isl_int_clear(denom);
 	return NULL;
 }
@@ -136,7 +136,7 @@ static void add_fold(__isl_take isl_qpolynomial *b, __isl_keep isl_set *dom,
  * c[i] contains the coefficient of the selected powers of the first i+1 vars.
  * multinom[i] contains the partial multinomial coefficient.
  */
-static void extract_coefficients(isl_qpolynomial *poly,
+static isl_stat extract_coefficients(isl_qpolynomial *poly,
 	__isl_keep isl_set *dom, struct bernstein_data *data)
 {
 	int i;
@@ -149,12 +149,12 @@ static void extract_coefficients(isl_qpolynomial *poly,
 	isl_vec *multinom = NULL;
 
 	if (!poly)
-		return;
+		return isl_stat_error;
 
 	ctx = isl_qpolynomial_get_ctx(poly);
 	n = isl_qpolynomial_dim(poly, isl_dim_in);
 	d = isl_qpolynomial_degree(poly);
-	isl_assert(ctx, n >= 2, return);
+	isl_assert(ctx, n >= 2, return isl_stat_error);
 
 	c = isl_calloc_array(ctx, isl_qpolynomial *, n);
 	k = isl_alloc_array(ctx, int, n);
@@ -218,7 +218,7 @@ static void extract_coefficients(isl_qpolynomial *poly,
 	free(left);
 	free(k);
 	free(c);
-	return;
+	return isl_stat_ok;
 error:
 	isl_vec_free(multinom);
 	free(left);
@@ -227,7 +227,7 @@ error:
 		for (i = 0; i < n; ++i)
 			isl_qpolynomial_free(c[i]);
 	free(c);
-	return;
+	return isl_stat_error;
 }
 
 /* Perform bernstein expansion on the parametric vertices that are active
@@ -307,7 +307,10 @@ static isl_stat bernstein_coefficients_cell(__isl_take isl_cell *cell,
 	dom = isl_set_from_basic_set(isl_basic_set_copy(cell->dom));
 	data->fold = isl_qpolynomial_fold_empty(data->type, isl_space_copy(dim_param));
 	data->fold_tight = isl_qpolynomial_fold_empty(data->type, dim_param);
-	extract_coefficients(poly, dom, data);
+	if (extract_coefficients(poly, dom, data) < 0) {
+		data->fold = isl_qpolynomial_fold_free(data->fold);
+		data->fold_tight = isl_qpolynomial_fold_free(data->fold_tight);
+	}
 
 	pwf = isl_pw_qpolynomial_fold_alloc(data->type, isl_set_copy(dom),
 					    data->fold);

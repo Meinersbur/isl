@@ -2743,7 +2743,8 @@ these functions
 		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_aff *isl_term_get_div(
 		__isl_keep isl_term *term, unsigned pos);
-	void isl_term_free(__isl_take isl_term *term);
+	__isl_null isl_term *isl_term_free(
+		__isl_take isl_term *term);
 
 Each term is a product of parameters, set variables and
 integer divisions.  The function C<isl_term_get_exp>
@@ -2771,7 +2772,8 @@ the following functions.
 	__isl_give isl_qpolynomial_fold *
 	isl_qpolynomial_fold_copy(
 		__isl_keep isl_qpolynomial_fold *fold);
-	void isl_qpolynomial_fold_free(
+	__isl_null isl_qpolynomial_fold *
+	isl_qpolynomial_fold_free(
 		__isl_take isl_qpolynomial_fold *fold);
 
 To iterate over all quasipolynomials in a reduction, use
@@ -8174,7 +8176,8 @@ Vertices can be inspected and destroyed using the following functions.
 		__isl_keep isl_vertex *vertex);
 	__isl_give isl_multi_aff *isl_vertex_get_expr(
 		__isl_keep isl_vertex *vertex);
-	void isl_vertex_free(__isl_take isl_vertex *vertex);
+	__isl_null isl_vertex *isl_vertex_free(
+		__isl_take isl_vertex *vertex);
 
 C<isl_vertex_get_expr> returns a multiple quasi-affine expression
 describing the vertex in terms of the parameters,
@@ -8185,7 +8188,8 @@ Chambers can be inspected and destroyed using the following functions.
 
 	__isl_give isl_basic_set *isl_cell_get_domain(
 		__isl_keep isl_cell *cell);
-	void isl_cell_free(__isl_take isl_cell *cell);
+	__isl_null isl_cell *isl_cell_free(
+		__isl_take isl_cell *cell);
 
 =head1 Polyhedral Compilation Library
 
@@ -9383,7 +9387,8 @@ A lower-level interface is provided by the following functions.
 		void *user);
 	__isl_give isl_map *isl_flow_get_no_source(
 		__isl_keep isl_flow *deps, int must);
-	void isl_flow_free(__isl_take isl_flow *deps);
+	__isl_null isl_flow *isl_flow_free(
+		__isl_take isl_flow *deps);
 
 The function C<isl_access_info_compute_flow> performs the actual
 dependence analysis.  The other functions are used to construct

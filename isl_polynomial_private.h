@@ -138,7 +138,7 @@ __isl_give struct isl_upoly *isl_upoly_sum(__isl_take struct isl_upoly *up1,
 __isl_give struct isl_upoly *isl_upoly_mul_isl_int(
 	__isl_take struct isl_upoly *up, isl_int v);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_alloc(__isl_take isl_space *space,
 	unsigned n_div, __isl_take struct isl_upoly *up);
 __isl_give isl_qpolynomial *isl_qpolynomial_cow(__isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial *isl_qpolynomial_dup(__isl_keep isl_qpolynomial *qp);
@@ -172,8 +172,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_coeff(
 
 __isl_give isl_vec *isl_qpolynomial_extract_affine(
 	__isl_keep isl_qpolynomial *qp);
-__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(__isl_take isl_space *dim,
-	isl_int *f, isl_int denom);
+__isl_give isl_qpolynomial *isl_qpolynomial_from_affine(
+	__isl_take isl_space *space, isl_int *f, isl_int denom);
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_cow(
 	__isl_take isl_pw_qpolynomial *pwqp);
@@ -228,7 +228,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_morph_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_morph *morph);
 
 __isl_give isl_qpolynomial *isl_qpolynomial_lift(__isl_take isl_qpolynomial *qp,
-	__isl_take isl_space *dim);
+	__isl_take isl_space *space);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_lift(
 	__isl_take isl_qpolynomial_fold *fold, __isl_take isl_space *dim);
 

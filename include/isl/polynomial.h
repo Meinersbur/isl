@@ -32,14 +32,20 @@ __isl_give isl_qpolynomial *isl_qpolynomial_set_dim_name(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type type, unsigned pos, const char *s);
 
-__isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(__isl_take isl_space *dim);
-__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(__isl_take isl_space *dim);
+__isl_give isl_qpolynomial *isl_qpolynomial_zero_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_one_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_infty_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_neginfty_on_domain(
+	__isl_take isl_space *domain);
+__isl_give isl_qpolynomial *isl_qpolynomial_nan_on_domain(
+	__isl_take isl_space *domain);
 __isl_give isl_qpolynomial *isl_qpolynomial_val_on_domain(
 	__isl_take isl_space *space, __isl_take isl_val *val);
-__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(__isl_take isl_space *dim,
+__isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
+	__isl_take isl_space *domain,
 	enum isl_dim_type type, unsigned pos);
 __isl_give isl_qpolynomial *isl_qpolynomial_copy(__isl_keep isl_qpolynomial *qp);
 __isl_null isl_qpolynomial *isl_qpolynomial_free(
@@ -101,7 +107,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_align_params(
 isl_ctx *isl_term_get_ctx(__isl_keep isl_term *term);
 
 __isl_give isl_term *isl_term_copy(__isl_keep isl_term *term);
-void isl_term_free(__isl_take isl_term *term);
+__isl_null isl_term *isl_term_free(__isl_take isl_term *term);
 
 unsigned isl_term_dim(__isl_keep isl_term *term, enum isl_dim_type type);
 __isl_give isl_val *isl_term_get_coefficient_val(__isl_keep isl_term *term);
@@ -288,7 +294,8 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_alloc(
 	enum isl_fold type, __isl_take isl_qpolynomial *qp);
 __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_copy(
 	__isl_keep isl_qpolynomial_fold *fold);
-void isl_qpolynomial_fold_free(__isl_take isl_qpolynomial_fold *fold);
+__isl_null isl_qpolynomial_fold *isl_qpolynomial_fold_free(
+	__isl_take isl_qpolynomial_fold *fold);
 
 int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold);
 isl_bool isl_qpolynomial_fold_is_nan(__isl_keep isl_qpolynomial_fold *fold);

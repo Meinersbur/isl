@@ -48,7 +48,8 @@ error:
 	return isl_stat_error;
 }
 
-static struct isl_mat *isl_basic_set_scan_samples(struct isl_basic_set *bset)
+static __isl_give isl_mat *isl_basic_set_scan_samples(
+	__isl_take isl_basic_set *bset)
 {
 	isl_ctx *ctx;
 	unsigned dim;
