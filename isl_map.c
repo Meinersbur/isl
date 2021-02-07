@@ -8203,7 +8203,7 @@ error:
 __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 {
 	int i;
-	isl_space *domain_dim;
+	isl_space *domain_space;
 
 	if (!map)
 		return NULL;
@@ -8217,9 +8217,9 @@ __isl_give isl_map *isl_map_deltas_map(__isl_take isl_map *map)
 	if (!map)
 		return NULL;
 
-	domain_dim = isl_space_from_range(isl_space_domain(isl_map_get_space(map)));
+	domain_space = isl_space_domain(isl_map_get_space(map));
 	map->dim = isl_space_from_domain(isl_space_wrap(map->dim));
-	map->dim = isl_space_join(map->dim, domain_dim);
+	map->dim = isl_space_join(map->dim, isl_space_from_range(domain_space));
 	if (!map->dim)
 		goto error;
 	for (i = 0; i < map->n; ++i) {
@@ -10585,7 +10585,7 @@ __isl_give isl_basic_set_list *isl_set_get_basic_set_list(
 
 __isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
 {
-	isl_space *dim;
+	isl_space *space;
 
 	if (!bset)
 		return NULL;
@@ -10594,12 +10594,12 @@ __isl_give isl_basic_set *isl_basic_set_lift(__isl_take isl_basic_set *bset)
 	if (!bset)
 		return NULL;
 
-	dim = isl_basic_set_get_space(bset);
-	dim = isl_space_lift(dim, bset->n_div);
-	if (!dim)
+	space = isl_basic_set_get_space(bset);
+	space = isl_space_lift(space, bset->n_div);
+	if (!space)
 		goto error;
 	isl_space_free(bset->dim);
-	bset->dim = dim;
+	bset->dim = space;
 	bset->extra -= bset->n_div;
 	bset->n_div = 0;
 

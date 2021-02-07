@@ -1272,13 +1272,13 @@ __isl_give isl_basic_set *isl_set_sample(__isl_take isl_set *set)
 __isl_give isl_point *isl_basic_set_sample_point(__isl_take isl_basic_set *bset)
 {
 	isl_vec *vec;
-	isl_space *dim;
+	isl_space *space;
 
-	dim = isl_basic_set_get_space(bset);
+	space = isl_basic_set_get_space(bset);
 	bset = isl_basic_set_underlying_set(bset);
 	vec = isl_basic_set_sample_vec(bset);
 
-	return isl_point_alloc(dim, vec);
+	return isl_point_alloc(space, vec);
 }
 
 __isl_give isl_point *isl_set_sample_point(__isl_take isl_set *set)

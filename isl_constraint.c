@@ -328,16 +328,16 @@ struct isl_basic_map *isl_basic_map_add_constraint(
 	struct isl_basic_map *bmap, struct isl_constraint *constraint)
 {
 	isl_ctx *ctx;
-	isl_space *dim;
+	isl_space *space;
 	int equal_space;
 
 	if (!bmap || !constraint)
 		goto error;
 
 	ctx = isl_constraint_get_ctx(constraint);
-	dim = isl_constraint_get_space(constraint);
-	equal_space = isl_space_is_equal(bmap->dim, dim);
-	isl_space_free(dim);
+	space = isl_constraint_get_space(constraint);
+	equal_space = isl_space_is_equal(bmap->dim, space);
+	isl_space_free(space);
 	isl_assert(ctx, equal_space, goto error);
 
 	bmap = isl_basic_map_intersect(bmap,
