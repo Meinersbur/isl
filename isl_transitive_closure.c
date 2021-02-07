@@ -1818,7 +1818,7 @@ static isl_bool basic_map_follows(int i, int j, void *user)
 	if (subset)
 		data->check_closed = 1;
 
-	return subset < 0 ? isl_bool_error : !subset;
+	return isl_bool_not(subset);
 error:
 	isl_map_free(map21);
 	return isl_bool_error;

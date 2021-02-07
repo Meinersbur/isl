@@ -2375,9 +2375,7 @@ isl_bool isl_union_map_is_strict_subset(__isl_keep isl_union_map *umap1,
 	if (is_subset != isl_bool_true)
 		return is_subset;
 	is_subset = isl_union_map_is_subset(umap2, umap1);
-	if (is_subset == isl_bool_error)
-		return is_subset;
-	return !is_subset;
+	return isl_bool_not(is_subset);
 }
 
 isl_bool isl_union_set_is_strict_subset(__isl_keep isl_union_set *uset1,
@@ -3757,9 +3755,7 @@ static isl_bool map_excludes(__isl_keep isl_map *map, void *user)
 
 	involves = isl_map_involves_dims(map,
 					isl_dim_param, data->first, data->n);
-	if (involves < 0)
-		return isl_bool_error;
-	return !involves;
+	return isl_bool_not(involves);
 }
 
 /* Does "umap" involve any of the n parameters starting at first?
@@ -3782,10 +3778,7 @@ isl_bool isl_union_map_involves_dims(__isl_keep isl_union_map *umap,
 
 	excludes = union_map_forall_user(umap, &map_excludes, &data);
 
-	if (excludes < 0)
-		return isl_bool_error;
-
-	return !excludes;
+	return isl_bool_not(excludes);
 }
 
 /* Internal data structure for isl_union_map_reset_range_space.

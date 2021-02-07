@@ -1463,9 +1463,11 @@ static __isl_give isl_basic_map *remove_redundant_divs(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
+	int v_div;
 
-	if (!bmap)
-		return NULL;
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0)
+		return isl_basic_map_free(bmap);
 
 	for (i = bmap->n_div-1; i >= 0; --i) {
 		isl_bool redundant;
@@ -1475,6 +1477,8 @@ static __isl_give isl_basic_map *remove_redundant_divs(
 			return isl_basic_map_free(bmap);
 		if (!redundant)
 			continue;
+		bmap = isl_basic_map_drop_constraints_involving(bmap,
+								v_div + i, 1);
 		bmap = isl_basic_map_drop_div(bmap, i);
 	}
 	return bmap;

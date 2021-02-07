@@ -121,22 +121,42 @@ unsigned isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type)
 	return set ? n(set->dim, type) : 0;
 }
 
-unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
-					enum isl_dim_type type)
+/* Return the position of the variables of the given type
+ * within the sequence of variables of "bmap".
+ */
+int isl_basic_map_var_offset(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type)
 {
 	isl_space *space;
 
-	if (!bmap)
-		return 0;
+	space = isl_basic_map_peek_space(bmap);
+	if (!space)
+		return -1;
 
-	space = bmap->dim;
+	switch (type) {
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:	return isl_space_offset(space, type);
+	case isl_dim_div:	return isl_space_dim(space, isl_dim_all);
+	case isl_dim_cst:
+	default:
+		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
+			"invalid dimension type", return -1);
+	}
+}
+
+/* Return the position of the coefficients of the variables of the given type
+ * within the sequence of coefficients of "bmap".
+ */
+unsigned isl_basic_map_offset(__isl_keep isl_basic_map *bmap,
+	enum isl_dim_type type)
+{
 	switch (type) {
 	case isl_dim_cst:	return 0;
-	case isl_dim_param:	return 1;
-	case isl_dim_in:	return 1 + space->nparam;
-	case isl_dim_out:	return 1 + space->nparam + space->n_in;
-	case isl_dim_div:	return 1 + space->nparam + space->n_in +
-								space->n_out;
+	case isl_dim_param:
+	case isl_dim_in:
+	case isl_dim_out:
+	case isl_dim_div:	return 1 + isl_basic_map_var_offset(bmap, type);
 	default:		return 0;
 	}
 }
@@ -1736,98 +1756,34 @@ isl_stat isl_basic_map_free_div(struct isl_basic_map *bmap, unsigned n)
 	return isl_stat_ok;
 }
 
-/* Copy constraint from src to dst, putting the vars of src at offset
- * dim_off in dst and the divs of src at offset div_off in dst.
- * If both sets are actually map, then dim_off applies to the input
- * variables.
- */
-static void copy_constraint(struct isl_basic_map *dst_map, isl_int *dst,
-			    struct isl_basic_map *src_map, isl_int *src,
-			    unsigned in_off, unsigned out_off, unsigned div_off)
-{
-	unsigned src_nparam = isl_basic_map_dim(src_map, isl_dim_param);
-	unsigned dst_nparam = isl_basic_map_dim(dst_map, isl_dim_param);
-	unsigned src_in = isl_basic_map_dim(src_map, isl_dim_in);
-	unsigned dst_in = isl_basic_map_dim(dst_map, isl_dim_in);
-	unsigned src_out = isl_basic_map_dim(src_map, isl_dim_out);
-	unsigned dst_out = isl_basic_map_dim(dst_map, isl_dim_out);
-	isl_int_set(dst[0], src[0]);
-	isl_seq_cpy(dst+1, src+1, isl_min(dst_nparam, src_nparam));
-	if (dst_nparam > src_nparam)
-		isl_seq_clr(dst+1+src_nparam,
-				dst_nparam - src_nparam);
-	isl_seq_clr(dst+1+dst_nparam, in_off);
-	isl_seq_cpy(dst+1+dst_nparam+in_off,
-		    src+1+src_nparam,
-		    isl_min(dst_in-in_off, src_in));
-	if (dst_in-in_off > src_in)
-		isl_seq_clr(dst+1+dst_nparam+in_off+src_in,
-				dst_in - in_off - src_in);
-	isl_seq_clr(dst+1+dst_nparam+dst_in, out_off);
-	isl_seq_cpy(dst+1+dst_nparam+dst_in+out_off,
-		    src+1+src_nparam+src_in,
-		    isl_min(dst_out-out_off, src_out));
-	if (dst_out-out_off > src_out)
-		isl_seq_clr(dst+1+dst_nparam+dst_in+out_off+src_out,
-				dst_out - out_off - src_out);
-	isl_seq_clr(dst+1+dst_nparam+dst_in+dst_out, div_off);
-	isl_seq_cpy(dst+1+dst_nparam+dst_in+dst_out+div_off,
-		    src+1+src_nparam+src_in+src_out,
-		    isl_min(dst_map->extra-div_off, src_map->n_div));
-	if (dst_map->n_div-div_off > src_map->n_div)
-		isl_seq_clr(dst+1+dst_nparam+dst_in+dst_out+
-				div_off+src_map->n_div,
-				dst_map->n_div - div_off - src_map->n_div);
-}
-
-static void copy_div(struct isl_basic_map *dst_map, isl_int *dst,
-		     struct isl_basic_map *src_map, isl_int *src,
-		     unsigned in_off, unsigned out_off, unsigned div_off)
-{
-	isl_int_set(dst[0], src[0]);
-	copy_constraint(dst_map, dst+1, src_map, src+1, in_off, out_off, div_off);
-}
-
 static __isl_give isl_basic_map *add_constraints(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2,
 	unsigned i_pos, unsigned o_pos)
 {
-	int i;
-	unsigned div_off;
+	unsigned total, n_param, n_in, o_in, n_out, o_out, n_div;
+	isl_ctx *ctx;
+	isl_space *space;
+	struct isl_dim_map *dim_map;
 
-	if (!bmap1 || !bmap2)
+	space = isl_basic_map_peek_space(bmap2);
+	if (!bmap1 || !space)
 		goto error;
 
-	div_off = bmap1->n_div;
+	total = isl_basic_map_dim(bmap1, isl_dim_all);
+	n_param = isl_basic_map_dim(bmap2, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap2, isl_dim_in);
+	o_in = isl_basic_map_offset(bmap1, isl_dim_in) - 1 + i_pos;
+	n_out = isl_basic_map_dim(bmap2, isl_dim_out);
+	o_out = isl_basic_map_offset(bmap1, isl_dim_out) - 1 + o_pos;
+	n_div = isl_basic_map_dim(bmap2, isl_dim_div);
+	ctx = isl_basic_map_get_ctx(bmap1);
+	dim_map = isl_dim_map_alloc(ctx, total + n_div);
+	isl_dim_map_dim_range(dim_map, space, isl_dim_param, 0, n_param, 0);
+	isl_dim_map_dim_range(dim_map, space, isl_dim_in, 0, n_in, o_in);
+	isl_dim_map_dim_range(dim_map, space, isl_dim_out, 0, n_out, o_out);
+	isl_dim_map_div(dim_map, bmap2, total);
 
-	for (i = 0; i < bmap2->n_eq; ++i) {
-		int i1 = isl_basic_map_alloc_equality(bmap1);
-		if (i1 < 0)
-			goto error;
-		copy_constraint(bmap1, bmap1->eq[i1], bmap2, bmap2->eq[i],
-				i_pos, o_pos, div_off);
-	}
-
-	for (i = 0; i < bmap2->n_ineq; ++i) {
-		int i1 = isl_basic_map_alloc_inequality(bmap1);
-		if (i1 < 0)
-			goto error;
-		copy_constraint(bmap1, bmap1->ineq[i1], bmap2, bmap2->ineq[i],
-				i_pos, o_pos, div_off);
-	}
-
-	for (i = 0; i < bmap2->n_div; ++i) {
-		int i1 = isl_basic_map_alloc_div(bmap1);
-		if (i1 < 0)
-			goto error;
-		copy_div(bmap1, bmap1->div[i1], bmap2, bmap2->div[i],
-			 i_pos, o_pos, div_off);
-	}
-
-	isl_basic_map_free(bmap2);
-
-	return bmap1;
-
+	return isl_basic_map_add_constraints_dim_map(bmap1, bmap2, dim_map);
 error:
 	isl_basic_map_free(bmap1);
 	isl_basic_map_free(bmap2);
@@ -2261,10 +2217,11 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	unsigned left;
 
 	if (!bmap)
-		goto error;
+		return NULL;
 
 	dim = isl_basic_map_dim(bmap, type);
-	isl_assert(bmap->ctx, first + n <= dim, goto error);
+	isl_assert(bmap->ctx, first + n <= dim,
+		return isl_basic_map_free(bmap););
 
 	if (n == 0 && !isl_space_is_named_or_nested(bmap->dim, type))
 		return bmap;
@@ -2287,21 +2244,18 @@ __isl_give isl_basic_map *isl_basic_map_drop(__isl_take isl_basic_map *bmap,
 	if (type == isl_dim_div) {
 		bmap = move_divs_last(bmap, first, n);
 		if (!bmap)
-			goto error;
+			return NULL;
 		if (isl_basic_map_free_div(bmap, n) < 0)
 			return isl_basic_map_free(bmap);
 	} else
 		bmap->dim = isl_space_drop_dims(bmap->dim, type, first, n);
 	if (!bmap->dim)
-		goto error;
+		return isl_basic_map_free(bmap);
 
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	bmap = isl_basic_map_simplify(bmap);
 	return isl_basic_map_finalize(bmap);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
 }
 
 __isl_give isl_basic_set *isl_basic_set_drop(__isl_take isl_basic_set *bset,
@@ -2357,8 +2311,11 @@ __isl_give isl_set *isl_set_drop(__isl_take isl_set *set,
 	return set_from_map(isl_map_drop(set_to_map(set), type, first, n));
 }
 
-/*
- * We don't cow, as the div is assumed to be redundant.
+/* Drop the integer division at position "div", which is assumed
+ * not to appear in any of the constraints or
+ * in any of the other integer divisions.
+ *
+ * Since the integer division is redundant, there is no need to cow.
  */
 __isl_give isl_basic_map *isl_basic_map_drop_div(
 	__isl_take isl_basic_map *bmap, unsigned div)
@@ -2376,14 +2333,8 @@ __isl_give isl_basic_map *isl_basic_map_drop_div(
 	for (i = 0; i < bmap->n_eq; ++i)
 		constraint_drop_vars(bmap->eq[i]+pos, 1, bmap->extra-div-1);
 
-	for (i = 0; i < bmap->n_ineq; ++i) {
-		if (!isl_int_is_zero(bmap->ineq[i][pos])) {
-			isl_basic_map_drop_inequality(bmap, i);
-			--i;
-			continue;
-		}
+	for (i = 0; i < bmap->n_ineq; ++i)
 		constraint_drop_vars(bmap->ineq[i]+pos, 1, bmap->extra-div-1);
-	}
 
 	for (i = 0; i < bmap->n_div; ++i)
 		constraint_drop_vars(bmap->div[i]+1+pos, 1, bmap->extra-div-1);
@@ -2876,8 +2827,12 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 
 /* Drop all constraints in bmap that involve any of the dimensions
  * first to first+n-1.
+ * This function only performs the actual removal of constraints.
+ *
+ * This function should not call finalize since it is used by
+ * remove_redundant_divs, which in turn is called by isl_basic_map_finalize.
  */
-static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
+__isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
 {
 	int i;
@@ -2902,12 +2857,12 @@ static __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 		isl_basic_map_drop_inequality(bmap, i);
 	}
 
-	bmap = isl_basic_map_add_known_div_constraints(bmap);
 	return bmap;
 }
 
 /* Drop all constraints in bset that involve any of the dimensions
  * first to first+n-1.
+ * This function only performs the actual removal of constraints.
  */
 __isl_give isl_basic_set *isl_basic_set_drop_constraints_involving(
 	__isl_take isl_basic_set *bset, unsigned first, unsigned n)
@@ -2982,7 +2937,9 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving_dims(
 
 	bmap = isl_basic_map_remove_divs_involving_dims(bmap, type, first, n);
 	first += isl_basic_map_offset(bmap, type) - 1;
-	return isl_basic_map_drop_constraints_involving(bmap, first, n);
+	bmap = isl_basic_map_drop_constraints_involving(bmap, first, n);
+	bmap = isl_basic_map_add_known_div_constraints(bmap);
+	return bmap;
 }
 
 /* Drop all constraints in bset that involve any of the dimensions
@@ -8580,9 +8537,7 @@ isl_bool isl_basic_map_is_strict_subset(
 	if (is_subset != isl_bool_true)
 		return is_subset;
 	is_subset = isl_basic_map_is_subset(bmap2, bmap1);
-	if (is_subset == isl_bool_error)
-		return is_subset;
-	return !is_subset;
+	return isl_bool_not(is_subset);
 }
 
 isl_bool isl_map_is_strict_subset(__isl_keep isl_map *map1,
@@ -8596,9 +8551,7 @@ isl_bool isl_map_is_strict_subset(__isl_keep isl_map *map1,
 	if (is_subset != isl_bool_true)
 		return is_subset;
 	is_subset = isl_map_is_subset(map2, map1);
-	if (is_subset == isl_bool_error)
-		return is_subset;
-	return !is_subset;
+	return isl_bool_not(is_subset);
 }
 
 isl_bool isl_set_is_strict_subset(__isl_keep isl_set *set1,

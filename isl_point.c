@@ -6,6 +6,7 @@
 #include <isl_scan.h>
 #include <isl_seq.h>
 #include <isl_space_private.h>
+#include <isl_local_private.h>
 #include <isl_val_private.h>
 #include <isl_vec_private.h>
 #include <isl_output_private.h>
@@ -444,9 +445,8 @@ error:
 isl_bool isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_point *point)
 {
-	int i;
-	struct isl_vec *vec;
-	unsigned dim;
+	isl_local *local;
+	isl_vec *vec;
 	isl_bool contains;
 
 	if (!bmap || !point)
@@ -456,18 +456,10 @@ isl_bool isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 	if (bmap->n_div == 0)
 		return isl_basic_map_contains(bmap, point->vec);
 
-	dim = isl_basic_map_total_dim(bmap) - bmap->n_div;
-	vec = isl_vec_alloc(bmap->ctx, 1 + dim + bmap->n_div);
-	if (!vec)
-		return isl_bool_error;
-
-	isl_seq_cpy(vec->el, point->vec->el, point->vec->size);
-	for (i = 0; i < bmap->n_div; ++i) {
-		isl_seq_inner_product(bmap->div[i] + 1, vec->el,
-					1 + dim + i, &vec->el[1+dim+i]);
-		isl_int_fdiv_q(vec->el[1+dim+i], vec->el[1+dim+i],
-				bmap->div[i][0]);
-	}
+	local = isl_local_alloc_from_mat(isl_basic_map_get_divs(bmap));
+	vec = isl_point_get_vec(point);
+	vec = isl_local_extend_point_vec(local, vec);
+	isl_local_free(local);
 
 	contains = isl_basic_map_contains(bmap, vec);
 

@@ -565,10 +565,8 @@ static isl_bool graph_has_edge(struct isl_sched_graph *graph,
 		return isl_bool_false;
 
 	empty = isl_map_plain_is_empty(edge->map);
-	if (empty < 0)
-		return isl_bool_error;
 
-	return !empty;
+	return isl_bool_not(empty);
 }
 
 /* Look for any edge with the same src, dst and map fields as "model".
