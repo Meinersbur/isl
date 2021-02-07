@@ -40,6 +40,8 @@ isl_bool isl_space_is_range_internal(__isl_keep isl_space *space1,
 
 unsigned isl_space_offset(__isl_keep isl_space *dim, enum isl_dim_type type);
 
+isl_stat isl_space_check_range(__isl_keep isl_space *space,
+	enum isl_dim_type type, unsigned first, unsigned n);
 isl_stat isl_space_check_is_set(__isl_keep isl_space *space);
 isl_bool isl_space_may_be_set(__isl_keep isl_space *space);
 isl_bool isl_space_is_named_or_nested(__isl_keep isl_space *space,

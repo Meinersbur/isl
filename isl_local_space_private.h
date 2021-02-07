@@ -12,6 +12,9 @@ struct isl_local_space {
 	isl_mat *div;
 };
 
+isl_stat isl_local_space_check_range(__isl_keep isl_local_space *ls,
+	enum isl_dim_type type, unsigned first, unsigned n);
+
 uint32_t isl_local_space_get_hash(__isl_keep isl_local_space *ls);
 
 __isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *space,

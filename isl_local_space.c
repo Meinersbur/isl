@@ -247,6 +247,10 @@ int isl_local_space_dim(__isl_keep isl_local_space *ls,
 	return isl_space_dim(ls->dim, type);
 }
 
+#undef TYPE
+#define TYPE	isl_local_space
+#include "check_type_range_templ.c"
+
 unsigned isl_local_space_offset(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type)
 {
@@ -1176,17 +1180,13 @@ __isl_give isl_local_space *isl_local_space_drop_dims(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	isl_ctx *ctx;
-
 	if (!ls)
 		return NULL;
 	if (n == 0 && !isl_local_space_is_named_or_nested(ls, type))
 		return ls;
 
-	ctx = isl_local_space_get_ctx(ls);
-	if (first + n > isl_local_space_dim(ls, type))
-		isl_die(ctx, isl_error_invalid, "range out of bounds",
-			return isl_local_space_free(ls));
+	if (isl_local_space_check_range(ls, type, first, n) < 0)
+		return isl_local_space_free(ls);
 
 	ls = isl_local_space_cow(ls);
 	if (!ls)
@@ -1212,17 +1212,13 @@ __isl_give isl_local_space *isl_local_space_insert_dims(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	isl_ctx *ctx;
-
 	if (!ls)
 		return NULL;
 	if (n == 0 && !isl_local_space_is_named_or_nested(ls, type))
 		return ls;
 
-	ctx = isl_local_space_get_ctx(ls);
-	if (first > isl_local_space_dim(ls, type))
-		isl_die(ctx, isl_error_invalid, "position out of bounds",
-			return isl_local_space_free(ls));
+	if (isl_local_space_check_range(ls, type, first, 0) < 0)
+		return isl_local_space_free(ls);
 
 	ls = isl_local_space_cow(ls);
 	if (!ls)
@@ -1537,13 +1533,10 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 	    !isl_local_space_is_named_or_nested(ls, dst_type))
 		return ls;
 
-	if (src_pos + n > isl_local_space_dim(ls, src_type))
-		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
-			"range out of bounds", return isl_local_space_free(ls));
-	if (dst_pos > isl_local_space_dim(ls, dst_type))
-		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
-			"position out of bounds",
-			return isl_local_space_free(ls));
+	if (isl_local_space_check_range(ls, src_type, src_pos, n) < 0)
+		return isl_local_space_free(ls);
+	if (isl_local_space_check_range(ls, dst_type, dst_pos, 0) < 0)
+		return isl_local_space_free(ls);
 	if (src_type == isl_dim_div)
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
 			"cannot move divs", return isl_local_space_free(ls));
