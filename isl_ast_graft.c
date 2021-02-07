@@ -105,18 +105,26 @@ static __isl_give isl_ast_graft *isl_ast_graft_copy(
 static isl_bool equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	int depth;
+	isl_size dim;
 	isl_ast_graft *graft_0;
 	isl_bool equal = isl_bool_true;
 	isl_bool skip;
 
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		return isl_bool_error;
 	graft_0 = isl_ast_graft_list_get_ast_graft(list, 0);
 	if (!graft_0)
 		return isl_bool_error;
 
 	depth = isl_ast_build_get_depth(build);
-	if (isl_set_dim(graft_0->guard, isl_dim_set) <= depth)
+	dim = isl_set_dim(graft_0->guard, isl_dim_set);
+	if (dim < 0)
+		return isl_bool_error;
+	if (dim <= depth)
 		skip = isl_bool_false;
 	else
 		skip = isl_set_involves_dims(graft_0->guard,
@@ -126,7 +134,6 @@ static isl_bool equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 		return isl_bool_not(skip);
 	}
 
-	n = isl_ast_graft_list_n_ast_graft(list);
 	for (i = 1; i < n; ++i) {
 		isl_ast_graft *graft;
 		graft = isl_ast_graft_list_get_ast_graft(list, i);
@@ -152,9 +159,13 @@ static __isl_give isl_set *hoist_guard(__isl_take isl_set *guard,
 	__isl_keep isl_ast_build *build)
 {
 	int depth;
+	isl_size dim;
 
 	depth = isl_ast_build_get_depth(build);
-	if (depth < isl_set_dim(guard, isl_dim_set)) {
+	dim = isl_set_dim(guard, isl_dim_set);
+	if (dim < 0)
+		return isl_set_free(guard);
+	if (depth < dim) {
 		guard = isl_set_remove_divs_involving_dims(guard,
 						isl_dim_set, depth, 1);
 		guard = isl_set_eliminate(guard, isl_dim_set, depth, 1);
@@ -193,7 +204,8 @@ static __isl_give isl_set *hoist_guard(__isl_take isl_set *guard,
 __isl_give isl_set *isl_ast_graft_list_extract_hoistable_guard(
 	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_bool equal;
 	isl_ctx *ctx;
 	isl_set *guard;
@@ -204,6 +216,8 @@ __isl_give isl_set *isl_ast_graft_list_extract_hoistable_guard(
 		return NULL;
 
 	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		return NULL;
 	if (n == 0)
 		return isl_set_universe(isl_ast_build_get_space(build, 1));
 
@@ -277,10 +291,13 @@ static __isl_give isl_ast_node *ast_node_insert_if(
 {
 	struct isl_insert_if_data data;
 	isl_ctx *ctx;
+	isl_size n;
 
+	n = isl_set_n_basic_set(guard);
+	if (n < 0)
+		goto error;
 	ctx = isl_ast_build_get_ctx(build);
-	if (isl_options_get_ast_build_allow_or(ctx) ||
-	    isl_set_n_basic_set(guard) <= 1) {
+	if (isl_options_get_ast_build_allow_or(ctx) || n <= 1) {
 		isl_ast_node *if_node;
 		isl_ast_expr *expr;
 
@@ -301,6 +318,10 @@ static __isl_give isl_ast_node *ast_node_insert_if(
 	isl_set_free(guard);
 	isl_ast_node_free(data.node);
 	return isl_ast_node_alloc_block(data.list);
+error:
+	isl_set_free(guard);
+	isl_ast_node_free(node);
+	return NULL;
 }
 
 /* Insert an if node around a copy of "data->node" testing the condition
@@ -389,10 +410,14 @@ static __isl_give isl_basic_set *update_enforced(
 	__isl_take isl_basic_set *enforced, __isl_keep isl_ast_graft *graft,
 	int depth)
 {
+	isl_size dim;
 	isl_basic_set *enforced_g;
 
 	enforced_g = isl_ast_graft_get_enforced(graft);
-	if (depth < isl_basic_set_dim(enforced_g, isl_dim_set))
+	dim = isl_basic_set_dim(enforced_g, isl_dim_set);
+	if (dim < 0)
+		enforced_g = isl_basic_set_free(enforced_g);
+	if (depth < dim)
 		enforced_g = isl_basic_set_eliminate(enforced_g,
 							isl_dim_set, depth, 1);
 	enforced_g = isl_basic_set_remove_unknown_divs(enforced_g);
@@ -444,19 +469,19 @@ static __isl_give isl_ast_graft_list *graft_extend_body(
 	__isl_keep isl_ast_node **body, __isl_take isl_ast_graft *graft,
 	__isl_keep isl_ast_build *build)
 {
-	int n;
+	isl_size n;
 	int depth;
 	isl_ast_graft *last;
 	isl_space *space;
 	isl_basic_set *enforced;
 
-	if (!list || !graft)
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0 || !graft)
 		goto error;
 	extend_body(body, isl_ast_node_copy(graft->node));
 	if (!*body)
 		goto error;
 
-	n = isl_ast_graft_list_n_ast_graft(list);
 	last = isl_ast_graft_list_get_ast_graft(list, n - 1);
 
 	depth = isl_ast_build_get_depth(build);
@@ -543,17 +568,18 @@ static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 	__isl_take isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
-	int i, j, n, n_if;
+	int i, j, n_if;
+	isl_size n;
 	int allow_else;
 	isl_ctx *ctx;
 	isl_ast_graft_list *res;
 	struct isl_if_node *if_node = NULL;
 
-	if (!build || !list)
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (!build || n < 0)
 		return isl_ast_graft_list_free(list);
 
 	ctx = isl_ast_build_get_ctx(build);
-	n = isl_ast_graft_list_n_ast_graft(list);
 
 	allow_else = isl_options_get_ast_build_allow_else(ctx);
 
@@ -663,15 +689,16 @@ static __isl_give isl_ast_graft_list *insert_pending_guard_nodes(
 __isl_give isl_ast_graft_list *isl_ast_graft_list_insert_pending_guard_nodes(
 	__isl_take isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_set *universe;
 
 	list = insert_pending_guard_nodes(list, build);
-	if (!list)
-		return NULL;
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		return isl_ast_graft_list_free(list);
 
 	universe = isl_set_universe(isl_ast_build_get_space(build, 1));
-	n = isl_ast_graft_list_n_ast_graft(list);
 	for (i = 0; i < n; ++i) {
 		isl_ast_graft *graft;
 
@@ -696,14 +723,15 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_insert_pending_guard_nodes(
 static __isl_give isl_ast_node_list *extract_node_list(
 	__isl_keep isl_ast_graft_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_node_list *node_list;
 
-	if (!list)
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
 		return NULL;
 	ctx = isl_ast_graft_list_get_ctx(list);
-	n = isl_ast_graft_list_n_ast_graft(list);
 	node_list = isl_ast_node_list_alloc(ctx, n);
 	for (i = 0; i < n; ++i) {
 		isl_ast_node *node;
@@ -727,19 +755,20 @@ __isl_give isl_basic_set *isl_ast_graft_list_extract_shared_enforced(
 	__isl_keep isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	int depth;
 	isl_space *space;
 	isl_basic_set *enforced;
 
-	if (!list)
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
 		return NULL;
 
 	space = isl_ast_build_get_space(build, 1);
 	enforced = isl_basic_set_empty(space);
 
 	depth = isl_ast_build_get_depth(build);
-	n = isl_ast_graft_list_n_ast_graft(list);
 	for (i = 0; i < n; ++i) {
 		isl_ast_graft *graft;
 
@@ -794,12 +823,13 @@ error:
 static __isl_give isl_ast_graft_list *gist_guards(
 	__isl_take isl_ast_graft_list *list, __isl_keep isl_set *context)
 {
-	int i, n;
-
-	if (!list)
-		return NULL;
+	int i;
+	isl_size n;
 
 	n = isl_ast_graft_list_n_ast_graft(list);
+	if (!list)
+		return isl_ast_graft_list_free(list);
+
 	for (i = 0; i < n; ++i) {
 		isl_ast_graft *graft;
 
@@ -909,11 +939,13 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_fuse(
 	__isl_take isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
+	isl_size n;
 	isl_ast_graft *graft;
 
-	if (!list)
-		return NULL;
-	if (isl_ast_graft_list_n_ast_graft(list) <= 1)
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		return isl_ast_graft_list_free(list);
+	if (n <= 1)
 		return list;
 	graft = ast_graft_list_fuse(list, build);
 	return isl_ast_graft_list_from_ast_graft(graft);
@@ -1098,9 +1130,12 @@ __isl_give isl_ast_graft *isl_ast_graft_unembed(__isl_take isl_ast_graft *graft,
 __isl_give isl_ast_graft_list *isl_ast_graft_list_unembed(
 	__isl_take isl_ast_graft_list *list, int product)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		return isl_ast_graft_list_free(list);
 	for (i = 0; i < n; ++i) {
 		isl_ast_graft *graft;
 
@@ -1140,9 +1175,12 @@ __isl_give isl_ast_graft *isl_ast_graft_preimage_multi_aff(
 __isl_give isl_ast_graft_list *isl_ast_graft_list_preimage_multi_aff(
 	__isl_take isl_ast_graft_list *list, __isl_take isl_multi_aff *ma)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		list = isl_ast_graft_list_free(list);
 	for (i = 0; i < n; ++i) {
 		isl_ast_graft *graft;
 

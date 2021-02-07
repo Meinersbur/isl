@@ -7,11 +7,11 @@
 isl_stat FN(TYPE,check_range)(__isl_keep TYPE *obj,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	unsigned dim;
+	isl_size dim;
 
-	if (!obj)
-		return isl_stat_error;
 	dim = FN(TYPE,dim)(obj, type);
+	if (dim < 0)
+		return isl_stat_error;
 	if (first + n > dim || first + n < first)
 		isl_die(FN(TYPE,get_ctx)(obj), isl_error_invalid,
 			"position or range out of bounds",

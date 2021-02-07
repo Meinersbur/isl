@@ -822,17 +822,23 @@ static __isl_give isl_map *read_var_def(__isl_keep isl_stream *s,
 	int rational)
 {
 	isl_pw_aff *def;
-	int pos;
+	isl_size pos;
 	isl_map *def_map;
 
 	if (type == isl_dim_param)
 		pos = isl_map_dim(map, isl_dim_param);
 	else {
 		pos = isl_map_dim(map, isl_dim_in);
-		if (type == isl_dim_out)
-			pos += isl_map_dim(map, isl_dim_out);
+		if (type == isl_dim_out) {
+			isl_size n_out = isl_map_dim(map, isl_dim_out);
+			if (pos < 0 || n_out < 0)
+				return isl_map_free(map);
+			pos += n_out;
+		}
 		type = isl_dim_in;
 	}
+	if (pos < 0)
+		return isl_map_free(map);
 	--pos;
 
 	def = accept_extended_affine(s, isl_space_wrap(isl_map_get_space(map)),
@@ -983,13 +989,14 @@ static isl_bool pw_aff_is_expr(__isl_keep isl_pw_aff *pa, int i, int n)
  */
 static isl_bool tuple_has_expr(__isl_keep isl_multi_pw_aff *tuple)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_bool has_expr = isl_bool_false;
 	isl_pw_aff *pa;
 
-	if (!tuple)
-		return isl_bool_error;
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
+	if (n < 0)
+		return isl_bool_error;
 	for (i = 0; i < n; ++i) {
 		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
 		has_expr = pw_aff_is_expr(pa, i, n);
@@ -1275,7 +1282,10 @@ static __isl_give isl_space *read_tuple_pw_aff_el(__isl_keep isl_stream *s,
 		isl_token_free(tok);
 		pa = identity_tuple_el(v);
 	} else if (new_name) {
-		int pos = isl_space_dim(space, isl_dim_out) - 1;
+		isl_size pos = isl_space_dim(space, isl_dim_out);
+		if (pos < 0)
+			goto error;
+		pos -= 1;
 		space = space_set_dim_name(space, pos, v->v->name);
 		isl_token_free(tok);
 		if (isl_stream_eat_if_available(s, '='))
@@ -1318,7 +1328,8 @@ error:
 static __isl_give isl_multi_pw_aff *read_tuple(__isl_keep isl_stream *s,
 	struct vars *v, int rational, int comma)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_space *space;
 	isl_pw_aff_list *list;
 
@@ -1327,6 +1338,8 @@ static __isl_give isl_multi_pw_aff *read_tuple(__isl_keep isl_stream *s,
 	space = read_tuple_space(s, v, space, rational, comma,
 				&read_tuple_pw_aff_el, &list);
 	n = isl_space_dim(space, isl_dim_set);
+	if (n < 0)
+		space = isl_space_free(space);
 	for (i = 0; i + 1 < n; ++i) {
 		isl_pw_aff *pa;
 
@@ -1350,14 +1363,15 @@ static __isl_give isl_map *map_from_tuple(__isl_take isl_multi_pw_aff *tuple,
 	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v,
 	int rational)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_space *space = NULL;
 
-	if (!map || !tuple)
+	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
+	if (!map || n < 0)
 		goto error;
 	ctx = isl_multi_pw_aff_get_ctx(tuple);
-	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
 	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
 	if (!space)
 		goto error;
@@ -1463,14 +1477,14 @@ static __isl_give isl_set *list_cmp(__isl_keep isl_set *set, int type,
 	__isl_take isl_pw_aff_list *left, __isl_take isl_pw_aff_list *right)
 {
 	isl_space *space;
-	int n;
+	isl_size n;
 	isl_multi_pw_aff *mpa1, *mpa2;
 
-	if (!set || !left || !right)
+	n = isl_pw_aff_list_n_pw_aff(left);
+	if (!set || n < 0 || !right)
 		goto error;
 
 	space = isl_set_get_space(set);
-	n = isl_pw_aff_list_n_pw_aff(left);
 	space = isl_space_from_domain(space);
 	space = isl_space_add_dims(space, isl_dim_out, n);
 	mpa1 = isl_multi_pw_aff_from_pw_aff_list(isl_space_copy(space), left);
@@ -1575,7 +1589,7 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 	struct isl_token *tok;
 	int type;
 	isl_pw_aff_list *list1 = NULL, *list2 = NULL;
-	int n1, n2;
+	isl_size n1, n2;
 	isl_set *set;
 
 	set = isl_map_wrap(map);
@@ -1593,10 +1607,10 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 	isl_token_free(tok);
 	for (;;) {
 		list2 = accept_affine_list(s, isl_set_get_space(set), v);
-		if (!list2)
-			goto error;
 		n1 = isl_pw_aff_list_n_pw_aff(list1);
 		n2 = isl_pw_aff_list_n_pw_aff(list2);
+		if (n1 < 0 || n2 < 0)
+			goto error;
 		if (is_list_comparator_type(type) && n1 != n2) {
 			isl_stream_error(s, NULL,
 					"list arguments not of same size");
@@ -1860,24 +1874,30 @@ static __isl_give isl_map *read_formula(__isl_keep isl_stream *s,
 	return res;
 }
 
-static int polylib_pos_to_isl_pos(__isl_keep isl_basic_map *bmap, int pos)
+static isl_size polylib_pos_to_isl_pos(__isl_keep isl_basic_map *bmap, int pos)
 {
-	if (pos < isl_basic_map_dim(bmap, isl_dim_out))
-		return 1 + isl_basic_map_dim(bmap, isl_dim_param) +
-			   isl_basic_map_dim(bmap, isl_dim_in) + pos;
-	pos -= isl_basic_map_dim(bmap, isl_dim_out);
+	isl_size n_out, n_in, n_param, n_div;
 
-	if (pos < isl_basic_map_dim(bmap, isl_dim_in))
-		return 1 + isl_basic_map_dim(bmap, isl_dim_param) + pos;
-	pos -= isl_basic_map_dim(bmap, isl_dim_in);
+	n_param = isl_basic_map_dim(bmap, isl_dim_param);
+	n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_param < 0 || n_in < 0 || n_out < 0 || n_div < 0)
+		return isl_size_error;
 
-	if (pos < isl_basic_map_dim(bmap, isl_dim_div))
-		return 1 + isl_basic_map_dim(bmap, isl_dim_param) +
-			   isl_basic_map_dim(bmap, isl_dim_in) +
-			   isl_basic_map_dim(bmap, isl_dim_out) + pos;
-	pos -= isl_basic_map_dim(bmap, isl_dim_div);
+	if (pos < n_out)
+		return 1 + n_param + n_in + pos;
+	pos -= n_out;
 
-	if (pos < isl_basic_map_dim(bmap, isl_dim_param))
+	if (pos < n_in)
+		return 1 + n_param + pos;
+	pos -= n_in;
+
+	if (pos < n_div)
+		return 1 + n_param + n_in + n_out + pos;
+	pos -= n_div;
+
+	if (pos < n_param)
 		return 1 + pos;
 
 	return 0;
@@ -1891,6 +1911,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 	int type;
 	int k;
 	isl_int *c;
+	isl_size total;
 
 	if (!bmap)
 		return NULL;
@@ -1922,8 +1943,11 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 	if (k < 0)
 		goto error;
 
-	for (j = 0; j < 1 + isl_basic_map_total_dim(bmap); ++j) {
-		int pos;
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
+		return isl_basic_map_free(bmap);
+	for (j = 0; j < 1 + total; ++j) {
+		isl_size pos;
 		tok = isl_stream_next_token(s);
 		if (!tok || tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok, "expecting coefficient");
@@ -1938,8 +1962,11 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 			goto error;
 		}
 		pos = polylib_pos_to_isl_pos(bmap, j);
-		isl_int_set(c[pos], tok->u.v);
+		if (pos >= 0)
+			isl_int_set(c[pos], tok->u.v);
 		isl_token_free(tok);
+		if (pos < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	return bmap;
@@ -3179,11 +3206,13 @@ __isl_give isl_aff *isl_stream_read_aff(__isl_keep isl_stream *s)
 {
 	isl_aff *aff;
 	isl_multi_aff *ma;
+	isl_size dim;
 
 	ma = isl_stream_read_multi_aff(s);
-	if (!ma)
-		return NULL;
-	if (isl_multi_aff_dim(ma, isl_dim_out) != 1)
+	dim = isl_multi_aff_dim(ma, isl_dim_out);
+	if (dim < 0)
+		goto error;
+	if (dim != 1)
 		isl_die(s->ctx, isl_error_invalid,
 			"expecting single affine expression",
 			goto error);
@@ -3314,12 +3343,15 @@ __isl_give isl_pw_aff *isl_pw_aff_read_from_str(isl_ctx *ctx, const char *str)
 static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
 	__isl_take isl_space *dom_space, __isl_keep isl_multi_pw_aff *tuple)
 {
-	int dim, i, n;
+	int i;
+	isl_size dim, n;
 	isl_space *space;
 	isl_multi_pw_aff *mpa;
 
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
 	dim = isl_space_dim(dom_space, isl_dim_all);
+	if (n < 0 || dim < 0)
+		dom_space = isl_space_free(dom_space);
 	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
 	space = isl_space_align_params(space, isl_space_copy(dom_space));
 	if (!isl_space_is_params(dom_space))
@@ -3618,7 +3650,8 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 	struct vars *v;
 	isl_set *dom = NULL;
 	isl_multi_pw_aff *tuple = NULL;
-	int dim, i, n;
+	int i;
+	isl_size dim, n;
 	isl_space *space, *dom_space;
 	isl_multi_aff *ma = NULL;
 
@@ -3666,6 +3699,8 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
 	dim = isl_set_dim(dom, isl_dim_all);
+	if (n < 0 || dim < 0)
+		goto error;
 	dom_space = isl_set_get_space(dom);
 	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
 	space = isl_space_align_params(space, isl_space_copy(dom_space));

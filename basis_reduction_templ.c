@@ -331,7 +331,9 @@ __isl_give isl_mat *isl_basic_set_reduced_basis(__isl_keep isl_basic_set *bset)
 		tab->basis = isl_mat_identity(bset->ctx, 1 + tab->n_var);
 	else {
 		isl_mat *eq;
-		unsigned nvar = isl_basic_set_total_dim(bset);
+		isl_size nvar = isl_basic_set_dim(bset, isl_dim_all);
+		if (nvar < 0)
+			goto error;
 		eq = isl_mat_sub_alloc6(bset->ctx, bset->eq, 0, bset->n_eq,
 					1, nvar);
 		eq = isl_mat_left_hermite(eq, 0, NULL, &tab->basis);
@@ -348,4 +350,7 @@ __isl_give isl_mat *isl_basic_set_reduced_basis(__isl_keep isl_basic_set *bset)
 	isl_tab_free(tab);
 
 	return basis;
+error:
+	isl_tab_free(tab);
+	return NULL;
 }

@@ -22,6 +22,18 @@ isl_bool isl_bool_not(isl_bool b)
 	return b < 0 ? isl_bool_error : !b;
 }
 
+/* Create an isl_bool from an integer.
+ *
+ * Return isl_bool_false if b is zero, otherwise return isl_bool_true.
+ * This function never returns isl_bool_error.
+ */
+isl_bool isl_bool_ok(int b)
+{
+	if (b)
+		return isl_bool_true;
+	return isl_bool_false;
+}
+
 /* Check that the result of an allocation ("p") is not NULL and
  * complain if it is.
  * The only exception is when allocation size ("size") is equal to zero.

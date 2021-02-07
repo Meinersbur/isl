@@ -60,7 +60,8 @@ __isl_give isl_val *isl_val_scale_down_val(__isl_take isl_val *v1,
 __isl_give isl_val *isl_val_mod_val(__isl_take isl_val *v1,
 	__isl_take isl_val *v2);
 
-int isl_val_plain_is_equal(__isl_keep isl_val *val1, __isl_keep isl_val *val2);
+isl_bool isl_val_plain_is_equal(__isl_keep isl_val *val1,
+	__isl_keep isl_val *val2);
 
 isl_bool isl_val_matching_params(__isl_keep isl_val *v,
 	__isl_keep isl_space *space);

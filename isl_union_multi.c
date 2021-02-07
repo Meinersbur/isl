@@ -93,13 +93,13 @@ static isl_stat FN(UNION,count_part)(__isl_keep S(UNION,group) *group,
 
 /* Return the number of base expressions in "u".
  */
-int FN(FN(UNION,n),BASE)(__isl_keep UNION *u)
+isl_size FN(FN(UNION,n),BASE)(__isl_keep UNION *u)
 {
 	int n;
 
 	n = 0;
 	if (FN(UNION,foreach_group)(u, &FN(UNION,count_part), &n) < 0)
-		n = -1;
+		return isl_size_error;
 	return n;
 }
 

@@ -36,7 +36,7 @@ static __isl_give isl_basic_set *unit_box_base_points(
 {
 	int i, j, k;
 	struct isl_basic_set *unit_box = NULL;
-	unsigned total;
+	isl_size total;
 
 	if (!bset)
 		goto error;
@@ -47,7 +47,9 @@ static __isl_give isl_basic_set *unit_box_base_points(
 		return isl_basic_set_empty(space);
 	}
 
-	total = isl_basic_set_total_dim(bset);
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
+		goto error;
 	unit_box = isl_basic_set_alloc_space(isl_basic_set_get_space(bset),
 					0, 0, bset->n_ineq);
 
@@ -107,9 +109,11 @@ static __isl_give isl_basic_set *add_bounds(__isl_take isl_basic_set *bset,
 	isl_int *f, isl_int l, isl_int u)
 {
 	int k;
-	unsigned total;
+	isl_size total;
 
-	total = isl_basic_set_total_dim(bset);
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
+		return isl_basic_set_free(bset);
 	bset = isl_basic_set_extend_constraints(bset, 0, 2);
 
 	k = isl_basic_set_alloc_inequality(bset);
@@ -263,13 +267,15 @@ static enum isl_lp_result solve_ilp(__isl_keep isl_basic_set *bset,
 static enum isl_lp_result solve_ilp_with_eq(__isl_keep isl_basic_set *bset,
 	int max, isl_int *f, isl_int *opt, __isl_give isl_vec **sol_p)
 {
-	unsigned dim;
+	isl_size dim;
 	enum isl_lp_result res;
 	struct isl_mat *T = NULL;
 	struct isl_vec *v;
 
 	bset = isl_basic_set_copy(bset);
-	dim = isl_basic_set_total_dim(bset);
+	dim = isl_basic_set_dim(bset, isl_dim_all);
+	if (dim < 0)
+		goto error;
 	v = isl_vec_alloc(bset->ctx, 1 + dim);
 	if (!v)
 		goto error;
@@ -305,7 +311,7 @@ error:
 enum isl_lp_result isl_basic_set_solve_ilp(__isl_keep isl_basic_set *bset,
 	int max, isl_int *f, isl_int *opt, __isl_give isl_vec **sol_p)
 {
-	unsigned dim;
+	isl_size dim;
 	enum isl_lp_result res;
 
 	if (sol_p)
@@ -320,7 +326,9 @@ enum isl_lp_result isl_basic_set_solve_ilp(__isl_keep isl_basic_set *bset,
 	if (bset->n_eq)
 		return solve_ilp_with_eq(bset, max, f, opt, sol_p);
 
-	dim = isl_basic_set_total_dim(bset);
+	dim = isl_basic_set_dim(bset, isl_dim_all);
+	if (dim < 0)
+		return isl_lp_error;
 
 	if (max)
 		isl_seq_neg(f, f, 1 + dim);
@@ -358,7 +366,7 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 	isl_mat *bset_div = NULL;
 	isl_mat *div = NULL;
 	enum isl_lp_result res;
-	int bset_n_div, obj_n_div;
+	isl_size bset_n_div, obj_n_div;
 
 	if (!bset || !obj)
 		return isl_lp_error;
@@ -374,6 +382,8 @@ enum isl_lp_result isl_basic_set_opt(__isl_keep isl_basic_set *bset, int max,
 
 	bset_n_div = isl_basic_set_dim(bset, isl_dim_div);
 	obj_n_div = isl_aff_dim(obj, isl_dim_div);
+	if (bset_n_div < 0 || obj_n_div < 0)
+		return isl_lp_error;
 	if (bset_n_div == 0 && obj_n_div == 0)
 		return basic_set_opt(bset, max, obj, opt);
 
@@ -768,13 +778,16 @@ __isl_give isl_val *isl_union_pw_aff_max_val(__isl_take isl_union_pw_aff *upa)
 static __isl_give isl_multi_val *isl_multi_union_pw_aff_opt_multi_val(
 	__isl_take isl_multi_union_pw_aff *mupa, int max)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_multi_val *mv;
 
+	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	if (n < 0)
+		mupa = isl_multi_union_pw_aff_free(mupa);
 	if (!mupa)
 		return NULL;
 
-	n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
 	mv = isl_multi_val_zero(isl_multi_union_pw_aff_get_space(mupa));
 
 	for (i = 0; i < n; ++i) {

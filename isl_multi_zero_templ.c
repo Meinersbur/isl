@@ -17,13 +17,13 @@
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
 {
-	int n;
+	isl_size n;
 	MULTI(BASE) *multi;
 
-	if (!space)
-		return NULL;
-
 	n = isl_space_dim(space , isl_dim_out);
+	if (n < 0)
+		goto error;
+
 	multi = FN(MULTI(BASE),alloc)(isl_space_copy(space));
 
 	if (!n)
@@ -45,4 +45,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),zero)(__isl_take isl_space *space)
 	}
 
 	return multi;
+error:
+	isl_space_free(space);
+	return NULL;
 }

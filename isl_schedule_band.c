@@ -48,19 +48,21 @@ static __isl_give isl_schedule_band *isl_schedule_band_alloc(isl_ctx *ctx)
 __isl_give isl_schedule_band *isl_schedule_band_from_multi_union_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa)
 {
+	isl_size dim;
 	isl_ctx *ctx;
 	isl_schedule_band *band;
 	isl_space *space;
 
 	mupa = isl_multi_union_pw_aff_floor(mupa);
-	if (!mupa)
-		return NULL;
+	dim = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	if (dim < 0)
+		goto error;
 	ctx = isl_multi_union_pw_aff_get_ctx(mupa);
 	band = isl_schedule_band_alloc(ctx);
 	if (!band)
 		goto error;
 
-	band->n = isl_multi_union_pw_aff_dim(mupa, isl_dim_set);
+	band->n = dim;
 	band->coincident = isl_calloc_array(ctx, int, band->n);
 	band->mupa = mupa;
 	space = isl_space_params_alloc(ctx, 0);
@@ -630,8 +632,12 @@ static isl_bool has_isolate_option(__isl_keep isl_union_set *options)
  */
 static isl_bool is_loop_type_option(__isl_keep isl_set *set)
 {
-	if (isl_set_dim(set, isl_dim_set) == 1 &&
-	    isl_set_has_tuple_name(set)) {
+	isl_size dim;
+
+	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
+		return isl_bool_error;
+	if (dim == 1 && isl_set_has_tuple_name(set)) {
 		const char *name;
 		enum isl_ast_loop_type type;
 		name = isl_set_get_tuple_name(set);
@@ -1076,7 +1082,8 @@ static isl_multi_union_pw_aff *isl_multi_union_pw_aff_tile(
 	__isl_take isl_multi_val *sizes)
 {
 	isl_ctx *ctx;
-	int i, n;
+	int i;
+	isl_size n;
 	isl_val *v;
 	int scale;
 
@@ -1084,6 +1091,8 @@ static isl_multi_union_pw_aff *isl_multi_union_pw_aff_tile(
 	scale = isl_options_get_tile_scale_tile_loops(ctx);
 
 	n = isl_multi_union_pw_aff_dim(sched, isl_dim_set);
+	if (n < 0)
+		sched = isl_multi_union_pw_aff_free(sched);
 	for (i = 0; i < n; ++i) {
 		isl_union_pw_aff *upa;
 

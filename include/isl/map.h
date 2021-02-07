@@ -30,25 +30,11 @@
 extern "C" {
 #endif
 
-ISL_DEPRECATED
-unsigned isl_basic_map_n_in(__isl_keep const isl_basic_map *bmap);
-ISL_DEPRECATED
-unsigned isl_basic_map_n_out(__isl_keep const isl_basic_map *bmap);
-ISL_DEPRECATED
-unsigned isl_basic_map_n_param(__isl_keep const isl_basic_map *bmap);
-ISL_DEPRECATED
-unsigned isl_basic_map_n_div(__isl_keep const isl_basic_map *bmap);
-unsigned isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap);
-unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
+isl_size isl_basic_map_total_dim(__isl_keep const isl_basic_map *bmap);
+isl_size isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 				enum isl_dim_type type);
 
-ISL_DEPRECATED
-unsigned isl_map_n_in(__isl_keep const isl_map *map);
-ISL_DEPRECATED
-unsigned isl_map_n_out(__isl_keep const isl_map *map);
-ISL_DEPRECATED
-unsigned isl_map_n_param(__isl_keep const isl_map *map);
-unsigned isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
+isl_size isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
 isl_ctx *isl_map_get_ctx(__isl_keep isl_map *map);
@@ -620,7 +606,7 @@ isl_bool isl_map_plain_is_equal(__isl_keep isl_map *map1,
 
 uint32_t isl_map_get_hash(__isl_keep isl_map *map);
 
-int isl_map_n_basic_map(__isl_keep isl_map *map);
+isl_size isl_map_n_basic_map(__isl_keep isl_map *map);
 __isl_export
 isl_stat isl_map_foreach_basic_map(__isl_keep isl_map *map,
 	isl_stat (*fn)(__isl_take isl_basic_map *bmap, void *user), void *user);

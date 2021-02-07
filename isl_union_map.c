@@ -34,15 +34,15 @@
 /* Return the number of parameters of "umap", where "type"
  * is required to be set to isl_dim_param.
  */
-unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+isl_size isl_union_map_dim(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type)
 {
 	if (!umap)
-		return 0;
+		return isl_size_error;
 
 	if (type != isl_dim_param)
 		isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
-			"can only reference parameters", return 0);
+			"can only reference parameters", return isl_size_error);
 
 	return isl_space_dim(umap->dim, type);
 }
@@ -50,7 +50,7 @@ unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
 /* Return the number of parameters of "uset", where "type"
  * is required to be set to isl_dim_param.
  */
-unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+isl_size isl_union_set_dim(__isl_keep isl_union_set *uset,
 	enum isl_dim_type type)
 {
 	return isl_union_map_dim(uset, type);
@@ -478,14 +478,14 @@ static isl_stat call_on_copy(void **entry, void *user)
 	return data->fn(isl_map_copy(map), data->user);
 }
 
-int isl_union_map_n_map(__isl_keep isl_union_map *umap)
+isl_size isl_union_map_n_map(__isl_keep isl_union_map *umap)
 {
-	return umap ? umap->table.n : 0;
+	return umap ? umap->table.n : isl_size_error;
 }
 
-int isl_union_set_n_set(__isl_keep isl_union_set *uset)
+isl_size isl_union_set_n_set(__isl_keep isl_union_set *uset)
 {
-	return uset ? uset->table.n : 0;
+	return uset ? uset->table.n : isl_size_error;
 }
 
 isl_stat isl_union_map_foreach_map(__isl_keep isl_union_map *umap,
@@ -573,14 +573,14 @@ static isl_stat add_list_map(__isl_take isl_map *map, void *user)
 __isl_give isl_map_list *isl_union_map_get_map_list(
 	__isl_keep isl_union_map *umap)
 {
-	int n_maps;
+	isl_size n_maps;
 	isl_ctx *ctx;
 	isl_map_list *list;
 
-	if (!umap)
+	n_maps = isl_union_map_n_map(umap);
+	if (n_maps < 0)
 		return NULL;
 	ctx = isl_union_map_get_ctx(umap);
-	n_maps = isl_union_map_n_map(umap);
 	list = isl_map_list_alloc(ctx, n_maps);
 
 	if (isl_union_map_foreach_map(umap, &add_list_map, &list) < 0)
@@ -2614,9 +2614,12 @@ static isl_bool union_map_forall_user(__isl_keep isl_union_map *umap,
  */
 isl_bool isl_union_map_plain_is_empty(__isl_keep isl_union_map *umap)
 {
-	if (!umap)
+	isl_size n;
+
+	n = isl_union_map_n_map(umap);
+	if (n < 0)
 		return isl_bool_error;
-	return isl_union_map_n_map(umap) == 0;
+	return n == 0;
 }
 
 isl_bool isl_union_map_is_empty(__isl_keep isl_union_map *umap)
@@ -2697,12 +2700,16 @@ static isl_stat single_valued_on_domain(__isl_take isl_set *set, void *user)
 {
 	struct isl_union_map_is_sv_data *data = user;
 	isl_union_map *umap, *test;
+	isl_size n;
 
 	umap = isl_union_map_copy(data->umap);
 	umap = isl_union_map_intersect_domain(umap,
 						isl_union_set_from_set(set));
 
-	if (isl_union_map_n_map(umap) == 1) {
+	n = isl_union_map_n_map(umap);
+	if (n < 0) {
+		data->sv = isl_bool_error;
+	} else if (n == 1) {
 		data->sv = single_map_is_single_valued(umap);
 		isl_union_map_free(umap);
 	} else {
@@ -2730,8 +2737,12 @@ isl_bool isl_union_map_is_single_valued(__isl_keep isl_union_map *umap)
 	isl_union_map *universe;
 	isl_union_set *domain;
 	struct isl_union_map_is_sv_data data;
+	isl_size n;
 
-	if (isl_union_map_n_map(umap) == 1)
+	n = isl_union_map_n_map(umap);
+	if (n < 0)
+		return isl_bool_error;
+	if (n == 1)
 		return single_map_is_single_valued(umap);
 
 	universe = isl_union_map_universe(isl_union_map_copy(umap));
@@ -2989,13 +3000,13 @@ static isl_bool plain_injective_on_range(__isl_take isl_union_map *umap,
 	int first, int n_range)
 {
 	isl_ctx *ctx;
-	int n;
+	isl_size n;
 	struct isl_fixed_dim_data data = { NULL };
 
 	ctx = isl_union_map_get_ctx(umap);
 
 	n = isl_union_map_n_map(umap);
-	if (!umap)
+	if (n < 0)
 		goto error;
 
 	if (n <= 1) {
@@ -3045,12 +3056,17 @@ error:
 static isl_bool plain_injective_on_range_wrap(__isl_keep isl_set *ran,
 	void *user)
 {
+	isl_size dim;
 	isl_union_map *umap = user;
+
+	dim = isl_set_dim(ran, isl_dim_set);
+	if (dim < 0)
+		return isl_bool_error;
 
 	umap = isl_union_map_copy(umap);
 	umap = isl_union_map_intersect_range(umap,
 			isl_union_set_from_set(isl_set_copy(ran)));
-	return plain_injective_on_range(umap, 0, isl_set_dim(ran, isl_dim_set));
+	return plain_injective_on_range(umap, 0, dim);
 }
 
 /* Check if the given union_map is obviously injective.
@@ -3748,11 +3764,11 @@ __isl_give isl_union_map *isl_union_map_project_out(
 __isl_give isl_union_map *isl_union_map_project_out_all_params(
 	__isl_take isl_union_map *umap)
 {
-	unsigned n;
+	isl_size n;
 
-	if (!umap)
-		return NULL;
 	n = isl_union_map_dim(umap, isl_dim_param);
+	if (n < 0)
+		return isl_union_map_free(umap);
 	return isl_union_map_project_out(umap, isl_dim_param, 0, n);
 }
 
@@ -3876,12 +3892,12 @@ __isl_give isl_union_map *isl_union_map_reset_range_space(
 static isl_stat check_union_map_space_equal_dim(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space)
 {
-	unsigned dim1, dim2;
+	isl_size dim1, dim2;
 
-	if (!umap || !space)
-		return isl_stat_error;
 	dim1 = isl_union_map_dim(umap, isl_dim_param);
 	dim2 = isl_space_dim(space, isl_dim_param);
+	if (dim1 < 0 || dim2 < 0)
+		return isl_stat_error;
 	if (dim1 == dim2)
 		return isl_stat_ok;
 	isl_die(isl_union_map_get_ctx(umap), isl_error_invalid,
@@ -4085,19 +4101,20 @@ __isl_give isl_union_map *isl_union_map_lex_gt_at_multi_union_pw_aff(
 __isl_give isl_union_set *isl_union_set_list_union(
 	__isl_take isl_union_set_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_space *space;
 	isl_union_set *res;
 
-	if (!list)
-		return NULL;
+	n = isl_union_set_list_n_union_set(list);
+	if (n < 0)
+		goto error;
 
 	ctx = isl_union_set_list_get_ctx(list);
 	space = isl_space_params_alloc(ctx, 0);
 	res = isl_union_set_empty(space);
 
-	n = isl_union_set_list_n_union_set(list);
 	for (i = 0; i < n; ++i) {
 		isl_union_set *uset_i;
 
@@ -4107,6 +4124,9 @@ __isl_give isl_union_set *isl_union_set_list_union(
 
 	isl_union_set_list_free(list);
 	return res;
+error:
+	isl_union_set_list_free(list);
+	return NULL;
 }
 
 /* Update *hash with the hash value of "map".
@@ -4151,11 +4171,13 @@ uint32_t isl_union_set_get_hash(__isl_keep isl_union_set *uset)
 static isl_stat add_n(__isl_take isl_set *set, void *user)
 {
 	int *n = user;
+	isl_size set_n;
 
-	*n += isl_set_n_basic_set(set);
+	set_n = isl_set_n_basic_set(set);
+	*n += set_n;
 	isl_set_free(set);
 
-	return isl_stat_ok;
+	return set_n < 0 ? isl_stat_error : isl_stat_ok;
 }
 
 /* Return the total number of basic sets in "uset".

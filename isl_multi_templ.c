@@ -64,14 +64,14 @@ __isl_give isl_space *FN(MULTI(BASE),get_domain_space)(
 __isl_give MULTI(BASE) *FN(MULTI(BASE),alloc)(__isl_take isl_space *space)
 {
 	isl_ctx *ctx;
-	int n;
+	isl_size n;
 	MULTI(BASE) *multi;
 
-	if (!space)
-		return NULL;
+	n = isl_space_dim(space, isl_dim_out);
+	if (n < 0)
+		goto error;
 
 	ctx = isl_space_get_ctx(space);
-	n = isl_space_dim(space, isl_dim_out);
 	if (n > 0)
 		multi = isl_calloc(ctx, MULTI(BASE),
 			 sizeof(MULTI(BASE)) + (n - 1) * sizeof(struct EL *));
@@ -153,10 +153,10 @@ __isl_null MULTI(BASE) *FN(MULTI(BASE),free)(__isl_take MULTI(BASE) *multi)
 	return NULL;
 }
 
-unsigned FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
+isl_size FN(MULTI(BASE),dim)(__isl_keep MULTI(BASE) *multi,
 	enum isl_dim_type type)
 {
-	return multi ? isl_space_dim(multi->space, type) : 0;
+	return isl_space_dim(FN(MULTI(BASE),peek_space)(multi), type);
 }
 
 /* Return the position of the first dimension of "type" with id "id".
@@ -561,16 +561,17 @@ __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),from),LIST(BASE))(
 	__isl_take isl_space *space, __isl_take LIST(EL) *list)
 {
 	int i;
-	int n;
+	isl_size n, dim;
 	isl_ctx *ctx;
 	MULTI(BASE) *multi;
 
-	if (!space || !list)
+	dim = isl_space_dim(space, isl_dim_out);
+	n = FN(FN(LIST(EL),n),BASE)(list);
+	if (dim < 0 || n < 0)
 		goto error;
 
 	ctx = isl_space_get_ctx(space);
-	n = FN(FN(LIST(EL),n),BASE)(list);
-	if (n != isl_space_dim(space, isl_dim_out))
+	if (n != dim)
 		isl_die(ctx, isl_error_invalid,
 			"invalid number of elements in list", goto error);
 
@@ -679,20 +680,20 @@ error:
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),range_product_aligned)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
 {
-	int i, n1, n2;
+	int i;
+	isl_size n1, n2;
 	EL *el;
 	isl_space *space;
 	MULTI(BASE) *res;
 
-	if (!multi1 || !multi2)
+	n1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
+	n2 = FN(MULTI(BASE),dim)(multi2, isl_dim_out);
+	if (n1 < 0 || n2 < 0)
 		goto error;
 
 	space = isl_space_range_product(FN(MULTI(BASE),get_space)(multi1),
 					FN(MULTI(BASE),get_space)(multi2));
 	res = FN(MULTI(BASE),alloc)(space);
-
-	n1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
-	n2 = FN(MULTI(BASE),dim)(multi2, isl_dim_out);
 
 	for (i = 0; i < n1; ++i) {
 		el = FN(FN(MULTI(BASE),get),BASE)(multi1, i);
@@ -743,19 +744,21 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_factor_domain)(
 	__isl_take MULTI(BASE) *multi)
 {
 	isl_space *space;
-	int total, keep;
+	isl_size total, keep;
 
-	if (!multi)
-		return NULL;
+	total = FN(MULTI(BASE),dim)(multi, isl_dim_out);
+	if (total < 0)
+		return FN(MULTI(BASE),free)(multi);
 	if (!isl_space_range_is_wrapping(multi->space))
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
 			"range is not a product",
 			return FN(MULTI(BASE),free)(multi));
 
 	space = FN(MULTI(BASE),get_space)(multi);
-	total = isl_space_dim(space, isl_dim_out);
 	space = isl_space_range_factor_domain(space);
 	keep = isl_space_dim(space, isl_dim_out);
+	if (keep < 0)
+		multi = FN(MULTI(BASE),free)(multi);
 	multi = FN(MULTI(BASE),drop_dims)(multi,
 					isl_dim_out, keep, total - keep);
 	multi = FN(MULTI(BASE),reset_space)(multi, space);
@@ -769,19 +772,21 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_factor_range)(
 	__isl_take MULTI(BASE) *multi)
 {
 	isl_space *space;
-	int total, keep;
+	isl_size total, keep;
 
-	if (!multi)
-		return NULL;
+	total = FN(MULTI(BASE),dim)(multi, isl_dim_out);
+	if (total < 0)
+		return FN(MULTI(BASE),free)(multi);
 	if (!isl_space_range_is_wrapping(multi->space))
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
 			"range is not a product",
 			return FN(MULTI(BASE),free)(multi));
 
 	space = FN(MULTI(BASE),get_space)(multi);
-	total = isl_space_dim(space, isl_dim_out);
 	space = isl_space_range_factor_range(space);
 	keep = isl_space_dim(space, isl_dim_out);
+	if (keep < 0)
+		multi = FN(MULTI(BASE),free)(multi);
 	multi = FN(MULTI(BASE),drop_dims)(multi, isl_dim_out, 0, total - keep);
 	multi = FN(MULTI(BASE),reset_space)(multi, space);
 
@@ -794,18 +799,20 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),factor_range)(
 	__isl_take MULTI(BASE) *multi)
 {
 	isl_space *space;
-	int total, keep;
+	isl_size total, keep;
 
-	if (!multi)
-		return NULL;
+	total = FN(MULTI(BASE),dim)(multi, isl_dim_set);
+	if (total < 0)
+		return FN(MULTI(BASE),free)(multi);
 	if (!isl_space_is_wrapping(multi->space))
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
 			"not a product", return FN(MULTI(BASE),free)(multi));
 
 	space = FN(MULTI(BASE),get_space)(multi);
-	total = isl_space_dim(space, isl_dim_set);
 	space = isl_space_factor_range(space);
 	keep = isl_space_dim(space, isl_dim_set);
+	if (keep < 0)
+		multi = FN(MULTI(BASE),free)(multi);
 	multi = FN(MULTI(BASE),drop_dims)(multi, isl_dim_set, 0, total - keep);
 	multi = FN(MULTI(BASE),reset_space)(multi, space);
 
@@ -862,14 +869,14 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_splice)(
 	__isl_take MULTI(BASE) *multi2)
 {
 	MULTI(BASE) *res;
-	unsigned dim;
+	isl_size dim;
 
-	if (!multi1 || !multi2)
+	dim = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
+	if (dim < 0 || !multi2)
 		goto error;
 
 	if (FN(MULTI(BASE),check_range)(multi1, isl_dim_out, pos, 0) < 0)
 		goto error;
-	dim = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
 
 	res = FN(MULTI(BASE),copy)(multi1);
 	res = FN(MULTI(BASE),drop_dims)(res, isl_dim_out, pos, dim - pos);

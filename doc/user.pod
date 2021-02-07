@@ -281,6 +281,19 @@ by various operations that take such objects as input.
 
 =back
 
+=head3 Changes since isl-0.20
+
+=over
+
+=item * Several functions that used to return C<unsigned>
+now return C<isl_size>.  This means that these functions may
+now return a negative value in case an error occurred.
+The same holds for functions that used to return C<int>,
+although some of those were already returning
+a negative value in case of error.
+
+=back
+
 =head1 License
 
 C<isl> is released under the MIT license.
@@ -617,17 +630,27 @@ in which the object was created.
 
 =head2 Return Types
 
-C<isl> uses two special return types for functions that either return
+C<isl> uses the special return type C<isl_size> for functions
+that return a non-negative value, typically a number or a position.
+Besides the regular non-negative return values, a special (negative)
+value C<isl_size_error> may be returned, indicating that something
+went wrong.
+
+C<isl> also uses two special return types for functions that either return
 a boolean or that in principle do not return anything.
 In particular, the C<isl_bool> type has three possible values:
 C<isl_bool_true> (a positive integer value), indicating I<true> or I<yes>;
 C<isl_bool_false> (the integer value zero), indicating I<false> or I<no>; and
 C<isl_bool_error> (a negative integer value), indicating that something
-went wrong.  The following function can be used to negate an C<isl_bool>,
-where the negation of C<isl_bool_error> is C<isl_bool_error> again.
+went wrong.  The following operations are defined on C<isl_bool>. The function
+C<isl_bool_not> can be used to negate an C<isl_bool>, where the negation of
+C<isl_bool_error> is C<isl_bool_error> again. The function C<isl_bool_ok>
+converts an integer to an C<isl_bool>. Any non-zero values yields
+C<isl_bool_true> and zero yields C<isl_bool_false>.
 
-	#include <isl/val.h>
+	#include <isl/ctx.h>
 	isl_bool isl_bool_not(isl_bool b);
+	isl_bool isl_bool_ok(int b);
 
 The C<isl_stat> type has two possible values:
 C<isl_stat_ok> (the integer value zero), indicating a successful
@@ -635,7 +658,7 @@ operation; and
 C<isl_stat_error> (a negative integer value), indicating that something
 went wrong.
 See L</"Error Handling"> for more information on
-C<isl_bool_error> and C<isl_stat_error>.
+C<isl_size_error>, C<isl_bool_error> and C<isl_stat_error>.
 
 =head2 Values
 
@@ -679,7 +702,7 @@ They can be inspected using the following functions.
 	__isl_give isl_val *isl_val_get_den_val(
 		__isl_keep isl_val *v);
 	double isl_val_get_d(__isl_keep isl_val *v);
-	size_t isl_val_n_abs_num_chunks(__isl_keep isl_val *v,
+	isl_size isl_val_n_abs_num_chunks(__isl_keep isl_val *v,
 		size_t size);
 	isl_stat isl_val_get_abs_num_chunks(__isl_keep isl_val *v,
 		size_t size, void *chunks);
@@ -860,8 +883,9 @@ The default behavior is to warn. In this mode, C<isl> prints a warning, stores
 the last error in the corresponding C<isl_ctx> and the function in which the
 error was triggered returns a value indicating that some error has
 occurred.  In case of functions returning a pointer, this value is
-C<NULL>.  In case of functions returning an C<isl_bool> or an
-C<isl_stat>, this value is C<isl_bool_error> or C<isl_stat_error>.
+C<NULL>.  In case of functions returning an C<isl_size>, C<isl_bool> or an
+C<isl_stat>, this value is C<isl_size_error>,
+C<isl_bool_error> or C<isl_stat_error>.
 An error does not corrupt internal state,
 such that isl can continue to be used. C<isl> also provides functions to
 read the last error, including the specific error message,
@@ -1134,65 +1158,65 @@ C<isl_dim_out> (only for relations), C<isl_dim_set>
 (only for sets) or C<isl_dim_all>.
 
 	#include <isl/space.h>
-	unsigned isl_space_dim(__isl_keep isl_space *space,
+	isl_size isl_space_dim(__isl_keep isl_space *space,
 		enum isl_dim_type type);
 
 	#include <isl/local_space.h>
-	int isl_local_space_dim(__isl_keep isl_local_space *ls,
+	isl_size isl_local_space_dim(__isl_keep isl_local_space *ls,
 		enum isl_dim_type type);
 
 	#include <isl/set.h>
-	unsigned isl_basic_set_dim(__isl_keep isl_basic_set *bset,
+	isl_size isl_basic_set_dim(__isl_keep isl_basic_set *bset,
 		enum isl_dim_type type);
-	unsigned isl_set_dim(__isl_keep isl_set *set,
+	isl_size isl_set_dim(__isl_keep isl_set *set,
 		enum isl_dim_type type);
 
 	#include <isl/union_set.h>
-	unsigned isl_union_set_dim(__isl_keep isl_union_set *uset,
+	isl_size isl_union_set_dim(__isl_keep isl_union_set *uset,
 		enum isl_dim_type type);
 
 	#include <isl/map.h>
-	unsigned isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
+	isl_size isl_basic_map_dim(__isl_keep isl_basic_map *bmap,
 		enum isl_dim_type type);
-	unsigned isl_map_dim(__isl_keep isl_map *map,
+	isl_size isl_map_dim(__isl_keep isl_map *map,
 		enum isl_dim_type type);
 
 	#include <isl/union_map.h>
-	unsigned isl_union_map_dim(__isl_keep isl_union_map *umap,
+	isl_size isl_union_map_dim(__isl_keep isl_union_map *umap,
 		enum isl_dim_type type);
 
 	#include <isl/val.h>
-	unsigned isl_multi_val_dim(__isl_keep isl_multi_val *mv,
+	isl_size isl_multi_val_dim(__isl_keep isl_multi_val *mv,
 		enum isl_dim_type type);
 
 	#include <isl/aff.h>
-	int isl_aff_dim(__isl_keep isl_aff *aff,
+	isl_size isl_aff_dim(__isl_keep isl_aff *aff,
 		enum isl_dim_type type);
-	unsigned isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
+	isl_size isl_multi_aff_dim(__isl_keep isl_multi_aff *maff,
 		enum isl_dim_type type);
-	unsigned isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
+	isl_size isl_pw_aff_dim(__isl_keep isl_pw_aff *pwaff,
 		enum isl_dim_type type);
-	unsigned isl_pw_multi_aff_dim(
+	isl_size isl_pw_multi_aff_dim(
 		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type);
-	unsigned isl_multi_pw_aff_dim(
+	isl_size isl_multi_pw_aff_dim(
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type);
-	unsigned isl_union_pw_aff_dim(
+	isl_size isl_union_pw_aff_dim(
 		__isl_keep isl_union_pw_aff *upa,
 		enum isl_dim_type type);
-	unsigned isl_union_pw_multi_aff_dim(
+	isl_size isl_union_pw_multi_aff_dim(
 		__isl_keep isl_union_pw_multi_aff *upma,
 		enum isl_dim_type type);
-	unsigned isl_multi_union_pw_aff_dim(
+	isl_size isl_multi_union_pw_aff_dim(
 		__isl_keep isl_multi_union_pw_aff *mupa,
 		enum isl_dim_type type);
 
 	#include <isl/polynomial.h>
-	unsigned isl_union_pw_qpolynomial_dim(
+	isl_size isl_union_pw_qpolynomial_dim(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		enum isl_dim_type type);
-	unsigned isl_union_pw_qpolynomial_fold_dim(
+	isl_size isl_union_pw_qpolynomial_fold_dim(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
 		enum isl_dim_type type);
 
@@ -2265,8 +2289,8 @@ of these calls returns false.
 The number of sets or maps in a union set or map can be obtained
 from
 
-	int isl_union_set_n_set(__isl_keep isl_union_set *uset);
-	int isl_union_map_n_map(__isl_keep isl_union_map *umap);
+	isl_size isl_union_set_n_set(__isl_keep isl_union_set *uset);
+	isl_size isl_union_map_n_map(__isl_keep isl_union_map *umap);
 
 To extract the set or map in a given space from a union, use
 
@@ -2307,10 +2331,10 @@ or the number of basic maps in a map can be obtained
 from
 
 	#include <isl/set.h>
-	int isl_set_n_basic_set(__isl_keep isl_set *set);
+	isl_size isl_set_n_basic_set(__isl_keep isl_set *set);
 
 	#include <isl/map.h>
-	int isl_map_n_basic_map(__isl_keep isl_map *map);
+	isl_size isl_map_n_basic_map(__isl_keep isl_map *map);
 
 It is also possible to obtain a list of (basic) sets from a set
 or union set, a list of basic maps from a map and a list of maps from a union
@@ -2341,14 +2365,14 @@ To iterate over the constraints of a basic set or map, use
 
 	#include <isl/constraint.h>
 
-	int isl_basic_set_n_constraint(
+	isl_size isl_basic_set_n_constraint(
 		__isl_keep isl_basic_set *bset);
 	isl_stat isl_basic_set_foreach_constraint(
 		__isl_keep isl_basic_set *bset,
 		isl_stat (*fn)(__isl_take isl_constraint *c,
 			void *user),
 		void *user);
-	int isl_basic_map_n_constraint(
+	isl_size isl_basic_map_n_constraint(
 		__isl_keep isl_basic_map *bmap);
 	isl_stat isl_basic_map_foreach_constraint(
 		__isl_keep isl_basic_map *bmap,
@@ -2748,11 +2772,11 @@ use
 The terms themselves can be inspected and freed using
 these functions
 
-	unsigned isl_term_dim(__isl_keep isl_term *term,
+	isl_size isl_term_dim(__isl_keep isl_term *term,
 		enum isl_dim_type type);
 	__isl_give isl_val *isl_term_get_coefficient_val(
 		__isl_keep isl_term *term);
-	int isl_term_get_exp(__isl_keep isl_term *term,
+	isl_size isl_term_get_exp(__isl_keep isl_term *term,
 		enum isl_dim_type type, unsigned pos);
 	__isl_give isl_aff *isl_term_get_div(
 		__isl_keep isl_term *term, unsigned pos);
@@ -3206,13 +3230,13 @@ use the following functions.
 
 	#include <isl/aff.h>
 	isl_bool isl_pw_aff_is_empty(__isl_keep isl_pw_aff *pwaff);
-	int isl_pw_aff_n_piece(__isl_keep isl_pw_aff *pwaff);
+	isl_size isl_pw_aff_n_piece(__isl_keep isl_pw_aff *pwaff);
 	isl_stat isl_pw_aff_foreach_piece(
 		__isl_keep isl_pw_aff *pwaff,
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_aff *aff,
 			  void *user), void *user);
-	int isl_pw_multi_aff_n_piece(
+	isl_size isl_pw_multi_aff_n_piece(
 		__isl_keep isl_pw_multi_aff *pma);
 	isl_stat isl_pw_multi_aff_foreach_piece(
 		__isl_keep isl_pw_multi_aff *pma,
@@ -3221,7 +3245,7 @@ use the following functions.
 			    void *user), void *user);
 
 	#include <isl/polynomial.h>
-	int isl_pw_qpolynomial_n_piece(
+	isl_size isl_pw_qpolynomial_n_piece(
 		__isl_keep isl_pw_qpolynomial *pwqp);
 	isl_stat isl_pw_qpolynomial_foreach_piece(
 		__isl_keep isl_pw_qpolynomial *pwqp,
@@ -3233,7 +3257,7 @@ use the following functions.
 		isl_stat (*fn)(__isl_take isl_set *set,
 			  __isl_take isl_qpolynomial *qp,
 			  void *user), void *user);
-	int isl_pw_qpolynomial_fold_n_piece(
+	isl_size isl_pw_qpolynomial_fold_n_piece(
 		__isl_keep isl_pw_qpolynomial_fold *pwf);
 	isl_stat isl_pw_qpolynomial_fold_foreach_piece(
 		__isl_keep isl_pw_qpolynomial_fold *pwf,
@@ -3441,13 +3465,13 @@ To iterate over the base expressions in a union expression,
 use the following functions.
 
 	#include <isl/aff.h>
-	int isl_union_pw_aff_n_pw_aff(
+	isl_size isl_union_pw_aff_n_pw_aff(
 		__isl_keep isl_union_pw_aff *upa);
 	isl_stat isl_union_pw_aff_foreach_pw_aff(
 		__isl_keep isl_union_pw_aff *upa,
 		isl_stat (*fn)(__isl_take isl_pw_aff *pa,
 			void *user), void *user);
-	int isl_union_pw_multi_aff_n_pw_multi_aff(
+	isl_size isl_union_pw_multi_aff_n_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma);
 	isl_stat isl_union_pw_multi_aff_foreach_pw_multi_aff(
 		__isl_keep isl_union_pw_multi_aff *upma,
@@ -3455,13 +3479,13 @@ use the following functions.
 			    void *user), void *user);
 
 	#include <isl/polynomial.h>
-	int isl_union_pw_qpolynomial_n_pw_qpolynomial(
+	isl_size isl_union_pw_qpolynomial_n_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp);
 	isl_stat isl_union_pw_qpolynomial_foreach_pw_qpolynomial(
 		__isl_keep isl_union_pw_qpolynomial *upwqp,
 		isl_stat (*fn)(__isl_take isl_pw_qpolynomial *pwqp,
 			    void *user), void *user);
-	int isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
+	isl_size isl_union_pw_qpolynomial_fold_n_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf);
 	isl_stat isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(
 		__isl_keep isl_union_pw_qpolynomial_fold *upwf,
@@ -7909,8 +7933,8 @@ C<isl_set_list_reverse> reverses the elements in the list.
 Lists can be inspected using the following functions.
 
 	#include <isl/set.h>
-	int isl_set_list_size(__isl_keep isl_set_list *list);
-	int isl_set_list_n_set(__isl_keep isl_set_list *list);
+	isl_size isl_set_list_size(__isl_keep isl_set_list *list);
+	isl_size isl_set_list_n_set(__isl_keep isl_set_list *list);
 	__isl_give isl_set *isl_set_list_get_at(
 		__isl_keep isl_set_list *list, int index);
 	__isl_give isl_set *isl_set_list_get_set(
@@ -8033,7 +8057,7 @@ may have arbitrary values.
 A vector created by C<isl_vec_zero> has elements with value zero.
 The elements can be changed and inspected using the following functions.
 
-	int isl_vec_size(__isl_keep isl_vec *vec);
+	isl_size isl_vec_size(__isl_keep isl_vec *vec);
 	__isl_give isl_val *isl_vec_get_element_val(
 		__isl_keep isl_vec *vec, int pos);
 	__isl_give isl_vec *isl_vec_set_element_si(
@@ -8069,8 +8093,8 @@ Matrices can be created, copied and freed using the following functions.
 Note that the elements of a newly created matrix may have arbitrary values.
 The elements can be changed and inspected using the following functions.
 
-	int isl_mat_rows(__isl_keep isl_mat *mat);
-	int isl_mat_cols(__isl_keep isl_mat *mat);
+	isl_size isl_mat_rows(__isl_keep isl_mat *mat);
+	isl_size isl_mat_cols(__isl_keep isl_mat *mat);
 	__isl_give isl_val *isl_mat_get_element_val(
 		__isl_keep isl_mat *mat, int row, int col);
 	__isl_give isl_mat *isl_mat_set_element_si(__isl_take isl_mat *mat,
@@ -8083,7 +8107,7 @@ The following function computes the rank of a matrix.
 The return value may be -1 if some error occurred.
 
 	#include <isl/mat.h>
-	int isl_mat_rank(__isl_keep isl_mat *mat);
+	isl_size isl_mat_rank(__isl_keep isl_mat *mat);
 
 The following function can be used to compute the (right) inverse
 of a matrix, i.e., a matrix such that the product of the original
@@ -8587,7 +8611,7 @@ exists.
 	__isl_give isl_schedule_node *isl_schedule_node_ancestor(
 		__isl_take isl_schedule_node *node,
 		int generation);
-	int isl_schedule_node_n_children(
+	isl_size isl_schedule_node_n_children(
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_child(
 		__isl_take isl_schedule_node *node, int pos);

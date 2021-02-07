@@ -207,8 +207,11 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
  * by isl is explicitly decoded as an 'ascii' string.  This is correct
  * as all strings returned by isl are expected to be 'ascii'.
  *
- * If the return type is isl_bool, then convert the result to
- * a Python boolean, raising an error on isl_bool_error.
+ * If the return type is isl_stat, isl_bool or isl_size, then
+ * raise an error on isl_stat_error, isl_bool_error or isl_size_error.
+ * In case of isl_bool, the result is converted to
+ * a Python boolean.
+ * In case of isl_size, the result is converted to a Python int.
  */
 void python_generator::print_method_return(FunctionDecl *method)
 {
@@ -229,10 +232,13 @@ void python_generator::print_method_return(FunctionDecl *method)
 			printf("        libc.free(res)\n");
 
 		printf("        return string\n");
-	} else if (is_isl_bool(return_type)) {
+	} else if (is_isl_neg_error(return_type)) {
 		printf("        if res < 0:\n");
 		printf("            raise\n");
-		printf("        return bool(res)\n");
+		if (is_isl_bool(return_type))
+			printf("        return bool(res)\n");
+		else if (is_isl_size(return_type))
+			printf("        return int(res)\n");
 	} else {
 		printf("        return res\n");
 	}
@@ -491,9 +497,11 @@ void python_generator::print_class_header(const isl_class &clazz,
 /* Tell ctypes about the return type of "fd".
  * In particular, if "fd" returns a pointer to an isl object,
  * then tell ctypes it returns a "c_void_p".
- * Similarly, if "fd" returns an isl_bool,
- * then tell ctypes it returns a "c_bool".
  * If "fd" returns a char *, then simply tell ctypes.
+ *
+ * Nothing needs to be done for functions returning
+ * isl_bool, isl_stat or isl_size since they are represented by an int and
+ * ctypes assumes that a function returns int by default.
  */
 void python_generator::print_restype(FunctionDecl *fd)
 {
@@ -501,8 +509,6 @@ void python_generator::print_restype(FunctionDecl *fd)
 	QualType type = fd->getReturnType();
 	if (is_isl_type(type))
 		printf("isl.%s.restype = c_void_p\n", fullname.c_str());
-	else if (is_isl_bool(type))
-		printf("isl.%s.restype = c_bool\n", fullname.c_str());
 	else if (is_string(type))
 		printf("isl.%s.restype = POINTER(c_char)\n", fullname.c_str());
 }

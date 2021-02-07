@@ -130,7 +130,8 @@ static __isl_give isl_fixed_box *isl_fixed_box_set_valid_extent(
 static __isl_give isl_fixed_box *isl_fixed_box_invalidate(
 	__isl_take isl_fixed_box *box)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_space *space;
 	isl_val *infty;
 	isl_aff *nan;
@@ -138,6 +139,8 @@ static __isl_give isl_fixed_box *isl_fixed_box_invalidate(
 	if (!box)
 		return NULL;
 	n = isl_multi_val_dim(box->size, isl_dim_set);
+	if (n < 0)
+		return isl_fixed_box_free(box);
 
 	infty = isl_val_infty(isl_fixed_box_get_ctx(box));
 	space = isl_space_domain(isl_fixed_box_get_space(box));
@@ -212,7 +215,7 @@ __isl_give isl_multi_val *isl_fixed_box_get_size(__isl_keep isl_fixed_box *box)
  */
 struct isl_size_info {
 	isl_basic_set *bset;
-	int pos;
+	isl_size pos;
 	isl_val *size;
 	isl_aff *offset;
 };
@@ -225,7 +228,7 @@ struct isl_size_info {
  */
 static isl_bool is_suitable_bound(__isl_keep isl_constraint *c, unsigned pos)
 {
-	unsigned n_div;
+	isl_size n_div;
 	isl_bool is_bound, any_divs;
 
 	is_bound = isl_constraint_is_lower_bound(c, isl_dim_set, pos);
@@ -233,6 +236,8 @@ static isl_bool is_suitable_bound(__isl_keep isl_constraint *c, unsigned pos)
 		return is_bound;
 
 	n_div = isl_constraint_dim(c, isl_dim_div);
+	if (n_div < 0)
+		return isl_bool_error;
 	any_divs = isl_constraint_involves_dims(c, isl_dim_div, 0, n_div);
 	return isl_bool_not(any_divs);
 }
@@ -316,6 +321,8 @@ static __isl_give isl_fixed_box *set_dim_extent(__isl_take isl_fixed_box *box,
 	info.offset = NULL;
 	info.pos = isl_map_dim(map, isl_dim_in);
 	info.bset = isl_basic_map_wrap(isl_map_simple_hull(map));
+	if (info.pos < 0)
+		info.bset = isl_basic_set_free(info.bset);
 	if (isl_basic_set_foreach_constraint(info.bset,
 					&compute_size_in_direction, &info) < 0)
 		box = isl_fixed_box_free(box);
@@ -345,11 +352,14 @@ static __isl_give isl_fixed_box *set_dim_extent(__isl_take isl_fixed_box *box,
 __isl_give isl_fixed_box *isl_map_get_range_simple_fixed_box_hull(
 	__isl_keep isl_map *map)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_space *space;
 	isl_fixed_box *box;
 
 	n = isl_map_dim(map, isl_dim_out);
+	if (n < 0)
+		return NULL;
 	space = isl_map_get_space(map);
 	box = isl_fixed_box_init(space);
 

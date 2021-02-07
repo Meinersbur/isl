@@ -679,7 +679,8 @@ static __isl_give isl_ast_expr *ast_expr_with_arguments(
 	enum isl_ast_op_type type, __isl_take isl_ast_expr *arg0,
 	__isl_take isl_ast_expr_list *arguments)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_expr *res = NULL;
 
@@ -688,6 +689,8 @@ static __isl_give isl_ast_expr *ast_expr_with_arguments(
 
 	ctx = isl_ast_expr_get_ctx(arg0);
 	n = isl_ast_expr_list_n_ast_expr(arguments);
+	if (n < 0)
+		goto error;
 	res = isl_ast_expr_alloc_op(ctx, type, 1 + n);
 	if (!res)
 		goto error;
@@ -942,15 +945,22 @@ error:
 __isl_give isl_ast_node *isl_ast_node_from_ast_node_list(
 	__isl_take isl_ast_node_list *list)
 {
+	isl_size n;
 	isl_ast_node *node;
 
-	if (isl_ast_node_list_n_ast_node(list) != 1)
+	n = isl_ast_node_list_n_ast_node(list);
+	if (n < 0)
+		goto error;
+	if (n != 1)
 		return isl_ast_node_alloc_block(list);
 
 	node = isl_ast_node_list_get_ast_node(list, 0);
 	isl_ast_node_list_free(list);
 
 	return node;
+error:
+	isl_ast_node_list_free(list);
+	return NULL;
 }
 
 __isl_give isl_ast_node *isl_ast_node_copy(__isl_keep isl_ast_node *node)
@@ -2020,7 +2030,8 @@ static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,
 static __isl_give isl_printer *print_ast_node_list(__isl_take isl_printer *p,
 	__isl_keep isl_ast_node_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_ast_node_list_n_ast_node(list);
 	if (n < 0)

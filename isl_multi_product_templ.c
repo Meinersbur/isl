@@ -26,12 +26,14 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),product_aligned)(
 	EL *el;
 	isl_space *space;
 	MULTI(BASE) *res;
-	int in1, in2, out1, out2;
+	isl_size in1, in2, out1, out2;
 
 	in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
 	in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
 	out1 = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
 	out2 = FN(MULTI(BASE),dim)(multi2, isl_dim_out);
+	if (in1 < 0 || in2 < 0 || out1 < 0 || out2 < 0)
+		goto error;
 	space = isl_space_product(FN(MULTI(BASE),get_space)(multi1),
 				  FN(MULTI(BASE),get_space)(multi2));
 	res = FN(MULTI(BASE),alloc)(isl_space_copy(space));
@@ -60,6 +62,10 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),product_aligned)(
 	FN(MULTI(BASE),free)(multi1);
 	FN(MULTI(BASE),free)(multi2);
 	return res;
+error:
+	FN(MULTI(BASE),free)(multi1);
+	FN(MULTI(BASE),free)(multi2);
+	return NULL;
 }
 
 /* Given two MULTI(BASE)s A -> B and C -> D,

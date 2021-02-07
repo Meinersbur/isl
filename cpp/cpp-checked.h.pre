@@ -127,5 +127,46 @@ enum class dim {
   all = isl_dim_all
 };
 
+/* Class encapsulating an isl_size value.
+ */
+class size {
+private:
+	mutable bool checked = false;
+	isl_size val;
+
+	friend size manage(isl_size val);
+	size(isl_size val) : val(val) {}
+public:
+	size() : val(isl_size_error) {}
+	~size() {
+		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+	}
+
+	isl_size release() {
+		auto tmp = val;
+		val = isl_size_error;
+		checked = true;
+		return tmp;
+	}
+
+	bool is_error() const {
+		checked = true;
+		return val == isl_size_error;
+	}
+
+	explicit operator unsigned() const {
+		ISLPP_ASSERT(checked,
+			    "IMPLEMENTATION ERROR: Unchecked error state");
+		ISLPP_ASSERT(!is_error(),
+			    "IMPLEMENTATION ERROR: Unhandled error state");
+		return val;
+	}
+};
+
+inline size manage(isl_size val)
+{
+	return size(val);
+}
+
 }
 } // namespace isl

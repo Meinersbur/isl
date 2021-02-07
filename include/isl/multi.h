@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 #define ISL_DECLARE_MULTI(BASE)						\
-unsigned isl_multi_##BASE##_dim(__isl_keep isl_multi_##BASE *multi,	\
+isl_size isl_multi_##BASE##_dim(__isl_keep isl_multi_##BASE *multi,	\
 	enum isl_dim_type type);					\
 isl_ctx *isl_multi_##BASE##_get_ctx(					\
 	__isl_keep isl_multi_##BASE *multi);				\

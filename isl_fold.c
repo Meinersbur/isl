@@ -329,7 +329,7 @@ done:
 static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 	__isl_keep isl_qpolynomial *qp)
 {
-	int d;
+	isl_size d;
 	int i;
 	isl_bool is;
 	isl_poly_rec *rec;
@@ -358,6 +358,8 @@ static int isl_qpolynomial_sign(__isl_keep isl_set *set,
 		return 0;
 
 	d = isl_space_dim(qp->dim, isl_dim_all);
+	if (d < 0)
+		return 0;
 	v = isl_vec_alloc(set->ctx, 2 + d);
 	if (!v)
 		return 0;
@@ -1525,7 +1527,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 	isl_set *dom;
 	isl_space *map_space;
 	isl_space *pwf_space;
-	unsigned n_in;
+	isl_size n_in;
 	isl_bool ok;
 
 	ctx = isl_map_get_ctx(map);
@@ -1544,6 +1546,8 @@ __isl_give isl_pw_qpolynomial_fold *isl_map_apply_pw_qpolynomial_fold(
 			goto error);
 
 	n_in = isl_map_dim(map, isl_dim_in);
+	if (n_in < 0)
+		goto error;
 	pwf = isl_pw_qpolynomial_fold_insert_dims(pwf, isl_dim_in, 0, n_in);
 
 	dom = isl_map_wrap(map);

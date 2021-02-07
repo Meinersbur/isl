@@ -487,7 +487,8 @@ int isl_schedule_tree_is_anchored(__isl_keep isl_schedule_tree *tree)
 __isl_give isl_schedule_tree *isl_schedule_tree_update_anchored(
 	__isl_take isl_schedule_tree *tree)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	int anchored;
 
 	anchored = isl_schedule_tree_is_anchored(tree);
@@ -628,7 +629,8 @@ isl_bool isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
 	__isl_keep isl_schedule_tree *tree2)
 {
 	isl_bool equal;
-	int i, n;
+	int i;
+	isl_size n1, n2;
 
 	if (!tree1 || !tree2)
 		return isl_bool_error;
@@ -681,10 +683,13 @@ isl_bool isl_schedule_tree_plain_is_equal(__isl_keep isl_schedule_tree *tree1,
 	if (equal < 0 || !equal)
 		return equal;
 
-	n = isl_schedule_tree_n_children(tree1);
-	if (n != isl_schedule_tree_n_children(tree2))
+	n1 = isl_schedule_tree_n_children(tree1);
+	n2 = isl_schedule_tree_n_children(tree2);
+	if (n1 < 0 || n2 < 0)
+		return isl_bool_error;
+	if (n1 != n2)
 		return isl_bool_false;
-	for (i = 0; i < n; ++i) {
+	for (i = 0; i < n1; ++i) {
 		isl_schedule_tree *child1, *child2;
 
 		child1 = isl_schedule_tree_get_child(tree1, i);
@@ -714,10 +719,10 @@ int isl_schedule_tree_has_children(__isl_keep isl_schedule_tree *tree)
  * The "children" field is NULL if there are
  * no children (except for the implicit leaves).
  */
-int isl_schedule_tree_n_children(__isl_keep isl_schedule_tree *tree)
+isl_size isl_schedule_tree_n_children(__isl_keep isl_schedule_tree *tree)
 {
 	if (!tree)
-		return -1;
+		return isl_size_error;
 
 	if (!tree->children)
 		return 0;
@@ -768,7 +773,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_reset_children(
 __isl_give isl_schedule_tree *isl_schedule_tree_drop_child(
 	__isl_take isl_schedule_tree *tree, int pos)
 {
-	int n;
+	isl_size n;
 
 	tree = isl_schedule_tree_cow(tree);
 
@@ -810,10 +815,15 @@ __isl_give isl_schedule_tree *isl_schedule_tree_replace_child(
 		goto error;
 
 	if (isl_schedule_tree_is_leaf(child)) {
+		isl_size n;
+
 		isl_schedule_tree_free(child);
 		if (!tree->children && pos == 0)
 			return tree;
-		if (isl_schedule_tree_n_children(tree) != 1)
+		n = isl_schedule_tree_n_children(tree);
+		if (n < 0)
+			return isl_schedule_tree_free(tree);
+		if (n != 1)
 			isl_die(isl_schedule_tree_get_ctx(tree),
 				isl_error_internal,
 				"can only replace single child by leaf",
@@ -948,12 +958,13 @@ __isl_give isl_schedule_tree *isl_schedule_tree_insert_filter(
 __isl_give isl_schedule_tree *isl_schedule_tree_children_insert_filter(
 	__isl_take isl_schedule_tree *tree, __isl_take isl_union_set *filter)
 {
-	int i, n;
-
-	if (!tree || !filter)
-		goto error;
+	int i;
+	isl_size n;
 
 	n = isl_schedule_tree_n_children(tree);
+	if (n < 0 || !filter)
+		goto error;
+
 	for (i = 0; i < n; ++i) {
 		isl_schedule_tree *child;
 
@@ -1529,7 +1540,7 @@ __isl_give isl_id *isl_schedule_tree_mark_get_id(
  */
 static isl_stat set_range_dim(__isl_take isl_map *map, void *user)
 {
-	int *dim = user;
+	isl_size *dim = user;
 
 	*dim = isl_map_dim(map, isl_dim_out);
 	isl_map_free(map);
@@ -1543,15 +1554,17 @@ static isl_stat set_range_dim(__isl_take isl_map *map, void *user)
  *
  * We extract the range dimension from the first map in "umap".
  */
-static int range_dim(__isl_keep isl_union_map *umap)
+static isl_size range_dim(__isl_keep isl_union_map *umap)
 {
-	int dim = -1;
+	isl_size dim = isl_size_error;
+	isl_size n;
 
-	if (!umap)
-		return -1;
-	if (isl_union_map_n_map(umap) == 0)
+	n = isl_union_map_n_map(umap);
+	if (n < 0)
+		return isl_size_error;
+	if (n == 0)
 		isl_die(isl_union_map_get_ctx(umap), isl_error_internal,
-			"unexpected empty input", return -1);
+			"unexpected empty input", return isl_size_error);
 
 	isl_union_map_foreach_map(umap, &set_range_dim, &dim);
 
@@ -1716,8 +1729,9 @@ static __isl_give isl_space *extract_space_from_filter_child(
 static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	__isl_keep isl_schedule_tree *tree, __isl_take isl_union_map *outer)
 {
-	int i, n;
-	int dim;
+	int i;
+	isl_size n;
+	isl_size dim;
 	int separate;
 	isl_ctx *ctx;
 	isl_val *v = NULL;
@@ -1747,13 +1761,15 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	mv = isl_multi_val_zero(space);
 
 	dim = isl_multi_val_dim(mv, isl_dim_set);
+	if (dim < 0)
+		umap = isl_union_map_free(umap);
 	for (i = 0; i < n; ++i) {
 		isl_multi_val *mv_copy;
 		isl_union_pw_multi_aff *upma;
 		isl_union_map *umap_i;
 		isl_union_set *dom;
 		isl_schedule_tree *child;
-		int dim_i;
+		isl_size dim_i;
 		isl_bool empty;
 
 		child = isl_schedule_tree_list_get_schedule_tree(
@@ -1880,7 +1896,8 @@ static __isl_give isl_union_set *initial_domain(
 static __isl_give isl_union_set *initial_domain_from_children(
 	__isl_keep isl_schedule_tree *tree)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_space *space;
 	isl_union_set *domain;
 
@@ -2114,7 +2131,7 @@ __isl_give isl_schedule_tree *isl_schedule_tree_sequence_splice(
 	__isl_take isl_schedule_tree *tree, int pos,
 	__isl_take isl_schedule_tree *child)
 {
-	int n;
+	isl_size n;
 	isl_schedule_tree_list *list1, *list2;
 
 	tree = isl_schedule_tree_cow(tree);
@@ -2124,6 +2141,8 @@ __isl_give isl_schedule_tree *isl_schedule_tree_sequence_splice(
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"not a sequence node", goto error);
 	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		goto error;
 	if (pos < 0 || pos >= n)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"position out of bounds", goto error);
@@ -2331,11 +2350,12 @@ __isl_give isl_schedule_tree *isl_schedule_tree_append_to_leaves(
 	__isl_take isl_schedule_tree *tree1,
 	__isl_take isl_schedule_tree *tree2)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
-	if (!tree1 || !tree2)
-		goto error;
 	n = isl_schedule_tree_n_children(tree1);
+	if (n < 0 || !tree2)
+		goto error;
 	if (n == 0) {
 		isl_schedule_tree_list *list;
 		list = isl_schedule_tree_list_from_schedule_tree(tree2);
@@ -2713,7 +2733,8 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 	__isl_take isl_printer *p, __isl_keep isl_schedule_tree *tree,
 	int n_ancestor, int *child_pos)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	int sequence = 0;
 	int block;
 

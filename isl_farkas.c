@@ -68,7 +68,7 @@ static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *space,
 {
 	int i;
 	isl_ctx *ctx;
-	unsigned nvar;
+	isl_size nvar;
 	size_t prefix_len = strlen(prefix);
 
 	if (!space)
@@ -76,6 +76,8 @@ static __isl_give isl_space *isl_space_prefix(__isl_take isl_space *space,
 
 	ctx = isl_space_get_ctx(space);
 	nvar = isl_space_dim(space, isl_dim_set);
+	if (nvar < 0)
+		return isl_space_free(space);
 
 	for (i = 0; i < nvar; ++i) {
 		const char *name;
@@ -119,11 +121,13 @@ error:
 static __isl_give isl_space *isl_space_coefficients(__isl_take isl_space *space)
 {
 	isl_space *space_param;
-	unsigned nvar;
-	unsigned nparam;
+	isl_size nvar;
+	isl_size nparam;
 
 	nvar = isl_space_dim(space, isl_dim_set);
 	nparam = isl_space_dim(space, isl_dim_param);
+	if (nvar < 0 || nparam < 0)
+		return isl_space_free(space);
 	space_param = isl_space_copy(space);
 	space_param = isl_space_drop_dims(space_param, isl_dim_set, 0, nvar);
 	space_param = isl_space_move_dims(space_param, isl_dim_set, 0,
@@ -148,10 +152,12 @@ static __isl_give isl_space *isl_space_unprefix(__isl_take isl_space *space,
 	enum isl_dim_type type, const char *prefix)
 {
 	int i;
-	unsigned n;
+	isl_size n;
 	size_t prefix_len = strlen(prefix);
 
 	n = isl_space_dim(space, type);
+	if (n < 0)
+		return isl_space_free(space);
 
 	for (i = 0; i < n; ++i) {
 		const char *name;
@@ -184,13 +190,15 @@ static __isl_give isl_space *isl_space_unprefix(__isl_take isl_space *space,
  */
 static __isl_give isl_space *isl_space_solutions(__isl_take isl_space *space)
 {
-	unsigned nparam;
+	isl_size nparam;
 
 	space = isl_space_unwrap(space);
 	space = isl_space_drop_dims(space, isl_dim_in, 0, 1);
 	space = isl_space_unprefix(space, isl_dim_in, "c_");
 	space = isl_space_unprefix(space, isl_dim_out, "c_");
 	nparam = isl_space_dim(space, isl_dim_in);
+	if (nparam < 0)
+		return isl_space_free(space);
 	space = isl_space_move_dims(space,
 				    isl_dim_param, 0, isl_dim_in, 0, nparam);
 	space = isl_space_range(space);
@@ -227,14 +235,16 @@ static __isl_give isl_basic_set *farkas(__isl_take isl_space *space,
 {
 	int i, j, k;
 	isl_basic_set *dual = NULL;
-	unsigned total;
+	isl_size total;
 
 	if (isl_basic_set_plain_is_empty(bset)) {
 		isl_basic_set_free(bset);
 		return rational_universe(space);
 	}
 
-	total = isl_basic_set_total_dim(bset);
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
+		space = isl_space_free(space);
 
 	dual = isl_basic_set_alloc_space(space, bset->n_eq + bset->n_ineq,
 					total, bset->n_ineq + (shift > 0));

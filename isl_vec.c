@@ -245,9 +245,9 @@ __isl_null isl_vec *isl_vec_free(__isl_take isl_vec *vec)
 	return NULL;
 }
 
-int isl_vec_size(__isl_keep isl_vec *vec)
+isl_size isl_vec_size(__isl_keep isl_vec *vec)
 {
-	return vec ? vec->size : -1;
+	return vec ? vec->size : isl_size_error;
 }
 
 /* Extract the element at position "pos" of "vec".

@@ -904,14 +904,14 @@ static const char *elimination_tests[] = {
 static int test_elimination(isl_ctx *ctx)
 {
 	int i;
-	unsigned n;
+	isl_size n;
 	isl_basic_set *bset;
 
 	for (i = 0; i < ARRAY_SIZE(elimination_tests); ++i) {
 		bset = isl_basic_set_read_from_str(ctx, elimination_tests[i]);
 		n = isl_basic_set_dim(bset, isl_dim_div);
 		isl_basic_set_free(bset);
-		if (!bset)
+		if (n < 0)
 			return -1;
 		if (n != 0)
 			isl_die(ctx, isl_error_unknown,
@@ -1257,7 +1257,7 @@ int test_affine_hull(struct isl_ctx *ctx)
 	const char *str;
 	isl_set *set;
 	isl_basic_set *bset, *bset2;
-	int n;
+	isl_size n;
 	isl_bool subset;
 
 	test_affine_hull_case(ctx, "affine2");
@@ -1272,6 +1272,8 @@ int test_affine_hull(struct isl_ctx *ctx)
 	bset = isl_set_affine_hull(set);
 	n = isl_basic_set_dim(bset, isl_dim_div);
 	isl_basic_set_free(bset);
+	if (n < 0)
+		return -1;
 	if (n != 0)
 		isl_die(ctx, isl_error_unknown, "not expecting any divs",
 			return -1);
@@ -1734,6 +1736,7 @@ static int test_gist(struct isl_ctx *ctx)
 	isl_basic_set *bset1, *bset2;
 	isl_map *map1, *map2;
 	isl_bool equal;
+	isl_size n_div;
 
 	for (i = 0; i < ARRAY_SIZE(gist_tests); ++i) {
 		isl_bool equal_input, equal_intersection;
@@ -1814,10 +1817,13 @@ static int test_gist(struct isl_ctx *ctx)
 	if (map1->n != 1)
 		isl_die(ctx, isl_error_unknown, "expecting single disjunct",
 			isl_map_free(map1); return -1);
-	if (isl_basic_map_dim(map1->p[0], isl_dim_div) != 1)
-		isl_die(ctx, isl_error_unknown, "expecting single div",
-			isl_map_free(map1); return -1);
+	n_div = isl_basic_map_dim(map1->p[0], isl_dim_div);
 	isl_map_free(map1);
+	if (n_div < 0)
+		return -1;
+	if (n_div != 1)
+		isl_die(ctx, isl_error_unknown, "expecting single div",
+			return -1);
 
 	if (test_plain_gist(ctx) < 0)
 		return -1;
@@ -2598,6 +2604,46 @@ static int test_closure(isl_ctx *ctx)
 	map = isl_map_transitive_closure(map, NULL);
 	assert(map);
 	isl_map_free(map);
+
+	return 0;
+}
+
+/* Check that the actual result of a boolean operation is equal
+ * to the expected result.
+ */
+static isl_stat check_bool(isl_ctx *ctx, isl_bool actual, isl_bool expected)
+{
+	if (actual != expected)
+		isl_die(ctx, isl_error_unknown,
+			"incorrect boolean operation", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Test operations on isl_bool values.
+ *
+ * This tests:
+ *
+ * 	isl_bool_not
+ * 	isl_bool_ok
+ */
+static int test_isl_bool(isl_ctx *ctx)
+{
+	if (check_bool(ctx, isl_bool_not(isl_bool_true), isl_bool_false) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_not(isl_bool_false), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_not(isl_bool_error), isl_bool_error) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(0), isl_bool_false) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(1), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(-1), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(2), isl_bool_true) < 0)
+		return -1;
+	if (check_bool(ctx, isl_bool_ok(-2), isl_bool_true) < 0)
+		return -1;
 
 	return 0;
 }
@@ -3432,7 +3478,7 @@ static int test_bound_unbounded_domain(isl_ctx *ctx)
 static int test_bound(isl_ctx *ctx)
 {
 	const char *str;
-	unsigned dim;
+	isl_size dim;
 	isl_pw_qpolynomial *pwqp;
 	isl_pw_qpolynomial_fold *pwf;
 
@@ -3444,6 +3490,8 @@ static int test_bound(isl_ctx *ctx)
 	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
 	dim = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in);
 	isl_pw_qpolynomial_fold_free(pwf);
+	if (dim < 0)
+		return -1;
 	if (dim != 4)
 		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
 			return -1);
@@ -3453,6 +3501,8 @@ static int test_bound(isl_ctx *ctx)
 	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
 	dim = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in);
 	isl_pw_qpolynomial_fold_free(pwf);
+	if (dim < 0)
+		return -1;
 	if (dim != 1)
 		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
 			return -1);
@@ -3693,7 +3743,7 @@ static int test_subtract(isl_ctx *ctx)
  */
 static int test_intersect_1(isl_ctx *ctx)
 {
-	int n1, n2;
+	isl_size n1, n2;
 	isl_basic_set *bset1, *bset2;
 
 	bset1 = isl_basic_set_read_from_str(ctx, "{ [a,b,c] : 1 = 0 }");
@@ -3702,7 +3752,7 @@ static int test_intersect_1(isl_ctx *ctx)
 	bset1 = isl_basic_set_intersect(bset1, bset2);
 	n2 = isl_basic_set_n_constraint(bset1);
 	isl_basic_set_free(bset1);
-	if (!bset1)
+	if (n1 < 0 || n2 < 0)
 		return -1;
 	if (n1 != n2)
 		isl_die(ctx, isl_error_unknown,
@@ -3815,6 +3865,7 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	isl_schedule_constraints *sc;
 	isl_schedule *sched;
 	int is_nonneg, is_parallel, is_tilable, is_injection, is_complete;
+	isl_size n;
 
 	D = isl_union_set_read_from_str(ctx, d);
 	W = isl_union_map_read_from_str(ctx, w);
@@ -3865,12 +3916,19 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 	test = isl_union_map_apply_range(test, schedule);
 
 	delta = isl_union_map_deltas(test);
-	if (isl_union_set_n_set(delta) == 0) {
+	n = isl_union_set_n_set(delta);
+	if (n < 0) {
+		isl_union_set_free(delta);
+		return -1;
+	}
+	if (n == 0) {
 		is_tilable = 1;
 		is_parallel = 1;
 		is_nonneg = 1;
 		isl_union_set_free(delta);
 	} else {
+		isl_size dim;
+
 		delta_set = isl_set_from_union_set(delta);
 
 		slice = isl_set_universe(isl_set_get_space(delta_set));
@@ -3886,7 +3944,10 @@ int test_one_schedule(isl_ctx *ctx, const char *d, const char *w,
 		isl_set_free(slice);
 
 		origin = isl_set_universe(isl_set_get_space(delta_set));
-		for (i = 0; i < isl_set_dim(origin, isl_dim_set); ++i)
+		dim = isl_set_dim(origin, isl_dim_set);
+		if (dim < 0)
+			origin = isl_set_free(origin);
+		for (i = 0; i < dim; ++i)
 			origin = isl_set_fix_si(origin, isl_dim_set, i, 0);
 
 		delta_set = isl_set_union(delta_set, isl_set_copy(origin));
@@ -6214,12 +6275,12 @@ int test_aff(isl_ctx *ctx)
  */
 static int check_single_piece(isl_ctx *ctx, __isl_take isl_pw_aff *pa)
 {
-	int n;
+	isl_size n;
 
 	n = isl_pw_aff_n_piece(pa);
 	isl_pw_aff_free(pa);
 
-	if (!pa)
+	if (n < 0)
 		return -1;
 	if (n != 1)
 		isl_die(ctx, isl_error_unknown, "expecting single expression",
@@ -7453,6 +7514,7 @@ static int test_list(isl_ctx *ctx)
 {
 	isl_id *a, *b, *c, *d, *id;
 	isl_id_list *list;
+	isl_size n;
 	int ok;
 
 	a = isl_id_alloc(ctx, "a", NULL);
@@ -7467,9 +7529,10 @@ static int test_list(isl_ctx *ctx)
 	list = isl_id_list_add(list, d);
 	list = isl_id_list_drop(list, 1, 1);
 
-	if (!list)
+	n = isl_id_list_n_id(list);
+	if (n < 0)
 		return -1;
-	if (isl_id_list_n_id(list) != 3) {
+	if (n != 3) {
 		isl_id_list_free(list);
 		isl_die(ctx, isl_error_unknown,
 			"unexpected number of elements in list", return -1);
@@ -7986,6 +8049,7 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 	isl_union_set *uset;
 	isl_set *set;
 	isl_bool empty;
+	isl_size n;
 	char name[] = "d0";
 
 	ctx = isl_ast_build_get_ctx(build);
@@ -8003,10 +8067,11 @@ static __isl_give isl_id *before_for(__isl_keep isl_ast_build *build,
 
 	schedule = isl_ast_build_get_schedule(build);
 	uset = isl_union_map_range(schedule);
-	if (!uset)
-		return NULL;
-	if (isl_union_set_n_set(uset) != 1) {
+	n = isl_union_set_n_set(uset);
+	if (n != 1) {
 		isl_union_set_free(uset);
+		if (n < 0)
+			return NULL;
 		isl_die(ctx, isl_error_unknown,
 			"expecting single range space", return NULL);
 	}
@@ -9134,12 +9199,13 @@ static isl_stat add_cell(__isl_take isl_cell *cell, void *user)
  */
 static isl_stat check_pairwise_disjoint(__isl_keep isl_basic_set_list *list)
 {
-	int i, j, n;
-
-	if (!list)
-		return isl_stat_error;
+	int i, j;
+	isl_size n;
 
 	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 0)
+		return isl_stat_error;
+
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset_i;
 
@@ -9274,6 +9340,7 @@ struct {
 	{ "map application", &test_application },
 	{ "convex hull", &test_convex_hull },
 	{ "transitive closure", &test_closure },
+	{ "isl_bool", &test_isl_bool},
 };
 
 int main(int argc, char **argv)

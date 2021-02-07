@@ -76,12 +76,14 @@ __isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *space,
 {
 	isl_ctx *ctx;
 	isl_mat *div;
-	unsigned total;
+	isl_size total;
 
 	if (!space)
 		return NULL;
 
 	total = isl_space_dim(space, isl_dim_all);
+	if (total < 0)
+		return isl_local_space_from_space(isl_space_free(space));
 
 	ctx = isl_space_get_ctx(space);
 	div = isl_mat_alloc(ctx, n_div, 1 + 1 + total + n_div);
@@ -235,15 +237,19 @@ int isl_local_space_cmp(__isl_keep isl_local_space *ls1,
 	return isl_local_cmp(ls1->div, ls2->div);
 }
 
-int isl_local_space_dim(__isl_keep isl_local_space *ls,
+isl_size isl_local_space_dim(__isl_keep isl_local_space *ls,
 	enum isl_dim_type type)
 {
 	if (!ls)
-		return 0;
+		return isl_size_error;
 	if (type == isl_dim_div)
 		return ls->div->n_row;
-	if (type == isl_dim_all)
-		return isl_space_dim(ls->dim, isl_dim_all) + ls->div->n_row;
+	if (type == isl_dim_all) {
+		isl_size dim = isl_space_dim(ls->dim, isl_dim_all);
+		if (dim < 0)
+			return isl_size_error;
+		return dim + ls->div->n_row;
+	}
 	return isl_space_dim(ls->dim, type);
 }
 
@@ -335,12 +341,15 @@ static __isl_give isl_aff *extract_div(__isl_keep isl_local_space *ls, int pos)
 static __isl_give isl_aff *drop_unknown_divs_and_extract_div(
 	__isl_keep isl_local_space *ls, int pos)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_bool unknown;
 	isl_aff *aff;
 
-	ls = isl_local_space_copy(ls);
 	n = isl_local_space_dim(ls, isl_dim_div);
+	if (n < 0)
+		return NULL;
+	ls = isl_local_space_copy(ls);
 	for (i = n - 1; i >= 0; --i) {
 		unknown = isl_local_space_div_is_marked_unknown(ls, i);
 		if (unknown < 0)
@@ -690,7 +699,7 @@ __isl_give isl_basic_map *isl_basic_map_sort_divs(
 	__isl_take isl_basic_map *bmap)
 {
 	int i, j;
-	unsigned total;
+	isl_size total;
 
 	bmap = isl_basic_map_order_divs(bmap);
 	if (!bmap)
@@ -698,10 +707,12 @@ __isl_give isl_basic_map *isl_basic_map_sort_divs(
 	if (bmap->n_div <= 1)
 		return bmap;
 
-	total = 2 + isl_basic_map_total_dim(bmap);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
+		return isl_basic_map_free(bmap);
 	for (i = 1; i < bmap->n_div; ++i) {
 		for (j = i - 1; j >= 0; --j) {
-			if (bmap_cmp_row(bmap, j, j + 1, total) <= 0)
+			if (bmap_cmp_row(bmap, j, j + 1, 2 + total) <= 0)
 				break;
 			bmap = isl_basic_map_swap_div(bmap, j, j + 1);
 			if (!bmap)
@@ -895,8 +906,12 @@ isl_bool isl_local_space_divs_known(__isl_keep isl_local_space *ls)
 __isl_give isl_local_space *isl_local_space_domain(
 	__isl_take isl_local_space *ls)
 {
-	ls = isl_local_space_drop_dims(ls, isl_dim_out,
-					0, isl_local_space_dim(ls, isl_dim_out));
+	isl_size n_out;
+
+	n_out = isl_local_space_dim(ls, isl_dim_out);
+	if (n_out < 0)
+		return isl_local_space_free(ls);
+	ls = isl_local_space_drop_dims(ls, isl_dim_out, 0, n_out);
 	ls = isl_local_space_cow(ls);
 	if (!ls)
 		return NULL;
@@ -909,8 +924,12 @@ __isl_give isl_local_space *isl_local_space_domain(
 __isl_give isl_local_space *isl_local_space_range(
 	__isl_take isl_local_space *ls)
 {
-	ls = isl_local_space_drop_dims(ls, isl_dim_in,
-					0, isl_local_space_dim(ls, isl_dim_in));
+	isl_size n_in;
+
+	n_in = isl_local_space_dim(ls, isl_dim_in);
+	if (n_in < 0)
+		return isl_local_space_free(ls);
+	ls = isl_local_space_drop_dims(ls, isl_dim_in, 0, n_in);
 	ls = isl_local_space_cow(ls);
 	if (!ls)
 		return NULL;
@@ -939,11 +958,11 @@ __isl_give isl_local_space *isl_local_space_from_domain(
 __isl_give isl_local_space *isl_local_space_add_dims(
 	__isl_take isl_local_space *ls, enum isl_dim_type type, unsigned n)
 {
-	int pos;
+	isl_size pos;
 
-	if (!ls)
-		return NULL;
 	pos = isl_local_space_dim(ls, type);
+	if (pos < 0)
+		return isl_local_space_free(ls);
 	return isl_local_space_insert_dims(ls, type, pos, n);
 }
 
@@ -954,15 +973,16 @@ __isl_give isl_local_space *isl_local_space_add_dims(
 __isl_give isl_basic_set *isl_local_space_lift_basic_set(
 	__isl_take isl_local_space *ls, __isl_take isl_basic_set *bset)
 {
-	unsigned n_local;
+	isl_size n_local;
 	isl_space *space;
 	isl_basic_set *ls_bset;
 
+	n_local = isl_local_space_dim(ls, isl_dim_div);
 	space = isl_basic_set_peek_space(bset);
-	if (isl_local_space_check_has_space(ls, space) < 0)
+	if (n_local < 0 ||
+	    isl_local_space_check_has_space(ls, space) < 0)
 		goto error;
 
-	n_local = isl_local_space_dim(ls, isl_dim_div);
 	if (n_local == 0) {
 		isl_local_space_free(ls);
 		return bset;
@@ -988,13 +1008,14 @@ error:
 __isl_give isl_set *isl_local_space_lift_set(__isl_take isl_local_space *ls,
 	__isl_take isl_set *set)
 {
-	unsigned n_local;
+	isl_size n_local;
 	isl_basic_set *bset;
 
-	if (isl_local_space_check_has_space(ls, isl_set_peek_space(set)) < 0)
+	n_local = isl_local_space_dim(ls, isl_dim_div);
+	if (n_local < 0 ||
+	    isl_local_space_check_has_space(ls, isl_set_peek_space(set)) < 0)
 		goto error;
 
-	n_local = isl_local_space_dim(ls, isl_dim_div);
 	if (n_local == 0) {
 		isl_local_space_free(ls);
 		return set;
@@ -1046,14 +1067,17 @@ __isl_give isl_local_space *isl_local_space_substitute_equalities(
 	__isl_take isl_local_space *ls, __isl_take isl_basic_set *eq)
 {
 	int i, j, k;
-	unsigned total;
+	isl_size total, dim;
 	unsigned n_div;
 
 	if (!ls || !eq)
 		goto error;
 
 	total = isl_space_dim(eq->dim, isl_dim_all);
-	if (isl_local_space_dim(ls, isl_dim_all) != total)
+	dim = isl_local_space_dim(ls, isl_dim_all);
+	if (dim < 0 || total < 0)
+		goto error;
+	if (dim != total)
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
 			"spaces don't match", goto error);
 	total++;
@@ -1161,6 +1185,8 @@ __isl_give isl_local_space *isl_local_space_substitute(
 	__isl_take isl_local_space *ls,
 	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
 {
+	isl_size n_div;
+
 	ls = isl_local_space_cow(ls);
 	if (!ls || !subs)
 		return isl_local_space_free(ls);
@@ -1168,7 +1194,10 @@ __isl_give isl_local_space *isl_local_space_substitute(
 	if (!isl_space_is_equal(ls->dim, subs->ls->dim))
 		isl_die(isl_local_space_get_ctx(ls), isl_error_invalid,
 			"spaces don't match", return isl_local_space_free(ls));
-	if (isl_local_space_dim(subs->ls, isl_dim_div) != 0)
+	n_div = isl_local_space_dim(subs->ls, isl_dim_div);
+	if (n_div < 0)
+		return isl_local_space_free(ls);
+	if (n_div != 0)
 		isl_die(isl_local_space_get_ctx(ls), isl_error_unsupported,
 			"cannot handle divs yet",
 			return isl_local_space_free(ls));
@@ -1370,11 +1399,13 @@ int *isl_local_space_get_active(__isl_keep isl_local_space *ls, isl_int *l)
 	int i, j;
 	isl_ctx *ctx;
 	int *active = NULL;
-	unsigned total;
+	isl_size total;
 	unsigned offset;
 
 	ctx = isl_local_space_get_ctx(ls);
 	total = isl_local_space_dim(ls, isl_dim_all);
+	if (total < 0)
+		return NULL;
 	active = isl_calloc_array(ctx, int, total);
 	if (total && !active)
 		return NULL;
@@ -1464,7 +1495,7 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 	int i;
 	isl_space *space;
 	isl_local_space *res = NULL;
-	int n_div_ls, n_div_ma;
+	isl_size n_div_ls, n_div_ma;
 	isl_int f, c1, c2, g;
 
 	ma = isl_multi_aff_align_divs(ma);
@@ -1476,6 +1507,8 @@ __isl_give isl_local_space *isl_local_space_preimage_multi_aff(
 
 	n_div_ls = isl_local_space_dim(ls, isl_dim_div);
 	n_div_ma = ma->n ? isl_aff_dim(ma->u.p[0], isl_dim_div) : 0;
+	if (n_div_ls < 0 || n_div_ma < 0)
+		goto error;
 
 	space = isl_space_domain(isl_multi_aff_get_space(ma));
 	res = isl_local_space_alloc(space, n_div_ma + n_div_ls);
@@ -1654,7 +1687,7 @@ __isl_give isl_local_space *isl_local_space_wrap(__isl_take isl_local_space *ls)
 __isl_give isl_point *isl_local_space_lift_point(__isl_take isl_local_space *ls,
 	__isl_take isl_point *pnt)
 {
-	unsigned n_local;
+	isl_size n_local;
 	isl_space *space;
 	isl_local *local;
 	isl_vec *vec;
@@ -1664,6 +1697,8 @@ __isl_give isl_point *isl_local_space_lift_point(__isl_take isl_local_space *ls,
 
 	local = isl_local_space_peek_local(ls);
 	n_local = isl_local_space_dim(ls, isl_dim_div);
+	if (n_local < 0)
+		goto error;
 
 	space = isl_point_take_space(pnt);
 	vec = isl_point_take_vec(pnt);

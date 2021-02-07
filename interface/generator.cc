@@ -347,9 +347,17 @@ bool generator::is_isl_type(QualType type)
 	return false;
 }
 
-/* Is "type" the type isl_bool?
+/* Is "type" one of the integral types with a negative value
+ * indicating an error condition?
  */
-bool generator::is_isl_bool(QualType type)
+bool generator::is_isl_neg_error(QualType type)
+{
+	return is_isl_bool(type) || is_isl_stat(type) || is_isl_size(type);
+}
+
+/* Is "type" the primitive type with the given name?
+ */
+static bool is_isl_primitive(QualType type, const char *name)
 {
 	string s;
 
@@ -357,22 +365,29 @@ bool generator::is_isl_bool(QualType type)
 		return false;
 
 	s = type.getAsString();
-	return s == "isl_bool";
+	return s == name;
+}
+
+/* Is "type" the type isl_bool?
+ */
+bool generator::is_isl_bool(QualType type)
+{
+	return is_isl_primitive(type, "isl_bool");
 }
 
 /* Is "type" the type isl_stat?
  */
 bool generator::is_isl_stat(QualType type)
 {
-	string s;
-
-	if (type->isPointerType())
-		return false;
-
-	s = type.getAsString();
-	return s == "isl_stat";
+	return is_isl_primitive(type, "isl_stat");
 }
 
+/* Is "type" the type isl_size?
+ */
+bool generator::is_isl_size(QualType type)
+{
+	return is_isl_primitive(type, "isl_size");
+}
 
 /* Is "type" that of a pointer to a function?
  */

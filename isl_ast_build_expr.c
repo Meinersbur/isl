@@ -679,11 +679,13 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
 	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
 	int i, t;
-	int n[2];
+	isl_size n[2];
 	int parallel = 1, opposite = 1;
 
 	for (t = 0; t < 2; ++t) {
 		n[t] = isl_constraint_dim(c, c_type[t]);
+		if (n[t] < 0)
+			return isl_stat_error;
 		for (i = 0; i < n[t]; ++i) {
 			int a, b;
 
@@ -825,12 +827,14 @@ static int try_extract_mod(struct isl_extract_mod_data *data)
 	isl_basic_set *hull;
 	isl_val *v1, *v2;
 	isl_stat r;
-	int n;
+	isl_size n;
 
 	if (!data->build)
 		goto error;
 
 	n = isl_aff_dim(data->div, isl_dim_div);
+	if (n < 0)
+		goto error;
 
 	if (isl_aff_involves_dims(data->div, isl_dim_div, 0, n))
 		return extract_nonneg_mod(data);
@@ -955,7 +959,7 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 {
 	struct isl_extract_mod_data data = { build, aff, *pos, *neg };
 	isl_ctx *ctx;
-	int n;
+	isl_size n;
 
 	if (!aff)
 		return NULL;
@@ -965,6 +969,8 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 		return aff;
 
 	n = isl_aff_dim(data.aff, isl_dim_div);
+	if (n < 0)
+		return isl_aff_free(aff);
 	for (data.i = 0; data.i < n; ++data.i) {
 		data.v = isl_aff_get_coefficient_val(data.aff,
 							isl_dim_div, data.i);
@@ -1001,7 +1007,8 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_expr **expr, __isl_keep isl_ast_build *build)
 {
-	int i, j, n;
+	int i, j;
+	isl_size n;
 	isl_aff *rat = NULL;
 	isl_local_space *ls = NULL;
 	isl_ast_expr *rat_expr;
@@ -1026,6 +1033,8 @@ static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
 
 	for (i = 0; i < 3; ++i) {
 		n = isl_aff_dim(aff, t[i]);
+		if (n < 0)
+			goto error;
 		for (j = 0; j < n; ++j) {
 			isl_aff *rat_j;
 
@@ -1083,7 +1092,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_build *build)
 {
 	int i, j;
-	int n;
+	isl_size n;
 	isl_val *v;
 	isl_ctx *ctx = isl_aff_get_ctx(aff);
 	isl_ast_expr *expr, *expr_neg;
@@ -1109,6 +1118,8 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	data.cst = isl_aff_get_constant_val(aff);
 	for (i = 0; i < 3; ++i) {
 		n = isl_aff_dim(aff, t[i]);
+		if (n < 0)
+			expr = isl_ast_expr_free(expr);
 		for (j = 0; j < n; ++j) {
 			v = isl_aff_get_coefficient_val(aff, t[i], j);
 			if (!v)
@@ -1145,7 +1156,9 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 	ls = isl_aff_get_domain_local_space(aff);
 
 	for (i = 0; i < 3; ++i) {
-		int n = isl_aff_dim(aff, t[i]);
+		isl_size n = isl_aff_dim(aff, t[i]);
+		if (n < 0)
+			expr = isl_ast_expr_free(expr);
 		for (j = 0; j < n; ++j) {
 			v = isl_aff_get_coefficient_val(aff, t[i], j);
 			if (sign * isl_val_sgn(v) <= 0) {
@@ -1238,17 +1251,19 @@ static int is_stride_constraint(__isl_keep isl_aff *aff, int pos)
  */
 static isl_bool all_negative_coefficients(__isl_keep isl_aff *aff)
 {
-	int i, n;
-
-	if (!aff)
-		return isl_bool_error;
+	int i;
+	isl_size n;
 
 	n = isl_aff_dim(aff, isl_dim_param);
+	if (n < 0)
+		return isl_bool_error;
 	for (i = 0; i < n; ++i)
 		if (isl_aff_coefficient_sgn(aff, isl_dim_param, i) > 0)
 			return isl_bool_false;
 
 	n = isl_aff_dim(aff, isl_dim_in);
+	if (n < 0)
+		return isl_bool_error;
 	for (i = 0; i < n; ++i)
 		if (isl_aff_coefficient_sgn(aff, isl_dim_in, i) > 0)
 			return isl_bool_false;
@@ -1346,7 +1361,8 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
 static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_expr *expr_pos;
 	isl_ast_expr *expr_neg;
@@ -1364,6 +1380,8 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	isl_constraint_free(constraint);
 
 	n = isl_aff_dim(aff, isl_dim_div);
+	if (n < 0)
+		aff = isl_aff_free(aff);
 	if (eq && n > 0)
 		for (i = 0; i < n; ++i) {
 			int is_stride;
@@ -1449,7 +1467,8 @@ static int cmp_constraint(__isl_keep isl_constraint *a,
 __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	 __isl_keep isl_ast_build *build, __isl_take isl_basic_set *bset)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_constraint *c;
 	isl_constraint_list *list;
 	isl_ast_expr *res;
@@ -1458,9 +1477,9 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 	list = isl_basic_set_get_constraint_list(bset);
 	isl_basic_set_free(bset);
 	list = isl_constraint_list_sort(list, &cmp_constraint, NULL);
-	if (!list)
-		return NULL;
 	n = isl_constraint_list_n_constraint(list);
+	if (n < 0)
+		build = NULL;
 	if (n == 0) {
 		isl_ctx *ctx = isl_constraint_list_get_ctx(list);
 		isl_constraint_list_free(list);
@@ -1515,7 +1534,8 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_basic_set(
 __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 	__isl_keep isl_ast_build *build, __isl_take isl_set *set)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_basic_set *bset;
 	isl_basic_set_list *list;
 	isl_set *domain;
@@ -1524,9 +1544,9 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_set_internal(
 	list = isl_set_get_basic_set_list(set);
 	isl_set_free(set);
 
-	if (!list)
-		return NULL;
 	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 0)
+		build = NULL;
 	if (n == 0) {
 		isl_ctx *ctx = isl_ast_build_get_ctx(build);
 		isl_basic_set_list_free(list);
@@ -1656,11 +1676,13 @@ struct isl_from_pw_aff_data {
 static isl_stat isl_from_pw_aff_data_init(struct isl_from_pw_aff_data *data,
 	__isl_keep isl_ast_build *build, __isl_keep isl_pw_aff *pa)
 {
-	int n;
+	isl_size n;
 	isl_ctx *ctx;
 
 	ctx = isl_pw_aff_get_ctx(pa);
 	n = isl_pw_aff_n_piece(pa);
+	if (n < 0)
+		return isl_stat_error;
 	if (n == 0)
 		isl_die(ctx, isl_error_invalid,
 			"cannot handle void expression", return isl_stat_error);
@@ -1781,9 +1803,10 @@ static __isl_give isl_ast_expr *ast_expr_from_aff_list(
 	__isl_take isl_aff_list *list, enum isl_from_pw_aff_state state,
 	__isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_aff *aff;
-	isl_ast_expr *expr;
+	isl_ast_expr *expr = NULL;
 	enum isl_ast_op_type op_type;
 
 	if (state == isl_state_single) {
@@ -1792,6 +1815,8 @@ static __isl_give isl_ast_expr *ast_expr_from_aff_list(
 		return isl_ast_expr_from_aff(aff, build);
 	}
 	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		goto error;
 	op_type = state == isl_state_min ? isl_ast_op_min : isl_ast_op_max;
 	expr = isl_ast_expr_alloc_op(isl_ast_build_get_ctx(build), op_type, n);
 	if (!expr)
@@ -1902,7 +1927,7 @@ static int sort_pieces_cmp(const void *p1, const void *p2, void *arg)
 {
 	const struct isl_from_pw_aff_piece *piece1 = p1;
 	const struct isl_from_pw_aff_piece *piece2 = p2;
-	int n1, n2;
+	isl_size n1, n2;
 
 	n1 = isl_set_n_basic_set(piece1->set);
 	n2 = isl_set_n_basic_set(piece2->set);
@@ -1993,10 +2018,14 @@ static isl_bool aff_is_rational(__isl_keep isl_aff *aff)
  */
 static isl_bool is_single_rational_aff(__isl_keep isl_aff_list *list)
 {
+	isl_size n;
 	isl_bool rational;
 	isl_aff *aff;
 
-	if (isl_aff_list_n_aff(list) != 1)
+	n = isl_aff_list_n_aff(list);
+	if (n < 0)
+		return isl_bool_error;
+	if (n != 1)
 		return isl_bool_false;
 	aff = isl_aff_list_get_aff(list, 0);
 	rational = aff_is_rational(aff);
@@ -2029,7 +2058,8 @@ static isl_bool extends(struct isl_from_pw_aff_data *data,
 	__isl_give isl_basic_set *(*test)(__isl_take isl_aff *aff1,
 		__isl_take isl_aff *aff2))
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_bool is_rational;
 	isl_ctx *ctx;
 	isl_set *dom;
@@ -2044,10 +2074,13 @@ static isl_bool extends(struct isl_from_pw_aff_data *data,
 	if (!isl_options_get_ast_build_detect_min_max(ctx))
 		return isl_bool_false;
 
+	n = isl_set_list_n_set(data->p[data->n].set_list);
+	if (n < 0)
+		return isl_bool_error;
+
 	dom = isl_ast_build_get_domain(data->build);
 	set = isl_set_intersect(dom, isl_set_copy(set));
 
-	n = isl_set_list_n_set(data->p[data->n].set_list);
 	for (i = 0; i < n ; ++i) {
 		isl_aff *aff_i;
 		isl_set *valid;
@@ -2238,9 +2271,12 @@ __isl_give isl_ast_expr *isl_ast_build_expr_from_pw_aff(
 static __isl_give isl_multi_pw_aff *set_iterator_names(
 	__isl_keep isl_ast_build *build, __isl_take isl_multi_pw_aff *mpa)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_multi_pw_aff_dim(mpa, isl_dim_in);
+	if (n < 0)
+		return isl_multi_pw_aff_free(mpa);
 	for (i = 0; i < n; ++i) {
 		isl_id *id;
 
@@ -2260,14 +2296,15 @@ static __isl_give isl_ast_expr *isl_ast_build_with_arguments(
 	__isl_keep isl_ast_build *build, enum isl_ast_op_type type,
 	__isl_take isl_ast_expr *arg0, __isl_take isl_multi_pw_aff *mpa)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_expr *expr;
 
 	ctx = isl_ast_build_get_ctx(build);
 
 	n = isl_multi_pw_aff_dim(mpa, isl_dim_out);
-	expr = isl_ast_expr_alloc_op(ctx, type, 1 + n);
+	expr = n >= 0 ? isl_ast_expr_alloc_op(ctx, type, 1 + n) : NULL;
 	expr = isl_ast_expr_set_op_arg(expr, 0, arg0);
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;

@@ -529,14 +529,15 @@ static int reduce_list_cmp(__isl_keep isl_pw_aff *a, __isl_keep isl_pw_aff *b,
 static __isl_give isl_pw_aff_list *remove_redundant_lower_bounds(
 	__isl_take isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
 {
-	int i, j, n;
+	int i, j;
+	isl_size n;
 	isl_set *domain;
 
 	list = isl_pw_aff_list_sort(list, &reduce_list_cmp, NULL);
-	if (!list)
-		return NULL;
 
 	n = isl_pw_aff_list_n_pw_aff(list);
+	if (n < 0)
+		return isl_pw_aff_list_free(list);
 	if (n <= 1)
 		return list;
 
@@ -600,12 +601,15 @@ static __isl_give isl_pw_aff_list *lower_bounds(
 {
 	isl_ctx *ctx;
 	isl_pw_aff_list *list;
-	int i, n;
+	int i;
+	isl_size n;
 
 	if (!build)
 		return NULL;
 
 	n = isl_constraint_list_n_constraint(constraints);
+	if (n < 0)
+		return NULL;
 	if (n == 0) {
 		isl_pw_aff *pa;
 		pa = exact_bound(domain, build, 0);
@@ -642,9 +646,12 @@ static __isl_give isl_pw_aff_list *upper_bounds(
 {
 	isl_ctx *ctx;
 	isl_pw_aff_list *list;
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_constraint_list_n_constraint(constraints);
+	if (n < 0)
+		return NULL;
 	if (n == 0) {
 		isl_pw_aff *pa;
 		pa = exact_bound(domain, build, 1);
@@ -680,14 +687,14 @@ static __isl_give isl_pw_aff_list *upper_bounds(
 static __isl_give isl_ast_expr *reduce_list(enum isl_ast_op_type type,
 	__isl_keep isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_expr *expr;
 
-	if (!list)
-		return NULL;
-
 	n = isl_pw_aff_list_n_pw_aff(list);
+	if (n < 0)
+		return NULL;
 
 	if (n == 1)
 		return isl_ast_build_expr_from_pw_aff_internal(build,
@@ -803,10 +810,13 @@ static __isl_give isl_ast_graft *refine_degenerate(
 static __isl_give isl_set *intersect_constraints(
 	__isl_keep isl_constraint_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_basic_set *bset;
 
 	n = isl_constraint_list_n_constraint(list);
+	if (n < 0)
+		return NULL;
 	if (n < 1)
 		isl_die(isl_constraint_list_get_ctx(list), isl_error_internal,
 			"expecting at least one constraint", return NULL);
@@ -859,9 +869,11 @@ static __isl_give isl_ast_graft *set_enforced_from_set(
 	isl_space *space;
 	isl_basic_set *enforced;
 	isl_pw_multi_aff *pma;
-	int i, n;
+	int i;
+	isl_size n;
 
-	if (!graft || !lower)
+	n = isl_pw_aff_list_n_pw_aff(lower);
+	if (!graft || n < 0)
 		return isl_ast_graft_free(graft);
 
 	space = isl_set_get_space(upper);
@@ -870,7 +882,6 @@ static __isl_give isl_ast_graft *set_enforced_from_set(
 	space = isl_space_map_from_set(space);
 	pma = isl_pw_multi_aff_identity(space);
 
-	n = isl_pw_aff_list_n_pw_aff(lower);
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
 		isl_set *enforced_i;
@@ -971,17 +982,21 @@ static int list_constant_is_negative(__isl_keep isl_pw_aff_list *list)
 static __isl_give isl_pw_aff_list *list_add_one(
 	__isl_take isl_pw_aff_list *list, __isl_keep isl_ast_build *build)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_space *space;
 	isl_aff *aff;
 	isl_pw_aff *one;
+
+	n = isl_pw_aff_list_n_pw_aff(list);
+	if (n < 0)
+		return isl_pw_aff_list_free(list);
 
 	space = isl_ast_build_get_space(build, 1);
 	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
 	aff = isl_aff_add_constant_si(aff, 1);
 	one = isl_pw_aff_from_aff(aff);
 
-	n = isl_pw_aff_list_n_pw_aff(list);
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
 		pa = isl_pw_aff_list_get_pw_aff(list, i);
@@ -1186,7 +1201,7 @@ static __isl_give isl_ast_graft *refine_generic_bounds(
 	int use_list;
 	isl_set *upper_set = NULL;
 	isl_pw_aff_list *upper_list = NULL;
-	int n_lower, n_upper;
+	isl_size n_lower, n_upper;
 
 	if (!graft || !c_lower || !c_upper || !build)
 		goto error;
@@ -1196,6 +1211,8 @@ static __isl_give isl_ast_graft *refine_generic_bounds(
 
 	n_lower = isl_constraint_list_n_constraint(c_lower);
 	n_upper = isl_constraint_list_n_constraint(c_upper);
+	if (n_lower < 0 || n_upper < 0)
+		goto error;
 
 	use_list = use_upper_bound_list(ctx, n_upper, domain, depth);
 
@@ -1478,6 +1495,7 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	int depth;
 	int degenerate;
 	isl_bool eliminated;
+	isl_size n;
 	isl_basic_set *hull;
 	isl_basic_set *enforced;
 	isl_set *guard, *hoisted;
@@ -1522,7 +1540,10 @@ static __isl_give isl_ast_graft *create_node_scaled(
 	enforced = extract_shared_enforced(children, build);
 	guard = extract_pending(sub_build, enforced);
 	hoisted = isl_ast_graft_list_extract_hoistable_guard(children, build);
-	if (isl_set_n_basic_set(hoisted) > 1)
+	n = isl_set_n_basic_set(hoisted);
+	if (n < 0)
+		children = isl_ast_graft_list_free(children);
+	if (n > 1)
 		children = isl_ast_graft_list_gist_guards(children,
 						    isl_set_copy(hoisted));
 	guard = isl_set_intersect(guard, hoisted);
@@ -1579,7 +1600,8 @@ static isl_stat constraint_check_scaled(__isl_take isl_constraint *c,
 	void *user)
 {
 	struct isl_check_scaled_data *data = user;
-	int i, j, n;
+	int i, j;
+	isl_size n;
 	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_out,
 				    isl_dim_div };
 
@@ -1590,6 +1612,8 @@ static isl_stat constraint_check_scaled(__isl_take isl_constraint *c,
 
 	for (i = 0; i < 4; ++i) {
 		n = isl_constraint_dim(c, t[i]);
+		if (n < 0)
+			break;
 		for (j = 0; j < n; ++j) {
 			isl_val *d;
 
@@ -1770,16 +1794,18 @@ static isl_stat collect_basic_set(__isl_take isl_basic_set *bset, void *user)
 static __isl_give isl_basic_set_list *isl_basic_set_list_from_set(
 	__isl_take isl_set *set)
 {
-	int n;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_basic_set_list *list;
 
+	n = isl_set_n_basic_set(set);
+	if (n < 0)
+		set = isl_set_free(set);
 	if (!set)
 		return NULL;
 
 	ctx = isl_set_get_ctx(set);
 
-	n = isl_set_n_basic_set(set);
 	list = isl_basic_set_list_alloc(ctx, n);
 	if (isl_set_foreach_basic_set(set, &collect_basic_set, &list) < 0)
 		list = isl_basic_set_list_free(list);
@@ -1880,15 +1906,16 @@ static __isl_give isl_basic_set_list *add_split_on(
 	__isl_take isl_basic_set_list *list, __isl_take isl_basic_set *bset,
 	__isl_keep isl_basic_map *gt)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_basic_set_list *res;
 
-	if (!list)
+	n = isl_basic_set_list_n_basic_set(list);
+	if (n < 0)
 		bset = isl_basic_set_free(bset);
 
 	gt = isl_basic_map_copy(gt);
 	gt = isl_basic_map_intersect_domain(gt, isl_basic_set_copy(bset));
-	n = isl_basic_set_list_n_basic_set(list);
 	res = isl_basic_set_list_from_basic_set(bset);
 	for (i = 0; res && i < n; ++i) {
 		isl_basic_set *bset;
@@ -1976,13 +2003,16 @@ struct isl_add_nodes_data {
 static isl_stat add_nodes(__isl_take isl_basic_set_list *scc, void *user)
 {
 	struct isl_add_nodes_data *data = user;
-	int i, n, depth;
+	int i, depth;
+	isl_size n;
 	isl_basic_set *bset, *first;
 	isl_basic_set_list *list;
 	isl_space *space;
 	isl_basic_map *gt;
 
 	n = isl_basic_set_list_n_basic_set(scc);
+	if (n < 0)
+		goto error;
 	bset = isl_basic_set_list_get_basic_set(scc, 0);
 	if (n == 1) {
 		isl_basic_set_list_free(scc);
@@ -2027,6 +2057,9 @@ static isl_stat add_nodes(__isl_take isl_basic_set_list *scc, void *user)
 	isl_basic_set_list_free(scc);
 
 	return data->list ? isl_stat_ok : isl_stat_error;
+error:
+	isl_basic_set_list_free(scc);
+	return isl_stat_error;
 }
 
 /* Sort the domains in "domain_list" according to the execution order
@@ -2049,13 +2082,13 @@ static __isl_give isl_ast_graft_list *generate_sorted_domains(
 	isl_ctx *ctx;
 	struct isl_add_nodes_data data;
 	int depth;
-	int n;
+	isl_size n;
 
-	if (!domain_list)
+	n = isl_basic_set_list_n_basic_set(domain_list);
+	if (n < 0)
 		return NULL;
 
 	ctx = isl_basic_set_list_get_ctx(domain_list);
-	n = isl_basic_set_list_n_basic_set(domain_list);
 	data.list = isl_ast_graft_list_alloc(ctx, n);
 	if (n == 0)
 		return data.list;
@@ -2107,7 +2140,7 @@ static isl_bool shared_outer(__isl_keep isl_basic_set *i,
  * "list" collects the results.
  */
 struct isl_ast_generate_parallel_domains_data {
-	int n;
+	isl_size n;
 	isl_union_map *executed;
 	isl_ast_build *build;
 
@@ -2129,9 +2162,13 @@ static isl_stat generate_sorted_domains_wrap(__isl_take isl_basic_set_list *scc,
 {
 	struct isl_ast_generate_parallel_domains_data *data = user;
 	isl_ast_graft_list *list;
+	isl_size n;
 
+	n = isl_basic_set_list_n_basic_set(scc);
+	if (n < 0)
+		scc = isl_basic_set_list_free(scc);
 	list = generate_sorted_domains(scc, data->executed, data->build);
-	data->single = isl_basic_set_list_n_basic_set(scc) == data->n;
+	data->single = n == data->n;
 	if (!data->single)
 		list = isl_ast_graft_list_fuse(list, data->build);
 	if (!data->list)
@@ -2169,10 +2206,10 @@ static __isl_give isl_ast_graft_list *generate_parallel_domains(
 	int depth;
 	struct isl_ast_generate_parallel_domains_data data;
 
-	if (!domain_list)
+	data.n = isl_basic_set_list_n_basic_set(domain_list);
+	if (data.n < 0)
 		return NULL;
 
-	data.n = isl_basic_set_list_n_basic_set(domain_list);
 	if (data.n <= 1)
 		return generate_sorted_domains(domain_list, executed, build);
 
@@ -2232,9 +2269,12 @@ static __isl_give isl_set *explicit_bounds(__isl_take isl_map *map,
 	__isl_keep isl_ast_build *build)
 {
 	isl_set *domain;
-	int depth, dim;
+	int depth;
+	isl_size dim;
 
 	dim = isl_map_dim(map, isl_dim_out);
+	if (dim < 0)
+		return isl_map_domain(isl_map_free(map));
 	map = isl_map_drop_constraints_involving_dims(map, isl_dim_out, 0, dim);
 
 	domain = isl_map_domain(map);
@@ -2351,7 +2391,7 @@ static isl_stat update_n_div(__isl_take isl_set *set,
 {
 	isl_aff *aff;
 	int *n = user;
-	int n_div;
+	isl_size n_div;
 
 	aff = isl_multi_aff_get_aff(ma, 0);
 	n_div = isl_aff_dim(aff, isl_dim_div);
@@ -2362,7 +2402,7 @@ static isl_stat update_n_div(__isl_take isl_set *set,
 	if (n_div > *n)
 		*n = n_div;
 
-	return aff ? isl_stat_ok : isl_stat_error;
+	return n_div >= 0 ? isl_stat_ok : isl_stat_error;
 }
 
 /* Get the number of integer divisions in the expression for the iterator
@@ -2786,7 +2826,8 @@ static __isl_give isl_set *compute_unroll_domains(
 {
 	isl_set *unroll_domain;
 	isl_basic_set_list *unroll_list;
-	int i, n;
+	int i;
+	isl_size n;
 	isl_bool empty;
 
 	empty = isl_set_is_empty(domains->option[isl_ast_loop_unroll]);
@@ -2799,6 +2840,8 @@ static __isl_give isl_set *compute_unroll_domains(
 	unroll_list = isl_basic_set_list_from_set(unroll_domain);
 
 	n = isl_basic_set_list_n_basic_set(unroll_list);
+	if (n < 0)
+		class_domain = isl_set_free(class_domain);
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset;
 
@@ -3099,6 +3142,8 @@ static __isl_give isl_basic_set_list *compute_domains(
 	domains.sep_class = isl_ast_build_get_separation_class(build);
 	classes = isl_map_range(isl_map_copy(domains.sep_class));
 	n_param = isl_set_dim(classes, isl_dim_param);
+	if (n_param < 0)
+		classes = isl_set_free(classes);
 	classes = isl_set_project_out(classes, isl_dim_param, 0, n_param);
 
 	space = isl_set_get_space(domain);
@@ -3258,14 +3303,21 @@ static isl_bool has_pure_outer_disjunction(__isl_keep isl_set *domain,
 	isl_basic_set *hull;
 	isl_set *shared, *inner;
 	isl_bool equal;
-	int depth, dim;
+	int depth;
+	isl_size n;
+	isl_size dim;
 
-	if (isl_set_n_basic_set(domain) <= 1)
+	n = isl_set_n_basic_set(domain);
+	if (n < 0)
+		return isl_bool_error;
+	if (n <= 1)
 		return isl_bool_false;
+	dim = isl_set_dim(domain, isl_dim_set);
+	if (dim < 0)
+		return isl_bool_error;
 
 	inner = isl_set_copy(domain);
 	depth = isl_ast_build_get_depth(build);
-	dim = isl_set_dim(inner, isl_dim_set);
 	inner = isl_set_drop_constraints_not_involving_dims(inner,
 					    isl_dim_set, depth, dim - depth);
 	hull = isl_set_plain_unshifted_simple_hull(isl_set_copy(inner));
@@ -3375,11 +3427,14 @@ static __isl_give isl_set *extract_disjunction(__isl_take isl_set *domain,
 	__isl_keep isl_ast_build *build)
 {
 	isl_set *hull;
-	int depth, dim;
+	int depth;
+	isl_size dim;
 
 	domain = isl_ast_build_specialize(build, domain);
 	depth = isl_ast_build_get_depth(build);
 	dim = isl_set_dim(domain, isl_dim_set);
+	if (dim < 0)
+		return isl_set_free(domain);
 	domain = isl_set_eliminate(domain, isl_dim_set, depth, dim - depth);
 	domain = isl_set_remove_unknown_divs(domain);
 	hull = isl_set_copy(domain);
@@ -3402,10 +3457,14 @@ static __isl_give isl_ast_graft_list *list_add_guard(
 	__isl_keep isl_ast_build *build, __isl_keep isl_ast_build *sub_build)
 {
 	isl_ast_graft *graft;
+	isl_size n;
 
 	list = isl_ast_graft_list_fuse(list, sub_build);
 
-	if (isl_ast_graft_list_n_ast_graft(list) != 1)
+	n = isl_ast_graft_list_n_ast_graft(list);
+	if (n < 0)
+		return isl_ast_graft_list_free(list);
+	if (n != 1)
 		return list;
 
 	graft = isl_ast_graft_list_get_ast_graft(list, 0);
@@ -4421,9 +4480,12 @@ static isl_bool after_in_filter(__isl_keep isl_union_map *umap,
 static isl_bool after_in_set(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
 	n = isl_schedule_node_n_children(node);
+	if (n < 0)
+		return isl_bool_error;
 	for (i = 0; i < n; ++i) {
 		isl_schedule_node *child;
 		isl_bool after;
@@ -4466,12 +4528,15 @@ static __isl_give isl_union_set *child_filter(
 static isl_bool after_in_sequence(__isl_keep isl_union_map *umap,
 	__isl_keep isl_schedule_node *node)
 {
-	int i, j, n;
+	int i, j;
+	isl_size n;
 	isl_union_map *umap_i;
 	isl_bool empty;
 	isl_bool after = isl_bool_false;
 
 	n = isl_schedule_node_n_children(node);
+	if (n < 0)
+		return isl_bool_error;
 	for (i = 1; i < n; ++i) {
 		isl_union_set *filter_i;
 
@@ -4642,8 +4707,11 @@ struct isl_any_scheduled_after_data {
 static isl_bool any_scheduled_after(int i, int j, void *user)
 {
 	struct isl_any_scheduled_after_data *data = user;
-	int dim = isl_set_dim(data->domain[i].set, isl_dim_set);
+	isl_size dim = isl_set_dim(data->domain[i].set, isl_dim_set);
 	int pos;
+
+	if (dim < 0)
+		return isl_bool_error;
 
 	for (pos = data->depth; pos < dim; ++pos) {
 		int follows;
@@ -4696,13 +4764,16 @@ static __isl_give isl_ast_graft_list *generate_components(
 {
 	int i;
 	isl_ctx *ctx = isl_ast_build_get_ctx(build);
-	int n = isl_union_map_n_map(executed);
+	isl_size n = isl_union_map_n_map(executed);
 	struct isl_any_scheduled_after_data data;
 	struct isl_set_map_pair *next;
 	struct isl_tarjan_graph *g = NULL;
 	isl_ast_graft_list *list = NULL;
 	int n_domain = 0;
 
+	data.domain = NULL;
+	if (n < 0)
+		goto error;
 	data.domain = isl_calloc_array(ctx, struct isl_set_map_pair, n);
 	if (!data.domain)
 		goto error;
@@ -4776,6 +4847,8 @@ static __isl_give isl_ast_graft_list *generate_next_level(
 	__isl_take isl_union_map *executed, __isl_take isl_ast_build *build)
 {
 	int depth;
+	isl_size dim;
+	isl_size n;
 
 	if (!build || !executed)
 		goto error;
@@ -4788,10 +4861,16 @@ static __isl_give isl_ast_graft_list *generate_next_level(
 	}
 
 	depth = isl_ast_build_get_depth(build);
-	if (depth >= isl_ast_build_dim(build, isl_dim_set))
+	dim = isl_ast_build_dim(build, isl_dim_set);
+	if (dim < 0)
+		goto error;
+	if (depth >= dim)
 		return generate_inner_level(executed, build);
 
-	if (isl_union_map_n_map(executed) == 1)
+	n = isl_union_map_n_map(executed);
+	if (n < 0)
+		goto error;
+	if (n == 1)
 		return generate_shifted_component(executed, build);
 
 	return generate_components(executed, build);
@@ -5112,7 +5191,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_band(
 	isl_multi_union_pw_aff *extra;
 	isl_union_map *extra_umap;
 	isl_ast_graft_list *list;
-	unsigned n1, n2;
+	isl_size n1, n2;
 
 	if (!build || !node || !executed)
 		goto error;
@@ -5134,7 +5213,9 @@ static __isl_give isl_ast_graft_list *build_ast_from_band(
 	n1 = isl_ast_build_dim(build, isl_dim_param);
 	build = isl_ast_build_product(build, space);
 	n2 = isl_ast_build_dim(build, isl_dim_param);
-	if (n2 > n1)
+	if (n1 < 0 || n2 < 0)
+		build = isl_ast_build_free(build);
+	else if (n2 > n1)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
 			"band node is not allowed to introduce new parameters",
 			build = isl_ast_build_free(build));
@@ -5167,13 +5248,12 @@ static __isl_give isl_ast_graft_list *hoist_out_of_context(
 	isl_ast_graft *graft;
 	isl_basic_set *enforced;
 	isl_set *guard;
-	unsigned n_param, extra_param;
-
-	if (!build || !sub_build)
-		return isl_ast_graft_list_free(list);
+	isl_size n_param, extra_param;
 
 	n_param = isl_ast_build_dim(build, isl_dim_param);
 	extra_param = isl_ast_build_dim(sub_build, isl_dim_param);
+	if (n_param < 0 || extra_param < 0)
+		return isl_ast_graft_list_free(list);
 
 	if (extra_param == n_param)
 		return list;
@@ -5287,7 +5367,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_expansion(
 	__isl_take isl_union_map *executed)
 {
 	isl_union_map *expansion;
-	unsigned n1, n2;
+	isl_size n1, n2;
 
 	expansion = isl_schedule_node_expansion_get_expansion(node);
 	expansion = isl_union_map_align_params(expansion,
@@ -5296,6 +5376,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_expansion(
 	n1 = isl_union_map_dim(executed, isl_dim_param);
 	executed = isl_union_map_apply_range(executed, expansion);
 	n2 = isl_union_map_dim(executed, isl_dim_param);
+	if (n1 < 0 || n2 < 0)
+		goto error;
 	if (n2 > n1)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
 			"expansion node is not allowed to introduce "
@@ -5372,7 +5454,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_filter(
 	isl_ast_graft_list *list;
 	int empty;
 	isl_bool unchanged;
-	unsigned n1, n2;
+	isl_size n1, n2;
 
 	orig = isl_union_map_copy(executed);
 	if (!build || !node || !executed)
@@ -5384,6 +5466,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_filter(
 	n1 = isl_union_map_dim(executed, isl_dim_param);
 	executed = isl_union_map_intersect_range(executed, filter);
 	n2 = isl_union_map_dim(executed, isl_dim_param);
+	if (n1 < 0 || n2 < 0)
+		goto error;
 	if (n2 > n1)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
 			"filter node is not allowed to introduce "
@@ -5438,14 +5522,16 @@ static __isl_give isl_ast_graft_list *build_ast_from_guard(
 	isl_ast_build *sub_build;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *list;
-	unsigned n1, n2;
+	isl_size n1, n2, n;
 
 	space = isl_ast_build_get_space(build, 1);
 	guard = isl_schedule_node_guard_get_guard(node);
 	n1 = isl_space_dim(space, isl_dim_param);
 	guard = isl_set_align_params(guard, space);
 	n2 = isl_set_dim(guard, isl_dim_param);
-	if (n2 > n1)
+	if (n1 < 0 || n2 < 0)
+		guard = isl_set_free(guard);
+	else if (n2 > n1)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_invalid,
 			"guard node is not allowed to introduce "
 			"new parameters", guard = isl_set_free(guard));
@@ -5462,7 +5548,10 @@ static __isl_give isl_ast_graft_list *build_ast_from_guard(
 							node, executed);
 
 	hoisted = isl_ast_graft_list_extract_hoistable_guard(list, sub_build);
-	if (isl_set_n_basic_set(hoisted) > 1)
+	n = isl_set_n_basic_set(hoisted);
+	if (n < 0)
+		list = isl_ast_graft_list_free(list);
+	if (n > 1)
 		list = isl_ast_graft_list_gist_guards(list,
 						    isl_set_copy(hoisted));
 	guard = isl_set_intersect(guard, hoisted);
@@ -5534,7 +5623,7 @@ static __isl_give isl_ast_graft_list *build_ast_from_mark(
 	isl_id *mark;
 	isl_ast_graft *graft;
 	isl_ast_graft_list *list;
-	int n;
+	isl_size n;
 
 	build = isl_ast_build_set_executed(build, isl_union_map_copy(executed));
 
@@ -5578,7 +5667,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_sequence(
 	__isl_take isl_ast_build *build, __isl_take isl_schedule_node *node,
 	__isl_take isl_union_map *executed)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_graft_list *list;
 
@@ -5586,6 +5676,8 @@ static __isl_give isl_ast_graft_list *build_ast_from_sequence(
 	list = isl_ast_graft_list_alloc(ctx, 0);
 
 	n = isl_schedule_node_n_children(node);
+	if (n < 0)
+		list = isl_ast_graft_list_free(list);
 	for (i = 0; i < n; ++i) {
 		isl_schedule_node *child;
 		isl_ast_graft_list *list_i;

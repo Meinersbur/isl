@@ -60,10 +60,13 @@ static __isl_give isl_printer *print_constraint_polylib(
 	struct isl_basic_map *bmap, int ineq, int n, __isl_take isl_printer *p)
 {
 	int i;
-	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
-	unsigned n_out = isl_basic_map_dim(bmap, isl_dim_out);
-	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	isl_size n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	isl_size n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	isl_size nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	isl_int *c = ineq ? bmap->ineq[n] : bmap->eq[n];
+
+	if (n_in < 0 || n_out < 0 || nparam < 0)
+		return isl_printer_free(p);
 
 	p = isl_printer_start_line(p);
 	p = isl_printer_print_int(p, ineq);
@@ -113,24 +116,32 @@ static __isl_give isl_printer *bset_print_constraints_polylib(
 static __isl_give isl_printer *isl_basic_map_print_polylib(
 	__isl_keep isl_basic_map *bmap, __isl_take isl_printer *p, int ext)
 {
-	unsigned total = isl_basic_map_total_dim(bmap);
+	isl_size total;
+
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (total < 0)
+		return isl_printer_free(p);
 	p = isl_printer_start_line(p);
 	p = isl_printer_print_int(p, bmap->n_eq + bmap->n_ineq);
 	p = isl_printer_print_str(p, " ");
 	p = isl_printer_print_int(p, 1 + total + 1);
 	if (ext) {
+		isl_size n_in = isl_basic_map_dim(bmap, isl_dim_in);
+		isl_size n_out = isl_basic_map_dim(bmap, isl_dim_out);
+		isl_size n_div = isl_basic_map_dim(bmap, isl_dim_div);
+		isl_size nparam = isl_basic_map_dim(bmap, isl_dim_param);
+
+		if (n_in < 0 || n_out < 0 || n_div < 0 || nparam < 0)
+			return isl_printer_free(p);
+
 		p = isl_printer_print_str(p, " ");
-		p = isl_printer_print_int(p,
-				    isl_basic_map_dim(bmap, isl_dim_out));
+		p = isl_printer_print_int(p, n_out);
 		p = isl_printer_print_str(p, " ");
-		p = isl_printer_print_int(p,
-				    isl_basic_map_dim(bmap, isl_dim_in));
+		p = isl_printer_print_int(p, n_in);
 		p = isl_printer_print_str(p, " ");
-		p = isl_printer_print_int(p,
-				    isl_basic_map_dim(bmap, isl_dim_div));
+		p = isl_printer_print_int(p, n_div);
 		p = isl_printer_print_str(p, " ");
-		p = isl_printer_print_int(p,
-				    isl_basic_map_dim(bmap, isl_dim_param));
+		p = isl_printer_print_int(p, nparam);
 	}
 	p = isl_printer_end_line(p);
 	return print_constraints_polylib(bmap, p);
@@ -164,15 +175,18 @@ static __isl_give isl_printer *isl_set_print_polylib(__isl_keep isl_set *set,
 	return isl_map_print_polylib(set_to_map(set), p, ext);
 }
 
-static int count_same_name(__isl_keep isl_space *space,
+static isl_size count_same_name(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos, const char *name)
 {
 	enum isl_dim_type t;
-	unsigned p, s;
+	int p;
+	isl_size s;
 	int count = 0;
 
 	for (t = isl_dim_param; t <= type && t <= isl_dim_out; ++t) {
 		s = t == type ? pos : isl_space_dim(space, t);
+		if (s < 0)
+			return isl_size_error;
 		for (p = 0; p < s; ++p) {
 			const char *n = isl_space_get_dim_name(space, t, p);
 			if (n && !strcmp(n, name))
@@ -191,7 +205,7 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 {
 	const char *name;
 	char buffer[20];
-	int primes;
+	isl_size primes;
 
 	name = type == isl_dim_div ? NULL
 				   : isl_space_get_dim_name(space, type, pos);
@@ -211,6 +225,8 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 	}
 	primes = count_same_name(space, name == buffer ? isl_dim_div : type,
 				 pos, name);
+	if (primes < 0)
+		return isl_printer_free(p);
 	p = isl_printer_print_str(p, name);
 	while (primes-- > 0)
 		p = isl_printer_print_str(p, "'");
@@ -220,9 +236,12 @@ static __isl_give isl_printer *print_name(__isl_keep isl_space *space,
 static isl_stat pos2type(__isl_keep isl_space *space,
 	enum isl_dim_type *type, unsigned *pos)
 {
-	unsigned n_in = isl_space_dim(space, isl_dim_in);
-	unsigned n_out = isl_space_dim(space, isl_dim_out);
-	unsigned nparam = isl_space_dim(space, isl_dim_param);
+	isl_size n_in = isl_space_dim(space, isl_dim_in);
+	isl_size n_out = isl_space_dim(space, isl_dim_out);
+	isl_size nparam = isl_space_dim(space, isl_dim_param);
+
+	if (n_in < 0 || n_out < 0 || nparam < 0)
+		return isl_stat_error;
 
 	if (*pos < 1 + nparam) {
 		*type = isl_dim_param;
@@ -330,13 +349,14 @@ static __isl_give isl_printer *print_affine_of_len(__isl_keep isl_space *dim,
 static __isl_give isl_printer *print_affine(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div, isl_int *c)
 {
-	unsigned n_div;
+	isl_size n_div, total;
 	unsigned len;
 
-	if (!space || !div)
-		return isl_printer_free(p);
+	total = isl_space_dim(space, isl_dim_all);
 	n_div = isl_mat_rows(div);
-	len = 1 + isl_space_dim(space, isl_dim_all) + n_div;
+	if (total < 0 || n_div < 0)
+		return isl_printer_free(p);
+	len = 1 + total + n_div;
 	return print_affine_of_len(space, div, p, c, len);
 }
 
@@ -347,11 +367,15 @@ static __isl_give isl_printer *print_nested_var_list(__isl_take isl_printer *p,
 	struct isl_print_space_data *data, int offset)
 {
 	int i;
+	isl_size dim;
 
 	if (data->space != local_space && local_type == isl_dim_out)
 		offset += local_space->n_in;
 
-	for (i = 0; i < isl_space_dim(local_space, local_type); ++i) {
+	dim = isl_space_dim(local_space, local_type);
+	if (dim < 0)
+		return isl_printer_free(p);
+	for (i = 0; i < dim; ++i) {
 		if (i)
 			p = isl_printer_print_str(p, ", ");
 		if (data->print_dim)
@@ -380,7 +404,10 @@ static __isl_give isl_printer *print_nested_tuple(__isl_take isl_printer *p,
 	struct isl_print_space_data *data, int offset)
 {
 	const char *name = NULL;
-	unsigned n = isl_space_dim(local_space, local_type);
+	isl_size n = isl_space_dim(local_space, local_type);
+
+	if (n < 0)
+		return isl_printer_free(p);
 	if ((local_type == isl_dim_in || local_type == isl_dim_out)) {
 		name = isl_space_get_tuple_name(local_space, local_type);
 		if (name) {
@@ -450,7 +477,11 @@ __isl_give isl_printer *isl_print_space(__isl_keep isl_space *space,
 static __isl_give isl_printer *print_omega_parameters(
 	__isl_keep isl_space *space, __isl_take isl_printer *p)
 {
-	if (isl_space_dim(space, isl_dim_param) == 0)
+	isl_size nparam = isl_space_dim(space, isl_dim_param);
+
+	if (nparam < 0)
+		return isl_printer_free(p);
+	if (nparam == 0)
 		return p;
 
 	p = isl_printer_start_line(p);
@@ -470,9 +501,11 @@ static __isl_give isl_printer *print_omega_parameters(
 static isl_bool next_is_opposite(__isl_keep isl_basic_map *bmap, int i,
 	int last)
 {
-	unsigned total = isl_basic_map_total_dim(bmap);
+	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
 	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 
+	if (total < 0)
+		return isl_bool_error;
 	if (i + 1 >= bmap->n_ineq)
 		return isl_bool_false;
 	if (isl_seq_last_non_zero(bmap->ineq[i + 1], 1 + total) != last)
@@ -606,12 +639,12 @@ static int print_as_modulo_pos(__isl_keep isl_printer *p,
 	isl_int c)
 {
 	isl_bool can_print;
-	unsigned n_div;
+	isl_size n_div;
 	enum isl_dim_type type;
 
-	if (!p || !space)
-		return -1;
 	n_div = isl_mat_rows(div);
+	if (!p || !space || n_div < 0)
+		return -1;
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
 	if (pos2type(space, &type, &pos) < 0)
@@ -682,12 +715,12 @@ static __isl_give isl_printer *print_eq_constraint(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div, isl_int *c,
 	int last, int latex)
 {
-	unsigned n_div;
+	isl_size n_div;
 	int div_pos;
 
 	n_div = isl_mat_rows(div);
 	div_pos = print_as_modulo_pos(p, space, div, last, c[last]);
-	if (div_pos < 0)
+	if (n_div < 0 || div_pos < 0)
 		return isl_printer_free(p);
 	if (div_pos < n_div)
 		return print_eq_mod_constraint(p, space, div, div_pos,
@@ -742,13 +775,13 @@ static __isl_give isl_printer *print_constraints(__isl_keep isl_basic_map *bmap,
 	int i;
 	isl_vec *c = NULL;
 	int rational = ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL);
-	unsigned total = isl_basic_map_total_dim(bmap);
+	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
 	unsigned o_div = isl_basic_map_offset(bmap, isl_dim_div);
 	int first = 1;
 	int dump;
 
-	if (!p)
-		return NULL;
+	if (total < 0 || !p)
+		return isl_printer_free(p);
 	bmap = isl_basic_map_copy(bmap);
 	dump = p->dump;
 	if (!dump)
@@ -861,12 +894,11 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
 {
 	int i;
 	int first = 1;
-	unsigned n_div;
-
-	if (!p || !space || !div)
-		return isl_printer_free(p);
+	isl_size n_div;
 
 	n_div = isl_mat_rows(div);
+	if (!p || !space || n_div < 0)
+		return isl_printer_free(p);
 
 	for (i = 0; i < n_div; ++i) {
 		if (!print_defined_divs && can_print_div_expr(p, div, i))
@@ -892,11 +924,12 @@ static __isl_give isl_printer *print_div_list(__isl_take isl_printer *p,
  */
 static isl_bool need_exists(__isl_keep isl_printer *p, __isl_keep isl_mat *div)
 {
-	int i, n;
+	int i;
+	isl_size n;
 
-	if (!p || !div)
-		return isl_bool_error;
 	n = isl_mat_rows(div);
+	if (!p || n < 0)
+		return isl_bool_error;
 	if (n == 0)
 		return isl_bool_false;
 	if (p->dump)
@@ -934,12 +967,13 @@ static __isl_give isl_printer *open_exists(__isl_take isl_printer *p,
  */
 static __isl_give isl_mat *mark_all_unknown(__isl_take isl_mat *div)
 {
-	int i, n_div;
-
-	if (!div)
-		return NULL;
+	int i;
+	isl_size n_div;
 
 	n_div = isl_mat_rows(div);
+	if (n_div < 0)
+		return isl_mat_free(div);
+
 	for (i = 0; i < n_div; ++i)
 		div = isl_mat_set_element_si(div, i, 0, 0);
 	return div;
@@ -1049,9 +1083,12 @@ static __isl_give isl_printer *isl_set_print_omega(__isl_keep isl_set *set,
 static __isl_give isl_printer *print_param_tuple(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, struct isl_print_space_data *data)
 {
-	if (!p || !space)
+	isl_size nparam;
+
+	nparam = isl_space_dim(space, isl_dim_param);
+	if (!p || nparam < 0)
 		return isl_printer_free(p);
-	if (isl_space_dim(space, isl_dim_param) == 0)
+	if (nparam == 0)
 		return p;
 
 	p = print_tuple(space, p, isl_dim_param, data);
@@ -1219,7 +1256,7 @@ static void free_split(__isl_take struct isl_aff_split *split, int n)
 static __isl_give isl_basic_map *get_aff(__isl_take isl_basic_map *bmap)
 {
 	int i, j;
-	unsigned nparam, n_in, n_out, total;
+	isl_size nparam, n_in, n_out, total;
 
 	bmap = isl_basic_map_cow(bmap);
 	if (!bmap)
@@ -1231,6 +1268,9 @@ static __isl_give isl_basic_map *get_aff(__isl_take isl_basic_map *bmap)
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (n_in < 0 || n_out < 0 || nparam < 0 || total < 0)
+		return isl_basic_map_free(bmap);
+
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		j = isl_seq_last_non_zero(bmap->eq[i] + 1, total);
 		if (j >= nparam && j < nparam + n_in + n_out &&
@@ -1262,20 +1302,19 @@ static __isl_give isl_basic_map *drop_aff(__isl_take isl_basic_map *bmap,
 	__isl_keep isl_basic_map *aff)
 {
 	int i, j;
-	unsigned total;
+	int v_div;
 
-	if (!bmap || !aff)
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (v_div < 0 || !aff)
 		goto error;
 
-	total = isl_space_dim(bmap->dim, isl_dim_all);
-
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total,
+		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + v_div,
 					    bmap->n_div) != -1)
 			continue;
 		for (j = 0; j < aff->n_eq; ++j) {
-			if (!isl_seq_eq(bmap->eq[i], aff->eq[j], 1 + total) &&
-			    !isl_seq_is_neg(bmap->eq[i], aff->eq[j], 1 + total))
+			if (!isl_seq_eq(bmap->eq[i], aff->eq[j], 1 + v_div) &&
+			    !isl_seq_is_neg(bmap->eq[i], aff->eq[j], 1 + v_div))
 				continue;
 			if (isl_basic_map_drop_equality(bmap, i) < 0)
 				goto error;
@@ -1340,13 +1379,13 @@ static int defining_equality(__isl_keep isl_basic_map *eq,
 	__isl_keep isl_space *dim, enum isl_dim_type type, int pos)
 {
 	int i;
-	unsigned total;
+	isl_size total;
 
-	if (!eq)
+	total = isl_basic_map_dim(eq, isl_dim_all);
+	if (total < 0)
 		return -1;
 
 	pos += isl_space_offset(dim, type);
-	total = isl_basic_map_total_dim(eq);
 
 	for (i = 0; i < eq->n_eq; ++i) {
 		if (isl_seq_last_non_zero(eq->eq[i] + 1, total) != pos)
@@ -1746,9 +1785,11 @@ error:
 static __isl_give isl_printer *print_base(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_mat *div, int var)
 {
-	unsigned total;
+	isl_size total;
 
 	total = isl_space_dim(space, isl_dim_all);
+	if (total < 0)
+		return isl_printer_free(p);
 	if (var < total)
 		p = print_term(space, NULL, space->ctx->one, 1 + var, p, 0);
 	else
@@ -2091,11 +2132,13 @@ static __isl_give isl_printer *print_constraint_c(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls, isl_int *c, const char *op, int *first)
 {
 	unsigned o_div;
-	unsigned n_div;
+	isl_size n_div;
 	int div;
 
 	o_div = isl_local_space_offset(ls, isl_dim_div);
 	n_div = isl_local_space_dim(ls, isl_dim_div);
+	if (n_div < 0)
+		return isl_printer_free(p);
 	div = isl_seq_last_non_zero(c + o_div, n_div);
 	if (div >= 0) {
 		isl_bool is_div = isl_local_space_is_div_constraint(ls, c, div);
@@ -2127,11 +2170,15 @@ static __isl_give isl_printer *print_basic_set_c(__isl_take isl_printer *p,
 {
 	int i, j;
 	int first = 1;
-	unsigned n_div = isl_basic_set_dim(bset, isl_dim_div);
-	unsigned total = isl_basic_set_total_dim(bset) - n_div;
+	isl_size n_div = isl_basic_set_dim(bset, isl_dim_div);
+	isl_size total = isl_basic_set_dim(bset, isl_dim_all);
 	isl_mat *div;
 	isl_local_space *ls;
 
+	if (n_div < 0 || total < 0)
+		return isl_printer_free(p);
+
+	total -= n_div;
 	div = isl_basic_set_get_divs(bset);
 	ls = isl_local_space_alloc_div(isl_space_copy(space), div);
 	for (i = 0; i < bset->n_eq; ++i) {
@@ -2515,15 +2562,15 @@ __isl_give isl_printer *isl_printer_print_local_space(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls)
 {
 	struct isl_print_space_data data = { 0 };
-	unsigned n_div;
+	isl_size n_div;
 
-	if (!ls)
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	if (n_div < 0)
 		goto error;
 
 	p = print_param_tuple(p, ls->dim, &data);
 	p = isl_printer_print_str(p, "{ ");
 	p = isl_print_space(ls->dim, p, 0, &data);
-	n_div = isl_local_space_dim(ls, isl_dim_div);
 	if (n_div > 0) {
 		p = isl_printer_print_str(p, " : ");
 		p = isl_printer_print_str(p, s_open_exists[0]);
@@ -2544,12 +2591,14 @@ error:
 static __isl_give isl_printer *print_aff_body(__isl_take isl_printer *p,
 	__isl_keep isl_space *space, __isl_keep isl_aff *aff)
 {
-	unsigned total;
+	isl_size total;
 
 	if (isl_aff_is_nan(aff))
 		return isl_printer_print_str(p, "NaN");
 
 	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	if (total < 0)
+		return isl_printer_free(p);
 	p = isl_printer_print_str(p, "(");
 	p = print_affine_of_len(space, aff->ls->div, p,
 				aff->v->el + 1, 1 + total);
@@ -2719,16 +2768,21 @@ static __isl_give isl_printer *print_ls_partial_affine_c(
 static __isl_give isl_printer *print_ls_affine_c(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls, isl_int *c)
 {
-	unsigned len = 1 + isl_local_space_dim(ls, isl_dim_all);
-	return print_ls_partial_affine_c(p, ls, c, len);
+	isl_size total = isl_local_space_dim(ls, isl_dim_all);
+
+	if (total < 0)
+		return isl_printer_free(p);
+	return print_ls_partial_affine_c(p, ls, c, 1 + total);
 }
 
 static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff)
 {
-	unsigned total;
+	isl_size total;
 
 	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	if (total < 0)
+		return isl_printer_free(p);
 	if (!isl_int_is_one(aff->v->el[0]))
 		p = isl_printer_print_str(p, "(");
 	p = print_ls_partial_affine_c(p, aff->ls, aff->v->el + 1, 1 + total);
@@ -3010,7 +3064,7 @@ static __isl_give isl_printer *print_unnamed_pw_multi_aff_c(
 static __isl_give isl_printer *print_pw_multi_aff_c(__isl_take isl_printer *p,
 	__isl_keep isl_pw_multi_aff *pma)
 {
-	int n;
+	isl_size n;
 	const char *name;
 
 	if (!pma)
@@ -3019,8 +3073,11 @@ static __isl_give isl_printer *print_pw_multi_aff_c(__isl_take isl_printer *p,
 		isl_die(p->ctx, isl_error_unsupported,
 			"cannot print empty isl_pw_multi_aff in C format",
 			goto error);
+	n = isl_pw_multi_aff_dim(pma, isl_dim_out);
+	if (n < 0)
+		return isl_printer_free(p);
 	name = isl_pw_multi_aff_get_tuple_name(pma, isl_dim_out);
-	if (!name && isl_pw_multi_aff_dim(pma, isl_dim_out) == 1)
+	if (!name && n == 1)
 		return print_unnamed_pw_multi_aff_c(p, pma);
 	if (!name)
 		isl_die(p->ctx, isl_error_unsupported,
@@ -3028,7 +3085,6 @@ static __isl_give isl_printer *print_pw_multi_aff_c(__isl_take isl_printer *p,
 			goto error);
 
 	p = isl_printer_print_str(p, name);
-	n = isl_pw_multi_aff_dim(pma, isl_dim_out);
 	if (n != 0)
 		isl_die(p->ctx, isl_error_unsupported,
 			"not supported yet", goto error);

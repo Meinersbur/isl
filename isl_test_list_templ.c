@@ -17,6 +17,7 @@ static isl_stat FN(FN(FN(test_get_list,EL_BASE),from),SET_BASE)(isl_ctx *ctx,
 	const char *str)
 {
 	int i;
+	isl_size n;
 	isl_bool equal;
 	SET *set, *set2;
 	LIST(EL) *list;
@@ -26,7 +27,8 @@ static isl_stat FN(FN(FN(test_get_list,EL_BASE),from),SET_BASE)(isl_ctx *ctx,
 
 	set2 = FN(SET,empty)(FN(SET,get_space)(set));
 
-	for (i = 0; i < FN(LIST(EL),size)(list); i++) {
+	n = FN(LIST(EL),size)(list);
+	for (i = 0; i < n; i++) {
 		EL *el;
 		el = FN(LIST(EL),get_at)(list, i);
 		set2 = FN(SET,union)(set2, FN(FN(SET,from),EL_BASE)(el));
@@ -38,7 +40,7 @@ static isl_stat FN(FN(FN(test_get_list,EL_BASE),from),SET_BASE)(isl_ctx *ctx,
 	FN(SET,free)(set2);
 	FN(LIST(EL),free)(list);
 
-	if (equal < 0)
+	if (n < 0 || equal < 0)
 		return isl_stat_error;
 
 	if (!equal)

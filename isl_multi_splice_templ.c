@@ -39,17 +39,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),splice)(
 	__isl_take MULTI(BASE) *multi1, unsigned in_pos, unsigned out_pos,
 	__isl_take MULTI(BASE) *multi2)
 {
-	unsigned n_in1;
-	unsigned n_in2;
+	isl_size n_in1;
+	isl_size n_in2;
 
-	if (!multi1 || !multi2)
+	n_in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
+	n_in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
+	if (n_in1 < 0 || n_in2 < 0)
 		goto error;
 
 	if (FN(MULTI(BASE),check_range)(multi1, isl_dim_in, in_pos, 0) < 0)
 		goto error;
-
-	n_in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
-	n_in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
 
 	multi1 = FN(MULTI(BASE),insert_dims)(multi1, isl_dim_in, in_pos, n_in2);
 	multi2 = FN(MULTI(BASE),insert_dims)(multi2, isl_dim_in, n_in2,

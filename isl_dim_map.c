@@ -87,8 +87,11 @@ void isl_dim_map_dim_range(__isl_keep isl_dim_map *dim_map,
 void isl_dim_map_dim(__isl_keep isl_dim_map *dim_map,
 	__isl_keep isl_space *space, enum isl_dim_type type, unsigned dst_pos)
 {
-	isl_dim_map_dim_range(dim_map, space, type,
-			      0, isl_space_dim(space, type), dst_pos);
+	isl_size dim = isl_space_dim(space, type);
+
+	if (dim < 0)
+		return;
+	isl_dim_map_dim_range(dim_map, space, type, 0, dim, dst_pos);
 }
 
 void isl_dim_map_div(__isl_keep isl_dim_map *dim_map,
@@ -224,6 +227,7 @@ __isl_give isl_dim_map *isl_dim_map_from_reordering(
 {
 	int i;
 	isl_ctx *ctx;
+	isl_size dim;
 	isl_space *space;
 	struct isl_dim_map *dim_map;
 
@@ -232,7 +236,10 @@ __isl_give isl_dim_map *isl_dim_map_from_reordering(
 
 	ctx = isl_reordering_get_ctx(exp);
 	space = isl_reordering_peek_space(exp);
-	dim_map = isl_dim_map_alloc(ctx, isl_space_dim(space, isl_dim_all));
+	dim = isl_space_dim(space, isl_dim_all);
+	if (dim < 0)
+		return NULL;
+	dim_map = isl_dim_map_alloc(ctx, dim);
 	if (!dim_map)
 		return NULL;
 

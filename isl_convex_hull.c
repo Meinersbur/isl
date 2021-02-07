@@ -199,12 +199,13 @@ static __isl_give isl_basic_set *wrap_constraints(__isl_keep isl_set *set)
 	unsigned n_eq;
 	unsigned n_ineq;
 	int i, j, k;
-	unsigned dim, lp_dim;
+	isl_size dim, lp_dim;
 
-	if (!set)
+	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
 		return NULL;
 
-	dim = 1 + isl_set_n_dim(set);
+	dim += 1;
 	n_eq = 1;
 	n_ineq = set->n;
 	for (i = 0; i < set->n; ++i) {
@@ -215,7 +216,9 @@ static __isl_give isl_basic_set *wrap_constraints(__isl_keep isl_set *set)
 	lp = isl_basic_set_set_rational(lp);
 	if (!lp)
 		return NULL;
-	lp_dim = isl_basic_set_n_dim(lp);
+	lp_dim = isl_basic_set_dim(lp, isl_dim_set);
+	if (lp_dim < 0)
+		return isl_basic_set_free(lp);
 	k = isl_basic_set_alloc_equality(lp);
 	isl_int_set_si(lp->eq[k][0], -1);
 	for (i = 0; i < set->n; ++i) {
@@ -312,15 +315,16 @@ isl_int *isl_set_wrap_facet(__isl_keep isl_set *set,
 	struct isl_vec *obj;
 	enum isl_lp_result res;
 	isl_int num, den;
-	unsigned dim;
+	isl_size dim;
 
-	if (!set)
+	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
 		return NULL;
 	ctx = set->ctx;
 	set = isl_set_copy(set);
 	set = isl_set_set_rational(set);
 
-	dim = 1 + isl_set_n_dim(set);
+	dim += 1;
 	T = isl_mat_alloc(ctx, 3, dim);
 	if (!T)
 		goto error;
@@ -387,10 +391,12 @@ static __isl_give isl_mat *initial_facet_constraint(__isl_keep isl_set *set)
 	struct isl_set *slice = NULL;
 	struct isl_basic_set *face = NULL;
 	int i;
-	unsigned dim = isl_set_n_dim(set);
+	isl_size dim = isl_set_dim(set, isl_dim_set);
 	isl_bool is_bound;
 	isl_mat *bounds = NULL;
 
+	if (dim < 0)
+		return NULL;
 	isl_assert(set->ctx, set->n > 0, goto error);
 	bounds = isl_mat_alloc(set->ctx, 1, 1 + dim);
 	if (!bounds)
@@ -479,11 +485,13 @@ static __isl_give isl_basic_set *compute_facet(__isl_keep isl_set *set,
 	struct isl_mat *m, *U, *Q;
 	struct isl_basic_set *facet = NULL;
 	struct isl_ctx *ctx;
-	unsigned dim;
+	isl_size dim;
 
+	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
+		return NULL;
 	ctx = set->ctx;
 	set = isl_set_copy(set);
-	dim = isl_set_n_dim(set);
 	m = isl_mat_alloc(set->ctx, 2, 1 + dim);
 	if (!m)
 		goto error;
@@ -535,14 +543,13 @@ static __isl_give isl_basic_set *extend(__isl_take isl_basic_set *hull,
 	int k;
 	struct isl_basic_set *facet = NULL;
 	struct isl_basic_set *hull_facet = NULL;
-	unsigned dim;
+	isl_size dim;
 
-	if (!hull)
-		return NULL;
+	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0 || !hull)
+		return isl_basic_set_free(hull);
 
 	isl_assert(set->ctx, set->n > 0, goto error);
-
-	dim = isl_set_n_dim(set);
 
 	for (i = 0; i < hull->n_ineq; ++i) {
 		facet = compute_facet(set, hull->ineq[i]);
@@ -741,12 +748,12 @@ static __isl_give isl_basic_set *convex_hull_pair_elim(
 	int i, j, k;
 	struct isl_basic_set *bset[2];
 	struct isl_basic_set *hull = NULL;
-	unsigned dim;
+	isl_size dim;
 
-	if (!bset1 || !bset2)
+	dim = isl_basic_set_dim(bset1, isl_dim_set);
+	if (dim < 0 || !bset2)
 		goto error;
 
-	dim = isl_basic_set_n_dim(bset1);
 	hull = isl_basic_set_alloc(bset1->ctx, 0, 2 + 3 * dim, 0,
 				1 + dim + bset1->n_eq + bset2->n_eq,
 				2 + bset1->n_ineq + bset2->n_ineq);
@@ -822,9 +829,12 @@ isl_bool isl_basic_set_is_bounded(__isl_keep isl_basic_set *bset)
  */
 isl_bool isl_basic_map_image_is_bounded(__isl_keep isl_basic_map *bmap)
 {
-	unsigned nparam = isl_basic_map_dim(bmap, isl_dim_param);
-	unsigned n_in = isl_basic_map_dim(bmap, isl_dim_in);
+	isl_size nparam = isl_basic_map_dim(bmap, isl_dim_param);
+	isl_size n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	isl_bool bounded;
+
+	if (nparam < 0 || n_in < 0)
+		return isl_bool_error;
 
 	bmap = isl_basic_map_copy(bmap);
 	bmap = isl_basic_map_cow(bmap);
@@ -864,12 +874,12 @@ static __isl_give isl_basic_set *induced_lineality_space(
 {
 	int i, k;
 	struct isl_basic_set *lin = NULL;
-	unsigned dim;
+	isl_size dim;
 
-	if (!bset1 || !bset2)
+	dim = isl_basic_set_dim(bset1, isl_dim_all);
+	if (dim < 0 || !bset2)
 		goto error;
 
-	dim = isl_basic_set_total_dim(bset1);
 	lin = isl_basic_set_alloc_space(isl_basic_set_get_space(bset1), 0,
 					bset1->n_eq + bset2->n_eq,
 					bset1->n_ineq + bset2->n_ineq);
@@ -940,12 +950,12 @@ static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set);
 static __isl_give isl_basic_set *modulo_lineality(__isl_take isl_set *set,
 	__isl_take isl_basic_set *lin)
 {
-	unsigned total = isl_basic_set_total_dim(lin);
+	isl_size total = isl_basic_set_dim(lin, isl_dim_all);
 	unsigned lin_dim;
 	struct isl_basic_set *hull;
 	struct isl_mat *M, *U, *Q;
 
-	if (!set || !lin)
+	if (!set || total < 0)
 		goto error;
 	lin_dim = total - lin->n_eq;
 	M = isl_mat_sub_alloc6(set->ctx, lin->eq, 0, lin->n_eq, 1, total);
@@ -989,10 +999,12 @@ static __isl_give isl_basic_set *valid_direction_lp(
 	unsigned d;
 	int n;
 	int i, j, k;
+	isl_size total;
 
-	if (!bset1 || !bset2)
+	total = isl_basic_set_dim(bset1, isl_dim_all);
+	if (total < 0 || !bset2)
 		goto error;
-	d = 1 + isl_basic_set_total_dim(bset1);
+	d = 1 + total;
 	n = 2 +
 	    2 * bset1->n_eq + bset1->n_ineq + 2 * bset2->n_eq + bset2->n_ineq;
 	dim = isl_space_set_alloc(bset1->ctx, 0, n);
@@ -1069,7 +1081,7 @@ static __isl_give isl_vec *valid_direction(
 	struct isl_tab *tab;
 	struct isl_vec *sample = NULL;
 	struct isl_vec *dir;
-	unsigned d;
+	isl_size d;
 	int i;
 	int n;
 
@@ -1083,7 +1095,9 @@ static __isl_give isl_vec *valid_direction(
 	isl_basic_set_free(lp);
 	if (!sample)
 		goto error;
-	d = isl_basic_set_total_dim(bset1);
+	d = isl_basic_set_dim(bset1, isl_dim_all);
+	if (d < 0)
+		goto error;
 	dir = isl_vec_alloc(bset1->ctx, 1 + d);
 	if (!dir)
 		goto error;
@@ -1129,14 +1143,16 @@ static __isl_give isl_basic_set *homogeneous_map(__isl_take isl_basic_set *bset,
 	__isl_take isl_mat *T)
 {
 	int k;
+	isl_size total;
 
-	if (!bset)
+	total = isl_basic_set_dim(bset, isl_dim_all);
+	if (total < 0)
 		goto error;
 	bset = isl_basic_set_extend_constraints(bset, 0, 1);
 	k = isl_basic_set_alloc_inequality(bset);
 	if (k < 0)
 		goto error;
-	isl_seq_clr(bset->ineq[k] + 1, isl_basic_set_total_dim(bset));
+	isl_seq_clr(bset->ineq[k] + 1, total);
 	isl_int_set_si(bset->ineq[k][0], 1);
 	bset = isl_basic_set_preimage(bset, T);
 	return bset;
@@ -1269,6 +1285,7 @@ static __isl_give isl_basic_set *convex_hull_pair(
 {
 	isl_basic_set *lin, *aff;
 	isl_bool bounded1, bounded2;
+	isl_size total;
 
 	if (bset1->ctx->opt->convex == ISL_CONVEX_HULL_FM)
 		return convex_hull_pair_elim(bset1, bset2);
@@ -1302,7 +1319,8 @@ static __isl_give isl_basic_set *convex_hull_pair(
 		isl_basic_set_free(bset2);
 		return lin;
 	}
-	if (lin->n_eq < isl_basic_set_total_dim(lin)) {
+	total = isl_basic_set_dim(lin, isl_dim_all);
+	if (lin->n_eq < total) {
 		struct isl_set *set;
 		set = isl_set_alloc_space(isl_basic_set_get_space(bset1), 2, 0);
 		set = isl_set_add_basic_set(set, bset1);
@@ -1310,6 +1328,8 @@ static __isl_give isl_basic_set *convex_hull_pair(
 		return modulo_lineality(set, lin);
 	}
 	isl_basic_set_free(lin);
+	if (total < 0)
+		goto error;
 
 	return convex_hull_pair_pointed(bset1, bset2);
 error:
@@ -1330,12 +1350,12 @@ __isl_give isl_basic_set *isl_basic_set_lineality_space(
 {
 	int i, k;
 	struct isl_basic_set *lin = NULL;
-	unsigned n_div, dim;
+	isl_size n_div, dim;
 
-	if (!bset)
-		goto error;
 	n_div = isl_basic_set_dim(bset, isl_dim_div);
-	dim = isl_basic_set_total_dim(bset);
+	dim = isl_basic_set_dim(bset, isl_dim_all);
+	if (n_div < 0 || dim < 0)
+		return isl_basic_set_free(bset);
 
 	lin = isl_basic_set_alloc_space(isl_basic_set_get_space(bset),
 					n_div, dim, 0);
@@ -1414,11 +1434,13 @@ static __isl_give isl_basic_set *uset_convex_hull_unbounded(
 	isl_set_free(set);
 
 	while (list) {
-		int n;
+		isl_size n, total;
 		struct isl_basic_set *t;
 		isl_basic_set *bset1, *bset2;
 
 		n = isl_basic_set_list_n_basic_set(list);
+		if (n < 0)
+			goto error;
 		if (n < 2)
 			isl_die(isl_basic_set_list_get_ctx(list),
 				isl_error_internal,
@@ -1442,11 +1464,14 @@ static __isl_give isl_basic_set *uset_convex_hull_unbounded(
 			isl_basic_set_list_free(list);
 			return t;
 		}
-		if (t->n_eq < isl_basic_set_total_dim(t)) {
+		total = isl_basic_set_dim(t, isl_dim_all);
+		if (t->n_eq < total) {
 			set = isl_basic_set_list_union(list);
 			return modulo_lineality(set, t);
 		}
 		isl_basic_set_free(t);
+		if (total < 0)
+			goto error;
 	}
 
 	return NULL;
@@ -1463,7 +1488,7 @@ static __isl_give isl_basic_set *initial_hull(__isl_take isl_basic_set *hull,
 	__isl_keep isl_set *set)
 {
 	struct isl_mat *bounds = NULL;
-	unsigned dim;
+	isl_size dim;
 	int k;
 
 	if (!hull)
@@ -1474,7 +1499,9 @@ static __isl_give isl_basic_set *initial_hull(__isl_take isl_basic_set *hull,
 	k = isl_basic_set_alloc_inequality(hull);
 	if (k < 0)
 		goto error;
-	dim = isl_set_n_dim(set);
+	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
+		goto error;
 	isl_assert(set->ctx, 1 + dim == bounds->n_col, goto error);
 	isl_seq_cpy(hull->ineq[k], bounds->row[0], bounds->n_col);
 	isl_mat_free(bounds);
@@ -1569,7 +1596,7 @@ static __isl_give isl_basic_set *common_constraints(
 	int best;
 	struct max_constraint *constraints = NULL;
 	struct isl_hash_table *table = NULL;
-	unsigned total;
+	isl_size total;
 
 	*is_hull = 0;
 
@@ -1597,6 +1624,8 @@ static __isl_give isl_basic_set *common_constraints(
 		goto error;
 
 	total = isl_set_dim(set, isl_dim_all);
+	if (total < 0)
+		goto error;
 	for (i = 0; i < set->p[best]->n_ineq; ++i) {
 		constraints[i].c = isl_mat_sub_alloc6(hull->ctx,
 			set->p[best]->ineq + i, 0, 1, 0, 1 + total);
@@ -1726,10 +1755,14 @@ static __isl_give isl_basic_set *uset_convex_hull_wrap(__isl_take isl_set *set)
 static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set)
 {
 	isl_bool bounded;
+	isl_size dim;
 	struct isl_basic_set *convex_hull = NULL;
 	struct isl_basic_set *lin;
 
-	if (isl_set_n_dim(set) == 0)
+	dim = isl_set_dim(set, isl_dim_all);
+	if (dim < 0)
+		goto error;
+	if (dim == 0)
 		return convex_hull_0d(set);
 
 	set = isl_set_coalesce(set);
@@ -1742,7 +1775,7 @@ static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set)
 		isl_set_free(set);
 		return convex_hull;
 	}
-	if (isl_set_n_dim(set) == 1)
+	if (dim == 1)
 		return convex_hull_1d(set);
 
 	bounded = isl_set_is_bounded(set);
@@ -1758,7 +1791,7 @@ static __isl_give isl_basic_set *uset_convex_hull(__isl_take isl_set *set)
 		isl_set_free(set);
 		return lin;
 	}
-	if (lin->n_eq < isl_basic_set_total_dim(lin))
+	if (lin->n_eq < dim)
 		return modulo_lineality(set, lin);
 	isl_basic_set_free(lin);
 
@@ -1777,11 +1810,13 @@ static __isl_give isl_basic_set *uset_convex_hull_wrap_bounded(
 	__isl_take isl_set *set)
 {
 	struct isl_basic_set *convex_hull = NULL;
+	isl_size dim;
 
-	if (!set)
+	dim = isl_set_dim(set, isl_dim_all);
+	if (dim < 0)
 		goto error;
 
-	if (isl_set_n_dim(set) == 0) {
+	if (dim == 0) {
 		convex_hull = isl_basic_set_universe(isl_space_copy(set->dim));
 		isl_set_free(set);
 		convex_hull = isl_basic_set_set_rational(convex_hull);
@@ -1798,7 +1833,7 @@ static __isl_give isl_basic_set *uset_convex_hull_wrap_bounded(
 		convex_hull = isl_basic_map_remove_redundancies(convex_hull);
 		return convex_hull;
 	}
-	if (isl_set_n_dim(set) == 1)
+	if (dim == 1)
 		return convex_hull_1d(set);
 
 	return uset_convex_hull_wrap(set);
@@ -1992,8 +2027,10 @@ static isl_stat hash_basic_set(struct isl_hash_table *table,
 	__isl_keep isl_basic_set *bset)
 {
 	int i, j;
-	unsigned dim = isl_basic_set_total_dim(bset);
+	isl_size dim = isl_basic_set_dim(bset, isl_dim_all);
 
+	if (dim < 0)
+		return isl_stat_error;
 	for (i = 0; i < bset->n_eq; ++i) {
 		for (j = 0; j < 2; ++j) {
 			isl_seq_neg(bset->eq[i], bset->eq[i], 1 + dim);
@@ -2146,11 +2183,13 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 	struct ineq_cmp_data v;
 	struct isl_hash_table_entry *entry;
 	int j, k;
+	isl_size total;
 
-	if (!hull)
-		return NULL;
+	total = isl_basic_set_dim(hull, isl_dim_all);
+	if (total < 0)
+		return isl_basic_set_free(hull);
 
-	v.len = isl_basic_set_total_dim(hull);
+	v.len = total;
 	v.p = ineq;
 	c_hash = isl_seq_get_hash(ineq + 1, v.len);
 
@@ -2224,7 +2263,10 @@ static __isl_give isl_basic_set *add_bounds(__isl_take isl_basic_set *bset,
 	struct sh_data *data, __isl_keep isl_set *set, int i, int shift)
 {
 	int j, k;
-	unsigned dim = isl_basic_set_total_dim(bset);
+	isl_size dim = isl_basic_set_dim(bset, isl_dim_all);
+
+	if (dim < 0)
+		return isl_basic_set_free(bset);
 
 	for (j = 0; j < set->p[i]->n_eq; ++j) {
 		for (k = 0; k < 2; ++k) {
@@ -2475,13 +2517,12 @@ static __isl_give isl_basic_map *select_shared_equalities(
 	__isl_take isl_basic_map *bmap1, __isl_keep isl_basic_map *bmap2)
 {
 	int i1, i2;
-	unsigned total;
+	isl_size total;
 
 	bmap1 = isl_basic_map_cow(bmap1);
-	if (!bmap1 || !bmap2)
+	total = isl_basic_map_dim(bmap1, isl_dim_all);
+	if (total < 0 || !bmap2)
 		return isl_basic_map_free(bmap1);
-
-	total = isl_basic_map_total_dim(bmap1);
 
 	i1 = bmap1->n_eq - 1;
 	i2 = bmap2->n_eq - 1;
@@ -2607,11 +2648,13 @@ static __isl_give isl_basic_set *add_bound_from_constraint(
 	isl_ctx *ctx;
 	uint32_t c_hash;
 	struct ineq_cmp_data v;
+	isl_size total;
 
-	if (!hull || !set)
+	total = isl_basic_set_dim(hull, isl_dim_all);
+	if (total < 0 || !set)
 		return isl_basic_set_free(hull);
 
-	v.len = isl_basic_set_total_dim(hull);
+	v.len = total;
 	v.p = ineq;
 	c_hash = isl_seq_get_hash(ineq + 1, v.len);
 
@@ -2679,7 +2722,7 @@ static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_constraints(
 	int last_added = 0;
 	struct sh_data *data = NULL;
 	isl_basic_set *hull = NULL;
-	unsigned dim;
+	isl_size dim;
 
 	hull = isl_basic_set_alloc_space(isl_set_get_space(set), 0, 0, n_ineq);
 	if (!hull)
@@ -2690,6 +2733,8 @@ static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_constraints(
 		goto error;
 
 	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
+		goto error;
 	for (i = 0; i < n_ineq; ++i) {
 		int hull_n_ineq = hull->n_ineq;
 		int parallel;
@@ -2725,14 +2770,15 @@ error:
 static __isl_give isl_mat *collect_inequalities(__isl_take isl_mat *mat,
 	__isl_keep isl_basic_set_list *list, isl_int **ineq)
 {
-	int i, j, n, n_eq, n_ineq;
+	int i, j, n_eq, n_ineq;
+	isl_size n;
 
-	if (!mat)
-		return NULL;
+	n = isl_basic_set_list_n_basic_set(list);
+	if (!mat || n < 0)
+		return isl_mat_free(mat);
 
 	n_eq = 0;
 	n_ineq = 0;
-	n = isl_basic_set_list_n_basic_set(list);
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset;
 		bset = isl_basic_set_list_get_basic_set(list, i);
@@ -2782,20 +2828,21 @@ static int cmp_ineq(const void *a, const void *b, void *arg)
 static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_basic_set_list(
 	__isl_take isl_set *set, __isl_take isl_basic_set_list *list)
 {
-	int i, n, n_eq, n_ineq;
-	unsigned dim;
+	int i, n_eq, n_ineq;
+	isl_size n;
+	isl_size dim;
 	isl_ctx *ctx;
 	isl_mat *mat = NULL;
 	isl_int **ineq = NULL;
 	isl_basic_set *hull;
 
-	if (!set)
+	n = isl_basic_set_list_n_basic_set(list);
+	if (!set || n < 0)
 		goto error;
 	ctx = isl_set_get_ctx(set);
 
 	n_eq = 0;
 	n_ineq = 0;
-	n = isl_basic_set_list_n_basic_set(list);
 	for (i = 0; i < n; ++i) {
 		isl_basic_set *bset;
 		bset = isl_basic_set_list_get_basic_set(list, i);
@@ -2811,6 +2858,8 @@ static __isl_give isl_basic_set *uset_unshifted_simple_hull_from_basic_set_list(
 		goto error;
 
 	dim = isl_set_dim(set, isl_dim_set);
+	if (dim < 0)
+		goto error;
 	mat = isl_mat_alloc(ctx, n_eq, 1 + dim);
 	mat = collect_inequalities(mat, list, ineq);
 	if (!mat)
@@ -2847,15 +2896,17 @@ error:
 static __isl_give isl_basic_map *map_unshifted_simple_hull_from_basic_map_list(
 	__isl_take isl_map *map, __isl_take isl_basic_map_list *list)
 {
+	isl_size n;
 	isl_basic_map *model;
 	isl_basic_map *hull;
 	isl_set *set;
 	isl_basic_set_list *bset_list;
 
-	if (!map || !list)
+	n = isl_basic_map_list_n_basic_map(list);
+	if (!map || n < 0)
 		goto error;
 
-	if (isl_basic_map_list_n_basic_map(list) == 0) {
+	if (n == 0) {
 		isl_space *space;
 
 		space = isl_map_get_space(map);
@@ -2893,7 +2944,8 @@ error:
 static __isl_give isl_basic_map_list *collect_basic_maps(
 	__isl_take isl_map_list *list)
 {
-	int i, n;
+	int i;
+	isl_size n;
 	isl_ctx *ctx;
 	isl_basic_map_list *bmap_list;
 
@@ -2902,6 +2954,8 @@ static __isl_give isl_basic_map_list *collect_basic_maps(
 	n = isl_map_list_n_map(list);
 	ctx = isl_map_list_get_ctx(list);
 	bmap_list = isl_basic_map_list_alloc(ctx, 0);
+	if (n < 0)
+		bmap_list = isl_basic_map_list_free(bmap_list);
 
 	for (i = 0; i < n; ++i) {
 		isl_map *map;
@@ -2958,7 +3012,9 @@ __isl_give isl_basic_set *isl_set_unshifted_simple_hull_from_set_list(
  */
 static __isl_give isl_basic_set *set_bounds(__isl_keep isl_set *set, int dim)
 {
-	unsigned set_dim = isl_set_dim(set, isl_dim_set);
+	isl_size set_dim = isl_set_dim(set, isl_dim_set);
+	if (set_dim < 0)
+		return NULL;
 	set = isl_set_copy(set);
 	set = isl_set_eliminate_dims(set, dim + 1, set_dim - (dim + 1));
 	set = isl_set_eliminate_dims(set, 0, dim);
@@ -2973,19 +3029,22 @@ __isl_give isl_basic_set *isl_set_bounded_simple_hull(__isl_take isl_set *set)
 {
 	int i, j;
 	struct isl_basic_set *hull;
-	unsigned nparam, left;
+	isl_size nparam, dim, total;
+	unsigned left;
 	int removed_divs = 0;
 
 	hull = isl_set_simple_hull(isl_set_copy(set));
-	if (!hull)
+	nparam = isl_basic_set_dim(hull, isl_dim_param);
+	dim = isl_basic_set_dim(hull, isl_dim_set);
+	total = isl_basic_set_dim(hull, isl_dim_all);
+	if (nparam < 0 || dim < 0 || total < 0)
 		goto error;
 
-	nparam = isl_basic_set_dim(hull, isl_dim_param);
-	for (i = 0; i < isl_basic_set_dim(hull, isl_dim_set); ++i) {
+	for (i = 0; i < dim; ++i) {
 		int lower = 0, upper = 0;
 		struct isl_basic_set *bounds;
 
-		left = isl_basic_set_total_dim(hull) - nparam - i - 1;
+		left = total - nparam - i - 1;
 		for (j = 0; j < hull->n_eq; ++j) {
 			if (isl_int_is_zero(hull->eq[j][1 + nparam + i]))
 				continue;
