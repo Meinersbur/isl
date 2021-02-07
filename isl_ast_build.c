@@ -364,7 +364,7 @@ __isl_give isl_ast_build *isl_ast_build_set_iterators(
 	if (!build)
 		goto error;
 
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	n_it = isl_id_list_n_id(build->iterators);
 	if (n_it < dim)
 		isl_die(isl_ast_build_get_ctx(build), isl_error_internal,
@@ -569,7 +569,7 @@ int isl_ast_build_need_schedule_map(__isl_keep isl_ast_build *build)
 	if (!build)
 		return -1;
 
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	return build->depth != dim || any_eliminated(build);
 }
 
@@ -607,7 +607,7 @@ __isl_give isl_multi_aff *isl_ast_build_get_schedule_map_multi_aff(
 	ma = isl_multi_aff_identity(space);
 	if (isl_ast_build_need_schedule_map(build)) {
 		int i;
-		int dim = isl_set_dim(build->domain, isl_dim_set);
+		int dim = isl_ast_build_dim(build, isl_dim_set);
 		ma = isl_multi_aff_drop_dims(ma, isl_dim_out,
 					build->depth, dim - build->depth);
 		for (i = build->depth - 1; i >= 0; --i)
@@ -1829,7 +1829,7 @@ __isl_give isl_ast_build *isl_ast_build_product(
 	build->outer_pos = build->depth;
 
 	ctx = isl_ast_build_get_ctx(build);
-	dim = isl_set_dim(build->domain, isl_dim_set);
+	dim = isl_ast_build_dim(build, isl_dim_set);
 	dim += isl_space_dim(space, isl_dim_set);
 	n_it = isl_id_list_n_id(build->iterators);
 	if (n_it < dim) {

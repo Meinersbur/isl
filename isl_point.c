@@ -257,6 +257,27 @@ error:
 	return NULL;
 }
 
+/* Return the number of variables of the given type.
+ */
+static unsigned isl_point_dim(__isl_keep isl_point *pnt, enum isl_dim_type type)
+{
+	return pnt ? isl_space_dim(pnt->dim, type) : 0;
+}
+
+/* Return the position of the coordinates of the given type
+ * within the sequence of coordinates of "pnt".
+ */
+static int isl_point_var_offset(__isl_keep isl_point *pnt,
+	enum isl_dim_type type)
+{
+	return pnt ? isl_space_offset(pnt->dim, type) : -1;
+}
+
+#undef TYPE
+#define TYPE	isl_point
+static
+#include "check_type_range_templ.c"
+
 /* Return the value of coordinate "pos" of type "type" of "pnt".
  */
 __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
@@ -264,6 +285,7 @@ __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
 {
 	isl_ctx *ctx;
 	isl_val *v;
+	int off;
 
 	if (!pnt)
 		return NULL;
@@ -272,12 +294,13 @@ __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
 	if (isl_point_is_void(pnt))
 		isl_die(ctx, isl_error_invalid,
 			"void point does not have coordinates", return NULL);
-	if (pos < 0 || pos >= isl_space_dim(pnt->dim, type))
-		isl_die(ctx, isl_error_invalid,
-			"position out of bounds", return NULL);
+	if (isl_point_check_range(pnt, type, pos, 1) < 0)
+		return NULL;
 
-	if (type == isl_dim_set)
-		pos += isl_space_dim(pnt->dim, isl_dim_param);
+	off = isl_point_var_offset(pnt, type);
+	if (off < 0)
+		return NULL;
+	pos += off;
 
 	v = isl_val_rat_from_isl_int(ctx, pnt->vec->el[1 + pos],
 						pnt->vec->el[0]);
@@ -294,9 +317,8 @@ __isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
 	if (isl_point_is_void(pnt))
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"void point does not have coordinates", goto error);
-	if (pos < 0 || pos >= isl_space_dim(pnt->dim, type))
-		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
-			"position out of bounds", goto error);
+	if (isl_point_check_range(pnt, type, pos, 1) < 0)
+		goto error;
 	if (!isl_val_is_rat(v))
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"expecting rational value", goto error);
@@ -339,6 +361,8 @@ error:
 __isl_give isl_point *isl_point_add_ui(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, unsigned val)
 {
+	int off;
+
 	if (!pnt || isl_point_is_void(pnt))
 		return pnt;
 
@@ -349,8 +373,10 @@ __isl_give isl_point *isl_point_add_ui(__isl_take isl_point *pnt,
 	if (!pnt->vec)
 		goto error;
 
-	if (type == isl_dim_set)
-		pos += isl_space_dim(pnt->dim, isl_dim_param);
+	off = isl_point_var_offset(pnt, type);
+	if (off < 0)
+		goto error;
+	pos += off;
 
 	isl_int_add_ui(pnt->vec->el[1 + pos], pnt->vec->el[1 + pos], val);
 
@@ -363,6 +389,8 @@ error:
 __isl_give isl_point *isl_point_sub_ui(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, unsigned val)
 {
+	int off;
+
 	if (!pnt || isl_point_is_void(pnt))
 		return pnt;
 
@@ -373,8 +401,10 @@ __isl_give isl_point *isl_point_sub_ui(__isl_take isl_point *pnt,
 	if (!pnt->vec)
 		goto error;
 
-	if (type == isl_dim_set)
-		pos += isl_space_dim(pnt->dim, isl_dim_param);
+	off = isl_point_var_offset(pnt, type);
+	if (off < 0)
+		goto error;
+	pos += off;
 
 	isl_int_sub_ui(pnt->vec->el[1 + pos], pnt->vec->el[1 + pos], val);
 
@@ -578,7 +608,7 @@ __isl_give isl_basic_set *isl_basic_set_box_from_points(
 		return isl_basic_set_from_point(pnt1);
 	}
 
-	total = isl_space_dim(pnt1->dim, isl_dim_all);
+	total = isl_point_dim(pnt1, isl_dim_all);
 	bset = isl_basic_set_alloc_space(isl_space_copy(pnt1->dim), 0, 0, 2 * total);
 
 	for (i = 0; i < total; ++i) {
@@ -666,7 +696,7 @@ __isl_give isl_printer *isl_printer_print_point(
 		return p;
 	}
 
-	nparam = isl_space_dim(pnt->dim, isl_dim_param);
+	nparam = isl_point_dim(pnt, isl_dim_param);
 	if (nparam > 0) {
 		p = isl_printer_print_str(p, "[");
 		for (i = 0; i < nparam; ++i) {

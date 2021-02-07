@@ -4743,11 +4743,8 @@ static isl_stat add_non_trivial_lineality(__isl_take isl_basic_set *lineality,
 	isl_map *map;
 	int n;
 
-	if (!lineality)
-		return isl_stat_error;
-	if (isl_basic_set_dim(lineality, isl_dim_div) != 0)
-		isl_die(isl_basic_set_get_ctx(lineality), isl_error_internal,
-			"local variables not allowed", goto error);
+	if (isl_basic_set_check_no_locals(lineality) < 0)
+		goto error;
 
 	space = isl_basic_set_get_space(lineality);
 	if (!data->any_non_trivial) {

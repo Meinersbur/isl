@@ -45,11 +45,10 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),splice)(
 	if (!multi1 || !multi2)
 		goto error;
 
-	n_in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
-	if (in_pos > n_in1)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi1), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (FN(MULTI(BASE),check_range)(multi1, isl_dim_in, in_pos, 0) < 0)
+		goto error;
 
+	n_in1 = FN(MULTI(BASE),dim)(multi1, isl_dim_in);
 	n_in2 = FN(MULTI(BASE),dim)(multi2, isl_dim_in);
 
 	multi1 = FN(MULTI(BASE),insert_dims)(multi1, isl_dim_in, in_pos, n_in2);

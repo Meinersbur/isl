@@ -69,16 +69,16 @@ int isl_local_dim(__isl_keep isl_local *local, enum isl_dim_type type)
 		"unsupported dimension type", return 0);
 }
 
+#undef TYPE
+#define TYPE	isl_local
+static
+#include "check_type_range_templ.c"
+
 /* Check that "pos" is a valid position for a variable in "local".
  */
 static isl_stat isl_local_check_pos(__isl_keep isl_local *local, int pos)
 {
-	if (!local)
-		return isl_stat_error;
-	if (pos < 0 || pos >= isl_local_dim(local, isl_dim_div))
-		isl_die(isl_local_get_ctx(local), isl_error_invalid,
-			"position out of bounds", return isl_stat_error);
-	return isl_stat_ok;
+	return isl_local_check_range(local, isl_dim_div, pos, 1);
 }
 
 /* Given local variables "local",

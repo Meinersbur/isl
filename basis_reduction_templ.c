@@ -319,15 +319,9 @@ __isl_give isl_mat *isl_basic_set_reduced_basis(__isl_keep isl_basic_set *bset)
 	struct isl_mat *basis;
 	struct isl_tab *tab;
 
-	if (!bset)
+	if (isl_basic_set_check_no_locals(bset) < 0 ||
+	    isl_basic_set_check_no_params(bset) < 0)
 		return NULL;
-
-	if (isl_basic_set_dim(bset, isl_dim_div) != 0)
-		isl_die(bset->ctx, isl_error_invalid,
-			"no integer division allowed", return NULL);
-	if (isl_basic_set_dim(bset, isl_dim_param) != 0)
-		isl_die(bset->ctx, isl_error_invalid,
-			"no parameters allowed", return NULL);
 
 	tab = isl_tab_from_basic_set(bset, 0);
 	if (!tab)

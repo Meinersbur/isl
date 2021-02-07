@@ -809,13 +809,10 @@ isl_bool isl_basic_set_has_defining_inequalities(
 	isl_int m;
 	isl_int **lower_line, **upper_line;
 
-	if (!bset)
+	if (isl_basic_set_check_range(bset, type, pos, 1) < 0)
 		return isl_bool_error;
 	offset = isl_basic_set_offset(bset, type);
 	total = isl_basic_set_total_dim(bset);
-	if (pos >= isl_basic_set_dim(bset, type))
-		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
-			"invalid position", return isl_bool_error);
 	isl_int_init(m);
 	for (i = 0; i < bset->n_ineq; ++i) {
 		if (isl_int_is_zero(bset->ineq[i][offset + pos]))
@@ -1141,10 +1138,8 @@ isl_stat isl_basic_set_foreach_bound_pair(__isl_keep isl_basic_set *bset,
 	unsigned abs_pos;
 	int n_lower, n_upper;
 
-	if (!bset)
+	if (isl_basic_set_check_range(bset, type, pos, 1) < 0)
 		return isl_stat_error;
-	isl_assert(bset->ctx, pos < isl_basic_set_dim(bset, type),
-		return isl_stat_error);
 	isl_assert(bset->ctx, type == isl_dim_param || type == isl_dim_set,
 		return isl_stat_error);
 

@@ -228,17 +228,19 @@ __isl_give isl_id *FN(MULTI(BASE),get_tuple_id)(__isl_keep MULTI(BASE) *multi,
 	return multi ? isl_space_get_tuple_id(multi->space, type) : NULL;
 }
 
+#undef TYPE
+#define TYPE	MULTI(BASE)
+static
+#include "check_type_range_templ.c"
+
 __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 	int pos)
 {
 	isl_ctx *ctx;
 
-	if (!multi)
+	if (FN(MULTI(BASE),check_range)(multi, isl_dim_out, pos, 1) < 0)
 		return NULL;
 	ctx = FN(MULTI(BASE),get_ctx)(multi);
-	if (pos < 0 || pos >= multi->n)
-		isl_die(ctx, isl_error_invalid,
-			"index out of bounds", return NULL);
 	return FN(EL,copy)(multi->u.p[pos]);
 }
 
@@ -252,9 +254,8 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),restore)(
 	if (!multi || !el)
 		goto error;
 
-	if (pos < 0 || pos >= multi->n)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (FN(MULTI(BASE),check_range)(multi, isl_dim_out, pos, 1) < 0)
+		goto error;
 
 	FN(EL,free)(multi->u.p[pos]);
 	multi->u.p[pos] = el;
@@ -598,17 +599,10 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	unsigned dim;
 
 	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	dim = FN(MULTI(BASE),dim)(multi, type);
-	if (first + n > dim || first + n < first)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"index out of bounds",
-			return FN(MULTI(BASE),free)(multi));
+	if (FN(MULTI(BASE),check_range)(multi, type, first, n) < 0)
+		return FN(MULTI(BASE),free)(multi);
 
 	multi->space = isl_space_drop_dims(multi->space, type, first, n);
 	if (!multi->space)
@@ -873,10 +867,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),range_splice)(
 	if (!multi1 || !multi2)
 		goto error;
 
+	if (FN(MULTI(BASE),check_range)(multi1, isl_dim_out, pos, 0) < 0)
+		goto error;
 	dim = FN(MULTI(BASE),dim)(multi1, isl_dim_out);
-	if (pos > dim)
-		isl_die(FN(MULTI(BASE),get_ctx)(multi1), isl_error_invalid,
-			"index out of bounds", goto error);
 
 	res = FN(MULTI(BASE),copy)(multi1);
 	res = FN(MULTI(BASE),drop_dims)(res, isl_dim_out, pos, dim - pos);

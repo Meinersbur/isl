@@ -365,7 +365,8 @@ static __isl_give isl_basic_set *copy_equalities(__isl_keep isl_basic_set *bset,
 	isl_basic_set *eq;
 	unsigned total;
 
-	isl_assert(bset->ctx, bset->n_div == 0, return NULL);
+	if (isl_basic_set_check_no_locals(bset) < 0)
+		return NULL;
 
 	total = isl_basic_set_total_dim(bset);
 	eq = isl_basic_set_alloc_space(isl_space_copy(bset->dim), 0, n, 0);
@@ -429,7 +430,8 @@ __isl_give isl_morph *isl_basic_set_variable_compression_with_id(
 	if (isl_basic_set_plain_is_empty(bset))
 		return isl_morph_empty(bset);
 
-	isl_assert(bset->ctx, bset->n_div == 0, return NULL);
+	if (isl_basic_set_check_no_locals(bset) < 0)
+		return NULL;
 
 	otype = 1 + isl_space_offset(bset->dim, type);
 	ntype = isl_basic_set_dim(bset, type);

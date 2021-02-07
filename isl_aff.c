@@ -2362,6 +2362,11 @@ int isl_aff_is_empty(__isl_keep isl_aff *aff)
 	return 0;
 }
 
+#undef TYPE
+#define TYPE	isl_aff
+static
+#include "check_type_range_templ.c"
+
 /* Check whether the given affine expression has non-zero coefficient
  * for any dimension in the given range or if any of these dimensions
  * appear with non-zero coefficients in any of the integer divisions
@@ -2371,7 +2376,6 @@ isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	isl_ctx *ctx;
 	int *active = NULL;
 	isl_bool involves = isl_bool_false;
 
@@ -2379,11 +2383,8 @@ isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 		return isl_bool_error;
 	if (n == 0)
 		return isl_bool_false;
-
-	ctx = isl_aff_get_ctx(aff);
-	if (first + n > isl_aff_dim(aff, type))
-		isl_die(ctx, isl_error_invalid,
-			"range out of bounds", return isl_bool_error);
+	if (isl_aff_check_range(aff, type, first, n) < 0)
+		return isl_bool_error;
 
 	active = isl_local_space_get_active(aff->ls, aff->v->el + 2);
 	if (!active)
@@ -5754,6 +5755,10 @@ error:
 	return isl_multi_aff_free(maff);
 }
 
+#undef TYPE
+#define TYPE	isl_pw_multi_aff
+static
+#include "check_type_range_templ.c"
 
 /* Extract an isl_pw_aff corresponding to output dimension "pos" of "pma".
  */
@@ -5765,13 +5770,10 @@ __isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 	isl_space *space;
 	isl_pw_aff *pa;
 
-	if (!pma)
+	if (isl_pw_multi_aff_check_range(pma, isl_dim_out, pos, 1) < 0)
 		return NULL;
 
 	n_out = isl_pw_multi_aff_dim(pma, isl_dim_out);
-	if (pos < 0 || pos >= n_out)
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-			"index out of bounds", return NULL);
 
 	space = isl_pw_multi_aff_get_space(pma);
 	space = isl_space_drop_dims(space, isl_dim_out,
@@ -6008,9 +6010,8 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_set_pw_aff(
 					pa->dim, isl_dim_in))
 		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
 			"domains don't match", goto error);
-	if (pos >= isl_pw_multi_aff_dim(pma, isl_dim_out))
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_pw_multi_aff_check_range(pma, isl_dim_out, pos, 1) < 0)
+		goto error;
 
 	n = pma->n * pa->n;
 	res = isl_pw_multi_aff_alloc_size(isl_pw_multi_aff_get_space(pma), n);

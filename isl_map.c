@@ -1386,6 +1386,32 @@ static int room_for_con(struct isl_basic_map *bmap, unsigned n)
 	return bmap->n_eq + bmap->n_ineq + n <= bmap->c_size;
 }
 
+/* Check that "bset" does not involve any parameters.
+ */
+isl_stat isl_basic_set_check_no_params(__isl_keep isl_basic_set *bset)
+{
+	if (!bset)
+		return isl_stat_error;
+	if (isl_basic_set_dim(bset, isl_dim_param) != 0)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"basic set should not have any parameters",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Check that "bset" does not involve any local variables.
+ */
+isl_stat isl_basic_set_check_no_locals(__isl_keep isl_basic_set *bset)
+{
+	if (!bset)
+		return isl_stat_error;
+	if (isl_basic_set_dim(bset, isl_dim_div) != 0)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
+			"basic set should not have any local variables",
+			return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Check that "map" has only named parameters, reporting an error
  * if it does not.
  */
@@ -1697,6 +1723,16 @@ int isl_basic_set_alloc_div(struct isl_basic_set *bset)
 #undef TYPE
 #define TYPE	isl_basic_map
 #include "check_type_range_templ.c"
+
+/* Check that there are "n" dimensions of type "type" starting at "first"
+ * in "bset".
+ */
+isl_stat isl_basic_set_check_range(__isl_keep isl_basic_set *bset,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_basic_map_check_range(bset_to_bmap(bset),
+					type, first, n);
+}
 
 /* Insert an extra integer division, prescribed by "div", to "bmap"
  * at (integer division) position "pos".
@@ -2173,6 +2209,15 @@ error:
 #define TYPE	isl_map
 static
 #include "check_type_range_templ.c"
+
+/* Check that there are "n" dimensions of type "type" starting at "first"
+ * in "set".
+ */
+static isl_stat isl_set_check_range(__isl_keep isl_set *set,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_map_check_range(set_to_map(set), type, first, n);
+}
 
 /* Drop "n" dimensions of type "type" starting at "first".
  * Perform the core computation, without cowing or
@@ -4364,18 +4409,13 @@ __isl_give isl_map *isl_set_project_onto_map(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
-	int dim;
 	isl_map *map;
 
-	if (!set)
-		return NULL;
 	if (type != isl_dim_set)
 		isl_die(isl_set_get_ctx(set), isl_error_invalid,
 			"only set dimensions can be projected out", goto error);
-	dim = isl_set_dim(set, isl_dim_set);
-	if (first + n > dim || first + n < first)
-		isl_die(isl_set_get_ctx(set), isl_error_invalid,
-			"index out of bounds", goto error);
+	if (isl_set_check_range(set, type, first, n) < 0)
+		return isl_set_free(set);
 
 	map = isl_map_from_domain(set);
 	map = isl_map_add_dims(map, isl_dim_out, n);
@@ -5332,8 +5372,9 @@ __isl_give isl_basic_map *isl_basic_map_overlying_set(
 	if (!bset || !like)
 		goto error;
 	ctx = bset->ctx;
-	isl_assert(ctx, bset->n_div == 0, goto error);
-	isl_assert(ctx, isl_basic_set_n_param(bset) == 0, goto error);
+	if (isl_basic_set_check_no_params(bset) < 0 ||
+	    isl_basic_set_check_no_locals(bset) < 0)
+		goto error;
 	isl_assert(ctx, bset->dim->n_out == isl_basic_map_total_dim(like),
 			goto error);
 	if (like->n_div == 0) {
@@ -8243,12 +8284,11 @@ __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	isl_basic_set *nonneg;
 	isl_basic_set *neg;
 
-	if (!set)
-		return NULL;
 	if (n == 0)
 		return set;
 
-	isl_assert(set->ctx, first + n <= isl_set_dim(set, type), goto error);
+	if (isl_set_check_range(set, type, first, n) < 0)
+		return isl_set_free(set);
 
 	offset = pos(set->dim, type);
 	for (i = 0; i < n; ++i) {
@@ -8260,9 +8300,6 @@ __isl_give isl_set *isl_set_split_dims(__isl_take isl_set *set,
 	}
 
 	return set;
-error:
-	isl_set_free(set);
-	return NULL;
 }
 
 static isl_stat foreach_orthant(__isl_take isl_set *set, int *signs, int first,
@@ -10769,8 +10806,8 @@ isl_stat isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 {
 	if (!bset || !signs)
 		return isl_stat_error;
-	isl_assert(bset->ctx, first + n <= isl_basic_set_dim(bset, type),
-		return isl_stat_error);
+	if (isl_basic_set_check_range(bset, type, first, n) < 0)
+		return isl_stat_error;
 
 	first += pos(bset->dim, type) - 1;
 	return isl_basic_set_vars_get_sign(bset, first, n, signs);

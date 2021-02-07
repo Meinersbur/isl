@@ -308,13 +308,11 @@ enum isl_lp_result isl_basic_set_solve_ilp(__isl_keep isl_basic_set *bset,
 	unsigned dim;
 	enum isl_lp_result res;
 
-	if (!bset)
-		return isl_lp_error;
 	if (sol_p)
 		*sol_p = NULL;
 
-	isl_assert(bset->ctx, isl_basic_set_n_param(bset) == 0,
-		return isl_lp_error);
+	if (isl_basic_set_check_no_params(bset) < 0)
+		return isl_lp_error;
 
 	if (isl_basic_set_plain_is_empty(bset))
 		return isl_lp_empty;
@@ -863,11 +861,8 @@ __isl_give isl_val *isl_basic_set_dim_max_val(__isl_take isl_basic_set *bset,
 	isl_aff *obj;
 	isl_val *v;
 
-	if (!bset)
-		return NULL;
-	if (pos < 0 || pos >= isl_basic_set_dim(bset, isl_dim_set))
-		isl_die(isl_basic_set_get_ctx(bset), isl_error_invalid,
-			"position out of bounds", goto error);
+	if (isl_basic_set_check_range(bset, isl_dim_set, pos, 1) < 0)
+		goto error;
 	ls = isl_local_space_from_space(isl_basic_set_get_space(bset));
 	obj = isl_aff_var_on_domain(ls, isl_dim_set, pos);
 	v = isl_basic_set_max_val(bset, obj);
