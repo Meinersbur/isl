@@ -344,6 +344,17 @@ include/isl/cpp-checked.h: interface/extract_interface libdep.a \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
 			> $@ || (rm $@ && false)
 
+include/isl/isl-noexceptions.h: interface/extract_interface libdep.a \
+		cpp/isl-noexceptions.h.top \
+		cpp/isl-noexceptions.h.pre cpp/isl-noexceptions.h.bot
+	(cat $(srcdir)/cpp/isl-noexceptions.h.top $(srcdir)/all.h \
+	    $(srcdir)/cpp/isl-noexceptions.h.pre && \
+		interface/extract_interface$(EXEEXT) \
+			--language=noexceptions \
+			$(includes) $(srcdir)/all.h && \
+		cat $(srcdir)/cpp/isl-noexceptions.h.bot) \
+			> $@ || (rm $@ && false)
+
 include/isl/cpp-checked-conversion.h: interface/extract_interface libdep.a \
 		cpp/cpp-checked-conversion.h.top \
 		cpp/cpp-checked-conversion.h.bot

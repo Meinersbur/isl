@@ -14,6 +14,8 @@ extract_interface_SOURCES = \
 	python.cc \
 	cpp.h \
 	cpp.cc \
+	noexceptions.h \
+	noexceptions.cc \
 	cpp_conversion.h \
 	cpp_conversion.cc \
 	extract_interface.h \
