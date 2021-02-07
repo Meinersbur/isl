@@ -76,6 +76,22 @@ static void osprintf(ostream &os, const char *format, ...)
 	va_end(arguments);
 }
 
+/* Print string formatted according to "fmt" to ostream "os"
+ * with the given indentation.
+ *
+ * This osprintf method allows us to use printf style formatting constructs when
+ * writing to an ostream.
+ */
+static void osprintf(ostream &os, int indent, const char *format, ...)
+{
+	va_list arguments;
+
+	osprintf(os, "%*s", indent, " ");
+	va_start(arguments, format);
+	osprintf(os, format, arguments);
+	va_end(arguments);
+}
+
 /* Convert "l" to a string.
  */
 static std::string to_string(long l)
@@ -478,11 +494,20 @@ static void print_throw_last_error(ostream &os)
 	osprintf(os, "    exception::throw_last_error(ctx);\n");
 }
 
+/* Print code with the given indentation
+ * for throwing an exception_invalid with the given message.
+ */
+static void print_throw_invalid(ostream &os, int indent, const char *msg)
+{
+	osprintf(os, indent,
+		"exception::throw_invalid(\"%s\", __FILE__, __LINE__);\n", msg);
+}
+
 /* Print code for throwing an exception on NULL input.
  */
 static void print_throw_NULL_input(ostream &os)
 {
-	osprintf(os, "    exception::throw_NULL_input(__FILE__, __LINE__);\n");
+	print_throw_invalid(os, 4, "NULL input");
 }
 
 /* Print an operator for inserting objects of "class"
