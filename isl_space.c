@@ -560,24 +560,24 @@ __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
 	return isl_id_copy(get_id(space, type, pos));
 }
 
-__isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *space,
 	enum isl_dim_type type, const char *s)
 {
 	isl_id *id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
 	if (!s)
-		return isl_space_reset_tuple_id(dim, type);
+		return isl_space_reset_tuple_id(space, type);
 
-	if (!name_ok(dim->ctx, s))
+	if (!name_ok(space->ctx, s))
 		goto error;
 
-	id = isl_id_alloc(dim->ctx, s, NULL);
-	return isl_space_set_tuple_id(dim, type, id);
+	id = isl_id_alloc(space->ctx, s, NULL);
+	return isl_space_set_tuple_id(space, type, id);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -594,34 +594,34 @@ isl_bool isl_space_has_tuple_name(__isl_keep isl_space *space,
 	return id && id->name;
 }
 
-__isl_keep const char *isl_space_get_tuple_name(__isl_keep isl_space *dim,
+__isl_keep const char *isl_space_get_tuple_name(__isl_keep isl_space *space,
 	 enum isl_dim_type type)
 {
 	isl_id *id;
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (type != isl_dim_in && type != isl_dim_out)
 		return NULL;
-	id = dim->tuple_id[type - isl_dim_in];
+	id = space->tuple_id[type - isl_dim_in];
 	return id ? id->name : NULL;
 }
 
-__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_dim_name(__isl_take isl_space *space,
 				 enum isl_dim_type type, unsigned pos,
 				 const char *s)
 {
 	isl_id *id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 	if (!s)
-		return isl_space_reset_dim_id(dim, type, pos);
-	if (!name_ok(dim->ctx, s))
+		return isl_space_reset_dim_id(space, type, pos);
+	if (!name_ok(space->ctx, s))
 		goto error;
-	id = isl_id_alloc(dim->ctx, s, NULL);
-	return isl_space_set_dim_id(dim, type, pos, id);
+	id = isl_id_alloc(space->ctx, s, NULL);
+	return isl_space_set_dim_id(space, type, pos, id);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -638,10 +638,10 @@ isl_bool isl_space_has_dim_name(__isl_keep isl_space *space,
 	return id && id->name;
 }
 
-__isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *dim,
+__isl_keep const char *isl_space_get_dim_name(__isl_keep isl_space *space,
 				 enum isl_dim_type type, unsigned pos)
 {
-	isl_id *id = get_id(dim, type, pos);
+	isl_id *id = get_id(space, type, pos);
 	return id ? id->name : NULL;
 }
 
@@ -1656,53 +1656,54 @@ static __isl_give isl_space *set_ids(__isl_take isl_space *dim,
 	return dim;
 }
 
-__isl_give isl_space *isl_space_reverse(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_reverse(__isl_take isl_space *space)
 {
 	unsigned t;
 	isl_space *nested;
 	isl_id **ids = NULL;
 	isl_id *id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (match(dim, isl_dim_in, dim, isl_dim_out))
-		return dim;
+	if (match(space, isl_dim_in, space, isl_dim_out))
+		return space;
 
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_cow(space);
+	if (!space)
 		return NULL;
 
-	id = dim->tuple_id[0];
-	dim->tuple_id[0] = dim->tuple_id[1];
-	dim->tuple_id[1] = id;
+	id = space->tuple_id[0];
+	space->tuple_id[0] = space->tuple_id[1];
+	space->tuple_id[1] = id;
 
-	nested = dim->nested[0];
-	dim->nested[0] = dim->nested[1];
-	dim->nested[1] = nested;
+	nested = space->nested[0];
+	space->nested[0] = space->nested[1];
+	space->nested[1] = nested;
 
-	if (dim->ids) {
-		int n_id = dim->n_in + dim->n_out;
-		ids = isl_alloc_array(dim->ctx, isl_id *, n_id);
+	if (space->ids) {
+		int n_id = space->n_in + space->n_out;
+		ids = isl_alloc_array(space->ctx, isl_id *, n_id);
 		if (n_id && !ids)
 			goto error;
-		get_ids(dim, isl_dim_in, 0, dim->n_in, ids);
-		get_ids(dim, isl_dim_out, 0, dim->n_out, ids + dim->n_in);
+		get_ids(space, isl_dim_in, 0, space->n_in, ids);
+		get_ids(space, isl_dim_out, 0, space->n_out, ids + space->n_in);
 	}
 
-	t = dim->n_in;
-	dim->n_in = dim->n_out;
-	dim->n_out = t;
+	t = space->n_in;
+	space->n_in = space->n_out;
+	space->n_out = t;
 
-	if (dim->ids) {
-		dim = set_ids(dim, isl_dim_out, 0, dim->n_out, ids);
-		dim = set_ids(dim, isl_dim_in, 0, dim->n_in, ids + dim->n_out);
+	if (space->ids) {
+		space = set_ids(space, isl_dim_out, 0, space->n_out, ids);
+		space = set_ids(space, isl_dim_in, 0, space->n_in,
+				ids + space->n_out);
 		free(ids);
 	}
 
-	return dim;
+	return space;
 error:
 	free(ids);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -1796,18 +1797,18 @@ __isl_give isl_space *isl_space_domain(__isl_take isl_space *space)
 	return space;
 }
 
-__isl_give isl_space *isl_space_from_domain(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_from_domain(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!isl_space_is_set(dim))
-		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"not a set space", goto error);
-	dim = isl_space_reverse(dim);
-	dim = isl_space_reset(dim, isl_dim_out);
-	return dim;
+	space = isl_space_reverse(space);
+	space = isl_space_reset(space, isl_dim_out);
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -1820,16 +1821,16 @@ __isl_give isl_space *isl_space_range(__isl_take isl_space *space)
 	return space;
 }
 
-__isl_give isl_space *isl_space_from_range(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_from_range(__isl_take isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!isl_space_is_set(dim))
-		isl_die(isl_space_get_ctx(dim), isl_error_invalid,
+	if (!isl_space_is_set(space))
+		isl_die(isl_space_get_ctx(space), isl_error_invalid,
 			"not a set space", goto error);
-	return isl_space_reset(dim, isl_dim_in);
+	return isl_space_reset(space, isl_dim_in);
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -2124,15 +2125,15 @@ uint32_t isl_space_get_domain_hash(__isl_keep isl_space *space)
 	return hash;
 }
 
-isl_bool isl_space_is_wrapping(__isl_keep isl_space *dim)
+isl_bool isl_space_is_wrapping(__isl_keep isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return isl_bool_error;
 
-	if (!isl_space_is_set(dim))
+	if (!isl_space_is_set(space))
 		return isl_bool_false;
 
-	return dim->nested[1] != NULL;
+	return space->nested[1] != NULL;
 }
 
 /* Is "space" the space of a map where the domain is a wrapped map space?
@@ -2181,48 +2182,48 @@ isl_bool isl_space_is_product(__isl_keep isl_space *space)
 	return isl_space_range_is_wrapping(space);
 }
 
-__isl_give isl_space *isl_space_wrap(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_wrap(__isl_take isl_space *space)
 {
 	isl_space *wrap;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	wrap = isl_space_set_alloc(dim->ctx,
-				    dim->nparam, dim->n_in + dim->n_out);
+	wrap = isl_space_set_alloc(space->ctx,
+				    space->nparam, space->n_in + space->n_out);
 
-	wrap = copy_ids(wrap, isl_dim_param, 0, dim, isl_dim_param);
-	wrap = copy_ids(wrap, isl_dim_set, 0, dim, isl_dim_in);
-	wrap = copy_ids(wrap, isl_dim_set, dim->n_in, dim, isl_dim_out);
+	wrap = copy_ids(wrap, isl_dim_param, 0, space, isl_dim_param);
+	wrap = copy_ids(wrap, isl_dim_set, 0, space, isl_dim_in);
+	wrap = copy_ids(wrap, isl_dim_set, space->n_in, space, isl_dim_out);
 
 	if (!wrap)
 		goto error;
 
-	wrap->nested[1] = dim;
+	wrap->nested[1] = space;
 
 	return wrap;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *dim)
+__isl_give isl_space *isl_space_unwrap(__isl_take isl_space *space)
 {
 	isl_space *unwrap;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	if (!isl_space_is_wrapping(dim))
-		isl_die(dim->ctx, isl_error_invalid, "not a wrapping space",
+	if (!isl_space_is_wrapping(space))
+		isl_die(space->ctx, isl_error_invalid, "not a wrapping space",
 			goto error);
 
-	unwrap = isl_space_copy(dim->nested[1]);
-	isl_space_free(dim);
+	unwrap = isl_space_copy(space->nested[1]);
+	isl_space_free(space);
 
 	return unwrap;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
