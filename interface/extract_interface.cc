@@ -131,11 +131,15 @@ static bool is_exported(Decl *decl)
 	if (isa<FunctionDecl>(decl)) {
 	FunctionDecl *FDecl = cast<FunctionDecl>(decl);
 	std::string N = FDecl->getName();
-	if (	N.find("fold_get_domain") != std::string::npos ||
+
+	if (N.find("every_set") != std::string::npos)
+		return false;
+
+	if (N.find("fold_get_domain") != std::string::npos ||
 		N.find("fold_align_params") != std::string::npos)
 		return false;
 
-	if (	N.find("is_disjoint") != std::string::npos ||
+	if (N.find("is_disjoint") != std::string::npos ||
 		N.find("get_domain") != std::string::npos ||
 		N.find("band_member_set_coincident") != std::string::npos ||
 		N.find("band_member_get_coincident") != std::string::npos ||
