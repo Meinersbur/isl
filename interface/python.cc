@@ -239,6 +239,16 @@ static void print_indent(int indent, const char *format, ...)
 	va_end(args);
 }
 
+/* Generate code that raises the exception captured in "exc_info", if any,
+ * with the given indentation.
+ */
+static void print_rethrow(int indent, const char *exc_info)
+{
+	print_indent(indent, "if %s != None:\n", exc_info);
+	print_indent(indent, "    raise (%s[0], %s[1], %s[2])\n",
+		exc_info, exc_info, exc_info);
+}
+
 /* Print the return statement of the python method corresponding
  * to the C function "method" with the given indentation.
  *
@@ -371,11 +381,8 @@ void python_generator::print_method(const isl_class &clazz,
 		printf(", None");
 	printf(")\n");
 
-	if (drop_user) {
-		printf("        if exc_info[0] != None:\n");
-		printf("            raise (exc_info[0][0], "
-			"exc_info[0][1], exc_info[0][2])\n");
-	}
+	if (drop_user)
+		print_rethrow(8, "exc_info[0]");
 
 	print_method_return(8, method);
 }
