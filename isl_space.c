@@ -18,9 +18,9 @@
 #include <isl_id_private.h>
 #include <isl_reordering.h>
 
-isl_ctx *isl_space_get_ctx(__isl_keep isl_space *dim)
+isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space)
 {
-	return dim ? dim->ctx : NULL;
+	return space ? space->ctx : NULL;
 }
 
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
@@ -233,12 +233,12 @@ static __isl_keep isl_id *get_id(__isl_keep isl_space *space,
 	return space->ids[pos];
 }
 
-static unsigned offset(__isl_keep isl_space *dim, enum isl_dim_type type)
+static unsigned offset(__isl_keep isl_space *space, enum isl_dim_type type)
 {
 	switch (type) {
 	case isl_dim_param:	return 0;
-	case isl_dim_in:	return dim->nparam;
-	case isl_dim_out:	return dim->nparam + dim->n_in;
+	case isl_dim_in:	return space->nparam;
+	case isl_dim_out:	return space->nparam + space->n_in;
 	default:		return 0;
 	}
 }
@@ -290,29 +290,32 @@ static __isl_give isl_space *copy_ids(__isl_take isl_space *dst,
 	return dst;
 }
 
-__isl_take isl_space *isl_space_dup(__isl_keep isl_space *dim)
+__isl_take isl_space *isl_space_dup(__isl_keep isl_space *space)
 {
 	isl_space *dup;
-	if (!dim)
+	if (!space)
 		return NULL;
-	dup = isl_space_alloc(dim->ctx, dim->nparam, dim->n_in, dim->n_out);
+	dup = isl_space_alloc(space->ctx,
+				space->nparam, space->n_in, space->n_out);
 	if (!dup)
 		return NULL;
-	if (dim->tuple_id[0] &&
-	    !(dup->tuple_id[0] = isl_id_copy(dim->tuple_id[0])))
+	if (space->tuple_id[0] &&
+	    !(dup->tuple_id[0] = isl_id_copy(space->tuple_id[0])))
 		goto error;
-	if (dim->tuple_id[1] &&
-	    !(dup->tuple_id[1] = isl_id_copy(dim->tuple_id[1])))
+	if (space->tuple_id[1] &&
+	    !(dup->tuple_id[1] = isl_id_copy(space->tuple_id[1])))
 		goto error;
-	if (dim->nested[0] && !(dup->nested[0] = isl_space_copy(dim->nested[0])))
+	if (space->nested[0] &&
+	    !(dup->nested[0] = isl_space_copy(space->nested[0])))
 		goto error;
-	if (dim->nested[1] && !(dup->nested[1] = isl_space_copy(dim->nested[1])))
+	if (space->nested[1] &&
+	    !(dup->nested[1] = isl_space_copy(space->nested[1])))
 		goto error;
-	if (!dim->ids)
+	if (!space->ids)
 		return dup;
-	dup = copy_ids(dup, isl_dim_param, 0, dim, isl_dim_param);
-	dup = copy_ids(dup, isl_dim_in, 0, dim, isl_dim_in);
-	dup = copy_ids(dup, isl_dim_out, 0, dim, isl_dim_out);
+	dup = copy_ids(dup, isl_dim_param, 0, space, isl_dim_param);
+	dup = copy_ids(dup, isl_dim_in, 0, space, isl_dim_in);
+	dup = copy_ids(dup, isl_dim_out, 0, space, isl_dim_out);
 	return dup;
 error:
 	isl_space_free(dup);
@@ -406,68 +409,68 @@ static int space_can_have_id(__isl_keep isl_space *space,
 
 /* Does the tuple have an id?
  */
-isl_bool isl_space_has_tuple_id(__isl_keep isl_space *dim,
+isl_bool isl_space_has_tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
-	if (!space_can_have_id(dim, type))
+	if (!space_can_have_id(space, type))
 		return isl_bool_error;
-	return dim->tuple_id[type - isl_dim_in] != NULL;
+	return space->tuple_id[type - isl_dim_in] != NULL;
 }
 
-__isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *dim,
+__isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type)
 {
 	int has_id;
 
-	if (!dim)
+	if (!space)
 		return NULL;
-	has_id = isl_space_has_tuple_id(dim, type);
+	has_id = isl_space_has_tuple_id(space, type);
 	if (has_id < 0)
 		return NULL;
 	if (!has_id)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"tuple has no id", return NULL);
-	return isl_id_copy(dim->tuple_id[type - isl_dim_in]);
+	return isl_id_copy(space->tuple_id[type - isl_dim_in]);
 }
 
-__isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_set_tuple_id(__isl_take isl_space *space,
 	enum isl_dim_type type, __isl_take isl_id *id)
 {
-	dim = isl_space_cow(dim);
-	if (!dim || !id)
+	space = isl_space_cow(space);
+	if (!space || !id)
 		goto error;
 	if (type != isl_dim_in && type != isl_dim_out)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"only input, output and set tuples can have names",
 			goto error);
 
-	isl_id_free(dim->tuple_id[type - isl_dim_in]);
-	dim->tuple_id[type - isl_dim_in] = id;
+	isl_id_free(space->tuple_id[type - isl_dim_in]);
+	space->tuple_id[type - isl_dim_in] = id;
 
-	return dim;
+	return space;
 error:
 	isl_id_free(id);
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
-__isl_give isl_space *isl_space_reset_tuple_id(__isl_take isl_space *dim,
+__isl_give isl_space *isl_space_reset_tuple_id(__isl_take isl_space *space,
 	enum isl_dim_type type)
 {
-	dim = isl_space_cow(dim);
-	if (!dim)
+	space = isl_space_cow(space);
+	if (!space)
 		return NULL;
 	if (type != isl_dim_in && type != isl_dim_out)
-		isl_die(dim->ctx, isl_error_invalid,
+		isl_die(space->ctx, isl_error_invalid,
 			"only input, output and set tuples can have names",
 			goto error);
 
-	isl_id_free(dim->tuple_id[type - isl_dim_in]);
-	dim->tuple_id[type - isl_dim_in] = NULL;
+	isl_id_free(space->tuple_id[type - isl_dim_in]);
+	space->tuple_id[type - isl_dim_in] = NULL;
 
-	return dim;
+	return space;
 error:
-	isl_space_free(dim);
+	isl_space_free(space);
 	return NULL;
 }
 
@@ -538,23 +541,23 @@ error:
 	return NULL;
 }
 
-isl_bool isl_space_has_dim_id(__isl_keep isl_space *dim,
+isl_bool isl_space_has_dim_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!space)
 		return isl_bool_error;
-	return get_id(dim, type, pos) != NULL;
+	return get_id(space, type, pos) != NULL;
 }
 
-__isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *dim,
+__isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
-	if (!get_id(dim, type, pos))
-		isl_die(dim->ctx, isl_error_invalid,
+	if (!get_id(space, type, pos))
+		isl_die(space->ctx, isl_error_invalid,
 			"dim has no id", return NULL);
-	return isl_id_copy(get_id(dim, type, pos));
+	return isl_id_copy(get_id(space, type, pos));
 }
 
 __isl_give isl_space *isl_space_set_tuple_name(__isl_take isl_space *dim,
