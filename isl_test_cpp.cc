@@ -237,6 +237,52 @@ static void test_schedule_tree(isl::ctx ctx)
 	assert(domain.is_equal(filters));
 }
 
+/* Test basic AST generation from a schedule tree.
+ *
+ * In particular, create a simple schedule tree and
+ * - perform some generic tests
+ * - test at_each_domain in the failing case
+ */
+static void test_ast_build(isl::ctx ctx)
+{
+	auto schedule = test_ast_build_generic(ctx);
+
+	bool do_fail = true;
+	int count_ast_fail = 0;
+	auto fail_inc_count_ast =
+	    [&count_ast_fail, &do_fail](isl::ast_node node,
+					isl::ast_build build) {
+		count_ast_fail++;
+		if (do_fail)
+			throw "fail";
+		return node;
+	};
+	auto build = isl::ast_build(ctx);
+	build = build.set_at_each_domain(fail_inc_count_ast);
+	auto caught = false;
+	try {
+		auto ast = build.node_from(schedule);
+	} catch (char const *s) {
+		caught = true;
+	}
+	assert(caught);
+	assert(count_ast_fail > 0);
+	auto build_copy = build;
+	int count_ast = 0;
+	auto inc_count_ast =
+	    [&count_ast](isl::ast_node node, isl::ast_build build) {
+		count_ast++;
+		return node;
+	};
+	build_copy = build_copy.set_at_each_domain(inc_count_ast);
+	auto ast = build_copy.node_from(schedule);
+	assert(count_ast == 2);
+	count_ast_fail = 0;
+	do_fail = false;
+	ast = build.node_from(schedule);
+	assert(count_ast_fail == 2);
+}
+
 /* Test the (unchecked) isl C++ interface
  *
  * This includes:
