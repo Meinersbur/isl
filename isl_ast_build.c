@@ -762,7 +762,7 @@ static __isl_give isl_set *intersect_stride_constraint(__isl_take isl_set *set,
 static __isl_give isl_ast_build *update_values(
 	__isl_take isl_ast_build *build, __isl_take isl_basic_set *bounds)
 {
-	int sv;
+	isl_bool sv;
 	isl_pw_multi_aff *pma;
 	isl_aff *aff = NULL;
 	isl_map *it_map;

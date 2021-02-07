@@ -279,7 +279,7 @@ __isl_give isl_constraint_list *isl_basic_map_get_constraint_list(
 	__isl_keep isl_basic_map *bmap)
 {
 	int n;
-	int known;
+	isl_bool known;
 	isl_ctx *ctx;
 	isl_constraint_list *list;
 

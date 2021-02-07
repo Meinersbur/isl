@@ -824,7 +824,8 @@ static int try_extract_mod(struct isl_extract_mod_data *data)
 {
 	isl_basic_set *hull;
 	isl_val *v1, *v2;
-	int r, n;
+	isl_stat r;
+	int n;
 
 	if (!data->build)
 		goto error;

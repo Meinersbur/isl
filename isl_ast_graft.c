@@ -102,28 +102,28 @@ static __isl_give isl_ast_graft *isl_ast_graft_copy(
 /* Do all the grafts in "list" have the same guard and is this guard
  * independent of the current depth?
  */
-static int equal_independent_guards(__isl_keep isl_ast_graft_list *list,
+static isl_bool equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 	__isl_keep isl_ast_build *build)
 {
 	int i, n;
 	int depth;
 	isl_ast_graft *graft_0;
-	int equal = 1;
-	int skip;
+	isl_bool equal = isl_bool_true;
+	isl_bool skip;
 
 	graft_0 = isl_ast_graft_list_get_ast_graft(list, 0);
 	if (!graft_0)
-		return -1;
+		return isl_bool_error;
 
 	depth = isl_ast_build_get_depth(build);
 	if (isl_set_dim(graft_0->guard, isl_dim_set) <= depth)
-		skip = 0;
+		skip = isl_bool_false;
 	else
 		skip = isl_set_involves_dims(graft_0->guard,
 						isl_dim_set, depth, 1);
 	if (skip < 0 || skip) {
 		isl_ast_graft_free(graft_0);
-		return skip < 0 ? -1 : 0;
+		return isl_bool_not(skip);
 	}
 
 	n = isl_ast_graft_list_n_ast_graft(list);
@@ -131,7 +131,7 @@ static int equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 		isl_ast_graft *graft;
 		graft = isl_ast_graft_list_get_ast_graft(list, i);
 		if (!graft)
-			equal = -1;
+			equal = isl_bool_error;
 		else
 			equal = isl_set_is_equal(graft_0->guard, graft->guard);
 		isl_ast_graft_free(graft);
@@ -194,7 +194,7 @@ __isl_give isl_set *isl_ast_graft_list_extract_hoistable_guard(
 	__isl_keep isl_ast_graft_list *list, __isl_keep isl_ast_build *build)
 {
 	int i, n;
-	int equal;
+	isl_bool equal;
 	isl_ctx *ctx;
 	isl_set *guard;
 	isl_set_list *set_list;

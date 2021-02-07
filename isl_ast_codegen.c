@@ -2787,7 +2787,7 @@ static __isl_give isl_set *compute_unroll_domains(
 	isl_set *unroll_domain;
 	isl_basic_set_list *unroll_list;
 	int i, n;
-	int empty;
+	isl_bool empty;
 
 	empty = isl_set_is_empty(domains->option[isl_ast_loop_unroll]);
 	if (empty < 0)

@@ -8781,7 +8781,7 @@ __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_aff(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_aff *aff)
 {
 	isl_space *space1, *space2;
-	int equal;
+	isl_bool equal;
 
 	mupa = isl_multi_union_pw_aff_align_params(mupa,
 						isl_aff_get_space(aff));
@@ -8836,7 +8836,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_multi_aff(
 {
 	isl_space *space1, *space2;
 	isl_multi_union_pw_aff *res;
-	int equal;
+	isl_bool equal;
 	int i, n_out;
 
 	mupa = isl_multi_union_pw_aff_align_params(mupa,
@@ -8908,7 +8908,7 @@ __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_pw_aff(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_pw_aff *pa)
 {
 	int i;
-	int equal;
+	isl_bool equal;
 	isl_space *space, *space2;
 	isl_union_pw_aff *upa;
 
@@ -8986,7 +8986,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_apply_pw_multi_aff(
 {
 	isl_space *space1, *space2;
 	isl_multi_union_pw_aff *res;
-	int equal;
+	isl_bool equal;
 	int i, n_out;
 
 	mupa = isl_multi_union_pw_aff_align_params(mupa,

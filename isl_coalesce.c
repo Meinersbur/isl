@@ -3596,7 +3596,7 @@ static enum isl_change check_coalesce_into_eq(int i, int j,
 {
 	unsigned n_div_i, n_div_j;
 	isl_basic_map *hull_i, *hull_j;
-	int equal, empty;
+	isl_bool equal, empty;
 	isl_aff_list *list;
 	enum isl_change change;
 

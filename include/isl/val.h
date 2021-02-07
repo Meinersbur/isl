@@ -45,7 +45,7 @@ long isl_val_get_den_si(__isl_keep isl_val *v);
 __isl_give isl_val *isl_val_get_den_val(__isl_keep isl_val *v);
 double isl_val_get_d(__isl_keep isl_val *v);
 size_t isl_val_n_abs_num_chunks(__isl_keep isl_val *v, size_t size);
-int isl_val_get_abs_num_chunks(__isl_keep isl_val *v, size_t size,
+isl_stat isl_val_get_abs_num_chunks(__isl_keep isl_val *v, size_t size,
 	void *chunks);
 
 __isl_give isl_val *isl_val_set_si(__isl_take isl_val *v, long i);

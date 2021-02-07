@@ -8231,45 +8231,19 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_map *basic_map_identity(__isl_take isl_space *space)
-{
-	struct isl_basic_map *bmap;
-	unsigned nparam;
-	unsigned dim;
-	int i;
-
-	if (!space)
-		return NULL;
-
-	nparam = space->nparam;
-	dim = space->n_out;
-	bmap = isl_basic_map_alloc_space(space, 0, dim, 0);
-	if (!bmap)
-		goto error;
-
-	for (i = 0; i < dim; ++i) {
-		int j = isl_basic_map_alloc_equality(bmap);
-		if (j < 0)
-			goto error;
-		isl_seq_clr(bmap->eq[j], 1 + isl_basic_map_total_dim(bmap));
-		isl_int_set_si(bmap->eq[j][1+nparam+i], 1);
-		isl_int_set_si(bmap->eq[j][1+nparam+dim+i], -1);
-	}
-	return isl_basic_map_finalize(bmap);
-error:
-	isl_basic_map_free(bmap);
-	return NULL;
-}
-
 __isl_give isl_basic_map *isl_basic_map_identity(__isl_take isl_space *space)
 {
+	unsigned n_in, n_out;
+
 	if (!space)
 		return NULL;
-	if (space->n_in != space->n_out)
+	n_in = isl_space_dim(space, isl_dim_in);
+	n_out = isl_space_dim(space, isl_dim_out);
+	if (n_in != n_out)
 		isl_die(space->ctx, isl_error_invalid,
 			"number of input and output dimensions needs to be "
 			"the same", goto error);
-	return basic_map_identity(space);
+	return isl_basic_map_equal(space, n_in);
 error:
 	isl_space_free(space);
 	return NULL;

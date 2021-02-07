@@ -1733,10 +1733,10 @@ static int test_gist(struct isl_ctx *ctx)
 	const char *str;
 	isl_basic_set *bset1, *bset2;
 	isl_map *map1, *map2;
-	int equal;
+	isl_bool equal;
 
 	for (i = 0; i < ARRAY_SIZE(gist_tests); ++i) {
-		int equal_input, equal_intersection;
+		isl_bool equal_input, equal_intersection;
 		isl_set *set1, *set2, *copy, *context;
 
 		set1 = isl_set_read_from_str(ctx, gist_tests[i].set);
