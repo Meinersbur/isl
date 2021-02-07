@@ -1869,7 +1869,7 @@ static isl_bool domain_follows_at_depth(__isl_keep isl_basic_set *i,
 	empty = isl_basic_map_is_empty(test);
 	isl_basic_map_free(test);
 
-	return empty < 0 ? isl_bool_error : !empty;
+	return isl_bool_not(empty);
 }
 
 /* Split up each element of "list" into a part that is related to "bset"
@@ -2093,7 +2093,7 @@ static isl_bool shared_outer(__isl_keep isl_basic_set *i,
 	empty = isl_basic_map_is_empty(test);
 	isl_basic_map_free(test);
 
-	return empty < 0 ? isl_bool_error : !empty;
+	return isl_bool_not(empty);
 }
 
 /* Internal data structure for generate_sorted_domains_wrap.

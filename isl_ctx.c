@@ -136,7 +136,7 @@ static struct isl_options *find_nested_options(struct isl_args *args,
 		if (arg->type != isl_arg_child)
 			continue;
 
-		if (arg->offset == (size_t) -1)
+		if (arg->offset == ISL_ARG_OFFSET_NONE)
 			child = opt;
 		else
 			child = *(void **)(((char *)opt) + arg->offset);

@@ -1061,7 +1061,7 @@ error:
 static __isl_give isl_basic_map *isl_basic_map_make_strides_explicit(
 	__isl_take isl_basic_map *bmap)
 {
-	int known;
+	isl_bool known;
 	int n_known;
 	int n, n_col;
 	int total;

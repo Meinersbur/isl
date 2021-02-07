@@ -1653,7 +1653,7 @@ isl_bool isl_val_matching_params(__isl_keep isl_val *v,
  * This function is only meant to be used in the generic isl_multi_*
  * functions which have to deal with base objects that have an associated
  * space.  Since an isl_val does not have an associated space, this function
- * simply returns 0, except if "v" or "space" are NULL.
+ * simply returns isl_stat_ok, except if "v" or "space" are NULL.
  */
 isl_stat isl_val_check_match_domain_space(__isl_keep isl_val *v,
 	__isl_keep isl_space *space)

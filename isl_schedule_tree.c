@@ -490,14 +490,11 @@ __isl_give isl_schedule_tree *isl_schedule_tree_update_anchored(
 	int i, n;
 	int anchored;
 
-	if (!tree)
-		return NULL;
-
 	anchored = isl_schedule_tree_is_anchored(tree);
-	if (anchored < 0)
+	n = isl_schedule_tree_n_children(tree);
+	if (anchored < 0 || n < 0)
 		return isl_schedule_tree_free(tree);
 
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	for (i = 0; !anchored && i < n; ++i) {
 		isl_schedule_tree *child;
 
@@ -714,12 +711,16 @@ int isl_schedule_tree_has_children(__isl_keep isl_schedule_tree *tree)
 }
 
 /* Return the number of children of "tree", excluding implicit leaves.
+ * The "children" field is NULL if there are
+ * no children (except for the implicit leaves).
  */
 int isl_schedule_tree_n_children(__isl_keep isl_schedule_tree *tree)
 {
 	if (!tree)
 		return -1;
 
+	if (!tree->children)
+		return 0;
 	return isl_schedule_tree_list_n_schedule_tree(tree->children);
 }
 
@@ -770,14 +771,14 @@ __isl_give isl_schedule_tree *isl_schedule_tree_drop_child(
 	int n;
 
 	tree = isl_schedule_tree_cow(tree);
-	if (!tree)
-		return NULL;
 
-	if (!isl_schedule_tree_has_children(tree))
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		return isl_schedule_tree_free(tree);
+	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"tree does not have any explicit children",
 			return isl_schedule_tree_free(tree));
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	if (pos < 0 || pos >= n)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_invalid,
 			"position out of bounds",
@@ -1719,18 +1720,14 @@ static __isl_give isl_union_map *subtree_schedule_extend_from_children(
 	isl_space *space;
 	isl_union_map *umap;
 
-	if (!tree)
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
 		return isl_union_map_free(outer);
-
-	ctx = isl_schedule_tree_get_ctx(tree);
-	if (!tree->children)
-		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return isl_union_map_free(outer));
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
 			"missing children", return isl_union_map_free(outer));
 
+	ctx = isl_schedule_tree_get_ctx(tree);
 	separate = n > 1 && (tree->type == isl_schedule_node_sequence ||
 			    isl_options_get_schedule_separate_components(ctx));
 
@@ -1882,10 +1879,9 @@ static __isl_give isl_union_set *initial_domain_from_children(
 	isl_space *space;
 	isl_union_set *domain;
 
-	if (!tree->children)
-		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
-			"missing children", return NULL);
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		return NULL;
 	if (n == 0)
 		isl_die(isl_schedule_tree_get_ctx(tree), isl_error_internal,
 			"missing children", return NULL);
@@ -2644,7 +2640,7 @@ static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 	__isl_keep isl_schedule_band *band)
 {
 	isl_union_set *options;
-	int empty;
+	isl_bool empty;
 	isl_bool coincident;
 
 	p = isl_printer_print_str(p, "schedule");
@@ -2800,7 +2796,10 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 	}
 	p = isl_printer_yaml_next(p);
 
-	if (!tree->children) {
+	n = isl_schedule_tree_n_children(tree);
+	if (n < 0)
+		return isl_printer_free(p);
+	if (n == 0) {
 		if (n_ancestor > 0 && block) {
 			isl_schedule_tree *leaf;
 
@@ -2822,7 +2821,6 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 		p = isl_printer_yaml_next(p);
 	}
 
-	n = isl_schedule_tree_list_n_schedule_tree(tree->children);
 	for (i = 0; i < n; ++i) {
 		isl_schedule_tree *t;
 

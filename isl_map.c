@@ -2168,14 +2168,6 @@ void isl_basic_map_swap_div(struct isl_basic_map *bmap, int a, int b)
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 }
 
-/* Swap divs "a" and "b" in "bset" and adjust the constraints and
- * div definitions accordingly.
- */
-void isl_basic_set_swap_div(__isl_keep isl_basic_set *bset, int a, int b)
-{
-	isl_basic_map_swap_div(bset, a, b);
-}
-
 static void constraint_drop_vars(isl_int *c, unsigned n, unsigned rem)
 {
 	isl_seq_cpy(c, c + n, rem);
@@ -8439,7 +8431,7 @@ isl_bool isl_set_is_equal(__isl_keep isl_set *set1, __isl_keep isl_set *set2)
 isl_bool isl_basic_map_is_subset(__isl_keep isl_basic_map *bmap1,
 	__isl_keep isl_basic_map *bmap2)
 {
-	int is_subset;
+	isl_bool is_subset;
 	struct isl_map *map1;
 	struct isl_map *map2;
 
