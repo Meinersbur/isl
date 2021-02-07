@@ -155,6 +155,7 @@ static bool is_exported(Decl *decl)
 		N.find("stride_info") == std::string::npos &&
 		N.find("isl_ast_expr_or") == std::string::npos &&
 		N.find("foreach_ast_op_type") == std::string::npos &&
+		N.find("foreach_ast_expr_op_type") == std::string::npos &&
 		N.find("foreach_descendant_top_down") == std::string::npos &&
 		N.find("foreach_schedule_node_top_down") == std::string::npos &&
 		N.find("foreach_descendant_top_down") == std::string::npos &&
