@@ -4495,7 +4495,7 @@ error:
 struct isl_basic_map *isl_basic_map_apply_range(
 		struct isl_basic_map *bmap1, struct isl_basic_map *bmap2)
 {
-	isl_space *dim_result = NULL;
+	isl_space *space_result = NULL;
 	struct isl_basic_map *bmap;
 	unsigned n_in, n_out, n, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
@@ -4507,7 +4507,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 		isl_die(isl_basic_map_get_ctx(bmap1), isl_error_invalid,
 			"spaces don't match", goto error);
 
-	dim_result = isl_space_join(isl_space_copy(bmap1->dim),
+	space_result = isl_space_join(isl_space_copy(bmap1->dim),
 				  isl_space_copy(bmap2->dim));
 
 	n_in = isl_basic_map_dim(bmap1, isl_dim_in);
@@ -4527,7 +4527,7 @@ struct isl_basic_map *isl_basic_map_apply_range(
 	isl_dim_map_dim(dim_map1, bmap1->dim, isl_dim_out, pos += bmap2->n_div);
 	isl_dim_map_dim(dim_map2, bmap2->dim, isl_dim_in, pos);
 
-	bmap = isl_basic_map_alloc_space(dim_result,
+	bmap = isl_basic_map_alloc_space(space_result,
 			bmap1->n_div + bmap2->n_div + n,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
@@ -5767,7 +5767,7 @@ __isl_give isl_basic_map *isl_basic_map_domain_map(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *domain;
 	int nparam, n_in, n_out;
 
@@ -5775,8 +5775,9 @@ __isl_give isl_basic_map *isl_basic_map_domain_map(
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 
-	dim = isl_space_from_range(isl_space_domain(isl_basic_map_get_space(bmap)));
-	domain = isl_basic_map_universe(dim);
+	space = isl_basic_map_get_space(bmap);
+	space = isl_space_from_range(isl_space_domain(space));
+	domain = isl_basic_map_universe(space);
 
 	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
 	bmap = isl_basic_map_apply_range(bmap, domain);
@@ -5794,7 +5795,7 @@ __isl_give isl_basic_map *isl_basic_map_range_map(
 	__isl_take isl_basic_map *bmap)
 {
 	int i;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *range;
 	int nparam, n_in, n_out;
 
@@ -5802,8 +5803,9 @@ __isl_give isl_basic_map *isl_basic_map_range_map(
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
 
-	dim = isl_space_from_range(isl_space_range(isl_basic_map_get_space(bmap)));
-	range = isl_basic_map_universe(dim);
+	space = isl_basic_map_get_space(bmap);
+	space = isl_space_from_range(isl_space_range(space));
+	range = isl_basic_map_universe(space);
 
 	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
 	bmap = isl_basic_map_apply_range(bmap, range);
@@ -7465,7 +7467,7 @@ static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 	struct isl_basic_set *bset;
 	struct isl_set *set;
 	struct isl_map *map;
-	isl_space *dim;
+	isl_space *space;
 	isl_local_space *ls;
 	unsigned	 nparam;
 	unsigned	 n_in;
@@ -7485,9 +7487,9 @@ static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n_in = isl_basic_map_dim(bmap, isl_dim_in);
 	n_out = isl_basic_map_dim(bmap, isl_dim_out);
-	dim = isl_space_set_alloc(bmap->ctx,
+	space = isl_space_set_alloc(bmap->ctx,
 				    nparam + n_in + n_out + n_known, 0);
-	if (!dim)
+	if (!space)
 		goto error;
 
 	ls = isl_basic_map_get_local_space(bmap);
@@ -7499,7 +7501,7 @@ static __isl_give isl_map *compute_divs(__isl_take isl_basic_map *bmap)
 		bmap->n_div -= n_known;
 		bmap->extra -= n_known;
 	}
-	bmap = isl_basic_map_reset_space(bmap, dim);
+	bmap = isl_basic_map_reset_space(bmap, space);
 	bset = bset_from_bmap(bmap);
 
 	set = parameter_compute_divs(bset);
@@ -8155,7 +8157,7 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	__isl_take isl_basic_map *bmap)
 {
 	int i, k;
-	isl_space *dim;
+	isl_space *space;
 	isl_basic_map *domain;
 	int nparam, n;
 	unsigned total;
@@ -8168,8 +8170,9 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n = isl_basic_map_dim(bmap, isl_dim_in);
 
-	dim = isl_space_from_range(isl_space_domain(isl_basic_map_get_space(bmap)));
-	domain = isl_basic_map_universe(dim);
+	space = isl_basic_map_get_space(bmap);
+	space = isl_space_from_range(isl_space_domain(space));
+	domain = isl_basic_map_universe(space);
 
 	bmap = isl_basic_map_from_domain(isl_basic_map_wrap(bmap));
 	bmap = isl_basic_map_apply_range(bmap, domain);
@@ -9974,14 +9977,14 @@ error:
 __isl_give isl_basic_map *isl_basic_map_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
-	isl_space *dim_result = NULL;
+	isl_space *space_result = NULL;
 	struct isl_basic_map *bmap;
 	unsigned in1, in2, out1, out2, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
 
 	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
-	dim_result = isl_space_product(isl_space_copy(bmap1->dim),
+	space_result = isl_space_product(isl_space_copy(bmap1->dim),
 						   isl_space_copy(bmap2->dim));
 
 	in1 = isl_basic_map_dim(bmap1, isl_dim_in);
@@ -10002,7 +10005,7 @@ __isl_give isl_basic_map *isl_basic_map_product(
 	isl_dim_map_div(dim_map1, bmap1, pos += out2);
 	isl_dim_map_div(dim_map2, bmap2, pos += bmap1->n_div);
 
-	bmap = isl_basic_map_alloc_space(dim_result,
+	bmap = isl_basic_map_alloc_space(space_result,
 			bmap1->n_div + bmap2->n_div,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);
@@ -10081,7 +10084,7 @@ __isl_give isl_basic_map *isl_basic_map_range_product(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
 	isl_bool rational;
-	isl_space *dim_result = NULL;
+	isl_space *space_result = NULL;
 	isl_basic_map *bmap;
 	unsigned in, out1, out2, nparam, total, pos;
 	struct isl_dim_map *dim_map1, *dim_map2;
@@ -10095,7 +10098,7 @@ __isl_give isl_basic_map *isl_basic_map_range_product(
 	if (isl_basic_map_check_equal_params(bmap1, bmap2) < 0)
 		goto error;
 
-	dim_result = isl_space_range_product(isl_space_copy(bmap1->dim),
+	space_result = isl_space_range_product(isl_space_copy(bmap1->dim),
 					   isl_space_copy(bmap2->dim));
 
 	in = isl_basic_map_dim(bmap1, isl_dim_in);
@@ -10115,7 +10118,7 @@ __isl_give isl_basic_map *isl_basic_map_range_product(
 	isl_dim_map_div(dim_map1, bmap1, pos += out2);
 	isl_dim_map_div(dim_map2, bmap2, pos += bmap1->n_div);
 
-	bmap = isl_basic_map_alloc_space(dim_result,
+	bmap = isl_basic_map_alloc_space(space_result,
 			bmap1->n_div + bmap2->n_div,
 			bmap1->n_eq + bmap2->n_eq,
 			bmap1->n_ineq + bmap2->n_ineq);

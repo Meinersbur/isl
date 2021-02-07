@@ -118,22 +118,23 @@ error:
  */
 static __isl_give isl_space *isl_space_coefficients(__isl_take isl_space *space)
 {
-	isl_space *dim_param;
+	isl_space *space_param;
 	unsigned nvar;
 	unsigned nparam;
 
 	nvar = isl_space_dim(space, isl_dim_set);
 	nparam = isl_space_dim(space, isl_dim_param);
-	dim_param = isl_space_copy(space);
-	dim_param = isl_space_drop_dims(dim_param, isl_dim_set, 0, nvar);
-	dim_param = isl_space_move_dims(dim_param, isl_dim_set, 0,
+	space_param = isl_space_copy(space);
+	space_param = isl_space_drop_dims(space_param, isl_dim_set, 0, nvar);
+	space_param = isl_space_move_dims(space_param, isl_dim_set, 0,
 				 isl_dim_param, 0, nparam);
-	dim_param = isl_space_prefix(dim_param, "c_");
-	dim_param = isl_space_insert_dims(dim_param, isl_dim_set, 0, 1);
-	dim_param = isl_space_set_dim_name(dim_param, isl_dim_set, 0, "c_cst");
+	space_param = isl_space_prefix(space_param, "c_");
+	space_param = isl_space_insert_dims(space_param, isl_dim_set, 0, 1);
+	space_param = isl_space_set_dim_name(space_param,
+				isl_dim_set, 0, "c_cst");
 	space = isl_space_drop_dims(space, isl_dim_param, 0, nparam);
 	space = isl_space_prefix(space, "c_");
-	space = isl_space_join(isl_space_from_domain(dim_param),
+	space = isl_space_join(isl_space_from_domain(space_param),
 			   isl_space_from_range(space));
 	space = isl_space_wrap(space);
 	space = isl_space_set_tuple_name(space, isl_dim_set, "coefficients");

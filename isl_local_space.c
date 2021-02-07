@@ -71,21 +71,21 @@ error:
 	return NULL;
 }
 
-__isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *dim,
+__isl_give isl_local_space *isl_local_space_alloc(__isl_take isl_space *space,
 	unsigned n_div)
 {
 	isl_ctx *ctx;
 	isl_mat *div;
 	unsigned total;
 
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	total = isl_space_dim(dim, isl_dim_all);
+	total = isl_space_dim(space, isl_dim_all);
 
-	ctx = isl_space_get_ctx(dim);
+	ctx = isl_space_get_ctx(space);
 	div = isl_mat_alloc(ctx, n_div, 1 + 1 + total + n_div);
-	return isl_local_space_alloc_div(dim, div);
+	return isl_local_space_alloc_div(space, div);
 }
 
 __isl_give isl_local_space *isl_local_space_from_space(__isl_take isl_space *dim)
