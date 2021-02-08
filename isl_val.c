@@ -1526,19 +1526,6 @@ __isl_give isl_val *isl_val_insert_dims(__isl_take isl_val *v,
 	return v;
 }
 
-/* Drop the "n" first dimensions of type "type" at position "first".
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  Since an isl_val does not have an associated space, this function
- * does not do anything.
- */
-__isl_give isl_val *isl_val_drop_dims(__isl_take isl_val *v,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	return v;
-}
-
 /* Change the name of the dimension of type "type" at position "pos" to "s".
  *
  * This function is only meant to be used in the generic isl_multi_*
@@ -1549,73 +1536,6 @@ __isl_give isl_val *isl_val_drop_dims(__isl_take isl_val *v,
 __isl_give isl_val *isl_val_set_dim_name(__isl_take isl_val *v,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
-	return v;
-}
-
-/* Return the space of "v".
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  The conditions surrounding the call to this function make sure
- * that this function will never actually get called.  We return a valid
- * space anyway, just in case.
- */
-__isl_give isl_space *isl_val_get_space(__isl_keep isl_val *v)
-{
-	if (!v)
-		return NULL;
-
-	return isl_space_params_alloc(isl_val_get_ctx(v), 0);
-}
-
-/* Reset the domain space of "v" to "space".
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  Since an isl_val does not have an associated space, this function
- * does not do anything, apart from error handling and cleaning up memory.
- */
-__isl_give isl_val *isl_val_reset_domain_space(__isl_take isl_val *v,
-	__isl_take isl_space *space)
-{
-	if (!space)
-		return isl_val_free(v);
-	isl_space_free(space);
-	return v;
-}
-
-/* Align the parameters of "v" to those of "space".
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  Since an isl_val does not have an associated space, this function
- * does not do anything, apart from error handling and cleaning up memory.
- * Note that the conditions surrounding the call to this function make sure
- * that this function will never actually get called.
- */
-__isl_give isl_val *isl_val_align_params(__isl_take isl_val *v,
-	__isl_take isl_space *space)
-{
-	if (!space)
-		return isl_val_free(v);
-	isl_space_free(space);
-	return v;
-}
-
-/* Reorder the dimensions of the domain of "v" according
- * to the given reordering.
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  Since an isl_val does not have an associated space, this function
- * does not do anything, apart from error handling and cleaning up memory.
- */
-__isl_give isl_val *isl_val_realign_domain(__isl_take isl_val *v,
-	__isl_take isl_reordering *r)
-{
-	if (!r)
-		return isl_val_free(v);
-	isl_reordering_free(r);
 	return v;
 }
 
@@ -1637,48 +1557,21 @@ __isl_give isl_val *isl_val_zero_on_domain(__isl_take isl_local_space *ls)
 	return isl_val_zero(ctx);
 }
 
-/* Do the parameters of "v" match those of "space"?
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  Since an isl_val does not have an associated space, this function
- * simply returns true, except if "v" or "space" are NULL.
- */
-isl_bool isl_val_matching_params(__isl_keep isl_val *v,
-	__isl_keep isl_space *space)
-{
-	if (!v || !space)
-		return isl_bool_error;
-	return isl_bool_true;
-}
-
-/* Check that the domain space of "v" matches "space".
- *
- * This function is only meant to be used in the generic isl_multi_*
- * functions which have to deal with base objects that have an associated
- * space.  Since an isl_val does not have an associated space, this function
- * simply returns isl_stat_ok, except if "v" or "space" are NULL.
- */
-isl_stat isl_val_check_match_domain_space(__isl_keep isl_val *v,
-	__isl_keep isl_space *space)
-{
-	if (!v || !space)
-		return isl_stat_error;
-	return isl_stat_ok;
-}
-
 #define isl_val_involves_nan isl_val_is_nan
 
 #undef BASE
 #define BASE val
 
+#include <isl_multi_no_domain_templ.c>
 #include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_dim_id_templ.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
+#include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
 
 /* Apply "fn" to each of the elements of "mv" with as second argument "v".

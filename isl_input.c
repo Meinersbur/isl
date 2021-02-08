@@ -17,6 +17,7 @@
 #include <string.h>
 #include <isl_ctx_private.h>
 #include <isl_map_private.h>
+#include <isl_id_private.h>
 #include <isl/set.h>
 #include <isl_seq.h>
 #include <isl_stream_private.h>
@@ -3557,85 +3558,15 @@ error:
 	return NULL;
 }
 
-/* This function is called for each element in a tuple inside
- * isl_stream_read_multi_val.
- * Read an isl_val from "s" and add it to *list.
- */
-static __isl_give isl_space *read_val_el(__isl_keep isl_stream *s,
-	struct vars *v, __isl_take isl_space *space, int rational, void *user)
-{
-	isl_val_list **list = (isl_val_list **) user;
-	isl_val *val;
+#undef BASE
+#define BASE val
 
-	val = isl_stream_read_val(s);
-	*list = isl_val_list_add(*list, val);
-	if (!*list)
-		return isl_space_free(space);
+#include <isl_multi_read_no_explicit_domain_templ.c>
 
-	return space;
-}
+#undef BASE
+#define BASE id
 
-/* Read an isl_multi_val from "s".
- *
- * We first read a tuple space, collecting the element values in a list.
- * Then we create an isl_multi_val from the space and the isl_val_list.
- */
-__isl_give isl_multi_val *isl_stream_read_multi_val(__isl_keep isl_stream *s)
-{
-	struct vars *v;
-	isl_set *dom = NULL;
-	isl_space *space;
-	isl_multi_val *mv = NULL;
-	isl_val_list *list;
-
-	v = vars_new(s->ctx);
-	if (!v)
-		return NULL;
-
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (!isl_set_plain_is_universe(dom))
-		isl_die(s->ctx, isl_error_invalid,
-			"expecting universe parameter domain", goto error);
-	if (isl_stream_eat(s, '{'))
-		goto error;
-
-	space = isl_set_get_space(dom);
-
-	list = isl_val_list_alloc(s->ctx, 0);
-	space = read_tuple_space(s, v, space, 1, 0, &read_val_el, &list);
-	mv = isl_multi_val_from_val_list(space, list);
-
-	if (isl_stream_eat(s, '}'))
-		goto error;
-
-	vars_free(v);
-	isl_set_free(dom);
-	return mv;
-error:
-	vars_free(v);
-	isl_set_free(dom);
-	isl_multi_val_free(mv);
-	return NULL;
-}
-
-/* Read an isl_multi_val from "str".
- */
-__isl_give isl_multi_val *isl_multi_val_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	isl_multi_val *mv;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	mv = isl_stream_read_multi_val(s);
-	isl_stream_free(s);
-	return mv;
-}
+#include <isl_multi_read_no_explicit_domain_templ.c>
 
 /* Read a multi-affine expression from "s".
  * If the multi-affine expression has a domain, then the tuple

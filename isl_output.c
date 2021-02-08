@@ -29,6 +29,7 @@
 #include <isl_local.h>
 #include <isl_local_space_private.h>
 #include <isl_aff_private.h>
+#include <isl_id_private.h>
 #include <isl_val_private.h>
 #include <isl_constraint_private.h>
 #include <isl/ast_build.h>
@@ -3320,6 +3321,58 @@ __isl_give isl_printer *isl_printer_print_multi_val(
 		return print_multi_val_isl(p, mv);
 	isl_die(p->ctx, isl_error_unsupported, "unsupported output format",
 		return isl_printer_free(p));
+}
+
+/* Print dimension "pos" of data->space to "p".
+ *
+ * data->user is assumed to be an isl_multi_id.
+ *
+ * If the current dimension is an output dimension, then print
+ * the corresponding identifier.  Otherwise, print the name of the dimension.
+ */
+static __isl_give isl_printer *print_dim_mi(__isl_take isl_printer *p,
+	struct isl_print_space_data *data, unsigned pos)
+{
+	isl_multi_id *mi = data->user;
+
+	if (data->type == isl_dim_out)
+		return isl_printer_print_id(p, mi->u.p[pos]);
+	else
+		return print_name(data->space, p, data->type, pos, data->latex);
+}
+
+/* Print the isl_multi_id "mi" to "p" in isl format.
+ */
+static __isl_give isl_printer *print_multi_id_isl(__isl_take isl_printer *p,
+	__isl_keep isl_multi_id *mi)
+{
+	isl_space *space;
+	struct isl_print_space_data data = { 0 };
+
+	space = isl_multi_id_peek_space(mi);
+	p = print_param_tuple(p, space, &data);
+	p = isl_printer_print_str(p, "{ ");
+	data.print_dim = &print_dim_mi;
+	data.user = mi;
+	p = isl_print_space(space, p, 0, &data);
+	p = isl_printer_print_str(p, " }");
+	return p;
+}
+
+/* Print the isl_multi_id "mi" to "p".
+ *
+ * Currently only supported in isl format.
+ */
+__isl_give isl_printer *isl_printer_print_multi_id(
+	__isl_take isl_printer *p, __isl_keep isl_multi_id *mi)
+{
+	if (!p || !mi)
+		return isl_printer_free(p);
+
+	if (p->output_format == ISL_FORMAT_ISL)
+		return print_multi_id_isl(p, mi);
+	isl_die(isl_printer_get_ctx(p), isl_error_unsupported,
+		"unsupported output format", return isl_printer_free(p));
 }
 
 /* Print dimension "pos" of data->space to "p".

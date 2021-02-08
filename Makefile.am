@@ -477,6 +477,7 @@ EXTRA_DIST = \
 	isl_multi_pw_aff_explicit_domain.c \
 	isl_multi_union_pw_aff_explicit_domain.c \
 	isl_multi_no_explicit_domain.c \
+	isl_multi_no_domain_templ.c \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
 	isl_multi_align_templ.c \
@@ -488,6 +489,7 @@ EXTRA_DIST = \
 	isl_multi_arith_templ.c \
 	isl_multi_cmp.c \
 	isl_multi_coalesce.c \
+	isl_multi_dim_id_templ.c \
 	isl_multi_dims.c \
 	isl_multi_domain_templ.c \
 	isl_multi_floor.c \
@@ -500,7 +502,9 @@ EXTRA_DIST = \
 	isl_multi_nan_templ.c \
 	isl_multi_param_templ.c \
 	isl_multi_product_templ.c \
+	isl_multi_read_no_explicit_domain_templ.c \
 	isl_multi_splice_templ.c \
+	isl_multi_tuple_id_templ.c \
 	isl_multi_zero_templ.c \
 	print_templ.c \
 	print_templ_yaml.c \
