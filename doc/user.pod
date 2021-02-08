@@ -4026,6 +4026,10 @@ Objects can be read from input using the following functions.
 	isl_union_pw_qpolynomial_read_from_str(
 		isl_ctx *ctx, const char *str);
 
+	__isl_give isl_pw_qpolynomial_fold *
+	isl_pw_qpolynomial_fold_read_from_str(
+		isl_ctx *ctx, const char *str);
+
 For sets and relations,
 the input format is autodetected and may be either the C<PolyLib> format
 or the C<isl> format.
@@ -5615,6 +5619,9 @@ symbolic constant expression.
 For functions taking a multi expression,
 this applies to all set dimensions.
 Those that bound a map, bound the range of that map.
+If the multi expression is zero-dimensional but has an explicit domain,
+then the (parameter) domain of the set or map is intersected
+with this explicit domain.
 
 	__isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 		enum isl_dim_type type1, int pos1,
@@ -8923,7 +8930,7 @@ Lists are defined over several element types, including
 C<isl_val>, C<isl_id>, C<isl_aff>, C<isl_pw_aff>, C<isl_pw_multi_aff>,
 C<isl_union_pw_aff>,
 C<isl_union_pw_multi_aff>,
-C<isl_pw_qpolynomial>, C<isl_pw_qpolynomial_fold>,
+C<isl_qpolynomial>, C<isl_pw_qpolynomial>, C<isl_pw_qpolynomial_fold>,
 C<isl_constraint>,
 C<isl_basic_set>, C<isl_set>, C<isl_basic_map>, C<isl_map>, C<isl_union_set>,
 C<isl_union_map>, C<isl_ast_expr> and C<isl_ast_node>.

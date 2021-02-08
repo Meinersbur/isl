@@ -4,6 +4,8 @@
 struct __isl_export isl_qpolynomial;
 typedef struct isl_qpolynomial isl_qpolynomial;
 
+ISL_DECLARE_LIST_TYPE(qpolynomial)
+
 struct __isl_export isl_term;
 typedef struct isl_term isl_term;
 
