@@ -3005,7 +3005,6 @@ __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
  * where the function values are ordered in the same way as "order",
  * which returns a set in the shared domain of its two arguments.
- * The parameters of "pa1" and "pa2" are assumed to have been aligned.
  *
  * Let "pa1" and "pa2" be defined on domains A and B respectively.
  * We first pull back the two functions such that they are defined on
@@ -3013,7 +3012,7 @@ __isl_give isl_set *isl_pw_aff_lt_set(__isl_take isl_pw_aff *pwaff1,
  * in the space [A -> B].  Finally, we unwrap this set to obtain
  * a map in the space A -> B.
  */
-static __isl_give isl_map *isl_pw_aff_order_map_aligned(
+static __isl_give isl_map *isl_pw_aff_order_map(
 	__isl_take isl_pw_aff *pa1, __isl_take isl_pw_aff *pa2,
 	__isl_give isl_set *(*order)(__isl_take isl_pw_aff *pa1,
 		__isl_take isl_pw_aff *pa2))
@@ -3022,6 +3021,7 @@ static __isl_give isl_map *isl_pw_aff_order_map_aligned(
 	isl_multi_aff *ma;
 	isl_set *set;
 
+	isl_pw_aff_align_params_bin(&pa1, &pa2);
 	space1 = isl_space_domain(isl_pw_aff_get_space(pa1));
 	space2 = isl_space_domain(isl_pw_aff_get_space(pa2));
 	space1 = isl_space_map_from_domain_and_range(space1, space2);
@@ -3040,8 +3040,17 @@ static __isl_give isl_map *isl_pw_aff_order_map_aligned(
 __isl_give isl_map *isl_pw_aff_eq_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	isl_pw_aff_align_params_bin(&pa1, &pa2);
-	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_eq_set);
+	return isl_pw_aff_order_map(pa1, pa2, &isl_pw_aff_eq_set);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function value of "pa1" is less than or equal to
+ * the function value of "pa2".
+ */
+__isl_give isl_map *isl_pw_aff_le_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return isl_pw_aff_order_map(pa1, pa2, &isl_pw_aff_le_set);
 }
 
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
@@ -3050,8 +3059,17 @@ __isl_give isl_map *isl_pw_aff_eq_map(__isl_take isl_pw_aff *pa1,
 __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	isl_pw_aff_align_params_bin(&pa1, &pa2);
-	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_lt_set);
+	return isl_pw_aff_order_map(pa1, pa2, &isl_pw_aff_lt_set);
+}
+
+/* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
+ * where the function value of "pa1" is greater than or equal to
+ * the function value of "pa2".
+ */
+__isl_give isl_map *isl_pw_aff_ge_map(__isl_take isl_pw_aff *pa1,
+	__isl_take isl_pw_aff *pa2)
+{
+	return isl_pw_aff_order_map(pa1, pa2, &isl_pw_aff_ge_set);
 }
 
 /* Return a map containing pairs of elements in the domains of "pa1" and "pa2"
@@ -3061,8 +3079,7 @@ __isl_give isl_map *isl_pw_aff_lt_map(__isl_take isl_pw_aff *pa1,
 __isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	isl_pw_aff_align_params_bin(&pa1, &pa2);
-	return isl_pw_aff_order_map_aligned(pa1, pa2, &isl_pw_aff_gt_set);
+	return isl_pw_aff_order_map(pa1, pa2, &isl_pw_aff_gt_set);
 }
 
 /* Return a set containing those elements in the shared domain

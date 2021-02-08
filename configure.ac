@@ -1,10 +1,10 @@
-AC_INIT([isl], [0.22], [isl-development@googlegroups.com])
+AC_INIT([isl], [0.22.1], [isl-development@googlegroups.com])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_SUBST(versioninfo)
-versioninfo=22:0:0
+versioninfo=22:1:0
 
 if test "x$prefix" != "xNONE"; then
 	prefix_wd=`cd $prefix && pwd`
@@ -133,6 +133,7 @@ AX_CREATE_PKGCONFIG_INFO
 
 AX_DETECT_GIT_HEAD
 
+AC_SUBST([CONFIG_STATUS_DEPENDENCIES], [$LLVM_CONFIG])
 AH_BOTTOM([#include <isl_config_post.h>])
 AC_CONFIG_HEADERS(isl_config.h)
 AC_CONFIG_FILES(isl_srcdir.c)

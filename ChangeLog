@@ -1,3 +1,8 @@
+version: 0.22.1
+date: Sun Jan 12 10:48:18 CET 2020
+changes:
+	- fix error handling
+---
 version: 0.22
 date: Fri Nov  1 18:39:30 CET 2019
 changes:

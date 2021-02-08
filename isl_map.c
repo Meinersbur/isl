@@ -5457,6 +5457,8 @@ __isl_give isl_basic_set *isl_basic_map_underlying_set(
 	    !isl_space_is_named_or_nested(bmap->dim, isl_dim_out))
 		return bset_from_bmap(bmap);
 	bmap = isl_basic_map_cow(bmap);
+	if (!bmap)
+		return NULL;
 	space = isl_basic_map_take_space(bmap);
 	space = isl_space_underlying(space, bmap->n_div);
 	bmap = isl_basic_map_restore_space(bmap, space);

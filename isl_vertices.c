@@ -581,7 +581,12 @@ static isl_bool can_intersect(struct isl_tab *tab,
 	snap = isl_tab_snap(tab);
 
 	for (i = 0; i < bset->n_ineq; ++i) {
-		if (isl_tab_ineq_type(tab, bset->ineq[i]) == isl_ineq_redundant)
+		enum isl_ineq_type type;
+
+		type = isl_tab_ineq_type(tab, bset->ineq[i]);
+		if (type < 0)
+			return isl_bool_error;
+		if (type == isl_ineq_redundant)
 			continue;
 		if (isl_tab_add_ineq(tab, bset->ineq[i]) < 0)
 			return isl_bool_error;
