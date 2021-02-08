@@ -45,7 +45,7 @@ private:
 	void print_isa_type_template(ostream &os, int indent,
 		const isl_class &super);
 	void print_downcast_decl(ostream &os, const isl_class &clazz);
-	void print_get_ctx_decl(ostream &os);
+	void print_ctx_decl(ostream &os);
 	void print_persistent_callback_prototype(ostream &os,
 		const isl_class &clazz, FunctionDecl *method,
 		bool is_declaration);
@@ -59,8 +59,15 @@ private:
 	void print_methods_decl(ostream &os, const isl_class &clazz);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
 		const set<FunctionDecl *> &methods);
+	void print_named_method_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd, const string &name, function_kind kind);
 	void print_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
+	void print_set_enum_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd, const string &name);
+	void print_set_enums_decl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd);
+	void print_set_enums_decl(ostream &os, const isl_class &clazz);
 	void print_implementations(ostream &os);
 	void print_class_impl(ostream &os, const isl_class &clazz);
 	void print_check_ptr(ostream &os, const char *ptr);
@@ -79,7 +86,7 @@ private:
 		const isl_class &clazz, FunctionDecl *fd);
 	void print_ptr_impl(ostream &os, const isl_class &clazz);
 	bool print_downcast_impl(ostream &os, const isl_class &clazz);
-	void print_get_ctx_impl(ostream &os, const isl_class &clazz);
+	void print_ctx_impl(ostream &os, const isl_class &clazz);
 	void print_persistent_callbacks_impl(ostream &os,
 		const isl_class &clazz);
 	void print_methods_impl(ostream &os, const isl_class &clazz);
@@ -99,12 +106,24 @@ private:
 		FunctionDecl *method);
 	void print_method_impl(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, function_kind kind);
+	void print_set_enum_impl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd, const string &enum_name,
+		const string &method_name);
+	void print_set_enums_impl(ostream &os, const isl_class &clazz,
+		FunctionDecl *fd);
+	void print_set_enums_impl(ostream &os, const isl_class &clazz);
 	void print_invalid(ostream &os, int indent, const char *msg,
 		const char *checked_code);
 	void print_stream_insertion(ostream &os, const isl_class &clazz);
 	void print_method_param_use(ostream &os, ParmVarDecl *param,
 		bool load_from_this_ptr);
 	std::string get_return_type(const isl_class &clazz, FunctionDecl *fd);
+	void print_method_header(ostream &os, const isl_class &clazz,
+		FunctionDecl *method, const string &cname, int num_params,
+		bool is_declaration, function_kind kind);
+	void print_named_method_header(ostream &os, const isl_class &clazz,
+		FunctionDecl *method, string name, bool is_declaration,
+		function_kind kind);
 	void print_method_header(ostream &os, const isl_class &clazz,
 		FunctionDecl *method, bool is_declaration, function_kind kind);
 	string generate_callback_args(QualType type, bool cpp);
@@ -120,6 +139,7 @@ private:
 	void print_callback_local(ostream &os, ParmVarDecl *param);
 	std::string rename_method(std::string name);
 	string isl_bool2cpp();
+	string isl_namespace();
 	string type2cpp(QualType type);
 	bool is_implicit_conversion(const isl_class &clazz, FunctionDecl *cons);
 	bool is_subclass(QualType subclass_type, const isl_class &class_type);

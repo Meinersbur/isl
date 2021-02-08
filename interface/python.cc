@@ -50,6 +50,17 @@ static string type2python(string name)
 	return name.substr(4);
 }
 
+/* Print the arguments of a method with "n_arg" arguments, starting at "first".
+ */
+void python_generator::print_method_arguments(int first, int n_arg)
+{
+	for (int i = first; i < n_arg; ++i) {
+		if (i > first)
+			printf(", ");
+		printf("arg%d", i);
+	}
+}
+
 /* Print the header of the method "name" with "n_arg" arguments.
  * If "is_static" is set, then mark the python method as static.
  *
@@ -69,11 +80,7 @@ void python_generator::print_method_header(bool is_static, const string &name,
 		s = "convert_from";
 
 	printf("    def %s(", s);
-	for (int i = 0; i < n_arg; ++i) {
-		if (i)
-			printf(", ");
-		printf("arg%d", i);
-	}
+	print_method_arguments(0, n_arg);
 	printf("):\n");
 }
 
@@ -106,6 +113,36 @@ void python_generator::print_type_check(const string &type, int pos,
 		printf(")\n");
 	} else
 		printf("            raise\n");
+}
+
+/* For each of the "n" initial arguments of the function "method"
+ * that refer to an isl structure,
+ * including the object on which the method is called,
+ * check if the corresponding actual argument is of the right type.
+ * If not, try and convert it to the right type.
+ * If that doesn't work and if "super" contains at least one element,
+ * try and convert self to the type of the first superclass in "super" and
+ * call the corresponding method.
+ * If "first_is_ctx" is set, then the first argument is skipped.
+ */
+void python_generator::print_type_checks(const string &cname,
+	FunctionDecl *method, bool first_is_ctx, int n,
+	const vector<string> &super)
+{
+	for (int i = first_is_ctx; i < n; ++i) {
+		ParmVarDecl *param = method->getParamDecl(i);
+		string type;
+
+		if (!is_isl_type(param->getOriginalType()))
+			continue;
+		type = type2python(extract_type(param->getOriginalType()));
+		if (!first_is_ctx && i > 0 && super.size() > 0)
+			print_type_check(type, i - first_is_ctx, true, super[0],
+					cname, n);
+		else
+			print_type_check(type, i - first_is_ctx, false, "",
+					cname, -1);
+	}
 }
 
 /* Print a call to the *_copy function corresponding to "type".
@@ -365,14 +402,6 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
  * a user argument in the Python interface, so we simply drop it.
  * We also create a wrapper ("cb") for the callback.
  *
- * For each argument of the function that refers to an isl structure,
- * including the object on which the method is called,
- * we check if the corresponding actual argument is of the right type.
- * If not, we try to convert it to the right type.
- * If that doesn't work and if "super" contains at least one element, we try
- * to convert self to the type of the first superclass in "super" and
- * call the corresponding method.
- *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
  */
@@ -395,19 +424,8 @@ void python_generator::print_method(const isl_class &clazz,
 	print_method_header(is_static(clazz, method), cname,
 			    num_params - drop_ctx - drop_user);
 
-	for (int i = drop_ctx; i < num_params; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		string type;
-		if (!is_isl_type(param->getOriginalType()))
-			continue;
-		type = type2python(extract_type(param->getOriginalType()));
-		if (!drop_ctx && i > 0 && super.size() > 0)
-			print_type_check(type, i - drop_ctx, true, super[0],
-					cname, num_params - drop_user);
-		else
-			print_type_check(type, i - drop_ctx, false, "",
-					cname, -1);
-	}
+	print_type_checks(cname, method, drop_ctx,
+			    num_params - drop_user, super);
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		QualType type = param->getOriginalType();
@@ -510,6 +528,58 @@ void python_generator::print_method(const isl_class &clazz,
 
 	for (it = methods.begin(); it != methods.end(); ++it)
 		print_method_overload(clazz, *it);
+}
+
+/* Print a python method "name" corresponding to "fd" setting
+ * the enum value "value".
+ * "super" contains the superclasses of the class to which the method belongs,
+ * with the first element corresponding to the annotation that appears
+ * closest to the annotated type.
+ *
+ * The last argument of the C function does not appear in the method call,
+ * but is fixed to "value" instead.
+ * Other than that, the method printed here is similar to one
+ * printed by python_generator::print_method, except that
+ * some of the special cases do not occur.
+ */
+void python_generator::print_set_enum(const isl_class &clazz,
+	FunctionDecl *fd, int value, const string &name,
+	const vector<string> &super)
+{
+	string fullname = fd->getName();
+	int num_params = fd->getNumParams();
+
+	print_method_header(is_static(clazz, fd), name, num_params - 1);
+
+	print_type_checks(name, fd, false, num_params - 1, super);
+	printf("        ctx = arg0.ctx\n");
+	printf("        res = isl.%s(", fullname.c_str());
+	for (int i = 0; i < num_params - 1; ++i) {
+		if (i)
+			printf(", ");
+		print_arg_in_call(fd, i, 0);
+	}
+	printf(", %d", value);
+	printf(")\n");
+	print_method_return(8, clazz, fd);
+}
+
+/* Print python methods corresponding to "fd", which sets an enum.
+ * "super" contains the superclasses of the class to which the method belongs,
+ * with the first element corresponding to the annotation that appears
+ * closest to the annotated type.
+ *
+ * A method is generated for each value in the enum, setting
+ * the enum to that value.
+ */
+void python_generator::print_set_enum(const isl_class &clazz,
+	FunctionDecl *fd, const vector<string> &super)
+{
+	vector<set_enum>::const_iterator it;
+	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
+
+	for (it = set_enums.begin(); it != set_enums.end(); ++it)
+		print_set_enum(clazz, fd, it->value, it->method_name, super);
 }
 
 /* Print part of the constructor for this isl_class.
@@ -780,7 +850,8 @@ void python_generator::print_copy_callbacks(const isl_class &clazz)
  *
  * To be able to call C functions it is necessary to explicitly set their
  * argument and result types.  Do this for all exported constructors and
- * methods (including those that set a persistent callback),
+ * methods (including those that set a persistent callback and
+ * those that set an enum value),
  * as well as for the *_to_str and the type function, if they exist.
  * Assuming each exported class has a *_copy and a *_free method,
  * also unconditionally set the type of such methods.
@@ -789,6 +860,7 @@ void python_generator::print_method_types(const isl_class &clazz)
 {
 	set<FunctionDecl *>::const_iterator in;
 	map<string, set<FunctionDecl *> >::const_iterator it;
+	map<FunctionDecl *, vector<set_enum> >::const_iterator ie;
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
 	for (in = clazz.constructors.begin(); in != clazz.constructors.end();
@@ -800,6 +872,8 @@ void python_generator::print_method_types(const isl_class &clazz)
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
 		for (in = it->second.begin(); in != it->second.end(); ++in)
 			print_method_type(*in);
+	for (ie = clazz.set_enums.begin(); ie != clazz.set_enums.end(); ++ie)
+		print_method_type(ie->first);
 
 	print_method_type(clazz.fn_copy);
 	print_method_type(clazz.fn_free);
@@ -820,7 +894,7 @@ void python_generator::print_method_types(const isl_class &clazz)
  *
  * Next, we print out some common methods and the methods corresponding
  * to functions that are not marked as constructors, including those
- * that set a persistent callback.
+ * that set a persistent callback and those that set an enum value.
  *
  * Finally, we tell ctypes about the types of the arguments of the
  * constructor functions and the return types of those function returning
@@ -831,6 +905,7 @@ void python_generator::print(const isl_class &clazz)
 	string p_name = type2python(clazz.subclass_name);
 	set<FunctionDecl *>::const_iterator in;
 	map<string, set<FunctionDecl *> >::const_iterator it;
+	map<FunctionDecl *, vector<set_enum> >::const_iterator ie;
 	vector<string> super = find_superclasses(clazz.type);
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
@@ -867,6 +942,8 @@ void python_generator::print(const isl_class &clazz)
 		print_method(clazz, *in, super);
 	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
 		print_method(clazz, it->first, it->second, super);
+	for (ie = clazz.set_enums.begin(); ie != clazz.set_enums.end(); ++ie)
+		print_set_enum(clazz, ie->first, super);
 
 	printf("\n");
 

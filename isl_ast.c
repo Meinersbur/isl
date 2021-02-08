@@ -1264,7 +1264,9 @@ error:
 	return NULL;
 }
 
-__isl_give isl_ast_node *isl_ast_node_if_get_then(
+/* Return the then-node of the given if-node.
+ */
+__isl_give isl_ast_node *isl_ast_node_if_get_then_node(
 	__isl_keep isl_ast_node *node)
 {
 	if (!node)
@@ -1275,8 +1277,17 @@ __isl_give isl_ast_node *isl_ast_node_if_get_then(
 	return isl_ast_node_copy(node->u.i.then);
 }
 
-isl_bool isl_ast_node_if_has_else(
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_ast_node *isl_ast_node_if_get_then(
 	__isl_keep isl_ast_node *node)
+{
+	return isl_ast_node_if_get_then_node(node);
+}
+
+/* Does the given if-node have an else-node?
+ */
+isl_bool isl_ast_node_if_has_else_node(__isl_keep isl_ast_node *node)
 {
 	if (!node)
 		return isl_bool_error;
@@ -1286,7 +1297,17 @@ isl_bool isl_ast_node_if_has_else(
 	return isl_bool_ok(node->u.i.else_node != NULL);
 }
 
-__isl_give isl_ast_node *isl_ast_node_if_get_else(
+/* This is an alternative name for the function above.
+ */
+isl_bool isl_ast_node_if_has_else(__isl_keep isl_ast_node *node)
+{
+	return isl_ast_node_if_has_else_node(node);
+}
+
+/* Return the else-node of the given if-node,
+ * assuming there is one.
+ */
+__isl_give isl_ast_node *isl_ast_node_if_get_else_node(
 	__isl_keep isl_ast_node *node)
 {
 	if (!node)
@@ -1295,6 +1316,14 @@ __isl_give isl_ast_node *isl_ast_node_if_get_else(
 		isl_die(isl_ast_node_get_ctx(node), isl_error_invalid,
 			"not an if node", return NULL);
 	return isl_ast_node_copy(node->u.i.else_node);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_ast_node *isl_ast_node_if_get_else(
+	__isl_keep isl_ast_node *node)
+{
+	return isl_ast_node_if_get_else_node(node);
 }
 
 __isl_give isl_ast_expr *isl_ast_node_if_get_cond(

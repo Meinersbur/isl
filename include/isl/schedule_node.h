@@ -125,6 +125,7 @@ __isl_give isl_union_map *isl_schedule_node_band_get_partial_schedule_union_map(
 	__isl_keep isl_schedule_node *node);
 enum isl_ast_loop_type isl_schedule_node_band_member_get_ast_loop_type(
 	__isl_keep isl_schedule_node *node, int pos);
+__isl_export
 __isl_give isl_schedule_node *isl_schedule_node_band_member_set_ast_loop_type(
 	__isl_take isl_schedule_node *node, int pos,
 	enum isl_ast_loop_type type);

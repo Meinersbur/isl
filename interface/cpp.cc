@@ -252,10 +252,11 @@ void cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	print_destructor_decl(os, clazz);
 	print_ptr_decl(os, clazz);
 	print_downcast_decl(os, clazz);
-	print_get_ctx_decl(os);
+	print_ctx_decl(os);
 	osprintf(os, "\n");
 	print_persistent_callbacks_decl(os, clazz);
 	print_methods_decl(os, clazz);
+	print_set_enums_decl(os, clazz);
 
 	osprintf(os, "};\n");
 }
@@ -509,11 +510,13 @@ void cpp_generator::print_downcast_decl(ostream &os, const isl_class &clazz)
 	osprintf(os, "  template <class T> inline T as() const;\n");
 }
 
-/* Print the declaration of the get_ctx method.
+/* Print the declaration of the ctx method.
  */
-void cpp_generator::print_get_ctx_decl(ostream &os)
+void cpp_generator::print_ctx_decl(ostream &os)
 {
-	osprintf(os, "  inline ctx get_ctx() const;\n");
+	std::string ns = isl_namespace();
+
+	osprintf(os, "  inline %sctx ctx() const;\n", ns.c_str());
 }
 
 /* Add a space to the return type "type" if needed,
@@ -642,6 +645,48 @@ void cpp_generator::print_methods_decl(ostream &os, const isl_class &clazz)
 		print_method_group_decl(os, clazz, it->second);
 }
 
+/* Print a declaration for a method "name" in "clazz" derived
+ * from "fd", which sets an enum, to "os".
+ *
+ * The last argument is removed because it is replaced by
+ * a break-up into several methods.
+ */
+void cpp_generator::print_set_enum_decl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd, const string &name)
+{
+	int n = fd->getNumParams();
+
+	print_method_header(os, clazz, fd, name, n - 1, true,
+				function_kind_member_method);
+}
+
+/* Print declarations for the methods in "clazz" derived from "fd",
+ * which sets an enum, to "os".
+ *
+ * A method is generated for each value in the enum, setting
+ * the enum to that value.
+ */
+void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd)
+{
+	vector<set_enum>::const_iterator it;
+	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
+
+	for (it = set_enums.begin(); it != set_enums.end(); ++it)
+		print_set_enum_decl(os, clazz, fd, it->method_name);
+}
+
+/* Print declarations for methods in "clazz" derived from functions
+ * that set an enum, to "os".
+ */
+void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz)
+{
+	map<FunctionDecl *, vector<set_enum> >::const_iterator it;
+
+	for (it = clazz.set_enums.begin(); it != clazz.set_enums.end(); ++it)
+		print_set_enums_decl(os, clazz, it->first);
+}
+
 /* Print declarations for methods "methods" in class "clazz" to "os".
  */
 void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
@@ -655,6 +700,17 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 	}
 }
 
+/* Print a declaration for a method called "name" in class "clazz"
+ * derived from "fd" to "os".
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_named_method_decl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd, const string &name, function_kind kind)
+{
+	print_named_method_header(os, clazz, fd, name, true, kind);
+}
+
 /* Print declarations for "method" in class "clazz" to "os".
  *
  * "kind" specifies the kind of method that should be generated.
@@ -662,7 +718,9 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
 	FunctionDecl *method, function_kind kind)
 {
-	print_method_header(os, clazz, method, true, kind);
+	string name = clazz.method_name(method);
+
+	print_named_method_decl(os, clazz, method, name, kind);
 }
 
 /* Print implementations for class "clazz" to "os".
@@ -690,21 +748,22 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "\n");
 	if (print_downcast_impl(os, clazz))
 		osprintf(os, "\n");
-	print_get_ctx_impl(os, clazz);
+	print_ctx_impl(os, clazz);
 	osprintf(os, "\n");
 	print_persistent_callbacks_impl(os, clazz);
 	print_methods_impl(os, clazz);
+	print_set_enums_impl(os, clazz);
 	print_stream_insertion(os, clazz);
 }
 
 /* Print code for throwing an exception corresponding to the last error
- * that occurred on "ctx".
- * This assumes that a valid isl::ctx is available in the "ctx" variable,
+ * that occurred on "saved_ctx".
+ * This assumes that a valid isl::ctx is available in the "saved_ctx" variable,
  * e.g., through a prior call to print_save_ctx.
  */
 static void print_throw_last_error(ostream &os)
 {
-	osprintf(os, "    exception::throw_last_error(ctx);\n");
+	osprintf(os, "    exception::throw_last_error(saved_ctx);\n");
 }
 
 /* Print code with the given indentation
@@ -734,7 +793,7 @@ void cpp_generator::print_invalid(ostream &os, int indent, const char *msg,
 {
 	if (checked)
 		osprintf(os, indent,
-			"isl_die(get_ctx().get(), isl_error_invalid, "
+			"isl_die(ctx().get(), isl_error_invalid, "
 			"\"%s\", %s);\n", msg, checked_code);
 	else
 		print_throw_invalid(os, indent, msg);
@@ -805,7 +864,8 @@ void cpp_generator::print_check_ptr_start(ostream &os, const isl_class &clazz,
 		return;
 
 	print_check_ptr(os, ptr);
-	osprintf(os, "  auto ctx = %s_get_ctx(%s);\n", clazz.name.c_str(), ptr);
+	osprintf(os, "  auto saved_ctx = %s_get_ctx(%s);\n",
+		clazz.name.c_str(), ptr);
 	print_on_error_continue(os);
 }
 
@@ -1101,16 +1161,17 @@ bool cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 	return true;
 }
 
-/* Print the implementation of the get_ctx method.
+/* Print the implementation of the ctx method.
  */
-void cpp_generator::print_get_ctx_impl(ostream &os, const isl_class &clazz)
+void cpp_generator::print_ctx_impl(ostream &os, const isl_class &clazz)
 {
 	const char *name = clazz.name.c_str();
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
+	std::string ns = isl_namespace();
 
-	osprintf(os, "ctx %s::get_ctx() const {\n", cppname);
-	osprintf(os, "  return ctx(%s_get_ctx(ptr));\n", name);
+	osprintf(os, "%sctx %s::ctx() const {\n", ns.c_str(), cppname);
+	osprintf(os, "  return %sctx(%s_get_ctx(ptr));\n", ns.c_str(), name);
 	osprintf(os, "}\n");
 }
 
@@ -1162,6 +1223,77 @@ void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
 			osprintf(os, "\n");
 		print_method_group_impl(os, clazz, it->second);
 	}
+}
+
+/* Print the definition for a method "method_name" in "clazz" derived
+ * from "fd", which sets an enum, to "os".
+ * In particular, the method "method_name" sets the enum to "enum_name".
+ *
+ * The last argument of the C function does not appear in the method call,
+ * but is fixed to "enum_name" instead.
+ * Other than that, the method printed here is similar to one
+ * printed by cpp_generator::print_method_impl, except that
+ * some of the special cases do not occur.
+ */
+void cpp_generator::print_set_enum_impl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd, const string &enum_name, const string &method_name)
+{
+	string c_name = fd->getName();
+	int n = fd->getNumParams();
+	function_kind kind = function_kind_member_method;
+
+	print_method_header(os, clazz, fd, method_name, n - 1, false, kind);
+	osprintf(os, "{\n");
+
+	print_argument_validity_check(os, fd, kind);
+	print_save_ctx(os, fd, kind);
+	print_on_error_continue(os);
+
+	osprintf(os, "  auto res = %s(", c_name.c_str());
+
+	for (int i = 0; i < n - 1; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+
+		if (i > 0)
+			osprintf(os, ", ");
+		print_method_param_use(os, param, i == 0);
+	}
+	osprintf(os, ", %s", enum_name.c_str());
+	osprintf(os, ");\n");
+
+	print_exceptional_execution_check(os, clazz, fd, kind);
+	print_method_return(os, clazz, fd);
+
+	osprintf(os, "}\n");
+}
+
+/* Print definitions for the methods in "clazz" derived from "fd",
+ * which sets an enum, to "os".
+ *
+ * A method is generated for each value in the enum, setting
+ * the enum to that value.
+ */
+void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd)
+{
+	vector<set_enum>::const_iterator it;
+	const vector<set_enum> &set_enums = clazz.set_enums.at(fd);
+
+	for (it = set_enums.begin(); it != set_enums.end(); ++it) {
+		osprintf(os, "\n");
+		print_set_enum_impl(os, clazz, fd, it->name, it->method_name);
+	}
+}
+
+/* Print definitions for methods in "clazz" derived from functions
+ * that set an enum, to "os".
+ */
+void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz)
+{
+	map<FunctionDecl *, vector<set_enum> >::const_iterator it;
+
+	for (it = clazz.set_enums.begin(); it != clazz.set_enums.end(); ++it)
+		print_set_enums_impl(os, clazz, it->first);
 }
 
 /* Print definitions for methods "methods" in class "clazz" to "os".
@@ -1286,15 +1418,15 @@ void cpp_generator::print_argument_validity_check(ostream &os,
 }
 
 /* Print code for saving a copy of the isl::ctx available at the start
- * of the method "method" in a "ctx" variable, for use in exception handling.
+ * of the method "method" in a "saved_ctx" variable,
+ * for use in exception handling.
  * "kind" specifies what kind of method "method" is.
  *
  * If checked bindings are being generated,
- * then the "ctx" variable is not needed.
+ * then the "saved_ctx" variable is not needed.
  * If "method" is a member function, then obtain the isl_ctx from
  * the "this" object.
- * If the first argument of the method is an isl::ctx, then use that one,
- * assuming it is not already called "ctx".
+ * If the first argument of the method is an isl::ctx, then use that one.
  * Otherwise, save a copy of the isl::ctx associated to the first argument
  * of isl object type.
  */
@@ -1308,15 +1440,14 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
 	if (checked)
 		return;
 	if (kind == function_kind_member_method) {
-		osprintf(os, "  auto ctx = get_ctx();\n");
+		osprintf(os, "  auto saved_ctx = ctx();\n");
 		return;
 	}
 	if (is_isl_ctx(type)) {
 		const char *name;
 
 		name = param->getName().str().c_str();
-		if (strcmp(name, "ctx") != 0)
-			osprintf(os, "  auto ctx = %s;\n", name);
+		osprintf(os, "  auto saved_ctx = %s;\n", name);
 		return;
 	}
 	n = method->getNumParams();
@@ -1326,7 +1457,7 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
 
 		if (!is_isl_type(type))
 			continue;
-		osprintf(os, "  auto ctx = %s.get_ctx();\n",
+		osprintf(os, "  auto saved_ctx = %s.ctx();\n",
 			param->getName().str().c_str());
 		return;
 	}
@@ -1340,14 +1471,15 @@ void cpp_generator::print_save_ctx(ostream &os, FunctionDecl *method,
  *
  * If checked bindings are being generated,
  * then leave it to the user to decide what isl should do on error.
- * Otherwise, assume that a valid isl::ctx is available in the "ctx" variable,
+ * Otherwise, assume that a valid isl::ctx is available
+ * in the "saved_ctx" variable,
  * e.g., through a prior call to print_save_ctx.
  */
 void cpp_generator::print_on_error_continue(ostream &os)
 {
 	if (checked)
 		return;
-	osprintf(os, "  options_scoped_set_on_error saved_on_error(ctx, "
+	osprintf(os, "  options_scoped_set_on_error saved_on_error(saved_ctx, "
 		     "exception::on_error);\n");
 }
 
@@ -1634,7 +1766,8 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	osprintf(os, "}\n");
 }
 
-/* Print the header for "method" in class "clazz" to "os".
+/* Print the header for "method" in class "clazz", with name "cname" and
+ * "num_params" number of arguments, to "os".
  *
  * Print the header of a declaration if "is_declaration" is set, otherwise print
  * the header of a method definition.
@@ -1674,15 +1807,13 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
  * know that implicit construction is allowed in absence of an explicit keyword.
  */
 void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, bool is_declaration, function_kind kind)
+	FunctionDecl *method, const string &cname, int num_params,
+	bool is_declaration, function_kind kind)
 {
-	string cname = clazz.method_name(method);
 	string rettype_str = get_return_type(clazz, method);
 	string classname = type2cpp(clazz);
-	int num_params = method->getNumParams();
 	int first_param = 0;
 
-	cname = rename_method(cname);
 	if (kind == function_kind_member_method)
 		first_param = 1;
 
@@ -1742,6 +1873,42 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	if (is_declaration)
 		osprintf(os, ";");
 	osprintf(os, "\n");
+}
+
+/* Print the header for a method called "name" in class "clazz"
+ * derived from "method" to "os".
+ *
+ * Print the header of a declaration if "is_declaration" is set, otherwise print
+ * the header of a method definition.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_named_method_header(ostream &os,
+	const isl_class &clazz, FunctionDecl *method, string name,
+	bool is_declaration, function_kind kind)
+{
+	int num_params = method->getNumParams();
+
+	name = rename_method(name);
+	print_method_header(os, clazz, method, name, num_params,
+			    is_declaration, kind);
+}
+
+/* Print the header for "method" in class "clazz" to "os"
+ * using its default name.
+ *
+ * Print the header of a declaration if "is_declaration" is set, otherwise print
+ * the header of a method definition.
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
+	FunctionDecl *method, bool is_declaration, function_kind kind)
+{
+	string name = clazz.method_name(method);
+
+	print_named_method_header(os, clazz, method, name, is_declaration,
+				  kind);
 }
 
 /* Generate the list of argument types for a callback function of
@@ -2112,6 +2279,13 @@ string cpp_generator::isl_bool2cpp()
 	return checked ? "boolean" : "bool";
 }
 
+/* Return the namespace of the generated C++ bindings.
+ */
+string cpp_generator::isl_namespace()
+{
+	return checked ? "isl::checked::" : "isl::";
+}
+
 /* Translate QualType "type" to its C++ name counterpart.
  *
  * An isl_bool return type is translated into "bool",
@@ -2124,7 +2298,8 @@ string cpp_generator::isl_bool2cpp()
 string cpp_generator::type2cpp(QualType type)
 {
 	if (is_isl_type(type))
-		return type2cpp(type->getPointeeType().getAsString());
+		return isl_namespace() +
+				type2cpp(type->getPointeeType().getAsString());
 
 	if (is_isl_bool(type))
 		return isl_bool2cpp();
