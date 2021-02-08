@@ -84,7 +84,20 @@ void python_generator::print_method_header(bool is_static, const string &name,
 	printf("):\n");
 }
 
-/* Print a check that the argument in position "pos" is of type "type".
+/* Print formatted output with the given indentation.
+ */
+static void print_indent(int indent, const char *format, ...)
+{
+	va_list args;
+
+	printf("%*s", indent, " ");
+	va_start(args, format);
+	vprintf(format, args);
+	va_end(args);
+}
+
+/* Print a check that the argument in position "pos" is of type "type"
+ * with the given indentation.
  * If this fails and if "upcast" is set, then convert the first
  * argument to "super" and call the method "name" on it, passing
  * the remaining of the "n" arguments.
@@ -93,17 +106,17 @@ void python_generator::print_method_header(bool is_static, const string &name,
  * If "upcast" is not set, then the "super", "name" and "n" arguments
  * to this function are ignored.
  */
-void python_generator::print_type_check(const string &type, int pos,
+void python_generator::print_type_check(int indent, const string &type, int pos,
 	bool upcast, const string &super, const string &name, int n)
 {
-	printf("        try:\n");
-	printf("            if not arg%d.__class__ is %s:\n",
+	print_indent(indent, "try:\n");
+	print_indent(indent, "    if not arg%d.__class__ is %s:\n",
 		pos, type.c_str());
-	printf("                arg%d = %s(arg%d)\n",
+	print_indent(indent, "        arg%d = %s(arg%d)\n",
 		pos, type.c_str(), pos);
-	printf("        except:\n");
+	print_indent(indent, "except:\n");
 	if (upcast) {
-		printf("            return %s(arg0).%s(",
+		print_indent(indent, "    return %s(arg0).%s(",
 			type2python(super).c_str(), name.c_str());
 		for (int i = 1; i < n; ++i) {
 			if (i != 1)
@@ -112,7 +125,7 @@ void python_generator::print_type_check(const string &type, int pos,
 		}
 		printf(")\n");
 	} else
-		printf("            raise\n");
+		print_indent(indent, "    raise\n");
 }
 
 /* For each of the "n" initial arguments of the function "method"
@@ -137,11 +150,11 @@ void python_generator::print_type_checks(const string &cname,
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
 		if (!first_is_ctx && i > 0 && super.size() > 0)
-			print_type_check(type, i - first_is_ctx, true, super[0],
-					cname, n);
+			print_type_check(8, type, i - first_is_ctx, true,
+					super[0], cname, n);
 		else
-			print_type_check(type, i - first_is_ctx, false, "",
-					cname, -1);
+			print_type_check(8, type, i - first_is_ctx, false,
+					"", cname, -1);
 	}
 }
 
@@ -262,18 +275,6 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
 	} else {
 		printf("arg%d", arg - skip);
 	}
-}
-
-/* Print formatted output with the given indentation.
- */
-static void print_indent(int indent, const char *format, ...)
-{
-	va_list args;
-
-	printf("%*s", indent, " ");
-	va_start(args, format);
-	vprintf(format, args);
-	va_end(args);
 }
 
 /* Generate code that raises the exception captured in "exc_info", if any,
@@ -483,13 +484,31 @@ void python_generator::print_method(const isl_class &clazz,
 		print_get_method(clazz, method);
 }
 
+/* Print a condition that checks whether Python method argument "i"
+ * corresponds to the C function argument type "type".
+ */
+static void print_argument_check(QualType type, int i)
+{
+	if (generator::is_isl_type(type)) {
+		string type_str;
+		type_str = generator::extract_type(type);
+		type_str = type2python(type_str);
+		printf("arg%d.__class__ is %s", i, type_str.c_str());
+	} else if (type->isPointerType()) {
+		printf("type(arg%d) == str", i);
+	} else {
+		printf("type(arg%d) == int", i);
+	}
+}
+
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
  * expected by "fd".
  *
  * If the Python method has no arguments, then print nothing.
  */
-static void print_argument_check(const isl_class &clazz, FunctionDecl *fd)
+void python_generator::print_argument_checks(const isl_class &clazz,
+	FunctionDecl *fd)
 {
 	int num_params = fd->getNumParams();
 	int first = generator::is_static(clazz, fd) ? 0 : 1;
@@ -504,13 +523,7 @@ static void print_argument_check(const isl_class &clazz, FunctionDecl *fd)
 
 		if (i > first)
 			printf(" and ");
-		if (generator::is_isl_type(type)) {
-			string type_str;
-			type_str = generator::extract_type(type);
-			type_str = type2python(type_str);
-			printf("arg%d.__class__ is %s", i, type_str.c_str());
-		} else
-			printf("type(arg%d) == str", i);
+		print_argument_check(type, i);
 	}
 	printf(":\n");
 }
@@ -528,7 +541,7 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	string fullname = method->getName();
 	int num_params = method->getNumParams();
 
-	print_argument_check(clazz, method);
+	print_argument_checks(clazz, method);
 	printf("            res = isl.%s(", fullname.c_str());
 	print_arg_in_call(method, 0, 0);
 	for (int i = 1; i < num_params; ++i) {
@@ -850,7 +863,7 @@ void python_generator::print_representation(const isl_class &clazz,
 		return;
 
 	printf("    def __str__(arg0):\n");
-	print_type_check(python_name, 0, false, "", "", -1);
+	print_type_check(8, python_name, 0, false, "", "", -1);
 	printf("        ptr = isl.%s(arg0.ptr)\n",
 		string(clazz.fn_to_str->getName()).c_str());
 	printf("        res = cast(ptr, c_char_p).value.decode('ascii')\n");
