@@ -1125,7 +1125,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 	FunctionDecl *method, bool is_declaration, function_kind kind)
 {
-	string cname = clazz.method_name(method);
+	string cname = clazz.base_method_name(method);
 	string rettype_str = type2cpp(method->getReturnType());
 	string classname = type2cpp(clazz);
 	int num_params = method->getNumParams();
