@@ -61,6 +61,8 @@ struct isl_class {
 	FunctionDecl *fn_dump;
 	FunctionDecl *fn_free;
 
+	/* Does "method" correspond to a static method? */
+	bool is_static(FunctionDecl *method) const;
 	/* Is this class a subclass based on a type function? */
 	bool is_type_subclass() const { return name != subclass_name; }
 	/* Return name of "fd" without type suffix, if any. */
