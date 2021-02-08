@@ -492,6 +492,7 @@ EXTRA_DIST = \
 	isl_multi_no_domain_templ.c \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
+	isl_multi_add_constant_templ.c \
 	isl_multi_align_templ.c \
 	isl_multi_align_set.c \
 	isl_multi_align_union_set.c \
@@ -529,6 +530,9 @@ EXTRA_DIST = \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
 	isl_pw_templ.h \
+	isl_pw_add_constant_templ.c \
+	isl_pw_add_constant_multi_val_templ.c \
+	isl_pw_add_constant_val_templ.c \
 	isl_pw_bind_domain_templ.c \
 	isl_pw_eval.c \
 	isl_pw_hash.c \
@@ -547,6 +551,7 @@ EXTRA_DIST = \
 	set_list_from_map_list_inl.c \
 	isl_tab_lexopt_templ.c \
 	isl_test_list_templ.c \
+	isl_test_plain_equal_templ.c \
 	isl_type_check_equal_space_templ.c \
 	isl_type_has_equal_space_bin_templ.c \
 	isl_type_has_equal_space_templ.c \

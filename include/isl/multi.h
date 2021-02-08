@@ -117,6 +117,14 @@ __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_neg(		 	\
 	__isl_take isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_ADD_CONSTANT(BASE)				\
+__isl_overload								\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_add_constant_val(	\
+	__isl_take isl_multi_##BASE *mpa, __isl_take isl_val *v);	\
+__isl_overload								\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_add_constant_multi_val(	\
+	__isl_take isl_multi_##BASE *mpa, __isl_take isl_multi_val *mv);
+
 #define ISL_DECLARE_MULTI_ZERO(BASE)					\
 __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_zero(			\

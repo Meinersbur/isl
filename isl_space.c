@@ -417,13 +417,13 @@ __isl_give isl_space *isl_space_cow(__isl_take isl_space *space)
 	return isl_space_dup(space);
 }
 
-__isl_give isl_space *isl_space_copy(__isl_keep isl_space *dim)
+__isl_give isl_space *isl_space_copy(__isl_keep isl_space *space)
 {
-	if (!dim)
+	if (!space)
 		return NULL;
 
-	dim->ref++;
-	return dim;
+	space->ref++;
+	return space;
 }
 
 __isl_null isl_space *isl_space_free(__isl_take isl_space *space)

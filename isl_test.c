@@ -657,6 +657,14 @@ static int test_dim(isl_ctx *ctx)
 	return 0;
 }
 
+#undef BASE
+#define BASE	multi_val
+#include "isl_test_plain_equal_templ.c"
+
+#undef BASE
+#define BASE	multi_aff
+#include "isl_test_plain_equal_templ.c"
+
 /* Check that "val" is equal to the value described by "str".
  * If "str" is "NaN", then check for a NaN value explicitly.
  */
@@ -1474,6 +1482,57 @@ static int test_simple_hull(struct isl_ctx *ctx)
 		return -1;
 	if (test_unshifted_simple_hull(ctx) < 0)
 		return -1;
+
+	return 0;
+}
+
+/* Inputs for isl_set_get_simple_fixed_box_hull tests.
+ * "set" is the input set.
+ * "offset" is the expected box offset.
+ * "size" is the expected box size.
+ */
+static struct {
+	const char *set;
+	const char *offset;
+	const char *size;
+} box_hull_tests[] = {
+	{ "{ S[x, y] : 0 <= x, y < 10 }", "{ S[0, 0] }", "{ S[10, 10] }" },
+	{ "[N] -> { S[x, y] : N <= x, y < N + 10 }",
+	  "[N] -> { S[N, N] }", "{ S[10, 10] }" },
+	{ "{ S[x, y] : 0 <= x + y, x - y < 10 }",
+	  "{ S[0, -4] }", "{ S[10, 9] }" },
+};
+
+/* Perform basic isl_set_get_simple_fixed_box_hull tests.
+ */
+static int test_box_hull(struct isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(box_hull_tests); ++i) {
+		const char *str;
+		isl_stat r;
+		isl_set *set;
+		isl_multi_aff *offset;
+		isl_multi_val *size;
+		isl_fixed_box *box;
+
+		set = isl_set_read_from_str(ctx, box_hull_tests[i].set);
+		box = isl_set_get_simple_fixed_box_hull(set);
+		offset = isl_fixed_box_get_offset(box);
+		size = isl_fixed_box_get_size(box);
+		str = box_hull_tests[i].offset;
+		r = multi_aff_check_plain_equal(offset, str);
+		str = box_hull_tests[i].size;
+		if (r >= 0)
+			r = multi_val_check_plain_equal(size, str);
+		isl_multi_aff_free(offset);
+		isl_multi_val_free(size);
+		isl_fixed_box_free(box);
+		isl_set_free(set);
+		if (r < 0)
+			return -1;
+	}
 
 	return 0;
 }
@@ -5052,107 +5111,17 @@ int test_injective(isl_ctx *ctx)
 	return 0;
 }
 
-static int aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
-{
-	isl_aff *aff2;
-	int equal;
+#undef BASE
+#define BASE	aff
+#include "isl_test_plain_equal_templ.c"
 
-	if (!aff)
-		return -1;
+#undef BASE
+#define BASE	pw_multi_aff
+#include "isl_test_plain_equal_templ.c"
 
-	aff2 = isl_aff_read_from_str(isl_aff_get_ctx(aff), str);
-	equal = isl_aff_plain_is_equal(aff, aff2);
-	isl_aff_free(aff2);
-
-	return equal;
-}
-
-static isl_stat aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
-{
-	int equal;
-
-	equal = aff_plain_is_equal(aff, str);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(isl_aff_get_ctx(aff), isl_error_unknown,
-			"result not as expected", return isl_stat_error);
-	return isl_stat_ok;
-}
-
-/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
- */
-static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	isl_ctx *ctx;
-	isl_pw_multi_aff *pma2;
-	int equal;
-
-	if (!pma)
-		return -1;
-
-	ctx = isl_pw_multi_aff_get_ctx(pma);
-	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
-	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
-	isl_pw_multi_aff_free(pma2);
-
-	return equal;
-}
-
-/* Check that "pma" is obviously equal to the isl_pw_multi_aff
- * represented by "str".
- */
-static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	int equal;
-
-	equal = pw_multi_aff_plain_is_equal(pma, str);
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
-			"result not as expected", return -1);
-	return 0;
-}
-
-/* Is "upa" obviously equal to the isl_union_pw_aff represented by "str"?
- */
-static isl_bool union_pw_aff_plain_is_equal(__isl_keep isl_union_pw_aff *upa,
-	const char *str)
-{
-	isl_ctx *ctx;
-	isl_union_pw_aff *upa2;
-	isl_bool equal;
-
-	if (!upa)
-		return isl_bool_error;
-
-	ctx = isl_union_pw_aff_get_ctx(upa);
-	upa2 = isl_union_pw_aff_read_from_str(ctx, str);
-	equal = isl_union_pw_aff_plain_is_equal(upa, upa2);
-	isl_union_pw_aff_free(upa2);
-
-	return equal;
-}
-
-/* Check that "upa" is obviously equal to the isl_union_pw_aff
- * represented by "str".
- */
-static isl_stat union_pw_aff_check_plain_equal(__isl_keep isl_union_pw_aff *upa,
-	const char *str)
-{
-	isl_bool equal;
-
-	equal = union_pw_aff_plain_is_equal(upa, str);
-	if (equal < 0)
-		return isl_stat_error;
-	if (!equal)
-		isl_die(isl_union_pw_aff_get_ctx(upa), isl_error_unknown,
-			"result not as expected", return isl_stat_error);
-	return isl_stat_ok;
-}
+#undef BASE
+#define BASE	union_pw_aff
+#include "isl_test_plain_equal_templ.c"
 
 /* Basic tests on isl_union_pw_aff.
  *
@@ -7310,7 +7279,7 @@ int test_dim_max(isl_ctx *ctx)
  */
 static int test_product_pma(isl_ctx *ctx)
 {
-	int equal;
+	isl_stat equal;
 	const char *str;
 	isl_pw_multi_aff *pma1, *pma2;
 
@@ -10348,6 +10317,7 @@ struct {
 	{ "recession cone", &test_recession_cone },
 	{ "affine hull", &test_affine_hull },
 	{ "simple_hull", &test_simple_hull },
+	{ "box hull", &test_box_hull },
 	{ "coalesce", &test_coalesce },
 	{ "factorize", &test_factorize },
 	{ "subset", &test_subset },

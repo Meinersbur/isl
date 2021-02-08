@@ -1110,7 +1110,8 @@ error:
 	isl_mat_free(C);
 	isl_mat_free(C2);
 	isl_mat_free(T);
-	return bmap;
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 static __isl_give isl_basic_map *set_div_from_lower_bound(
