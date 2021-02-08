@@ -317,7 +317,7 @@ isl_test_cpp_checked_conversion_LDADD = libisl.la @MP_LIBS@
 # dummy library that captures the dependencies on all headers
 # that are relevant for the bindings
 noinst_LIBRARIES = libdep.a
-libdep_a_SOURCES = all.c
+libdep_a_SOURCES = dep.c
 
 if HAVE_CLANG
 interface/isldlname.py: libisl.la

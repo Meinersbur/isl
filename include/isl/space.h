@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space);
+__isl_give isl_space *isl_space_unit(isl_ctx *ctx);
 __isl_constructor
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out);
@@ -121,6 +122,10 @@ __isl_give isl_space *isl_space_from_range(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_domain_map(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_range_map(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_params(__isl_take isl_space *space);
+__isl_give isl_space *isl_space_add_unnamed_tuple_ui(
+	__isl_take isl_space *space, unsigned dim);
+__isl_give isl_space *isl_space_add_named_tuple_id_ui(
+	__isl_take isl_space *space, __isl_take isl_id *tuple_id, unsigned dim);
 __isl_give isl_space *isl_space_set_from_params(__isl_take isl_space *space);
 
 __isl_give isl_space *isl_space_align_params(__isl_take isl_space *dim1,
