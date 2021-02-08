@@ -571,7 +571,7 @@ static void generate(MyASTConsumer &consumer, SourceManager &SM)
 	} else if (OutputLanguage.compare("cpp-checked-conversion") == 0) {
 		gen = new cpp_conversion_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	} else if (Language.compare("noexceptions") == 0) {
+	} else if (OutputLanguage.compare("noexceptions") == 0) {
 		gen = new noexceptions_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions, true);
 	} else {

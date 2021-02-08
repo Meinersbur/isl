@@ -289,12 +289,7 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
 void cpp_generator::print_constructors_decl(ostream &os,
        const isl_class &clazz)
 {
-	set<FunctionDecl *>::const_iterator in;
-	const set<FunctionDecl *> &constructors = clazz.constructors;
-
-	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		FunctionDecl *cons = *in;
-
+	for (FunctionDecl *cons : clazz.constructors) {
 		print_method_decl(os, clazz, cons, function_kind_constructor);
 	}
 }
@@ -396,16 +391,14 @@ void cpp_generator::print_dump_decl(ostream &os, const isl_class &clazz)
  */
 void cpp_generator::print_methods_decl(ostream &os, const isl_class &clazz)
 {
-	map<string, set<FunctionDecl *> >::const_iterator it;
-
-	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		print_method_group_decl(os, clazz, it->second);
+	for (const auto &meth : clazz.methods) 
+		print_method_group_decl(os, clazz, meth.second);
 }
 
 /* Print declarations for methods "methods" in class "clazz" to "os".
  */
 void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
-	const set<FunctionDecl *> &methods)
+	const function_set &methods)
 {
 	set<FunctionDecl *>::const_iterator it;
 
@@ -597,12 +590,7 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 void cpp_generator::print_constructors_impl(ostream &os,
        const isl_class &clazz)
 {
-	set<FunctionDecl *>::const_iterator in;
-	const set<FunctionDecl *> constructors = clazz.constructors;
-
-	for (in = constructors.begin(); in != constructors.end(); ++in) {
-		FunctionDecl *cons = *in;
-
+    for (FunctionDecl *cons : clazz.constructors) {
 		print_method_impl(os, clazz, cons, function_kind_constructor);
 	}
 }
@@ -713,15 +701,13 @@ void cpp_generator::print_str_impl(ostream &os, const isl_class &clazz)
  */
 void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
 {
-	map<string, set<FunctionDecl *> >::const_iterator it;
 	bool first = true;
-
-	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it) {
+	for (const auto &meth : clazz.methods) {
 		if (first)
 			first = false;
 		else
 			osprintf(os, "\n");
-		print_method_group_impl(os, clazz, it->second);
+		print_method_group_impl(os, clazz, meth.second);
 	}
 }
 
@@ -730,7 +716,7 @@ void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
  * "kind" specifies the kind of method that should be generated.
  */
 void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
-	const set<FunctionDecl *> &methods)
+	const function_set &methods)
 {
 	set<FunctionDecl *>::const_iterator it;
 	bool first = true;
