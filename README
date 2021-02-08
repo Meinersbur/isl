@@ -1,3 +1,16 @@
+polly-generator branch
+======================
+
+This is used to generate the isl-noexceptions.h used in Polly. Use
+
+  make include/isl/isl-noexceptions.h
+  
+to re-generate it. Other interfaces are not supposed to work in this branch.
+
+
+isl
+===
+
 isl is a thread-safe C library for manipulating sets and relations
 of integer points bounded by affine constraints.  The descriptions of
 the sets and relations may involve both parameters and existentially
