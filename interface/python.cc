@@ -486,11 +486,16 @@ void python_generator::print_method(const isl_class &clazz,
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
  * expected by "fd".
+ *
+ * If the Python method has no arguments, then print nothing.
  */
 static void print_argument_check(const isl_class &clazz, FunctionDecl *fd)
 {
 	int num_params = fd->getNumParams();
 	int first = generator::is_static(clazz, fd) ? 0 : 1;
+
+	if (first >= num_params)
+		return;
 
 	printf("        if ");
 	for (int i = first; i < num_params; ++i) {
