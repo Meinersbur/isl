@@ -140,7 +140,17 @@ static bool is_exported(Decl *decl)
 	FunctionDecl *FDecl = cast<FunctionDecl>(decl);
 	std::string N = FDecl->getName();
 
-	if (N.find("every_set") != std::string::npos)
+	// deprecated, renamed to *_intersect/subtract_<type> 
+	if (N == "isl_union_map_intersect_domain" ||
+		N == "isl_union_map_intersect_range" ||
+		N == "isl_union_pw_aff_intersect_domain" ||
+		N == "isl_union_pw_aff_subtract_domain"  ||
+		N == "isl_union_pw_multi_aff_intersect_domain" ||
+		N == "isl_union_pw_multi_aff_subtract_domain")
+		return false;
+
+	if (N.find("_every_") != std::string::npos ||
+		N.rfind("_every") == N.length()-6)
 		return false;
 
 	if (N.find("fold_get_domain") != std::string::npos ||
@@ -349,6 +359,26 @@ static void create_from_args(CompilerInvocation &invocation,
 
 #endif
 
+#ifdef CLANG_SYSROOT
+/* Set sysroot if required.
+ *
+ * If CLANG_SYSROOT is defined, then set it to this value.
+ */
+static void set_sysroot(ArgStringList &args)
+{
+	args.push_back("-isysroot");
+	args.push_back(CLANG_SYSROOT);
+}
+#else
+/* Set sysroot if required.
+ *
+ * If CLANG_SYSROOT is not defined, then it does not need to be set.
+ */
+static void set_sysroot(ArgStringList &args)
+{
+}
+#endif
+
 /* Create a CompilerInvocation object that stores the command line
  * arguments constructed by the driver.
  * The arguments are mainly useful for setting up the system include
@@ -370,10 +400,11 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	if (strcmp(cmd->getCreator().getName(), "clang"))
 		return NULL;
 
-	const ArgStringList *args = &cmd->getArguments();
+	ArgStringList args = cmd->getArguments();
+	set_sysroot(args);
 
 	CompilerInvocation *invocation = new CompilerInvocation;
-	create_from_args(*invocation, args, Diags);
+	create_from_args(*invocation, &args, Diags);
 	return invocation;
 }
 
@@ -470,13 +501,21 @@ static void create_preprocessor(CompilerInstance *Clang)
 
 #ifdef ADDPATH_TAKES_4_ARGUMENTS
 
+/* Add "Path" to the header search options.
+ *
+ * Do not take into account sysroot, i.e., set ignoreSysRoot to true.
+ */
 void add_path(HeaderSearchOptions &HSO, string Path)
 {
-	HSO.AddPath(Path, frontend::Angled, false, false);
+	HSO.AddPath(Path, frontend::Angled, false, true);
 }
 
 #else
 
+/* Add "Path" to the header search options.
+ *
+ * Do not take into account sysroot, i.e., set IsSysRootRelative to false.
+ */
 void add_path(HeaderSearchOptions &HSO, string Path)
 {
 	HSO.AddPath(Path, frontend::Angled, true, false, false);
