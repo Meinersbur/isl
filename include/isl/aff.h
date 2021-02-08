@@ -484,6 +484,10 @@ __isl_give isl_multi_aff *isl_multi_aff_multi_val_on_space(
 	__isl_take isl_space *space, __isl_take isl_multi_val *mv);
 
 __isl_export
+__isl_give isl_multi_val *isl_multi_aff_get_constant_multi_val(
+	__isl_keep isl_multi_aff *ma);
+
+__isl_export
 __isl_give isl_multi_aff *isl_multi_aff_floor(__isl_take isl_multi_aff *ma);
 
 __isl_give isl_multi_aff *isl_multi_aff_gist_params(

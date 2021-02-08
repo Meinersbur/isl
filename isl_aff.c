@@ -3,6 +3,7 @@
  * Copyright 2011      Sven Verdoolaege
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2016      Sven Verdoolaege
  * Copyright 2018      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
@@ -3325,24 +3326,6 @@ isl_bool isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff)
 	return isl_bool_true;
 }
 
-/* Are all elements of "mpa" piecewise constants?
- */
-isl_bool isl_multi_pw_aff_is_cst(__isl_keep isl_multi_pw_aff *mpa)
-{
-	int i;
-
-	if (!mpa)
-		return isl_bool_error;
-
-	for (i = 0; i < mpa->n; ++i) {
-		isl_bool is_cst = isl_pw_aff_is_cst(mpa->u.p[i]);
-		if (is_cst < 0 || !is_cst)
-			return is_cst;
-	}
-
-	return isl_bool_true;
-}
-
 /* Return the product of "aff1" and "aff2".
  *
  * If either of the two is NaN, then the result is NaN.
@@ -3900,6 +3883,36 @@ error:
 	isl_mat_free(mat);
 	isl_multi_aff_free(ma);
 	return NULL;
+}
+
+/* Return the constant terms of the affine expressions of "ma".
+ */
+__isl_give isl_multi_val *isl_multi_aff_get_constant_multi_val(
+	__isl_keep isl_multi_aff *ma)
+{
+	int i;
+	isl_size n;
+	isl_space *space;
+	isl_multi_val *mv;
+
+	n = isl_multi_aff_size(ma);
+	if (n < 0)
+		return NULL;
+	space = isl_space_range(isl_multi_aff_get_space(ma));
+	space = isl_space_drop_all_params(space);
+	mv = isl_multi_val_zero(space);
+
+	for (i = 0; i < n; ++i) {
+		isl_aff *aff;
+		isl_val *val;
+
+		aff = isl_multi_aff_get_at(ma, i);
+		val = isl_aff_get_constant_val(aff);
+		isl_aff_free(aff);
+		mv = isl_multi_val_set_at(mv, i, val);
+	}
+
+	return mv;
 }
 
 /* Remove any internal structure of the domain of "ma".
@@ -6249,6 +6262,13 @@ error:
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
+
+/* Are all elements of "mpa" piecewise constants?
+ */
+isl_bool isl_multi_pw_aff_is_cst(__isl_keep isl_multi_pw_aff *mpa)
+{
+	return isl_multi_pw_aff_every(mpa, &isl_pw_aff_is_cst);
+}
 
 /* Does "mpa" have a non-trivial explicit domain?
  *

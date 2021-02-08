@@ -2904,9 +2904,9 @@ __isl_give isl_space *isl_space_copy_ids_if_unset(__isl_take isl_space *dst,
 	return dst;
 }
 
-/* Given a dimension specification "dim" of a set, create a dimension
- * specification for the lift of the set.  In particular, the result
- * is of the form [dim -> local[..]], with n_local variables in the
+/* Given a space "space" of a set, create a space
+ * for the lift of the set.  In particular, the result
+ * is of the form lifted[space -> local[..]], with n_local variables in the
  * range of the wrapped map.
  */
 __isl_give isl_space *isl_space_lift(__isl_take isl_space *space,

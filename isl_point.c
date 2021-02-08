@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010      INRIA Saclay
+ * Copyright 2013      Ecole Normale Superieure
+ * Copyright 2015      Sven Verdoolaege
+ * Copyright 2019      Cerebras Systems
+ *
+ * Use of this software is governed by the MIT license
+ *
+ * Written by Sven Verdoolaege, INRIA Saclay - Ile-de-France,
+ * Parc Club Orsay Universite, ZAC des vignes, 4 rue Jacques Monod,
+ * 91893 Orsay, France
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
+ */
+
 #include <isl_map_private.h>
 #include <isl_point_private.h>
 #include <isl/set.h>
@@ -321,6 +336,55 @@ __isl_give isl_val *isl_point_get_coordinate_val(__isl_keep isl_point *pnt,
 	v = isl_val_rat_from_isl_int(ctx, pnt->vec->el[1 + pos],
 						pnt->vec->el[0]);
 	return isl_val_normalize(v);
+}
+
+/* Set all entries of "mv" to NaN.
+ */
+static __isl_give isl_multi_val *set_nan(__isl_take isl_multi_val *mv)
+{
+	int i;
+	isl_size n;
+	isl_val *v;
+
+	n = isl_multi_val_size(mv);
+	if (n < 0)
+		return isl_multi_val_free(mv);
+	v = isl_val_nan(isl_multi_val_get_ctx(mv));
+	for (i = 0; i < n; ++i)
+		mv = isl_multi_val_set_at(mv, i, isl_val_copy(v));
+	isl_val_free(v);
+
+	return mv;
+}
+
+/* Return the values of the set dimensions of "pnt".
+ * Return a sequence of NaNs in case of a void point.
+ */
+__isl_give isl_multi_val *isl_point_get_multi_val(__isl_keep isl_point *pnt)
+{
+	int i;
+	isl_bool is_void;
+	isl_size n;
+	isl_multi_val *mv;
+
+	is_void = isl_point_is_void(pnt);
+	if (is_void < 0)
+		return NULL;
+
+	mv = isl_multi_val_alloc(isl_point_get_space(pnt));
+	if (is_void)
+		return set_nan(mv);
+	n = isl_multi_val_size(mv);
+	if (n < 0)
+		return isl_multi_val_free(mv);
+	for (i = 0; i < n; ++i) {
+		isl_val *v;
+
+		v = isl_point_get_coordinate_val(pnt, isl_dim_set, i);
+		mv = isl_multi_val_set_at(mv, i, v);
+	}
+
+	return mv;
 }
 
 /* Replace coordinate "pos" of type "type" of "pnt" by "v".

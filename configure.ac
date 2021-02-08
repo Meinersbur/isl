@@ -25,7 +25,7 @@ AX_CC_MAXOPT
 AX_GCC_WARN_UNUSED_RESULT
 AX_C___ATTRIBUTE__
 
-AX_CXX_COMPILE_STDCXX_11([noext], [optional])
+AX_CXX_COMPILE_STDCXX_11_NO_OVERRIDE
 
 AC_PROG_GREP
 AC_PROG_LIBTOOL
@@ -119,7 +119,8 @@ system)
 esac
 AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
 AM_CONDITIONAL(HAVE_CPP_ISL_H,
-    [test $with_clang = system -o -f $srcdir/include/isl/cpp.h])
+    [(test $with_clang = system -a "x$HAVE_CXX11" = "x1") || \
+     test -f $srcdir/include/isl/cpp.h])
 
 AX_SET_WARNING_FLAGS
 
