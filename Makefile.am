@@ -38,6 +38,7 @@ endif
 TEST_EXTENSIONS = .py
 AM_TESTS_ENVIRONMENT = \
 	export PYTHONPATH=interface; \
+	export ISL_DYLD_LIBRARY_PATH=.libs; \
 	export LD_LIBRARY_PATH=.libs;
 PY_LOG_COMPILER = $(PYTHON)
 
@@ -318,8 +319,11 @@ noinst_LIBRARIES = libdep.a
 libdep_a_SOURCES = all.c
 
 if HAVE_CLANG
-interface/isl.py: interface/extract_interface libdep.a python/isl.py.top
-	(cat $(srcdir)/python/isl.py.top && \
+interface/isldlname.py: libisl.la
+	$(AM_V_GEN) $(GREP) dlname $< | $(SED) -e 's/dlname/isl_dlname/' > $@
+interface/isl.py: interface/extract_interface libdep.a python/isl.py.top \
+		interface/isldlname.py
+	(cat interface/isldlname.py $(srcdir)/python/isl.py.top && \
 		interface/extract_interface$(EXEEXT) --language=python \
 			$(includes) $(srcdir)/all.h) \
 			> $@ || (rm $@ && false)
@@ -438,7 +442,8 @@ if HAVE_CLANG
 	include/isl/cpp-checked-conversion.h
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
-CLEANFILES = gitversion.h interface/isl.py $(CPP_INTERFACES)
+CLEANFILES = gitversion.h interface/isldlname.py  interface/isl.py \
+	$(CPP_INTERFACES)
 
 DISTCLEANFILES = \
 	isl-uninstalled.sh \
@@ -457,6 +462,7 @@ EXTRA_DIST = \
 	check_type_range_templ.c \
 	extract_key.c \
 	has_single_reference_templ.c \
+	isl_list_macro.h \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \

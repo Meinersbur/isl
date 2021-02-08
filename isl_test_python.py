@@ -370,7 +370,7 @@ def test_ast_build():
 	ast = build.node_from(schedule)
 	assert(count_ast[0] == 2)
 
-	do_fail = True;
+	do_fail = True
 	count_ast_fail = [0]
 	def fail_inc_count_ast(node, build):
 		count_ast_fail[0] += 1
@@ -392,11 +392,11 @@ def test_ast_build():
 	ast = build_copy.node_from(schedule)
 	assert(count_ast[0] == 2)
 	count_ast_fail[0] = 0
-	do_fail = False;
+	do_fail = False
 	ast = build.node_from(schedule)
 	assert(count_ast_fail[0] == 2)
 
-	test_ast_build_unroll(schedule);
+	test_ast_build_unroll(schedule)
 
 # Test basic AST expression generation from an affine expression.
 #
@@ -427,4 +427,4 @@ test_foreach()
 test_every()
 test_schedule_tree()
 test_ast_build()
-test_ast_build_expr();
+test_ast_build_expr()

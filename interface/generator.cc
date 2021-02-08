@@ -472,7 +472,7 @@ isl_class *generator::method2class(FunctionDecl *fd)
 bool generator::is_isl_ctx(QualType type)
 {
 	if (!type->isPointerType())
-		return 0;
+		return false;
 	type = type->getPointeeType();
 	if (type.getAsString() != "isl_ctx")
 		return false;
