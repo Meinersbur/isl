@@ -255,9 +255,9 @@ __isl_overload
 __isl_give isl_union_map *isl_union_map_fixed_power_val(
 	__isl_take isl_union_map *umap, __isl_take isl_val *exp);
 __isl_give isl_union_map *isl_union_map_power(__isl_take isl_union_map *umap,
-	int *exact);
+	isl_bool *exact);
 __isl_give isl_union_map *isl_union_map_transitive_closure(
-	__isl_take isl_union_map *umap, int *exact);
+	__isl_take isl_union_map *umap, isl_bool *exact);
 
 __isl_give isl_union_map *isl_union_map_lex_lt_union_map(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);

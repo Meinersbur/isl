@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 	isl_stream *s;
 	struct isl_obj obj;
 	struct bound_options *options;
-	int exact;
+	isl_bool exact;
 	int r = 0;
 
 	options = bound_options_new_with_defaults();

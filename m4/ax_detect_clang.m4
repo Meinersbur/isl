@@ -1,6 +1,7 @@
 AC_DEFUN([AX_DETECT_CLANG], [
 AC_SUBST(CLANG_CXXFLAGS)
 AC_SUBST(CLANG_LDFLAGS)
+AC_SUBST(CLANG_RFLAG)
 AC_SUBST(CLANG_LIBS)
 AC_PROG_GREP
 AC_PROG_SED
@@ -18,6 +19,9 @@ fi
 CLANG_CXXFLAGS=`$llvm_config --cxxflags | \
 	$SED -e 's/-Wcovered-switch-default//;s/-gsplit-dwarf//'`
 CLANG_LDFLAGS=`$llvm_config --ldflags`
+# Construct a -R argument for libtool.
+# This is needed in case some of the clang libraries are shared libraries.
+CLANG_RFLAG=`echo "$CLANG_LDFLAGS" | $SED -e 's/-L/-R/g'`
 targets=`$llvm_config --targets-built`
 components="$targets asmparser bitreader support mc"
 $llvm_config --components | $GREP option > /dev/null 2> /dev/null

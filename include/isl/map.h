@@ -615,11 +615,11 @@ __isl_give isl_basic_map_list *isl_map_get_basic_map_list(
 
 __isl_give isl_map *isl_map_fixed_power_val(__isl_take isl_map *map,
 	__isl_take isl_val *exp);
-__isl_give isl_map *isl_map_power(__isl_take isl_map *map, int *exact);
+__isl_give isl_map *isl_map_power(__isl_take isl_map *map, isl_bool *exact);
 __isl_give isl_map *isl_map_reaching_path_lengths(__isl_take isl_map *map,
-	int *exact);
+	isl_bool *exact);
 __isl_give isl_map *isl_map_transitive_closure(__isl_take isl_map *map,
-	int *exact);
+	isl_bool *exact);
 
 __isl_give isl_map *isl_map_lex_le_map(__isl_take isl_map *map1,
 	__isl_take isl_map *map2);

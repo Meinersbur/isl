@@ -355,7 +355,8 @@ error:
  */
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 	__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, struct bernstein_data *data, int *tight)
+	__isl_take isl_qpolynomial *poly, struct bernstein_data *data,
+	isl_bool *tight)
 {
 	isl_size nvar;
 	isl_space *space;
@@ -373,7 +374,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 		fold = isl_qpolynomial_fold_alloc(data->type, poly);
 		dom = isl_set_from_basic_set(bset);
 		if (tight)
-			*tight = 1;
+			*tight = isl_bool_true;
 		pwf = isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
 		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
 	}
@@ -385,7 +386,7 @@ static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_base(
 		dom = isl_set_from_basic_set(bset);
 		pwf = isl_pw_qpolynomial_fold_alloc(data->type, dom, fold);
 		if (tight)
-			*tight = 1;
+			*tight = isl_bool_true;
 		return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
 	}
 
@@ -433,7 +434,7 @@ error:
  */
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_recursive(
 	__isl_take isl_pw_qpolynomial *pwqp,
-	int n_group, int *len, struct bernstein_data *data, int *tight)
+	int n_group, int *len, struct bernstein_data *data, isl_bool *tight)
 {
 	int i;
 	isl_size nparam;
@@ -468,7 +469,8 @@ error:
 
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_factors(
 	__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, struct bernstein_data *data, int *tight)
+	__isl_take isl_qpolynomial *poly, struct bernstein_data *data,
+	isl_bool *tight)
 {
 	isl_factorizer *f;
 	isl_set *set;
@@ -501,7 +503,8 @@ error:
 
 static __isl_give isl_pw_qpolynomial_fold *bernstein_coefficients_full_recursive(
 	__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, struct bernstein_data *data, int *tight)
+	__isl_take isl_qpolynomial *poly, struct bernstein_data *data,
+	isl_bool *tight)
 {
 	int i;
 	int *len;
@@ -553,8 +556,8 @@ isl_stat isl_qpolynomial_bound_on_domain_bernstein(
 	struct bernstein_data data;
 	isl_pw_qpolynomial_fold *pwf;
 	isl_size nvar;
-	int tight = 0;
-	int *tp = bound->check_tight ? &tight : NULL;
+	isl_bool tight = isl_bool_false;
+	isl_bool *tp = bound->check_tight ? &tight : NULL;
 
 	nvar = isl_basic_set_dim(bset, isl_dim_set);
 	if (nvar < 0 || !poly)

@@ -738,26 +738,17 @@ void cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
-	osprintf(os, "// implementations for isl::%s\n", cppname);
+	osprintf(os, "// implementations for isl::%s", cppname);
 
 	print_class_factory_impl(os, clazz);
-	osprintf(os, "\n");
 	print_public_constructors_impl(os, clazz);
-	osprintf(os, "\n");
 	print_protected_constructors_impl(os, clazz);
-	osprintf(os, "\n");
 	print_constructors_impl(os, clazz);
-	osprintf(os, "\n");
 	print_copy_assignment_impl(os, clazz);
-	osprintf(os, "\n");
 	print_destructor_impl(os, clazz);
-	osprintf(os, "\n");
 	print_ptr_impl(os, clazz);
-	osprintf(os, "\n");
-	if (print_downcast_impl(os, clazz))
-		osprintf(os, "\n");
+	print_downcast_impl(os, clazz);
 	print_ctx_impl(os, clazz);
-	osprintf(os, "\n");
 	print_persistent_callbacks_impl(os, clazz);
 	print_methods_impl(os, clazz);
 	print_set_enums_impl(os, clazz);
@@ -920,6 +911,7 @@ void cpp_generator::print_class_factory_impl(ostream &os,
 	if (clazz.is_type_subclass())
 		return;
 
+	osprintf(os, "\n");
 	osprintf(os, "%s manage(__isl_take %s *ptr) {\n", cppname, name);
 	print_check_ptr(os, "ptr");
 	osprintf(os, "  return %s(ptr);\n", cppname);
@@ -947,6 +939,7 @@ void cpp_generator::print_protected_constructors_impl(ostream &os,
 	const char *cppname = cppstring.c_str();
 	bool subclass = clazz.is_type_subclass();
 
+	osprintf(os, "\n");
 	osprintf(os, "%s::%s(__isl_take %s *ptr)\n", cppname, cppname, name);
 	if (subclass)
 		osprintf(os, "    : %s(ptr) {}\n",
@@ -980,6 +973,7 @@ void cpp_generator::print_public_constructors_impl(ostream &os,
 	const char *cppname = cppstring.c_str();
 	bool subclass = clazz.is_type_subclass();
 
+	osprintf(os, "\n");
 	if (subclass)
 		super = type2cpp(clazz.superclass_name);
 	osprintf(os, "%s::%s()\n", cppname, cppname);
@@ -1030,6 +1024,7 @@ void cpp_generator::print_copy_assignment_impl(ostream &os,
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
+	osprintf(os, "\n");
 	osprintf(os, "%s &%s::operator=(%s obj) {\n", cppname,
 		 cppname, cppname);
 	osprintf(os, "  std::swap(this->ptr, obj.ptr);\n", name);
@@ -1053,6 +1048,7 @@ void cpp_generator::print_destructor_impl(ostream &os,
 	if (clazz.is_type_subclass())
 		return;
 
+	osprintf(os, "\n");
 	osprintf(os, "%s::~%s() {\n", cppname, cppname);
 	osprintf(os, "  if (ptr)\n");
 	osprintf(os, "    %s_free(ptr);\n", name);
@@ -1092,6 +1088,7 @@ void cpp_generator::print_ptr_impl(ostream &os, const isl_class &clazz)
 	if (clazz.is_type_subclass())
 		return;
 
+	osprintf(os, "\n");
 	osprintf(os, "__isl_give %s *%s::copy() const & {\n", name, cppname);
 	osprintf(os, "  return %s_copy(ptr);\n", name);
 	osprintf(os, "}\n\n");
@@ -1124,17 +1121,16 @@ void cpp_generator::print_ptr_impl(ostream &os, const isl_class &clazz)
  * an exception.
  * If checked bindings are being generated,
  * then an invalid boolean or object is returned instead.
- *
- * Return true if anything was printed.
  */
-bool cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
+void cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 {
 	std::string cppstring = type2cpp(clazz);
 	const char *cppname = cppstring.c_str();
 
 	if (!clazz.fn_type)
-		return false;
+		return;
 
+	osprintf(os, "\n");
 	osprintf(os, "template <typename T, typename>\n");
 	osprintf(os, "%s %s::isa_type(T subtype) const\n",
 		isl_bool2cpp().c_str(), cppname);
@@ -1165,8 +1161,6 @@ bool cpp_generator::print_downcast_impl(ostream &os, const isl_class &clazz)
 		    "return T()");
 	osprintf(os, "  return T(copy());\n");
 	osprintf(os, "}\n");
-
-	return true;
 }
 
 /* Print the implementation of the ctx method.
@@ -1178,6 +1172,7 @@ void cpp_generator::print_ctx_impl(ostream &os, const isl_class &clazz)
 	const char *cppname = cppstring.c_str();
 	std::string ns = isl_namespace();
 
+	osprintf(os, "\n");
 	osprintf(os, "%sctx %s::ctx() const {\n", ns.c_str(), cppname);
 	osprintf(os, "  return %sctx(%s_get_ctx(ptr));\n", ns.c_str(), name);
 	osprintf(os, "}\n");
@@ -1198,6 +1193,7 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
 	if (!clazz.has_persistent_callbacks())
 		return;
 
+	osprintf(os, "\n");
 	osprintf(os, "%s &%s::copy_callbacks(const %s &obj)\n",
 		cppname, classname.c_str(), cppname);
 	osprintf(os, "{\n");
@@ -1208,7 +1204,7 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
 			callback_name.c_str(), callback_name.c_str());
 	}
 	osprintf(os, "  return *this;\n");
-	osprintf(os, "}\n\n");
+	osprintf(os, "}\n");
 
 	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
 		function_kind kind = function_kind_member_method;
@@ -1222,15 +1218,9 @@ void cpp_generator::print_persistent_callbacks_impl(ostream &os,
 void cpp_generator::print_methods_impl(ostream &os, const isl_class &clazz)
 {
 	map<string, set<FunctionDecl *> >::const_iterator it;
-	bool first = true;
 
-	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it) {
-		if (first)
-			first = false;
-		else
-			osprintf(os, "\n");
+	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
 		print_method_group_impl(os, clazz, it->second);
-	}
 }
 
 /* Print the definition for a method "method_name" in "clazz" derived
@@ -1250,6 +1240,7 @@ void cpp_generator::print_set_enum_impl(ostream &os, const isl_class &clazz,
 	int n = fd->getNumParams();
 	function_kind kind = function_kind_member_method;
 
+	osprintf(os, "\n");
 	print_method_header(os, clazz, fd, method_name, n - 1, false, kind);
 	osprintf(os, "{\n");
 
@@ -1319,6 +1310,7 @@ void cpp_generator::print_get_method_impl(ostream &os, const isl_class &clazz,
 	function_kind kind = function_kind_member_method;
 	int num_params = fd->getNumParams();
 
+	osprintf(os, "\n");
 	print_named_method_header(os, clazz, fd, get_name, false, kind);
 	osprintf(os, "{\n");
 	osprintf(os, "  return %s(", name.c_str());
@@ -1345,14 +1337,9 @@ void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
 	const set<FunctionDecl *> &methods)
 {
 	set<FunctionDecl *>::const_iterator it;
-	bool first = true;
 
 	for (it = methods.begin(); it != methods.end(); ++it) {
 		function_kind kind;
-		if (first)
-			first = false;
-		else
-			osprintf(os, "\n");
 		kind = get_method_kind(clazz, *it);
 		print_method_impl(os, clazz, *it, kind);
 		if (clazz.is_get_method(*it))
@@ -1654,6 +1641,7 @@ void cpp_generator::print_set_persistent_callback(ostream &os,
 	string pname;
 	string callback_name = clazz.persistent_callback_name(method);
 
+	osprintf(os, "\n");
 	print_persistent_callback_prototype(os, clazz, method, false);
 	osprintf(os, "\n");
 	osprintf(os, "{\n");
@@ -1680,7 +1668,7 @@ void cpp_generator::print_set_persistent_callback(ostream &os,
 	osprintf(os, "  copy.set_%s_data(%s);\n",
 		callback_name.c_str(), pname.c_str());
 	osprintf(os, "  return copy;\n");
-	osprintf(os, "}\n\n");
+	osprintf(os, "}\n");
 }
 
 /* Print the return statement of the C++ method corresponding
@@ -1769,6 +1757,7 @@ void cpp_generator::print_method_impl(ostream &os, const isl_class &clazz,
 	string methodname = method->getName();
 	int num_params = method->getNumParams();
 
+	osprintf(os, "\n");
 	print_method_header(os, clazz, method, false, kind);
 	osprintf(os, "{\n");
 	print_argument_validity_check(os, method, kind);

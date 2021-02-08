@@ -298,6 +298,11 @@ enumeration constants have been similarly renamed.
 The old names are defined to the new names for backward
 compatibility.
 
+=item * Several functions returning an extra boolean value
+through an C<int *> argument now do so through an C<isl_bool *>
+argument.  The returned values are the same, only the type
+of the pointer has been changed.
+
 =back
 
 =head1 License
@@ -5557,9 +5562,9 @@ If the exponent C<exp> is negative, then the -C<exp> th power of the inverse
 of C<map> is computed.
 
 	__isl_give isl_map *isl_map_power(__isl_take isl_map *map,
-		int *exact);
+		isl_bool *exact);
 	__isl_give isl_union_map *isl_union_map_power(
-		__isl_take isl_union_map *umap, int *exact);
+		__isl_take isl_union_map *umap, isl_bool *exact);
 
 Compute a parametric representation for all positive powers I<k> of C<map>.
 The result maps I<k> to a nested relation corresponding to the
@@ -5570,9 +5575,9 @@ then C<*exact> is set to C<1>.
 =item * Transitive closure
 
 	__isl_give isl_map *isl_map_transitive_closure(
-		__isl_take isl_map *map, int *exact);
+		__isl_take isl_map *map, isl_bool *exact);
 	__isl_give isl_union_map *isl_union_map_transitive_closure(
-		__isl_take isl_union_map *umap, int *exact);
+		__isl_take isl_union_map *umap, isl_bool *exact);
 
 Compute the transitive closure of C<map>.
 The result may be an overapproximation.  If the result is known to be exact,
@@ -5581,7 +5586,7 @@ then C<*exact> is set to C<1>.
 =item * Reaching path lengths
 
 	__isl_give isl_map *isl_map_reaching_path_lengths(
-		__isl_take isl_map *map, int *exact);
+		__isl_take isl_map *map, isl_bool *exact);
 
 Compute a relation that maps each element in the range of C<map>
 to the lengths of all paths composed of edges in C<map> that
@@ -6540,22 +6545,22 @@ Similarly for C<isl_multi_union_pw_aff_apply_pw_multi_aff>.
 	isl_set_apply_pw_qpolynomial_fold(
 		__isl_take isl_set *set,
 		__isl_take isl_pw_qpolynomial_fold *pwf,
-		int *tight);
+		isl_bool *tight);
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_map_apply_pw_qpolynomial_fold(
 		__isl_take isl_map *map,
 		__isl_take isl_pw_qpolynomial_fold *pwf,
-		int *tight);
+		isl_bool *tight);
 	__isl_give isl_union_pw_qpolynomial_fold *
 	isl_union_set_apply_union_pw_qpolynomial_fold(
 		__isl_take isl_union_set *uset,
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
-		int *tight);
+		isl_bool *tight);
 	__isl_give isl_union_pw_qpolynomial_fold *
 	isl_union_map_apply_union_pw_qpolynomial_fold(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_pw_qpolynomial_fold *upwf,
-		int *tight);
+		isl_bool *tight);
 
 The functions taking a map
 compose the given map with the given piecewise quasipolynomial reduction.
@@ -8163,12 +8168,12 @@ an upper or lower bound on a quasipolynomial over its domain.
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_pw_qpolynomial_bound(
 		__isl_take isl_pw_qpolynomial *pwqp,
-		enum isl_fold type, int *tight);
+		enum isl_fold type, isl_bool *tight);
 
 	__isl_give isl_union_pw_qpolynomial_fold *
 	isl_union_pw_qpolynomial_bound(
 		__isl_take isl_union_pw_qpolynomial *upwqp,
-		enum isl_fold type, int *tight);
+		enum isl_fold type, isl_bool *tight);
 
 The C<type> argument may be either C<isl_fold_min> or C<isl_fold_max>.
 If C<tight> is not C<NULL>, then C<*tight> is set to C<1>

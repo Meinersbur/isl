@@ -209,7 +209,7 @@ error:
 }
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
-	__isl_take isl_pw_qpolynomial_fold *pwf, int *tight)
+	__isl_take isl_pw_qpolynomial_fold *pwf, isl_bool *tight)
 {
 	isl_size nvar;
 	struct isl_bound bound;
@@ -232,7 +232,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 
 	if (nvar == 0) {
 		if (tight)
-			*tight = 1;
+			*tight = isl_bool_true;
 		return isl_pw_qpolynomial_fold_reset_space(pwf, bound.dim);
 	}
 
@@ -240,7 +240,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_bound(
 		enum isl_fold type = pwf->type;
 		isl_pw_qpolynomial_fold_free(pwf);
 		if (tight)
-			*tight = 1;
+			*tight = isl_bool_true;
 		return isl_pw_qpolynomial_fold_zero(bound.dim, type);
 	}
 
@@ -281,7 +281,8 @@ error:
 }
 
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
-	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type, int *tight)
+	__isl_take isl_pw_qpolynomial *pwqp, enum isl_fold type,
+	isl_bool *tight)
 {
 	isl_pw_qpolynomial_fold *pwf;
 
@@ -291,7 +292,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_bound(
 
 struct isl_union_bound_data {
 	enum isl_fold type;
-	int tight;
+	isl_bool tight;
 	isl_union_pw_qpolynomial_fold *res;
 };
 
@@ -310,7 +311,7 @@ static isl_stat bound_pw(__isl_take isl_pw_qpolynomial *pwqp, void *user)
 
 __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
 	__isl_take isl_union_pw_qpolynomial *upwqp,
-	enum isl_fold type, int *tight)
+	enum isl_fold type, isl_bool *tight)
 {
 	isl_space *dim;
 	struct isl_union_bound_data data = { type, 1, NULL };
@@ -319,7 +320,7 @@ __isl_give isl_union_pw_qpolynomial_fold *isl_union_pw_qpolynomial_bound(
 		return NULL;
 
 	if (!tight)
-		data.tight = 0;
+		data.tight = isl_bool_false;
 
 	dim = isl_union_pw_qpolynomial_get_space(upwqp);
 	data.res = isl_union_pw_qpolynomial_fold_zero(dim, type);
