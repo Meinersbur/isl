@@ -120,39 +120,10 @@ static int test_parse_multi_val(isl_ctx *ctx, const char *str)
 	return mv ? 0 : -1;
 }
 
-#undef BASE
-#define BASE multi_pw_aff
-
-#include "check_reparse_templ.c"
-
-#undef BASE
-#define BASE pw_multi_aff
-
-#include "check_reparse_templ.c"
-
-/* Test parsing of piecewise multi affine expressions by printing
- * the expressions and checking that parsing the output results
- * in the same expression.
- * Do this for an expression converted from a map with an output
- * dimension name that is equal to an automatically generated name.
- */
-static isl_stat test_parse_pma(isl_ctx *ctx)
-{
-	isl_map *map;
-	isl_pw_multi_aff *pma;
-
-	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
-	pma = isl_pw_multi_aff_from_map(map);
-	if (check_reparse_pw_multi_aff(ctx, pma) < 0)
-		return isl_stat_error;
-
-	return isl_stat_ok;
-}
-
 /* String descriptions of multi piecewise affine expressions
  * that are used for testing printing and parsing.
  */
-const char *parse_multi_mpa_tests[] = {
+static const char *reparse_multi_pw_aff_tests[] = {
 	"{ A[x, y] -> [] : x + y >= 0 }",
 	"{ A[x, y] -> B[] : x + y >= 0 }",
 	"{ A[x, y] -> [x] : x + y >= 0 }",
@@ -166,6 +137,53 @@ const char *parse_multi_mpa_tests[] = {
 	"[N, M] -> { [(N : N >= 0), (M : M >= 0)] : N + M >= 0 }",
 };
 
+#undef BASE
+#define BASE multi_pw_aff
+
+#include "check_reparse_templ.c"
+#include "check_reparse_test_templ.c"
+
+/* String descriptions of piecewise multi affine expressions
+ * that are used for testing printing and parsing.
+ */
+static const char *reparse_pw_multi_aff_tests[] = {
+	"{ [x] -> [x] }",
+	"{ [x] -> [x % 4] }",
+	"{ [x] -> [x % 4] : x mod 3 = 1 }",
+	"{ [x, x] -> [x % 4] }",
+	"{ [x, x + 1] -> [x % 4] : x mod 3 = 1 }",
+	"{ [x, x mod 2] -> [x % 4] }",
+};
+
+#undef BASE
+#define BASE pw_multi_aff
+
+#include "check_reparse_templ.c"
+#include "check_reparse_test_templ.c"
+
+/* Test parsing of piecewise multi affine expressions by printing
+ * the expressions and checking that parsing the output results
+ * in the same expression.
+ * Do this for an expression converted from a map with an output
+ * dimension name that is equal to an automatically generated name, and
+ * a set of expressions parsed from strings.
+ */
+static isl_stat test_parse_pma(isl_ctx *ctx)
+{
+	isl_map *map;
+	isl_pw_multi_aff *pma;
+
+	map = isl_map_read_from_str(ctx, "{ [a, a] -> [i1 = a + 1] }");
+	pma = isl_pw_multi_aff_from_map(map);
+	if (check_reparse_pw_multi_aff(ctx, pma) < 0)
+		return isl_stat_error;
+
+	if (check_reparse_pw_multi_aff_tests(ctx) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Test parsing of multi piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
@@ -176,7 +194,6 @@ const char *parse_multi_mpa_tests[] = {
  */
 static int test_parse_mpa(isl_ctx *ctx)
 {
-	int i;
 	isl_space *space;
 	isl_set *dom;
 	isl_map *map;
@@ -208,29 +225,16 @@ static int test_parse_mpa(isl_ctx *ctx)
 	if (check_reparse_multi_pw_aff(ctx, mpa) < 0)
 		return -1;
 
-	for (i = 0; i < ARRAY_SIZE(parse_multi_mpa_tests); ++i) {
-		const char *str;
-
-		str = parse_multi_mpa_tests[i];
-		mpa = isl_multi_pw_aff_read_from_str(ctx, str);
-		r = check_reparse_multi_pw_aff(ctx, mpa);
-		if (r < 0)
-			return -1;
-	}
+	if (check_reparse_multi_pw_aff_tests(ctx) < 0)
+		return -1;
 
 	return 0;
 }
 
-
-#undef BASE
-#define BASE multi_union_pw_aff
-
-#include "check_reparse_templ.c"
-
 /* String descriptions of multi union piecewise affine expressions
  * that are used for testing printing and parsing.
  */
-const char *parse_multi_mupa_tests[] = {
+static const char *reparse_multi_union_pw_aff_tests[] = {
 	"[]",
 	"A[]",
 	"A[B[] -> C[]]",
@@ -245,6 +249,12 @@ const char *parse_multi_mupa_tests[] = {
 		"{ S[x] : x > 0; T[y] : y >= 0 })",
 };
 
+#undef BASE
+#define BASE multi_union_pw_aff
+
+#include "check_reparse_templ.c"
+#include "check_reparse_test_templ.c"
+
 /* Test parsing of multi union piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
@@ -253,7 +263,6 @@ const char *parse_multi_mupa_tests[] = {
  */
 static int test_parse_mupa(isl_ctx *ctx)
 {
-	int i;
 	isl_space *space;
 	isl_multi_union_pw_aff *mupa;
 	isl_set *dom;
@@ -282,15 +291,8 @@ static int test_parse_mupa(isl_ctx *ctx)
 	if (r < 0)
 		return -1;
 
-	for (i = 0; i < ARRAY_SIZE(parse_multi_mupa_tests); ++i) {
-		const char *str;
-
-		str = parse_multi_mupa_tests[i];
-		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
-		r = check_reparse_multi_union_pw_aff(ctx, mupa);
-		if (r < 0)
-			return -1;
-	}
+	if (check_reparse_multi_union_pw_aff_tests(ctx) < 0)
+		return -1;
 
 	return 0;
 }
@@ -1251,6 +1253,49 @@ void test_affine_hull_case(struct isl_ctx *ctx, const char *name)
 	free(filename);
 
 	fclose(input);
+}
+
+/* Pairs of sets and the corresponding expected results of
+ * isl_basic_set_recession_cone.
+ */
+struct {
+	const char *set;
+	const char *cone;
+} recession_cone_tests[] = {
+	{ "{ [i] : 0 <= i <= 10 }", "{ [0] }" },
+	{ "{ [i] : 0 <= i }", "{ [i] : 0 <= i }" },
+	{ "{ [i] : i <= 10 }", "{ [i] : i <= 0 }" },
+	{ "{ [i] : false }", "{ [i] : false }" },
+};
+
+/* Perform some basic isl_basic_set_recession_cone tests.
+ */
+static int test_recession_cone(struct isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(recession_cone_tests); ++i) {
+		const char *str;
+		isl_basic_set *bset;
+		isl_basic_set *cone, *expected;
+		isl_bool equal;
+
+		str = recession_cone_tests[i].set;
+		bset = isl_basic_set_read_from_str(ctx, str);
+		str = recession_cone_tests[i].cone;
+		expected = isl_basic_set_read_from_str(ctx, str);
+		cone = isl_basic_set_recession_cone(bset);
+		equal = isl_basic_set_is_equal(cone, expected);
+		isl_basic_set_free(cone);
+		isl_basic_set_free(expected);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown, "unexpected cone",
+				return -1);
+	}
+
+	return 0;
 }
 
 int test_affine_hull(struct isl_ctx *ctx)
@@ -7481,11 +7526,98 @@ static isl_stat test_un_union_map(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for basic tests of binary operations on isl_union_map.
+ * "fn" is the function that is being tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+static struct {
+	__isl_give isl_union_map *(*fn)(__isl_take isl_union_map *umap1,
+				__isl_take isl_union_map *umap2);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} umap_bin_tests[] = {
+	{ &isl_union_map_intersect,
+	  "[n] -> { A[i] -> [] : 0 <= i <= n; B[] -> [] }",
+	  "[m] -> { A[i] -> [] : 0 <= i <= m; C[] -> [] }",
+	  "[m, n] -> { A[i] -> [] : 0 <= i <= n and i <= m }" },
+	{ &isl_union_map_intersect_domain_factor_range,
+	  "{ [A[i] -> B[i + 1]] -> C[i + 2] }",
+	  "[N] -> { B[i] -> C[N] }",
+	  "[N] -> { [A[N - 2] -> B[N - 1]] -> C[N] }" },
+	{ &isl_union_map_intersect_domain_factor_range,
+	  "{ T[A[i] -> B[i + 1]] -> C[i + 2] }",
+	  "[N] -> { B[i] -> C[N] }",
+	  "[N] -> { T[A[N - 2] -> B[N - 1]] -> C[N] }" },
+	{ &isl_union_map_intersect_domain_factor_range,
+	  "{ [A[i] -> B[i + 1]] -> C[i + 2] }",
+	  "[N] -> { A[i] -> C[N] }",
+	  "{ }" },
+	{ &isl_union_map_intersect_range_factor_domain,
+	  "{ A[i] -> [B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> B[N] }",
+	  "[N] -> { A[N - 1] -> [B[N] -> C[N + 1]] }" },
+	{ &isl_union_map_intersect_range_factor_domain,
+	  "{ A[i] -> T[B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> B[N] }",
+	  "[N] -> { A[N - 1] -> T[B[N] -> C[N + 1]] }" },
+	{ &isl_union_map_intersect_range_factor_domain,
+	  "{ A[i] -> [B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> C[N] }",
+	  "{ }" },
+	{ &isl_union_map_intersect_range_factor_range,
+	  "{ A[i] -> [B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> C[N] }",
+	  "[N] -> { A[N - 2] -> [B[N - 1] -> C[N]] }" },
+	{ &isl_union_map_intersect_range_factor_range,
+	  "{ A[i] -> T[B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> C[N] }",
+	  "[N] -> { A[N - 2] -> T[B[N - 1] -> C[N]] }" },
+	{ &isl_union_map_intersect_range_factor_range,
+	  "{ A[i] -> [B[i + 1] -> C[i + 2]] }",
+	  "[N] -> { A[i] -> B[N] }",
+	  "{ }" },
+};
+
+/* Perform basic tests of binary operations on isl_union_map.
+ */
+static isl_stat test_bin_union_map(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(umap_bin_tests); ++i) {
+		const char *str;
+		isl_union_map *umap1, *umap2, *res;
+		isl_bool equal;
+
+		str = umap_bin_tests[i].arg1;
+		umap1 = isl_union_map_read_from_str(ctx, str);
+		str = umap_bin_tests[i].arg2;
+		umap2 = isl_union_map_read_from_str(ctx, str);
+		str = umap_bin_tests[i].res;
+		res = isl_union_map_read_from_str(ctx, str);
+		umap1 = umap_bin_tests[i].fn(umap1, umap2);
+		equal = isl_union_map_is_equal(umap1, res);
+		isl_union_map_free(umap1);
+		isl_union_map_free(res);
+		if (equal < 0)
+			return isl_stat_error;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform basic tests of operations on isl_union_map.
  */
 static int test_union_map(isl_ctx *ctx)
 {
 	if (test_un_union_map(ctx) < 0)
+		return -1;
+	if (test_bin_union_map(ctx) < 0)
 		return -1;
 	return 0;
 }
@@ -10111,6 +10243,7 @@ struct {
 	{ "eval", &test_eval },
 	{ "parse", &test_parse },
 	{ "single-valued", &test_sv },
+	{ "recession cone", &test_recession_cone },
 	{ "affine hull", &test_affine_hull },
 	{ "simple_hull", &test_simple_hull },
 	{ "coalesce", &test_coalesce },

@@ -177,6 +177,13 @@ __isl_keep isl_space *isl_union_map_peek_space(__isl_keep isl_union_map *umap)
 	return umap ? umap->dim : NULL;
 }
 
+/* Return the space of "uset".
+ */
+__isl_keep isl_space *isl_union_set_peek_space(__isl_keep isl_union_set *uset)
+{
+	return isl_union_map_peek_space(uset_to_umap(uset));
+}
+
 __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap)
 {
 	return isl_space_copy(isl_union_map_peek_space(umap));
@@ -1418,6 +1425,38 @@ __isl_give isl_union_map *isl_union_map_intersect_range(
 	};
 
 	return gen_bin_op(umap, uset, &control);
+}
+
+/* Intersect each map in "umap" in a space [A -> B] -> C
+ * with the corresponding map in "factor" in the space B -> C and
+ * collect the results.
+ */
+__isl_give isl_union_map *isl_union_map_intersect_domain_factor_range(
+	__isl_take isl_union_map *umap, __isl_take isl_union_map *factor)
+{
+	struct isl_bin_op_control control = {
+		.filter = &isl_map_domain_is_wrapping,
+		.match_space = &isl_space_domain_factor_range,
+		.fn_map = &isl_map_intersect_domain_factor_range,
+	};
+
+	return gen_bin_op(umap, factor, &control);
+}
+
+/* Intersect each map in "umap" in a space A -> [B -> C]
+ * with the corresponding map in "factor" in the space A -> B and
+ * collect the results.
+ */
+__isl_give isl_union_map *isl_union_map_intersect_range_factor_domain(
+	__isl_take isl_union_map *umap, __isl_take isl_union_map *factor)
+{
+	struct isl_bin_op_control control = {
+		.filter = &isl_map_range_is_wrapping,
+		.match_space = &isl_space_range_factor_domain,
+		.fn_map = &isl_map_intersect_range_factor_domain,
+	};
+
+	return gen_bin_op(umap, factor, &control);
 }
 
 /* Intersect each map in "umap" in a space A -> [B -> C]
@@ -3849,19 +3888,9 @@ __isl_give isl_union_map *isl_union_map_project_out(
 	return data.res;
 }
 
-/* Project out all parameters from "umap" by existentially quantifying
- * over them.
- */
-__isl_give isl_union_map *isl_union_map_project_out_all_params(
-	__isl_take isl_union_map *umap)
-{
-	isl_size n;
-
-	n = isl_union_map_dim(umap, isl_dim_param);
-	if (n < 0)
-		return isl_union_map_free(umap);
-	return isl_union_map_project_out(umap, isl_dim_param, 0, n);
-}
+#undef TYPE
+#define TYPE	isl_union_map
+#include "isl_project_out_all_params_templ.c"
 
 /* Turn the "n" dimensions of type "type", starting at "first"
  * into existentially quantified variables.

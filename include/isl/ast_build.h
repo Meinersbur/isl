@@ -1,5 +1,5 @@
-#ifndef ISL_AST_CONTEXT_H
-#define ISL_AST_CONTEXT_H
+#ifndef ISL_AST_BUILD_H
+#define ISL_AST_BUILD_H
 
 #include <isl/ctx.h>
 #include <isl/set.h>

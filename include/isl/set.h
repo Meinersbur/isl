@@ -306,6 +306,10 @@ __isl_give isl_set *isl_set_intersect(
 __isl_export
 __isl_give isl_set *isl_set_intersect_params(__isl_take isl_set *set,
 		__isl_take isl_set *params);
+__isl_give isl_set *isl_set_intersect_factor_domain(__isl_take isl_set *set,
+	__isl_take isl_set *domain);
+__isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
+	__isl_take isl_set *range);
 __isl_export
 __isl_give isl_set *isl_set_subtract(
 		__isl_take isl_set *set1,
@@ -347,8 +351,16 @@ __isl_give isl_set *isl_set_move_dims(__isl_take isl_set *set,
 __isl_give isl_basic_set *isl_basic_set_project_out(
 		__isl_take isl_basic_set *bset,
 		enum isl_dim_type type, unsigned first, unsigned n);
+__isl_overload
+__isl_give isl_set *isl_set_project_out_param_id(__isl_take isl_set *set,
+	__isl_take isl_id *id);
+__isl_overload
+__isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
+	__isl_take isl_id_list *list);
 __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned first, unsigned n);
+__isl_export
+__isl_give isl_set *isl_set_project_out_all_params(__isl_take isl_set *set);
 __isl_give isl_map *isl_set_project_onto_map(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_basic_set *isl_basic_set_remove_divs(

@@ -128,6 +128,7 @@ __isl_give isl_space *isl_space_domain_map(__isl_take isl_space *space);
 __isl_give isl_space *isl_space_range_map(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_space *isl_space_params(__isl_take isl_space *space);
+__isl_overload
 __isl_give isl_space *isl_space_add_unnamed_tuple_ui(
 	__isl_take isl_space *space, unsigned dim);
 __isl_overload
@@ -164,6 +165,7 @@ isl_bool isl_space_is_domain(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 isl_bool isl_space_is_range(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
+__isl_export
 isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 isl_bool isl_space_has_equal_params(__isl_keep isl_space *space1,
@@ -178,7 +180,9 @@ isl_bool isl_space_match(__isl_keep isl_space *space1, enum isl_dim_type type1,
 	__isl_keep isl_space *space2, enum isl_dim_type type2);
 isl_size isl_space_dim(__isl_keep isl_space *space, enum isl_dim_type type);
 
+__isl_export
 __isl_give isl_space *isl_space_flatten_domain(__isl_take isl_space *space);
+__isl_export
 __isl_give isl_space *isl_space_flatten_range(__isl_take isl_space *space);
 
 __isl_give char *isl_space_to_str(__isl_keep isl_space *space);

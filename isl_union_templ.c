@@ -698,10 +698,26 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
 	return FN(UNION,any_set_op)(u, set, &FN(PW,gist_params));
 }
 
+/* Data structure that specifies how isl_union_*_match_domain_op
+ * should combine its arguments.
+ *
+ * "fn" is applied to each part in the union and each corresponding
+ * set in the union set, i.e., such that the set lives in the same space
+ * as the domain of the part.
+ * If "match_space" is not NULL, then the set extracted from the union set
+ * does not live in the same space as the domain of the part,
+ * but rather in the space that results from calling "match_space"
+ * on this domain space.
+ */
+S(UNION,match_domain_control) {
+	__isl_give isl_space *(*match_space)(__isl_take isl_space *space);
+	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
+};
+
 S(UNION,match_domain_data) {
 	isl_union_set *uset;
 	UNION *res;
-	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
+	S(UNION,match_domain_control) *control;
 };
 
 static isl_bool FN(UNION,set_has_space)(const void *entry, const void *val)
@@ -721,9 +737,13 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	S(UNION,match_domain_data) *data = user;
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
-	isl_space *space;
+	isl_space *space, *uset_space;
 
+	uset_space = isl_union_set_peek_space(data->uset);
 	space = FN(PART,get_domain_space)(part);
+	if (data->control->match_space)
+		space = data->control->match_space(space);
+	space = isl_space_replace_params(space, uset_space);
 	hash = isl_space_get_hash(space);
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
 				     hash, &FN(UNION,set_has_space), space, 0);
@@ -733,7 +753,7 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 		return isl_stat_non_null(entry2);
 	}
 
-	part = data->fn(part, isl_set_copy(entry2->data));
+	part = data->control->fn(part, isl_set_copy(entry2->data));
 
 	data->res = FN(FN(UNION,add),BASE)(data->res, part);
 	if (!data->res)
@@ -742,18 +762,13 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	return isl_stat_ok;
 }
 
-/* Apply fn to each pair of PW in u and set in uset such that
- * the set lives in the same space as the domain of PW
+/* Combine "u" and "uset" according to "control"
  * and collect the results.
  */
 static __isl_give UNION *FN(UNION,match_domain_op)(__isl_take UNION *u,
-	__isl_take isl_union_set *uset,
-	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
+	__isl_take isl_union_set *uset, S(UNION,match_domain_control) *control)
 {
-	S(UNION,match_domain_data) data = { NULL, NULL, fn };
-
-	u = FN(UNION,align_params)(u, isl_union_set_get_space(uset));
-	uset = isl_union_set_align_params(uset, FN(UNION,get_space)(u));
+	S(UNION,match_domain_data) data = { NULL, NULL, control };
 
 	if (!u || !uset)
 		goto error;
@@ -781,10 +796,14 @@ error:
 __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
+	S(UNION,match_domain_control) control = {
+		.fn = &FN(PW,intersect_domain),
+	};
+
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,intersect_params)(u,
 						isl_set_from_union_set(uset));
-	return FN(UNION,match_domain_op)(u, uset, &FN(PW,intersect_domain));
+	return FN(UNION,match_domain_op)(u, uset, &control);
 }
 
 /* Take the set (which may be empty) in data->uset that lives
@@ -821,9 +840,13 @@ __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 __isl_give UNION *FN(UNION,gist)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
+	S(UNION,match_domain_control) control = {
+		.fn = &FN(PW,gist),
+	};
+
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,gist_params)(u, isl_set_from_union_set(uset));
-	return FN(UNION,match_domain_op)(u, uset, &FN(PW,gist));
+	return FN(UNION,match_domain_op)(u, uset, &control);
 }
 
 /* Coalesce an entry in a UNION.  Coalescing is performed in-place.

@@ -308,6 +308,8 @@ __isl_give isl_map *isl_map_intersect_range(
 		__isl_take isl_set *set);
 __isl_give isl_map *isl_map_intersect_domain_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor);
+__isl_give isl_map *isl_map_intersect_range_factor_domain(
+	__isl_take isl_map *map, __isl_take isl_map *factor);
 __isl_give isl_map *isl_map_intersect_range_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor);
 __isl_export
@@ -318,14 +320,19 @@ __isl_export
 __isl_give isl_map *isl_map_apply_range(
 		__isl_take isl_map *map1,
 		__isl_take isl_map *map2);
+__isl_overload
 __isl_give isl_map *isl_map_preimage_domain_multi_aff(__isl_take isl_map *map,
 	__isl_take isl_multi_aff *ma);
+__isl_overload
 __isl_give isl_map *isl_map_preimage_range_multi_aff(__isl_take isl_map *map,
 	__isl_take isl_multi_aff *ma);
+__isl_overload
 __isl_give isl_map *isl_map_preimage_domain_pw_multi_aff(
 	__isl_take isl_map *map, __isl_take isl_pw_multi_aff *pma);
+__isl_overload
 __isl_give isl_map *isl_map_preimage_range_pw_multi_aff(
 	__isl_take isl_map *map, __isl_take isl_pw_multi_aff *pma);
+__isl_overload
 __isl_give isl_map *isl_map_preimage_domain_multi_pw_aff(
 	__isl_take isl_map *map, __isl_take isl_multi_pw_aff *mpa);
 __isl_give isl_basic_map *isl_basic_map_product(
@@ -428,6 +435,8 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 		enum isl_dim_type type, unsigned first, unsigned n);
 __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n);
+__isl_export
+__isl_give isl_map *isl_map_project_out_all_params(__isl_take isl_map *map);
 __isl_give isl_basic_map *isl_basic_map_remove_divs(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_map *isl_map_remove_unknown_divs(__isl_take isl_map *map);

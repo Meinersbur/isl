@@ -1626,19 +1626,24 @@ __isl_give isl_basic_set *isl_basic_set_free_equality(
 							    n));
 }
 
+/* Drop the equality constraint at position "pos",
+ * preserving the order of the other equality constraints.
+ */
 int isl_basic_map_drop_equality(struct isl_basic_map *bmap, unsigned pos)
 {
 	isl_int *t;
+	int r;
+
 	if (!bmap)
 		return -1;
 	isl_assert(bmap->ctx, pos < bmap->n_eq, return -1);
 
-	if (pos != bmap->n_eq - 1) {
-		t = bmap->eq[pos];
-		bmap->eq[pos] = bmap->eq[bmap->n_eq - 1];
-		bmap->eq[bmap->n_eq - 1] = t;
-	}
+	t = bmap->eq[pos];
 	bmap->n_eq--;
+	for (r = pos; r < bmap->n_eq; ++r)
+		bmap->eq[r] = bmap->eq[r + 1];
+	bmap->eq[bmap->n_eq] = t;
+
 	return 0;
 }
 
@@ -2971,13 +2976,15 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) == -1)
 			continue;
-		isl_basic_map_drop_equality(bmap, i);
+		if (isl_basic_map_drop_equality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) == -1)
 			continue;
-		isl_basic_map_drop_inequality(bmap, i);
+		if (isl_basic_map_drop_inequality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	return bmap;
@@ -3019,13 +3026,15 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) != -1)
 			continue;
-		isl_basic_map_drop_equality(bmap, i);
+		if (isl_basic_map_drop_equality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
 		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) != -1)
 			continue;
-		isl_basic_map_drop_inequality(bmap, i);
+		if (isl_basic_map_drop_inequality(bmap, i) < 0)
+			return isl_basic_map_free(bmap);
 	}
 
 	bmap = isl_basic_map_add_known_div_constraints(bmap);
@@ -4469,6 +4478,10 @@ __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 			goto error;
 	}
 
+	if (map->n > 1)
+		ISL_F_CLR(map, ISL_MAP_DISJOINT);
+	map = isl_map_unmark_normalized(map);
+
 	space = isl_map_take_space(map);
 	space = isl_space_drop_dims(space, type, first, n);
 	map = isl_map_restore_space(map, space);
@@ -4478,6 +4491,10 @@ error:
 	isl_map_free(map);
 	return NULL;
 }
+
+#undef TYPE
+#define TYPE	isl_map
+#include "isl_project_out_all_params_templ.c"
 
 /* Turn all the dimensions of type "type", except the "n" starting at "first"
  * into existentially quantified variables.
@@ -4503,6 +4520,62 @@ __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 {
 	return set_from_map(isl_map_project_out(set_to_map(set),
 						type, first, n));
+}
+
+/* If "set" involves a parameter with identifier "id",
+ * then turn it into an existentially quantified variable.
+ */
+__isl_give isl_set *isl_set_project_out_param_id(__isl_take isl_set *set,
+	__isl_take isl_id *id)
+{
+	int pos;
+
+	if (!set || !id)
+		goto error;
+	pos = isl_set_find_dim_by_id(set, isl_dim_param, id);
+	isl_id_free(id);
+	if (pos < 0)
+		return set;
+	return isl_set_project_out(set, isl_dim_param, pos, 1);
+error:
+	isl_set_free(set);
+	isl_id_free(id);
+	return NULL;
+}
+
+/* If "set" involves any of the parameters with identifiers in "list",
+ * then turn them into existentially quantified variables.
+ */
+__isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
+	__isl_take isl_id_list *list)
+{
+	int i;
+	isl_size n;
+
+	n = isl_id_list_size(list);
+	if (n < 0)
+		goto error;
+	for (i = 0; i < n; ++i) {
+		isl_id *id;
+
+		id = isl_id_list_get_at(list, i);
+		set = isl_set_project_out_param_id(set, id);
+	}
+
+	isl_id_list_free(list);
+	return set;
+error:
+	isl_id_list_free(list);
+	isl_set_free(set);
+	return NULL;
+}
+
+/* Project out all parameters from "set" by existentially quantifying
+ * over them.
+ */
+__isl_give isl_set *isl_set_project_out_all_params(__isl_take isl_set *set)
+{
+	return set_from_map(isl_map_project_out_all_params(set_to_map(set)));
 }
 
 /* Return a map that projects the elements in "set" onto their
@@ -8024,23 +8097,89 @@ __isl_give isl_map *isl_map_intersect_domain(__isl_take isl_map *map,
 						&map_intersect_domain);
 }
 
-/* Given a map "map" in a space [A -> B] -> C and a map "factor"
- * in the space B -> C, return the intersection.
- * The parameters are assumed to have been aligned.
+/* Data structure that specifies how isl_map_intersect_factor
+ * should operate.
  *
- * The map "factor" is first extended to a map living in the space
- * [A -> B] -> C and then a regular intersection is computed.
+ * "preserve_type" is the tuple where the factor differs from
+ * the input map and of which the identifiers needs
+ * to be preserved explicitly.
+ * "other_factor" is used to extract the space of the other factor
+ * from the space of the product ("map").
+ * "product" is used to combine the given factor and a universe map
+ * in the space returned by "other_factor" to produce a map
+ * that lives in the same space as the input map.
  */
-static __isl_give isl_map *map_intersect_domain_factor_range(
-	__isl_take isl_map *map, __isl_take isl_map *factor)
-{
-	isl_space *space;
-	isl_map *ext_factor;
+struct isl_intersect_factor_control {
+	enum isl_dim_type preserve_type;
+	__isl_give isl_space *(*other_factor)(__isl_take isl_space *space);
+	__isl_give isl_map *(*product)(__isl_take isl_map *factor,
+		__isl_take isl_map *other);
+};
 
-	space = isl_space_domain_factor_domain(isl_map_get_space(map));
-	ext_factor = isl_map_universe(space);
-	ext_factor = isl_map_domain_product(ext_factor, factor);
-	return map_intersect(map, ext_factor);
+/* Given a map "map" in some product space and a map "factor"
+ * living in some factor space, return the intersection.
+ *
+ * After aligning the parameters,
+ * the map "factor" is first extended to a map living in the same space
+ * as "map" and then a regular intersection is computed.
+ *
+ * Note that the extension is computed as a product, which is anonymous
+ * by default.  If "map" has an identifier on the corresponding tuple,
+ * then this identifier needs to be set on the product
+ * before the intersection is computed.
+ */
+static __isl_give isl_map *isl_map_intersect_factor(
+	__isl_take isl_map *map, __isl_take isl_map *factor,
+	struct isl_intersect_factor_control *control)
+{
+	isl_bool equal, has_id;
+	isl_id *id;
+	isl_space *space;
+	isl_map *other, *product;
+
+	equal = isl_map_has_equal_params(map, factor);
+	if (equal < 0)
+		goto error;
+	if (!equal) {
+		map = isl_map_align_params(map, isl_map_get_space(factor));
+		factor = isl_map_align_params(factor, isl_map_get_space(map));
+	}
+
+	space = isl_map_get_space(map);
+	has_id = isl_space_has_tuple_id(space, control->preserve_type);
+	if (has_id < 0)
+		space = isl_space_free(space);
+	else if (has_id)
+		id = isl_space_get_tuple_id(space, control->preserve_type);
+
+	other = isl_map_universe(control->other_factor(space));
+	product = control->product(factor, other);
+
+	if (has_id >= 0 && has_id)
+		product = isl_map_set_tuple_id(product,
+						control->preserve_type, id);
+
+	return map_intersect(map, product);
+error:
+	isl_map_free(map);
+	isl_map_free(factor);
+	return NULL;
+}
+
+/* Return the domain product of "map2" and "map1".
+ */
+static __isl_give isl_map *isl_map_reverse_domain_product(
+	__isl_take isl_map *map1, __isl_take isl_map *map2)
+{
+	return isl_map_domain_product(map2, map1);
+}
+
+/* Return the range product of "map2" and "map1".
+ */
+static __isl_give isl_map *isl_map_reverse_range_product(
+	__isl_take isl_map *map1, __isl_take isl_map *map2)
+{
+	return isl_map_range_product(map2, map1);
 }
 
 /* Given a map "map" in a space [A -> B] -> C and a map "factor"
@@ -8049,26 +8188,28 @@ static __isl_give isl_map *map_intersect_domain_factor_range(
 __isl_give isl_map *isl_map_intersect_domain_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
-	return isl_map_align_params_map_map_and(map, factor,
-					    &map_intersect_domain_factor_range);
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_in,
+		.other_factor = isl_space_domain_factor_domain,
+		.product = isl_map_reverse_domain_product,
+	};
+
+	return isl_map_intersect_factor(map, factor, &control);
 }
 
 /* Given a map "map" in a space A -> [B -> C] and a map "factor"
- * in the space A -> C, return the intersection.
- *
- * The map "factor" is first extended to a map living in the space
- * A -> [B -> C] and then a regular intersection is computed.
+ * in the space A -> B, return the intersection.
  */
-static __isl_give isl_map *map_intersect_range_factor_range(
+__isl_give isl_map *isl_map_intersect_range_factor_domain(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
-	isl_space *space;
-	isl_map *ext_factor;
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_out,
+		.other_factor = isl_space_range_factor_range,
+		.product = isl_map_range_product,
+	};
 
-	space = isl_space_range_factor_domain(isl_map_get_space(map));
-	ext_factor = isl_map_universe(space);
-	ext_factor = isl_map_range_product(ext_factor, factor);
-	return isl_map_intersect(map, ext_factor);
+	return isl_map_intersect_factor(map, factor, &control);
 }
 
 /* Given a map "map" in a space A -> [B -> C] and a map "factor"
@@ -8077,8 +8218,51 @@ static __isl_give isl_map *map_intersect_range_factor_range(
 __isl_give isl_map *isl_map_intersect_range_factor_range(
 	__isl_take isl_map *map, __isl_take isl_map *factor)
 {
-	return isl_map_align_params_map_map_and(map, factor,
-					    &map_intersect_range_factor_range);
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_out,
+		.other_factor = isl_space_range_factor_domain,
+		.product = isl_map_reverse_range_product,
+	};
+
+	return isl_map_intersect_factor(map, factor, &control);
+}
+
+/* Given a set "set" in a space [A -> B] and a set "domain"
+ * in the space A, return the intersection.
+ *
+ * The set "domain" is first extended to a set living in the space
+ * [A -> B] and then a regular intersection is computed.
+ */
+__isl_give isl_set *isl_set_intersect_factor_domain(__isl_take isl_set *set,
+	__isl_take isl_set *domain)
+{
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_set,
+		.other_factor = isl_space_factor_range,
+		.product = isl_map_range_product,
+	};
+
+	return set_from_map(isl_map_intersect_factor(set_to_map(set),
+						set_to_map(domain), &control));
+}
+
+/* Given a set "set" in a space [A -> B] and a set "range"
+ * in the space B, return the intersection.
+ *
+ * The set "range" is first extended to a set living in the space
+ * [A -> B] and then a regular intersection is computed.
+ */
+__isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
+	__isl_take isl_set *range)
+{
+	struct isl_intersect_factor_control control = {
+		.preserve_type = isl_dim_set,
+		.other_factor = isl_space_factor_domain,
+		.product = isl_map_reverse_range_product,
+	};
+
+	return set_from_map(isl_map_intersect_factor(set_to_map(set),
+						set_to_map(range), &control));
 }
 
 static __isl_give isl_map *map_apply_domain(__isl_take isl_map *map1,

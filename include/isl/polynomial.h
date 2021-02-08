@@ -188,6 +188,12 @@ __isl_export
 __isl_give isl_set *isl_pw_qpolynomial_domain(__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_domain(
 	__isl_take isl_pw_qpolynomial *pwpq, __isl_take isl_set *set);
+__isl_give isl_pw_qpolynomial *
+isl_pw_qpolynomial_intersect_domain_wrapped_domain(
+	__isl_take isl_pw_qpolynomial *pwpq, __isl_take isl_set *set);
+__isl_give isl_pw_qpolynomial *
+isl_pw_qpolynomial_intersect_domain_wrapped_range(
+	__isl_take isl_pw_qpolynomial *pwpq, __isl_take isl_set *set);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_intersect_params(
 	__isl_take isl_pw_qpolynomial *pwpq, __isl_take isl_set *set);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_subtract_domain(
@@ -372,7 +378,7 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_alloc(
 	enum isl_fold type,
 	__isl_take isl_set *set, __isl_take isl_qpolynomial_fold *fold);
 __isl_give isl_pw_qpolynomial_fold *
-	isl_pw_qpolynomial_fold_from_qpolynomial_fold(
+isl_pw_qpolynomial_fold_from_qpolynomial_fold(
 	__isl_take isl_qpolynomial_fold *fold);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_copy(
 	__isl_keep isl_pw_qpolynomial_fold *pwf);
@@ -415,6 +421,12 @@ __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_reset_user(
 __isl_give isl_set *isl_pw_qpolynomial_fold_domain(
 	__isl_take isl_pw_qpolynomial_fold *pwf);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_intersect_domain(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *set);
+__isl_give isl_pw_qpolynomial_fold *
+isl_pw_qpolynomial_fold_intersect_domain_wrapped_domain(
+	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *set);
+__isl_give isl_pw_qpolynomial_fold *
+isl_pw_qpolynomial_fold_intersect_domain_wrapped_range(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *set);
 __isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_intersect_params(
 	__isl_take isl_pw_qpolynomial_fold *pwf, __isl_take isl_set *set);

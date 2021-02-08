@@ -469,6 +469,7 @@ EXTRA_DIST = \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
 	check_reparse_templ.c \
+	check_reparse_test_templ.c \
 	check_type_range_templ.c \
 	isl_domain_factor_templ.c \
 	extract_key.c \
@@ -521,6 +522,7 @@ EXTRA_DIST = \
 	print_templ_yaml.c \
 	print_yaml_field_templ.c \
 	isl_power_templ.c \
+	isl_project_out_all_params_templ.c \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
 	isl_pw_templ.h \
