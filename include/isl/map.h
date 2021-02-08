@@ -508,6 +508,9 @@ __isl_give isl_basic_map *isl_map_sample(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_set *isl_map_bind_domain(__isl_take isl_map *map,
 	__isl_take isl_multi_id *tuple);
+__isl_export
+__isl_give isl_set *isl_map_bind_range(__isl_take isl_map *map,
+	__isl_take isl_multi_id *tuple);
 
 isl_bool isl_map_plain_is_empty(__isl_keep isl_map *map);
 isl_bool isl_map_plain_is_universe(__isl_keep isl_map *map);

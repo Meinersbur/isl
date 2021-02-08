@@ -12120,6 +12120,18 @@ __isl_give isl_set *isl_map_bind_domain(__isl_take isl_map *map,
 	return set;
 }
 
+/* Bind the output dimensions of "map" to parameters with identifiers
+ * specified by "tuple", living in the range space of "map".
+ *
+ * Since binding is more easily implemented on the domain,
+ * bind the input dimensions of the inverse of "map".
+ */
+__isl_give isl_set *isl_map_bind_range(__isl_take isl_map *map,
+	__isl_take isl_multi_id *tuple)
+{
+	return isl_map_bind_domain(isl_map_reverse(map), tuple);
+}
+
 /* Insert a domain corresponding to "tuple"
  * into the nullary or unary relation "set".
  * The result has an extra initial tuple and is therefore

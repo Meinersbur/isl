@@ -408,6 +408,9 @@ __isl_give isl_map *isl_pw_aff_gt_map(__isl_take isl_pw_aff *pa1,
 __isl_export
 __isl_give isl_pw_aff *isl_pw_aff_bind_domain(__isl_take isl_pw_aff *pa,
 	__isl_take isl_multi_id *tuple);
+__isl_export
+__isl_give isl_pw_aff *isl_pw_aff_bind_domain_wrapped_domain(
+	__isl_take isl_pw_aff *pa, __isl_take isl_multi_id *tuple);
 __isl_overload
 __isl_give isl_set *isl_pw_aff_bind_id(__isl_take isl_pw_aff *pa,
 	__isl_take isl_id *id);
@@ -436,6 +439,7 @@ __isl_give isl_set *isl_pw_aff_list_gt_set(__isl_take isl_pw_aff_list *list1,
 	__isl_take isl_pw_aff_list *list2);
 
 ISL_DECLARE_MULTI(aff)
+ISL_DECLARE_MULTI_IDENTITY(aff)
 ISL_DECLARE_MULTI_CMP(aff)
 ISL_DECLARE_MULTI_ARITH(aff)
 ISL_DECLARE_MULTI_ZERO(aff)
@@ -448,7 +452,6 @@ ISL_DECLARE_MULTI_BIND_DOMAIN(aff)
 
 __isl_constructor
 __isl_give isl_multi_aff *isl_multi_aff_from_aff(__isl_take isl_aff *aff);
-__isl_give isl_multi_aff *isl_multi_aff_identity(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_multi_aff *isl_multi_aff_domain_map(__isl_take isl_space *space);
 __isl_export
@@ -502,6 +505,7 @@ __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
 void isl_multi_aff_dump(__isl_keep isl_multi_aff *maff);
 
 ISL_DECLARE_MULTI(pw_aff)
+ISL_DECLARE_MULTI_IDENTITY(pw_aff)
 ISL_DECLARE_MULTI_ARITH(pw_aff)
 ISL_DECLARE_MULTI_ZERO(pw_aff)
 ISL_DECLARE_MULTI_NAN(pw_aff)
@@ -692,6 +696,9 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_map(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_bind_domain(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_id *tuple);
+__isl_export
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_bind_domain_wrapped_domain(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_id *tuple);
 
 __isl_constructor
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
@@ -852,8 +859,6 @@ __isl_give char *isl_union_pw_multi_aff_to_str(
 
 uint32_t isl_multi_pw_aff_get_hash(__isl_keep isl_multi_pw_aff *mpa);
 
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
-	__isl_take isl_space *space);
 __isl_constructor
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_multi_aff(
 	__isl_take isl_multi_aff *ma);

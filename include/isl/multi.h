@@ -72,6 +72,14 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_align_params(		\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_range(		\
 	__isl_take isl_multi_##BASE *multi);
 
+#define ISL_DECLARE_MULTI_IDENTITY(BASE)				\
+__isl_give isl_multi_##BASE *isl_multi_##BASE##_identity(		\
+	__isl_take isl_space *space);					\
+__isl_overload								\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_identity_on_domain_space(				\
+	__isl_take isl_space *space);
+
 #define ISL_DECLARE_MULTI_CMP(BASE)					\
 int isl_multi_##BASE##_plain_cmp(__isl_keep isl_multi_##BASE *multi1,	\
 	__isl_keep isl_multi_##BASE *multi2);
@@ -177,6 +185,11 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_splice(			\
 #define ISL_DECLARE_MULTI_BIND_DOMAIN(BASE)				\
 __isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_bind_domain(		\
+	__isl_take isl_multi_##BASE *multi,				\
+	__isl_take isl_multi_id *tuple);				\
+__isl_export								\
+__isl_give isl_multi_##BASE *						\
+isl_multi_##BASE##_bind_domain_wrapped_domain(				\
 	__isl_take isl_multi_##BASE *multi,				\
 	__isl_take isl_multi_id *tuple);
 

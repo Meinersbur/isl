@@ -2098,6 +2098,31 @@ __isl_give isl_space *isl_space_bind_map_domain(__isl_take isl_space *space,
 	return space;
 }
 
+/* Internal function that, given a space of the form [A -> B] -> C and
+ * a tuple of identifiers in A, returns a space B -> C with
+ * the identifiers in "tuple" added as fresh parameters.
+ * In other words, the domain dimensions of the wrapped relation
+ * in the domain of "space" are reinterpreted
+ * as parameters, but stay in the same global positions.
+ */
+__isl_give isl_space *isl_space_bind_domain_wrapped_domain(
+	__isl_take isl_space *space, __isl_keep isl_multi_id *tuple)
+{
+	isl_space *tuple_space;
+
+	if (isl_space_check_is_map(space) < 0)
+		return isl_space_free(space);
+	tuple_space = isl_multi_id_peek_space(tuple);
+	if (isl_space_check_domain_wrapped_domain_tuples(tuple_space,
+							space) < 0)
+		  return isl_space_free(space);
+	if (check_fresh_params(space, tuple) < 0)
+		return isl_space_free(space);
+	space = isl_space_domain_factor_range(space);
+	space = add_bind_params(space, tuple);
+	return space;
+}
+
 /* Insert a domain tuple in "space" corresponding to the set space "domain".
  * In particular, if "space" is a parameter space, then the result
  * is the set space "domain" combined with the parameters of "space".
@@ -2236,6 +2261,24 @@ isl_bool isl_space_has_domain_tuples(__isl_keep isl_space *space1,
 					space2, isl_dim_in);
 }
 
+/* Do the tuples of "space1" correspond to those of the range of "space2"?
+ * That is, is "space1" equal to the range of "space2", ignoring parameters.
+ *
+ * "space2" is allowed to be the space of a set,
+ * in which case it should be equal to "space1", ignoring parameters.
+ */
+isl_bool isl_space_has_range_tuples(__isl_keep isl_space *space1,
+	__isl_keep isl_space *space2)
+{
+	isl_bool is_set;
+
+	is_set = isl_space_is_set(space1);
+	if (is_set < 0 || !is_set)
+		return is_set;
+	return isl_space_tuple_is_equal(space1, isl_dim_set,
+					space2, isl_dim_out);
+}
+
 /* Check that the tuples of "space1" correspond to those
  * of the domain of "space2".
  * That is, check that "space1" is equal to the domain of "space2",
@@ -2254,6 +2297,24 @@ isl_stat isl_space_check_domain_tuples(__isl_keep isl_space *space1,
 			"incompatible spaces", return isl_stat_error);
 
 	return isl_stat_ok;
+}
+
+/* Check that the tuples of "space1" correspond to those
+ * of the domain of the wrapped relation in the domain of "space2".
+ * That is, check that "space1" is equal to this domain,
+ * ignoring parameters.
+ */
+isl_stat isl_space_check_domain_wrapped_domain_tuples(
+	__isl_keep isl_space *space1, __isl_keep isl_space *space2)
+{
+	isl_space *domain;
+	isl_stat r;
+
+	domain = isl_space_unwrap(isl_space_domain(isl_space_copy(space2)));
+	r = isl_space_check_domain_tuples(space1, domain);
+	isl_space_free(domain);
+
+	return r;
 }
 
 /* Is space1 equal to the domain of space2?
@@ -2298,13 +2359,10 @@ isl_bool isl_space_is_range_internal(__isl_keep isl_space *space1,
 
 	if (!space1 || !space2)
 		return isl_bool_error;
-	if (!isl_space_is_set(space1))
-		return isl_bool_false;
 	equal_params = isl_space_has_equal_params(space1, space2);
 	if (equal_params < 0 || !equal_params)
 		return equal_params;
-	return isl_space_tuple_is_equal(space1, isl_dim_set,
-					space2, isl_dim_out);
+	return isl_space_has_range_tuples(space1, space2);
 }
 
 /* Is space1 equal to the range of space2?

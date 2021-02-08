@@ -2903,10 +2903,19 @@ value of type C<isl_union_pw_aff>, the space passed
 to C<isl_multi_union_pw_aff_zero> needs to be zero-dimensional.
 
 An identity function can be created using the following
-functions.  The space needs to be that of a relation
+functions.
+For the first group of functions, the space needs to be that of a set.
+For the second group,
+the space needs to be that of a relation
 with the same number of input and output dimensions.
 
 	#include <isl/aff.h>
+	__isl_give isl_multi_aff *
+	isl_multi_aff_identity_on_domain_space(
+		__isl_take isl_space *space);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_identity_on_domain_space(
+		__isl_take isl_space *space);
 	__isl_give isl_multi_aff *isl_multi_aff_identity(
 		__isl_take isl_space *space);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_identity(
@@ -4758,6 +4767,14 @@ The space of C<tuple> needs to match that of the bound tuple.
 	__isl_give isl_set *isl_map_bind_domain(
 		__isl_take isl_map *map,
 		__isl_take isl_multi_id *tuple);
+	__isl_give isl_set *isl_map_bind_range(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_id *tuple);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_set *isl_union_map_bind_range(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_multi_id *tuple);
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_bind_domain(
@@ -4772,6 +4789,22 @@ The space of C<tuple> needs to match that of the bound tuple.
 		__isl_take isl_multi_id *tuple);
 	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_bind_domain(
+		__isl_take isl_multi_pw_aff *mpa,
+		__isl_take isl_multi_id *tuple);
+	__isl_give isl_pw_aff *
+	isl_pw_aff_bind_domain_wrapped_domain(
+		__isl_take isl_pw_aff *pa,
+		__isl_take isl_multi_id *tuple);
+	__isl_give isl_multi_aff *
+	isl_multi_aff_bind_domain_wrapped_domain(
+		__isl_take isl_multi_aff *ma,
+		__isl_take isl_multi_id *tuple);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_bind_domain_wrapped_domain(
+		__isl_take isl_pw_multi_aff *pma,
+		__isl_take isl_multi_id *tuple);
+	__isl_give isl_multi_pw_aff *
+	isl_multi_pw_aff_bind_domain_wrapped_domain(
 		__isl_take isl_multi_pw_aff *mpa,
 		__isl_take isl_multi_id *tuple);
 	__isl_give isl_basic_set *isl_aff_bind_id(
@@ -4794,6 +4827,9 @@ The space of C<tuple> needs to match that of the bound tuple.
 		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_multi_id *tuple);
 
+Projecting out the domain of the wrapped relation in the domain
+of a function leaves the range of that wrapped relation
+in the domain of the resulting function.
 In the case of C<isl_aff_bind_id>, C<isl_pw_aff_bind_id>,
 C<isl_multi_aff_bind>, C<isl_multi_pw_aff_bind>,
 C<isl_union_pw_aff_bind_id> and
