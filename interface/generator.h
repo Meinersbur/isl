@@ -11,6 +11,13 @@
 using namespace std;
 using namespace clang;
 
+/* Compare the prefix of "s" to "prefix" up to the length of "prefix".
+ */
+inline int prefixcmp(const char *s, const char *prefix)
+{
+	return strncmp(s, prefix, strlen(prefix));
+}
+
 /* Information about a single enum value of an enum set by a function.
  * "value" is the enum value.
  * "name" is the corresponding name.
