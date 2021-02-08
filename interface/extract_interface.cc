@@ -101,7 +101,7 @@ static llvm::cl::list<string> Includes("I",
 			llvm::cl::desc("Header search path"),
 			llvm::cl::value_desc("path"), llvm::cl::Prefix);
 
-static llvm::cl::opt<string> Language(llvm::cl::Required,
+static llvm::cl::opt<string> OutputLanguage(llvm::cl::Required,
 	llvm::cl::ValueRequired, "language",
 	llvm::cl::desc("Bindings to generate"),
 	llvm::cl::value_desc("name"));
@@ -514,6 +514,44 @@ static void set_invocation(CompilerInstance *Clang,
 
 #endif
 
+/* Helper function for ignore_error that only gets enabled if T
+ * (which is either const FileEntry * or llvm::ErrorOr<const FileEntry *>)
+ * has getError method, i.e., if it is llvm::ErrorOr<const FileEntry *>.
+ */
+template <class T>
+static const FileEntry *ignore_error_helper(const T obj, int,
+	int[1][sizeof(obj.getError())])
+{
+	return *obj;
+}
+
+/* Helper function for ignore_error that is always enabled,
+ * but that only gets selected if the variant above is not enabled,
+ * i.e., if T is const FileEntry *.
+ */
+template <class T>
+static const FileEntry *ignore_error_helper(const T obj, long, void *)
+{
+	return obj;
+}
+
+/* Given either a const FileEntry * or a llvm::ErrorOr<const FileEntry *>,
+ * extract out the const FileEntry *.
+ */
+template <class T>
+static const FileEntry *ignore_error(const T obj)
+{
+	return ignore_error_helper(obj, 0, NULL);
+}
+
+/* Return the FileEntry corresponding to the given file name
+ * in the given compiler instances, ignoring any error.
+ */
+static const FileEntry *getFile(CompilerInstance *Clang, std::string Filename)
+{
+	return ignore_error(Clang->getFileManager().getFile(Filename));
+}
+
 /* Create an interface generator for the selected language and
  * then use it to generate the interface.
  */
@@ -521,23 +559,24 @@ static void generate(MyASTConsumer &consumer, SourceManager &SM)
 {
 	generator *gen;
 
-	if (Language.compare("python") == 0) {
+	if (OutputLanguage.compare("python") == 0) {
 		gen = new python_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	} else if (Language.compare("cpp") == 0) {
+	} else if (OutputLanguage.compare("cpp") == 0) {
 		gen = new cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
-	} else if (Language.compare("cpp-checked") == 0) {
+	} else if (OutputLanguage.compare("cpp-checked") == 0) {
 		gen = new cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions, true);
-	} else if (Language.compare("cpp-checked-conversion") == 0) {
+	} else if (OutputLanguage.compare("cpp-checked-conversion") == 0) {
 		gen = new cpp_conversion_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else if (Language.compare("noexceptions") == 0) {
 		gen = new noexceptions_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions, true);
 	} else {
-		cerr << "Language '" << Language << "' not recognized." << endl
+		cerr << "Language '" << OutputLanguage
+		     << "' not recognized." << endl
 		     << "Not generating bindings." << endl;
 		exit(EXIT_FAILURE);
 	}
@@ -585,7 +624,7 @@ int main(int argc, char *argv[])
 
 	PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(), LO);
 
-	const FileEntry *file = Clang->getFileManager().getFile(InputFilename);
+	const FileEntry *file = getFile(Clang, InputFilename);
 	assert(file);
 	create_main_file_id(Clang->getSourceManager(), file);
 

@@ -1,8 +1,10 @@
 if HAVE_CLANG
+if HAVE_CXX11
 MAYBE_INTERFACE = interface
 FORCE:
 interface/extract_interface: FORCE
 	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface
+endif
 endif
 SUBDIRS = . $(MAYBE_INTERFACE) doc
 DIST_SUBDIRS = $(MAYBE_INTERFACE) doc
@@ -29,11 +31,11 @@ if HAVE_CLANG
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test_cpp-checked isl_test_cpp-checked-conversion
   TESTS += isl_test_cpp-checked isl_test_cpp-checked-conversion
-endif
 if HAVE_PYTHON
   TESTS += isl_test_python.py
   noinst_PYTHON = interface/isl.py
   isl_test_python.py: interface/isl.py libisl.la
+endif
 endif
 endif
 TEST_EXTENSIONS = .py
@@ -294,21 +296,18 @@ isl_closure_LDADD = libisl.la
 isl_closure_SOURCES = \
 	closure.c
 
-isl_test_cpp_CXXFLAGS = @CXX11FLAGS@
 isl_test_cpp_SOURCES = \
 	isl_test_cpp.cc \
 	include/isl/cpp.h
 isl_test_cpp_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_LDADD = libisl.la @MP_LIBS@
 
-isl_test_cpp_checked_CXXFLAGS = @CXX11FLAGS@
 isl_test_cpp_checked_SOURCES = \
 	isl_test_cpp-checked.cc \
 	include/isl/cpp-checked.h
 isl_test_cpp_checked_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_checked_LDADD = libisl.la @MP_LIBS@
 
-isl_test_cpp_checked_conversion_CXXFLAGS = @CXX11FLAGS@
 isl_test_cpp_checked_conversion_SOURCES = \
 	isl_test_cpp-checked-conversion.cc \
 	include/isl/cpp-checked-conversion.h
@@ -321,6 +320,7 @@ noinst_LIBRARIES = libdep.a
 libdep_a_SOURCES = dep.c
 
 if HAVE_CLANG
+if HAVE_CXX11
 interface/isldlname.py: libisl.la
 	$(AM_V_GEN) $(GREP) dlname $< | $(SED) -e 's/dlname/isl_dlname/' > $@
 interface/isl.py: interface/extract_interface libdep.a python/isl.py.top \
@@ -371,6 +371,7 @@ include/isl/cpp-checked-conversion.h: interface/extract_interface libdep.a \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \
 			> $@ || (rm $@ && false)
+endif
 endif
 
 nodist_pkginclude_HEADERS = \
@@ -438,10 +439,12 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 if HAVE_CLANG
+if HAVE_CXX11
     CPP_INTERFACES = \
 	include/isl/cpp.h \
 	include/isl/cpp-checked.h \
 	include/isl/cpp-checked-conversion.h
+endif
 endif
 BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
 CLEANFILES = \
@@ -513,6 +516,7 @@ EXTRA_DIST = \
 	isl_multi_splice_templ.c \
 	isl_multi_tuple_id_templ.c \
 	isl_multi_zero_templ.c \
+	opt_type.h \
 	print_templ.c \
 	print_templ_yaml.c \
 	print_yaml_field_templ.c \

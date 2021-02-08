@@ -141,8 +141,11 @@ AC_EGREP_HEADER([initializeBuiltins],
 	[AC_DEFINE([initializeBuiltins], [InitializeBuiltins],
 		[Define to InitializeBuiltins for older versions of clang])])
 AC_EGREP_HEADER([IK_C], [clang/Frontend/FrontendOptions.h], [],
-	 [AC_DEFINE([IK_C], [InputKind::C],
-	    [Define to InputKind::C for newer versions of clang])])
+	[AC_CHECK_HEADER([clang/Basic/LangStandard.h],
+		[IK_C=Language::C], [IK_C=InputKind::C])
+	 AC_DEFINE_UNQUOTED([IK_C], [$IK_C],
+	 [Define to Language::C or InputKind::C for newer versions of clang])
+	])
 AC_TRY_COMPILE([
 	#include <clang/Basic/TargetOptions.h>
 	#include <clang/Lex/PreprocessorOptions.h>

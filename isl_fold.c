@@ -28,6 +28,8 @@
 enum isl_fold isl_fold_type_negate(enum isl_fold type)
 {
 	switch (type) {
+	case isl_fold_error:
+		return isl_fold_error;
 	case isl_fold_min:
 		return isl_fold_max;
 	case isl_fold_max:
@@ -667,6 +669,17 @@ __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_gist_params(
 	return isl_qpolynomial_fold_gist(fold, dom_context);
 }
 
+/* Return a zero (i.e., empty) isl_qpolynomial_fold in the given space.
+ *
+ * This is a helper function for isl_pw_*_as_* that ensures a uniform
+ * interface over all piecewise types.
+ */
+static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
+	__isl_take isl_space *space, enum isl_fold type)
+{
+	return isl_qpolynomial_fold_empty(type, isl_space_domain(space));
+}
+
 #define isl_qpolynomial_fold_involves_nan isl_qpolynomial_fold_is_nan
 
 #define HAS_TYPE
@@ -795,12 +808,12 @@ __isl_null isl_qpolynomial_fold *isl_qpolynomial_fold_free(
 	return NULL;
 }
 
-int isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold)
+isl_bool isl_qpolynomial_fold_is_empty(__isl_keep isl_qpolynomial_fold *fold)
 {
 	if (!fold)
-		return -1;
+		return isl_bool_error;
 
-	return fold->n == 0;
+	return isl_bool_ok(fold->n == 0);
 }
 
 /* Does "fold" represent max(NaN) or min(NaN)?
@@ -1310,15 +1323,25 @@ error:
 enum isl_fold isl_qpolynomial_fold_get_type(__isl_keep isl_qpolynomial_fold *fold)
 {
 	if (!fold)
-		return isl_fold_list;
+		return isl_fold_error;
 	return fold->type;
+}
+
+/* Return the type of this piecewise quasipolynomial reduction.
+ */
+enum isl_fold isl_pw_qpolynomial_fold_get_type(
+	__isl_keep isl_pw_qpolynomial_fold *pwf)
+{
+	if (!pwf)
+		return isl_fold_error;
+	return pwf->type;
 }
 
 enum isl_fold isl_union_pw_qpolynomial_fold_get_type(
 	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
 {
 	if (!upwf)
-		return isl_fold_list;
+		return isl_fold_error;
 	return upwf->type;
 }
 

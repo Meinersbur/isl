@@ -9,7 +9,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
- * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  */
 
 #include <stdlib.h>
@@ -623,15 +623,15 @@ static __isl_give isl_printer *print_mod(__isl_take isl_printer *p,
 	return p;
 }
 
-/* Can the equality constraints "c" be printed as a modulo constraint?
- * In particular, is of the form
+/* Given an equality constraint with a non-zero coefficient "c"
+ * in position "pos", is this term of the form
  *
- *	f - a m floor(g/m) = 0,
+ *	a m floor(g/m),
  *
- * with c = -a m the coefficient at position "pos"?
+ * with c = a m?
  * Return the position of the corresponding integer division if so.
  * Return the number of integer divisions if not.
- * Return -1 on error.
+ * Return isl_size_error on error.
  *
  * Modulo constraints are currently not printed in C format.
  * Other than that, "pos" needs to correspond to an integer division
@@ -652,7 +652,7 @@ static isl_size print_as_modulo_pos(__isl_keep isl_printer *p,
 	if (p->output_format == ISL_FORMAT_C)
 		return n_div;
 	if (pos2type(space, &type, &pos) < 0)
-		return -1;
+		return isl_size_error;
 	if (type != isl_dim_div)
 		return n_div;
 	can_print = can_print_div_expr(p, div, pos);
@@ -2600,7 +2600,7 @@ static __isl_give isl_printer *print_aff_body(__isl_take isl_printer *p,
 	if (isl_aff_is_nan(aff))
 		return isl_printer_print_str(p, "NaN");
 
-	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	total = isl_aff_domain_dim(aff, isl_dim_all);
 	if (total < 0)
 		return isl_printer_free(p);
 	p = isl_printer_print_str(p, "(");
@@ -2784,7 +2784,7 @@ static __isl_give isl_printer *print_aff_c(__isl_take isl_printer *p,
 {
 	isl_size total;
 
-	total = isl_local_space_dim(aff->ls, isl_dim_all);
+	total = isl_aff_domain_dim(aff, isl_dim_all);
 	if (total < 0)
 		return isl_printer_free(p);
 	if (!isl_int_is_one(aff->v->el[0]))

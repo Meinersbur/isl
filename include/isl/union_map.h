@@ -188,6 +188,8 @@ __isl_give isl_union_map *isl_union_map_preimage_range_union_pw_multi_aff(
 	__isl_take isl_union_pw_multi_aff *upma);
 __isl_export
 __isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap);
+__isl_give isl_union_map *isl_union_map_range_reverse(
+	__isl_take isl_union_map *umap);
 __isl_export
 __isl_give isl_union_map *isl_union_map_from_domain_and_range(
 	__isl_take isl_union_set *domain, __isl_take isl_union_set *range);

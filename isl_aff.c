@@ -325,6 +325,24 @@ uint32_t isl_aff_get_hash(__isl_keep isl_aff *aff)
 	return hash;
 }
 
+/* Return the domain local space of "aff".
+ */
+static __isl_keep isl_local_space *isl_aff_peek_domain_local_space(
+	__isl_keep isl_aff *aff)
+{
+	return aff ? aff->ls : NULL;
+}
+
+/* Return the number of variables of the given type in the domain of "aff".
+ */
+isl_size isl_aff_domain_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
+{
+	isl_local_space *ls;
+
+	ls = isl_aff_peek_domain_local_space(aff);
+	return isl_local_space_dim(ls, type);
+}
+
 /* Externally, an isl_aff has a map space, but internally, the
  * ls field corresponds to the domain of that space.
  */
@@ -336,7 +354,7 @@ isl_size isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 		return 1;
 	if (type == isl_dim_in)
 		type = isl_dim_set;
-	return isl_local_space_dim(aff->ls, type);
+	return isl_aff_domain_dim(aff, type);
 }
 
 /* Return the position of the dimension of the given type and name
@@ -378,10 +396,12 @@ __isl_give isl_space *isl_aff_get_space(__isl_keep isl_aff *aff)
 	return space;
 }
 
+/* Return a copy of the domain space of "aff".
+ */
 __isl_give isl_local_space *isl_aff_get_domain_local_space(
 	__isl_keep isl_aff *aff)
 {
-	return aff ? isl_local_space_copy(aff->ls) : NULL;
+	return isl_local_space_copy(isl_aff_peek_domain_local_space(aff));
 }
 
 __isl_give isl_local_space *isl_aff_get_local_space(__isl_keep isl_aff *aff)
@@ -1299,10 +1319,7 @@ __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 	int off;
 	isl_size n;
 
-	if (!aff)
-		return NULL;
-
-	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	n = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_aff_free(aff);
 	off = isl_local_space_offset(aff->ls, isl_dim_div);
@@ -1337,10 +1354,7 @@ static __isl_give isl_aff *plug_in_integral_divs(__isl_take isl_aff *aff)
 	isl_local_space *ls;
 	unsigned pos;
 
-	if (!aff)
-		return NULL;
-
-	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	n = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_aff_free(aff);
 	len = aff->v->size;
@@ -1401,10 +1415,7 @@ static __isl_give isl_aff *plug_in_unit_divs(__isl_take isl_aff *aff)
 	isl_size n;
 	int off;
 
-	if (!aff)
-		return NULL;
-
-	n = isl_local_space_dim(aff->ls, isl_dim_div);
+	n = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n < 0)
 		return isl_aff_free(aff);
 	off = isl_local_space_offset(aff->ls, isl_dim_div);
@@ -1722,10 +1733,8 @@ __isl_give isl_aff *isl_aff_expand_divs(__isl_take isl_aff *aff,
 	int offset;
 
 	aff = isl_aff_cow(aff);
-	if (!aff || !div)
-		goto error;
 
-	old_n_div = isl_local_space_dim(aff->ls, isl_dim_div);
+	old_n_div = isl_aff_domain_dim(aff, isl_dim_div);
 	new_n_div = isl_mat_rows(div);
 	if (old_n_div < 0 || new_n_div < 0)
 		goto error;
@@ -2113,9 +2122,7 @@ __isl_give isl_aff *isl_aff_substitute_equalities(__isl_take isl_aff *aff,
 {
 	isl_size n_div;
 
-	if (!aff || !eq)
-		goto error;
-	n_div = isl_local_space_dim(aff->ls, isl_dim_div);
+	n_div = isl_aff_domain_dim(aff, isl_dim_div);
 	if (n_div < 0)
 		goto error;
 	if (n_div > 0)
@@ -2405,12 +2412,12 @@ __isl_give isl_aff *isl_aff_add_on_domain(__isl_keep isl_set *dom,
 	return aff1;
 }
 
-int isl_aff_is_empty(__isl_keep isl_aff *aff)
+isl_bool isl_aff_is_empty(__isl_keep isl_aff *aff)
 {
 	if (!aff)
-		return -1;
+		return isl_bool_error;
 
-	return 0;
+	return isl_bool_false;
 }
 
 #undef TYPE
@@ -2665,10 +2672,17 @@ __isl_give isl_aff *isl_aff_move_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
+/* Return a zero isl_aff in the given space.
+ *
+ * This is a helper function for isl_pw_*_as_* that ensures a uniform
+ * interface over all piecewise types.
+ */
+static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 {
-	isl_set *dom = isl_set_universe(isl_aff_get_domain_space(aff));
-	return isl_pw_aff_alloc(dom, aff);
+	isl_local_space *ls;
+
+	ls = isl_local_space_from_space(isl_space_domain(space));
+	return isl_aff_zero_on_domain(ls);
 }
 
 #define isl_aff_involves_nan isl_aff_is_nan
@@ -4178,16 +4192,6 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_out_map(
 	return isl_pw_multi_aff_from_multi_aff(ma);
 }
 
-/* Create an isl_pw_multi_aff with the given isl_multi_aff on a universe
- * domain.
- */
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_from_multi_aff(
-	__isl_take isl_multi_aff *ma)
-{
-	isl_set *dom = isl_set_universe(isl_multi_aff_get_domain_space(ma));
-	return isl_pw_multi_aff_alloc(dom, ma);
-}
-
 /* Create a piecewise multi-affine expression in the given space that maps each
  * input dimension to the corresponding output dimension.
  */
@@ -4249,12 +4253,12 @@ __isl_give isl_multi_aff *isl_multi_aff_add_on_domain(__isl_keep isl_set *dom,
 	return maff1;
 }
 
-int isl_multi_aff_is_empty(__isl_keep isl_multi_aff *maff)
+isl_bool isl_multi_aff_is_empty(__isl_keep isl_multi_aff *maff)
 {
 	if (!maff)
-		return -1;
+		return isl_bool_error;
 
-	return 0;
+	return isl_bool_false;
 }
 
 /* Return the set of domain elements where "ma1" is lexicographically
@@ -4314,6 +4318,8 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 {
 	return isl_multi_aff_order_set(ma1, ma2, &isl_map_lex_gt);
 }
+
+#define isl_multi_aff_zero_in_space	isl_multi_aff_zero
 
 #undef PW
 #define PW isl_pw_multi_aff
@@ -5496,7 +5502,7 @@ __isl_give isl_aff *isl_aff_substitute(__isl_take isl_aff *aff,
 	if (!isl_space_is_equal(aff->ls->dim, subs->ls->dim))
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", return isl_aff_free(aff));
-	n_div = isl_local_space_dim(subs->ls, isl_dim_div);
+	n_div = isl_aff_domain_dim(subs, isl_dim_div);
 	if (n_div < 0)
 		return isl_aff_free(aff);
 	if (n_div != 0)
@@ -5872,8 +5878,8 @@ __isl_give isl_aff *isl_aff_align_divs(__isl_take isl_aff *dst,
 		isl_die(ctx, isl_error_invalid,
 			"spaces don't match", goto error);
 
-	src_n_div = isl_local_space_dim(src->ls, isl_dim_div);
-	dst_n_div = isl_local_space_dim(dst->ls, isl_dim_div);
+	src_n_div = isl_aff_domain_dim(src, isl_dim_div);
+	dst_n_div = isl_aff_domain_dim(dst, isl_dim_div);
 	if (src_n_div == 0)
 		return dst;
 	equal = isl_local_space_is_equal(src->ls, dst->ls);

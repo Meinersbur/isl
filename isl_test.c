@@ -7431,6 +7431,65 @@ int test_vertices(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for basic tests of unary operations on isl_union_map.
+ * "fn" is the function that is being tested.
+ * "arg" is a string description of the input.
+ * "res" is a string description of the expected result.
+ */
+static struct {
+	__isl_give isl_union_map *(*fn)(__isl_take isl_union_map *umap);
+	const char *arg;
+	const char *res;
+} umap_un_tests[] = {
+	{ &isl_union_map_range_reverse,
+	  "{ A[] -> [B[] -> C[]]; A[] -> B[]; A[0] -> N[B[1] -> B[2]] }",
+	  "{ A[] -> [C[] -> B[]]; A[0] -> N[B[2] -> B[1]] }" },
+	{ &isl_union_map_range_reverse,
+	  "{ A[] -> N[B[] -> C[]] }",
+	  "{ A[] -> [C[] -> B[]] }" },
+	{ &isl_union_map_range_reverse,
+	  "{ A[] -> N[B[x] -> B[y]] }",
+	  "{ A[] -> N[B[*] -> B[*]] }" },
+};
+
+/* Perform basic tests of unary operations on isl_union_map.
+ */
+static isl_stat test_un_union_map(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(umap_un_tests); ++i) {
+		const char *str;
+		isl_union_map *umap, *res;
+		isl_bool equal;
+
+		str = umap_un_tests[i].arg;
+		umap = isl_union_map_read_from_str(ctx, str);
+		str = umap_un_tests[i].res;
+		res = isl_union_map_read_from_str(ctx, str);
+		umap = umap_un_tests[i].fn(umap);
+		equal = isl_union_map_is_equal(umap, res);
+		isl_union_map_free(umap);
+		isl_union_map_free(res);
+		if (equal < 0)
+			return isl_stat_error;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
+}
+
+/* Perform basic tests of operations on isl_union_map.
+ */
+static int test_union_map(isl_ctx *ctx)
+{
+	if (test_un_union_map(ctx) < 0)
+		return -1;
+	return 0;
+}
+
 int test_union_pw(isl_ctx *ctx)
 {
 	int equal;
@@ -10046,6 +10105,7 @@ struct {
 	{ "schedule tree prefix", &test_schedule_tree_prefix },
 	{ "schedule tree grouping", &test_schedule_tree_group },
 	{ "tile", &test_tile },
+	{ "union map", &test_union_map },
 	{ "union_pw", &test_union_pw },
 	{ "locus", &test_locus },
 	{ "eval", &test_eval },

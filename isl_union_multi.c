@@ -458,4 +458,80 @@ static isl_stat FN(UNION,free_u_entry)(void **entry, void *user)
 	return isl_stat_ok;
 }
 
+/* Set "single" to true if this group of expressions
+ * contains an expression living in exactly one space.
+ */
+static isl_stat FN(UNION,group_single_space)(__isl_keep S(UNION,group) *group,
+	void *user)
+{
+	isl_bool *single = user;
+
+	if (!group)
+		return isl_stat_error;
+	*single = isl_bool_ok(group->part_table.n == 1);
+	return isl_stat_ok;
+}
+
+/* Can this union expression be converted to a single base expression?
+ * That is, does it contain a base expression in exactly one space?
+ * In particular, is only one domain space involved and
+ * is only a single expression associated to that domain?
+ */
+isl_bool FN(FN(UNION,isa),BASE)(__isl_take UNION *u)
+{
+	isl_bool single;
+
+	if (!u)
+		return isl_bool_error;
+	if (u->table.n != 1)
+		return isl_bool_false;
+	if (FN(UNION,foreach_group)(u,
+				&FN(UNION,group_single_space), &single) < 0)
+		return isl_bool_error;
+	return single;
+}
+
+/* Callback for isl_union_*_foreach_inplace call
+ * on a union expression with a single base expression.
+ * Store that base expression in "user".
+ * This callback should only be called once
+ * for any given isl_union_*_foreach_inplace call.
+ */
+static isl_stat FN(UNION,extract_part)(void **entry, void *user)
+{
+	PART **part_p = user;
+	PART *part = *entry;
+
+	if (*part_p)
+		isl_die(FN(PART,get_ctx)(part), isl_error_internal,
+			"more than one part", return isl_stat_error);
+	*part_p = FN(PART,copy)(part);
+	if (!*part_p)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Convert the union expression to its single base expression.
+ */
+__isl_give PART *FN(FN(UNION,as),BASE)(__isl_take UNION *u)
+{
+	isl_bool has_single_space;
+	PART *part = NULL;
+
+	has_single_space = FN(FN(UNION,isa),BASE)(u);
+	if (has_single_space < 0)
+		goto error;
+	if (!has_single_space)
+		isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+			"expecting elements in exactly one space",
+			goto error);
+	if (FN(UNION,foreach_inplace)(u, &FN(UNION,extract_part), &part) < 0)
+		part = FN(PART,free)(part);
+	FN(UNION,free)(u);
+	return part;
+error:
+	FN(UNION,free)(u);
+	return NULL;
+}
+
 #include <isl_union_templ.c>

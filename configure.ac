@@ -25,16 +25,7 @@ AX_CC_MAXOPT
 AX_GCC_WARN_UNUSED_RESULT
 AX_C___ATTRIBUTE__
 
-# CXX11FLAGS contains the flags (if any) added by AX_CXX_COMPILE_STDCXX_11
-# Original state of CXX and CXXCPP is preserved because CXX11FLAGS
-# is only needed for compiling interface/isl_test_cpp
-AC_SUBST(CXX11FLAGS)
-ac_save_CXX="$CXX"
-ac_save_CXXCPP="$CXXCPP"
 AX_CXX_COMPILE_STDCXX_11([noext], [optional])
-CXX11FLAGS=${CXX#$ac_save_CXX}
-CXX="$ac_save_CXX"
-CXXCPP="$ac_save_CXXCPP"
 
 AC_PROG_GREP
 AC_PROG_LIBTOOL
