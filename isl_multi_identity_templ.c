@@ -71,3 +71,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),identity_on_domain_space)(
 {
 	return FN(MULTI(BASE),identity)(isl_space_map_from_set(space));
 }
+
+/* Create a multi expression in the same space as "multi" that maps each
+ * input dimension to the corresponding output dimension.
+ */
+__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),identity_multi),BASE)(
+	__isl_take MULTI(BASE) *multi)
+{
+	isl_space *space;
+
+	space = FN(MULTI(BASE),get_space)(multi);
+	FN(MULTI(BASE),free)(multi);
+	return FN(MULTI(BASE),identity)(space);
+}
