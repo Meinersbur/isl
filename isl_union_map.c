@@ -611,6 +611,14 @@ isl_bool isl_union_map_isa_map(__isl_keep isl_union_map *umap)
 	return isl_bool_ok(n == 1);
 }
 
+/* Can "uset" be converted to an isl_set?
+ * That is, does it contain elements in exactly one space?
+ */
+isl_bool isl_union_set_isa_set(__isl_keep isl_union_set *uset)
+{
+	return isl_union_map_isa_map(uset_to_umap(uset));
+}
+
 static isl_stat copy_map(void **entry, void *user)
 {
 	isl_map *map = *entry;
