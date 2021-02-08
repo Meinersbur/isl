@@ -22,8 +22,8 @@
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
 
-#undef BASE
-#define BASE constraint
+#undef EL_BASE
+#define EL_BASE constraint
 
 #include <isl_list_templ.c>
 

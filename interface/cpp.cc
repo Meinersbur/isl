@@ -355,6 +355,18 @@ void cpp_generator::print_public_constructors_decl(ostream &os,
 		 cppname, cppname);
 }
 
+/* Print declarations for "method" in class "clazz" to "os".
+ *
+ * "kind" specifies the kind of method that should be generated.
+ */
+void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
+	FunctionDecl *method, function_kind kind)
+{
+	string name = clazz.method_name(method);
+
+	print_named_method_decl(os, clazz, method, name, kind);
+}
+
 /* Print declarations for constructors for class "class" to "os".
  *
  * For each isl function that is marked as __isl_constructor,
@@ -717,18 +729,6 @@ void cpp_generator::print_named_method_decl(ostream &os, const isl_class &clazz,
 	FunctionDecl *fd, const string &name, function_kind kind)
 {
 	print_named_method_header(os, clazz, fd, name, true, kind);
-}
-
-/* Print declarations for "method" in class "clazz" to "os".
- *
- * "kind" specifies the kind of method that should be generated.
- */
-void cpp_generator::print_method_decl(ostream &os, const isl_class &clazz,
-	FunctionDecl *method, function_kind kind)
-{
-	string name = clazz.method_name(method);
-
-	print_named_method_decl(os, clazz, method, name, kind);
 }
 
 /* Print implementations for class "clazz" to "os".
@@ -1878,6 +1878,7 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 
 	for (int i = first_param; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
+		std::string name = param->getName().str();
 		QualType type = param->getOriginalType();
 		string cpptype = type2cpp(type);
 
@@ -1886,10 +1887,9 @@ void cpp_generator::print_method_header(ostream &os, const isl_class &clazz,
 
 		if (keeps(param) || is_string(type) || is_callback(type))
 			osprintf(os, "const %s &%s", cpptype.c_str(),
-				 param->getName().str().c_str());
+				 name.c_str());
 		else
-			osprintf(os, "%s %s", cpptype.c_str(),
-				 param->getName().str().c_str());
+			osprintf(os, "%s %s", cpptype.c_str(), name.c_str());
 
 		if (i != num_params - 1)
 			osprintf(os, ", ");

@@ -7988,6 +7988,14 @@ Lists can be printed using
 		__isl_take isl_printer *p,
 		__isl_keep isl_set_list *list);
 
+Alternatively, a string representation can be obtained
+directly using the following function, which always prints
+in isl format.
+
+	#include <isl/set.h>
+	__isl_give char *isl_set_list_to_str(
+		__isl_keep isl_set_list *list);
+
 =head2 Associative arrays
 
 Associative arrays map isl objects of a specific type to isl objects

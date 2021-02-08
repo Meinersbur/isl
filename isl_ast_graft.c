@@ -20,8 +20,8 @@
 static __isl_give isl_ast_graft *isl_ast_graft_copy(
 	__isl_keep isl_ast_graft *graft);
 
-#undef BASE
-#define BASE ast_graft
+#undef EL_BASE
+#define EL_BASE ast_graft
 
 #include <isl_list_templ.c>
 

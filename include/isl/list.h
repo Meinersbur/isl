@@ -85,6 +85,8 @@ isl_stat isl_##EL##_list_foreach_scc(__isl_keep isl_##EL##_list *list,	\
 	void *follows_user,						\
 	isl_stat (*fn)(__isl_take isl_##EL##_list *scc, void *user),	\
 	void *fn_user);							\
+__isl_give char *isl_##EL##_list_to_str(				\
+	__isl_keep isl_##EL##_list *list);				\
 __isl_give isl_printer *isl_printer_print_##EL##_list(			\
 	__isl_take isl_printer *p, __isl_keep isl_##EL##_list *list);	\
 void isl_##EL##_list_dump(__isl_keep isl_##EL##_list *list);

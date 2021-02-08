@@ -30,28 +30,28 @@
 #include <isl_point_private.h>
 #include <isl_config.h>
 
-#undef BASE
-#define BASE aff
+#undef EL_BASE
+#define EL_BASE aff
 
 #include <isl_list_templ.c>
 
-#undef BASE
-#define BASE pw_aff
+#undef EL_BASE
+#define EL_BASE pw_aff
 
 #include <isl_list_templ.c>
 
-#undef BASE
-#define BASE pw_multi_aff
+#undef EL_BASE
+#define EL_BASE pw_multi_aff
 
 #include <isl_list_templ.c>
 
-#undef BASE
-#define BASE union_pw_aff
+#undef EL_BASE
+#define EL_BASE union_pw_aff
 
 #include <isl_list_templ.c>
 
-#undef BASE
-#define BASE union_pw_multi_aff
+#undef EL_BASE
+#define EL_BASE union_pw_multi_aff
 
 #include <isl_list_templ.c>
 

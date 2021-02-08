@@ -25,8 +25,8 @@
 
 #include <isl_list_templ.h>
 
-#undef BASE
-#define BASE schedule_tree
+#undef EL_BASE
+#define EL_BASE schedule_tree
 
 #include <isl_list_templ.c>
 

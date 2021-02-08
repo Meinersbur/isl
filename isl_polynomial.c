@@ -28,8 +28,8 @@
 #include <isl_val_private.h>
 #include <isl_config.h>
 
-#undef BASE
-#define BASE pw_qpolynomial
+#undef EL_BASE
+#define EL_BASE pw_qpolynomial
 
 #include <isl_list_templ.c>
 
