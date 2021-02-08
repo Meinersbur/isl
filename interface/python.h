@@ -44,6 +44,7 @@ private:
 	void print_copy_callbacks(const isl_class &clazz);
 	void print_method_type(FunctionDecl *fd);
 	void print_method_types(const isl_class &clazz);
+	void print_get_method(const isl_class &clazz, FunctionDecl *fd);
 	void print_method(const isl_class &clazz, FunctionDecl *method,
 		vector<string> super);
 	void print_method_overload(const isl_class &clazz,

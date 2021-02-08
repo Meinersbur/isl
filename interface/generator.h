@@ -74,11 +74,23 @@ struct isl_class {
 	bool is_type_subclass() const { return name != subclass_name; }
 	/* Return name of "fd" without type suffix, if any. */
 	static string name_without_type_suffix(FunctionDecl *fd);
-	/* Extract the method name corresponding to "fd". */
-	string method_name(FunctionDecl *fd) const {
+	/* Extract the method name corresponding to "fd"
+	 * (including "get" method prefix if any).
+	 */
+	string base_method_name(FunctionDecl *fd) const {
 		string m_name = name_without_type_suffix(fd);
 		return m_name.substr(subclass_name.length() + 1);
 	}
+	/* The prefix of a "get" method. */
+	static const char *get_prefix;
+	/* Is function "fd" with the given name a "get" method? */
+	bool is_get_method_name(FunctionDecl *fd, const string &name) const;
+	/* Is function "fd" a "get" method? */
+	bool is_get_method(FunctionDecl *fd) const {
+		return is_get_method_name(fd, base_method_name(fd));
+	}
+	/* Extract the method name corresponding to "fd". */
+	string method_name(FunctionDecl *fd) const;
 	/* The prefix of any method that may set a (persistent) callback. */
 	static const char *set_callback_prefix;
 	/* Given a function that sets a persistent callback,

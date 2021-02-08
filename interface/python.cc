@@ -385,6 +385,26 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
 	}
 }
 
+/* Print a python "get" method corresponding to the C function "fd"
+ * in class "clazz" using a name that includes the "get_" prefix.
+ *
+ * This method simply calls the variant without the "get_" prefix and
+ * returns its result.
+ * Note that static methods are not considered to be "get" methods.
+ */
+void python_generator::print_get_method(const isl_class &clazz,
+	FunctionDecl *fd)
+{
+	string get_name = clazz.base_method_name(fd);
+	string name = clazz.method_name(fd);
+	int num_params = fd->getNumParams();
+
+	print_method_header(false, get_name, num_params);
+	printf("        return arg0.%s(", name.c_str());
+	print_method_arguments(1, num_params);
+	printf(")\n");
+}
+
 /* Print a python method corresponding to the C function "method".
  * "super" contains the superclasses of the class to which the method belongs,
  * with the first element corresponding to the annotation that appears
@@ -404,6 +424,10 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
+ *
+ * For methods that are identified as "get" methods, also
+ * print a variant of the method using a name that includes
+ * the "get_" prefix.
  */
 void python_generator::print_method(const isl_class &clazz,
 	FunctionDecl *method, vector<string> super)
@@ -454,6 +478,9 @@ void python_generator::print_method(const isl_class &clazz,
 		print_rethrow(8, "exc_info[0]");
 
 	print_method_return(8, clazz, method);
+
+	if (clazz.is_get_method(method))
+		print_get_method(clazz, method);
 }
 
 /* Print part of an overloaded python method corresponding to the C function

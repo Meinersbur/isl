@@ -43,6 +43,7 @@
 #include "extract_interface.h"
 #include "generator.h"
 
+const char *isl_class::get_prefix = "get_";
 const char *isl_class::set_callback_prefix = "set_";
 
 /* Should "method" be considered to be a static method?
@@ -686,4 +687,27 @@ string isl_class::name_without_type_suffix(FunctionDecl *method)
 		name = name.substr(0, name_len - type_len - 1);
 
 	return name;
+}
+
+/* Is function "fd" with the given name a "get" method?
+ *
+ * A "get" method is an instance method
+ * with a name that starts with the get method prefix.
+ */
+bool isl_class::is_get_method_name(FunctionDecl *fd, const string &name) const
+{
+	return !is_static(fd) && prefixcmp(name.c_str(), get_prefix) == 0;
+}
+
+/* Extract the method name corresponding to "fd".
+ *
+ * If "fd" is a "get" method, then drop the "get" method prefix.
+ */
+string isl_class::method_name(FunctionDecl *fd) const
+{
+      string base = base_method_name(fd);
+
+      if (is_get_method_name(fd, base))
+	      return base.substr(strlen(get_prefix));
+      return base;
 }

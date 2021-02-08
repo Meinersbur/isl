@@ -688,6 +688,10 @@ void cpp_generator::print_set_enums_decl(ostream &os, const isl_class &clazz)
 }
 
 /* Print declarations for methods "methods" in class "clazz" to "os".
+ *
+ * For methods that are identified as "get" methods, also
+ * print a declaration for the method using a name that includes
+ * the "get_" prefix.
  */
 void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 	const set<FunctionDecl *> &methods)
@@ -697,6 +701,10 @@ void cpp_generator::print_method_group_decl(ostream &os, const isl_class &clazz,
 	for (it = methods.begin(); it != methods.end(); ++it) {
 		function_kind kind = get_method_kind(clazz, *it);
 		print_method_decl(os, clazz, *it, kind);
+		if (clazz.is_get_method(*it)) {
+			string base = clazz.base_method_name(*it);
+			print_named_method_decl(os, clazz, *it, base, kind);
+		}
 	}
 }
 
@@ -1296,9 +1304,42 @@ void cpp_generator::print_set_enums_impl(ostream &os, const isl_class &clazz)
 		print_set_enums_impl(os, clazz, it->first);
 }
 
+/* Print a definition for the "get" method "fd" in class "clazz",
+ * using a name that includes the "get_" prefix, to "os".
+ *
+ * This definition simply calls the variant without the "get_" prefix and
+ * returns its result.
+ * Note that static methods are not considered to be "get" methods.
+ */
+void cpp_generator::print_get_method_impl(ostream &os, const isl_class &clazz,
+	FunctionDecl *fd)
+{
+	string get_name = clazz.base_method_name(fd);
+	string name = clazz.method_name(fd);
+	function_kind kind = function_kind_member_method;
+	int num_params = fd->getNumParams();
+
+	print_named_method_header(os, clazz, fd, get_name, false, kind);
+	osprintf(os, "{\n");
+	osprintf(os, "  return %s(", name.c_str());
+	for (int i = 1; i < num_params; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+
+		if (i != 1)
+			osprintf(os, ", ");
+		osprintf(os, "%s", param->getName().str().c_str());
+	}
+	osprintf(os, ");\n");
+	osprintf(os, "}\n");
+}
+
 /* Print definitions for methods "methods" in class "clazz" to "os".
  *
  * "kind" specifies the kind of method that should be generated.
+ *
+ * For methods that are identified as "get" methods, also
+ * print a definition for the method using a name that includes
+ * the "get_" prefix.
  */
 void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
 	const set<FunctionDecl *> &methods)
@@ -1314,6 +1355,8 @@ void cpp_generator::print_method_group_impl(ostream &os, const isl_class &clazz,
 			osprintf(os, "\n");
 		kind = get_method_kind(clazz, *it);
 		print_method_impl(os, clazz, *it, kind);
+		if (clazz.is_get_method(*it))
+			print_get_method_impl(os, clazz, *it);
 	}
 }
 
