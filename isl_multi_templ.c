@@ -1,6 +1,6 @@
 /*
  * Copyright 2011      Sven Verdoolaege
- * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2012-2014 Ecole Normale Superieure
  *
  * Use of this software is governed by the MIT license
  *
@@ -816,6 +816,32 @@ error:
 	FN(MULTI(BASE),free)(multi1);
 	FN(MULTI(BASE),free)(multi2);
 	return NULL;
+}
+
+/* Only used on some multi-expressions.
+ */
+static isl_bool FN(MULTI(BASE),any)(__isl_keep MULTI(BASE) *multi,
+	isl_bool (*test)(__isl_keep EL *)) __attribute__ ((unused));
+
+/* Does "test" succeed on any base expression of "multi"?
+ */
+static isl_bool FN(MULTI(BASE),any)(__isl_keep MULTI(BASE) *multi,
+	isl_bool (*test)(__isl_keep EL *))
+{
+	isl_size n;
+	int i;
+
+	n = FN(MULTI(BASE),size)(multi);
+	if (n < 0)
+		return isl_bool_error;
+
+	for (i = 0; i < n; ++i) {
+		isl_bool any = test(multi->u.p[i]);
+		if (any < 0 || any)
+			return any;
+	}
+
+	return isl_bool_false;
 }
 
 /* Convert a multiple expression defined over a parameter domain

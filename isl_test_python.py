@@ -14,6 +14,7 @@ import isl
 #  - construction from an integer
 #  - static constructor without a parameter
 #  - conversion construction
+#  - construction of empty union set
 #
 #  The tests to construct from integers and strings cover functionality that
 #  is also tested in the parameter type tests, but here the presence of
@@ -33,6 +34,10 @@ def test_constructors():
 	result = isl.set("{ [1] }")
 	s = isl.set(bs)
 	assert(s.is_equal(result))
+
+	us = isl.union_set("{ A[1]; B[2, 3] }")
+	empty = isl.union_set.empty()
+	assert(us.is_equal(us.union(empty)))
 
 # Test integer function parameters for a particular integer value.
 #
@@ -220,6 +225,18 @@ def test_every():
 	except:
 		caught = True
 	assert(caught)
+
+# Check basic construction of spaces.
+#
+def test_space():
+	unit = isl.space.unit()
+	set_space = unit.add_named_tuple("A", 3)
+	map_space = set_space.add_named_tuple("B", 2)
+
+	set = isl.set.universe(set_space)
+	map = isl.map.universe(map_space)
+	assert(set.is_equal(isl.set("{ A[*,*,*] }")))
+	assert(map.is_equal(isl.map("{ A[*,*,*] -> B[*,*] }")))
 
 # Construct a simple schedule tree with an outer sequence node and
 # a single-dimensional band node in each branch, with one of them
@@ -416,6 +433,7 @@ def test_ast_build_expr():
 #  - Different return types
 #  - Foreach functions
 #  - Every functions
+#  - Spaces
 #  - Schedule trees
 #  - AST generation
 #  - AST expression generation
@@ -425,6 +443,7 @@ test_parameters()
 test_return()
 test_foreach()
 test_every()
+test_space()
 test_schedule_tree()
 test_ast_build()
 test_ast_build_expr()

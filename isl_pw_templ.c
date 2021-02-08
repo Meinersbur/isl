@@ -1497,6 +1497,136 @@ __isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
 	return isl_space_copy(FN(PW,peek_space)(pw));
 }
 
+/* Return the space of "pw".
+ * This may be either a copy or the space itself
+ * if there is only one reference to "pw".
+ * This allows the space to be modified inplace
+ * if both the piecewise expression and its space have only a single reference.
+ * The caller is not allowed to modify "pw" between this call and
+ * a subsequent call to isl_pw_*_restore_*.
+ * The only exception is that isl_pw_*_free can be called instead.
+ */
+__isl_give isl_space *FN(PW,take_space)(__isl_keep PW *pw)
+{
+	isl_space *space;
+
+	if (!pw)
+		return NULL;
+	if (pw->ref != 1)
+		return FN(PW,get_space)(pw);
+	space = pw->dim;
+	pw->dim = NULL;
+	return space;
+}
+
+/* Set the space of "pw" to "space", where the space of "pw" may be missing
+ * due to a preceding call to isl_pw_*_take_space.
+ * However, in this case, "pw" only has a single reference and
+ * then the call to isl_pw_*_cow has no effect.
+ */
+__isl_give PW *FN(PW,restore_space)(__isl_take PW *pw,
+	__isl_take isl_space *space)
+{
+	if (!pw || !space)
+		goto error;
+
+	if (pw->dim == space) {
+		isl_space_free(space);
+		return pw;
+	}
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+	isl_space_free(pw->dim);
+	pw->dim = space;
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	isl_space_free(space);
+	return NULL;
+}
+
+/* Check that "pos" is a valid position for a cell in "pw".
+ */
+static isl_stat FN(PW,check_pos)(__isl_keep PW *pw, int pos)
+{
+	if (!pw)
+		return isl_stat_error;
+	if (pos < 0 || pos >= pw->n)
+		isl_die(FN(PW,get_ctx)(pw), isl_error_internal,
+			"position out of bounds", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Return a copy of the base expression associated to
+ * the cell at position "pos" in "pw".
+ */
+__isl_give EL *FN(PW,get_base_at)(__isl_keep PW *pw, int pos)
+{
+	if (FN(PW,check_pos)(pw, pos) < 0)
+		return NULL;
+	return FN(EL,copy)(pw->p[pos].FIELD);
+}
+
+/* Return the base expression associated to
+ * the cell at position "pos" in "pw".
+ * This may be either a copy or the base expression itself
+ * if there is only one reference to "pw".
+ * This allows the base expression to be modified inplace
+ * if both the piecewise expression and this base expression
+ * have only a single reference.
+ * The caller is not allowed to modify "pw" between this call and
+ * a subsequent call to isl_pw_*_restore_*.
+ * The only exception is that isl_pw_*_free can be called instead.
+ */
+__isl_give EL *FN(PW,take_base_at)(__isl_keep PW *pw, int pos)
+{
+	EL *el;
+
+	if (!pw)
+		return NULL;
+	if (pw->ref != 1)
+		return FN(PW,get_base_at)(pw, pos);
+	if (FN(PW,check_pos)(pw, pos) < 0)
+		return NULL;
+	el = pw->p[pos].FIELD;
+	pw->p[pos].FIELD = NULL;
+	return el;
+}
+
+/* Set the base expression associated to
+ * the cell at position "pos" in "pw" to "el",
+ * where this base expression may be missing
+ * due to a preceding call to isl_pw_*_take_base_at.
+ * However, in this case, "pw" only has a single reference and
+ * then the call to isl_pw_*_cow has no effect.
+ */
+__isl_give PW *FN(PW,restore_base_at)(__isl_take PW *pw, int pos,
+	__isl_take EL *el)
+{
+	if (FN(PW,check_pos)(pw, pos) < 0 || !el)
+		goto error;
+
+	if (pw->p[pos].FIELD == el) {
+		FN(EL,free)(el);
+		return pw;
+	}
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+	FN(EL,free)(pw->p[pos].FIELD);
+	pw->p[pos].FIELD = el;
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	FN(EL,free)(el);
+	return NULL;
+}
+
 __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
 {
 	return pw ? isl_space_domain(isl_space_copy(pw->dim)) : NULL;

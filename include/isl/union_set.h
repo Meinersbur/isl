@@ -16,6 +16,10 @@ __isl_give isl_union_set *isl_union_set_from_basic_set(
 	__isl_take isl_basic_set *bset);
 __isl_constructor
 __isl_give isl_union_set *isl_union_set_from_set(__isl_take isl_set *set);
+__isl_overload
+__isl_give isl_union_set *isl_union_set_empty_ctx(isl_ctx *ctx);
+__isl_give isl_union_set *isl_union_set_empty_space(
+	__isl_take isl_space *space);
 __isl_give isl_union_set *isl_union_set_empty(__isl_take isl_space *space);
 __isl_give isl_union_set *isl_union_set_copy(__isl_keep isl_union_set *uset);
 __isl_null isl_union_set *isl_union_set_free(__isl_take isl_union_set *uset);
@@ -111,6 +115,7 @@ isl_bool isl_union_set_is_subset(__isl_keep isl_union_set *uset1,
 __isl_export
 isl_bool isl_union_set_is_equal(__isl_keep isl_union_set *uset1,
 	__isl_keep isl_union_set *uset2);
+__isl_export
 isl_bool isl_union_set_is_disjoint(__isl_keep isl_union_set *uset1,
 	__isl_keep isl_union_set *uset2);
 __isl_export

@@ -283,6 +283,7 @@ static void test_ast_build(isl::ctx ctx)
  *  - Different return types
  *  - Foreach functions
  *  - Every functions
+ *  - Spaces
  *  - Schedule trees
  *  - AST generation
  *  - AST expression generation
@@ -299,6 +300,7 @@ int main()
 	test_return(ctx);
 	test_foreach(ctx);
 	test_every(ctx);
+	test_space(ctx);
 	test_schedule_tree(ctx);
 	test_ast_build(ctx);
 	test_ast_build_expr(ctx);

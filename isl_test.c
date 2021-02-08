@@ -380,6 +380,12 @@ struct {
 	  "{ [x] -> [] : 0 <= x <= 15 }" },
 	{ "{ [x] -> [x] : }",
 	  "{ [x] -> [x] }" },
+	{ "{ [x=4:5] -> [x + 1] }",
+	  "{ [x] -> [x + 1] : 4 <= x <= 5 }" },
+	{ "{ [x=4:5] -> [x + 1 : x + 1] }",
+	  "{ [x=4:5] -> [x + 1] }" },
+	{ "{ [x] -> [x - 1 : x + 1] }",
+	  "{ [x] -> [y] : x - 1 <= y <= x + 1 }" },
 };
 
 int test_parse(struct isl_ctx *ctx)
@@ -2796,6 +2802,8 @@ static int test_lexmin(struct isl_ctx *ctx)
 	map = isl_map_read_from_str(ctx, str);
 	map = isl_map_lexmin(map);
 	isl_map_free(map);
+	if (!map)
+		return -1;
 
 	str = "[C] -> { [obj,a,b,c] : obj <= 38 a + 7 b + 10 c and "
 	    "a + b <= 1 and c <= 10 b and c <= C and a,b,c,C >= 0 }";

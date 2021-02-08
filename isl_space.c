@@ -2773,7 +2773,7 @@ __isl_give isl_space *isl_space_zip(__isl_take isl_space *space)
 	isl_space *dom_dom, *dom_ran, *ran_dom, *ran_ran;
 
 	if (!isl_space_can_zip(space))
-		isl_die(space->ctx, isl_error_invalid, "dim cannot be zipped",
+		isl_die(space->ctx, isl_error_invalid, "space cannot be zipped",
 			goto error);
 
 	if (!space)

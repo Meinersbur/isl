@@ -36,12 +36,20 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <vector>
 
 #include "python.h"
 #include "generator.h"
+
+/* Argument format for Python methods with a fixed number of arguments.
+ */
+static const char *fixed_arg_fmt = "arg%d";
+/* Argument format for Python methods with a variable number of arguments.
+ */
+static const char *var_arg_fmt = "args[%d]";
 
 /* Drop the "isl_" initial part of the type name "name".
  */
@@ -61,14 +69,14 @@ void python_generator::print_method_arguments(int first, int n_arg)
 	}
 }
 
-/* Print the header of the method "name" with "n_arg" arguments.
+/* Print the start of a definition for method "name"
+ * (without specifying the arguments).
  * If "is_static" is set, then mark the python method as static.
  *
  * If the method is called "from", then rename it to "convert_from"
  * because "from" is a python keyword.
  */
-void python_generator::print_method_header(bool is_static, const string &name,
-	int n_arg)
+static void print_method_def(bool is_static, const string &name)
 {
 	const char *s;
 
@@ -79,7 +87,17 @@ void python_generator::print_method_header(bool is_static, const string &name,
 	if (name == "from")
 		s = "convert_from";
 
-	printf("    def %s(", s);
+	printf("    def %s", s);
+}
+
+/* Print the header of the method "name" with "n_arg" arguments.
+ * If "is_static" is set, then mark the python method as static.
+ */
+void python_generator::print_method_header(bool is_static, const string &name,
+	int n_arg)
+{
+	print_method_def(is_static, name);
+	printf("(");
 	print_method_arguments(0, n_arg);
 	printf("):\n");
 }
@@ -105,23 +123,31 @@ static void print_indent(int indent, const char *format, ...)
  * an exception.
  * If "upcast" is not set, then the "super", "name" and "n" arguments
  * to this function are ignored.
+ * "fmt" is the format for printing Python method arguments.
  */
-void python_generator::print_type_check(int indent, const string &type, int pos,
-	bool upcast, const string &super, const string &name, int n)
+void python_generator::print_type_check(int indent, const string &type,
+	const char *fmt, int pos, bool upcast, const string &super,
+	const string &name, int n)
 {
 	print_indent(indent, "try:\n");
-	print_indent(indent, "    if not arg%d.__class__ is %s:\n",
-		pos, type.c_str());
-	print_indent(indent, "        arg%d = %s(arg%d)\n",
-		pos, type.c_str(), pos);
+	print_indent(indent, "    if not ");
+	printf(fmt, pos);
+	printf(".__class__ is %s:\n", type.c_str());
+	print_indent(indent, "        ");
+	printf(fmt, pos);
+	printf(" = %s(", type.c_str());
+	printf(fmt, pos);
+	printf(")\n");
 	print_indent(indent, "except:\n");
 	if (upcast) {
-		print_indent(indent, "    return %s(arg0).%s(",
-			type2python(super).c_str(), name.c_str());
+		print_indent(indent, "    return %s(",
+			type2python(super).c_str());
+		printf(fmt, 0);
+		printf(").%s(", name.c_str());
 		for (int i = 1; i < n; ++i) {
 			if (i != 1)
 				printf(", ");
-			printf("arg%d", i);
+			printf(fmt, i);
 		}
 		printf(")\n");
 	} else
@@ -150,11 +176,12 @@ void python_generator::print_type_checks(const string &cname,
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
 		if (!first_is_ctx && i > 0 && super.size() > 0)
-			print_type_check(8, type, i - first_is_ctx, true,
+			print_type_check(8, type, fixed_arg_fmt,
+					i - first_is_ctx, true,
 					super[0], cname, n);
 		else
-			print_type_check(8, type, i - first_is_ctx, false,
-					"", cname, -1);
+			print_type_check(8, type, fixed_arg_fmt,
+					i - first_is_ctx, false, "", cname, -1);
 	}
 }
 
@@ -250,30 +277,46 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 }
 
 /* Print the argument at position "arg" in call to "fd".
+ * "fmt" is the format for printing Python method arguments.
  * "skip" is the number of initial arguments of "fd" that are
  * skipped in the Python method.
  *
- * If the argument is a callback, then print a reference to
+ * If the (first) argument is an isl_ctx, then print "ctx",
+ * assuming that the caller has made the context available
+ * in a "ctx" variable.
+ * Otherwise, if the argument is a callback, then print a reference to
  * the callback wrapper "cb".
  * Otherwise, if the argument is marked as consuming a reference,
  * then pass a copy of the pointer stored in the corresponding
  * argument passed to the Python method.
+ * Otherwise, if the argument is a string, then the python string is first
+ * encoded as a byte sequence, using 'ascii' as encoding.  This assumes
+ * that all strings passed to isl can be converted to 'ascii'.
  * Otherwise, if the argument is a pointer, then pass this pointer itself.
  * Otherwise, pass the argument directly.
  */
-void python_generator::print_arg_in_call(FunctionDecl *fd, int arg, int skip)
+void python_generator::print_arg_in_call(FunctionDecl *fd, const char *fmt,
+	int arg, int skip)
 {
 	ParmVarDecl *param = fd->getParamDecl(arg);
 	QualType type = param->getOriginalType();
-	if (is_callback(type)) {
+	if (is_isl_ctx(type)) {
+		printf("ctx");
+	} else if (is_callback(type)) {
 		printf("cb");
 	} else if (takes(param)) {
 		print_copy(type);
-		printf("(arg%d.ptr)", arg - skip);
+		printf("(");
+		printf(fmt, arg - skip);
+		printf(".ptr)");
+	} else if (is_string(type)) {
+		printf(fmt, arg - skip);
+		printf(".encode('ascii')");
 	} else if (type->isPointerType()) {
-		printf("arg%d.ptr", arg - skip);
+		printf(fmt, arg - skip);
+		printf(".ptr");
 	} else {
-		printf("arg%d", arg - skip);
+		printf(fmt, arg - skip);
 	}
 }
 
@@ -292,9 +335,10 @@ static void print_rethrow(int indent, const char *exc_info)
  * is set and if it failed with an exception.  If so, the 'exc_info'
  * field contains the exception and is raised again.
  * The field is cleared because the callback and its data may get reused.
+ * "fmt" is the format for printing Python method arguments.
  */
 static void print_persistent_callback_failure_check(int indent,
-	const isl_class &clazz)
+	const isl_class &clazz, const char *fmt)
 {
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 	set<FunctionDecl *>::const_iterator in;
@@ -302,13 +346,17 @@ static void print_persistent_callback_failure_check(int indent,
 	for (in = callbacks.begin(); in != callbacks.end(); ++in) {
 		string callback_name = clazz.persistent_callback_name(*in);
 
-		print_indent(indent, "if hasattr(arg0, '%s') and "
-			"arg0.%s['exc_info'] != None:\n",
-			callback_name.c_str(), callback_name.c_str());
-		print_indent(indent, "    exc_info = arg0.%s['exc_info'][0]\n",
-			callback_name.c_str());
-		print_indent(indent, "    arg0.%s['exc_info'][0] = None\n",
-			callback_name.c_str());
+		print_indent(indent, "if hasattr(");
+		printf(fmt, 0);
+		printf(", '%s') and ", callback_name.c_str());
+		printf(fmt, 0);
+		printf(".%s['exc_info'] != None:\n", callback_name.c_str());
+		print_indent(indent, "    exc_info = ");
+		printf(fmt, 0);
+		printf(".%s['exc_info'][0]\n", callback_name.c_str());
+		print_indent(indent, "    ");
+		printf(fmt, 0);
+		printf(".%s['exc_info'][0] = None\n", callback_name.c_str());
 		print_rethrow(indent + 4, "exc_info");
 	}
 }
@@ -317,6 +365,7 @@ static void print_persistent_callback_failure_check(int indent,
  * to the C function "method" with the given indentation.
  * If the object on which the method was called
  * may have a persistent callback, then first check if any of those failed.
+ * "fmt" is the format for printing Python method arguments.
  *
  * If the method returns a new instance of the same object type and
  * if the class has any persistent callbacks, then the data
@@ -339,12 +388,12 @@ static void print_persistent_callback_failure_check(int indent,
  * In case of isl_size, the result is converted to a Python int.
  */
 void python_generator::print_method_return(int indent, const isl_class &clazz,
-	FunctionDecl *method)
+	FunctionDecl *method, const char *fmt)
 {
 	QualType return_type = method->getReturnType();
 
 	if (!is_static(clazz, method))
-		print_persistent_callback_failure_check(indent, clazz);
+		print_persistent_callback_failure_check(indent, clazz, fmt);
 
 	if (is_isl_type(return_type)) {
 		string type;
@@ -406,6 +455,47 @@ void python_generator::print_get_method(const isl_class &clazz,
 	printf(")\n");
 }
 
+/* Print a call to "method", along with the corresponding
+ * return statement, with the given indentation.
+ * "drop_ctx" is set if the first argument is an isl_ctx.
+ * "drop_user" is set if the last argument is a "user" argument
+ * corresponding to a callback argument.
+ *
+ * A "ctx" variable is first initialized as it may be needed
+ * in the first call to print_arg_in_call and in print_method_return.
+ *
+ * If the method has a callback function, then any exception
+ * thrown in the callback also need to be rethrown.
+ */
+void python_generator::print_method_call(int indent, const isl_class &clazz,
+	FunctionDecl *method, const char *fmt, int drop_ctx, int drop_user)
+{
+	string fullname = method->getName();
+	int num_params = method->getNumParams();
+
+	if (drop_ctx) {
+		print_indent(indent, "ctx = Context.getDefaultInstance()\n");
+	} else {
+		print_indent(indent, "ctx = ");
+		printf(fmt, 0);
+		printf(".ctx\n");
+	}
+	print_indent(indent, "res = isl.%s(", fullname.c_str());
+	for (int i = 0; i < num_params - drop_user; ++i) {
+		if (i > 0)
+			printf(", ");
+		print_arg_in_call(method, fmt, i, drop_ctx);
+	}
+	if (drop_user)
+		printf(", None");
+	printf(")\n");
+
+	if (drop_user)
+		print_rethrow(indent, "exc_info[0]");
+
+	print_method_return(indent, clazz, method, fmt);
+}
+
 /* Print a python method corresponding to the C function "method".
  * "super" contains the superclasses of the class to which the method belongs,
  * with the first element corresponding to the annotation that appears
@@ -433,7 +523,6 @@ void python_generator::print_get_method(const isl_class &clazz,
 void python_generator::print_method(const isl_class &clazz,
 	FunctionDecl *method, vector<string> super)
 {
-	string fullname = method->getName();
 	string cname = clazz.method_name(method);
 	int num_params = method->getNumParams();
 	int drop_user = 0;
@@ -458,27 +547,7 @@ void python_generator::print_method(const isl_class &clazz,
 			continue;
 		print_callback(param, i - drop_ctx);
 	}
-	if (drop_ctx)
-		printf("        ctx = Context.getDefaultInstance()\n");
-	else
-		printf("        ctx = arg0.ctx\n");
-	printf("        res = isl.%s(", fullname.c_str());
-	if (drop_ctx)
-		printf("ctx");
-	else
-		print_arg_in_call(method, 0, 0);
-	for (int i = 1; i < num_params - drop_user; ++i) {
-		printf(", ");
-		print_arg_in_call(method, i, drop_ctx);
-	}
-	if (drop_user)
-		printf(", None");
-	printf(")\n");
-
-	if (drop_user)
-		print_rethrow(8, "exc_info[0]");
-
-	print_method_return(8, clazz, method);
+	print_method_call(8, clazz, method, fixed_arg_fmt, drop_ctx, drop_user);
 
 	if (clazz.is_get_method(method))
 		print_get_method(clazz, method);
@@ -493,43 +562,74 @@ static void print_argument_check(QualType type, int i)
 		string type_str;
 		type_str = generator::extract_type(type);
 		type_str = type2python(type_str);
-		printf("arg%d.__class__ is %s", i, type_str.c_str());
+		printf("args[%d].__class__ is %s", i, type_str.c_str());
 	} else if (type->isPointerType()) {
-		printf("type(arg%d) == str", i);
+		printf("type(args[%d]) == str", i);
 	} else {
-		printf("type(arg%d) == int", i);
+		printf("type(args[%d]) == int", i);
 	}
 }
 
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
  * expected by "fd".
+ * "drop_ctx" is set if the first argument of "fd" is an isl_ctx,
+ * which does not appear as an argument to the Python method.
  *
- * If the Python method has no arguments, then print nothing.
+ * If an automatic conversion function is available for any
+ * of the argument types, then also allow the argument
+ * to be of the type as prescribed by the second input argument
+ * of the conversion function.
+ * The corresponding arguments are then converted to the expected types
+ * if needed.  The argument tuple first needs to be converted to a list
+ * in order to be able to modify the entries.
  */
 void python_generator::print_argument_checks(const isl_class &clazz,
-	FunctionDecl *fd)
+	FunctionDecl *fd, int drop_ctx)
 {
 	int num_params = fd->getNumParams();
-	int first = generator::is_static(clazz, fd) ? 0 : 1;
+	int first = generator::is_static(clazz, fd) ? drop_ctx : 1;
+	std::vector<bool> convert(num_params);
 
-	if (first >= num_params)
-		return;
-
-	printf("        if ");
+	printf("        if len(args) == %d", num_params - drop_ctx);
 	for (int i = first; i < num_params; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
+		const Type *ptr = type.getTypePtr();
 
-		if (i > first)
-			printf(" and ");
-		print_argument_check(type, i);
+		printf(" and ");
+		if (conversions.count(ptr) == 0) {
+			print_argument_check(type, i - drop_ctx);
+		} else {
+			QualType type2 = conversions.at(ptr)->getOriginalType();
+			convert[i] = true;
+			printf("(");
+			print_argument_check(type, i - drop_ctx);
+			printf(" or ");
+			print_argument_check(type2, i - drop_ctx);
+			printf(")");
+		}
 	}
 	printf(":\n");
+
+	if (std::find(convert.begin(), convert.end(), true) == convert.end())
+		return;
+	print_indent(12, "args = list(args)\n");
+	for (int i = first; i < num_params; ++i) {
+		ParmVarDecl *param = fd->getParamDecl(i);
+		string type;
+
+		if (!convert[i])
+			continue;
+		type = type2python(extract_type(param->getOriginalType()));
+		print_type_check(12, type, var_arg_fmt,
+				i - drop_ctx, false, "", "", -1);
+	}
 }
 
 /* Print part of an overloaded python method corresponding to the C function
  * "method".
+ * "drop_ctx" is set if the first argument of "method" is an isl_ctx.
  *
  * In particular, print code to test whether the arguments passed to
  * the python method correspond to the arguments expected by "method"
@@ -538,19 +638,10 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 void python_generator::print_method_overload(const isl_class &clazz,
 	FunctionDecl *method)
 {
-	string fullname = method->getName();
-	int num_params = method->getNumParams();
+	int drop_ctx = first_arg_is_isl_ctx(method);
 
-	print_argument_checks(clazz, method);
-	printf("            res = isl.%s(", fullname.c_str());
-	print_arg_in_call(method, 0, 0);
-	for (int i = 1; i < num_params; ++i) {
-		printf(", ");
-		print_arg_in_call(method, i, 0);
-	}
-	printf(")\n");
-	printf("            ctx = arg0.ctx\n");
-	print_method_return(12, clazz, method);
+	print_argument_checks(clazz, method, drop_ctx);
+	print_method_call(12, clazz, method, var_arg_fmt, drop_ctx, 0);
 }
 
 /* Print a python method with a name derived from "fullname"
@@ -568,7 +659,6 @@ void python_generator::print_method(const isl_class &clazz,
 {
 	string cname;
 	function_set::const_iterator it;
-	int num_params;
 	FunctionDecl *any_method;
 
 	any_method = *methods.begin();
@@ -578,12 +668,13 @@ void python_generator::print_method(const isl_class &clazz,
 	}
 
 	cname = clazz.method_name(any_method);
-	num_params = any_method->getNumParams();
 
-	print_method_header(is_static(clazz, any_method), cname, num_params);
+	print_method_def(is_static(clazz, any_method), cname);
+	printf("(*args):\n");
 
 	for (it = methods.begin(); it != methods.end(); ++it)
 		print_method_overload(clazz, *it);
+	printf("        raise Error\n");
 }
 
 /* Print a python method "name" corresponding to "fd" setting
@@ -613,11 +704,11 @@ void python_generator::print_set_enum(const isl_class &clazz,
 	for (int i = 0; i < num_params - 1; ++i) {
 		if (i)
 			printf(", ");
-		print_arg_in_call(fd, i, 0);
+		print_arg_in_call(fd, fixed_arg_fmt, i, 0);
 	}
 	printf(", %d", value);
 	printf(")\n");
-	print_method_return(8, clazz, fd);
+	print_method_return(8, clazz, fd, fixed_arg_fmt);
 }
 
 /* Print python methods corresponding to "fd", which sets an enum.
@@ -643,13 +734,6 @@ void python_generator::print_set_enum(const isl_class &clazz,
  * In particular, check if the actual arguments correspond to the
  * formal arguments of "cons" and if so call "cons" and put the
  * result in self.ptr and a reference to the default context in self.ctx.
- *
- * If the function consumes a reference, then we pass it a copy of
- * the actual argument.
- *
- * If the function takes a string argument, the python string is first
- * encoded as a byte sequence, using 'ascii' as encoding.  This assumes
- * that all strings passed to isl can be converted to 'ascii'.
  */
 void python_generator::print_constructor(const isl_class &clazz,
 	FunctionDecl *cons)
@@ -659,40 +743,15 @@ void python_generator::print_constructor(const isl_class &clazz,
 	int num_params = cons->getNumParams();
 	int drop_ctx = first_arg_is_isl_ctx(cons);
 
-	printf("        if len(args) == %d", num_params - drop_ctx);
-	for (int i = drop_ctx; i < num_params; ++i) {
-		ParmVarDecl *param = cons->getParamDecl(i);
-		QualType type = param->getOriginalType();
-		if (is_isl_type(type)) {
-			string s;
-			s = type2python(extract_type(type));
-			printf(" and args[%d].__class__ is %s",
-				i - drop_ctx, s.c_str());
-		} else if (type->isPointerType()) {
-			printf(" and type(args[%d]) == str", i - drop_ctx);
-		} else {
-			printf(" and type(args[%d]) == int", i - drop_ctx);
-		}
-	}
-	printf(":\n");
+	print_argument_checks(clazz, cons, drop_ctx);
 	printf("            self.ctx = Context.getDefaultInstance()\n");
 	printf("            self.ptr = isl.%s(", fullname.c_str());
 	if (drop_ctx)
 		printf("self.ctx");
 	for (int i = drop_ctx; i < num_params; ++i) {
-		ParmVarDecl *param = cons->getParamDecl(i);
-		QualType type = param->getOriginalType();
 		if (i)
 			printf(", ");
-		if (is_isl_type(type)) {
-			if (takes(param))
-				print_copy(param->getOriginalType());
-			printf("(args[%d].ptr)", i - drop_ctx);
-		} else if (is_string(type)) {
-			printf("args[%d].encode('ascii')", i - drop_ctx);
-		} else {
-			printf("args[%d]", i - drop_ctx);
-		}
+		print_arg_in_call(cons, var_arg_fmt, i, drop_ctx);
 	}
 	printf(")\n");
 	printf("            return\n");
@@ -863,7 +922,7 @@ void python_generator::print_representation(const isl_class &clazz,
 		return;
 
 	printf("    def __str__(arg0):\n");
-	print_type_check(8, python_name, 0, false, "", "", -1);
+	print_type_check(8, python_name, fixed_arg_fmt, 0, false, "", "", -1);
 	printf("        ptr = isl.%s(arg0.ptr)\n",
 		string(clazz.fn_to_str->getName()).c_str());
 	printf("        res = cast(ptr, c_char_p).value.decode('ascii')\n");

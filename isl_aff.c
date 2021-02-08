@@ -2456,6 +2456,18 @@ error:
 	return isl_bool_error;
 }
 
+/* Does "aff" involve any local variables, i.e., integer divisions?
+ */
+isl_bool isl_aff_involves_locals(__isl_keep isl_aff *aff)
+{
+	isl_size n;
+
+	n = isl_aff_dim(aff, isl_dim_div);
+	if (n < 0)
+		return isl_bool_error;
+	return isl_aff_involves_dims(aff, isl_dim_div, 0, n);
+}
+
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
@@ -2492,23 +2504,16 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	return aff;
 }
 
-/* Drop the "n" domain dimensions starting at "first" from "aff",
- * after checking that they do not appear in the affine expression.
+/* Is the domain of "aff" a product?
  */
-static __isl_give isl_aff *drop_domain(__isl_take isl_aff *aff, unsigned first,
-	unsigned n)
+static isl_bool isl_aff_domain_is_product(__isl_keep isl_aff *aff)
 {
-	isl_bool involves;
-
-	involves = isl_aff_involves_dims(aff, isl_dim_in, first, n);
-	if (involves < 0)
-		return isl_aff_free(aff);
-	if (involves)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-		    "affine expression involves some of the domain dimensions",
-		    return isl_aff_free(aff));
-	return isl_aff_drop_dims(aff, isl_dim_in, first, n);
+	return isl_space_is_product(isl_aff_peek_domain_space(aff));
 }
+
+#undef TYPE
+#define TYPE	isl_aff
+#include <isl_domain_factor_templ.c>
 
 /* Project the domain of the affine expression onto its parameter space.
  * The affine expression may not involve any of the domain dimensions.
@@ -2521,46 +2526,9 @@ __isl_give isl_aff *isl_aff_project_domain_on_params(__isl_take isl_aff *aff)
 	n = isl_aff_dim(aff, isl_dim_in);
 	if (n < 0)
 		return isl_aff_free(aff);
-	aff = drop_domain(aff, 0, n);
+	aff = isl_aff_drop_domain(aff, 0, n);
 	space = isl_aff_get_domain_space(aff);
 	space = isl_space_params(space);
-	aff = isl_aff_reset_domain_space(aff, space);
-	return aff;
-}
-
-/* Check that the domain of "aff" is a product.
- */
-static isl_stat check_domain_product(__isl_keep isl_aff *aff)
-{
-	isl_bool is_product;
-
-	is_product = isl_space_is_product(isl_aff_peek_domain_space(aff));
-	if (is_product < 0)
-		return isl_stat_error;
-	if (!is_product)
-		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
-			"domain is not a product", return isl_stat_error);
-	return isl_stat_ok;
-}
-
-/* Given an affine function with a domain of the form [A -> B] that
- * does not depend on B, return the same function on domain A.
- */
-__isl_give isl_aff *isl_aff_domain_factor_domain(__isl_take isl_aff *aff)
-{
-	isl_space *space;
-	isl_size n, n_in;
-
-	if (check_domain_product(aff) < 0)
-		return isl_aff_free(aff);
-	space = isl_aff_get_domain_space(aff);
-	n = isl_space_dim(space, isl_dim_set);
-	space = isl_space_factor_domain(space);
-	n_in = isl_space_dim(space, isl_dim_set);
-	if (n < 0 || n_in < 0)
-		aff = isl_aff_free(aff);
-	else
-		aff = drop_domain(aff, n_in, n - n_in);
 	aff = isl_aff_reset_domain_space(aff, space);
 	return aff;
 }
@@ -2707,8 +2675,8 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 
 #undef PW
 #define PW isl_pw_aff
-#undef EL
-#define EL isl_aff
+#undef BASE
+#define BASE aff
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_empty
 #undef ZERO
@@ -2762,7 +2730,7 @@ error:
 	return NULL;
 }
 
-/* Align the parameters of the to isl_pw_aff arguments and
+/* Align the parameters of the two isl_pw_aff arguments and
  * then apply a function "fn" on them that returns an isl_map.
  */
 static __isl_give isl_map *align_params_pw_pw_map_and(
@@ -2837,6 +2805,17 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
 	else
 		return isl_pw_aff_union_min(pwaff1, pwaff2);
 }
+
+/* Is the domain of "pa" a product?
+ */
+static isl_bool isl_pw_aff_domain_is_product(__isl_keep isl_pw_aff *pa)
+{
+	return isl_space_domain_is_wrapping(isl_pw_aff_peek_space(pa));
+}
+
+#undef TYPE
+#define TYPE	isl_pw_aff
+#include <isl_domain_factor_templ.c>
 
 /* Return a set containing those elements in the domain
  * of "pwaff" where it satisfies "fn" (if complement is 0) or
@@ -3932,6 +3911,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
 #include <isl_multi_identity_templ.c>
+#include <isl_multi_locals_templ.c>
 #include <isl_multi_move_dims_templ.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_product_templ.c>
@@ -4337,8 +4317,8 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 
 #undef PW
 #define PW isl_pw_multi_aff
-#undef EL
-#define EL isl_multi_aff
+#undef BASE
+#define BASE multi_aff
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_empty
 #undef ZERO
@@ -4367,6 +4347,84 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 
 #include <isl_union_multi.c>
 #include <isl_union_neg.c>
+
+/* Generic function for extracting a factor from a product "pma".
+ * "check_space" checks that the space is that of the right kind of product.
+ * "space_factor" extracts the factor from the space.
+ * "multi_aff_factor" extracts the factor from the constituent functions.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_factor(
+	__isl_take isl_pw_multi_aff *pma,
+	isl_stat (*check_space)(__isl_keep isl_pw_multi_aff *pma),
+	__isl_give isl_space *(*space_factor)(__isl_take isl_space *space),
+	__isl_give isl_multi_aff *(*multi_aff_factor)(
+		__isl_take isl_multi_aff *ma))
+{
+	int i;
+	isl_space *space;
+
+	if (check_space(pma) < 0)
+		return isl_pw_multi_aff_free(pma);
+
+	space = isl_pw_multi_aff_take_space(pma);
+	space = space_factor(space);
+
+	for (i = 0; pma && i < pma->n; ++i) {
+		isl_multi_aff *ma;
+
+		ma = isl_pw_multi_aff_take_base_at(pma, i);
+		ma = multi_aff_factor(ma);
+		pma = isl_pw_multi_aff_restore_base_at(pma, i, ma);
+	}
+
+	pma = isl_pw_multi_aff_restore_space(pma, space);
+
+	return pma;
+}
+
+/* Is the range of "pma" a wrapped relation?
+ */
+static isl_bool isl_pw_multi_aff_range_is_wrapping(
+	__isl_keep isl_pw_multi_aff *pma)
+{
+	return isl_space_range_is_wrapping(isl_pw_multi_aff_peek_space(pma));
+}
+
+/* Check that the range of "pma" is a product.
+ */
+static isl_stat pw_multi_aff_check_range_product(
+	__isl_keep isl_pw_multi_aff *pma)
+{
+	isl_bool wraps;
+
+	wraps = isl_pw_multi_aff_range_is_wrapping(pma);
+	if (wraps < 0)
+		return isl_stat_error;
+	if (!wraps)
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
+			"range is not a product", return isl_stat_error);
+	return isl_stat_ok;
+}
+
+/* Given a function A -> [B -> C], extract the function A -> B.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_domain(
+	__isl_take isl_pw_multi_aff *pma)
+{
+	return pw_multi_aff_factor(pma, &pw_multi_aff_check_range_product,
+				&isl_space_range_factor_domain,
+				&isl_multi_aff_range_factor_domain);
+}
+
+/* Given a function A -> [B -> C], extract the function A -> C.
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_range_factor_range(
+	__isl_take isl_pw_multi_aff *pma)
+{
+	return pw_multi_aff_factor(pma, &pw_multi_aff_check_range_product,
+				&isl_space_range_factor_range,
+				&isl_multi_aff_range_factor_range);
+}
 
 static __isl_give isl_pw_multi_aff *pw_multi_aff_union_lexmax(
 	__isl_take isl_pw_multi_aff *pma1,
@@ -6437,6 +6495,11 @@ static __isl_give isl_pw_multi_aff *union_pw_multi_aff_scale_multi_val_entry(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_multi_val *mv)
 {
+	struct isl_union_pw_multi_aff_transform_control control = {
+		.fn = &union_pw_multi_aff_scale_multi_val_entry,
+		.fn_user = mv,
+	};
+
 	upma = isl_union_pw_multi_aff_align_params(upma,
 						isl_multi_val_get_space(mv));
 	mv = isl_multi_val_align_params(mv,
@@ -6444,8 +6507,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_scale_multi_val(
 	if (!upma || !mv)
 		goto error;
 
-	return isl_union_pw_multi_aff_transform(upma,
-		       &union_pw_multi_aff_scale_multi_val_entry, mv);
+	return isl_union_pw_multi_aff_transform(upma, &control);
 
 	isl_multi_val_free(mv);
 	return upma;
@@ -7220,7 +7282,7 @@ __isl_give isl_map *isl_multi_pw_aff_eq_map(__isl_take isl_multi_pw_aff *mpa1,
 }
 
 /* Return a map containing pairs of elements in the domains of "mpa1" and "mpa2"
- * where the function values of "mpa1" is lexicographically satisfies "base"
+ * where the function values of "mpa1" lexicographically satisfies "base"
  * compared to that of "mpa2".  "space" is the space of the result.
  * The parameters of "mpa1" and "mpa2" are assumed to have been aligned.
  *
@@ -7410,6 +7472,23 @@ __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 	space = isl_set_get_space(domain);
 	ls = isl_local_space_from_space(space);
 	aff = isl_aff_val_on_domain(ls, v);
+
+	return isl_pw_aff_alloc(domain, aff);
+}
+
+/* Return a piecewise affine expression that is equal to the parameter
+ * with identifier "id" on "domain".
+ */
+__isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
+	__isl_take isl_set *domain, __isl_take isl_id *id)
+{
+	isl_space *space;
+	isl_aff *aff;
+
+	space = isl_set_get_space(domain);
+	space = isl_space_add_param_id(space, isl_id_copy(id));
+	domain = isl_set_align_params(domain, isl_space_copy(space));
+	aff = isl_aff_param_on_domain_space_id(space, id);
 
 	return isl_pw_aff_alloc(domain, aff);
 }
@@ -9435,6 +9514,79 @@ __isl_give isl_multi_pw_aff *isl_multi_union_pw_aff_extract_multi_pw_aff(
 error:
 	isl_space_free(space);
 	return NULL;
+}
+
+/* Data structure that specifies how isl_union_pw_multi_aff_un_op
+ * should modify the base expressions in the input.
+ *
+ * If "filter" is not NULL, then only the base expressions that satisfy "filter"
+ * are taken into account.
+ * "fn" is applied to each entry in the input.
+ */
+struct isl_union_pw_multi_aff_un_op_control {
+	isl_bool (*filter)(__isl_keep isl_pw_multi_aff *part);
+	__isl_give isl_pw_multi_aff *(*fn)(__isl_take isl_pw_multi_aff *pma);
+};
+
+/* Wrapper for isl_union_pw_multi_aff_un_op base functions (which do not take
+ * a second argument) for use as an isl_union_pw_multi_aff_transform
+ * base function (which does take a second argument).
+ * Simply call control->fn without the second argument.
+ */
+static __isl_give isl_pw_multi_aff *isl_union_pw_multi_aff_un_op_drop_user(
+	__isl_take isl_pw_multi_aff *pma, void *user)
+{
+	struct isl_union_pw_multi_aff_un_op_control *control = user;
+
+	return control->fn(pma);
+}
+
+/* Construct an isl_union_pw_multi_aff that is obtained by
+ * modifying "upma" according to "control".
+ *
+ * isl_union_pw_multi_aff_transform performs essentially
+ * the same operation, but takes a callback function
+ * of a different form (with an extra argument).
+ * Call isl_union_pw_multi_aff_transform with a wrapper
+ * that removes this extra argument.
+ */
+static __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_un_op(
+	__isl_take isl_union_pw_multi_aff *upma,
+	struct isl_union_pw_multi_aff_un_op_control *control)
+{
+	struct isl_union_pw_multi_aff_transform_control t_control = {
+		.filter = control->filter,
+		.fn = &isl_union_pw_multi_aff_un_op_drop_user,
+		.fn_user = control,
+	};
+
+	return isl_union_pw_multi_aff_transform(upma, &t_control);
+}
+
+/* For each function in "upma" of the form A -> [B -> C],
+ * extract the function A -> B and collect the results.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_factor_domain(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	struct isl_union_pw_multi_aff_un_op_control control = {
+		.filter = &isl_pw_multi_aff_range_is_wrapping,
+		.fn = &isl_pw_multi_aff_range_factor_domain,
+	};
+	return isl_union_pw_multi_aff_un_op(upma, &control);
+}
+
+/* For each function in "upma" of the form A -> [B -> C],
+ * extract the function A -> C and collect the results.
+ */
+__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_range_factor_range(
+	__isl_take isl_union_pw_multi_aff *upma)
+{
+	struct isl_union_pw_multi_aff_un_op_control control = {
+		.filter = &isl_pw_multi_aff_range_is_wrapping,
+		.fn = &isl_pw_multi_aff_range_factor_range,
+	};
+	return isl_union_pw_multi_aff_un_op(upma, &control);
 }
 
 /* Evaluate the affine function "aff" in the void point "pnt".

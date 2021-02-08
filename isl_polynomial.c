@@ -3085,8 +3085,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_from_qpolynomial(
 
 #undef PW
 #define PW isl_pw_qpolynomial
-#undef EL
-#define EL isl_qpolynomial
+#undef BASE
+#define BASE qpolynomial
 #undef EL_IS_ZERO
 #define EL_IS_ZERO is_zero
 #undef ZERO
@@ -4142,6 +4142,9 @@ __isl_give isl_term *isl_poly_foreach_term(__isl_keep isl_poly *poly,
 		if (!term)
 			goto error;
 	}
+	term = isl_term_cow(term);
+	if (!term)
+		return NULL;
 	term->pow[poly->var] = 0;
 
 	return term;

@@ -101,66 +101,6 @@ static std::string to_string(long l)
 	return strm.str();
 }
 
-/* List of conversion functions that are used to automatically convert
- * the second argument of the conversion function to its function result.
- */
-const std::set<std::string> cpp_generator::automatic_conversion_functions = {
-	"isl_id_read_from_str",
-	"isl_val_int_from_si",
-};
-
-/* Extract information about the automatic conversion function "fd",
- * storing the results in this->conversions.
- *
- * A function used for automatic conversion has exactly two arguments,
- * an isl_ctx and a non-isl object, and it returns an isl object.
- * Store a mapping from the isl object return type
- * to the non-isl object source type.
- */
-void cpp_generator::extract_automatic_conversion(FunctionDecl *fd)
-{
-	QualType return_type = fd->getReturnType();
-	const Type *type = return_type.getTypePtr();
-
-	if (fd->getNumParams() != 2)
-		die("Expecting two arguments");
-	if (!is_isl_ctx(fd->getParamDecl(0)->getOriginalType()))
-		die("Expecting isl_ctx first argument");
-	if (!is_isl_type(return_type))
-		die("Expecting isl object return type");
-	conversions[type] = fd->getParamDecl(1);
-}
-
-/* Extract information about all automatic conversion functions
- * for the given class, storing the results in this->conversions.
- *
- * In particular, look through all exported constructors for the class and
- * check if any of them is explicitly marked as a conversion function.
- */
-void cpp_generator::extract_class_automatic_conversions(const isl_class &clazz)
-{
-	const function_set &constructors = clazz.constructors;
-	function_set::iterator fi;
-
-	for (fi = constructors.begin(); fi != constructors.end(); ++fi) {
-		FunctionDecl *fd = *fi;
-		string name = fd->getName();
-		if (automatic_conversion_functions.count(name) != 0)
-			extract_automatic_conversion(fd);
-	}
-}
-
-/* Extract information about all automatic conversion functions,
- * storing the results in this->conversions.
- */
-void cpp_generator::extract_automatic_conversions()
-{
-	map<string, isl_class>::iterator ci;
-
-	for (ci = classes.begin(); ci != classes.end(); ++ci)
-		extract_class_automatic_conversions(ci->second);
-}
-
 /* Generate a cpp interface based on the extracted types and functions.
  *
  * Print first a set of forward declarations for all isl wrapper
@@ -174,8 +114,6 @@ void cpp_generator::extract_automatic_conversions()
 void cpp_generator::generate()
 {
 	ostream &os = cout;
-
-	extract_automatic_conversions();
 
 	osprintf(os, "\n");
 	osprintf(os, "namespace isl {\n\n");

@@ -1519,15 +1519,16 @@ struct max_constraint {
 	int		ineq;
 };
 
-static int max_constraint_equal(const void *entry, const void *val)
+static isl_bool max_constraint_equal(const void *entry, const void *val)
 {
 	struct max_constraint *a = (struct max_constraint *)entry;
 	isl_int *b = (isl_int *)val;
 
-	return isl_seq_eq(a->c->row[0] + 1, b, a->c->n_col - 1);
+	return isl_bool_ok(isl_seq_eq(a->c->row[0] + 1, b, a->c->n_col - 1));
 }
 
-static void update_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
+static isl_stat update_constraint(struct isl_ctx *ctx,
+	struct isl_hash_table *table,
 	isl_int *con, unsigned len, int n, int ineq)
 {
 	struct isl_hash_table_entry *entry;
@@ -1538,30 +1539,34 @@ static void update_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
-		return;
+		return isl_stat_error;
+	if (entry == isl_hash_table_entry_none)
+		return isl_stat_ok;
 	c = entry->data;
 	if (c->count < n) {
 		isl_hash_table_remove(ctx, table, entry);
-		return;
+		return isl_stat_ok;
 	}
 	c->count++;
 	if (isl_int_gt(c->c->row[0][0], con[0]))
-		return;
+		return isl_stat_ok;
 	if (isl_int_eq(c->c->row[0][0], con[0])) {
 		if (ineq)
 			c->ineq = ineq;
-		return;
+		return isl_stat_ok;
 	}
 	c->c = isl_mat_cow(c->c);
 	isl_int_set(c->c->row[0][0], con[0]);
 	c->ineq = ineq;
+
+	return isl_stat_ok;
 }
 
 /* Check whether the constraint hash table "table" contains the constraint
  * "con".
  */
-static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
-	isl_int *con, unsigned len, int n)
+static isl_bool has_constraint(struct isl_ctx *ctx,
+	struct isl_hash_table *table, isl_int *con, unsigned len, int n)
 {
 	struct isl_hash_table_entry *entry;
 	struct max_constraint *c;
@@ -1571,11 +1576,13 @@ static int has_constraint(struct isl_ctx *ctx, struct isl_hash_table *table,
 	entry = isl_hash_table_find(ctx, table, c_hash, max_constraint_equal,
 			con + 1, 0);
 	if (!entry)
-		return 0;
+		return isl_bool_error;
+	if (entry == isl_hash_table_entry_none)
+		return isl_bool_false;
 	c = entry->data;
 	if (c->count < n)
-		return 0;
-	return isl_int_eq(c->c->row[0][0], con[0]);
+		return isl_bool_false;
+	return isl_bool_ok(isl_int_eq(c->c->row[0][0], con[0]));
 }
 
 /* Are the constraints of "bset" known to be facets?
@@ -1679,14 +1686,16 @@ static __isl_give isl_basic_set *common_constraints(
 			isl_int *eq = set->p[s]->eq[i];
 			for (j = 0; j < 2; ++j) {
 				isl_seq_neg(eq, eq, 1 + total);
-				update_constraint(hull->ctx, table,
-							    eq, total, n, 0);
+				if (update_constraint(hull->ctx, table,
+						    eq, total, n, 0) < 0)
+					goto error;
 			}
 		}
 		for (i = 0; i < set->p[s]->n_ineq; ++i) {
 			isl_int *ineq = set->p[s]->ineq[i];
-			update_constraint(hull->ctx, table, ineq, total, n,
-				set->p[s]->n_eq == 0);
+			if (update_constraint(hull->ctx, table, ineq, total, n,
+					set->p[s]->n_eq == 0) < 0)
+				goto error;
 		}
 		++n;
 	}
@@ -1708,8 +1717,12 @@ static __isl_give isl_basic_set *common_constraints(
 		if (set->p[s]->n_ineq != hull->n_ineq)
 			continue;
 		for (i = 0; i < set->p[s]->n_ineq; ++i) {
+			isl_bool has;
 			isl_int *ineq = set->p[s]->ineq[i];
-			if (!has_constraint(hull->ctx, table, ineq, total, n))
+			has = has_constraint(hull->ctx, table, ineq, total, n);
+			if (has < 0)
+				goto error;
+			if (!has)
 				break;
 		}
 		if (i == set->p[s]->n_ineq)
@@ -2018,13 +2031,13 @@ struct ineq_cmp_data {
 	isl_int		*p;
 };
 
-static int has_ineq(const void *entry, const void *val)
+static isl_bool has_ineq(const void *entry, const void *val)
 {
 	isl_int *row = (isl_int *)entry;
 	struct ineq_cmp_data *v = (struct ineq_cmp_data *)val;
 
-	return isl_seq_eq(row + 1, v->p + 1, v->len) ||
-	       isl_seq_is_neg(row + 1, v->p + 1, v->len);
+	return isl_bool_ok(isl_seq_eq(row + 1, v->p + 1, v->len) ||
+			   isl_seq_is_neg(row + 1, v->p + 1, v->len));
 }
 
 static int hash_ineq(struct isl_ctx *ctx, struct isl_hash_table *table,
@@ -2151,7 +2164,8 @@ static int is_bound(struct sh_data *data, __isl_keep isl_set *set, int j,
  * least its constant term) may need to be temporarily negated to get
  * the actually hashed constraint.
  */
-static void set_max_constant_term(struct sh_data *data, __isl_keep isl_set *set,
+static isl_stat set_max_constant_term(struct sh_data *data,
+	__isl_keep isl_set *set,
 	int i, isl_int *ineq, uint32_t c_hash, struct ineq_cmp_data *v)
 {
 	int j;
@@ -2166,6 +2180,8 @@ static void set_max_constant_term(struct sh_data *data, __isl_keep isl_set *set,
 		entry = isl_hash_table_find(ctx, data->p[j].table,
 						c_hash, &has_ineq, v, 0);
 		if (!entry)
+			return isl_stat_error;
+		if (entry == isl_hash_table_entry_none)
 			continue;
 
 		ineq_j = entry->data;
@@ -2177,6 +2193,8 @@ static void set_max_constant_term(struct sh_data *data, __isl_keep isl_set *set,
 		if (neg)
 			isl_int_neg(ineq_j[0], ineq_j[0]);
 	}
+
+	return isl_stat_ok;
 }
 
 /* Check if inequality "ineq" from basic set "i" is or can be relaxed to
@@ -2220,13 +2238,17 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 
 	entry = isl_hash_table_find(hull->ctx, data->hull_table, c_hash,
 					has_ineq, &v, 0);
-	if (entry)
+	if (!entry)
+		return isl_basic_set_free(hull);
+	if (entry != isl_hash_table_entry_none)
 		return hull;
 
 	for (j = 0; j < i; ++j) {
 		entry = isl_hash_table_find(hull->ctx, data->p[j].table,
 						c_hash, has_ineq, &v, 0);
-		if (entry)
+		if (!entry)
+			return isl_basic_set_free(hull);
+		if (entry != isl_hash_table_entry_none)
 			break;
 	}
 	if (j < i)
@@ -2237,7 +2259,8 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 		goto error;
 	isl_seq_cpy(hull->ineq[k], ineq, 1 + v.len);
 
-	set_max_constant_term(data, set, i, hull->ineq[k], c_hash, &v);
+	if (set_max_constant_term(data, set, i, hull->ineq[k], c_hash, &v) < 0)
+		goto error;
 	for (j = 0; j < i; ++j) {
 		int bound;
 		bound = is_bound(data, set, j, hull->ineq[k], shift);
@@ -2253,7 +2276,9 @@ static __isl_give isl_basic_set *add_bound(__isl_take isl_basic_set *hull,
 		int bound;
 		entry = isl_hash_table_find(hull->ctx, data->p[j].table,
 						c_hash, has_ineq, &v, 0);
-		if (entry)
+		if (!entry)
+			return isl_basic_set_free(hull);
+		if (entry != isl_hash_table_entry_none)
 			continue;
 		bound = is_bound(data, set, j, hull->ineq[k], shift);
 		if (bound < 0)
@@ -2686,7 +2711,9 @@ static __isl_give isl_basic_set *add_bound_from_constraint(
 
 		entry = isl_hash_table_find(ctx, data->p[i].table,
 						c_hash, &has_ineq, &v, 0);
-		if (entry) {
+		if (!entry)
+			return isl_basic_set_free(hull);
+		if (entry != isl_hash_table_entry_none) {
 			isl_int *ineq_i = entry->data;
 			int neg, more_relaxed;
 

@@ -66,11 +66,17 @@ int FN(UNION,find_dim_by_name)(__isl_keep UNION *u, enum isl_dim_type type,
 }
 
 #ifdef HAS_TYPE
-static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space,
-	enum isl_fold type, int size)
+#define OPT_TYPE_PARAM		, enum isl_fold type
+#define OPT_TYPE_ARG(loc)	, loc type
+#define OPT_SET_TYPE(loc,val)	loc type = (val);
 #else
-static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space, int size)
+#define OPT_TYPE_PARAM
+#define OPT_TYPE_ARG(loc)
+#define OPT_SET_TYPE(loc,val)
 #endif
+
+static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space
+	OPT_TYPE_PARAM, int size)
 {
 	UNION *u;
 
@@ -83,9 +89,7 @@ static __isl_give UNION *FN(UNION,alloc)(__isl_take isl_space *space, int size)
 		goto error;
 
 	u->ref = 1;
-#ifdef HAS_TYPE
-	u->type = type;
-#endif
+	OPT_SET_TYPE(u->, type);
 	u->space = space;
 	if (isl_hash_table_init(space->ctx, &u->table, size) < 0)
 		return FN(UNION,free)(u);
@@ -96,17 +100,28 @@ error:
 	return NULL;
 }
 
-#ifdef HAS_TYPE
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *dim, enum isl_fold type)
+/* Create an empty/zero union without specifying any parameters.
+ */
+__isl_give UNION *FN(FN(UNION,ZERO),ctx)(isl_ctx *ctx OPT_TYPE_PARAM)
 {
-	return FN(UNION,alloc)(dim, type, 16);
+	isl_space *space;
+
+	space = isl_space_unit(ctx);
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
 }
-#else
-__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *dim)
+
+__isl_give UNION *FN(FN(UNION,ZERO),space)(__isl_take isl_space *space
+	OPT_TYPE_PARAM)
 {
-	return FN(UNION,alloc)(dim, 16);
+	return FN(UNION,alloc)(space OPT_TYPE_ARG(), 16);
 }
-#endif
+
+/* This is an alternative name for the function above.
+ */
+__isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
+{
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
+}
 
 __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)
 {
@@ -133,11 +148,7 @@ __isl_give PART *FN(FN(UNION,extract),BASE)(__isl_keep UNION *u,
 	if (!entry)
 		goto error;
 	if (entry == isl_hash_table_entry_none)
-#ifdef HAS_TYPE
-		return FN(PART,ZERO)(space, u->type);
-#else
-		return FN(PART,ZERO)(space);
-#endif
+		return FN(PART,ZERO)(space OPT_TYPE_ARG(u->));
 	isl_space_free(space);
 	return FN(PART,copy)(entry->data);
 error:
@@ -217,8 +228,7 @@ __isl_give UNION *FN(FN(UNION,add),BASE)(__isl_take UNION *u,
 	return FN(UNION,add_part_generic)(u, part, 1);
 }
 
-#ifdef HAS_TYPE
-/* Allocate a UNION with the same type and the same size as "u" and
+/* Allocate a UNION with the same type (if any) and the same size as "u" and
  * with space "space".
  */
 static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
@@ -226,25 +236,11 @@ static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
 {
 	if (!u)
 		goto error;
-	return FN(UNION,alloc)(space, u->type, u->table.n);
+	return FN(UNION,alloc)(space OPT_TYPE_ARG(u->), u->table.n);
 error:
 	isl_space_free(space);
 	return NULL;
 }
-#else
-/* Allocate a UNION with the same size as "u" and with space "space".
- */
-static __isl_give UNION *FN(UNION,alloc_same_size_on_space)(__isl_keep UNION *u,
-	__isl_take isl_space *space)
-{
-	if (!u)
-		goto error;
-	return FN(UNION,alloc)(space, u->table.n);
-error:
-	isl_space_free(space);
-	return NULL;
-}
-#endif
 
 /* Allocate a UNION with the same space, the same type (if any) and
  * the same size as "u".
@@ -254,68 +250,104 @@ static __isl_give UNION *FN(UNION,alloc_same_size)(__isl_keep UNION *u)
 	return FN(UNION,alloc_same_size_on_space)(u, FN(UNION,get_space)(u));
 }
 
+/* Data structure that specifies how isl_union_*_transform
+ * should modify the base expressions in the union expression.
+ *
+ * If "inplace" is set, then the base expression in the input union
+ * are modified in place.  This means that "fn" should not
+ * change the meaning of the union or that the union only
+ * has a single reference.
+ * If "space" is not NULL, then a new union is created in this space.
+ * If "filter" is not NULL, then only the base expressions that satisfy "filter"
+ * are taken into account.
+ * "fn" is applied to each entry in the input.
+ * "fn_user" is passed as the second argument to "fn".
+ */
+S(UNION,transform_control) {
+	int inplace;
+	isl_space *space;
+	isl_bool (*filter)(__isl_keep PART *part);
+	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
+	void *fn_user;
+};
+
 /* Internal data structure for isl_union_*_transform_space.
- * "fn' is applied to each entry in the input.
- * "res" collects the results.
+ * "control" specifies how the base expressions should be modified.
+ * "res" collects the results (if control->inplace is not set).
  */
 S(UNION,transform_data)
 {
-	__isl_give PART *(*fn)(__isl_take PART *part, void *user);
-	void *user;
-
+	S(UNION,transform_control) *control;
 	UNION *res;
 };
 
-/* Apply data->fn to "part" and add the result to data->res.
+/* Apply control->fn to "part" and add the result to data->res or
+ * place it back into the input union if control->inplace is set.
  */
-static isl_stat FN(UNION,transform_entry)(__isl_take PART *part, void *user)
+static isl_stat FN(UNION,transform_entry)(void **entry, void *user)
 {
 	S(UNION,transform_data) *data = (S(UNION,transform_data) *)user;
+	PART *part = *entry;
 
-	part = data->fn(part, data->user);
-	data->res = FN(FN(UNION,add),BASE)(data->res, part);
-	if (!data->res)
+	if (data->control->filter) {
+		isl_bool handle;
+
+		handle = data->control->filter(part);
+		if (handle < 0)
+			return isl_stat_error;
+		if (!handle)
+			return isl_stat_ok;
+	}
+
+	if (!data->control->inplace)
+		part = FN(PART,copy)(part);
+	part = data->control->fn(part, data->control->fn_user);
+	if (data->control->inplace)
+		*entry = part;
+	else
+		data->res = FN(FN(UNION,add),BASE)(data->res, part);
+	if (!part || !data->res)
 		return isl_stat_error;
 
 	return isl_stat_ok;
 }
 
-/* Return a UNION living in "space" that is obtained by applying "fn"
- * to each of the entries in "u".
+/* Return a UNION that is obtained by modifying "u" according to "control".
  */
-static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
-	isl_space *space,
-	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
+static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
+	S(UNION,transform_control) *control)
 {
-	S(UNION,transform_data) data = { fn, user };
+	S(UNION,transform_data) data = { control };
+	isl_space *space;
 
-	data.res = FN(UNION,alloc_same_size_on_space)(u, space);
-	if (FN(FN(UNION,foreach),BASE)(u,
-					&FN(UNION,transform_entry), &data) < 0)
+	if (control->inplace) {
+		data.res = u;
+	} else {
+		if (control->space)
+			space = isl_space_copy(control->space);
+		else
+			space = FN(UNION,get_space)(u);
+		data.res = FN(UNION,alloc_same_size_on_space)(u, space);
+	}
+	if (FN(UNION,foreach_inplace)(u, &FN(UNION,transform_entry), &data) < 0)
 		data.res = FN(UNION,free)(data.res);
-	FN(UNION,free)(u);
+	if (!control->inplace)
+		FN(UNION,free)(u);
 	return data.res;
 }
 
-/* Return a UNION that lives in the same space as "u" and that is obtained
- * by applying "fn" to each of the entries in "u".
+/* Return a UNION living in "space" that is otherwise obtained by modifying "u"
+ * according to "control".
  */
-static __isl_give UNION *FN(UNION,transform)(__isl_take UNION *u,
-	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
+static __isl_give UNION *FN(UNION,transform_space)(__isl_take UNION *u,
+	__isl_take isl_space *space, S(UNION,transform_control) *control)
 {
-	return FN(UNION,transform_space)(u, FN(UNION,get_space)(u), fn, user);
-}
-
-/* Apply data->fn to *part and store the result back into *part.
- */
-static isl_stat FN(UNION,transform_inplace_entry)(void **part, void *user)
-{
-	S(UNION,transform_data) *data = (S(UNION,transform_data) *) user;
-
-	*part = data->fn(*part, data->user);
-	if (!*part)
-		return isl_stat_error;
-	return isl_stat_ok;
+	if (!space)
+		return FN(UNION,free)(u);
+	control->space = space;
+	u = FN(UNION,transform)(u, control);
+	isl_space_free(space);
+	return u;
 }
 
 /* Update "u" by applying "fn" to each entry.
@@ -328,19 +360,15 @@ static isl_stat FN(UNION,transform_inplace_entry)(void **part, void *user)
 static __isl_give UNION *FN(UNION,transform_inplace)(__isl_take UNION *u,
 	__isl_give PART *(*fn)(__isl_take PART *part, void *user), void *user)
 {
+	S(UNION,transform_control) control = { .fn = fn, .fn_user = user };
 	isl_bool single_ref;
 
 	single_ref = FN(UNION,has_single_reference)(u);
 	if (single_ref < 0)
 		return FN(UNION,free)(u);
-	if (single_ref) {
-		S(UNION,transform_data) data = { fn, user };
-		if (FN(UNION,foreach_inplace)(u,
-				&FN(UNION,transform_inplace_entry), &data) < 0)
-			return FN(UNION,free)(u);
-		return u;
-	}
-	return FN(UNION,transform)(u, fn, user);
+	if (single_ref)
+		control.inplace = 1;
+	return FN(UNION,transform)(u, &control);
 }
 
 /* An isl_union_*_transform callback for use in isl_union_*_dup
@@ -353,8 +381,10 @@ static __isl_give PART *FN(UNION,copy_part)(__isl_take PART *part, void *user)
 
 __isl_give UNION *FN(UNION,dup)(__isl_keep UNION *u)
 {
+	S(UNION,transform_control) control = { .fn = &FN(UNION,copy_part) };
+
 	u = FN(UNION,copy)(u);
-	return FN(UNION,transform)(u, &FN(UNION,copy_part), NULL);
+	return FN(UNION,transform)(u, &control);
 }
 
 __isl_give UNION *FN(UNION,cow)(__isl_take UNION *u)
@@ -398,13 +428,17 @@ static __isl_give PART *FN(UNION,align_entry)(__isl_take PART *part, void *user)
 static __isl_give UNION *FN(UNION,realign_domain)(__isl_take UNION *u,
 	__isl_take isl_reordering *r)
 {
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,align_entry),
+		.fn_user = r,
+	};
 	isl_space *space;
 
 	if (!u || !r)
 		goto error;
 
 	space = isl_reordering_get_space(r);
-	u = FN(UNION,transform_space)(u, space, &FN(UNION,align_entry), r);
+	u = FN(UNION,transform_space)(u, space, &control);
 	isl_reordering_free(r);
 	return u;
 error:
@@ -500,11 +534,7 @@ __isl_give UNION *FN(FN(UNION,from),BASE)(__isl_take PART *part)
 					isl_space_dim(space, isl_dim_in));
 	space = isl_space_drop_dims(space, isl_dim_out, 0,
 					isl_space_dim(space, isl_dim_out));
-#ifdef HAS_TYPE
-	u = FN(UNION,ZERO)(space, part->type);
-#else
-	u = FN(UNION,ZERO)(space);
-#endif
+	u = FN(UNION,ZERO)(space OPT_TYPE_ARG(part->));
 	u = FN(FN(UNION,add),BASE)(u, part);
 
 	return u;
@@ -638,6 +668,10 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*))
 {
 	S(UNION,any_set_data) data = { NULL, fn };
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,any_set_entry),
+		.fn_user = &data,
+	};
 
 	u = FN(UNION,align_params)(u, isl_set_get_space(set));
 	set = isl_set_align_params(set, FN(UNION,get_space)(u));
@@ -646,7 +680,7 @@ static __isl_give UNION *FN(UNION,any_set_op)(__isl_take UNION *u,
 		goto error;
 
 	data.set = set;
-	u = FN(UNION,transform)(u, &FN(UNION,any_set_entry), &data);
+	u = FN(UNION,transform)(u, &control);
 	isl_set_free(set);
 	return u;
 error:
@@ -678,7 +712,7 @@ S(UNION,match_domain_data) {
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
 
-static int FN(UNION,set_has_space)(const void *entry, const void *val)
+static isl_bool FN(UNION,set_has_space)(const void *entry, const void *val)
 {
 	isl_set *set = (isl_set *)entry;
 	isl_space *space = (isl_space *)val;
@@ -702,9 +736,9 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	entry2 = isl_hash_table_find(data->uset->dim->ctx, &data->uset->table,
 				     hash, &FN(UNION,set_has_space), space, 0);
 	isl_space_free(space);
-	if (!entry2) {
+	if (!entry2 || entry2 == isl_hash_table_entry_none) {
 		FN(PART,free)(part);
-		return isl_stat_ok;
+		return isl_stat_non_null(entry2);
 	}
 
 	part = data->fn(part, isl_set_copy(entry2->data));
@@ -777,12 +811,17 @@ static __isl_give PART *FN(UNION,subtract_domain_entry)(__isl_take PART *part,
 	return FN(PART,subtract_domain)(part, set);
 }
 
-/* Subtract "uset' from the domain of "u".
+/* Subtract "uset" from the domain of "u".
  */
 __isl_give UNION *FN(UNION,subtract_domain)(__isl_take UNION *u,
 	__isl_take isl_union_set *uset)
 {
-	u = FN(UNION,transform)(u, &FN(UNION,subtract_domain_entry), uset);
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,subtract_domain_entry),
+		.fn_user = uset,
+	};
+
+	u = FN(UNION,transform)(u, &control);
 	isl_union_set_free(uset);
 	return u;
 }
@@ -897,11 +936,7 @@ __isl_give UNION *FN(UNION,scale_val)(__isl_take UNION *u,
 	if (DEFAULT_IS_ZERO && u && isl_val_is_zero(v)) {
 		UNION *zero;
 		isl_space *space = FN(UNION,get_space)(u);
-#ifdef HAS_TYPE
-		zero = FN(UNION,ZERO)(space, u->type);
-#else
-		zero = FN(UNION,ZERO)(space);
-#endif
+		zero = FN(UNION,ZERO)(space OPT_TYPE_ARG(u->));
 		FN(UNION,free)(u);
 		isl_val_free(v);
 		return zero;
@@ -1093,6 +1128,10 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 {
 	isl_space *space;
 	S(UNION,drop_dims_data) data = { type, first, n };
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,drop_dims_entry),
+		.fn_user = &data,
+	};
 
 	if (!u)
 		return NULL;
@@ -1104,8 +1143,7 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_drop_dims(space, type, first, n);
-	return FN(UNION,transform_space)(u, space, &FN(UNION,drop_dims_entry),
-					&data);
+	return FN(UNION,transform_space)(u, space, &control);
 }
 
 /* Internal data structure for isl_union_*_set_dim_name.
@@ -1135,6 +1173,10 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
 	S(UNION,set_dim_name_data) data = { pos, s };
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,set_dim_name_entry),
+		.fn_user = &data,
+	};
 	isl_space *space;
 
 	if (!u)
@@ -1147,8 +1189,7 @@ __isl_give UNION *FN(UNION,set_dim_name)(__isl_take UNION *u,
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_set_dim_name(space, type, pos, s);
-	return FN(UNION,transform_space)(u, space,
-					&FN(UNION,set_dim_name_entry), &data);
+	return FN(UNION,transform_space)(u, space, &control);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples
@@ -1165,12 +1206,14 @@ static __isl_give PART *FN(UNION,reset_user_entry)(__isl_take PART *part,
  */
 __isl_give UNION *FN(UNION,reset_user)(__isl_take UNION *u)
 {
+	S(UNION,transform_control) control = {
+		.fn = &FN(UNION,reset_user_entry),
+	};
 	isl_space *space;
 
 	space = FN(UNION,get_space)(u);
 	space = isl_space_reset_user(space);
-	return FN(UNION,transform_space)(u, space, &FN(UNION,reset_user_entry),
-					NULL);
+	return FN(UNION,transform_space)(u, space, &control);
 }
 
 /* Add the base expression held by "entry" to "list".

@@ -178,6 +178,15 @@ __isl_give LIST(EL) *FN(LIST(EL),drop)(__isl_take LIST(EL) *list,
 	return list;
 }
 
+/* Remove all elements from "list".
+ */
+__isl_give LIST(EL) *FN(LIST(EL),clear)(__isl_take LIST(EL) *list)
+{
+	if (!list)
+		return NULL;
+	return FN(LIST(EL),drop)(list, 0, list->n);
+}
+
 /* Insert "el" at position "pos" in "list".
  *
  * If there is only one reference to "list" and if it already has space

@@ -132,7 +132,6 @@ libisl_la_SOURCES = \
 	isl_flow.c \
 	isl_fold.c \
 	isl_hash.c \
-	isl_hash_private.h \
 	isl_id_to_ast_expr.c \
 	isl_id_to_id.c \
 	isl_id_to_pw_aff.c \
@@ -200,6 +199,8 @@ libisl_la_SOURCES = \
 	isl_stream_private.h \
 	isl_seq.c \
 	isl_seq.h \
+	isl_set_to_ast_graft_list.c \
+	isl_set_to_ast_graft_list.h \
 	isl_stride.c \
 	isl_tab.c \
 	isl_tab.h \
@@ -466,12 +467,14 @@ EXTRA_DIST = \
 	bset_from_bmap.c \
 	check_reparse_templ.c \
 	check_type_range_templ.c \
+	isl_domain_factor_templ.c \
 	extract_key.c \
 	has_single_reference_templ.c \
 	isl_list_macro.h \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_map_lexopt_templ.c \
+	isl_maybe_ast_graft_list.h \
 	isl_maybe_map.h \
 	isl_multi_macro.h \
 	isl_multi_bind_templ.c \
@@ -501,6 +504,7 @@ EXTRA_DIST = \
 	isl_multi_hash.c \
 	isl_multi_intersect.c \
 	isl_multi_identity_templ.c \
+	isl_multi_locals_templ.c \
 	isl_multi_move_dims_templ.c \
 	isl_multi_nan_templ.c \
 	isl_multi_param_templ.c \

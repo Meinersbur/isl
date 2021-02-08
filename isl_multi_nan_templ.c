@@ -13,18 +13,5 @@
  */
 isl_bool FN(MULTI(BASE),involves_nan)(__isl_keep MULTI(BASE) *multi)
 {
-	int i;
-
-	if (!multi)
-		return isl_bool_error;
-	if (multi->n == 0)
-		return isl_bool_false;
-
-	for (i = 0; i < multi->n; ++i) {
-		isl_bool has_nan = FN(EL,involves_nan)(multi->u.p[i]);
-		if (has_nan < 0 || has_nan)
-			return has_nan;
-	}
-
-	return isl_bool_false;
+	return FN(MULTI(BASE),any)(multi, &FN(EL,involves_nan));
 }

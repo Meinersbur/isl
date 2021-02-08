@@ -105,7 +105,7 @@ __isl_null isl_ast_print_options *isl_ast_print_options_free(
 
 /* Set the print_user callback of "options" to "print_user".
  *
- * If this callback is set, then it used to print user nodes in the AST.
+ * If this callback is set, then it is used to print user nodes in the AST.
  * Otherwise, the expression associated to the user node is printed.
  */
 __isl_give isl_ast_print_options *isl_ast_print_options_set_print_user(

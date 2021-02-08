@@ -705,7 +705,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
 static __isl_give isl_pw_aff *accept_ternary(__isl_keep isl_stream *s,
 	__isl_take isl_map *cond, struct vars *v, int rational)
 {
-	isl_space *dim;
+	isl_space *space;
 	isl_pw_aff *pwaff1 = NULL, *pwaff2 = NULL, *pa_cond;
 
 	if (!cond)
@@ -714,17 +714,17 @@ static __isl_give isl_pw_aff *accept_ternary(__isl_keep isl_stream *s,
 	if (isl_stream_eat(s, '?'))
 		goto error;
 
-	dim = isl_space_wrap(isl_map_get_space(cond));
-	pwaff1 = accept_extended_affine(s, dim, v, rational);
+	space = isl_space_wrap(isl_map_get_space(cond));
+	pwaff1 = accept_extended_affine(s, space, v, rational);
 	if (!pwaff1)
 		goto error;
 
 	if (isl_stream_eat(s, ':'))
 		goto error;
 
-	dim = isl_pw_aff_get_domain_space(pwaff1);
-	pwaff2 = accept_extended_affine(s, dim, v, rational);
-	if (!pwaff1)
+	space = isl_pw_aff_get_domain_space(pwaff1);
+	pwaff2 = accept_extended_affine(s, space, v, rational);
+	if (!pwaff2)
 		goto error;
 
 	pa_cond = isl_set_indicator_function(isl_map_wrap(cond));
@@ -754,7 +754,7 @@ static void set_current_line_col(__isl_keep isl_stream *s, int *line, int *col)
 /* Push a token encapsulating "pa" onto "s", with the given
  * line and column.
  */
-static int push_aff(__isl_keep isl_stream *s, int line, int col,
+static isl_stat push_aff(__isl_keep isl_stream *s, int line, int col,
 	__isl_take isl_pw_aff *pa)
 {
 	struct isl_token *tok;
@@ -766,10 +766,27 @@ static int push_aff(__isl_keep isl_stream *s, int line, int col,
 	tok->u.pwaff = pa;
 	isl_stream_push_token(s, tok);
 
-	return 0;
+	return isl_stat_ok;
 error:
 	isl_pw_aff_free(pa);
-	return -1;
+	return isl_stat_error;
+}
+
+/* Is the next token a comparison operator?
+ */
+static int next_is_comparator(__isl_keep isl_stream *s)
+{
+	int is_comp;
+	struct isl_token *tok;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return 0;
+
+	is_comp = is_comparator(tok);
+	isl_stream_push_token(s, tok);
+
+	return is_comp;
 }
 
 /* Accept an affine expression that may involve ternary operators.
@@ -784,9 +801,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
 	isl_space *space;
 	isl_map *cond;
 	isl_pw_aff *pwaff;
-	struct isl_token *tok;
 	int line = -1, col = -1;
-	int is_comp;
 
 	set_current_line_col(s, &line, &col);
 
@@ -795,14 +810,7 @@ static __isl_give isl_pw_aff *accept_extended_affine(__isl_keep isl_stream *s,
 		pwaff = isl_pw_aff_set_rational(pwaff);
 	if (!pwaff)
 		return NULL;
-
-	tok = isl_stream_next_token(s);
-	if (!tok)
-		return isl_pw_aff_free(pwaff);
-
-	is_comp = is_comparator(tok);
-	isl_stream_push_token(s, tok);
-	if (!is_comp)
+	if (!next_is_comparator(s))
 		return pwaff;
 
 	space = isl_pw_aff_get_domain_space(pwaff);
@@ -961,6 +969,17 @@ static int next_is_tuple(__isl_keep isl_stream *s)
 	return is_tuple;
 }
 
+/* Is the next token one that necessarily forms the start of a condition?
+ */
+static int next_is_condition_start(__isl_keep isl_stream *s)
+{
+	return isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_NOT) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
+	    isl_stream_next_token_is(s, ISL_TOKEN_MAP);
+}
+
 /* Is "pa" an expression in term of earlier dimensions?
  * The alternative is that the dimension is defined to be equal to itself,
  * meaning that it has a universe domain and an expression that depends
@@ -1032,6 +1051,110 @@ static __isl_give isl_space *space_set_dim_name(__isl_take isl_space *space,
 	return space;
 }
 
+/* Construct an isl_pw_aff defined on a "space" (with v->n variables)
+ * that is equal to the last of those variables.
+ */
+static __isl_give isl_pw_aff *identity_tuple_el_on_space(
+	__isl_take isl_space *space, struct vars *v)
+{
+	isl_aff *aff;
+
+	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
+	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, v->n - 1, 1);
+	return isl_pw_aff_from_aff(aff);
+}
+
+/* Construct a piecewise affine expression corresponding
+ * to the last variable in "v" that ranges between "pa" and "pa2".
+ *
+ * In particular, if D is the domain space of "pa" (and "pa2"),
+ * then construct the expression
+ *
+ *	D[..., i] -> i,
+ *
+ * construct the conditions
+ *
+ *	D[..., i] : i >= pa
+ *	D[..., i] : i <= pa2
+ *
+ * and return
+ *
+ *	D[..., i] -> i : pa <= i <= pa2
+ */
+static __isl_give isl_pw_aff *construct_range(__isl_take isl_pw_aff *pa,
+	__isl_take isl_pw_aff *pa2, struct vars *v)
+{
+	isl_set *range1, *range2;
+	isl_space *space;
+	isl_pw_aff *range_pa;
+
+	space = isl_pw_aff_get_domain_space(pa);
+	range_pa = identity_tuple_el_on_space(space, v);
+	range1 = isl_pw_aff_ge_set(isl_pw_aff_copy(range_pa), pa);
+	range2 = isl_pw_aff_le_set(isl_pw_aff_copy(range_pa), pa2);
+	range_pa = isl_pw_aff_intersect_domain(range_pa, range1);
+	range_pa = isl_pw_aff_intersect_domain(range_pa, range2);
+
+	return range_pa;
+}
+
+static int resolve_paren_expr(__isl_keep isl_stream *s,
+	struct vars *v, __isl_take isl_map *map, int rational);
+
+/* Given that the (piecewise) affine expression "pa"
+ * has just been parsed, followed by a colon,
+ * continue parsing as part of a piecewise affine expression.
+ *
+ * In particular, check if the colon is followed by a condition.
+ * If so, parse the conditions(a) on "pa" and include them in the domain.
+ * Otherwise, if the colon is followed by another (piecewise) affine expression
+ * then consider the two expressions as endpoints of a range of values and
+ * return a piecewise affine expression that takes values in that range.
+ * Note that an affine expression followed by a comparison operator
+ * is considered to be part of a condition.
+ */
+static __isl_give isl_pw_aff *update_piecewise_affine_colon(
+	__isl_take isl_pw_aff *pa, __isl_keep isl_stream *s,
+	struct vars *v, int rational)
+{
+	isl_space *dom_space;
+	isl_map *map;
+
+	dom_space = isl_pw_aff_get_domain_space(pa);
+	map = isl_map_universe(isl_space_from_domain(dom_space));
+
+	if (isl_stream_next_token_is(s, '('))
+		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
+			goto error;
+	if (!next_is_condition_start(s)) {
+		int line = -1, col = -1;
+		isl_space *space;
+		isl_pw_aff *pa2;
+
+		set_current_line_col(s, &line, &col);
+		space = isl_space_wrap(isl_map_get_space(map));
+		pa2 = accept_affine(s, space, v);
+		if (rational)
+			pa2 = isl_pw_aff_set_rational(pa2);
+		if (!next_is_comparator(s)) {
+			isl_map_free(map);
+			pa2 = isl_pw_aff_domain_factor_domain(pa2);
+			return construct_range(pa, pa2, v);
+		}
+		if (push_aff(s, line, col, pa2) < 0)
+			goto error;
+	}
+
+	map = read_formula(s, v, map, rational);
+	pa = isl_pw_aff_intersect_domain(pa, isl_map_domain(map));
+
+	return pa;
+error:
+	isl_map_free(map);
+	isl_pw_aff_free(pa);
+	return NULL;
+}
+
 /* Accept a piecewise affine expression.
  *
  * At the outer level, the piecewise affine expression may be of the form
@@ -1082,15 +1205,8 @@ static __isl_give isl_pw_aff *accept_piecewise_affine(__isl_keep isl_stream *s,
 			pa = accept_extended_affine(s, isl_space_copy(space),
 							v, rational);
 		}
-		if (isl_stream_eat_if_available(s, ':')) {
-			isl_space *dom_space;
-			isl_set *dom;
-
-			dom_space = isl_pw_aff_get_domain_space(pa);
-			dom = isl_set_universe(dom_space);
-			dom = read_formula(s, v, dom, rational);
-			pa = isl_pw_aff_intersect_domain(pa, dom);
-		}
+		if (isl_stream_eat_if_available(s, ':'))
+			pa = update_piecewise_affine_colon(pa, s, v, rational);
 
 		res = isl_pw_aff_union_add(res, pa);
 
@@ -1122,9 +1238,7 @@ static __isl_give isl_pw_aff *read_tuple_var_def(__isl_keep isl_stream *s,
 	space = isl_space_wrap(isl_space_alloc(s->ctx, 0, v->n, 0));
 
 	def = accept_piecewise_affine(s, space, v, rational);
-
-	space = isl_space_set_alloc(s->ctx, 0, v->n);
-	def = isl_pw_aff_reset_domain_space(def, space);
+	def = isl_pw_aff_domain_factor_domain(def);
 
 	return def;
 }
@@ -1237,12 +1351,9 @@ error:
 static __isl_give isl_pw_aff *identity_tuple_el(struct vars *v)
 {
 	isl_space *space;
-	isl_aff *aff;
 
 	space = isl_space_set_alloc(v->ctx, 0, v->n);
-	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
-	aff = isl_aff_add_coefficient_si(aff, isl_dim_in, v->n - 1, 1);
-	return isl_pw_aff_from_aff(aff);
+	return identity_tuple_el_on_space(space, v);
 }
 
 /* This function is called for each element in a tuple inside read_tuple.
@@ -1622,12 +1733,9 @@ static __isl_give isl_map *add_constraint(__isl_keep isl_stream *s,
 		isl_pw_aff_list_free(list1);
 		list1 = list2;
 
-		tok = isl_stream_next_token(s);
-		if (!is_comparator(tok)) {
-			if (tok)
-				isl_stream_push_token(s, tok);
+		if (!next_is_comparator(s))
 			break;
-		}
+		tok = isl_stream_next_token(s);
 		type = tok->type;
 		isl_token_free(tok);
 	}
@@ -1685,6 +1793,7 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 	struct vars *v, __isl_take isl_map *map, int rational)
 {
 	struct isl_token *tok, *tok2;
+	int has_paren;
 	int line, col;
 	isl_pw_aff *pwaff;
 
@@ -1696,11 +1805,7 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 		if (resolve_paren_expr(s, v, isl_map_copy(map), rational))
 			goto error;
 
-	if (isl_stream_next_token_is(s, ISL_TOKEN_EXISTS) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_NOT) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_TRUE) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_FALSE) ||
-	    isl_stream_next_token_is(s, ISL_TOKEN_MAP)) {
+	if (next_is_condition_start(s)) {
 		map = read_formula(s, v, map, rational);
 		if (isl_stream_eat(s, ')'))
 			goto error;
@@ -1721,20 +1826,16 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 	if (!pwaff)
 		goto error;
 
-	tok2 = isl_token_new(s->ctx, line, col, 0);
-	if (!tok2)
-		goto error2;
-	tok2->type = ISL_TOKEN_AFF;
-	tok2->u.pwaff = pwaff;
+	has_paren = isl_stream_eat_if_available(s, ')');
 
-	if (isl_stream_eat_if_available(s, ')')) {
-		isl_stream_push_token(s, tok2);
+	if (push_aff(s, line, col, pwaff) < 0)
+		goto error;
+
+	if (has_paren) {
 		isl_token_free(tok);
 		isl_map_free(map);
 		return 0;
 	}
-
-	isl_stream_push_token(s, tok2);
 
 	map = read_formula(s, v, map, rational);
 	if (isl_stream_eat(s, ')'))
@@ -1745,8 +1846,6 @@ static int resolve_paren_expr(__isl_keep isl_stream *s,
 	isl_stream_push_token(s, tok);
 
 	return 0;
-error2:
-	isl_pw_aff_free(pwaff);
 error:
 	isl_token_free(tok);
 	isl_map_free(map);

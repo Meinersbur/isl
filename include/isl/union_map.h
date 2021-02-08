@@ -25,6 +25,10 @@ __isl_give isl_union_map *isl_union_map_from_basic_map(
 	__isl_take isl_basic_map *bmap);
 __isl_constructor
 __isl_give isl_union_map *isl_union_map_from_map(__isl_take isl_map *map);
+__isl_overload
+__isl_give isl_union_map *isl_union_map_empty_ctx(isl_ctx *ctx);
+__isl_give isl_union_map *isl_union_map_empty_space(
+	__isl_take isl_space *space);
 __isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *space);
 __isl_give isl_union_map *isl_union_map_copy(__isl_keep isl_union_map *umap);
 __isl_null isl_union_map *isl_union_map_free(__isl_take isl_union_map *umap);
@@ -229,6 +233,7 @@ isl_bool isl_union_map_is_subset(__isl_keep isl_union_map *umap1,
 __isl_export
 isl_bool isl_union_map_is_equal(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
+__isl_export
 isl_bool isl_union_map_is_disjoint(__isl_keep isl_union_map *umap1,
 	__isl_keep isl_union_map *umap2);
 __isl_export
@@ -305,9 +310,11 @@ __isl_give isl_union_map *isl_union_set_unwrap(__isl_take isl_union_set *uset);
 
 __isl_export
 __isl_give isl_union_map *isl_union_map_zip(__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_union_map *isl_union_map_curry(__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_range_curry(
 	__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_union_map *isl_union_map_uncurry(__isl_take isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_align_params(

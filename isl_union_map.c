@@ -122,14 +122,42 @@ static __isl_give isl_union_map *isl_union_map_alloc(
 	return umap;
 }
 
-__isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *space)
+/* Create an empty union map without specifying any parameters.
+ */
+__isl_give isl_union_map *isl_union_map_empty_ctx(isl_ctx *ctx)
+{
+	return isl_union_map_empty_space(isl_space_unit(ctx));
+}
+
+__isl_give isl_union_map *isl_union_map_empty_space(__isl_take isl_space *space)
 {
 	return isl_union_map_alloc(space, 16);
 }
 
+/* This is an alternative name for the function above.
+ */
+__isl_give isl_union_map *isl_union_map_empty(__isl_take isl_space *space)
+{
+	return isl_union_map_empty_space(space);
+}
+
+/* Create an empty union set without specifying any parameters.
+ */
+__isl_give isl_union_set *isl_union_set_empty_ctx(isl_ctx *ctx)
+{
+	return uset_from_umap(isl_union_map_empty_ctx(ctx));
+}
+
+__isl_give isl_union_set *isl_union_set_empty_space(__isl_take isl_space *space)
+{
+	return uset_from_umap(isl_union_map_empty_space(space));
+}
+
+/* This is an alternative name for the function above.
+ */
 __isl_give isl_union_set *isl_union_set_empty(__isl_take isl_space *space)
 {
-	return isl_union_map_empty(space);
+	return isl_union_set_empty_space(space);
 }
 
 isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap)
@@ -367,7 +395,7 @@ isl_bool isl_union_set_space_has_equal_params(__isl_keep isl_union_set *uset,
 	return isl_union_map_space_has_equal_params(uset_to_umap(uset), space);
 }
 
-static int has_space(const void *entry, const void *val)
+static isl_bool has_space(const void *entry, const void *val)
 {
 	isl_map *map = (isl_map *)entry;
 	isl_space *space = (isl_space *) val;
@@ -678,6 +706,8 @@ __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
 				    &has_space, space, 0);
 	if (!entry)
+		goto error;
+	if (entry == isl_hash_table_entry_none)
 		return isl_map_empty(space);
 	isl_space_free(space);
 	return isl_map_copy(entry->data);
@@ -706,7 +736,9 @@ isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	hash = isl_space_get_hash(space);
 	entry = isl_hash_table_find(umap->dim->ctx, &umap->table, hash,
 				    &has_space, space, 0);
-	return !!entry;
+	if (!entry)
+		return isl_bool_error;
+	return isl_bool_ok(entry != isl_hash_table_entry_none);
 }
 
 isl_bool isl_union_set_contains(__isl_keep isl_union_set *uset,
@@ -883,8 +915,9 @@ static __isl_keep isl_maybe_isl_map bin_try_get_match(
 				     &data->umap2->table, hash,
 				     &has_space, space, 0);
 	isl_space_free(space);
-	res.valid = entry2 != NULL;
 	if (entry2)
+		res.valid = isl_bool_ok(entry2 != isl_hash_table_entry_none);
+	if (res.valid >= 0 && res.valid)
 		res.value = entry2->data;
 
 	return res;
@@ -1085,6 +1118,8 @@ static isl_stat match_bin_entry(void **entry, void *user)
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_space, map->dim, 0);
 	if (!entry2)
+		return isl_stat_error;
+	if (entry2 == isl_hash_table_entry_none)
 		return isl_stat_ok;
 
 	map = isl_map_copy(map);
@@ -2359,7 +2394,9 @@ static isl_stat is_subset_entry(void **entry, void *user)
 	hash = isl_space_get_hash(map->dim);
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_space, map->dim, 0);
-	if (!entry2) {
+	if (!entry2)
+		return isl_stat_error;
+	if (entry2 == isl_hash_table_entry_none) {
 		int empty = isl_map_is_empty(map);
 		if (empty < 0)
 			return isl_stat_error;
@@ -2475,6 +2512,8 @@ static isl_stat is_disjoint_entry(void **entry, void *user)
 	entry2 = isl_hash_table_find(data->umap2->dim->ctx, &data->umap2->table,
 				     hash, &has_space, map->dim, 0);
 	if (!entry2)
+		return isl_stat_error;
+	if (entry2 == isl_hash_table_entry_none)
 		return isl_stat_ok;
 
 	data->is_disjoint = isl_map_is_disjoint(map, entry2->data);

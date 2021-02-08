@@ -670,6 +670,13 @@ C<isl_stat_ok> (the integer value zero), indicating a successful
 operation; and
 C<isl_stat_error> (a negative integer value), indicating that something
 went wrong.
+The function C<isl_stat_non_null> converts an isl object pointer
+to an C<isl_stat>, returning C<isl_stat_ok> if the object pointer is valid and
+C<isl_stat_error> if it is C<NULL>.
+
+	#include <isl/ctx.h>
+	isl_stat isl_stat_non_null(void *obj);
+
 See L</"Error Handling"> for more information on
 C<isl_size_error>, C<isl_bool_error> and C<isl_stat_error>.
 
@@ -1920,13 +1927,24 @@ C<isl> has functions for creating some standard sets and relations.
 		__isl_take isl_space *space);
 	__isl_give isl_map *isl_map_empty(
 		__isl_take isl_space *space);
+	__isl_give isl_union_set *isl_union_set_empty_ctx(
+		isl_ctx *ctx);
+	__isl_give isl_union_set *isl_union_set_empty_space(
+		__isl_take isl_space *space);
 	__isl_give isl_union_set *isl_union_set_empty(
+		__isl_take isl_space *space);
+	__isl_give isl_union_map *isl_union_map_empty_ctx(
+		isl_ctx *ctx);
+	__isl_give isl_union_map *isl_union_map_empty_space(
 		__isl_take isl_space *space);
 	__isl_give isl_union_map *isl_union_map_empty(
 		__isl_take isl_space *space);
 
 For C<isl_union_set>s and C<isl_union_map>s, the space
 is only used to specify the parameters.
+C<isl_union_set_empty> is an alternative name for
+C<isl_union_set_empty_space>.
+Similarly for the other pair of functions.
 
 =item * Universe sets and relations
 
@@ -2152,8 +2170,8 @@ describing the equalities and the inequalities.
 
 The C<isl_dim_type> arguments indicate the order in which
 different kinds of variables appear in the input matrices
-and should be a permutation of C<isl_dim_cst>, C<isl_dim_param>,
-C<isl_dim_set> and C<isl_dim_div> for sets and
+and should be a permutation of C<isl_dim_cst> (the constant term),
+C<isl_dim_param>, C<isl_dim_set> and C<isl_dim_div> for sets and
 of C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div> for relations.
 
@@ -2496,7 +2514,8 @@ form, use the following functions.
 The C<isl_dim_type> arguments dictate the order in which
 different kinds of variables appear in the resulting matrix.
 For set inputs, they should be a permutation of
-C<isl_dim_cst>, C<isl_dim_param>, C<isl_dim_set> and C<isl_dim_div>.
+C<isl_dim_cst> (the constant term), C<isl_dim_param>, C<isl_dim_set> and
+C<isl_dim_div>.
 For map inputs, they should be a permutation of
 C<isl_dim_cst>, C<isl_dim_param>,
 C<isl_dim_in>, C<isl_dim_out> and C<isl_dim_div>.
@@ -3312,6 +3331,9 @@ then create a piecewise expression over a given domain.
 	isl_pw_multi_aff_multi_val_on_domain(
 		__isl_take isl_set *domain,
 		__isl_take isl_multi_val *mv);
+	__isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
+		__isl_take isl_set *domain,
+		__isl_take isl_id *id);
 
 As a convenience, a piecewise multiple expression can
 also be created from a piecewise expression.
@@ -3471,7 +3493,19 @@ but the domains of these expressions need to be disjoint.
 An empty union expression can be created using the following functions.
 
 	#include <isl/aff.h>
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_empty_ctx(
+		isl_ctx *ctx);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_empty_space(
+		__isl_take isl_space *space);
 	__isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
+		__isl_take isl_space *space);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_empty_ctx(
+		isl_ctx *ctx);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_empty_space(
 		__isl_take isl_space *space);
 	__isl_give isl_union_pw_multi_aff *
 	isl_union_pw_multi_aff_empty(
@@ -3479,8 +3513,18 @@ An empty union expression can be created using the following functions.
 
 	#include <isl/polynomial.h>
 	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_zero_ctx(
+		isl_ctx *ctx);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_zero_space(
+		__isl_take isl_space *space);
+	__isl_give isl_union_pw_qpolynomial *
 	isl_union_pw_qpolynomial_zero(
 		__isl_take isl_space *space);
+
+C<isl_union_pw_aff_empty> is an alternative name for
+C<isl_union_pw_aff_empty_space>.
+Similarly for the other pairs of functions.
 
 A union expression containing a single base expression
 can be created using the following functions.
@@ -4257,6 +4301,16 @@ functions.
 		__isl_take isl_stride_info *si);
 
 =item * Dependence
+
+To check whether a function involves any local variables,
+i.e., integer divisions,
+the following functions can be used.
+
+	#include <isl/aff.h>
+	isl_bool isl_aff_involves_locals(
+		__isl_keep isl_aff *aff);
+	isl_bool isl_multi_aff_involves_locals(
+		__isl_keep isl_multi_aff *ma);
 
 To check whether the description of a set, relation or function depends
 on a parameter or one or more given dimensions,
@@ -5111,6 +5165,8 @@ Create a relation with the given set(s) as domain and/or range.
 If only the domain or the range is specified, then
 the range or domain of the created relation is a zero-dimensional
 flat anonymous space.
+If the case of C<isl_space_map_from_set>, the input space
+specifies both the domain and the range of the result.
 
 	#include <isl/space.h>
 	__isl_give isl_space *isl_space_from_domain(
@@ -7454,6 +7510,18 @@ from the result using the following functions.
 	__isl_give isl_multi_pw_aff *
 	isl_multi_pw_aff_range_factor_range(
 		__isl_take isl_multi_pw_aff *mpa);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_range_factor_domain(
+		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_pw_multi_aff *
+	isl_pw_multi_aff_range_factor_range(
+		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_range_factor_domain(
+		__isl_take isl_union_pw_multi_aff *upma);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_range_factor_range(
+		__isl_take isl_union_pw_multi_aff *upma);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_factor_range(
 		__isl_take isl_multi_union_pw_aff *mupa);
@@ -8264,6 +8332,8 @@ Lists can be created, copied, modified and freed using the following functions.
 	__isl_give isl_set_list *isl_set_list_drop(
 		__isl_take isl_set_list *list,
 		unsigned first, unsigned n);
+	__isl_give isl_set_list *isl_set_list_clear(
+		__isl_take isl_set_list *list);
 	__isl_give isl_set_list *isl_set_list_swap(
 		__isl_take isl_set_list *list,
 		unsigned pos1, unsigned pos2);
@@ -8292,6 +8362,7 @@ C<isl_set_list_alloc> creates an empty list with an initial capacity
 for C<n> elements.  C<isl_set_list_insert> and C<isl_set_list_add>
 add elements to a list, increasing its capacity as needed.
 C<isl_set_list_from_set> creates a list with a single element.
+C<isl_set_list_clear> removes all elements from a list.
 C<isl_set_list_swap> swaps the elements at the specified locations.
 C<isl_set_list_reverse> reverses the elements in the list.
 

@@ -204,8 +204,10 @@ __isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmin_pw_multi_aff(
 __isl_give isl_pw_multi_aff *isl_basic_set_partial_lexmax_pw_multi_aff(
 	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_set_lexmin_pw_multi_aff(
 	__isl_take isl_set *set);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_set_lexmax_pw_multi_aff(
 	__isl_take isl_set *set);
 

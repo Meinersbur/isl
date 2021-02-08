@@ -603,5 +603,7 @@ int main(int argc, char *argv[])
 	delete Clang;
 	llvm::llvm_shutdown();
 
+	if (Diags.hasErrorOccurred())
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
