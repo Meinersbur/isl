@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-ISL_DECLARE_LIST_FN(id)
+ISL_DECLARE_EXPORTED_LIST_FN(id)
 
 isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id);
 uint32_t isl_id_get_hash(__isl_keep isl_id *id);

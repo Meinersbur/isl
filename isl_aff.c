@@ -3825,6 +3825,7 @@ error:
 #include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
+#include <isl_multi_arith_templ.c>
 #include <isl_multi_cmp.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_floor.c>
@@ -3832,6 +3833,7 @@ error:
 #include <isl_multi_gist.c>
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_move_dims_templ.c>
+#include <isl_multi_nan_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_zero_templ.c>
@@ -6219,6 +6221,7 @@ error:
 #include <isl_multi_pw_aff_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
+#include <isl_multi_arith_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_domain_templ.c>
 #include <isl_multi_dims.c>
@@ -6229,6 +6232,8 @@ error:
 #include <isl_multi_align_set.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_move_dims_templ.c>
+#include <isl_multi_nan_templ.c>
+#include <isl_multi_param_templ.c>
 #include <isl_multi_product_templ.c>
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_zero_templ.c>
@@ -7994,6 +7999,7 @@ error:
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
+#include <isl_multi_arith_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
@@ -8001,6 +8007,7 @@ error:
 #include <isl_multi_align_set.c>
 #include <isl_multi_align_union_set.c>
 #include <isl_multi_intersect.c>
+#include <isl_multi_nan_templ.c>
 
 /* Does "mupa" have a non-trivial explicit domain?
  *

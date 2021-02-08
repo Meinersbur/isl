@@ -376,3 +376,32 @@ __isl_give isl_fixed_box *isl_map_get_range_simple_fixed_box_hull(
 
 	return box;
 }
+
+#undef BASE
+#define BASE multi_val
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE multi_aff
+#include "print_yaml_field_templ.c"
+
+/* Print the information contained in "box" to "p".
+ * The information is printed as a YAML document.
+ */
+__isl_give isl_printer *isl_printer_print_fixed_box(
+	__isl_take isl_printer *p, __isl_keep isl_fixed_box *box)
+{
+	if (!box)
+		return isl_printer_free(p);
+
+	p = isl_printer_yaml_start_mapping(p);
+	p = print_yaml_field_multi_aff(p, "offset", box->offset);
+	p = print_yaml_field_multi_val(p, "size", box->size);
+	p = isl_printer_yaml_end_mapping(p);
+
+	return p;
+}
+
+#undef BASE
+#define BASE fixed_box
+#include <print_templ_yaml.c>

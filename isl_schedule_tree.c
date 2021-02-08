@@ -2736,6 +2736,27 @@ static __isl_give isl_printer *print_tree_band(__isl_take isl_printer *p,
 	return p;
 }
 
+#undef BASE
+#define BASE str
+#define isl_str const char
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE set
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE union_set
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE union_map
+#include "print_yaml_field_templ.c"
+
+#undef BASE
+#define BASE union_pw_multi_aff
+#include "print_yaml_field_templ.c"
+
 /* Print "tree" to "p".
  *
  * If "n_ancestor" is non-negative, then "child_pos" contains the child
@@ -2767,78 +2788,51 @@ __isl_give isl_printer *isl_printer_print_schedule_tree_mark(
 	switch (tree->type) {
 	case isl_schedule_node_error:
 		p = isl_printer_print_str(p, "ERROR");
+		p = isl_printer_yaml_next(p);
 		break;
 	case isl_schedule_node_leaf:
 		p = isl_printer_print_str(p, "leaf");
+		p = isl_printer_yaml_next(p);
 		break;
 	case isl_schedule_node_sequence:
 		p = isl_printer_print_str(p, "sequence");
+		p = isl_printer_yaml_next(p);
 		sequence = 1;
 		break;
 	case isl_schedule_node_set:
 		p = isl_printer_print_str(p, "set");
+		p = isl_printer_yaml_next(p);
 		sequence = 1;
 		break;
 	case isl_schedule_node_context:
-		p = isl_printer_print_str(p, "context");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_set(p, tree->context);
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_set(p, "context", tree->context);
 		break;
 	case isl_schedule_node_domain:
-		p = isl_printer_print_str(p, "domain");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_union_set(p, tree->domain);
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_union_set(p, "domain", tree->domain);
 		break;
 	case isl_schedule_node_expansion:
-		p = isl_printer_print_str(p, "contraction");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_union_pw_multi_aff(p, tree->contraction);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "expansion");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_union_map(p, tree->expansion);
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_union_pw_multi_aff(p, "contraction",
+							tree->contraction);
+		p = print_yaml_field_union_map(p, "expansion", tree->expansion);
 		break;
 	case isl_schedule_node_extension:
-		p = isl_printer_print_str(p, "extension");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_union_map(p, tree->extension);
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_union_map(p, "extension", tree->extension);
 		break;
 	case isl_schedule_node_filter:
-		p = isl_printer_print_str(p, "filter");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_union_set(p, tree->filter);
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_union_set(p, "filter", tree->filter);
 		break;
 	case isl_schedule_node_guard:
-		p = isl_printer_print_str(p, "guard");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_set(p, tree->guard);
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_set(p, "guard", tree->guard);
 		break;
 	case isl_schedule_node_mark:
-		p = isl_printer_print_str(p, "mark");
-		p = isl_printer_yaml_next(p);
-		p = isl_printer_print_str(p, "\"");
-		p = isl_printer_print_str(p, isl_id_get_name(tree->mark));
-		p = isl_printer_print_str(p, "\"");
+		p = print_yaml_field_str(p, "mark",
+					isl_id_get_name(tree->mark));
 		break;
 	case isl_schedule_node_band:
 		p = print_tree_band(p, tree->band);
+		p = isl_printer_yaml_next(p);
 		break;
 	}
-	p = isl_printer_yaml_next(p);
 
 	n = isl_schedule_tree_n_children(tree);
 	if (n < 0)

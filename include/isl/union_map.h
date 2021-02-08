@@ -30,6 +30,7 @@ __isl_give isl_union_map *isl_union_map_copy(__isl_keep isl_union_map *umap);
 __isl_null isl_union_map *isl_union_map_free(__isl_take isl_union_map *umap);
 
 isl_ctx *isl_union_map_get_ctx(__isl_keep isl_union_map *umap);
+__isl_export
 __isl_give isl_space *isl_union_map_get_space(__isl_keep isl_union_map *umap);
 
 __isl_give isl_union_map *isl_union_map_reset_user(
@@ -38,6 +39,7 @@ __isl_give isl_union_map *isl_union_map_reset_user(
 int isl_union_map_find_dim_by_name(__isl_keep isl_union_map *umap,
 	enum isl_dim_type type, const char *name);
 
+__isl_export
 __isl_give isl_union_map *isl_union_map_universe(
 	__isl_take isl_union_map *umap);
 __isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap);
@@ -245,6 +247,7 @@ __isl_give isl_union_map *isl_union_map_remove_map_if(
 	isl_bool (*fn)(__isl_keep isl_map *map, void *user), void *user);
 isl_bool isl_union_map_contains(__isl_keep isl_union_map *umap,
 	__isl_keep isl_space *space);
+__isl_export
 __isl_give isl_map *isl_union_map_extract_map(__isl_keep isl_union_map *umap,
 	__isl_take isl_space *dim);
 __isl_export

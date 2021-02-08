@@ -3028,6 +3028,20 @@ the following functions.
 	isl_multi_union_pw_aff_free(
 		__isl_take isl_multi_union_pw_aff *mupa);
 
+The number of base expressions in a multiple
+expression can be obtained using the following functions.
+
+	#include <isl/val.h>
+	isl_size isl_multi_val_size(__isl_keep isl_multi_val *mv);
+
+	#include <isl/aff.h>
+	isl_size isl_multi_aff_size(
+		__isl_keep isl_multi_aff *multi);
+	isl_size isl_multi_pw_aff_size(
+		__isl_keep isl_multi_pw_aff *mpa);
+	isl_size isl_multi_union_pw_aff_size(
+		__isl_keep isl_multi_union_pw_aff *mupa);
+
 The base expression at a given position of a multiple
 expression can be extracted using the following functions.
 
@@ -4142,7 +4156,7 @@ functions.
 =item * Dependence
 
 To check whether the description of a set, relation or function depends
-on one or more given dimensions,
+on a parameter or one or more given dimensions,
 the following functions can be used.
 
 	#include <isl/constraint.h>
@@ -4172,23 +4186,41 @@ the following functions can be used.
 	#include <isl/aff.h>
 	isl_bool isl_aff_involves_dims(__isl_keep isl_aff *aff,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_aff_involves_param_id(
+		__isl_keep isl_pw_aff *pa,
+		__isl_keep isl_id *id);
 	isl_bool isl_pw_aff_involves_dims(
 		__isl_keep isl_pw_aff *pwaff,
 		enum isl_dim_type type, unsigned first, unsigned n);
 	isl_bool isl_multi_aff_involves_dims(
 		__isl_keep isl_multi_aff *ma,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_multi_aff_involves_param_id(
+		__isl_keep isl_pw_multi_aff *pma,
+		__isl_keep isl_id *id);
 	isl_bool isl_pw_multi_aff_involves_dims(
 		__isl_keep isl_pw_multi_aff *pma,
 		enum isl_dim_type type, unsigned first, unsigned n);
 	isl_bool isl_multi_pw_aff_involves_dims(
 		__isl_keep isl_multi_pw_aff *mpa,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_multi_pw_aff_involves_param_id(
+		__isl_keep isl_multi_pw_aff *mpa,
+		__isl_keep isl_id *id);
+	isl_bool isl_multi_pw_aff_involves_param_id_list(
+		__isl_keep isl_multi_pw_aff *mpa,
+		__isl_keep isl_id_list *list);
 
 	#include <isl/polynomial.h>
 	isl_bool isl_qpolynomial_involves_dims(
 		__isl_keep isl_qpolynomial *qp,
 		enum isl_dim_type type, unsigned first, unsigned n);
+	isl_bool isl_pw_qpolynomial_involves_param_id(
+		__isl_keep isl_pw_qpolynomial *pwqp,
+		__isl_keep isl_id *id);
+	isl_bool isl_pw_qpolynomial_fold_involves_param_id(
+		__isl_keep isl_pw_qpolynomial_fold *pwf,
+		__isl_keep isl_id *id);
 
 Similarly, the following functions can be used to check whether
 a given dimension is involved in any lower or upper bound.
@@ -5401,6 +5433,18 @@ The box can be copied and freed using the following functions.
 		__isl_keep isl_fixed_box *box);
 	__isl_null isl_fixed_box *isl_fixed_box_free(
 		__isl_take isl_fixed_box *box);
+
+A representation of the information contained in an object
+of type C<isl_fixed_box> can be obtained using
+
+	#include <isl/fixed_box.h>
+	__isl_give isl_printer *isl_printer_print_fixed_box(
+		__isl_take isl_printer *p,
+		__isl_keep isl_fixed_box *box);
+	__isl_give char *isl_fixed_box_to_str(
+		__isl_keep isl_fixed_box *box);
+
+C<isl_fixed_box_to_str> prints the information in flow format.
 
 =item * Other approximations
 

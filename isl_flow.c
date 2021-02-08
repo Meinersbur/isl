@@ -1763,21 +1763,9 @@ __isl_give isl_union_access_info *isl_union_access_info_copy(
 	return copy;
 }
 
-/* Print a key-value pair of a YAML mapping to "p",
- * with key "name" and value "umap".
- */
-static __isl_give isl_printer *print_union_map_field(__isl_take isl_printer *p,
-	const char *name, __isl_keep isl_union_map *umap)
-{
-	p = isl_printer_print_str(p, name);
-	p = isl_printer_yaml_next(p);
-	p = isl_printer_print_str(p, "\"");
-	p = isl_printer_print_union_map(p, umap);
-	p = isl_printer_print_str(p, "\"");
-	p = isl_printer_yaml_next(p);
-
-	return p;
-}
+#undef BASE
+#define BASE union_map
+#include "print_yaml_field_templ.c"
 
 /* An enumeration of the various keys that may appear in a YAML mapping
  * of an isl_union_access_info object.
@@ -1825,7 +1813,7 @@ static __isl_give isl_printer *print_access_field(__isl_take isl_printer *p,
 		if (empty)
 			return p;
 	}
-	return print_union_map_field(p, key_str[type], info->access[type]);
+	return print_yaml_field_union_map(p, key_str[type], info->access[type]);
 }
 
 /* Print the information contained in "access" to "p".
@@ -1848,8 +1836,8 @@ __isl_give isl_printer *isl_printer_print_union_access_info(
 		p = isl_printer_print_schedule(p, access->schedule);
 		p = isl_printer_yaml_next(p);
 	} else {
-		p = print_union_map_field(p, key_str[isl_ai_key_schedule_map],
-						access->schedule_map);
+		p = print_yaml_field_union_map(p,
+			key_str[isl_ai_key_schedule_map], access->schedule_map);
 	}
 	p = isl_printer_yaml_end_mapping(p);
 
@@ -3252,14 +3240,15 @@ __isl_give isl_printer *isl_printer_print_union_flow(
 
 	p = isl_printer_yaml_start_mapping(p);
 	umap = isl_union_flow_get_full_must_dependence(flow);
-	p = print_union_map_field(p, "must_dependence", umap);
+	p = print_yaml_field_union_map(p, "must_dependence", umap);
 	isl_union_map_free(umap);
 	umap = isl_union_flow_get_full_may_dependence(flow);
-	p = print_union_map_field(p, "may_dependence", umap);
+	p = print_yaml_field_union_map(p, "may_dependence", umap);
 	isl_union_map_free(umap);
-	p = print_union_map_field(p, "must_no_source", flow->must_no_source);
+	p = print_yaml_field_union_map(p, "must_no_source",
+					flow->must_no_source);
 	umap = isl_union_flow_get_may_no_source(flow);
-	p = print_union_map_field(p, "may_no_source", umap);
+	p = print_yaml_field_union_map(p, "may_no_source", umap);
 	isl_union_map_free(umap);
 	p = isl_printer_yaml_end_mapping(p);
 

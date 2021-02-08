@@ -1,6 +1,8 @@
 #ifndef ISL_SPACE_TYPE_H
 #define ISL_SPACE_TYPE_H
 
+#include <isl/ctx.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

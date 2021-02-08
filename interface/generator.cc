@@ -334,7 +334,7 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		} else if (sets_persistent_callback(c, method)) {
 			c->persistent_callbacks.insert(method);
 		} else {
-			string fullname = c->name_without_type_suffix(method);
+			string fullname = c->name_without_type_suffixes(method);
 			c->methods[fullname].insert(method);
 		}
 	}
@@ -658,6 +658,14 @@ bool generator::is_long(QualType type)
 	return builtin && builtin->getKind() == BuiltinType::Long;
 }
 
+/* Is "type" that of "unsigned int"?
+ */
+static bool is_unsigned_int(QualType type)
+{
+	const BuiltinType *builtin = type->getAs<BuiltinType>();
+	return builtin && builtin->getKind() == BuiltinType::UInt;
+}
+
 /* Return the name of the type that "type" points to.
  * The input "type" is assumed to be a pointer type.
  */
@@ -676,30 +684,67 @@ const FunctionProtoType *generator::extract_prototype(QualType type)
 	return type->getPointeeType()->getAs<FunctionProtoType>();
 }
 
-/* If "method" is overloaded, then return its name with the suffix
- * corresponding to the type of the final argument removed.
- * Otherwise, simply return the name of the function.
+/* Return the function name suffix for the type of "param".
+ *
+ * If the type of "param" is an isl object type,
+ * then the suffix is the name of the type with the "isl" prefix removed,
+ * but keeping the "_".
+ * If the type is an unsigned integer, then the type suffix is "_ui".
  */
-string isl_class::name_without_type_suffix(FunctionDecl *method)
+static std::string type_suffix(ParmVarDecl *param)
+{
+	QualType type;
+
+	type = param->getOriginalType();
+	if (generator::is_isl_type(type))
+		return generator::extract_type(type).substr(3);
+	else if (is_unsigned_int(type))
+		return "_ui";
+	generator::die("Unsupported type suffix");
+}
+
+/* If "suffix" is a suffix of "s", then return "s" with the suffix removed.
+ * Otherwise, simply return "s".
+ */
+static std::string drop_suffix(const std::string &s, const std::string &suffix)
+{
+	size_t len, suffix_len;
+
+	len = s.length();
+	suffix_len = suffix.length();
+
+	if (len >= suffix_len && s.substr(len - suffix_len) == suffix)
+		return s.substr(0, len - suffix_len);
+	else
+		return s;
+}
+
+/* If "method" is overloaded, then return its name with the suffixes
+ * corresponding to the types of the final arguments removed.
+ * Otherwise, simply return the name of the function.
+ * Start from the final argument and keep removing suffixes
+ * matching arguments, independently of whether previously considered
+ * arguments matched.
+ */
+string isl_class::name_without_type_suffixes(FunctionDecl *method)
 {
 	int num_params;
-	ParmVarDecl *param;
-	string name, type;
-	size_t name_len, type_len;
+	string name;
 
 	name = method->getName();
 	if (!generator::is_overload(method))
 		return name;
 
 	num_params = method->getNumParams();
-	param = method->getParamDecl(num_params - 1);
-	type = generator::extract_type(param->getOriginalType());
-	type = type.substr(4);
-	name_len = name.length();
-	type_len = type.length();
+	for (int i = num_params - 1; i >= 0; --i) {
+		ParmVarDecl *param;
+		string type;
 
-	if (name_len > type_len && name.substr(name_len - type_len) == type)
-		name = name.substr(0, name_len - type_len - 1);
+		param = method->getParamDecl(i);
+		type = type_suffix(param);
+
+		name = drop_suffix(name, type);
+	}
 
 	return name;
 }
