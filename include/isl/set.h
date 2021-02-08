@@ -169,6 +169,18 @@ __isl_give isl_basic_set *isl_basic_set_upper_bound_val(
 	__isl_take isl_val *value);
 __isl_give isl_set *isl_set_upper_bound_val(__isl_take isl_set *set,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value);
+__isl_overload
+__isl_give isl_set *isl_set_lower_bound_multi_val(__isl_take isl_set *set,
+	__isl_take isl_multi_val *lower);
+__isl_overload
+__isl_give isl_set *isl_set_upper_bound_multi_val(__isl_take isl_set *set,
+	__isl_take isl_multi_val *upper);
+__isl_overload
+__isl_give isl_set *isl_set_lower_bound_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *lower);
+__isl_overload
+__isl_give isl_set *isl_set_upper_bound_multi_pw_aff(__isl_take isl_set *set,
+	__isl_take isl_multi_pw_aff *upper);
 
 __isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);

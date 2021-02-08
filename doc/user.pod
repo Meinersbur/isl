@@ -5442,6 +5442,18 @@ dimension has the fixed given value.
 		__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_val *value);
+	__isl_give isl_set *isl_set_lower_bound_multi_val(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_val *lower);
+	__isl_give isl_set *isl_set_upper_bound_multi_val(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_val *upper);
+	__isl_give isl_set *isl_set_lower_bound_multi_pw_aff(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_pw_aff *lower);
+	__isl_give isl_set *isl_set_upper_bound_multi_pw_aff(
+		__isl_take isl_set *set,
+		__isl_take isl_multi_pw_aff *upper);
 
 	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_lower_bound_si(
@@ -5464,9 +5476,25 @@ dimension has the fixed given value.
 		__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos,
 		__isl_take isl_val *value);
+	__isl_give isl_map *isl_map_lower_bound_multi_val(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_val *lower);
+	__isl_give isl_map *isl_map_upper_bound_multi_val(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_val *upper);
+	__isl_give isl_map *isl_map_lower_bound_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *lower);
+	__isl_give isl_map *isl_map_upper_bound_multi_pw_aff(
+		__isl_take isl_map *map,
+		__isl_take isl_multi_pw_aff *upper);
 
 Intersect the set or relation with the half-space where the given
-dimension has a value bounded by the fixed given integer value.
+dimension has a value bounded by the given fixed integer value or
+symbolic constant expression.
+For functions taking a multi expression,
+this applies to all set dimensions.
+Those that bound a map, bound the range of that map.
 
 	__isl_give isl_set *isl_set_equate(__isl_take isl_set *set,
 		enum isl_dim_type type1, int pos1,
