@@ -30,6 +30,18 @@ __isl_give isl_space *isl_point_get_space(__isl_keep isl_point *pnt)
 	return isl_space_copy(isl_point_peek_space(pnt));
 }
 
+#undef TYPE1
+#define TYPE1		isl_basic_map
+#undef TYPE2
+#define TYPE2		isl_point
+#undef TYPE_PAIR
+#define TYPE_PAIR	isl_basic_map_point
+
+static
+#include "isl_type_has_equal_space_templ.c"
+static
+#include "isl_type_check_equal_space_templ.c"
+
 __isl_give isl_point *isl_point_alloc(__isl_take isl_space *space,
 	__isl_take isl_vec *vec)
 {
@@ -484,10 +496,8 @@ isl_bool isl_basic_map_contains_point(__isl_keep isl_basic_map *bmap,
 	isl_vec *vec;
 	isl_bool contains;
 
-	if (!bmap || !point)
+	if (isl_basic_map_point_check_equal_space(bmap, point) < 0)
 		return isl_bool_error;
-	isl_assert(bmap->ctx, isl_space_is_equal(bmap->dim, point->dim),
-		return isl_bool_error);
 	if (bmap->n_div == 0)
 		return isl_basic_map_contains(bmap, point->vec);
 

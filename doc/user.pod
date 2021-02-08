@@ -4325,6 +4325,9 @@ only maps elements to themselves.
 	__isl_give isl_val *isl_set_plain_get_val_if_fixed(
 		__isl_keep isl_set *set,
 		enum isl_dim_type type, unsigned pos);
+	__isl_give isl_multi_val *
+	isl_set_get_plain_multi_val_if_fixed(
+		__isl_keep isl_set *set);
 	__isl_give isl_val *isl_map_plain_get_val_if_fixed(
 		__isl_keep isl_map *map,
 		enum isl_dim_type type, unsigned pos);
@@ -4332,6 +4335,8 @@ only maps elements to themselves.
 If the set or relation obviously lies on a hyperplane where the given dimension
 has a fixed value, then return that value.
 Otherwise return NaN.
+C<isl_set_get_plain_multi_val_if_fixed> collects the results over
+all set dimensions.
 
 =item * Stride
 
@@ -5620,7 +5625,7 @@ basic set or relation.
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_coalesce(
-		__isl_take isl_pw_aff *pwqp);
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_pw_multi_aff *isl_pw_multi_aff_coalesce(
 		__isl_take isl_pw_multi_aff *pma);
 	__isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
@@ -5632,7 +5637,7 @@ basic set or relation.
 		__isl_take isl_union_pw_multi_aff *upma);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_coalesce(
-		__isl_take isl_multi_union_pw_aff *aff);
+		__isl_take isl_multi_union_pw_aff *mupa);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial_fold *
@@ -6822,6 +6827,14 @@ the same (number of) parameters.
 	isl_pw_multi_aff_intersect_domain_wrapped_domain(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_aff *
 	isl_pw_aff_intersect_domain_wrapped_range(
 		__isl_take isl_pw_aff *pa,
@@ -6830,6 +6843,14 @@ the same (number of) parameters.
 	isl_pw_multi_aff_intersect_domain_wrapped_range(
 		__isl_take isl_pw_multi_aff *pma,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_aff *upa,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_aff *isl_pw_aff_intersect_params(
 		__isl_take isl_pw_aff *pa,
 		__isl_take isl_set *set);
@@ -6878,6 +6899,14 @@ the same (number of) parameters.
 	isl_pw_qpolynomial_fold_intersect_domain_wrapped_domain(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_intersect_domain_wrapped_domain(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_intersect_domain_wrapped_range(
 		__isl_take isl_pw_qpolynomial *pwpq,
@@ -6886,6 +6915,14 @@ the same (number of) parameters.
 	isl_pw_qpolynomial_fold_intersect_domain_wrapped_range(
 		__isl_take isl_pw_qpolynomial_fold *pwf,
 		__isl_take isl_set *set);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_qpolynomial *upwpq,
+		__isl_take isl_union_set *uset);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_intersect_domain_wrapped_range(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf,
+		__isl_take isl_union_set *uset);
 	__isl_give isl_pw_qpolynomial *
 	isl_pw_qpolynomial_intersect_params(
 		__isl_take isl_pw_qpolynomial *pwpq,
@@ -7024,16 +7061,20 @@ at least one element and all elements need to live in the same space.
 		__isl_take isl_space *left,
 		__isl_take isl_space *right);
 
-	#include <isl/map.h>
+	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_apply(
 		__isl_take isl_basic_set *bset,
 		__isl_take isl_basic_map *bmap);
 	__isl_give isl_set *isl_set_apply(
 		__isl_take isl_set *set,
 		__isl_take isl_map *map);
+
+	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_apply(
 		__isl_take isl_union_set *uset,
 		__isl_take isl_union_map *umap);
+
+	#include <isl/map.h>
 	__isl_give isl_basic_map *isl_basic_map_apply_domain(
 		__isl_take isl_basic_map *bmap1,
 		__isl_take isl_basic_map *bmap2);
@@ -7849,11 +7890,11 @@ to simplify the expression associated to each cell.
 		__isl_take isl_union_set *context);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_gist_params(
-		__isl_take isl_multi_union_pw_aff *aff,
+		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_set *context);
 	__isl_give isl_multi_union_pw_aff *
 	isl_multi_union_pw_aff_gist(
-		__isl_take isl_multi_union_pw_aff *aff,
+		__isl_take isl_multi_union_pw_aff *mupa,
 		__isl_take isl_union_set *context);
 
 	#include <isl/polynomial.h>

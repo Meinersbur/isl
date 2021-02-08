@@ -923,8 +923,7 @@ __isl_give isl_basic_map *isl_basic_map_detect_equalities(
 		isl_basic_set_free(hull);
 		return isl_basic_map_set_to_empty(bmap);
 	}
-	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim), 0,
-					hull->n_eq, 0);
+	bmap = isl_basic_map_extend(bmap, 0, hull->n_eq, 0);
 	total = isl_basic_set_dim(hull, isl_dim_all);
 	if (total < 0)
 		goto error;
@@ -1030,8 +1029,7 @@ static __isl_give isl_basic_map *add_strides(__isl_take isl_basic_map *bmap,
 	if (isl_int_is_one(M->row[0][0]))
 		return bmap;
 
-	bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
-					M->n_row - 1, M->n_row - 1, 0);
+	bmap = isl_basic_map_extend(bmap, M->n_row - 1, M->n_row - 1, 0);
 
 	isl_int_init(gcd);
 	for (i = 1; i < M->n_row; ++i) {

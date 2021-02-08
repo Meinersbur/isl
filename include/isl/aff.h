@@ -224,6 +224,7 @@ __isl_overload
 __isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 	__isl_take isl_set *domain, __isl_take isl_id *id);
 
+__isl_export
 __isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set);
 
 const char *isl_pw_aff_get_dim_name(__isl_keep isl_pw_aff *pa,
@@ -358,7 +359,8 @@ __isl_give isl_pw_aff *isl_pw_aff_move_dims(__isl_take isl_pw_aff *pa,
 __isl_give isl_pw_aff *isl_pw_aff_drop_dims(__isl_take isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
-__isl_give isl_pw_aff *isl_pw_aff_coalesce(__isl_take isl_pw_aff *pwqp);
+__isl_export
+__isl_give isl_pw_aff *isl_pw_aff_coalesce(__isl_take isl_pw_aff *pa);
 __isl_export
 __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
@@ -698,6 +700,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_align_params(
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_unused_params(
 	__isl_take isl_pw_multi_aff *pma);
 
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_coalesce(
 	__isl_take isl_pw_multi_aff *pma);
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist_params(
@@ -807,6 +810,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_drop_dims(
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_reset_user(
 	__isl_take isl_union_pw_multi_aff *upma);
 
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_coalesce(
 	__isl_take isl_union_pw_multi_aff *upma);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_gist_params(
@@ -894,6 +898,16 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_intersect_domain(
 	__isl_take isl_union_pw_multi_aff *upma,
 	__isl_take isl_union_set *uset);
 __isl_export
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_intersect_domain_wrapped_domain(
+	__isl_take isl_union_pw_multi_aff *upma,
+	__isl_take isl_union_set *uset);
+__isl_export
+__isl_give isl_union_pw_multi_aff *
+isl_union_pw_multi_aff_intersect_domain_wrapped_range(
+	__isl_take isl_union_pw_multi_aff *upma,
+	__isl_take isl_union_set *uset);
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_subtract_domain(
 	__isl_take isl_union_pw_multi_aff *upma,
 	__isl_take isl_union_set *uset);
@@ -936,6 +950,7 @@ __isl_export
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_intersect_domain(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_set *domain);
 
+__isl_export
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_coalesce(
 	__isl_take isl_multi_pw_aff *mpa);
 __isl_export
@@ -1067,6 +1082,7 @@ __isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_sub(
 	__isl_take isl_union_pw_aff *upa1, __isl_take isl_union_pw_aff *upa2);
 
+__isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_coalesce(
 	__isl_take isl_union_pw_aff *upa);
 __isl_export
@@ -1098,6 +1114,12 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_params(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_set *set);
 __isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_domain(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_union_set *uset);
+__isl_export
+__isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_domain_wrapped_domain(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_union_set *uset);
+__isl_export
+__isl_give isl_union_pw_aff *isl_union_pw_aff_intersect_domain_wrapped_range(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_union_set *uset);
 __isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_subtract_domain(
@@ -1166,14 +1188,15 @@ __isl_export
 __isl_give isl_union_set *isl_multi_union_pw_aff_domain(
 	__isl_take isl_multi_union_pw_aff *mupa);
 
+__isl_export
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_coalesce(
-	__isl_take isl_multi_union_pw_aff *aff);
+	__isl_take isl_multi_union_pw_aff *mupa);
 __isl_export
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist(
-	__isl_take isl_multi_union_pw_aff *aff,
+	__isl_take isl_multi_union_pw_aff *mupa,
 	__isl_take isl_union_set *context);
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_gist_params(
-	__isl_take isl_multi_union_pw_aff *aff, __isl_take isl_set *context);
+	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_set *context);
 
 __isl_give isl_union_pw_aff *isl_multi_union_pw_aff_apply_aff(
 	__isl_take isl_multi_union_pw_aff *mupa, __isl_take isl_aff *aff);

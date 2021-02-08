@@ -42,7 +42,7 @@ TEST_EXTENSIONS = .py
 AM_TESTS_ENVIRONMENT = \
 	export PYTHONPATH=interface; \
 	export ISL_DYLD_LIBRARY_PATH=.libs; \
-	export LD_LIBRARY_PATH=.libs;
+	export LD_LIBRARY_PATH=".libs:$(LD_LIBRARY_PATH)";
 PY_LOG_COMPILER = $(PYTHON)
 
 if IMATH_FOR_MP
@@ -464,10 +464,13 @@ DISTCLEANFILES = \
 EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
+	isl_align_params_templ.c \
+	isl_align_params_bin_templ.c \
 	basis_reduction_templ.c \
 	isl_bind_domain_templ.c \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
+	isl_check_named_params_templ.c \
 	check_reparse_templ.c \
 	check_reparse_test_templ.c \
 	check_type_range_templ.c \
@@ -529,6 +532,14 @@ EXTRA_DIST = \
 	isl_pw_bind_domain_templ.c \
 	isl_pw_eval.c \
 	isl_pw_hash.c \
+	isl_pw_insert_dims_templ.c \
+	isl_pw_lift_templ.c \
+	isl_pw_morph_templ.c \
+	isl_pw_move_dims_templ.c \
+	isl_pw_neg_templ.c \
+	isl_pw_opt_templ.c \
+	isl_pw_pullback_templ.c \
+	isl_pw_sub_templ.c \
 	isl_pw_union_opt.c \
 	read_in_string_templ.c \
 	set_to_map.c \
@@ -536,6 +547,9 @@ EXTRA_DIST = \
 	set_list_from_map_list_inl.c \
 	isl_tab_lexopt_templ.c \
 	isl_test_list_templ.c \
+	isl_type_check_equal_space_templ.c \
+	isl_type_has_equal_space_bin_templ.c \
+	isl_type_has_equal_space_templ.c \
 	uset_to_umap.c \
 	uset_from_umap.c \
 	isl_union_macro.h \

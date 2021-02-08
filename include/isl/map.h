@@ -291,6 +291,7 @@ __isl_null isl_map *isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
 __isl_export
 __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map);
+__isl_export
 __isl_give isl_map *isl_map_range_reverse(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_map *isl_map_union(

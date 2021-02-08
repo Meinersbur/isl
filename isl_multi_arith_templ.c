@@ -14,32 +14,12 @@
 #include <isl_multi_macro.h>
 
 /* Add "multi2" to "multi1" and return the result.
- *
- * The parameters of "multi1" and "multi2" are assumed to have been aligned.
- */
-static __isl_give MULTI(BASE) *FN(MULTI(BASE),add_aligned)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
-{
-	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,add));
-}
-
-/* Add "multi2" to "multi1" and return the result.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),add)(__isl_take MULTI(BASE) *multi1,
 	__isl_take MULTI(BASE) *multi2)
 {
-	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
-						&FN(MULTI(BASE),add_aligned));
-}
-
-/* Subtract "multi2" from "multi1" and return the result.
- *
- * The parameters of "multi1" and "multi2" are assumed to have been aligned.
- */
-static __isl_give MULTI(BASE) *FN(MULTI(BASE),sub_aligned)(
-	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2)
-{
-	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,sub));
+	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
+	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,add));
 }
 
 /* Subtract "multi2" from "multi1" and return the result.
@@ -47,8 +27,8 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),sub_aligned)(
 __isl_give MULTI(BASE) *FN(MULTI(BASE),sub)(__isl_take MULTI(BASE) *multi1,
 	__isl_take MULTI(BASE) *multi2)
 {
-	return FN(MULTI(BASE),align_params_multi_multi_and)(multi1, multi2,
-						&FN(MULTI(BASE),sub_aligned));
+	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
+	return FN(MULTI(BASE),bin_op)(multi1, multi2, &FN(EL,sub));
 }
 
 /* Multiply the elements of "multi" by "v" and return the result.

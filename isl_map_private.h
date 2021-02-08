@@ -135,9 +135,6 @@ __isl_give isl_basic_map *isl_basic_map_mark_final(
 	__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_finalize(
 	__isl_take isl_basic_map *bmap);
-__isl_give isl_basic_map *isl_basic_map_extend(__isl_take isl_basic_map *base,
-	unsigned nparam, unsigned n_in, unsigned n_out, unsigned extra,
-	unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_map *isl_basic_map_extend_constraints(
 	__isl_take isl_basic_map *base, unsigned n_eq, unsigned n_ineq);
 __isl_give isl_basic_map *isl_basic_map_simplify(
@@ -196,15 +193,10 @@ isl_bool isl_basic_map_compatible_domain(__isl_keep isl_basic_map *bmap,
 isl_bool isl_basic_map_compatible_range(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *bset);
 
-__isl_give isl_basic_map *isl_basic_map_extend_space(
-	__isl_take isl_basic_map *base, __isl_take isl_space *space,
+__isl_give isl_basic_map *isl_basic_map_extend(__isl_take isl_basic_map *base,
 	unsigned extra, unsigned n_eq, unsigned n_ineq);
-__isl_give isl_basic_set *isl_basic_set_extend_space(
-	__isl_take isl_basic_set *base,
-		__isl_take isl_space *dim, unsigned extra,
-		unsigned n_eq, unsigned n_ineq);
-struct isl_basic_set *isl_basic_set_add_constraints(struct isl_basic_set *bset1,
-		struct isl_basic_set *bset2, unsigned pos);
+__isl_give isl_basic_set *isl_basic_set_extend(__isl_take isl_basic_set *base,
+	unsigned extra, unsigned n_eq, unsigned n_ineq);
 
 __isl_give isl_map *isl_map_grow(__isl_take isl_map *map, int n);
 struct isl_set *isl_set_grow(struct isl_set *set, int n);
@@ -494,10 +486,10 @@ isl_bool isl_set_space_has_equal_params(__isl_keep isl_set *set,
 isl_bool isl_map_space_has_equal_params(__isl_keep isl_map *map,
 	__isl_keep isl_space *space);
 
-__isl_give isl_map *isl_map_align_params_map_map_and(
-	__isl_take isl_map *map1, __isl_take isl_map *map2,
-	__isl_give isl_map *(*fn)(__isl_take isl_map *map1,
-				    __isl_take isl_map *map2));
+isl_stat isl_map_align_params_bin(__isl_keep isl_map **map1,
+	__isl_keep isl_map **map2);
+isl_stat isl_map_align_params_set(__isl_keep isl_map **map,
+	__isl_keep isl_set **set);
 isl_bool isl_map_align_params_map_map_and_test(__isl_keep isl_map *map1,
 	__isl_keep isl_map *map2,
 	isl_bool (*fn)(__isl_keep isl_map *map1, __isl_keep isl_map *map2));
@@ -560,6 +552,16 @@ int isl_basic_set_count_upto(__isl_keep isl_basic_set *bset,
 int isl_set_count_upto(__isl_keep isl_set *set, isl_int max, isl_int *count);
 
 isl_stat isl_map_check_equal_tuples(__isl_keep isl_map *map);
+isl_stat isl_basic_set_check_equal_space(__isl_keep isl_basic_set *bset1,
+	__isl_keep isl_basic_set *bset2);
+isl_stat isl_basic_map_check_equal_space(__isl_keep isl_basic_map *bmap1,
+	__isl_keep isl_basic_map *bmap2);
+isl_stat isl_set_basic_set_check_equal_space(__isl_keep isl_set *set,
+	__isl_keep isl_basic_set *bset);
+isl_stat isl_map_basic_map_check_equal_space(__isl_keep isl_map *map,
+	__isl_keep isl_basic_map *bmap);
+isl_stat isl_map_check_equal_space(__isl_keep isl_map *map1,
+	__isl_keep isl_map *map2);
 
 __isl_give isl_mat *isl_basic_set_extract_equalities(
 	__isl_keep isl_basic_set *bset);

@@ -158,16 +158,10 @@ isl_bool isl_local_space_is_set(__isl_keep isl_local_space *ls)
 	return ls ? isl_space_is_set(ls->dim) : isl_bool_error;
 }
 
-/* Do "ls1" and "ls2" have the same space?
- */
-isl_bool isl_local_space_has_equal_space(__isl_keep isl_local_space *ls1,
-	__isl_keep isl_local_space *ls2)
-{
-	if (!ls1 || !ls2)
-		return isl_bool_error;
+#undef TYPE
+#define TYPE	isl_local_space
 
-	return isl_space_is_equal(ls1->dim, ls2->dim);
-}
+#include "isl_type_has_equal_space_bin_templ.c"
 
 /* Is the space of "ls" equal to "space"?
  */

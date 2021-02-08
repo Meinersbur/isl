@@ -32,6 +32,7 @@
  */ 
 
 #include "isl_config.h"
+#undef PACKAGE
 
 #include <assert.h>
 #include <iostream>
@@ -321,6 +322,32 @@ struct ClangAPI {
 	static Command *command(Command &C) { return &C; }
 };
 
+#ifdef CREATE_FROM_ARGS_TAKES_ARRAYREF
+
+/* Call CompilerInvocation::CreateFromArgs with the right arguments.
+ * In this case, an ArrayRef<const char *>.
+ */
+static void create_from_args(CompilerInvocation &invocation,
+	const ArgStringList *args, DiagnosticsEngine &Diags)
+{
+	CompilerInvocation::CreateFromArgs(invocation, *args, Diags);
+}
+
+#else
+
+/* Call CompilerInvocation::CreateFromArgs with the right arguments.
+ * In this case, two "const char *" pointers.
+ */
+static void create_from_args(CompilerInvocation &invocation,
+	const ArgStringList *args, DiagnosticsEngine &Diags)
+{
+	CompilerInvocation::CreateFromArgs(invocation, args->data() + 1,
+						args->data() + args->size(),
+						Diags);
+}
+
+#endif
+
 /* Create a CompilerInvocation object that stores the command line
  * arguments constructed by the driver.
  * The arguments are mainly useful for setting up the system include
@@ -345,9 +372,7 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	const ArgStringList *args = &cmd->getArguments();
 
 	CompilerInvocation *invocation = new CompilerInvocation;
-	CompilerInvocation::CreateFromArgs(*invocation, args->data() + 1,
-						args->data() + args->size(),
-						Diags);
+	create_from_args(*invocation, args, Diags);
 	return invocation;
 }
 
@@ -592,15 +617,15 @@ int main(int argc, char *argv[])
 	create_diagnostics(Clang);
 	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.setSuppressSystemWarnings(true);
+	TargetInfo *target = create_target_info(Clang, Diags);
+	Clang->setTarget(target);
+	set_lang_defaults(Clang);
 	CompilerInvocation *invocation =
 		construct_invocation(InputFilename.c_str(), Diags);
 	if (invocation)
 		set_invocation(Clang, invocation);
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
-	TargetInfo *target = create_target_info(Clang, Diags);
-	Clang->setTarget(target);
-	set_lang_defaults(Clang);
 	HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
 	LangOptions &LO = Clang->getLangOpts();
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();

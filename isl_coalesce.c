@@ -3522,12 +3522,9 @@ static isl_stat add_sub_vars(struct isl_coalesce_info *info,
 {
 	int i, j, d;
 	isl_size n;
-	isl_space *space;
 
-	space = isl_basic_map_get_space(info->bmap);
 	info->bmap = isl_basic_map_cow(info->bmap);
-	info->bmap = isl_basic_map_extend_space(info->bmap, space,
-						extra_var, 0, 0);
+	info->bmap = isl_basic_map_extend(info->bmap, extra_var, 0, 0);
 	n = isl_aff_list_n_aff(list);
 	if (!info->bmap || n < 0)
 		return isl_stat_error;

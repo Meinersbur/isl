@@ -1066,8 +1066,7 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 			needed++;
 	}
 	if (needed > dropped) {
-		bmap = isl_basic_map_extend_space(bmap, isl_space_copy(bmap->dim),
-				needed, needed, 0);
+		bmap = isl_basic_map_extend(bmap, needed, needed, 0);
 		if (!bmap)
 			goto error;
 	}
@@ -3224,9 +3223,8 @@ __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
 
 	context = isl_basic_map_remove_redundancies(context);
 	map = isl_map_cow(map);
-	if (!map || !context)
+	if (isl_map_basic_map_check_equal_space(map, context) < 0)
 		goto error;
-	isl_assert(map->ctx, isl_space_is_equal(map->dim, context->dim), goto error);
 	map = isl_map_compute_divs(map);
 	if (!map)
 		goto error;
@@ -3545,7 +3543,7 @@ static __isl_give isl_map *replace_by_universe(__isl_take isl_map *map,
  * for the context.  These can then be used to simplify away
  * the corresponding constraints in "map".
  */
-static __isl_give isl_map *map_gist(__isl_take isl_map *map,
+__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
 	__isl_take isl_map *context)
 {
 	int equal;
@@ -3564,6 +3562,7 @@ static __isl_give isl_map *map_gist(__isl_take isl_map *map,
 		return map;
 	}
 
+	isl_map_align_params_bin(&map, &context);
 	equal = isl_map_plain_is_equal(map, context);
 	if (equal < 0)
 		goto error;
@@ -3603,12 +3602,6 @@ error:
 	isl_map_free(map);
 	isl_map_free(context);
 	return NULL;
-}
-
-__isl_give isl_map *isl_map_gist(__isl_take isl_map *map,
-	__isl_take isl_map *context)
-{
-	return isl_map_align_params_map_map_and(map, context, &map_gist);
 }
 
 struct isl_basic_set *isl_basic_set_gist(struct isl_basic_set *bset,
@@ -3696,10 +3689,8 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 	isl_size total;
 	int i;
 
-	if (!bmap1 || !bmap2)
+	if (isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
 		return isl_bool_error;
-	isl_assert(bmap1->ctx, isl_space_is_equal(bmap1->dim, bmap2->dim),
-			return isl_bool_error);
 	if (bmap1->n_div || bmap2->n_div)
 		return isl_bool_false;
 	if (!bmap1->n_eq && !bmap2->n_eq)

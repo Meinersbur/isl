@@ -388,6 +388,18 @@ struct {
 	  "{ [x=4:5] -> [x + 1] }" },
 	{ "{ [x] -> [x - 1 : x + 1] }",
 	  "{ [x] -> [y] : x - 1 <= y <= x + 1 }" },
+	{ "{ [x=4:] -> [x + 1] }",
+	  "{ [x] -> [x + 1] : 4 <= x }" },
+	{ "{ [x=:5] -> [x + 1] }",
+	  "{ [x] -> [x + 1] : x <= 5 }" },
+	{ "{ [x=:] -> [x + 1] }",
+	  "{ [x] -> [x + 1] }" },
+	{ "{ [:] -> [:] }",
+	  "{ [x] -> [y] }" },
+	{ "{ [x, x//4] }",
+	  "{ [x, floor(x/4)] }" },
+	{ "{ [10//4] }",
+	  "{ [2] }" },
 };
 
 int test_parse(struct isl_ctx *ctx)
@@ -5055,17 +5067,17 @@ static int aff_plain_is_equal(__isl_keep isl_aff *aff, const char *str)
 	return equal;
 }
 
-static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
+static isl_stat aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 {
 	int equal;
 
 	equal = aff_plain_is_equal(aff, str);
 	if (equal < 0)
-		return -1;
+		return isl_stat_error;
 	if (!equal)
 		isl_die(isl_aff_get_ctx(aff), isl_error_unknown,
-			"result not as expected", return -1);
-	return 0;
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
 }
 
 /* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
@@ -5423,6 +5435,72 @@ static int test_bin_upma_fail(isl_ctx *ctx)
 			"operation not expected to succeed", return -1);
 
 	return 0;
+}
+
+/* Inputs for basic tests of binary operations on
+ * pairs of isl_union_pw_multi_aff and isl_union_set objects.
+ * "fn" is the function that is being tested.
+ * "arg1" and "arg2" are string descriptions of the inputs.
+ * "res" is a string description of the expected result.
+ */
+struct {
+	__isl_give isl_union_pw_multi_aff *(*fn)(
+		__isl_take isl_union_pw_multi_aff *upma,
+		__isl_take isl_union_set *uset);
+	const char *arg1;
+	const char *arg2;
+	const char *res;
+} upma_uset_tests[] = {
+	{ &isl_union_pw_multi_aff_intersect_domain_wrapped_range,
+	  "{ A[i] -> B[i] }", "{ B[0] }",
+	  "{ }" },
+	{ &isl_union_pw_multi_aff_intersect_domain_wrapped_domain,
+	  "{ [A[i] -> B[i]] -> C[i + 1] }", "{ A[1]; B[0] }",
+	  "{ [A[1] -> B[1]] -> C[2] }" },
+	{ &isl_union_pw_multi_aff_intersect_domain_wrapped_range,
+	  "{ [A[i] -> B[i]] -> C[i + 1] }", "{ A[1]; B[0] }",
+	  "{ [A[0] -> B[0]] -> C[1] }" },
+	{ &isl_union_pw_multi_aff_intersect_domain_wrapped_range,
+	  "{ [A[i] -> B[i]] -> C[i + 1] }", "[N] -> { B[N] }",
+	  "[N] -> { [A[N] -> B[N]] -> C[N + 1] }" },
+	{ &isl_union_pw_multi_aff_intersect_domain_wrapped_range,
+	  "[M] -> { [A[M] -> B[M]] -> C[M + 1] }", "[N] -> { B[N] }",
+	  "[N, M] -> { [A[N] -> B[N]] -> C[N + 1] : N = M }" },
+	{ &isl_union_pw_multi_aff_intersect_domain_wrapped_range,
+	  "{ [A[] -> B[]] -> C[]; N[A[] -> B[]] -> D[]; [B[] -> A[]] -> E[] }",
+	  "{ B[] }",
+	  "{ [A[] -> B[]] -> C[]; N[A[] -> B[]] -> D[] }" },
+};
+
+/* Perform some basic tests of binary operations on
+ * pairs of isl_union_pw_multi_aff and isl_union_set objects.
+ */
+static isl_stat test_upma_uset(isl_ctx *ctx)
+{
+	int i;
+	isl_bool ok;
+	isl_union_pw_multi_aff *upma, *res;
+	isl_union_set *uset;
+
+	for (i = 0; i < ARRAY_SIZE(upma_uset_tests); ++i) {
+		upma = isl_union_pw_multi_aff_read_from_str(ctx,
+						    upma_uset_tests[i].arg1);
+		uset = isl_union_set_read_from_str(ctx,
+						    upma_uset_tests[i].arg2);
+		res = isl_union_pw_multi_aff_read_from_str(ctx,
+						    upma_uset_tests[i].res);
+		upma = upma_uset_tests[i].fn(upma, uset);
+		ok = isl_union_pw_multi_aff_plain_is_equal(upma, res);
+		isl_union_pw_multi_aff_free(upma);
+		isl_union_pw_multi_aff_free(res);
+		if (ok < 0)
+			return isl_stat_error;
+		if (!ok)
+			isl_die(ctx, isl_error_unknown,
+				"unexpected result", return isl_stat_error);
+	}
+
+	return isl_stat_ok;
 }
 
 /* Inputs for basic tests of unary operations on isl_multi_pw_aff objects.
@@ -6388,7 +6466,7 @@ static isl_stat test_aff_set_tuple_id(isl_ctx *ctx)
 {
 	isl_id *id;
 	isl_aff *aff;
-	int equal;
+	isl_stat equal;
 
 	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x + 1] }");
 	id = isl_id_alloc(ctx, "A", NULL);
@@ -6401,6 +6479,25 @@ static isl_stat test_aff_set_tuple_id(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Check that affine expressions get normalized on addition/subtraction.
+ * In particular, check that (final) unused integer divisions get removed
+ * such that an expression derived from expressions with integer divisions
+ * is found to be obviously equal to one that is created directly.
+ */
+static isl_stat test_aff_normalize(isl_ctx *ctx)
+{
+	isl_aff *aff, *aff2;
+	isl_stat ok;
+
+	aff = isl_aff_read_from_str(ctx, "{ [x] -> [x//2] }");
+	aff2 = isl_aff_read_from_str(ctx, "{ [x] -> [1 + x//2] }");
+	aff = isl_aff_sub(aff2, aff);
+	ok = aff_check_plain_equal(aff, "{ [x] -> [1] }");
+	isl_aff_free(aff);
+
+	return ok;
+}
+
 int test_aff(isl_ctx *ctx)
 {
 	const char *str;
@@ -6408,7 +6505,8 @@ int test_aff(isl_ctx *ctx)
 	isl_space *space;
 	isl_local_space *ls;
 	isl_aff *aff;
-	int zero, equal;
+	int zero;
+	isl_stat equal;
 
 	if (test_upa(ctx) < 0)
 		return -1;
@@ -6419,6 +6517,8 @@ int test_aff(isl_ctx *ctx)
 	if (test_bin_upma(ctx) < 0)
 		return -1;
 	if (test_bin_upma_fail(ctx) < 0)
+		return -1;
+	if (test_upma_uset(ctx) < 0)
 		return -1;
 	if (test_un_mpa(ctx) < 0)
 		return -1;
@@ -6475,6 +6575,8 @@ int test_aff(isl_ctx *ctx)
 		return -1;
 
 	if (test_aff_set_tuple_id(ctx) < 0)
+		return -1;
+	if (test_aff_normalize(ctx) < 0)
 		return -1;
 
 	return 0;

@@ -563,8 +563,7 @@ static __isl_give isl_basic_set *extend(__isl_take isl_basic_set *hull,
 		if (!facet || !hull_facet)
 			goto error;
 		hull = isl_basic_set_cow(hull);
-		hull = isl_basic_set_extend_space(hull,
-			isl_space_copy(hull->dim), 0, 0, facet->n_ineq);
+		hull = isl_basic_set_extend(hull, 0, 0, facet->n_ineq);
 		if (!hull)
 			goto error;
 		for (j = 0; j < facet->n_ineq; ++j) {
@@ -2614,6 +2613,9 @@ static __isl_give isl_basic_map *select_shared_equalities(
 __isl_give isl_basic_map *isl_basic_map_plain_unshifted_simple_hull(
 	__isl_take isl_basic_map *bmap1, __isl_take isl_basic_map *bmap2)
 {
+	if (isl_basic_map_check_equal_space(bmap1, bmap2) < 0)
+		goto error;
+
 	bmap1 = isl_basic_map_drop_constraint_involving_unknown_divs(bmap1);
 	bmap2 = isl_basic_map_drop_constraint_involving_unknown_divs(bmap2);
 	bmap2 = isl_basic_map_align_divs(bmap2, bmap1);
@@ -2629,6 +2631,10 @@ __isl_give isl_basic_map *isl_basic_map_plain_unshifted_simple_hull(
 	isl_basic_map_free(bmap2);
 	bmap1 = isl_basic_map_finalize(bmap1);
 	return bmap1;
+error:
+	isl_basic_map_free(bmap1);
+	isl_basic_map_free(bmap2);
+	return NULL;
 }
 
 /* Compute a superset of the convex hull of "map" that is described

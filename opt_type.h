@@ -1,3 +1,4 @@
+#define NO_LOC
 #ifdef HAS_TYPE
 #define OPT_TYPE_PARAM			, enum isl_fold type
 #define OPT_TYPE_PARAM_FIRST		enum isl_fold type,

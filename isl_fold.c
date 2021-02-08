@@ -699,12 +699,13 @@ static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 1
 
-#define NO_NEG
-#define NO_SUB
-#define NO_PULLBACK
-
 #include <isl_pw_templ.c>
 #include <isl_pw_eval.c>
+#include <isl_pw_insert_dims_templ.c>
+#include <isl_pw_lift_templ.c>
+#include <isl_pw_morph_templ.c>
+#include <isl_pw_move_dims_templ.c>
+#include <isl_pw_opt_templ.c>
 
 #undef BASE
 #define BASE pw_qpolynomial_fold

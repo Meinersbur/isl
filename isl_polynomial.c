@@ -457,6 +457,18 @@ __isl_give isl_space *isl_qpolynomial_get_domain_space(
 	return isl_space_copy(isl_qpolynomial_peek_domain_space(qp));
 }
 
+#undef TYPE
+#define TYPE		isl_qpolynomial
+#undef PEEK_SPACE
+#define PEEK_SPACE	peek_domain_space
+
+static
+#include "isl_type_has_equal_space_bin_templ.c"
+static
+#include "isl_type_check_equal_space_templ.c"
+
+#undef PEEK_SPACE
+
 /* Return a copy of the local space on which "qp" is defined.
  */
 static __isl_give isl_local_space *isl_qpolynomial_get_domain_local_space(
@@ -1667,13 +1679,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_add(__isl_take isl_qpolynomial *qp1,
 
 	qp1 = isl_qpolynomial_cow(qp1);
 
-	if (!qp1 || !qp2)
+	if (isl_qpolynomial_check_equal_space(qp1, qp2) < 0)
 		goto error;
 
 	if (qp1->div->n_row < qp2->div->n_row)
 		return isl_qpolynomial_add(qp2, qp1);
 
-	isl_assert(qp1->dim->ctx, isl_space_is_equal(qp1->dim, qp2->dim), goto error);
 	compatible = compatible_divs(qp1->div, qp2->div);
 	if (compatible < 0)
 		goto error;
@@ -1842,13 +1853,12 @@ __isl_give isl_qpolynomial *isl_qpolynomial_mul(__isl_take isl_qpolynomial *qp1,
 
 	qp1 = isl_qpolynomial_cow(qp1);
 
-	if (!qp1 || !qp2)
+	if (isl_qpolynomial_check_equal_space(qp1, qp2) < 0)
 		goto error;
 
 	if (qp1->div->n_row < qp2->div->n_row)
 		return isl_qpolynomial_mul(qp2, qp1);
 
-	isl_assert(qp1->dim->ctx, isl_space_is_equal(qp1->dim, qp2->dim), goto error);
 	compatible = compatible_divs(qp1->div, qp2->div);
 	if (compatible < 0)
 		goto error;
@@ -3092,10 +3102,15 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
 #undef DEFAULT_IS_ZERO
 #define DEFAULT_IS_ZERO 1
 
-#define NO_PULLBACK
-
 #include <isl_pw_templ.c>
 #include <isl_pw_eval.c>
+#include <isl_pw_insert_dims_templ.c>
+#include <isl_pw_lift_templ.c>
+#include <isl_pw_morph_templ.c>
+#include <isl_pw_move_dims_templ.c>
+#include <isl_pw_neg_templ.c>
+#include <isl_pw_opt_templ.c>
+#include <isl_pw_sub_templ.c>
 
 #undef BASE
 #define BASE pw_qpolynomial
@@ -3584,8 +3599,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_substitute(
 			goto error;
 
 	for (i = 0; i < n; ++i)
-		isl_assert(qp->dim->ctx, isl_space_is_equal(qp->dim, subs[i]->dim),
-				goto error);
+		if (isl_qpolynomial_check_equal_space(qp, subs[i]) < 0)
+			goto error;
 
 	isl_assert(qp->dim->ctx, qp->div->n_row == 0, goto error);
 	for (i = 0; i < n; ++i)

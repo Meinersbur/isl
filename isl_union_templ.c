@@ -99,20 +99,20 @@ __isl_give UNION *FN(FN(UNION,ZERO),ctx)(isl_ctx *ctx OPT_TYPE_PARAM)
 	isl_space *space;
 
 	space = isl_space_unit(ctx);
-	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG(NO_LOC));
 }
 
 __isl_give UNION *FN(FN(UNION,ZERO),space)(__isl_take isl_space *space
 	OPT_TYPE_PARAM)
 {
-	return FN(UNION,alloc)(space OPT_TYPE_ARG(), 16);
+	return FN(UNION,alloc)(space OPT_TYPE_ARG(NO_LOC), 16);
 }
 
 /* This is an alternative name for the function above.
  */
 __isl_give UNION *FN(UNION,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
 {
-	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG());
+	return FN(FN(UNION,ZERO),space)(space OPT_TYPE_ARG(NO_LOC));
 }
 
 __isl_give UNION *FN(UNION,copy)(__isl_keep UNION *u)
@@ -701,6 +701,8 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
 /* Data structure that specifies how isl_union_*_match_domain_op
  * should combine its arguments.
  *
+ * If "filter" is not NULL, then only parts that pass the given
+ * filter are considered for matching.
  * "fn" is applied to each part in the union and each corresponding
  * set in the union set, i.e., such that the set lives in the same space
  * as the domain of the part.
@@ -710,6 +712,7 @@ __isl_give UNION *FN(UNION,gist_params)(__isl_take UNION *u,
  * on this domain space.
  */
 S(UNION,match_domain_control) {
+	isl_bool (*filter)(__isl_keep PART *part);
 	__isl_give isl_space *(*match_space)(__isl_take isl_space *space);
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);
 };
@@ -738,6 +741,14 @@ static isl_stat FN(UNION,match_domain_entry)(__isl_take PART *part, void *user)
 	uint32_t hash;
 	struct isl_hash_table_entry *entry2;
 	isl_space *space, *uset_space;
+
+	if (data->control->filter) {
+		isl_bool pass = data->control->filter(part);
+		if (pass < 0 || !pass) {
+			FN(PART,free)(part);
+			return pass < 0 ? isl_stat_error : isl_stat_ok;
+		}
+	}
 
 	uset_space = isl_union_set_peek_space(data->uset);
 	space = FN(PART,get_domain_space)(part);
@@ -803,6 +814,43 @@ __isl_give UNION *FN(UNION,intersect_domain)(__isl_take UNION *u,
 	if (isl_union_set_is_params(uset))
 		return FN(UNION,intersect_params)(u,
 						isl_set_from_union_set(uset));
+	return FN(UNION,match_domain_op)(u, uset, &control);
+}
+
+/* Is the domain of "pw" a wrapped relation?
+ */
+static isl_bool FN(PW,domain_is_wrapping)(__isl_keep PW *pw)
+{
+	return isl_space_domain_is_wrapping(FN(PW,peek_space)(pw));
+}
+
+/* Intersect the domain of the wrapped relation inside the domain of "u"
+ * with "uset".
+ */
+__isl_give UNION *FN(UNION,intersect_domain_wrapped_domain)(__isl_take UNION *u,
+	__isl_take isl_union_set *uset)
+{
+	S(UNION,match_domain_control) control = {
+		.filter = &FN(PART,domain_is_wrapping),
+		.match_space = &isl_space_factor_domain,
+		.fn = &FN(PW,intersect_domain_wrapped_domain),
+	};
+
+	return FN(UNION,match_domain_op)(u, uset, &control);
+}
+
+/* Intersect the range of the wrapped relation inside the domain of "u"
+ * with "uset".
+ */
+__isl_give UNION *FN(UNION,intersect_domain_wrapped_range)(__isl_take UNION *u,
+	__isl_take isl_union_set *uset)
+{
+	S(UNION,match_domain_control) control = {
+		.filter = &FN(PART,domain_is_wrapping),
+		.match_space = &isl_space_factor_range,
+		.fn = &FN(PW,intersect_domain_wrapped_range),
+	};
+
 	return FN(UNION,match_domain_op)(u, uset, &control);
 }
 

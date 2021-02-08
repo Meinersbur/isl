@@ -649,11 +649,8 @@ __isl_give isl_basic_set *isl_morph_basic_set(__isl_take isl_morph *morph,
 	int i, k;
 	int max_stride;
 
-	if (!morph || !bset)
+	if (!morph || isl_basic_set_check_equal_space(bset, morph->dom) < 0)
 		goto error;
-
-	isl_assert(bset->ctx, isl_space_is_equal(bset->dim, morph->dom->dim),
-		    goto error);
 
 	max_stride = morph->inv->n_row - 1;
 	if (isl_int_is_one(morph->inv->row[0][0]))
@@ -739,10 +736,8 @@ __isl_give isl_set *isl_morph_set(__isl_take isl_morph *morph,
 {
 	int i;
 
-	if (!morph || !set)
+	if (!morph || isl_set_basic_set_check_equal_space(set, morph->dom) < 0)
 		goto error;
-
-	isl_assert(set->ctx, isl_space_is_equal(set->dim, morph->dom->dim), goto error);
 
 	set = isl_set_cow(set);
 	if (!set)
