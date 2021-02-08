@@ -3051,6 +3051,39 @@ static isl_stat set_check_equal(__isl_keep isl_set *set, const char *str)
 	return isl_stat_ok;
 }
 
+/* Is "uset" equal to the union set described by "str"?
+ */
+static isl_bool uset_is_equal(__isl_keep isl_union_set *uset, const char *str)
+{
+	isl_union_set *uset2;
+	isl_bool equal;
+
+	if (!uset)
+		return isl_bool_error;
+
+	uset2 = isl_union_set_read_from_str(isl_union_set_get_ctx(uset), str);
+	equal = isl_union_set_is_equal(uset, uset2);
+	isl_union_set_free(uset2);
+
+	return equal;
+}
+
+/* Check that "uset" is equal to the union set described by "str".
+ */
+static isl_stat uset_check_equal(__isl_keep isl_union_set *uset,
+	const char *str)
+{
+	isl_bool equal;
+
+	equal = uset_is_equal(uset, str);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_union_set_get_ctx(uset), isl_error_unknown,
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 static int test_dep(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -4982,6 +5015,43 @@ static int aff_check_plain_equal(__isl_keep isl_aff *aff, const char *str)
 	return 0;
 }
 
+/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
+ */
+static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
+	const char *str)
+{
+	isl_ctx *ctx;
+	isl_pw_multi_aff *pma2;
+	int equal;
+
+	if (!pma)
+		return -1;
+
+	ctx = isl_pw_multi_aff_get_ctx(pma);
+	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
+	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
+	isl_pw_multi_aff_free(pma2);
+
+	return equal;
+}
+
+/* Check that "pma" is obviously equal to the isl_pw_multi_aff
+ * represented by "str".
+ */
+static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
+	const char *str)
+{
+	int equal;
+
+	equal = pw_multi_aff_plain_is_equal(pma, str);
+	if (equal < 0)
+		return -1;
+	if (!equal)
+		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
+			"result not as expected", return -1);
+	return 0;
+}
+
 /* Is "upa" obviously equal to the isl_union_pw_aff represented by "str"?
  */
 static isl_bool union_pw_aff_plain_is_equal(__isl_keep isl_union_pw_aff *upa,
@@ -6407,6 +6477,121 @@ static isl_stat test_bind_set(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_map_bind_domain tests.
+ * "map" is the input map.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+struct {
+	const char *map;
+	const char *tuple;
+	const char *res;
+} bind_map_domain_tests[] = {
+	{ "{ A[M, N] -> [M + floor(N/2)] }",
+	  "{ A[M, N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "{ B[N, M] -> [M + floor(N/2)] }",
+	  "{ B[N, M] }",
+	  "[N, M] -> { [M + floor(N/2)] }" },
+	{ "[M] -> { C[N] -> [M + floor(N/2)] }",
+	  "{ C[N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "[M] -> { C[x, N] -> [x + floor(N/2)] }",
+	  "{ C[M, N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "[M] -> { C[x, N] -> [M + floor(N/2)] }",
+	  "{ C[M, N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "[A, M] -> { C[N, x] -> [x + floor(N/2)] }",
+	  "{ C[N, M] }",
+	  "[A, N, M] -> { [M + floor(N/2)] }" },
+};
+
+/* Perform basic isl_map_bind_domain tests.
+ */
+static isl_stat test_bind_map_domain(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_map_domain_tests); ++i) {
+		const char *str;
+		isl_map *map;
+		isl_set *set;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		str = bind_map_domain_tests[i].map;
+		map = isl_map_read_from_str(ctx, str);
+		str = bind_map_domain_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		set = isl_map_bind_domain(map, tuple);
+		str = bind_map_domain_tests[i].res;
+		r = set_check_equal(set, str);
+		isl_set_free(set);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Inputs for isl_pw_multi_aff_bind_domain tests.
+ * "pma" is the input expression.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+struct {
+	const char *pma;
+	const char *tuple;
+	const char *res;
+} bind_pma_domain_tests[] = {
+	{ "{ A[M, N] -> [M + floor(N/2)] }",
+	  "{ A[M, N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "{ B[N, M] -> [M + floor(N/2)] }",
+	  "{ B[N, M] }",
+	  "[N, M] -> { [M + floor(N/2)] }" },
+	{ "[M] -> { C[N] -> [M + floor(N/2)] }",
+	  "{ C[N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "[M] -> { C[x, N] -> [x + floor(N/2)] }",
+	  "{ C[M, N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "[M] -> { C[x, N] -> [M + floor(N/2)] }",
+	  "{ C[M, N] }",
+	  "[M, N] -> { [M + floor(N/2)] }" },
+	{ "[A, M] -> { C[N, x] -> [x + floor(N/2)] }",
+	  "{ C[N, M] }",
+	  "[A, N, M] -> { [M + floor(N/2)] }" },
+};
+
+/* Perform basic isl_pw_multi_aff_bind_domain tests.
+ */
+static isl_stat test_bind_pma_domain(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_pma_domain_tests); ++i) {
+		const char *str;
+		isl_pw_multi_aff *pma;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		str = bind_pma_domain_tests[i].pma;
+		pma = isl_pw_multi_aff_read_from_str(ctx, str);
+		str = bind_pma_domain_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		pma = isl_pw_multi_aff_bind_domain(pma, tuple);
+		str = bind_pma_domain_tests[i].res;
+		r = pw_multi_aff_check_plain_equal(pma, str);
+		isl_pw_multi_aff_free(pma);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Inputs for isl_aff_bind_id tests.
  * "aff" is the input expression.
  * "id" is the binding id.
@@ -6450,13 +6635,114 @@ static isl_stat test_bind_aff(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* Inputs for isl_pw_aff_bind_id tests.
+ * "pa" is the input expression.
+ * "id" is the binding id.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *pa;
+	const char *id;
+	const char *res;
+} bind_pa_tests[] = {
+	{ "{ [4] }", "M", "[M = 4] -> { : }" },
+	{ "{ B[x] -> [floor(x/2)] }", "M", "[M] -> { B[x] : M = floor(x/2) }" },
+	{ "[M] -> { [4] }", "M", "[M = 4] -> { : }" },
+	{ "[M] -> { [floor(M/2)] }", "M", "[M] -> { : floor(M/2) = M }" },
+	{ "[M] -> { [M] : M >= 0; [-M] : M < 0 }", "M", "[M] -> { : M >= 0 }" },
+	{ "{ [NaN] }", "M", "{ : false }" },
+	{ "{ A[x] -> [NaN] }", "M", "{ A[x] : false }" },
+};
+
+/* Perform basic isl_pw_aff_bind_id tests.
+ */
+static isl_stat test_bind_pa(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_pa_tests); ++i) {
+		isl_pw_aff *pa;
+		isl_set *res;
+		isl_id *id;
+		isl_stat r;
+
+		pa = isl_pw_aff_read_from_str(ctx, bind_pa_tests[i].pa);
+		id = isl_id_read_from_str(ctx, bind_pa_tests[i].id);
+		res = isl_pw_aff_bind_id(pa, id);
+		r = set_check_equal(res, bind_pa_tests[i].res);
+		isl_set_free(res);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Inputs for isl_multi_union_pw_aff_bind tests.
+ * "mupa" is the input expression.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *mupa;
+	const char *tuple;
+	const char *res;
+} bind_mupa_tests[] = {
+	{ "A[{ [4] }, { [5] }]",
+	  "{ A[M, N] }",
+	  "[M = 4, N = 5] -> { : }" },
+	{ "A[{ B[x] -> [floor(x/2)] }, { B[y] -> [y + 5] }]",
+	  "{ A[M, N] }",
+	  "[M, N] -> { B[x] : M = floor(x/2) and N = x + 5 }" },
+	{ "[M] -> A[{ [4] }, { [M + 1] }]",
+	  "{ A[M, N] }",
+	  "[M = 4, N = 5] -> { : }" },
+};
+
+/* Perform basic isl_multi_union_pw_aff_bind tests.
+ */
+static isl_stat test_bind_mupa(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_mupa_tests); ++i) {
+		const char *str;
+		isl_multi_union_pw_aff *mupa;
+		isl_union_set *res;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		str = bind_mupa_tests[i].mupa;
+		mupa = isl_multi_union_pw_aff_read_from_str(ctx, str);
+		str = bind_mupa_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		res = isl_multi_union_pw_aff_bind(mupa, tuple);
+		r = uset_check_equal(res, bind_mupa_tests[i].res);
+		isl_union_set_free(res);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
 /* Perform tests that reinterpret dimensions as parameters.
  */
 static int test_bind(isl_ctx *ctx)
 {
 	if (test_bind_set(ctx) < 0)
 		return -1;
+	if (test_bind_map_domain(ctx) < 0)
+		return -1;
+	if (test_bind_pma_domain(ctx) < 0)
+		return -1;
 	if (test_bind_aff(ctx) < 0)
+		return -1;
+	if (test_bind_pa(ctx) < 0)
+		return -1;
+	if (test_bind_mupa(ctx) < 0)
 		return -1;
 
 	return 0;
@@ -6750,43 +7036,6 @@ int test_dim_max(isl_ctx *ctx)
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
 
-	return 0;
-}
-
-/* Is "pma" obviously equal to the isl_pw_multi_aff represented by "str"?
- */
-static int pw_multi_aff_plain_is_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	isl_ctx *ctx;
-	isl_pw_multi_aff *pma2;
-	int equal;
-
-	if (!pma)
-		return -1;
-
-	ctx = isl_pw_multi_aff_get_ctx(pma);
-	pma2 = isl_pw_multi_aff_read_from_str(ctx, str);
-	equal = isl_pw_multi_aff_plain_is_equal(pma, pma2);
-	isl_pw_multi_aff_free(pma2);
-
-	return equal;
-}
-
-/* Check that "pma" is obviously equal to the isl_pw_multi_aff
- * represented by "str".
- */
-static int pw_multi_aff_check_plain_equal(__isl_keep isl_pw_multi_aff *pma,
-	const char *str)
-{
-	int equal;
-
-	equal = pw_multi_aff_plain_is_equal(pma, str);
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_unknown,
-			"result not as expected", return -1);
 	return 0;
 }
 

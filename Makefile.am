@@ -461,6 +461,7 @@ EXTRA_DIST = \
 	LICENSE \
 	isl_config_post.h \
 	basis_reduction_templ.c \
+	isl_bind_domain_templ.c \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
 	check_reparse_templ.c \
@@ -473,6 +474,7 @@ EXTRA_DIST = \
 	isl_map_lexopt_templ.c \
 	isl_maybe_map.h \
 	isl_multi_macro.h \
+	isl_multi_bind_templ.c \
 	isl_multi_explicit_domain.c \
 	isl_multi_pw_aff_explicit_domain.c \
 	isl_multi_union_pw_aff_explicit_domain.c \
@@ -487,6 +489,7 @@ EXTRA_DIST = \
 	isl_multi_apply_set.c \
 	isl_multi_apply_union_set.c \
 	isl_multi_arith_templ.c \
+	isl_multi_bind_domain_templ.c \
 	isl_multi_cmp.c \
 	isl_multi_coalesce.c \
 	isl_multi_dim_id_templ.c \
@@ -513,6 +516,7 @@ EXTRA_DIST = \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
 	isl_pw_templ.h \
+	isl_pw_bind_domain_templ.c \
 	isl_pw_eval.c \
 	isl_pw_hash.c \
 	isl_pw_union_opt.c \

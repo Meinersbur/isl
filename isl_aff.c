@@ -24,7 +24,7 @@
 #include <isl_local_space_private.h>
 #include <isl_vec_private.h>
 #include <isl_mat_private.h>
-#include <isl/id.h>
+#include <isl_id_private.h>
 #include <isl/constraint.h>
 #include <isl_seq.h>
 #include <isl/set.h>
@@ -2159,7 +2159,7 @@ __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
  * If "aff" is NaN, then it is not positive.
  */
 static __isl_give isl_basic_set *aff_pos_basic_set(__isl_take isl_aff *aff,
-	int rational)
+	int rational, void *user)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -2196,7 +2196,7 @@ error:
  * If "aff" is NaN, then it is not non-negative (it's not negative either).
  */
 static __isl_give isl_basic_set *aff_nonneg_basic_set(
-	__isl_take isl_aff *aff, int rational)
+	__isl_take isl_aff *aff, int rational, void *user)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -2223,7 +2223,7 @@ static __isl_give isl_basic_set *aff_nonneg_basic_set(
  */
 __isl_give isl_basic_set *isl_aff_nonneg_basic_set(__isl_take isl_aff *aff)
 {
-	return aff_nonneg_basic_set(aff, 0);
+	return aff_nonneg_basic_set(aff, 0, NULL);
 }
 
 /* Return a basic set containing those elements in the domain space
@@ -2251,7 +2251,7 @@ __isl_give isl_basic_set *isl_aff_neg_basic_set(__isl_take isl_aff *aff)
  * If "aff" is NaN, then it is not zero.
  */
 static __isl_give isl_basic_set *aff_zero_basic_set(__isl_take isl_aff *aff,
-	int rational)
+	int rational, void *user)
 {
 	isl_constraint *ineq;
 	isl_basic_set *bset;
@@ -2278,7 +2278,7 @@ static __isl_give isl_basic_set *aff_zero_basic_set(__isl_take isl_aff *aff,
  */
 __isl_give isl_basic_set *isl_aff_zero_basic_set(__isl_take isl_aff *aff)
 {
-	return aff_zero_basic_set(aff, 0);
+	return aff_zero_basic_set(aff, 0, NULL);
 }
 
 /* Return a basic set containing those elements in the shared space
@@ -2725,6 +2725,7 @@ __isl_give isl_pw_aff *isl_pw_aff_from_aff(__isl_take isl_aff *aff)
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+#include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_eval.c>
 #include <isl_pw_hash.c>
 #include <isl_pw_union_opt.c>
@@ -2845,8 +2846,9 @@ __isl_give isl_pw_aff *isl_pw_aff_union_opt(__isl_take isl_pw_aff *pwaff1,
  * NaN does not satisfy any property.
  */
 static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
-	__isl_give isl_basic_set *(*fn)(__isl_take isl_aff *aff, int rational),
-	int complement)
+	__isl_give isl_basic_set *(*fn)(__isl_take isl_aff *aff, int rational,
+		void *user),
+	int complement, void *user)
 {
 	int i;
 	isl_set *set;
@@ -2865,7 +2867,7 @@ static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
 			continue;
 
 		rational = isl_set_has_rational(pwaff->p[i].set);
-		bset = fn(isl_aff_copy(pwaff->p[i].aff), rational);
+		bset = fn(isl_aff_copy(pwaff->p[i].aff), rational, user);
 		locus = isl_set_from_basic_set(bset);
 		set_i = isl_set_copy(pwaff->p[i].set);
 		if (complement)
@@ -2885,7 +2887,7 @@ static __isl_give isl_set *pw_aff_locus(__isl_take isl_pw_aff *pwaff,
  */
 __isl_give isl_set *isl_pw_aff_pos_set(__isl_take isl_pw_aff *pa)
 {
-	return pw_aff_locus(pa, &aff_pos_basic_set, 0);
+	return pw_aff_locus(pa, &aff_pos_basic_set, 0, NULL);
 }
 
 /* Return a set containing those elements in the domain
@@ -2893,7 +2895,7 @@ __isl_give isl_set *isl_pw_aff_pos_set(__isl_take isl_pw_aff *pa)
  */
 __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_locus(pwaff, &aff_nonneg_basic_set, 0);
+	return pw_aff_locus(pwaff, &aff_nonneg_basic_set, 0, NULL);
 }
 
 /* Return a set containing those elements in the domain
@@ -2901,7 +2903,7 @@ __isl_give isl_set *isl_pw_aff_nonneg_set(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_locus(pwaff, &aff_zero_basic_set, 0);
+	return pw_aff_locus(pwaff, &aff_zero_basic_set, 0, NULL);
 }
 
 /* Return a set containing those elements in the domain
@@ -2909,7 +2911,7 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
  */
 __isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff)
 {
-	return pw_aff_locus(pwaff, &aff_zero_basic_set, 1);
+	return pw_aff_locus(pwaff, &aff_zero_basic_set, 1, NULL);
 }
 
 /* Bind the affine function "aff" to the parameter "id",
@@ -2929,6 +2931,40 @@ __isl_give isl_basic_set *isl_aff_bind_id(__isl_take isl_aff *aff,
 	aff_id = isl_aff_param_on_domain_space_id(space, id);
 
 	return isl_aff_eq_basic_set(aff, aff_id);
+}
+
+/* Wrapper around isl_aff_bind_id for use as pw_aff_locus callback.
+ * "rational" should not be set.
+ */
+static __isl_give isl_basic_set *aff_bind_id(__isl_take isl_aff *aff,
+	int rational, void *user)
+{
+	isl_id *id = user;
+
+	if (!aff)
+		return NULL;
+	if (rational)
+		isl_die(isl_aff_get_ctx(aff), isl_error_unsupported,
+			"rational binding not supported", goto error);
+	return isl_aff_bind_id(aff, isl_id_copy(id));
+error:
+	isl_aff_free(aff);
+	return NULL;
+}
+
+/* Bind the piecewise affine function "pa" to the parameter "id",
+ * returning the elements in the domain where the expression
+ * is equal to the parameter.
+ */
+__isl_give isl_set *isl_pw_aff_bind_id(__isl_take isl_pw_aff *pa,
+	__isl_take isl_id *id)
+{
+	isl_set *bound;
+
+	bound = pw_aff_locus(pa, &aff_bind_id, 0, id);
+	isl_id_free(id);
+
+	return bound;
 }
 
 /* Return a set containing those elements in the shared domain
@@ -3865,21 +3901,36 @@ error:
 	return isl_stat_error;
 }
 
+/* Return the shared (universe) domain of the elements of "ma".
+ *
+ * Since an isl_multi_aff (and an isl_aff) is always total,
+ * the domain is always the universe set in its domain space.
+ * This is a helper function for use in the generic isl_multi_*_bind.
+ */
+static __isl_give isl_basic_set *isl_multi_aff_domain(
+	__isl_take isl_multi_aff *ma)
+{
+	isl_space *space;
+
+	space = isl_multi_aff_get_space(ma);
+	isl_multi_aff_free(ma);
+
+	return isl_basic_set_universe(isl_space_domain(space));
+}
+
 #undef BASE
 #define BASE aff
-#undef DOMBASE
-#define DOMBASE set
 
 #include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_bind_domain_templ.c>
 #include <isl_multi_cmp.c>
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
-#include <isl_multi_gist.c>
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_move_dims_templ.c>
 #include <isl_multi_nan_templ.c>
@@ -3887,6 +3938,14 @@ error:
 #include <isl_multi_splice_templ.c>
 #include <isl_multi_tuple_id_templ.c>
 #include <isl_multi_zero_templ.c>
+
+#undef DOMBASE
+#define DOMBASE set
+#include <isl_multi_gist.c>
+
+#undef DOMBASE
+#define DOMBASE basic_set
+#include <isl_multi_bind_templ.c>
 
 /* Construct an isl_multi_aff living in "space" that corresponds
  * to the affine transformation matrix "mat".
@@ -4298,6 +4357,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define NO_MORPH
 
 #include <isl_pw_templ.c>
+#include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_union_opt.c>
 
 #undef NO_SUB
@@ -6272,6 +6332,8 @@ error:
 #include <isl_multi_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_bind_templ.c>
+#include <isl_multi_bind_domain_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_domain_templ.c>
 #include <isl_multi_dim_id_templ.c>
@@ -7953,6 +8015,48 @@ __isl_give isl_union_set *isl_union_pw_aff_zero_union_set(
 	return zero;
 }
 
+/* Internal data structure for isl_union_pw_aff_bind_id,
+ * storing the parameter that needs to be bound and
+ * the accumulated results.
+ */
+struct isl_bind_id_data {
+	isl_id *id;
+	isl_union_set *bound;
+};
+
+/* Bind the piecewise affine function "pa" to the parameter data->id,
+ * adding the resulting elements in the domain where the expression
+ * is equal to the parameter to data->bound.
+ */
+static isl_stat bind_id(__isl_take isl_pw_aff *pa, void *user)
+{
+	struct isl_bind_id_data *data = user;
+	isl_set *bound;
+
+	bound = isl_pw_aff_bind_id(pa, isl_id_copy(data->id));
+	data->bound = isl_union_set_add_set(data->bound, bound);
+
+	return data->bound ? isl_stat_ok : isl_stat_error;
+}
+
+/* Bind the union piecewise affine function "upa" to the parameter "id",
+ * returning the elements in the domain where the expression
+ * is equal to the parameter.
+ */
+__isl_give isl_union_set *isl_union_pw_aff_bind_id(
+	__isl_take isl_union_pw_aff *upa, __isl_take isl_id *id)
+{
+	struct isl_bind_id_data data = { id };
+
+	data.bound = isl_union_set_empty(isl_union_pw_aff_get_space(upa));
+	if (isl_union_pw_aff_foreach_pw_aff(upa, &bind_id, &data) < 0)
+		data.bound = isl_union_set_free(data.bound);
+
+	isl_union_pw_aff_free(upa);
+	isl_id_free(id);
+	return data.bound;
+}
+
 /* Internal data structure for isl_union_pw_aff_pullback_union_pw_multi_aff.
  * upma is the function that is plugged in.
  * pa is the current part of the function in which upma is plugged in.
@@ -8052,6 +8156,7 @@ error:
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
 #include <isl_multi_arith_templ.c>
+#include <isl_multi_bind_templ.c>
 #include <isl_multi_coalesce.c>
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_floor.c>
