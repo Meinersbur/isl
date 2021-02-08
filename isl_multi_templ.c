@@ -156,8 +156,9 @@ isl_size FN(MULTI(BASE),size)(__isl_keep MULTI(BASE) *multi)
 static
 #include "check_type_range_templ.c"
 
-__isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
-	int pos)
+/* Return a copy of the base expression at position "pos" in "multi".
+ */
+__isl_give EL *FN(MULTI(BASE),get_at)(__isl_keep MULTI(BASE) *multi, int pos)
 {
 	isl_ctx *ctx;
 
@@ -165,6 +166,14 @@ __isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
 		return NULL;
 	ctx = FN(MULTI(BASE),get_ctx)(multi);
 	return FN(EL,copy)(multi->u.p[pos]);
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give EL *FN(FN(MULTI(BASE),get),BASE)(__isl_keep MULTI(BASE) *multi,
+	int pos)
+{
+	return FN(MULTI(BASE),get_at)(multi, pos);
 }
 
 /* Set the element at position "pos" of "multi" to "el",
@@ -206,7 +215,9 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),restore_check_space)(
 	return FN(MULTI(BASE),restore)(multi, pos, el);
 }
 
-__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
+/* Replace the base expression at position "pos" in "multi" with "el".
+ */
+__isl_give MULTI(BASE) *FN(MULTI(BASE),set_at)(
 	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
 {
 	isl_space *multi_space = NULL;
@@ -237,6 +248,14 @@ error:
 	isl_space_free(multi_space);
 	isl_space_free(el_space);
 	return NULL;
+}
+
+/* This is an alternative name for the function above.
+ */
+__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),set),BASE)(
+	__isl_take MULTI(BASE) *multi, int pos, __isl_take EL *el)
+{
+	return FN(MULTI(BASE),set_at)(multi, pos, el);
 }
 
 /* Reset the space of "multi".  This function is called from isl_pw_templ.c

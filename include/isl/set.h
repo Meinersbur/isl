@@ -227,6 +227,16 @@ __isl_export
 __isl_give isl_set *isl_set_params(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_from_params(__isl_take isl_set *set);
 
+__isl_export
+__isl_give isl_set *isl_set_bind(__isl_take isl_set *set,
+	__isl_take isl_multi_id *tuple);
+__isl_export
+__isl_give isl_set *isl_set_unbind_params(__isl_take isl_set *set,
+	__isl_take isl_multi_id *tuple);
+__isl_export
+__isl_give isl_map *isl_set_unbind_params_insert_domain(
+	__isl_take isl_set *set, __isl_take isl_multi_id *domain);
+
 isl_stat isl_basic_set_dims_get_sign(__isl_keep isl_basic_set *bset,
 	enum isl_dim_type type, unsigned pos, unsigned n, int *signs);
 

@@ -3,6 +3,7 @@
  * Copyright 2011      Sven Verdoolaege
  * Copyright 2012-2014 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2018      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -12,6 +13,7 @@
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
  * B.P. 105 - 78153 Le Chesnay, France
+ * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
  */
 
 #include <isl_ctx_private.h>
@@ -578,6 +580,33 @@ error:
 	isl_space_free(model);
 	isl_aff_free(aff);
 	return NULL;
+}
+
+/* Given an affine function "aff" defined over a parameter domain,
+ * convert it to a function defined over a domain corresponding
+ * to "domain".
+ * Any parameters with identifiers in "domain" are reinterpreted
+ * as the corresponding domain dimensions.
+ */
+__isl_give isl_aff *isl_aff_unbind_params_insert_domain(
+	__isl_take isl_aff *aff, __isl_take isl_multi_id *domain)
+{
+	isl_bool is_params;
+	isl_space *space;
+	isl_reordering *r;
+
+	space = isl_aff_peek_domain_space(aff);
+	is_params = isl_space_is_params(space);
+	if (is_params < 0)
+		domain = isl_multi_id_free(domain);
+	else if (!is_params)
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
+			"expecting function with parameter domain",
+			domain = isl_multi_id_free(domain));
+	r = isl_reordering_unbind_params_insert_domain(space, domain);
+	isl_multi_id_free(domain);
+
+	return isl_aff_realign_domain(aff, r);
 }
 
 /* Is "aff" obviously equal to zero?
@@ -2881,6 +2910,25 @@ __isl_give isl_set *isl_pw_aff_zero_set(__isl_take isl_pw_aff *pwaff)
 __isl_give isl_set *isl_pw_aff_non_zero_set(__isl_take isl_pw_aff *pwaff)
 {
 	return pw_aff_locus(pwaff, &aff_zero_basic_set, 1);
+}
+
+/* Bind the affine function "aff" to the parameter "id",
+ * returning the elements in the domain where the affine expression
+ * is equal to the parameter.
+ */
+__isl_give isl_basic_set *isl_aff_bind_id(__isl_take isl_aff *aff,
+	__isl_take isl_id *id)
+{
+	isl_space *space;
+	isl_aff *aff_id;
+
+	space = isl_aff_get_domain_space(aff);
+	space = isl_space_add_param_id(space, isl_id_copy(id));
+
+	aff = isl_aff_align_params(aff, isl_space_copy(space));
+	aff_id = isl_aff_param_on_domain_space_id(space, id);
+
+	return isl_aff_eq_basic_set(aff, aff_id);
 }
 
 /* Return a set containing those elements in the shared domain

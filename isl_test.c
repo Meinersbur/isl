@@ -3019,6 +3019,38 @@ static int map_check_equal(__isl_keep isl_map *map, const char *str)
 	return 0;
 }
 
+/* Is "set" equal to the set described by "str"?
+ */
+static isl_bool set_is_equal(__isl_keep isl_set *set, const char *str)
+{
+	isl_set *set2;
+	isl_bool equal;
+
+	if (!set)
+		return isl_bool_error;
+
+	set2 = isl_set_read_from_str(isl_set_get_ctx(set), str);
+	equal = isl_set_is_equal(set, set2);
+	isl_set_free(set2);
+
+	return equal;
+}
+
+/* Check that "set" is equal to the set described by "str".
+ */
+static isl_stat set_check_equal(__isl_keep isl_set *set, const char *str)
+{
+	isl_bool equal;
+
+	equal = set_is_equal(set, str);
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(isl_set_get_ctx(set), isl_error_unknown,
+			"result not as expected", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 static int test_dep(struct isl_ctx *ctx)
 {
 	const char *str;
@@ -6325,6 +6357,221 @@ int test_aff(isl_ctx *ctx)
 	return 0;
 }
 
+/* Inputs for isl_set_bind tests.
+ * "set" is the input set.
+ * "tuple" is the binding tuple.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *set;
+	const char *tuple;
+	const char *res;
+} bind_set_tests[] = {
+	{ "{ A[M, N] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ A[M, N] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "{ B[N, M] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ B[N, M] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M] -> { C[N] : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ C[N] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M] -> { D[x, N] : x mod 2 = 0 and N mod 8 = 3 and M >= 0 }",
+	  "{ D[M, N] }",
+	  "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 and M >= 0 }" },
+};
+
+/* Perform basic isl_set_bind tests.
+ */
+static isl_stat test_bind_set(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_set_tests); ++i) {
+		const char *str;
+		isl_set *set;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		set = isl_set_read_from_str(ctx, bind_set_tests[i].set);
+		str = bind_set_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		set = isl_set_bind(set, tuple);
+		r = set_check_equal(set, bind_set_tests[i].res);
+		isl_set_free(set);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Inputs for isl_aff_bind_id tests.
+ * "aff" is the input expression.
+ * "id" is the binding id.
+ * "res" is the expected result.
+ */
+static
+struct {
+	const char *aff;
+	const char *id;
+	const char *res;
+} bind_aff_tests[] = {
+	{ "{ [4] }", "M", "[M = 4] -> { : }" },
+	{ "{ B[x] -> [floor(x/2)] }", "M", "[M] -> { B[x] : M = floor(x/2) }" },
+	{ "[M] -> { [4] }", "M", "[M = 4] -> { : }" },
+	{ "[M] -> { [floor(M/2)] }", "M", "[M] -> { : floor(M/2) = M }" },
+	{ "{ [NaN] }", "M", "{ : false }" },
+	{ "{ A[x] -> [NaN] }", "M", "{ A[x] : false }" },
+};
+
+/* Perform basic isl_aff_bind_id tests.
+ */
+static isl_stat test_bind_aff(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(bind_aff_tests); ++i) {
+		isl_aff *aff;
+		isl_set *res;
+		isl_id *id;
+		isl_stat r;
+
+		aff = isl_aff_read_from_str(ctx, bind_aff_tests[i].aff);
+		id = isl_id_read_from_str(ctx, bind_aff_tests[i].id);
+		res = isl_set_from_basic_set(isl_aff_bind_id(aff, id));
+		r = set_check_equal(res, bind_aff_tests[i].res);
+		isl_set_free(res);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Perform tests that reinterpret dimensions as parameters.
+ */
+static int test_bind(isl_ctx *ctx)
+{
+	if (test_bind_set(ctx) < 0)
+		return -1;
+	if (test_bind_aff(ctx) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* Inputs for isl_set_unbind_params tests.
+ * "set" is the input parameter domain.
+ * "tuple" is the tuple of the constructed set.
+ * "res" is the expected result.
+ */
+struct {
+	const char *set;
+	const char *tuple;
+	const char *res;
+} unbind_set_tests[] = {
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ A[M, N] }",
+	  "{ A[M, N] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ B[N, M] }",
+	  "{ B[N, M] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ C[N] }",
+	  "[M] -> { C[N] : M mod 2 = 0 and N mod 8 = 3 }" },
+	{ "[M, N] -> { : M mod 2 = 0 and N mod 8 = 3 }",
+	  "{ D[T, N] }",
+	  "[M] -> { D[x, N] : M mod 2 = 0 and N mod 8 = 3 }" },
+};
+
+/* Perform basic isl_set_unbind_params tests.
+ */
+static isl_stat test_unbind_set(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(unbind_set_tests); ++i) {
+		const char *str;
+		isl_set *set;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		set = isl_set_read_from_str(ctx, unbind_set_tests[i].set);
+		str = unbind_set_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		set = isl_set_unbind_params(set, tuple);
+		r = set_check_equal(set, unbind_set_tests[i].res);
+		isl_set_free(set);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Inputs for isl_aff_unbind_params_insert_domain tests.
+ * "aff" is the input affine expression defined over a parameter domain.
+ * "tuple" is the tuple of the domain that gets introduced.
+ * "res" is the expected result.
+ */
+struct {
+	const char *aff;
+	const char *tuple;
+	const char *res;
+} unbind_aff_tests[] = {
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ A[M, N] }",
+	  "{ A[M, N] -> [M + floor(N/2)] }" },
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ B[N, M] }",
+	  "{ B[N, M] -> [M + floor(N/2)] }" },
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ C[N] }",
+	  "[M] -> { C[N] -> [M + floor(N/2)] }" },
+	{ "[M, N] -> { [M + floor(N/2)] }",
+	  "{ D[A, B, C, N, Z] }",
+	  "[M] -> { D[A, B, C, N, Z] -> [M + floor(N/2)] }" },
+};
+
+/* Perform basic isl_aff_unbind_params_insert_domain tests.
+ */
+static isl_stat test_unbind_aff(isl_ctx *ctx)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(unbind_aff_tests); ++i) {
+		const char *str;
+		isl_aff *aff;
+		isl_multi_id *tuple;
+		isl_stat r;
+
+		aff = isl_aff_read_from_str(ctx, unbind_aff_tests[i].aff);
+		str = unbind_aff_tests[i].tuple;
+		tuple = isl_multi_id_read_from_str(ctx, str);
+		aff = isl_aff_unbind_params_insert_domain(aff, tuple);
+		r = aff_check_plain_equal(aff, unbind_aff_tests[i].res);
+		isl_aff_free(aff);
+		if (r < 0)
+			return isl_stat_error;
+	}
+
+	return isl_stat_ok;
+}
+
+/* Perform tests that reinterpret parameters.
+ */
+static int test_unbind(isl_ctx *ctx)
+{
+	if (test_unbind_set(ctx) < 0)
+		return -1;
+	if (test_unbind_aff(ctx) < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Check that "pa" consists of a single expression.
  */
 static int check_single_piece(isl_ctx *ctx, __isl_take isl_pw_aff *pa)
@@ -9449,6 +9696,8 @@ struct {
 	{ "gist", &test_gist },
 	{ "piecewise quasi-polynomials", &test_pwqp },
 	{ "lift", &test_lift },
+	{ "bind parameters", &test_bind },
+	{ "unbind parameters", &test_unbind },
 	{ "bound", &test_bound },
 	{ "get lists", &test_get_list },
 	{ "union", &test_union },
