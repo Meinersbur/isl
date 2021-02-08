@@ -69,7 +69,7 @@ private:
 	void print_method_variants(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd);
 	void print_method_group_decl(ostream &os, const isl_class &clazz,
-		const set<FunctionDecl *> &methods);
+		const function_set &methods);
 	void print_named_method_decl(ostream &os, const isl_class &clazz,
 		FunctionDecl *fd, const string &name, function_kind kind,
 		const std::vector<bool> &convert = {});
@@ -108,7 +108,7 @@ private:
 		const isl_class &clazz);
 	void print_methods_impl(ostream &os, const isl_class &clazz);
 	void print_method_group_impl(ostream &os, const isl_class &clazz,
-		const set<FunctionDecl *> &methods);
+		const function_set &methods);
 	void print_argument_validity_check(ostream &os, FunctionDecl *method,
 		function_kind kind);
 	void print_save_ctx(ostream &os, FunctionDecl *method,
