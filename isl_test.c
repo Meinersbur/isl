@@ -1875,6 +1875,8 @@ struct {
 	{ 1, "{ [x,0,0] : -5 <= x <= 5; [0,y,1] : -5 <= y <= 5 }" },
 	{ 1, "{ [x,y] : 0 <= x <= 10 and 0 >= y >= -1 and x+y >= 0; [0,1] }" },
 	{ 1, "{ [x,y] : (0 <= x,y <= 4) or (2 <= x,y <= 5 and x + y <= 9) }" },
+	{ 0, "{ [x, y, z] : 0 <= x,y,z <= 100 and 0 < z <= 2 + 2x + 2y; "
+		"[x, y, 0] : x,y <= 100 and y <= 9 + 11x and x <= 9 + 11y }" },
 };
 
 /* Test the functionality of isl_set_coalesce with the bounded wrapping
@@ -7431,6 +7433,25 @@ int test_eliminate(isl_ctx *ctx)
 	return 0;
 }
 
+/* Check basic functionality of isl_map_deltas_map.
+ */
+static int test_deltas_map(isl_ctx *ctx)
+{
+	const char *str;
+	isl_map *map;
+	int equal;
+
+	str = "{ A[i] -> A[i + 1] }";
+	map = isl_map_read_from_str(ctx, str);
+	map = isl_map_deltas_map(map);
+	equal = map_check_equal(map, "{ [A[i] -> A[i + 1]] -> A[1] }");
+	isl_map_free(map);
+	if (equal < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Check that isl_set_dim_residue_class detects that the values of j
  * in the set below are all odd and that it does not detect any spurious
  * strides.
@@ -9389,6 +9410,7 @@ struct {
 	{ "AST build", &test_ast_build },
 	{ "AST generation", &test_ast_gen },
 	{ "eliminate", &test_eliminate },
+	{ "deltas_map", &test_deltas_map },
 	{ "residue class", &test_residue_class },
 	{ "div", &test_div },
 	{ "slice", &test_slice },

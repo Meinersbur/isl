@@ -193,7 +193,7 @@ static void add_set_enum(isl_class *c, const string &prefix, EnumDecl *decl,
 		if (val < 0)
 			continue;
 		method_name = prefix + name.substr(4);
-		c->set_enums[fd].emplace_back(set_enum(val, name, method_name));
+		c->set_enums[fd].push_back(set_enum(val, name, method_name));
 	}
 }
 
@@ -361,10 +361,20 @@ void generator::die(string msg)
  * appear in the source.  In particular, the first annotation
  * is the one that is closest to the annotated type and the corresponding
  * type is then also the first that will appear in the sequence of types.
+ * This is also the order in which the annotations appear
+ * in the AttrVec returned by Decl::getAttrs() in older versions of clang.
+ * In newer versions of clang, the order is that in which
+ * the attribute appears in the source.
+ * Use the position of the "isl_export" attribute to determine
+ * whether this is an old (with reversed order) or a new version.
+ * The "isl_export" attribute is automatically added
+ * after each "isl_subclass" attribute.  If it appears in the list before
+ * any "isl_subclass" is encountered, then this must be a reversed list.
  */
 std::vector<string> generator::find_superclasses(Decl *decl)
 {
 	vector<string> super;
+	bool reversed = false;
 
 	if (!decl->hasAttrs())
 		return super;
@@ -377,9 +387,14 @@ std::vector<string> generator::find_superclasses(Decl *decl)
 		if (!ann)
 			continue;
 		string s = ann->getAnnotation().str();
+		if (s == "isl_export" && super.size() == 0)
+			reversed = true;
 		if (s.substr(0, len) == sub) {
 			s = s.substr(len + 1, s.length() - len  - 2);
-			super.push_back(s);
+			if (reversed)
+				super.push_back(s);
+			else
+				super.insert(super.begin(), s);
 		}
 	}
 

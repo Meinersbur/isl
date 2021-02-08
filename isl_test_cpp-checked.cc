@@ -220,12 +220,12 @@ static void test_schedule_tree(isl::ctx ctx)
 	};
 	assert(root.every_descendant(fail).is_error());
 
-	auto domain = root.as<isl::schedule_node_domain>().get_domain();
+	auto domain = root.as<isl::schedule_node_domain>().domain();
 	auto filters = isl::union_set(ctx, "{}");
 	auto collect_filters = [&filters](isl::schedule_node node) {
 		if (node.isa<isl::schedule_node_filter>().is_true()) {
 			auto filter = node.as<isl::schedule_node_filter>();
-			filters = filters.unite(filter.get_filter());
+			filters = filters.unite(filter.filter());
 		}
 		return isl::boolean(true);
 	};

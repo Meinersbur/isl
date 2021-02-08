@@ -245,7 +245,7 @@ static isl::schedule construct_schedule_tree(isl::ctx ctx)
 	node = node.insert_partial_schedule(f_B);
 	node = node.ancestor(2);
 
-	return node.get_schedule();
+	return node.schedule();
 }
 
 /* Test basic schedule tree functionality that is independent
@@ -259,7 +259,7 @@ static isl::schedule construct_schedule_tree(isl::ctx ctx)
 static isl::schedule_node test_schedule_tree_generic(isl::ctx ctx)
 {
 	auto schedule = construct_schedule_tree(ctx);
-	auto root = schedule.get_root();
+	auto root = schedule.root();
 
 	assert(IS_TRUE(root.isa<isl::schedule_node_domain>()));
 	root = root.as<isl::schedule_node_domain>().child(0).parent();
@@ -283,7 +283,7 @@ static isl::schedule_node test_schedule_tree_generic(isl::ctx ctx)
  */
 static void test_ast_build_unroll(isl::schedule schedule)
 {
-	auto root = schedule.get_root();
+	auto root = schedule.root();
 	auto mark_unroll = [](isl::schedule_node node) {
 		if (IS_TRUE(node.isa<isl::schedule_node_band>())) {
 			auto band = node.as<isl::schedule_node_band>();
@@ -292,7 +292,7 @@ static void test_ast_build_unroll(isl::schedule schedule)
 		return node;
 	};
 	root = root.map_descendant_bottom_up(mark_unroll);
-	schedule = root.get_schedule();
+	schedule = root.schedule();
 
 	int count_ast = 0;
 	auto inc_count_ast =
@@ -351,5 +351,5 @@ static void test_ast_build_expr(isl::ctx ctx)
 	auto expr = build.expr_from(pa);
 	auto op = expr.as<isl::ast_expr_op>();
 	assert(IS_TRUE(op.isa<isl::ast_expr_op_add>()));
-	assert(SIZE_VAL(op.get_n_arg()) == 2);
+	assert(SIZE_VAL(op.n_arg()) == 2);
 }

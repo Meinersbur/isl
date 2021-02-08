@@ -163,6 +163,9 @@ AC_TRY_COMPILE([
 	Clang->setInvocation(std::make_shared<CompilerInvocation>(*invocation));
 ], [AC_DEFINE([SETINVOCATION_TAKES_SHARED_PTR], [],
 	[Defined if CompilerInstance::setInvocation takes a shared_ptr])])
+AC_CHECK_HEADER([llvm/Option/Arg.h],
+	[AC_DEFINE([HAVE_LLVM_OPTION_ARG_H], [],
+		   [Define if llvm/Option/Arg.h exists])])
 AC_LANG_POP
 CPPFLAGS="$SAVE_CPPFLAGS"
 

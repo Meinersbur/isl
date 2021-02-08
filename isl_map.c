@@ -8169,7 +8169,7 @@ __isl_give isl_basic_map *isl_basic_map_deltas_map(
 
 	nparam = isl_basic_map_dim(bmap, isl_dim_param);
 	n = isl_basic_map_dim(bmap, isl_dim_in);
-	if (nparam < 0 || n)
+	if (nparam < 0 || n < 0)
 		return isl_basic_map_free(bmap);
 
 	space = isl_basic_map_get_space(bmap);
