@@ -25,6 +25,8 @@ struct Method {
 		const std::string &name);
 	Method(const isl_class &clazz, FunctionDecl *fd);
 
+	int c_num_params() const;
+	virtual int num_params() const;
 	void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
 
@@ -42,6 +44,8 @@ struct Method {
 struct EnumMethod : public Method {
 	EnumMethod(const isl_class &clazz, FunctionDecl *fd,
 		const std::string &method_name, const std::string &enum_name);
+
+	virtual int num_params() const override;
 
 	std::string enum_name;
 };
@@ -127,8 +131,6 @@ struct cpp_generator::class_printer {
 	void print_set_enums();
 	ParmVarDecl *get_param(FunctionDecl *fd, int pos,
 		const std::vector<bool> &convert);
-	void print_method_header(const Method &method, int num_params,
-		const std::vector<bool> &convert = {});
 	void print_method_header(const Method &method,
 		const std::vector<bool> &convert = {});
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);

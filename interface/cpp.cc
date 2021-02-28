@@ -641,15 +641,10 @@ void cpp_generator::class_printer::print_methods()
 }
 
 /* Print a declaration for a method "method", which sets an enum.
- *
- * The last argument is removed because it is replaced by
- * a break-up into several methods.
  */
 void cpp_generator::decl_printer::print_set_enum(const EnumMethod &method)
 {
-	int n = method.fd->getNumParams();
-
-	print_method_header(method, n - 1);
+	print_method_header(method);
 }
 
 /* Print declarations or implementations for the methods derived from "fd",
@@ -738,7 +733,7 @@ bool cpp_generator::class_printer::next_variant(FunctionDecl *fd,
 void cpp_generator::class_printer::print_method_variants(FunctionDecl *fd)
 {
 	Method method(clazz, fd);
-	std::vector<bool> convert(fd->getNumParams());
+	std::vector<bool> convert(method.num_params());
 
 	print_method(method);
 	if (clazz.is_get_method(fd))
@@ -1045,7 +1040,7 @@ void cpp_generator::impl_printer::print_public_constructors()
 void cpp_generator::impl_printer::print_method(const Method &method)
 {
 	string methodname = method.fd->getName().str();
-	int num_params = method.fd->getNumParams();
+	int num_params = method.c_num_params();
 
 	osprintf(os, "\n");
 	print_method_header(method);
@@ -1101,7 +1096,7 @@ void cpp_generator::impl_printer::print_method(const Method &method)
 void cpp_generator::impl_printer::print_method(const Method &method,
 	const std::vector<bool> &convert)
 {
-	int num_params = method.fd->getNumParams();
+	int num_params = method.num_params();
 
 	if (method.kind != Method::Kind::member_method)
 		die("Automatic conversion currently only supported "
@@ -1321,8 +1316,7 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 
 /* Print the definition for a method "method", which sets an enum.
  *
- * The last argument of the C function does not appear in the method call,
- * but is fixed to "enum_name" instead.
+ * The last argument of the C function is fixed to "enum_name".
  * Other than that, the method printed here is similar to one
  * printed by cpp_generator::print_method_impl, except that
  * some of the special cases do not occur.
@@ -1330,10 +1324,10 @@ void cpp_generator::impl_printer::print_persistent_callbacks()
 void cpp_generator::impl_printer::print_set_enum(const EnumMethod &method)
 {
 	string c_name = method.fd->getName().str();
-	int n = method.fd->getNumParams();
+	int n = method.num_params();
 
 	osprintf(os, "\n");
-	print_method_header(method, n - 1);
+	print_method_header(method);
 	osprintf(os, "{\n");
 
 	print_argument_validity_check(method);
@@ -1342,7 +1336,7 @@ void cpp_generator::impl_printer::print_set_enum(const EnumMethod &method)
 
 	osprintf(os, "  auto res = %s(", c_name.c_str());
 
-	for (int i = 0; i < n - 1; ++i) {
+	for (int i = 0; i < n; ++i) {
 		if (i > 0)
 			osprintf(os, ", ");
 		method.print_param_use(os, i);
@@ -1457,7 +1451,7 @@ void cpp_generator::impl_printer::print_argument_validity_check(
 	if (generator.checked)
 		return;
 
-	n = method.fd->getNumParams();
+	n = method.num_params();
 	for (int i = 0; i < n; ++i) {
 		bool is_this;
 		ParmVarDecl *param = method.fd->getParamDecl(i);
@@ -1518,7 +1512,7 @@ void cpp_generator::impl_printer::print_save_ctx(const Method &method)
 		osprintf(os, "  auto saved_ctx = %s;\n", name);
 		return;
 	}
-	n = method.fd->getNumParams();
+	n = method.num_params();
 	for (int i = 0; i < n; ++i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
@@ -1609,7 +1603,7 @@ void cpp_generator::impl_printer::print_exceptional_execution_check(
 
 	print_persistent_callback_exceptional_execution_check(os, method);
 
-	n = method.fd->getNumParams();
+	n = method.num_params();
 	for (int i = 0; i < n; ++i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 		const char *name;
@@ -1769,8 +1763,7 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
 	return generator.conversions[param->getOriginalType().getTypePtr()];
 }
 
-/* Print the header for "method", with
- * "num_params" number of arguments.
+/* Print the header for "method".
  *
  * Print the header of a declaration if this->declarations is set,
  * otherwise print the header of a method definition.
@@ -1817,11 +1810,12 @@ ParmVarDecl *cpp_generator::class_printer::get_param(FunctionDecl *fd, int pos,
  * function argument.
  */
 void cpp_generator::class_printer::print_method_header(
-	const Method &method, int num_params,
+	const Method &method,
 	const std::vector<bool> &convert)
 {
 	string rettype_str = generator.get_return_type(method);
 	int first_param = 0;
+	int num_params = method.num_params();
 
 	if (method.kind == Method::Kind::member_method)
 		first_param = 1;
@@ -1882,23 +1876,6 @@ void cpp_generator::class_printer::print_method_header(
 	if (declarations)
 		osprintf(os, ";");
 	osprintf(os, "\n");
-}
-
-/* Print the header for a method "method".
- *
- * Print the header of a declaration if this->declarations is set,
- * otherwise print the header of a method definition.
- *
- * "convert" specifies which of the method arguments should
- * be automatically converted.
- */
-void cpp_generator::class_printer::print_method_header(
-	const Method &method,
-	const std::vector<bool> &convert)
-{
-	int num_params = method.fd->getNumParams();
-
-	print_method_header(method, num_params, convert);
 }
 
 /* Generate the list of argument types for a callback function of
@@ -2404,6 +2381,24 @@ Method::Method(const isl_class &clazz, FunctionDecl *fd) :
 {
 }
 
+/* Return the number of parameters of the corresponding C function.
+ */
+int Method::c_num_params() const
+{
+	return fd->getNumParams();
+}
+
+/* Return the number of parameters of the method
+ * (including the implicit "this").
+ *
+ * By default, it is the same as the number of parameters
+ * of the corresponding C function.
+ */
+int Method::num_params() const
+{
+	return c_num_params();
+}
+
 /* Construct an object representing a C++ method for setting an enum
  * from the class to which is belongs,
  * the isl function from which it is derived and the method and enum names.
@@ -2412,6 +2407,17 @@ EnumMethod::EnumMethod(const isl_class &clazz, FunctionDecl *fd,
 	const std::string &method_name, const std::string &enum_name) :
 		Method(clazz, fd, method_name), enum_name(enum_name)
 {
+}
+
+/* Return the number of parameters of the method
+ * (including the implicit "this").
+ *
+ * The last argument of the C function does not appear in the method call,
+ * because it is replaced by a break-up into several methods.
+ */
+int EnumMethod::num_params() const
+{
+	return Method::num_params() - 1;
 }
 
 /* Initialize a class method printer from the stream onto which the methods
