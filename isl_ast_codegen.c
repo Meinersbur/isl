@@ -3946,7 +3946,7 @@ static int first_offset(struct isl_set_map_pair *domain, int *order, int n,
 static __isl_give isl_union_map *construct_shifted_executed(
 	struct isl_set_map_pair *domain, int *order, int n,
 	__isl_keep isl_val *stride, __isl_keep isl_multi_val *offset,
-	__isl_take isl_ast_build *build)
+	__isl_keep isl_ast_build *build)
 {
 	int i;
 	isl_union_map *executed;
