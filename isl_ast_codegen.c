@@ -743,12 +743,15 @@ static __isl_give isl_set *add_implied_guards(__isl_take isl_set *guard,
 	int degenerate, __isl_keep isl_basic_set *bounds,
 	__isl_keep isl_ast_build *build)
 {
-	int depth, has_stride;
+	int depth;
+	isl_bool has_stride;
 	isl_space *space;
 	isl_set *dom, *set;
 
 	depth = isl_ast_build_get_depth(build);
 	has_stride = isl_ast_build_has_stride(build, depth);
+	if (has_stride < 0)
+		return isl_set_free(guard);
 	if (!has_stride && !degenerate)
 		return guard;
 
