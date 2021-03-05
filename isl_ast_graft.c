@@ -126,8 +126,8 @@ static isl_bool equal_independent_guards(__isl_keep isl_ast_graft_list *list,
 	depth = isl_ast_build_get_depth(build);
 	dim = isl_set_dim(graft_0->guard, isl_dim_set);
 	if (dim < 0)
-		return isl_bool_error;
-	if (dim <= depth)
+		skip = isl_bool_error;
+	else if (dim <= depth)
 		skip = isl_bool_false;
 	else
 		skip = isl_set_involves_dims(graft_0->guard,
