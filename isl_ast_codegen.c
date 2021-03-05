@@ -783,7 +783,7 @@ static __isl_give isl_set *add_implied_guards(__isl_take isl_set *guard,
  *
  * We set the initialization part of the for loop to the single
  * value attained by the current dimension.
- * The increment and condition are not strictly needed as the are known
+ * The increment and condition are not strictly needed as they are known
  * to be "1" and "iterator <= value" respectively.
  */
 static __isl_give isl_ast_graft *refine_degenerate(
