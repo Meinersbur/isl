@@ -1949,7 +1949,7 @@ isl_bool isl_ast_build_has_stride(__isl_keep isl_ast_build *build, int pos)
  *
  *	f + s a
  *
- * with a an integer, return s through *stride.
+ * with a an integer, return s.
  */
 __isl_give isl_val *isl_ast_build_get_stride(__isl_keep isl_ast_build *build,
 	int pos)
