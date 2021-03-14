@@ -13496,7 +13496,7 @@ __isl_give isl_aff *isl_basic_set_get_div(__isl_keep isl_basic_set *bset,
  * Handling rational expressions may require us to add stride constraints
  * as we do in isl_basic_set_preimage_multi_aff.
  */
-__isl_give isl_basic_set *isl_basic_set_substitute(
+static __isl_give isl_basic_set *isl_basic_set_substitute(
 	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned pos, __isl_keep isl_aff *subs)
 {
