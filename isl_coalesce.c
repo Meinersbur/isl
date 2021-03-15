@@ -3606,6 +3606,8 @@ static isl_bool has_nested_div(__isl_keep isl_basic_map *bmap)
  * If no such list can be constructed, then the number of elements
  * in the returned list is smaller than the number of integer divisions
  * in "bmap_i".
+ * The integer division of "bmap_i" and "bmap_j" are assumed to be known and
+ * not contain any nested divs.
  */
 static __isl_give isl_aff_list *set_up_substitutions(
 	__isl_keep isl_basic_map *bmap_i, __isl_keep isl_basic_map *bmap_j,
