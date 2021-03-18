@@ -232,6 +232,9 @@ __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 __isl_overload
 __isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 	__isl_take isl_set *domain, __isl_take isl_id *id);
+__isl_overload
+__isl_give isl_pw_aff *isl_set_param_pw_aff_on_domain_id(
+	__isl_take isl_set *domain, __isl_take isl_id *id);
 
 __isl_export
 __isl_give isl_pw_aff *isl_set_indicator_function(__isl_take isl_set *set);

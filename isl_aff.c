@@ -7629,6 +7629,16 @@ __isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 	return isl_pw_aff_alloc(domain, aff);
 }
 
+/* This function performs the same operation as
+ * isl_pw_aff_param_on_domain_id,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_pw_aff *isl_set_param_pw_aff_on_domain_id(
+	__isl_take isl_set *domain, __isl_take isl_id *id)
+{
+	return isl_pw_aff_param_on_domain_id(domain, id);
+}
+
 /* Return a multi affine expression that is equal to "mv" on domain
  * space "space".
  */
