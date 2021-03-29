@@ -750,6 +750,7 @@ member_methods {
 	{ "bind_range",		{ bind_range } },
 	{ "bind_domain_wrapped_domain",
 				{ bind_domain_wrapped_domain } },
+	{ "ceil",		fn_un_op },
 	{ "coalesce",		un_op },
 	{ "constant_multi_val",	range_op },
 	{ "curry",		{ curry } },
