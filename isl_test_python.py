@@ -192,6 +192,36 @@ def test_foreach():
 		caught = True
 	assert(caught)
 
+# Test the functionality of "foreach_scc" functions.
+#
+# In particular, test it on a list of elements that can be completely sorted
+# but where two of the elements ("a" and "b") are incomparable.
+#
+def test_foreach_scc():
+	list = isl.id_list(3)
+	sorted = [isl.id_list(3)]
+	data = {
+		'a' : isl.map("{ [0] -> [1] }"),
+		'b' : isl.map("{ [1] -> [0] }"),
+		'c' : isl.map("{ [i = 0:1] -> [i] }"),
+	}
+	for k, v in data.items():
+		list = list.add(k)
+	id = data['a'].space().domain().identity_multi_pw_aff_on_domain()
+	def follows(a, b):
+		map = data[b.name()].apply_domain(data[a.name()])
+		return not map.lex_ge_at(id).is_empty()
+
+	def add_single(scc):
+		assert(scc.size() == 1)
+		sorted[0] = sorted[0].concat(scc)
+
+	list.foreach_scc(follows, add_single)
+	assert(sorted[0].size() == 3)
+	assert(sorted[0].at(0).name() == "b")
+	assert(sorted[0].at(1).name() == "c")
+	assert(sorted[0].at(2).name() == "a")
+
 # Test the functionality of "every" functions.
 #
 # In particular, test the generic functionality and
@@ -432,6 +462,7 @@ def test_ast_build_expr():
 #  - Different parameter types
 #  - Different return types
 #  - Foreach functions
+#  - Foreach SCC function
 #  - Every functions
 #  - Spaces
 #  - Schedule trees
@@ -442,6 +473,7 @@ test_constructors()
 test_parameters()
 test_return()
 test_foreach()
+test_foreach_scc()
 test_every()
 test_space()
 test_schedule_tree()

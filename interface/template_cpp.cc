@@ -529,6 +529,24 @@ static Signature each_map =
 	{ { Res }, { { Domain, Range }, { Res }, { Domain, Range } } };
 static std::vector<Signature> each = { each_params, each_set, each_map };
 
+/* Signatures for isl_*_list_foreach_scc.
+ *
+ * The first callback takes two elements with the same tuple kinds.
+ * The second callback takes a list with the same tuple kinds.
+ */
+static Signature each_scc_params =
+	{ { Res }, { { }, { Res }, { }, { }, { Res }, { } } };
+static Signature each_scc_set =
+	{ { Res }, { { Domain },
+		     { Res }, { Domain }, { Domain },
+		     { Res }, { Domain } } };
+static Signature each_scc_map =
+	{ { Res }, { { Domain, Range },
+		     { Res }, { Domain, Range }, { Domain, Range },
+		     { Res }, { Domain, Range } } };
+static std::vector<Signature> each_scc =
+	{ each_scc_params, each_scc_set, each_scc_map };
+
 /* Signature for creating a map from a range,
  * where the domain is given by an extra argument.
  */
@@ -798,6 +816,7 @@ member_methods {
 	{ "flatten_range",	flatten_range },
 	{ "floor",		fn_un_op },
 	{ "foreach",		each },
+	{ "foreach_scc",	each_scc },
 	{ "ge_set",		{ set_join } },
 	{ "gt_set",		{ set_join } },
 	{ "gist",		bin_op },
