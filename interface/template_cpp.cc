@@ -1683,7 +1683,7 @@ static void print_callback_lambda(std::ostream &os, ParmVarDecl *callback,
 	auto callback_name = callback->getName().str();
 	auto proto = generator::extract_prototype(callback_type);
 
-	os << "  auto lambda = [&] ";
+	os << "  auto lambda_" << callback_name << " = [&] ";
 	print_callback_args(os, proto, cpp_type_printer(), shift,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << " " << name;
@@ -1749,9 +1749,8 @@ void template_cpp_generator::method_impl_printer::print_callback_method_body(
 		auto param = method.fd->getParamDecl(i);
 
 		if (generator::is_callback(param->getType()))
-			os << "lambda";
-		else
-			os << param->getName().str();
+			os << "lambda_";
+		os << param->getName().str();
 	});
 	os << ";\n";
 
