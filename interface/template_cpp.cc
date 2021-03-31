@@ -1748,7 +1748,7 @@ void template_cpp_generator::method_impl_printer::print_callback_method_body(
 	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		auto param = method.fd->getParamDecl(i);
 
-		if (param == method.callback)
+		if (generator::is_callback(param->getType()))
 			os << "lambda";
 		else
 			os << param->getName().str();
