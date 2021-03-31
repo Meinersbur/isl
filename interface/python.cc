@@ -195,8 +195,7 @@ void python_generator::print_copy(QualType type)
 }
 
 /* Construct a wrapper for callback argument "param" (at position "arg").
- * Assign the wrapper to "cb".  We assume here that a function call
- * has at most one callback argument.
+ * Assign the wrapper to "cb{arg}".
  *
  * The wrapper converts the arguments of the callback to python types,
  * taking a copy if the C callback does not take its arguments.
@@ -272,7 +271,7 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
 		print_copy(return_type);
 		printf("(res.ptr)\n");
 	}
-	printf("        cb = fn(cb_func)\n");
+	printf("        cb%d = fn(cb_func)\n", arg);
 }
 
 /* Print the argument at position "arg" in call to "fd".
@@ -284,7 +283,7 @@ void python_generator::print_callback(ParmVarDecl *param, int arg)
  * assuming that the caller has made the context available
  * in a "ctx" variable.
  * Otherwise, if the argument is a callback, then print a reference to
- * the callback wrapper "cb".
+ * the corresponding callback wrapper.
  * Otherwise, if the argument is marked as consuming a reference,
  * then pass a copy of the pointer stored in the corresponding
  * argument passed to the Python method.
@@ -302,7 +301,7 @@ void python_generator::print_arg_in_call(FunctionDecl *fd, const char *fmt,
 	if (is_isl_ctx(type)) {
 		printf("ctx");
 	} else if (is_callback(type)) {
-		printf("cb");
+		printf("cb%d", arg - skip);
 	} else if (takes(param)) {
 		print_copy(type);
 		printf("(");
@@ -372,6 +371,8 @@ static void print_persistent_callback_failure_check(int indent,
  * then keep track of the constructed C callback (such that it doesn't
  * get destroyed) and the data structure that holds the captured exception
  * (such that it can be raised again).
+ * The callback appears in position 1 and the C callback is therefore
+ * called "cb1".
  *
  * If the return type is a (const) char *, then convert the result
  * to a Python string, raising an error on NULL and freeing
@@ -406,7 +407,7 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
 			string callback_name;
 
 			callback_name = clazz.persistent_callback_name(method);
-			print_indent(indent, "obj.%s = { 'func': cb, "
+			print_indent(indent, "obj.%s = { 'func': cb1, "
 				"'exc_info': exc_info }\n",
 				callback_name.c_str());
 		}
@@ -509,7 +510,7 @@ void python_generator::print_method_call(int indent, const isl_class &clazz,
  * If the function has a callback argument, then it also has a "user"
  * argument.  Since Python has closures, there is no need for such
  * a user argument in the Python interface, so we simply drop it.
- * We also create a wrapper ("cb") for the callback.
+ * We also create a wrapper ("cb{arg}") for the callback.
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
