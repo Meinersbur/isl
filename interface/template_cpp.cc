@@ -1670,37 +1670,29 @@ static void print_callback_args(std::ostream &os,
 	});
 }
 
-/* Print a lambda for passing to the plain method corresponding to "method"
- * with signature "sig".
- *
- * The method is assumed to have only the callback as argument,
- * which means the arguments of the callback are shifted by 2
- * with respect to the arguments of the signature
- * (one for the position of the callback argument plus
- * one for the return kind of the callback).
+/* Print a lambda corresponding to "callback"
+ * with signature "sig" and argument positions shifted by "shift".
  *
  * The lambda takes arguments with plain isl types and
  * calls the callback of "method" with templated arguments.
  */
-static void print_callback_lambda(std::ostream &os, const Method &method,
-	const Signature &sig)
+static void print_callback_lambda(std::ostream &os, ParmVarDecl *callback,
+	const Signature &sig, int shift)
 {
-	auto callback_type = method.callback->getType();
-	auto callback_name = method.callback->getName().str();
+	auto callback_type = callback->getType();
+	auto callback_name = callback->getName().str();
 	auto proto = generator::extract_prototype(callback_type);
 
-	if (method.num_params() != 3)
-		generator::die("callback is assumed to be single argument");
-
 	os << "  auto lambda = [&] ";
-	print_callback_args(os, proto, cpp_type_printer(), 2,
+	print_callback_args(os, proto, cpp_type_printer(), shift,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << " " << name;
 		});
 	os << " {\n";
 
 	os << "    return " << callback_name;
-	print_callback_args(os, proto, template_cpp_arg_type_printer(sig), 2,
+	print_callback_args(os, proto, template_cpp_arg_type_printer(sig),
+		shift,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << "(" << name << ")";
 		});
@@ -1709,13 +1701,31 @@ static void print_callback_lambda(std::ostream &os, const Method &method,
 	os << "  };\n";
 }
 
+/* Print lambdas for passing to the plain method corresponding to "method"
+ * with signature "sig".
+ *
+ * The method is assumed to have only the callback as argument,
+ * which means the arguments of the callback are shifted by 2
+ * with respect to the arguments of the signature
+ * (one for the position of the callback argument plus
+ * one for the return kind of the callback).
+ */
+static void print_callback_lambdas(std::ostream &os, const Method &method,
+	const Signature &sig)
+{
+	if (method.num_params() != 3)
+		generator::die("callback is assumed to be single argument");
+
+	print_callback_lambda(os, method.callback, sig, 2);
+}
+
 /* Print a definition of the member method "method", which is known
  * to have a callback argument, with signature "sig".
  *
- * First print a lambda for passing to the corresponding plain method and
+ * First print lambdas for passing to the corresponding plain method and
  * calling the callback of "method" with templated arguments.
- * Then call the plain method, replacing the original callback
- * by the lambda.
+ * Then call the plain method, replacing the original callbacks
+ * by the lambdas.
  *
  * The return value is assumed to be isl_bool or isl_stat
  * so that no conversion to a template type is required.
@@ -1731,7 +1741,7 @@ void template_cpp_generator::method_impl_printer::print_callback_method_body(
 
 	os << "{\n";
 
-	print_callback_lambda(os, method, sig);
+	print_callback_lambdas(os, method, sig);
 
 	os << "  return ";
 	os << base_name << "::" << method.name;
