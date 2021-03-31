@@ -457,8 +457,6 @@ void python_generator::print_get_method(const isl_class &clazz,
 /* Print a call to "method", along with the corresponding
  * return statement, with the given indentation.
  * "drop_ctx" is set if the first argument is an isl_ctx.
- * "drop_user" is set if the last argument is a "user" argument
- * corresponding to a callback argument.
  *
  * A "ctx" variable is first initialized as it may be needed
  * in the first call to print_arg_in_call and in print_method_return.
@@ -467,10 +465,11 @@ void python_generator::print_get_method(const isl_class &clazz,
  * thrown in the callback also need to be rethrown.
  */
 void python_generator::print_method_call(int indent, const isl_class &clazz,
-	FunctionDecl *method, const char *fmt, int drop_ctx, int drop_user)
+	FunctionDecl *method, const char *fmt, int drop_ctx)
 {
 	string fullname = method->getName().str();
 	int num_params = method->getNumParams();
+	int drop_user = 0;
 
 	if (drop_ctx) {
 		print_indent(indent, "ctx = Context.getDefaultInstance()\n");
@@ -484,6 +483,8 @@ void python_generator::print_method_call(int indent, const isl_class &clazz,
 		if (i > 0)
 			printf(", ");
 		print_arg_in_call(method, fmt, i, drop_ctx);
+		if (is_callback_arg(method, i))
+			drop_user = 1;
 	}
 	if (drop_user)
 		printf(", None");
@@ -544,7 +545,7 @@ void python_generator::print_method(const isl_class &clazz,
 			continue;
 		print_callback(param, i - drop_ctx);
 	}
-	print_method_call(8, clazz, method, fixed_arg_fmt, drop_ctx, drop_user);
+	print_method_call(8, clazz, method, fixed_arg_fmt, drop_ctx);
 
 	if (clazz.is_get_method(method))
 		print_get_method(clazz, method);
@@ -638,7 +639,7 @@ void python_generator::print_method_overload(const isl_class &clazz,
 	int drop_ctx = first_arg_is_isl_ctx(method);
 
 	print_argument_checks(clazz, method, drop_ctx);
-	print_method_call(12, clazz, method, var_arg_fmt, drop_ctx, 0);
+	print_method_call(12, clazz, method, var_arg_fmt, drop_ctx);
 }
 
 /* Print a python method with a name derived from "fullname"

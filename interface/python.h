@@ -51,7 +51,7 @@ private:
 		vector<string> super);
 	void print_method_call(int indent, const isl_class &clazz,
 		FunctionDecl *method, const char *fmt,
-		int drop_ctx, int drop_user);
+		int drop_ctx);
 	void print_argument_checks(const isl_class &clazz, FunctionDecl *fd,
 		int drop_ctx);
 	void print_method_overload(const isl_class &clazz,
