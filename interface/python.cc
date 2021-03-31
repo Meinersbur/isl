@@ -824,34 +824,37 @@ void python_generator::print_restype(FunctionDecl *fd)
 }
 
 /* Tell ctypes about the types of the arguments of the function "fd".
+ *
+ * Any callback argument is followed by a user pointer argument.
+ * Each such pair or arguments is handled together.
  */
 void python_generator::print_argtypes(FunctionDecl *fd)
 {
 	string fullname = fd->getName().str();
 	int n = fd->getNumParams();
-	int drop_user = 0;
 
 	printf("isl.%s.argtypes = [", fullname.c_str());
-	for (int i = 0; i < n - drop_user; ++i) {
+	for (int i = 0; i < n; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		QualType type = param->getOriginalType();
-		if (is_callback(type))
-			drop_user = 1;
 		if (i)
 			printf(", ");
 		if (is_isl_ctx(type))
 			printf("Context");
-		else if (is_isl_type(type) || is_callback(type))
+		else if (is_isl_type(type))
 			printf("c_void_p");
+		else if (is_callback(type))
+			printf("c_void_p, c_void_p");
 		else if (is_string(type))
 			printf("c_char_p");
 		else if (is_long(type))
 			printf("c_long");
 		else
 			printf("c_int");
+
+		if (is_callback(type))
+			++i;
 	}
-	if (drop_user)
-		printf(", c_void_p");
 	printf("]\n");
 }
 
