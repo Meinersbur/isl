@@ -934,7 +934,7 @@ void plain_cpp_generator::impl_printer::print_method(const Method &method)
 
 	osprintf(os, "  auto res = %s", methodname.c_str());
 
-	Method::print_arg_list(os, 0, num_params, [&] (int i) {
+	method.print_fd_arg_list(os, 0, num_params, [&] (int i) {
 		method.print_param_use(os, i);
 	});
 	osprintf(os, ";\n");

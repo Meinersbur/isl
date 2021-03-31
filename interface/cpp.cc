@@ -1027,6 +1027,18 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
 	os << ")";
 }
 
+/* Print the arguments from "start" (inclusive) to "end" (exclusive)
+ * as arguments to a method of C function call, using "print_arg"
+ * to print each individual argument.
+ *
+ * Call print_arg_list to do the actual printing.
+ */
+void Method::print_fd_arg_list(std::ostream &os, int start, int end,
+	const std::function<void(int i)> &print_arg) const
+{
+	print_arg_list(os, start, end, print_arg);
+}
+
 /* Print the arguments to the method call, using "print_arg"
  * to print each individual argument.
  */
@@ -1034,7 +1046,7 @@ void Method::print_cpp_arg_list(std::ostream &os,
 	const std::function<void(int i)> &print_arg) const
 {
 	int first_param = kind == member_method ? 1 : 0;
-	print_arg_list(os, first_param, num_params(), print_arg);
+	print_fd_arg_list(os, first_param, num_params(), print_arg);
 }
 
 /* Should the parameter at position "pos" be a copy (rather than
