@@ -649,11 +649,11 @@ void cpp_generator::class_printer::print_method_header(
 	else
 		os << cppstring;
 
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		std::string name = method.fd->getParamDecl(i)->getName().str();
 		ParmVarDecl *param = method.get_param(i);
 		QualType type = param->getOriginalType();
-		string cpptype = type_printer.param(i, type);
+		string cpptype = type_printer.param(arg, type);
 
 		if (!method.param_needs_copy(i))
 			os << "const " << cpptype << " &" << name;
@@ -1026,6 +1026,10 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
 /* Print the arguments from "start" (inclusive) to "end" (exclusive)
  * as arguments to a method of C function call, using "print_arg"
  * to print each individual argument.
+ * The first argument to this callback is the position of the argument
+ * in this->fd.
+ * The second argument is the (first) position in the list of arguments
+ * with all callback arguments spliced in.
  *
  * Call print_arg_list to do the actual printing, skipping
  * the user argument that comes after every callback argument.
@@ -1035,23 +1039,38 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
  * of the C function because the pair of callback and user pointer
  * is considered as a single argument that is printed as a whole
  * by Method::print_param_use.
+ *
+ * In case of a callback argument, the second argument to "print_arg"
+ * is also adjusted to account for the spliced-in arguments of the callback.
+ * The return value takes the place of the callback itself,
+ * while the arguments (excluding the final user pointer)
+ * take the following positions.
  */
 void Method::print_fd_arg_list(std::ostream &os, int start, int end,
-	const std::function<void(int i)> &print_arg) const
+	const std::function<void(int i, int arg)> &print_arg) const
 {
-	print_arg_list(os, start, end, [this, &print_arg] (int i) {
+	int arg = start;
+
+	print_arg_list(os, start, end, [this, &print_arg, &arg] (int i) {
 		auto type = fd->getParamDecl(i)->getType();
 
-		print_arg(i);
-		return generator::is_callback(type);
+		print_arg(i, arg++);
+		if (!generator::is_callback(type))
+			return false;
+		arg += generator::prototype_n_args(type) - 1;
+		return true;
 	});
 }
 
 /* Print the arguments to the method call, using "print_arg"
  * to print each individual argument.
+ * The first argument to this callback is the position of the argument
+ * in this->fd.
+ * The second argument is the (first) position in the list of arguments
+ * with all callback arguments spliced in.
  */
 void Method::print_cpp_arg_list(std::ostream &os,
-	const std::function<void(int i)> &print_arg) const
+	const std::function<void(int i, int arg)> &print_arg) const
 {
 	int first_param = kind == member_method ? 1 : 0;
 	print_fd_arg_list(os, first_param, num_params(), print_arg);

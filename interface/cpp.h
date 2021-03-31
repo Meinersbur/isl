@@ -36,9 +36,9 @@ struct Method {
 	static void print_arg_list(std::ostream &os, int start, int end,
 		const std::function<bool(int i)> &print_arg_skip_next);
 	void print_fd_arg_list(std::ostream &os, int start, int end,
-		const std::function<void(int i)> &print_arg) const;
+		const std::function<void(int i, int arg)> &print_arg) const;
 	void print_cpp_arg_list(std::ostream &os,
-		const std::function<void(int i)> &print_arg) const;
+		const std::function<void(int i, int arg)> &print_arg) const;
 
 	const isl_class &clazz;
 	FunctionDecl *const fd;

@@ -781,6 +781,14 @@ const FunctionProtoType *generator::extract_prototype(QualType type)
 	return type->getPointeeType()->getAs<FunctionProtoType>();
 }
 
+/* Given the type of a function pointer, return the number of arguments
+ * of the corresponding function prototype.
+ */
+int generator::prototype_n_args(QualType type)
+{
+	return extract_prototype(type)->getNumArgs();
+}
+
 /* Return the function name suffix for the type of "param".
  *
  * If the type of "param" is an isl object type,

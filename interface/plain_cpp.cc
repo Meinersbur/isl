@@ -934,7 +934,7 @@ void plain_cpp_generator::impl_printer::print_method(const Method &method)
 
 	osprintf(os, "  auto res = %s", methodname.c_str());
 
-	method.print_fd_arg_list(os, 0, num_params, [&] (int i) {
+	method.print_fd_arg_list(os, 0, num_params, [&] (int i, int arg) {
 		method.print_param_use(os, i);
 	});
 	osprintf(os, ";\n");
@@ -1002,7 +1002,7 @@ void plain_cpp_generator::impl_printer::print_method(
 	print_check_ptr("ptr");
 	osprintf(os, "  return ");
 	method.print_call(os, generator.isl_namespace());
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
 
 		print_arg_conversion(param, method.get_param(i));

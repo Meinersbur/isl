@@ -1636,7 +1636,7 @@ void template_cpp_generator::method_impl_printer::print_constructor_body(
 	const auto &base_name = instance.base_name();
 
 	os << "  : " << base_name;
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		os << method.fd->getParamDecl(i)->getName().str();
 	});
 	os << "\n";
@@ -1735,7 +1735,7 @@ void template_cpp_generator::method_impl_printer::print_callback_method_body(
 
 	os << "  return ";
 	os << base_name << "::" << method.name;
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		auto param = method.fd->getParamDecl(i);
 
 		if (param == method.callback)
@@ -1763,7 +1763,7 @@ void template_cpp_generator::method_impl_printer::print_method_body(
 	os << "{\n";
 	os << "  auto res = ";
 	os << base_name << "::" << method.name;
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		os << method.fd->getParamDecl(i)->getName().str();
 	});
 	os << ";\n";

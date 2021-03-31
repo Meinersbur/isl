@@ -195,6 +195,7 @@ public:
 	static bool is_mutator(const isl_class &clazz, FunctionDecl *fd);
 	static string extract_type(QualType type);
 	static const FunctionProtoType *extract_prototype(QualType type);
+	static int prototype_n_args(QualType type);
 	static ParmVarDecl *persistent_callback_arg(FunctionDecl *fd);
 };
 
