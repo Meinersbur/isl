@@ -14,7 +14,7 @@
  * "name" is the name of the method, which may be different
  * from the default name derived from "fd".
  * "kind" is the type of the method.
- * "callback" stores the callback argument, if any, or NULL.
+ * "callbacks" stores the callback arguments.
  */
 struct Method {
 	enum Kind {
@@ -44,7 +44,7 @@ struct Method {
 	FunctionDecl *const fd;
 	const std::string name;
 	const enum Kind kind;
-	ParmVarDecl *const callback;
+	const std::vector<ParmVarDecl *> callbacks;
 };
 
 /* A method that does not require its isl type parameters to be a copy.

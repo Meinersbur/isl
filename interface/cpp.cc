@@ -942,20 +942,20 @@ static Method::Kind get_kind(const isl_class &clazz, FunctionDecl *method)
 		return Method::Kind::member_method;
 }
 
-/* Return the callback argument of "fd", if there is any.
- * Return NULL otherwise.
+/* Return the callback arguments of "fd".
  */
-static ParmVarDecl *find_callback_arg(FunctionDecl *fd)
+static std::vector<ParmVarDecl *> find_callback_args(FunctionDecl *fd)
 {
+	std::vector<ParmVarDecl *> callbacks;
 	int num_params = fd->getNumParams();
 
 	for (int i = 0; i < num_params; ++i) {
 		ParmVarDecl *param = fd->getParamDecl(i);
 		if (generator::is_callback(param->getType()))
-			return param;
+			callbacks.emplace_back(param);
 	}
 
-	return NULL;
+	return callbacks;
 }
 
 /* Construct a C++ method object from the class to which is belongs,
@@ -968,7 +968,7 @@ Method::Method(const isl_class &clazz, FunctionDecl *fd,
 	const std::string &name) :
 		clazz(clazz), fd(fd), name(rename_method(name)),
 		kind(get_kind(clazz, fd)),
-		callback(find_callback_arg(fd))
+		callbacks(find_callback_args(fd))
 {
 }
 

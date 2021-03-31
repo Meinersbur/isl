@@ -1558,7 +1558,7 @@ void template_cpp_generator::method_decl_printer::print_method_sig(
 }
 
 /* Return the total number of arguments in the signature for "method",
- * taking into account a possible callback argument.
+ * taking into account any possible callback arguments.
  *
  * In particular, if the method has a callback argument,
  * then the return kind of the callback appears at the position
@@ -1571,8 +1571,8 @@ static int total_params(const Method &method)
 {
 	int n = method.num_params();
 
-	if (method.callback) {
-		auto callback_type = method.callback->getType();
+	for (const auto &callback : method.callbacks) {
+		auto callback_type = callback->getType();
 		auto proto = generator::extract_prototype(callback_type);
 
 		n += proto->getNumParams() - 1;
@@ -1704,19 +1704,28 @@ static void print_callback_lambda(std::ostream &os, ParmVarDecl *callback,
 /* Print lambdas for passing to the plain method corresponding to "method"
  * with signature "sig".
  *
- * The method is assumed to have only the callback as argument,
- * which means the arguments of the callback are shifted by 2
+ * The method is assumed to have only callbacks as argument,
+ * which means the arguments of the first callback are shifted by 2
  * with respect to the arguments of the signature
  * (one for the position of the callback argument plus
  * one for the return kind of the callback).
+ * The arguments of a subsequent callback are shifted by
+ * the number of arguments of the previous callback minus one
+ * for the user pointer plus one for the return kind.
  */
 static void print_callback_lambdas(std::ostream &os, const Method &method,
 	const Signature &sig)
 {
-	if (method.num_params() != 3)
-		generator::die("callback is assumed to be single argument");
+	int shift;
 
-	print_callback_lambda(os, method.callback, sig, 2);
+	if (method.num_params() != 1 + 2 * method.callbacks.size())
+		generator::die("callbacks are assumed to be only arguments");
+
+	shift = 2;
+	for (const auto &callback : method.callbacks) {
+		print_callback_lambda(os, callback, sig, shift);
+		shift += generator::prototype_n_args(callback->getType());
+	}
 }
 
 /* Print a definition of the member method "method", which is known
@@ -1792,7 +1801,7 @@ void template_cpp_generator::method_impl_printer::print_method_body(
  * Otherwise print the method header, preceded by the template parameters,
  * if needed.
  * The body depends on whether the method is a constructor or
- * takes a callback.
+ * takes any callbacks.
  */
 void template_cpp_generator::method_impl_printer::print_method_sig(
 	const Method &method, const Signature &sig, bool deleted)
@@ -1806,7 +1815,7 @@ void template_cpp_generator::method_impl_printer::print_method_sig(
 	os << "\n";
 	if (method.kind == Method::Kind::constructor)
 		print_constructor_body(method, sig);
-	else if (method.callback)
+	else if (method.callbacks.size() != 0)
 		print_callback_method_body(method, sig);
 	else
 		print_method_body(method, sig);
@@ -2549,15 +2558,15 @@ const std::string name_without_return(const Method &method)
 }
 
 /* If this method has a callback, then remove the type
- * of the first argument of the callback from the name of the method.
+ * of the first argument of the first callback from the name of the method.
  * Otherwise, simply return the name of the method.
  */
 const std::string callback_name(const Method &method)
 {
-	if (!method.callback)
+	if (method.callbacks.size() == 0)
 		return method.name;
 
-	auto type = method.callback->getType();
+	auto type = method.callbacks.at(0)->getType();
 	auto callback = cpp_generator::extract_prototype(type);
 	auto arg_type = plain_type(callback->getArgType(0));
 	return generator::drop_suffix(method.name, "_" + arg_type);

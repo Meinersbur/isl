@@ -929,8 +929,8 @@ void plain_cpp_generator::impl_printer::print_method(const Method &method)
 	print_save_ctx(method);
 	print_on_error_continue();
 
-	if (method.callback)
-		print_callback_local(method.callback);
+	for (const auto &callback : method.callbacks)
+		print_callback_local(callback);
 
 	osprintf(os, "  auto res = %s", methodname.c_str());
 
@@ -1393,10 +1393,10 @@ void plain_cpp_generator::impl_printer::print_exceptional_execution_check(
 
 	print_persistent_callback_exceptional_execution_check(os, method);
 
-	if (method.callback) {
+	for (const auto &callback : method.callbacks) {
 		std::string name;
 
-		name = method.callback->getName().str();
+		name = callback->getName().str();
 		osprintf(os, "  if (%s_data.eptr)\n", name.c_str());
 		osprintf(os, "    std::rethrow_exception(%s_data.eptr);\n",
 			name.c_str());
