@@ -1573,9 +1573,9 @@ static int total_params(const Method &method)
 
 	if (method.callback) {
 		auto callback_type = method.callback->getType();
-		auto callback = generator::extract_prototype(callback_type);
+		auto proto = generator::extract_prototype(callback_type);
 
-		n += callback->getNumParams() - 1;
+		n += proto->getNumParams() - 1;
 		n -= 1;
 	}
 
