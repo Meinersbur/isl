@@ -451,6 +451,16 @@ static Signature ter_map_int_int =
 static std::vector<Signature> ter_int_int =
 	{ ter_params_int_int, ter_set_int_int, ter_map_int_int };
 
+/* Signatures for ternary operations.
+ * Functions have at least one tuple.
+ */
+static Signature ter_set =
+	{ { Domain }, { { Domain }, { Domain }, { Domain } } };
+static Signature ter_map =
+	{ { Domain, Range },
+	  { { Domain, Range }, { Domain, Range }, { Domain, Range } } };
+static std::vector<Signature> fn_ter_op = { ter_set, ter_map };
+
 /* Signatures for naming a leaf tuple using an identifier (with an anonymous
  * tuple).
  */
@@ -752,6 +762,7 @@ member_methods {
 				{ bind_domain_wrapped_domain } },
 	{ "ceil",		fn_un_op },
 	{ "coalesce",		un_op },
+	{ "cond",		fn_ter_op },
 	{ "constant_multi_val",	range_op },
 	{ "curry",		{ curry } },
 	{ "deltas",		{ transformation_domain } },
