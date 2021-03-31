@@ -985,19 +985,13 @@ Method::Method(const isl_class &clazz, FunctionDecl *fd) :
 
 /* Return the number of parameters of the corresponding C function.
  *
- * If the method has a callback argument, we reduce the number of parameters
- * that are exposed by one to hide the user pointer from the interface. On
- * the C++ side no user pointer is needed, as arguments can be forwarded
- * as part of the std::function argument which specifies the callback function.
- *
- * The user pointer is also removed from the number of parameters
- * of the C function because the pair of callback and user pointer
- * is considered as a single argument that is printed as a whole
- * by Method::print_param_use.
+ * This number includes any possible user pointers that follow callback
+ * arguments.  These are skipped by Method::print_fd_arg_list
+ * during the actual argument printing.
  */
 int Method::c_num_params() const
 {
-	return fd->getNumParams() - (callback != NULL);
+	return fd->getNumParams();
 }
 
 /* Return the number of parameters of the method

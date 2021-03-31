@@ -1564,6 +1564,8 @@ void template_cpp_generator::method_decl_printer::print_method_sig(
  * then the return kind of the callback appears at the position
  * of the callback and the kinds of the arguments (except
  * the user pointer argument) appear in the following positions.
+ * The user pointer argument that follows the callback argument
+ * is also removed.
  */
 static int total_params(const Method &method)
 {
@@ -1573,7 +1575,8 @@ static int total_params(const Method &method)
 		auto callback_type = method.callback->getType();
 		auto callback = generator::extract_prototype(callback_type);
 
-		n += callback->getNumArgs() - 1;
+		n += callback->getNumParams() - 1;
+		n -= 1;
 	}
 
 	return n;
@@ -1686,7 +1689,7 @@ static void print_callback_lambda(std::ostream &os, const Method &method,
 	auto callback_name = method.callback->getName().str();
 	auto callback = generator::extract_prototype(callback_type);
 
-	if (method.num_params() != 2)
+	if (method.num_params() != 3)
 		generator::die("callback is assumed to be single argument");
 
 	os << "  auto lambda = [&] ";
