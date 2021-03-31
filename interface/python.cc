@@ -461,8 +461,8 @@ void python_generator::print_get_method(const isl_class &clazz,
  * A "ctx" variable is first initialized as it may be needed
  * in the first call to print_arg_in_call and in print_method_return.
  *
- * If the method has a callback function, then any exception
- * thrown in the callback also need to be rethrown.
+ * If the method has any callback function, then any exception
+ * thrown in any callback also need to be rethrown.
  */
 void python_generator::print_method_call(int indent, const isl_class &clazz,
 	FunctionDecl *method, const char *fmt, int drop_ctx)
@@ -479,18 +479,19 @@ void python_generator::print_method_call(int indent, const isl_class &clazz,
 		printf(".ctx\n");
 	}
 	print_indent(indent, "res = isl.%s(", fullname.c_str());
-	for (int i = 0; i < num_params - drop_user; ++i) {
+	for (int i = 0; i < num_params; ++i) {
 		if (i > 0)
 			printf(", ");
-		print_arg_in_call(method, fmt, i, drop_ctx);
-		if (is_callback_arg(method, i))
-			drop_user = 1;
-	}
-	if (drop_user)
+		print_arg_in_call(method, fmt, i, drop_ctx + drop_user);
+		if (!is_callback_arg(method, i))
+			continue;
+		++drop_user;
+		++i;
 		printf(", None");
+	}
 	printf(")\n");
 
-	if (drop_user)
+	if (drop_user > 0)
 		print_rethrow(indent, "exc_info[0]");
 
 	print_method_return(indent, clazz, method, fmt);
@@ -508,10 +509,10 @@ void python_generator::print_method_call(int indent, const isl_class &clazz,
  * If, moreover, this first argument is an isl_ctx, then remove
  * it from the arguments of the Python method.
  *
- * If the function has a callback argument, then it also has a "user"
- * argument.  Since Python has closures, there is no need for such
- * a user argument in the Python interface, so we simply drop it.
- * We also create a wrapper ("cb{arg}") for the callback.
+ * If the function has any callback arguments, then it also has corresponding
+ * "user" arguments.  Since Python has closures, there is no need for such
+ * user arguments in the Python interface, so we simply drop them.
+ * We also create a wrapper ("cb{arg}") for each callback.
  *
  * If the function consumes a reference, then we pass it a copy of
  * the actual argument.
@@ -530,7 +531,7 @@ void python_generator::print_method(const isl_class &clazz,
 
 	for (int i = 1; i < num_params; ++i) {
 		if (is_callback_arg(method, i))
-			drop_user = 1;
+			drop_user += 1;
 	}
 
 	print_method_header(is_static(clazz, method), cname,
@@ -538,12 +539,14 @@ void python_generator::print_method(const isl_class &clazz,
 
 	print_type_checks(cname, method, drop_ctx,
 			    num_params, super);
+	drop_user = 0;
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		QualType type = param->getOriginalType();
 		if (!is_callback(type))
 			continue;
-		print_callback(param, i - drop_ctx);
+		print_callback(param, i - drop_ctx - drop_user);
+		drop_user += 1;
 	}
 	print_method_call(8, clazz, method, fixed_arg_fmt, drop_ctx);
 
