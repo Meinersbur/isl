@@ -1687,20 +1687,20 @@ static void print_callback_lambda(std::ostream &os, const Method &method,
 {
 	auto callback_type = method.callback->getType();
 	auto callback_name = method.callback->getName().str();
-	auto callback = generator::extract_prototype(callback_type);
+	auto proto = generator::extract_prototype(callback_type);
 
 	if (method.num_params() != 3)
 		generator::die("callback is assumed to be single argument");
 
 	os << "  auto lambda = [&] ";
-	print_callback_args(os, callback, cpp_type_printer(), 2,
+	print_callback_args(os, proto, cpp_type_printer(), 2,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << " " << name;
 		});
 	os << " {\n";
 
 	os << "    return " << callback_name;
-	print_callback_args(os, callback, template_cpp_arg_type_printer(sig), 2,
+	print_callback_args(os, proto, template_cpp_arg_type_printer(sig), 2,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << "(" << name << ")";
 		});
