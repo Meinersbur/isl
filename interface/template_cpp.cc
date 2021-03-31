@@ -1646,6 +1646,7 @@ void template_cpp_generator::method_impl_printer::print_constructor_body(
  * calling "print_arg" with the type and the name of the arguments,
  * where the type is obtained from "type_printer" with argument positions
  * shifted by "shift".
+ * None of the arguments should be skipped.
  */
 static void print_callback_args(std::ostream &os,
 	const FunctionProtoType *callback, const cpp_type_printer &type_printer,
@@ -1661,6 +1662,8 @@ static void print_callback_args(std::ostream &os,
 		auto cpptype = type_printer.param(shift + i, type);
 
 		print_arg(cpptype, name);
+
+		return false;
 	});
 }
 

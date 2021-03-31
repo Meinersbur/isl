@@ -1012,17 +1012,19 @@ int Method::num_params() const
 }
 
 /* Print the arguments from "start" (inclusive) to "end" (exclusive)
- * as arguments to a method of C function call, using "print_arg"
- * to print each individual argument.
+ * as arguments to a method of C function call, using "print_arg_skip_next"
+ * to print each individual argument.  If this callback return true
+ * then the next argument is skipped.
  */
 void Method::print_arg_list(std::ostream &os, int start, int end,
-	const std::function<void(int i)> &print_arg)
+	const std::function<bool(int i)> &print_arg_skip_next)
 {
 	os << "(";
 	for (int i = start; i < end; ++i) {
 		if (i != start)
 			os << ", ";
-		print_arg(i);
+		if (print_arg_skip_next(i))
+			++i;
 	}
 	os << ")";
 }
@@ -1031,12 +1033,24 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
  * as arguments to a method of C function call, using "print_arg"
  * to print each individual argument.
  *
- * Call print_arg_list to do the actual printing.
+ * Call print_arg_list to do the actual printing, skipping
+ * the user argument that comes after every callback argument.
+ * On the C++ side no user pointer is needed, as arguments can be forwarded
+ * as part of the std::function argument which specifies the callback function.
+ * The user pointer is also removed from the number of parameters
+ * of the C function because the pair of callback and user pointer
+ * is considered as a single argument that is printed as a whole
+ * by Method::print_param_use.
  */
 void Method::print_fd_arg_list(std::ostream &os, int start, int end,
 	const std::function<void(int i)> &print_arg) const
 {
-	print_arg_list(os, start, end, print_arg);
+	print_arg_list(os, start, end, [this, &print_arg] (int i) {
+		auto type = fd->getParamDecl(i)->getType();
+
+		print_arg(i);
+		return generator::is_callback(type);
+	});
 }
 
 /* Print the arguments to the method call, using "print_arg"

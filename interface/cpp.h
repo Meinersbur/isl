@@ -34,7 +34,7 @@ struct Method {
 	virtual void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
 	static void print_arg_list(std::ostream &os, int start, int end,
-		const std::function<void(int i)> &print_arg);
+		const std::function<bool(int i)> &print_arg_skip_next);
 	void print_fd_arg_list(std::ostream &os, int start, int end,
 		const std::function<void(int i)> &print_arg) const;
 	void print_cpp_arg_list(std::ostream &os,
