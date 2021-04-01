@@ -528,9 +528,7 @@ void python_generator::print_method(const isl_class &clazz,
 	int drop_ctx = first_arg_is_isl_ctx(method);
 
 	for (int i = 1; i < num_params; ++i) {
-		ParmVarDecl *param = method->getParamDecl(i);
-		QualType type = param->getOriginalType();
-		if (is_callback(type))
+		if (is_callback_arg(method, i))
 			drop_user = 1;
 	}
 
