@@ -538,7 +538,7 @@ void python_generator::print_method(const isl_class &clazz,
 			    num_params - drop_ctx - drop_user);
 
 	print_type_checks(cname, method, drop_ctx,
-			    num_params - drop_user, super);
+			    num_params, super);
 	for (int i = 1; i < num_params; ++i) {
 		ParmVarDecl *param = method->getParamDecl(i);
 		QualType type = param->getOriginalType();
