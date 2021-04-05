@@ -420,12 +420,15 @@ static void create_main_file_id(SourceManager &SM, const FileEntry *file)
 
 #ifdef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
 
+#include "set_lang_defaults_arg4.h"
+
 static void set_lang_defaults(CompilerInstance *Clang)
 {
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
 	TargetOptions &TO = Clang->getTargetOpts();
 	llvm::Triple T(TO.Triple);
-	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C, T, PO,
+	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C, T,
+					    setLangDefaultsArg4(PO),
 					    LangStandard::lang_unspecified);
 }
 
