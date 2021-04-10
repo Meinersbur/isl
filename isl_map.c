@@ -2147,19 +2147,22 @@ error:
  * Since the basic map has conflicting constraints,
  * it must have at least one constraint, except perhaps
  * if it was already explicitly marked as being empty.
- * Do nothing in the latter case.
+ * Do nothing in the latter case, i.e., if it has been marked empty and
+ * has no constraints.
  */
 __isl_give isl_basic_map *isl_basic_map_set_to_empty(
 	__isl_take isl_basic_map *bmap)
 {
 	int i = 0;
 	isl_bool empty;
+	isl_size n;
 	isl_size total;
 
+	n = isl_basic_map_n_constraint(bmap);
 	empty = isl_basic_map_plain_is_empty(bmap);
-	if (empty < 0)
+	if (n < 0 || empty < 0)
 		return isl_basic_map_free(bmap);
-	if (empty)
+	if (n == 0 && empty)
 		return bmap;
 	total = isl_basic_map_dim(bmap, isl_dim_all);
 	if (total < 0)
