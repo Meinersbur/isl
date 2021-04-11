@@ -385,6 +385,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	struct isl_vertex_list *list = NULL;
 	int n_vertices = 0;
 	isl_vertices *vertices;
+	isl_basic_set *copy;
 
 	if (!bset)
 		return NULL;
@@ -404,27 +405,27 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	if (nvar == 0)
 		return vertices_0D(bset);
 
-	bset = isl_basic_set_copy(bset);
-	bset = isl_basic_set_set_rational(bset);
-	if (!bset)
+	copy = isl_basic_set_copy(bset);
+	copy = isl_basic_set_set_rational(copy);
+	if (!copy)
 		return NULL;
 
-	tab = isl_tab_from_basic_set(bset, 0);
+	tab = isl_tab_from_basic_set(copy, 0);
 	if (!tab)
 		goto error;
 	tab->strict_redundant = 1;
 
 	if (tab->empty)	{
-		vertices = vertices_empty(bset);
-		isl_basic_set_free(bset);
+		vertices = vertices_empty(copy);
+		isl_basic_set_free(copy);
 		isl_tab_free(tab);
 		return vertices;
 	}
 
-	selection = isl_alloc_array(bset->ctx, int, bset->n_ineq);
-	snap = isl_alloc_array(bset->ctx, struct isl_tab_undo *, bset->n_ineq);
-	facets = isl_mat_alloc(bset->ctx, nvar, nvar);
-	if ((bset->n_ineq && (!selection || !snap)) || !facets)
+	selection = isl_alloc_array(copy->ctx, int, copy->n_ineq);
+	snap = isl_alloc_array(copy->ctx, struct isl_tab_undo *, copy->n_ineq);
+	facets = isl_mat_alloc(copy->ctx, nvar, nvar);
+	if ((copy->n_ineq && (!selection || !snap)) || !facets)
 		goto error;
 
 	level = 0;
@@ -432,7 +433,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	selected = 0;
 
 	while (level >= 0) {
-		if (level >= bset->n_ineq ||
+		if (level >= copy->n_ineq ||
 		    (!init && selection[level] != SELECTED)) {
 			--level;
 			init = 0;
@@ -441,7 +442,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 		if (init) {
 			isl_bool ok;
 			snap[level] = isl_tab_snap(tab);
-			ok = can_select(bset, level, tab, facets, selected,
+			ok = can_select(copy, level, tab, facets, selected,
 					selection);
 			if (ok < 0)
 				goto error;
@@ -458,7 +459,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 		}
 		if (selected == nvar) {
 			if (tab->n_dead == nvar) {
-				isl_bool added = add_vertex(&list, bset, tab);
+				isl_bool added = add_vertex(&list, copy, tab);
 				if (added < 0)
 					goto error;
 				if (added)
@@ -477,9 +478,9 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 
 	isl_tab_free(tab);
 
-	vertices = vertices_from_list(bset, n_vertices, list);
+	vertices = vertices_from_list(copy, n_vertices, list);
 
-	vertices = compute_chambers(bset, vertices);
+	vertices = compute_chambers(copy, vertices);
 
 	return vertices;
 error:
@@ -488,7 +489,7 @@ error:
 	free(selection);
 	free(snap);
 	isl_tab_free(tab);
-	isl_basic_set_free(bset);
+	isl_basic_set_free(copy);
 	return NULL;
 }
 
