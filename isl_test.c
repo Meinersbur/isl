@@ -7861,6 +7861,15 @@ struct isl_vertices_test_data {
 		"[n, m] -> { [1, 1, m] : 0 < m <= n }",
 		"[n, m] -> { [1, 1, 1] : 0 < m <= n }"
 	    } },
+	/* An input with implicit equality constraints among the parameters. */
+	{ "[N, M] -> { [a, b] : M >= 3 and 9 + 3M <= a <= 29 + 2N + 11M and "
+			    "2b >= M + a and 5 - 2N - M + a <= 2b <= 3 + a and "
+			    "3b >= 15 + a }",
+	  2, {
+		"[N, M] -> { [(21), (12)] : M = 3 and N >= 0 }",
+		"[N, M] -> { [(61 + 2N), (32 + N)] : M = 3 and N >= 0 }",
+	     }
+	},
 };
 
 /* Check that "vertex" corresponds to one of the vertices in data->vertex.

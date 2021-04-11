@@ -343,6 +343,37 @@ static __isl_give isl_vertices *lower_dim_vertices(
 }
 
 /* Compute the parametric vertices and the chamber decomposition
+ * of a parametric polytope "bset" that is not full-dimensional.
+ * Additionally, free both "copy" and "tab".
+ */
+static __isl_give isl_vertices *lower_dim_vertices_free(
+	__isl_take isl_basic_set *bset, __isl_take isl_basic_set *copy,
+	struct isl_tab *tab)
+{
+	isl_basic_set_free(copy);
+	isl_tab_free(tab);
+	return lower_dim_vertices(bset);
+}
+
+/* Detect implicit equality constraints in "bset" using the tableau
+ * representation "tab".
+ * Return a copy of "bset" with the implicit equality constraints
+ * made explicit, leaving the original "bset" unmodified.
+ */
+static __isl_give isl_basic_set *detect_implicit_equality_constraints(
+	__isl_keep isl_basic_set *bset, struct isl_tab *tab)
+{
+	if (isl_tab_detect_implicit_equalities(tab) < 0)
+		return NULL;
+
+	bset = isl_basic_set_copy(bset);
+	bset = isl_basic_set_cow(bset);
+	bset = isl_basic_set_update_from_tab(bset, tab);
+
+	return bset;
+}
+
+/* Compute the parametric vertices and the chamber decomposition
  * of the parametric polytope defined using the same constraints
  * as "bset".  "bset" is assumed to have no existentially quantified
  * variables.
@@ -354,6 +385,19 @@ static __isl_give isl_vertices *lower_dim_vertices(
  * which we may happen if a vertex is defined by more that d constraints,
  * we make sure we only generate the vertex for the d constraints with
  * smallest index.
+ *
+ * Only potential vertices with a full-dimensional activity domain
+ * are considered.  However, if the input has (implicit) equality
+ * constraints among the parameters, then activity domain
+ * should be considered full-dimensional if it does not satisfy
+ * any extra equality constraints beyond those of the input.
+ * The implicit equality constraints of the input are therefore first detected.
+ * If there are any, then the input is mapped to a lower dimensional space
+ * such that the check for full-dimensional activity domains
+ * can be performed with respect to a full-dimensional space.
+ * Note that it is important to leave "bset" unmodified while detecting
+ * equality constraints since the inequality constraints of "bset"
+ * are assumed to correspond to those of the tableau.
  *
  * We set up a tableau and keep track of which facets have been
  * selected.  The tableau is marked strict_redundant so that we can be
@@ -377,6 +421,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	struct isl_tab *tab;
 	int level;
 	int init;
+	isl_size n_eq;
 	isl_size nvar;
 	int *selection = NULL;
 	int selected;
@@ -386,6 +431,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 	int n_vertices = 0;
 	isl_vertices *vertices;
 	isl_basic_set *copy;
+	isl_basic_set *test;
 
 	if (!bset)
 		return NULL;
@@ -421,6 +467,14 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 		isl_tab_free(tab);
 		return vertices;
 	}
+
+	test = detect_implicit_equality_constraints(bset, tab);
+	n_eq = isl_basic_set_n_equality(test);
+	if (n_eq < 0)
+		test = isl_basic_set_free(test);
+	if (n_eq < 0 || n_eq > 0)
+		return lower_dim_vertices_free(test, copy, tab);
+	isl_basic_set_free(test);
 
 	selection = isl_alloc_array(copy->ctx, int, copy->n_ineq);
 	snap = isl_alloc_array(copy->ctx, struct isl_tab_undo *, copy->n_ineq);
