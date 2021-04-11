@@ -862,6 +862,7 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 {
 	int i;
 	isl_ctx *ctx;
+	isl_size n_eq;
 	isl_vec *sample = NULL;
 	struct isl_tab *tab = NULL;
 	struct isl_tab_undo *snap;
@@ -879,6 +880,12 @@ static __isl_give isl_vertices *compute_chambers(__isl_take isl_basic_set *bset,
 		goto error;
 
 	bset = isl_basic_set_params(bset);
+	n_eq = isl_basic_set_n_equality(bset);
+	if (n_eq < 0)
+		goto error;
+	if (n_eq > 0)
+		isl_die(isl_basic_set_get_ctx(bset), isl_error_internal,
+			"expecting full-dimensional input", goto error);
 
 	tab = isl_tab_from_basic_set(bset, 1);
 	if (!tab)
