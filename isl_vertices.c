@@ -324,12 +324,11 @@ static isl_bool can_select(__isl_keep isl_basic_set *bset, int level,
  * and map the resulting vertices back.
  */
 static __isl_give isl_vertices *lower_dim_vertices(
-	__isl_keep isl_basic_set *bset)
+	__isl_take isl_basic_set *bset)
 {
 	isl_morph *morph;
 	isl_vertices *vertices;
 
-	bset = isl_basic_set_copy(bset);
 	morph = isl_basic_set_full_compression(bset);
 	bset = isl_morph_basic_set(isl_morph_copy(morph), bset);
 
@@ -394,7 +393,7 @@ __isl_give isl_vertices *isl_basic_set_compute_vertices(
 		return vertices_empty(bset);
 
 	if (bset->n_eq != 0)
-		return lower_dim_vertices(bset);
+		return lower_dim_vertices(isl_basic_set_copy(bset));
 
 	if (isl_basic_set_check_no_locals(bset) < 0)
 		return NULL;
