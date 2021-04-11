@@ -382,7 +382,7 @@ static __isl_give isl_basic_set *detect_implicit_equality_constraints(
  * We simply run through all combinations of d constraints,
  * with d the number of set variables, and check if those d constraints
  * define a vertex.  To avoid the generation of duplicate vertices,
- * which we may happen if a vertex is defined by more that d constraints,
+ * which may happen if a vertex is defined by more than d constraints,
  * we make sure we only generate the vertex for the d constraints with
  * smallest index.
  *
