@@ -802,6 +802,7 @@ member_methods {
 	{ "gt_set",		{ set_join } },
 	{ "gist",		bin_op },
 	{ "gist_domain",	{ bin_map_domain } },
+	{ "gist_params",	{ bin_set_params, bin_map_params } },
 	{ "identity",		{ un_map, set_to_map } },
 	{ "identity_on_domain",	{ set_to_map } },
 	{ "indicator_function",	anonymous_from_domain },
