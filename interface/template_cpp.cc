@@ -780,6 +780,7 @@ member_methods {
 	{ "drop",		ter_int_int },
 	{ "eq_at",		{ map_cmp } },
 	{ "every",		each },
+	{ "extract",		bin_op },
 	{ "flatten_domain",	flatten_domain },
 	{ "flatten_range",	flatten_range },
 	{ "floor",		fn_un_op },
