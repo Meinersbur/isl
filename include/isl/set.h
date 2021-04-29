@@ -488,6 +488,7 @@ __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 __isl_export
 __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 	__isl_take isl_set *context);
+__isl_export
 __isl_give isl_set *isl_set_gist_params(__isl_take isl_set *set,
 	__isl_take isl_set *context);
 isl_stat isl_set_dim_residue_class_val(__isl_keep isl_set *set,
