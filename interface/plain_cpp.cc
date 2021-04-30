@@ -1297,10 +1297,10 @@ void plain_cpp_generator::impl_printer::print_save_ctx(const Method &method)
 		return;
 	}
 	if (is_isl_ctx(type)) {
-		const char *name;
+		std::string name;
 
-		name = param->getName().str().c_str();
-		osprintf(os, "  auto saved_ctx = %s;\n", name);
+		name = param->getName().str();
+		osprintf(os, "  auto saved_ctx = %s;\n", name.c_str());
 		return;
 	}
 	n = method.num_params();
