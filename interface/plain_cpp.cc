@@ -1394,12 +1394,12 @@ void plain_cpp_generator::impl_printer::print_exceptional_execution_check(
 	print_persistent_callback_exceptional_execution_check(os, method);
 
 	if (method.callback) {
-		const char *name;
+		std::string name;
 
-		name = method.callback->getName().str().c_str();
-		osprintf(os, "  if (%s_data.eptr)\n", name);
+		name = method.callback->getName().str();
+		osprintf(os, "  if (%s_data.eptr)\n", name.c_str());
 		osprintf(os, "    std::rethrow_exception(%s_data.eptr);\n",
-			name);
+			name.c_str());
 	}
 
 	check_neg = is_isl_neg_error(return_type);
