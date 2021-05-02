@@ -83,8 +83,8 @@ AM_CONDITIONAL(IMATH_FOR_MP, test x$with_int = ximath -o x$with_int = ximath-32)
 AM_CONDITIONAL(GMP_FOR_MP, test x$with_int = xgmp)
 
 AM_CONDITIONAL(HAVE_CXX11, test "x$HAVE_CXX11" = "x1")
-AM_CONDITIONAL(SMALL_INT_OPT, test "x$with_int" == "ximath-32")
-AS_IF([test "x$with_int" == "ximath-32"], [
+AM_CONDITIONAL(SMALL_INT_OPT, test "x$with_int" = "ximath-32")
+AS_IF([test "x$with_int" = "ximath-32"], [
 	AC_DEFINE([USE_SMALL_INT_OPT], [], [Use small integer optimization])
 ])
 
