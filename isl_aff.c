@@ -5,6 +5,7 @@
  * Copyright 2014      INRIA Rocquencourt
  * Copyright 2016      Sven Verdoolaege
  * Copyright 2018,2020 Cerebras Systems
+ * Copyright 2021      Sven Verdoolaege
  *
  * Use of this software is governed by the MIT license
  *
@@ -6597,6 +6598,37 @@ error:
 #include <isl_multi_union_add_templ.c>
 #include <isl_multi_zero_templ.c>
 #include <isl_multi_unbind_params_templ.c>
+
+/* Is every element of "mpa" defined over a single universe domain?
+ */
+isl_bool isl_multi_pw_aff_isa_multi_aff(__isl_keep isl_multi_pw_aff *mpa)
+{
+	return isl_multi_pw_aff_every(mpa, &isl_pw_aff_isa_aff);
+}
+
+/* Given that every element of "mpa" is defined over a single universe domain,
+ * return the corresponding base expressions.
+ */
+__isl_give isl_multi_aff *isl_multi_pw_aff_as_multi_aff(
+	__isl_take isl_multi_pw_aff *mpa)
+{
+	int i;
+	isl_size n;
+	isl_multi_aff *ma;
+
+	n = isl_multi_pw_aff_size(mpa);
+	if (n < 0)
+		mpa = isl_multi_pw_aff_free(mpa);
+	ma = isl_multi_aff_alloc(isl_multi_pw_aff_get_space(mpa));
+	for (i = 0; i < n; ++i) {
+		isl_aff *aff;
+
+		aff = isl_pw_aff_as_aff(isl_multi_pw_aff_get_at(mpa, i));
+		ma = isl_multi_aff_set_aff(ma, i, aff);
+	}
+	isl_multi_pw_aff_free(mpa);
+	return ma;
+}
 
 /* If "mpa" has an explicit domain, then intersect the domain of "map"
  * with this explicit domain.
