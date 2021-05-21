@@ -135,6 +135,8 @@ static const char *reparse_multi_pw_aff_tests[] = {
 	"[N] -> { [N] : N >= 0 }",
 	"[N] -> { [N, N + 1] : N >= 0 }",
 	"[N, M] -> { [(N : N >= 0), (M : M >= 0)] : N + M >= 0 }",
+	"{ [a] -> [b = a] }",
+	"{ [a] -> [b = a] : a >= 0 }",
 };
 
 #undef BASE
@@ -142,6 +144,16 @@ static const char *reparse_multi_pw_aff_tests[] = {
 
 #include "check_reparse_templ.c"
 #include "check_reparse_test_templ.c"
+
+/* String descriptions that cannot be parsed
+ * as multi piecewise affine expressions.
+ */
+static const char *parse_multi_pw_aff_fail_tests[] = {
+	"{ [a] -> [b] : b = a }",
+	"{ [a] -> [b = a] : b >= 0 }",
+};
+
+#include "check_parse_fail_test_templ.c"
 
 /* String descriptions of piecewise multi affine expressions
  * that are used for testing printing and parsing.
@@ -191,6 +203,8 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
  * an expression converted from a map with an output dimension name
  * that is equal to an automatically generated name, and
  * a set of expressions parsed from strings.
+ *
+ * Additionally, check some cases where parsing is supposed to fail.
  */
 static int test_parse_mpa(isl_ctx *ctx)
 {
@@ -226,6 +240,8 @@ static int test_parse_mpa(isl_ctx *ctx)
 		return -1;
 
 	if (check_reparse_multi_pw_aff_tests(ctx) < 0)
+		return -1;
+	if (check_parse_multi_pw_aff_fail_tests(ctx) < 0)
 		return -1;
 
 	return 0;

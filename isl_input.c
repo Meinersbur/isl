@@ -3989,10 +3989,14 @@ __isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
  * is then converted into the isl_multi_pw_aff through a call
  * to extract_mpa_from_tuple and the domain of the result
  * is intersected with the domain.
+ *
+ * Note that the last tuple may introduce new identifiers,
+ * but these cannot be referenced in the description of the domain.
  */
 __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 	__isl_keep isl_stream *s)
 {
+	int n_dom;
 	struct vars *v;
 	isl_set *dom = NULL;
 	isl_multi_pw_aff *tuple = NULL;
@@ -4011,17 +4015,20 @@ __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
+	n_dom = v->n;
 	tuple = read_tuple(s, v, 0, 0);
 	if (!tuple)
 		goto error;
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
 		isl_map *map = map_from_tuple(tuple, dom, isl_dim_in, v, 0);
 		dom = isl_map_domain(map);
+		n_dom = v->n;
 		tuple = read_tuple(s, v, 0, 0);
 		if (!tuple)
 			goto error;
 	}
 
+	vars_drop(v, v->n - n_dom);
 	if (isl_stream_eat_if_available(s, ':'))
 		dom = read_formula(s, v, dom, 0);
 
