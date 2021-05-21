@@ -3681,6 +3681,9 @@ static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
  * through a call to extract_mpa_from_tuple.
  * The result is converted to an isl_pw_multi_aff and
  * its domain is intersected with the domain.
+ *
+ * Note that the last tuple may introduce new identifiers,
+ * but these cannot be referenced in the description of the domain.
  */
 static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
 	__isl_keep isl_stream *s, __isl_take isl_set *dom, struct vars *v)
@@ -3689,13 +3692,16 @@ static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
 	isl_multi_pw_aff *mpa;
 	isl_pw_multi_aff *pma;
 	int n = v->n;
+	int n_dom;
 
+	n_dom = v->n;
 	tuple = read_tuple(s, v, 0, 0);
 	if (!tuple)
 		goto error;
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
 		isl_map *map = map_from_tuple(tuple, dom, isl_dim_in, v, 0);
 		dom = isl_map_domain(map);
+		n_dom = v->n;
 		tuple = read_tuple(s, v, 0, 0);
 		if (!tuple)
 			goto error;
@@ -3705,6 +3711,7 @@ static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
 	if (!mpa)
 		dom = isl_set_free(dom);
 
+	vars_drop(v, v->n - n_dom);
 	dom = read_optional_formula(s, dom, v, 0);
 
 	vars_drop(v, v->n - n);

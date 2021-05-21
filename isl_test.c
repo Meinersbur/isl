@@ -196,6 +196,31 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* String descriptions that cannot be parsed
+ * as union piecewise multi affine expressions.
+ */
+static const char *parse_union_pw_multi_aff_fail_tests[] = {
+	"{ [a] -> [b] : b = a }",
+	"{ [a] -> [b = a] : b >= 0 }",
+};
+
+#undef BASE
+#define BASE union_pw_multi_aff
+
+#include "check_parse_fail_test_templ.c"
+
+/* Test parsing of union piecewise multi affine expressions.
+ *
+ * In particular, check some cases where parsing is supposed to fail.
+ */
+static isl_stat test_parse_upma(isl_ctx *ctx)
+{
+	if (check_parse_union_pw_multi_aff_fail_tests(ctx) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Test parsing of multi piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
@@ -433,6 +458,8 @@ int test_parse(struct isl_ctx *ctx)
 	if (test_parse_multi(ctx) < 0)
 		return -1;
 	if (test_parse_pma(ctx) < 0)
+		return -1;
+	if (test_parse_upma(ctx) < 0)
 		return -1;
 
 	str = "{ [i] -> [-i] }";
