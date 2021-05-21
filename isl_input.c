@@ -509,7 +509,9 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 		aff = isl_aff_zero_on_domain(isl_local_space_from_space(isl_space_copy(space)));
 		if (!aff)
 			goto error;
-		isl_int_set_si(aff->v->el[2 + pos], 1);
+		aff->v = isl_vec_set_element_si(aff->v, 2 + pos, 1);
+		if (!aff->v)
+			aff = isl_aff_free(aff);
 		res = isl_pw_aff_from_aff(aff);
 		isl_token_free(tok);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
