@@ -2679,8 +2679,7 @@ static isl_bool div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 {
 	int i;
 	isl_bool unknown;
-	isl_size n_div;
-	unsigned div_offset = isl_basic_map_offset(bmap, isl_dim_div);
+	isl_size n_div, v_div;
 
 	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
 	if (unknown < 0 || unknown)
@@ -2689,12 +2688,13 @@ static isl_bool div_involves_vars(__isl_keep isl_basic_map *bmap, int div,
 		return isl_bool_true;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
-	if (n_div < 0)
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	if (n_div < 0 || v_div < 0)
 		return isl_bool_error;
 	for (i = n_div - 1; i >= 0; --i) {
 		isl_bool involves;
 
-		if (isl_int_is_zero(bmap->div[div][1 + div_offset + i]))
+		if (isl_int_is_zero(bmap->div[div][1 + 1 + v_div + i]))
 			continue;
 		involves = div_involves_vars(bmap, i, first, n);
 		if (involves < 0 || involves)
