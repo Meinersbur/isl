@@ -4265,7 +4265,7 @@ static isl_bool is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
 /* Check if we can combine a given div with lower bound l and upper
  * bound u with some other div and if so return that other div.
  * Otherwise, return a position beyond the integer divisions.
- * Return -1 on error.
+ * Return isl_size_error on error.
  *
  * We first check that
  *	- the bounds are opposites of each other (except for the constant
@@ -4293,7 +4293,7 @@ static isl_bool is_opposite(__isl_keep isl_basic_map *bmap, int i, int j)
  * If so, we return b so that "a + m b" can be replaced by
  * a single div "c = a + m b".
  */
-static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
+static isl_size div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	unsigned div, unsigned l, unsigned u)
 {
 	int i, j;
@@ -4307,7 +4307,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 		return n_div;
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0)
-		return -1;
+		return isl_size_error;
 	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + v_div, div) != -1)
 		return n_div;
 	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + v_div + div + 1,
@@ -4315,7 +4315,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 		return n_div;
 	opp = is_opposite(bmap, l, u);
 	if (opp < 0 || !opp)
-		return opp < 0 ? -1 : n_div;
+		return opp < 0 ? isl_size_error : n_div;
 
 	for (i = 0; i < n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
