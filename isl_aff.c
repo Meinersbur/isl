@@ -1468,16 +1468,19 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 
 /* Remove divs from the local space that do not appear in the affine
  * expression.
- * We currently only remove divs at the end.
- * Some intermediate divs may also not appear directly in the affine
- * expression, but we would also need to check that no other divs are
- * defined in terms of them.
+ *
+ * First remove any unused local variables at the end.
+ * Then look for other unused local variables.  These need some extra care
+ * because a local variable that does not appear in the affine expression
+ * may still appear in the definition of some later local variable.
  */
 __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 {
 	int pos;
 	isl_size v_div;
 	isl_size n;
+	int *active;
+	isl_local_space *ls;
 
 	n = isl_aff_domain_dim(aff, isl_dim_div);
 	v_div = isl_aff_domain_var_offset(aff, isl_dim_div);
@@ -1487,6 +1490,19 @@ __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 	pos = isl_seq_last_non_zero(aff->v->el + 1 + 1 + v_div, n) + 1;
 	if (pos < n)
 		aff = isl_aff_drop_dims(aff, isl_dim_div, pos, n - pos);
+	if (pos <= 1 || !aff)
+		return aff;
+
+	ls = isl_aff_peek_domain_local_space(aff);
+	active = isl_local_space_get_active(ls, aff->v->el + 2);
+	if (!active)
+		return isl_aff_free(aff);
+	for (pos = pos - 2; pos >= 0; pos--) {
+		if (active[v_div + pos])
+			continue;
+		aff = isl_aff_drop_dims(aff, isl_dim_div, pos, 1);
+	}
+	free(active);
 
 	return aff;
 }
