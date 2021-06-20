@@ -24,8 +24,8 @@ TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 if HAVE_CPP_ISL_H
   CPP_H = include/isl/cpp.h include/isl/typed_cpp.h
 if HAVE_CXX11
-  noinst_PROGRAMS += isl_test_cpp
-  TESTS += isl_test_cpp isl_test_cpp_failed.sh
+  noinst_PROGRAMS += isl_test2 isl_test_cpp
+  TESTS += isl_test2 isl_test_cpp isl_test_cpp_failed.sh
 endif
 endif
 if HAVE_CLANG
@@ -229,6 +229,12 @@ libisl_la_LDFLAGS = -version-info @versioninfo@ \
 
 isl_test_LDFLAGS = @MP_LDFLAGS@
 isl_test_LDADD = libisl.la @MP_LIBS@
+
+isl_test2_SOURCES = \
+	isl_test2.cc \
+	include/isl/cpp.h
+isl_test2_LDFLAGS = @MP_LDFLAGS@
+isl_test2_LDADD = libisl.la @MP_LIBS@
 
 isl_test_int_LDFLAGS = @MP_LDFLAGS@
 isl_test_int_LDADD = libisl.la @MP_LIBS@
