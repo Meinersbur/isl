@@ -9307,21 +9307,21 @@ struct {
 	  "{ A[i,j] : j = [(i)/6] and exists a : i = 3 a }" },
 };
 
-static int test_preimage_basic_set(isl_ctx *ctx)
+static int test_preimage_set(isl_ctx *ctx)
 {
 	int i;
-	isl_basic_set *bset1, *bset2;
+	isl_set *set1, *set2;
 	isl_multi_aff *ma;
 	int equal;
 
 	for (i = 0; i < ARRAY_SIZE(preimage_tests); ++i) {
-		bset1 = isl_basic_set_read_from_str(ctx, preimage_tests[i].set);
+		set1 = isl_set_read_from_str(ctx, preimage_tests[i].set);
 		ma = isl_multi_aff_read_from_str(ctx, preimage_tests[i].ma);
-		bset2 = isl_basic_set_read_from_str(ctx, preimage_tests[i].res);
-		bset1 = isl_basic_set_preimage_multi_aff(bset1, ma);
-		equal = isl_basic_set_is_equal(bset1, bset2);
-		isl_basic_set_free(bset1);
-		isl_basic_set_free(bset2);
+		set2 = isl_set_read_from_str(ctx, preimage_tests[i].res);
+		set1 = isl_set_preimage_multi_aff(set1, ma);
+		equal = isl_set_is_equal(set1, set2);
+		isl_set_free(set1);
+		isl_set_free(set2);
 		if (equal < 0)
 			return -1;
 		if (!equal)
@@ -9396,7 +9396,7 @@ static int test_preimage_union_map(isl_ctx *ctx)
 
 static int test_preimage(isl_ctx *ctx)
 {
-	if (test_preimage_basic_set(ctx) < 0)
+	if (test_preimage_set(ctx) < 0)
 		return -1;
 	if (test_preimage_union_map(ctx) < 0)
 		return -1;
