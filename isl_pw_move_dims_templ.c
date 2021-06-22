@@ -14,15 +14,18 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 {
 	int i;
 	isl_size n_piece;
+	isl_space *space;
+
+	space = FN(PW,take_space)(pw);
+	space = isl_space_move_dims(space, dst_type, dst_pos,
+				    src_type, src_pos, n);
+	pw = FN(PW,restore_space)(pw, space);
 
 	pw = FN(PW,cow)(pw);
 	n_piece = FN(PW,n_piece)(pw);
 	if (n_piece < 0)
 		return FN(PW,free)(pw);
 
-	pw->dim = isl_space_move_dims(pw->dim, dst_type, dst_pos, src_type, src_pos, n);
-	if (!pw->dim)
-		goto error;
 	for (i = 0; i < n_piece; ++i) {
 		pw->p[i].FIELD = FN(EL,move_dims)(pw->p[i].FIELD,
 					dst_type, dst_pos, src_type, src_pos, n);
