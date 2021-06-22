@@ -881,7 +881,7 @@ static int FN(PW,exploit_equalities_and_remove_if_empty)(__isl_keep PW *pw,
 		return 0;
 	}
 
-	aff = isl_set_affine_hull(isl_set_copy(pw->p[i].set));
+	aff = isl_set_affine_hull(FN(PW,get_domain_at)(pw, i));
 	pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD, aff);
 	if (!pw->p[i].FIELD)
 		return -1;
