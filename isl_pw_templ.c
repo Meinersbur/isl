@@ -1929,13 +1929,13 @@ __isl_give PW *FN(PW,scale_val)(__isl_take PW *pw, __isl_take isl_val *v)
 		isl_val_free(v);
 		return zero;
 	}
-	if (pw->n == 0) {
+	if (isl_val_is_neg(v))
+		pw = FN(PW,negate_type)(pw);
+	if (pw && pw->n == 0) {
 		isl_val_free(v);
 		return pw;
 	}
 	pw = FN(PW,cow)(pw);
-	if (isl_val_is_neg(v))
-		pw = FN(PW,negate_type)(pw);
 	if (!pw)
 		goto error;
 
@@ -1975,13 +1975,13 @@ __isl_give PW *FN(PW,scale_down_val)(__isl_take PW *pw, __isl_take isl_val *v)
 		isl_die(isl_val_get_ctx(v), isl_error_invalid,
 			"cannot scale down by zero", goto error);
 
-	if (pw->n == 0) {
+	if (isl_val_is_neg(v))
+		pw = FN(PW,negate_type)(pw);
+	if (pw && pw->n == 0) {
 		isl_val_free(v);
 		return pw;
 	}
 	pw = FN(PW,cow)(pw);
-	if (isl_val_is_neg(v))
-		pw = FN(PW,negate_type)(pw);
 	if (!pw)
 		goto error;
 
