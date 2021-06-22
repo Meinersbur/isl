@@ -1872,7 +1872,6 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 		FN(PW,free)(pw);
 		return zero;
 	}
-	pw = FN(PW,cow)(pw);
 	if (isl_int_is_neg(v))
 		pw = FN(PW,negate_type)(pw);
 
@@ -1880,15 +1879,14 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 	if (n < 0)
 		return FN(PW,free)(pw);
 	for (i = 0; i < n; ++i) {
-		pw->p[i].FIELD = FN(EL,scale)(pw->p[i].FIELD, v);
-		if (!pw->p[i].FIELD)
-			goto error;
+		EL *el;
+
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,scale)(el, v);
+		pw = FN(PW,restore_base_at)(pw, i, el);
 	}
 
 	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
 }
 
 /* Multiply the pieces of "pw" by "v" and return the result.
