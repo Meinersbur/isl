@@ -1328,12 +1328,14 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	space = isl_space_drop_dims(space, type, first, n);
 	pw = FN(PW,restore_space)(pw, space);
 	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
 	for (i = 0; i < n_piece; ++i) {
-		pw->p[i].FIELD = FN(EL,drop_dims)(pw->p[i].FIELD, type, first, n);
-		if (!pw->p[i].FIELD)
-			goto error;
+		EL *el;
+
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,drop_dims)(el, type, first, n);
+		pw = FN(PW,restore_base_at)(pw, i, el);
+		if (!pw)
+			return NULL;
 		if (type == isl_dim_out)
 			continue;
 		pw->p[i].set = isl_set_drop(pw->p[i].set, set_type, first, n);
