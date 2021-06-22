@@ -1606,13 +1606,17 @@ static __isl_give PW *FN(PW,reset_space_and_domain)(__isl_take PW *pw,
 		goto error;
 
 	for (i = 0; i < n; ++i) {
+		EL *el;
+
 		pw->p[i].set = isl_set_reset_space(pw->p[i].set,
 						 isl_space_copy(domain));
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,reset_space_and_domain)(pw->p[i].FIELD,
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,reset_space_and_domain)(el,
 			      isl_space_copy(space), isl_space_copy(domain));
-		if (!pw->p[i].FIELD)
+		pw = FN(PW,restore_base_at)(pw, i, el);
+		if (!pw)
 			goto error;
 	}
 
