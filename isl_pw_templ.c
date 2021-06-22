@@ -313,6 +313,61 @@ __isl_give isl_set *FN(PW,get_domain_at)(__isl_keep PW *pw, int pos)
 	return isl_set_copy(FN(PW,peek_domain_at)(pw, pos));
 }
 
+/* Return the cell at position "pos" in "pw".
+ * This may be either a copy or the cell itself
+ * if there is only one reference to "pw".
+ * This allows the cell to be modified inplace
+ * if both the piecewise expression and this cell
+ * have only a single reference.
+ * The caller is not allowed to modify "pw" between this call and
+ * the subsequent call to isl_pw_*_restore_domain_at.
+ * The only exception is that isl_pw_*_free can be called instead.
+ */
+static __isl_give isl_set *FN(PW,take_domain_at)(__isl_keep PW *pw, int pos)
+{
+	isl_set *domain;
+
+	if (!pw)
+		return NULL;
+	if (pw->ref != 1)
+		return FN(PW,get_domain_at)(pw, pos);
+	if (FN(PW,check_pos)(pw, pos) < 0)
+		return NULL;
+	domain = pw->p[pos].set;
+	pw->p[pos].set = NULL;
+	return domain;
+}
+
+/* Set the cell at position "pos" in "pw" to "el",
+ * where this cell may be missing
+ * due to a preceding call to isl_pw_*_take_domain_at.
+ * However, in this case, "pw" only has a single reference and
+ * then the call to isl_pw_*_cow has no effect.
+ */
+static __isl_give PW *FN(PW,restore_domain_at)(__isl_take PW *pw, int pos,
+	__isl_take isl_set *domain)
+{
+	if (FN(PW,check_pos)(pw, pos) < 0 || !domain)
+		goto error;
+
+	if (pw->p[pos].set == domain) {
+		isl_set_free(domain);
+		return pw;
+	}
+
+	pw = FN(PW,cow)(pw);
+	if (!pw)
+		goto error;
+	isl_set_free(pw->p[pos].set);
+	pw->p[pos].set = domain;
+
+	return pw;
+error:
+	FN(PW,free)(pw);
+	isl_set_free(domain);
+	return NULL;
+}
+
 /* Return the base expression associated to
  * the cell at position "pos" in "pw".
  */
@@ -527,23 +582,21 @@ __isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
 	int i;
 	isl_size n;
 
-	pw = FN(PW,cow)(pw);
 	n = FN(PW,n_piece)(pw);
 	if (n < 0 || !exp)
 		goto error;
 
 	for (i = 0; i < n; ++i) {
+		isl_set *domain;
 		EL *el;
 
-		pw->p[i].set = isl_set_realign(pw->p[i].set,
-						    isl_reordering_copy(exp));
-		if (!pw->p[i].set)
-			goto error;
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_realign(domain, isl_reordering_copy(exp));
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
+
 		el = FN(PW,take_base_at)(pw, i);
 		el = FN(EL,realign_domain)(el, isl_reordering_copy(exp));
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			goto error;
 	}
 
 	pw = FN(PW,reset_domain_space)(pw, isl_reordering_get_space(exp));
@@ -955,21 +1008,16 @@ __isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
 		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
 			"cannot fix output dimension", return FN(PW,free)(pw));
 
-	if (n == 0)
-		return pw;
-
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return FN(PW,free)(pw);
-
 	for (i = n - 1; i >= 0; --i) {
-		pw->p[i].set = isl_set_fix_si(pw->p[i].set, type, pos, value);
+		isl_set *domain;
+
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_fix_si(domain, type, pos, value);
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
-		if (!pw)
-			return NULL;
 	}
 
 	return pw;
@@ -993,20 +1041,13 @@ static __isl_give PW *FN(PW,restrict_domain)(__isl_take PW *pw,
 	if (n < 0 || !set)
 		goto error;
 
-	if (n == 0) {
-		isl_set_free(set);
-		return pw;
-	}
-
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		goto error;
-
 	for (i = n - 1; i >= 0; --i) {
-		pw->p[i].set = fn(pw->p[i].set, isl_set_copy(set));
+		isl_set *domain;
+
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = fn(domain, isl_set_copy(set));
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
-		if (!pw)
-			goto error;
 	}
 	
 	isl_set_free(set);
@@ -1149,19 +1190,10 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
 	el = FN(PW,take_base_at)(pw, 0);
 	el = fn_el(el, context);
 	pw = FN(PW,restore_base_at)(pw, 0, el);
-	if (!pw)
-		goto error;
 	context = isl_set_universe(space);
-	isl_set_free(pw->p[0].set);
-	pw->p[0].set = context;
-
-	if (!pw->p[0].set)
-		return FN(PW,free)(pw);
+	pw = FN(PW,restore_domain_at)(pw, 0, context);
 
 	return pw;
-error:
-	isl_space_free(space);
-	return FN(PW,free)(pw);
 }
 
 /* Compute the gist of "pw" with respect to the domain constraints
@@ -1243,10 +1275,10 @@ static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 		el = FN(PW,take_base_at)(pw, i);
 		el = fn_el(el, set_i);
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			goto error;
-		pw->p[i].set = fn_dom(pw->p[i].set, isl_basic_set_copy(hull));
-		if (empty < 0 || !pw->p[i].set)
+		set_i = FN(PW,take_domain_at)(pw, i);
+		set_i = fn_dom(set_i, isl_basic_set_copy(hull));
+		pw = FN(PW,restore_domain_at)(pw, i, set_i);
+		if (empty < 0 || !pw)
 			goto error;
 		if (empty) {
 			isl_set_free(pw->p[i].set);
@@ -1370,26 +1402,21 @@ __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
 	space = FN(PW,take_space)(pw);
 	space = isl_space_drop_dims(space, type, first, n);
 	pw = FN(PW,restore_space)(pw, space);
-	pw = FN(PW,cow)(pw);
 	for (i = 0; i < n_piece; ++i) {
+		isl_set *domain;
 		EL *el;
 
 		el = FN(PW,take_base_at)(pw, i);
 		el = FN(EL,drop_dims)(el, type, first, n);
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			return NULL;
 		if (type == isl_dim_out)
 			continue;
-		pw->p[i].set = isl_set_drop(pw->p[i].set, set_type, first, n);
-		if (!pw->p[i].set)
-			goto error;
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_drop(domain, set_type, first, n);
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 	}
 
 	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
 }
 
 /* This function is very similar to drop_dims.
@@ -1416,27 +1443,19 @@ __isl_give PW *FN(PW,project_out)(__isl_take PW *pw,
 	space = FN(PW,take_space)(pw);
 	space = isl_space_drop_dims(space, type, first, n);
 	pw = FN(PW,restore_space)(pw, space);
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
 	for (i = 0; i < n_piece; ++i) {
+		isl_set *domain;
 		EL *el;
 
-		pw->p[i].set = isl_set_project_out(pw->p[i].set,
-							set_type, first, n);
-		if (!pw->p[i].set)
-			goto error;
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_project_out(domain, set_type, first, n);
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		el = FN(PW,take_base_at)(pw, i);
 		el = FN(EL,drop_dims)(el, type, first, n);
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			return NULL;
 	}
 
 	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
 }
 
 /* Project the domain of pw onto its parameter space.
@@ -1495,14 +1514,13 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
 	for (i = 0; i < n; ++i) {
-		pw->p[i].set = isl_set_fix(pw->p[i].set, type, pos, v);
+		isl_set *domain;
+
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_fix(domain, type, pos, v);
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
-		if (!pw)
-			return NULL;
 	}
 
 	return pw;
@@ -1549,19 +1567,15 @@ __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
 	for (i = 0; i < n; ++i) {
-		pw->p[i].set = isl_set_split_dims(pw->p[i].set, type, first, n);
-		if (!pw->p[i].set)
-			goto error;
+		isl_set *domain;
+
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_split_dims(domain, type, first, n);
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 	}
 
 	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
 }
 
 __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
@@ -1622,24 +1636,21 @@ static __isl_give PW *FN(PW,reset_space_and_domain)(__isl_take PW *pw,
 	int i;
 	isl_size n;
 
-	pw = FN(PW,cow)(pw);
 	n = FN(PW,n_piece)(pw);
 	if (n < 0 || !space || !domain)
 		goto error;
 
 	for (i = 0; i < n; ++i) {
+		isl_set *set;
 		EL *el;
 
-		pw->p[i].set = isl_set_reset_space(pw->p[i].set,
-						 isl_space_copy(domain));
-		if (!pw->p[i].set)
-			goto error;
+		set = FN(PW,take_domain_at)(pw, i);
+		set = isl_set_reset_space(set, isl_space_copy(domain));
+		pw = FN(PW,restore_domain_at)(pw, i, set);
 		el = FN(PW,take_base_at)(pw, i);
 		el = FN(EL,reset_space_and_domain)(el,
 			      isl_space_copy(space), isl_space_copy(domain));
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			goto error;
 	}
 
 	isl_space_free(domain);

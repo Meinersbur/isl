@@ -21,7 +21,6 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 				    src_type, src_pos, n);
 	pw = FN(PW,restore_space)(pw, space);
 
-	pw = FN(PW,cow)(pw);
 	n_piece = FN(PW,n_piece)(pw);
 	if (n_piece < 0)
 		return FN(PW,free)(pw);
@@ -33,8 +32,6 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 		el = FN(EL,move_dims)(el,
 					dst_type, dst_pos, src_type, src_pos, n);
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			return NULL;
 	}
 
 	if (dst_type == isl_dim_in)
@@ -43,15 +40,13 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 		src_type = isl_dim_set;
 
 	for (i = 0; i < n_piece; ++i) {
-		pw->p[i].set = isl_set_move_dims(pw->p[i].set,
-						dst_type, dst_pos,
+		isl_set *domain;
+
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_move_dims(domain, dst_type, dst_pos,
 						src_type, src_pos, n);
-		if (!pw->p[i].set)
-			goto error;
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 	}
 
 	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
 }

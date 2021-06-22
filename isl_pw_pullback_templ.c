@@ -41,7 +41,6 @@ __isl_give PW *FN(PW,pullback_multi_aff)(__isl_take PW *pw,
 
 	FN(PW,align_params_multi_aff)(&pw, &ma);
 	ma = isl_multi_aff_align_divs(ma);
-	pw = FN(PW,cow)(pw);
 	n = FN(PW,n_piece)(pw);
 	if (n < 0 || !ma)
 		goto error;
@@ -50,17 +49,16 @@ __isl_give PW *FN(PW,pullback_multi_aff)(__isl_take PW *pw,
 				FN(PW,get_space)(pw));
 
 	for (i = 0; i < n; ++i) {
+		isl_set *domain;
 		EL *el;
 
-		pw->p[i].set = isl_set_preimage_multi_aff(pw->p[i].set,
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_set_preimage_multi_aff(domain,
 						    isl_multi_aff_copy(ma));
-		if (!pw->p[i].set)
-			goto error;
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		el = FN(PW,take_base_at)(pw, i);
 		el = FN(EL,pullback_multi_aff)(el, isl_multi_aff_copy(ma));
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			goto error;
 	}
 
 	pw = FN(PW,reset_space)(pw, space);

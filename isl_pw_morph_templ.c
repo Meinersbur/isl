@@ -28,21 +28,17 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 	space = isl_space_extend_domain_with_range(
 			isl_space_copy(morph->ran->dim), space);
 	pw = FN(PW,restore_space)(pw, space);
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		goto error;
 
 	for (i = 0; i < n; ++i) {
+		isl_set *domain;
 		EL *el;
 
-		pw->p[i].set = isl_morph_set(isl_morph_copy(morph), pw->p[i].set);
-		if (!pw->p[i].set)
-			goto error;
+		domain = FN(PW,take_domain_at)(pw, i);
+		domain = isl_morph_set(isl_morph_copy(morph), domain);
+		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		el = FN(PW,take_base_at)(pw, i);
 		el = FN(EL,morph_domain)(el, isl_morph_copy(morph));
 		pw = FN(PW,restore_base_at)(pw, i, el);
-		if (!pw)
-			goto error;
 	}
 
 	isl_morph_free(morph);
