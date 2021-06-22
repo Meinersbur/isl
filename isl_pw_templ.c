@@ -1695,11 +1695,14 @@ __isl_give PW *FN(PW,reset_tuple_id)(__isl_take PW *pw, enum isl_dim_type type)
 __isl_give PW *FN(PW,set_dim_id)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_id *id)
 {
+	isl_space *space;
+
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		goto error;
 	pw->dim = isl_space_set_dim_id(pw->dim, type, pos, id);
-	return FN(PW,reset_space)(pw, isl_space_copy(pw->dim));
+	space = FN(PW,get_space)(pw);
+	return FN(PW,reset_space)(pw, space);
 error:
 	isl_id_free(id);
 	return FN(PW,free)(pw);
