@@ -14,6 +14,7 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 	int i;
 	isl_size n_piece;
 	enum isl_dim_type set_type;
+	isl_space *space;
 
 	n_piece = FN(PW,n_piece)(pw);
 	if (n_piece < 0)
@@ -23,13 +24,13 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 
 	set_type = type == isl_dim_in ? isl_dim_set : type;
 
+	space = FN(PW,take_space)(pw);
+	space = isl_space_insert_dims(space, type, first, n);
+	pw = FN(PW,restore_space)(pw, space);
+
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
-
-	pw->dim = isl_space_insert_dims(pw->dim, type, first, n);
-	if (!pw->dim)
-		goto error;
 
 	for (i = 0; i < n_piece; ++i) {
 		pw->p[i].set = isl_set_insert_dims(pw->p[i].set,
