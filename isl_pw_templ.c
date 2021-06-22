@@ -1697,15 +1697,9 @@ __isl_give PW *FN(PW,set_dim_id)(__isl_take PW *pw,
 {
 	isl_space *space;
 
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		goto error;
-	pw->dim = isl_space_set_dim_id(pw->dim, type, pos, id);
 	space = FN(PW,get_space)(pw);
+	space = isl_space_set_dim_id(space, type, pos, id);
 	return FN(PW,reset_space)(pw, space);
-error:
-	isl_id_free(id);
-	return FN(PW,free)(pw);
 }
 
 /* Reset the user pointer on all identifiers of parameters and tuples
