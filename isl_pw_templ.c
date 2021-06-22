@@ -863,14 +863,14 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
  * If the domain of piece "i" is empty, then remove it entirely,
  * replacing it with the final piece.
  */
-static int FN(PW,exploit_equalities_and_remove_if_empty)(__isl_keep PW *pw,
-	int i)
+static __isl_give PW *FN(PW,exploit_equalities_and_remove_if_empty)(
+	__isl_take PW *pw, int i)
 {
 	isl_basic_set *aff;
 	int empty = isl_set_plain_is_empty(pw->p[i].set);
 
 	if (empty < 0)
-		return -1;
+		return FN(PW,free)(pw);
 	if (empty) {
 		isl_set_free(pw->p[i].set);
 		FN(EL,free)(pw->p[i].FIELD);
@@ -878,15 +878,15 @@ static int FN(PW,exploit_equalities_and_remove_if_empty)(__isl_keep PW *pw,
 			pw->p[i] = pw->p[pw->n - 1];
 		pw->n--;
 
-		return 0;
+		return pw;
 	}
 
 	aff = isl_set_affine_hull(FN(PW,get_domain_at)(pw, i));
 	pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD, aff);
 	if (!pw->p[i].FIELD)
-		return -1;
+		return FN(PW,free)(pw);
 
-	return 0;
+	return pw;
 }
 
 /* Convert a piecewise expression defined over a parameter domain
@@ -938,8 +938,9 @@ __isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
 
 	for (i = n - 1; i >= 0; --i) {
 		pw->p[i].set = isl_set_fix_si(pw->p[i].set, type, pos, value);
-		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
-			return FN(PW,free)(pw);
+		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
+		if (!pw)
+			return NULL;
 	}
 
 	return pw;
@@ -974,7 +975,8 @@ static __isl_give PW *FN(PW,restrict_domain)(__isl_take PW *pw,
 
 	for (i = n - 1; i >= 0; --i) {
 		pw->p[i].set = fn(pw->p[i].set, isl_set_copy(set));
-		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
+		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
+		if (!pw)
 			goto error;
 	}
 	
@@ -1469,8 +1471,9 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 		return NULL;
 	for (i = 0; i < n; ++i) {
 		pw->p[i].set = isl_set_fix(pw->p[i].set, type, pos, v);
-		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
-			return FN(PW,free)(pw);
+		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
+		if (!pw)
+			return NULL;
 	}
 
 	return pw;
