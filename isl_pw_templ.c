@@ -1087,6 +1087,7 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
 {
 	int i;
 	isl_space *space;
+	EL *el;
 
 	for (i = 0; i < pw->n - 1; ++i) {
 		isl_set_free(pw->p[i].set);
@@ -1097,15 +1098,22 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
 	pw->n = 1;
 
 	space = isl_set_get_space(context);
-	pw->p[0].FIELD = fn_el(pw->p[0].FIELD, context);
+	el = FN(PW,take_base_at)(pw, 0);
+	el = fn_el(el, context);
+	pw = FN(PW,restore_base_at)(pw, 0, el);
+	if (!pw)
+		goto error;
 	context = isl_set_universe(space);
 	isl_set_free(pw->p[0].set);
 	pw->p[0].set = context;
 
-	if (!pw->p[0].FIELD || !pw->p[0].set)
+	if (!pw->p[0].set)
 		return FN(PW,free)(pw);
 
 	return pw;
+error:
+	isl_space_free(space);
+	return FN(PW,free)(pw);
 }
 
 /* Compute the gist of "pw" with respect to the domain constraints
