@@ -14,6 +14,7 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 	int i;
 	isl_size n;
 	isl_ctx *ctx;
+	isl_space *space;
 
 	n = FN(PW,n_piece)(pw);
 	if (n < 0 || !morph)
@@ -23,12 +24,12 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 	isl_assert(ctx, isl_space_is_domain_internal(morph->dom->dim, pw->dim),
 		goto error);
 
+	space = FN(PW,take_space)(pw);
+	space = isl_space_extend_domain_with_range(
+			isl_space_copy(morph->ran->dim), space);
+	pw = FN(PW,restore_space)(pw, space);
 	pw = FN(PW,cow)(pw);
 	if (!pw)
-		goto error;
-	pw->dim = isl_space_extend_domain_with_range(
-			isl_space_copy(morph->ran->dim), pw->dim);
-	if (!pw->dim)
 		goto error;
 
 	for (i = 0; i < n; ++i) {
