@@ -505,13 +505,16 @@ __isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
 		goto error;
 
 	for (i = 0; i < n; ++i) {
+		EL *el;
+
 		pw->p[i].set = isl_set_realign(pw->p[i].set,
 						    isl_reordering_copy(exp));
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,realign_domain)(pw->p[i].FIELD,
-						    isl_reordering_copy(exp));
-		if (!pw->p[i].FIELD)
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,realign_domain)(el, isl_reordering_copy(exp));
+		pw = FN(PW,restore_base_at)(pw, i, el);
+		if (!pw)
 			goto error;
 	}
 
