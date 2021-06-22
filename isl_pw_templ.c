@@ -1861,6 +1861,7 @@ static __isl_give PW *FN(PW,negate_type)(__isl_take PW *pw)
 __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 {
 	int i;
+	isl_size n;
 
 	if (isl_int_is_one(v))
 		return pw;
@@ -1874,12 +1875,11 @@ __isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
 	pw = FN(PW,cow)(pw);
 	if (isl_int_is_neg(v))
 		pw = FN(PW,negate_type)(pw);
-	if (!pw)
-		return NULL;
-	if (pw->n == 0)
-		return pw;
 
-	for (i = 0; i < pw->n; ++i) {
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
+		return FN(PW,free)(pw);
+	for (i = 0; i < n; ++i) {
 		pw->p[i].FIELD = FN(EL,scale)(pw->p[i].FIELD, v);
 		if (!pw->p[i].FIELD)
 			goto error;
