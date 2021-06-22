@@ -33,12 +33,15 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 		goto error;
 
 	for (i = 0; i < n; ++i) {
+		EL *el;
+
 		pw->p[i].set = isl_morph_set(isl_morph_copy(morph), pw->p[i].set);
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,morph_domain)(pw->p[i].FIELD,
-						isl_morph_copy(morph));
-		if (!pw->p[i].FIELD)
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,morph_domain)(el, isl_morph_copy(morph));
+		pw = FN(PW,restore_base_at)(pw, i, el);
+		if (!pw)
 			goto error;
 	}
 
