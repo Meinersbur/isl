@@ -1979,19 +1979,13 @@ __isl_give PW *FN(PW,scale_down_val)(__isl_take PW *pw, __isl_take isl_val *v)
 	n = FN(PW,n_piece)(pw);
 	if (n < 0)
 		goto error;
-	if (n == 0) {
-		isl_val_free(v);
-		return pw;
-	}
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		goto error;
 
 	for (i = 0; i < n; ++i) {
-		pw->p[i].FIELD = FN(EL,scale_down_val)(pw->p[i].FIELD,
-						    isl_val_copy(v));
-		if (!pw->p[i].FIELD)
-			goto error;
+		EL *el;
+
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,scale_down_val)(el, isl_val_copy(v));
+		pw = FN(PW,restore_base_at)(pw, i, el);
 	}
 
 	isl_val_free(v);
