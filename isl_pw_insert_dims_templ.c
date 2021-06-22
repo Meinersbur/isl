@@ -33,14 +33,17 @@ __isl_give PW *FN(PW,insert_dims)(__isl_take PW *pw, enum isl_dim_type type,
 		return NULL;
 
 	for (i = 0; i < n_piece; ++i) {
+		EL *el;
+
 		pw->p[i].set = isl_set_insert_dims(pw->p[i].set,
 							    set_type, first, n);
 		if (!pw->p[i].set)
 			goto error;
-		pw->p[i].FIELD = FN(EL,insert_dims)(pw->p[i].FIELD,
-								type, first, n);
-		if (!pw->p[i].FIELD)
-			goto error;
+		el = FN(PW,take_base_at)(pw, i);
+		el = FN(EL,insert_dims)(el, type, first, n);
+		pw = FN(PW,restore_base_at)(pw, i, el);
+		if (!pw)
+			return NULL;
 	}
 
 	return pw;
