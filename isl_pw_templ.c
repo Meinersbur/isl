@@ -1168,6 +1168,7 @@ static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 
 	for (i = pw->n - 1; i >= 0; --i) {
 		isl_set *set_i;
+		EL *el;
 		int empty;
 
 		if (i == pw->n - 1) {
@@ -1183,9 +1184,13 @@ static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 		set_i = isl_set_intersect(isl_set_copy(pw->p[i].set),
 						 isl_set_copy(context));
 		empty = isl_set_plain_is_empty(set_i);
-		pw->p[i].FIELD = fn_el(pw->p[i].FIELD, set_i);
+		el = FN(PW,take_base_at)(pw, i);
+		el = fn_el(el, set_i);
+		pw = FN(PW,restore_base_at)(pw, i, el);
+		if (!pw)
+			goto error;
 		pw->p[i].set = fn_dom(pw->p[i].set, isl_basic_set_copy(hull));
-		if (empty < 0 || !pw->p[i].FIELD || !pw->p[i].set)
+		if (empty < 0 || !pw->p[i].set)
 			goto error;
 		if (empty) {
 			isl_set_free(pw->p[i].set);
