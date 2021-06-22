@@ -1618,8 +1618,7 @@ static __isl_give PW *FN(PW,reset_space_and_domain)(__isl_take PW *pw,
 
 	isl_space_free(domain);
 
-	isl_space_free(pw->dim);
-	pw->dim = space;
+	pw = FN(PW,restore_space)(pw, space);
 
 	return pw;
 error:
