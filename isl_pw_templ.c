@@ -1243,12 +1243,14 @@ __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
 __isl_give PW *FN(PW,coalesce)(__isl_take PW *pw)
 {
 	int i;
+	isl_size n;
 
 	pw = FN(PW,sort_unique)(pw);
-	if (!pw)
-		return NULL;
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
+		return FN(PW,free)(pw);
 
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		pw->p[i].set = isl_set_coalesce(pw->p[i].set);
 		if (!pw->p[i].set)
 			goto error;
