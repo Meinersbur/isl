@@ -13,16 +13,17 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
 	int i;
+	isl_size n_piece;
 
 	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
+	n_piece = FN(PW,n_piece)(pw);
+	if (n_piece < 0)
+		return FN(PW,free)(pw);
 
 	pw->dim = isl_space_move_dims(pw->dim, dst_type, dst_pos, src_type, src_pos, n);
 	if (!pw->dim)
 		goto error;
-
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n_piece; ++i) {
 		pw->p[i].FIELD = FN(EL,move_dims)(pw->p[i].FIELD,
 					dst_type, dst_pos, src_type, src_pos, n);
 		if (!pw->p[i].FIELD)
@@ -34,7 +35,7 @@ __isl_give PW *FN(PW,move_dims)(__isl_take PW *pw,
 	if (src_type == isl_dim_in)
 		src_type = isl_dim_set;
 
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n_piece; ++i) {
 		pw->p[i].set = isl_set_move_dims(pw->p[i].set,
 						dst_type, dst_pos,
 						src_type, src_pos, n);
