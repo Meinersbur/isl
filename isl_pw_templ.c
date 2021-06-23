@@ -911,15 +911,17 @@ __isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
 	unsigned pos, int value)
 {
 	int i;
+	isl_size n;
 
-	if (!pw)
-		return NULL;
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
+		return FN(PW,free)(pw);
 
 	if (type == isl_dim_out)
 		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
 			"cannot fix output dimension", return FN(PW,free)(pw));
 
-	if (pw->n == 0)
+	if (n == 0)
 		return pw;
 
 	if (type == isl_dim_in)
@@ -929,7 +931,7 @@ __isl_give PW *FN(PW,fix_si)(__isl_take PW *pw, enum isl_dim_type type,
 	if (!pw)
 		return FN(PW,free)(pw);
 
-	for (i = pw->n - 1; i >= 0; --i) {
+	for (i = n - 1; i >= 0; --i) {
 		pw->p[i].set = isl_set_fix_si(pw->p[i].set, type, pos, value);
 		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
 			return FN(PW,free)(pw);
