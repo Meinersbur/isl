@@ -1063,7 +1063,15 @@ static __isl_give PW *FN(PW,sort_unique)(__isl_take PW *pw)
 		    &FN(PW,sort_field_cmp), NULL) < 0)
 		return FN(PW,free)(pw);
 	for (i = pw->n - 1; i >= 1; --i) {
-		if (!FN(EL,plain_is_equal)(pw->p[i - 1].FIELD, pw->p[i].FIELD))
+		isl_bool equal;
+		EL *el, *el_prev;
+
+		el = FN(PW,peek_base_at)(pw, i);
+		el_prev = FN(PW,peek_base_at)(pw, i - 1);
+		equal = FN(EL,plain_is_equal)(el, el_prev);
+		if (equal < 0)
+			return FN(PW,free)(pw);
+		if (!equal)
 			continue;
 		set = isl_set_union(isl_set_copy(pw->p[i - 1].set),
 				    isl_set_copy(pw->p[i].set));
