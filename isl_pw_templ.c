@@ -1436,9 +1436,11 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, isl_int v)
 {
 	int i;
+	isl_size n;
 
-	if (!pw)
-		return NULL;
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
+		return FN(PW,free)(pw);
 
 	if (type == isl_dim_in)
 		type = isl_dim_set;
@@ -1446,7 +1448,7 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		pw->p[i].set = isl_set_fix(pw->p[i].set, type, pos, v);
 		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
 			return FN(PW,free)(pw);
