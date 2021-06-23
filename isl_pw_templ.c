@@ -1181,8 +1181,8 @@ static __isl_give PW *FN(PW,gist_fn)(__isl_take PW *pw,
 				return FN(PW,gist_last)(pw, context, fn_el);
 			}
 		}
-		set_i = isl_set_intersect(isl_set_copy(pw->p[i].set),
-						 isl_set_copy(context));
+		set_i = FN(PW,get_domain_at)(pw, i);
+		set_i = isl_set_intersect(set_i, isl_set_copy(context));
 		empty = isl_set_plain_is_empty(set_i);
 		el = FN(PW,take_base_at)(pw, i);
 		el = fn_el(el, set_i);
