@@ -1598,12 +1598,14 @@ static __isl_give PW *FN(PW,reset_space_and_domain)(__isl_take PW *pw,
 	__isl_take isl_space *space, __isl_take isl_space *domain)
 {
 	int i;
+	isl_size n;
 
 	pw = FN(PW,cow)(pw);
-	if (!pw || !space || !domain)
+	n = FN(PW,n_piece)(pw);
+	if (n < 0 || !space || !domain)
 		goto error;
 
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		pw->p[i].set = isl_set_reset_space(pw->p[i].set,
 						 isl_space_copy(domain));
 		if (!pw->p[i].set)
