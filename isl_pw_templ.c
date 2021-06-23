@@ -1506,9 +1506,11 @@ __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	int i;
+	isl_size n_piece;
 
-	if (!pw)
-		return NULL;
+	n_piece = FN(PW,n_piece)(pw);
+	if (n_piece < 0)
+		return FN(PW,free)(pw);
 	if (n == 0)
 		return pw;
 
@@ -1518,7 +1520,7 @@ __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		pw->p[i].set = isl_set_split_dims(pw->p[i].set, type, first, n);
 		if (!pw->p[i].set)
 			goto error;
