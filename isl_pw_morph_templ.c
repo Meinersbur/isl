@@ -12,9 +12,11 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 	__isl_take isl_morph *morph)
 {
 	int i;
+	isl_size n;
 	isl_ctx *ctx;
 
-	if (!pw || !morph)
+	n = FN(PW,n_piece)(pw);
+	if (n < 0 || !morph)
 		goto error;
 
 	ctx = isl_space_get_ctx(pw->dim);
@@ -29,7 +31,7 @@ __isl_give PW *FN(PW,morph_domain)(__isl_take PW *pw,
 	if (!pw->dim)
 		goto error;
 
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		pw->p[i].set = isl_morph_set(isl_morph_copy(morph), pw->p[i].set);
 		if (!pw->p[i].set)
 			goto error;
