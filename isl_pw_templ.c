@@ -956,12 +956,14 @@ static __isl_give PW *FN(PW,restrict_domain)(__isl_take PW *pw,
 				    __isl_take isl_set *set2))
 {
 	int i;
+	isl_size n;
 
 	FN(PW,align_params_set)(&pw, &set);
-	if (!pw || !set)
+	n = FN(PW,n_piece)(pw);
+	if (n < 0 || !set)
 		goto error;
 
-	if (pw->n == 0) {
+	if (n == 0) {
 		isl_set_free(set);
 		return pw;
 	}
@@ -970,7 +972,7 @@ static __isl_give PW *FN(PW,restrict_domain)(__isl_take PW *pw,
 	if (!pw)
 		goto error;
 
-	for (i = pw->n - 1; i >= 0; --i) {
+	for (i = n - 1; i >= 0; --i) {
 		pw->p[i].set = fn(pw->p[i].set, isl_set_copy(set));
 		if (FN(PW,exploit_equalities_and_remove_if_empty)(pw, i) < 0)
 			goto error;
