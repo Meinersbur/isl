@@ -1518,8 +1518,6 @@ __isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
 	pw = FN(PW,cow)(pw);
 	if (!pw)
 		return NULL;
-	if (!pw->dim)
-		goto error;
 	for (i = 0; i < pw->n; ++i) {
 		pw->p[i].set = isl_set_split_dims(pw->p[i].set, type, first, n);
 		if (!pw->p[i].set)
