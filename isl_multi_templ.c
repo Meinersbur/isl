@@ -492,6 +492,29 @@ __isl_give MULTI(BASE) *FN(isl_space_multi,BASE)(__isl_take isl_space *space,
 	return FN(FN(MULTI(BASE),from),LIST(BASE))(space, list);
 }
 
+/* Drop the "n" output dimensions of "multi" starting at "first",
+ * where the space is assumed to have been adjusted already.
+ */
+static __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_output_dims)(
+	__isl_take MULTI(BASE) *multi, unsigned first, unsigned n)
+{
+	int i;
+
+	multi = FN(MULTI(BASE),cow)(multi);
+	if (!multi)
+		return NULL;
+
+	for (i = 0; i < n; ++i)
+		FN(EL,free)(multi->u.p[first + i]);
+	for (i = first; i + n < multi->n; ++i)
+		multi->u.p[i] = multi->u.p[i + n];
+	multi->n -= n;
+	if (n > 0 && FN(MULTI(BASE),has_explicit_domain)(multi))
+		multi = FN(MULTI(BASE),init_explicit_domain)(multi);
+
+	return multi;
+}
+
 __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)
@@ -506,17 +529,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	if (!multi->space)
 		return FN(MULTI(BASE),free)(multi);
 
-	if (type == isl_dim_out) {
-		for (i = 0; i < n; ++i)
-			FN(EL,free)(multi->u.p[first + i]);
-		for (i = first; i + n < multi->n; ++i)
-			multi->u.p[i] = multi->u.p[i + n];
-		multi->n -= n;
-		if (n > 0 && FN(MULTI(BASE),has_explicit_domain)(multi))
-			multi = FN(MULTI(BASE),init_explicit_domain)(multi);
-
-		return multi;
-	}
+	if (type == isl_dim_out)
+		return FN(MULTI(BASE),drop_output_dims)(multi, first, n);
 
 	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		multi = FN(MULTI(BASE),drop_explicit_domain_dims)(multi,
