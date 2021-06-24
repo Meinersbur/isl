@@ -20,10 +20,12 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	isl_size size;
 	int i;
 
-	if (!multi)
-		return NULL;
+	size = FN(MULTI(BASE),size)(multi);
+	if (size < 0)
+		return FN(MULTI(BASE),free)(multi);
 
 	if (n == 0 &&
 	    !isl_space_is_named_or_nested(multi->space, src_type) &&
@@ -59,7 +61,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),move_dims)(__isl_take MULTI(BASE) *multi,
 	if (!multi)
 		return NULL;
 
-	for (i = 0; i < multi->n; ++i) {
+	for (i = 0; i < size; ++i) {
 		multi->u.p[i] = FN(EL,move_dims)(multi->u.p[i],
 						dst_type, dst_pos,
 						src_type, src_pos, n);
