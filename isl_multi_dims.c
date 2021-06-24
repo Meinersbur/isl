@@ -45,10 +45,12 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	isl_size size;
 	int i;
 
-	if (!multi)
-		return NULL;
+	size = FN(MULTI(BASE),size)(multi);
+	if (size < 0)
+		return FN(MULTI(BASE),free)(multi);
 	if (type == isl_dim_out)
 		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
 			"cannot insert output/set dimensions",
@@ -69,7 +71,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),insert_dims)(
 	if (!multi)
 		return NULL;
 
-	for (i = 0; i < multi->n; ++i) {
+	for (i = 0; i < size; ++i) {
 		multi->u.p[i] = FN(EL,insert_dims)(multi->u.p[i],
 							type, first, n);
 		if (!multi->u.p[i])
