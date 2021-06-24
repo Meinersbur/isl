@@ -362,13 +362,15 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),realign_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_reordering *exp)
 {
 	int i;
+	isl_size n;
 	isl_space *space;
 
 	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi || !exp)
+	n = FN(MULTI(BASE),size)(multi);
+	if (n < 0 || !exp)
 		goto error;
 
-	for (i = 0; i < multi->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		multi->u.p[i] = FN(EL,realign_domain)(multi->u.p[i],
 						isl_reordering_copy(exp));
 		if (!multi->u.p[i])
