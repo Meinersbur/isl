@@ -1303,33 +1303,11 @@ isl_bool FN(PW,involves_dims)(__isl_keep PW *pw, enum isl_dim_type type,
 __isl_give PW *FN(PW,set_dim_name)(__isl_take PW *pw,
 	enum isl_dim_type type, unsigned pos, const char *s)
 {
-	int i;
-	enum isl_dim_type set_type;
+	isl_space *space;
 
-	pw = FN(PW,cow)(pw);
-	if (!pw)
-		return NULL;
-
-	set_type = type == isl_dim_in ? isl_dim_set : type;
-
-	pw->dim = isl_space_set_dim_name(pw->dim, type, pos, s);
-	if (!pw->dim)
-		goto error;
-
-	for (i = 0; i < pw->n; ++i) {
-		pw->p[i].set = isl_set_set_dim_name(pw->p[i].set,
-							set_type, pos, s);
-		if (!pw->p[i].set)
-			goto error;
-		pw->p[i].FIELD = FN(EL,set_dim_name)(pw->p[i].FIELD, type, pos, s);
-		if (!pw->p[i].FIELD)
-			goto error;
-	}
-
-	return pw;
-error:
-	FN(PW,free)(pw);
-	return NULL;
+	space = FN(PW,get_space)(pw);
+	space = isl_space_set_dim_name(space, type, pos, s);
+	return FN(PW,reset_space)(pw, space);
 }
 
 __isl_give PW *FN(PW,drop_dims)(__isl_take PW *pw,
