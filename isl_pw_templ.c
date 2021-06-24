@@ -1065,6 +1065,7 @@ static __isl_give PW *FN(PW,sort_unique)(__isl_take PW *pw)
 	for (i = pw->n - 1; i >= 1; --i) {
 		isl_bool equal;
 		EL *el, *el_prev;
+		isl_set *set_prev;
 
 		el = FN(PW,peek_base_at)(pw, i);
 		el_prev = FN(PW,peek_base_at)(pw, i - 1);
@@ -1073,8 +1074,9 @@ static __isl_give PW *FN(PW,sort_unique)(__isl_take PW *pw)
 			return FN(PW,free)(pw);
 		if (!equal)
 			continue;
-		set = isl_set_union(isl_set_copy(pw->p[i - 1].set),
-				    isl_set_copy(pw->p[i].set));
+		set = FN(PW,get_domain_at)(pw, i);
+		set_prev = FN(PW,get_domain_at)(pw, i - 1);
+		set = isl_set_union(set_prev, set);
 		if (!set)
 			return FN(PW,free)(pw);
 		isl_set_free(pw->p[i].set);
