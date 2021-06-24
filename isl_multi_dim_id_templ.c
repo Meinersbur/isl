@@ -77,16 +77,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),set_dim_id)(
 {
 	isl_space *space;
 
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi || !id)
-		goto error;
-
 	space = FN(MULTI(BASE),get_space)(multi);
 	space = isl_space_set_dim_id(space, type, pos, id);
 
 	return FN(MULTI(BASE),reset_space)(multi, space);
-error:
-	isl_id_free(id);
-	FN(MULTI(BASE),free)(multi);
-	return NULL;
 }
