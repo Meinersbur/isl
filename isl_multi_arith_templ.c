@@ -78,39 +78,13 @@ error:
 	return FN(MULTI(BASE),free)(multi);
 }
 
-#undef TYPE
-#define TYPE	MULTI(BASE)
-#include "isl_type_check_match_range_multi_val.c"
-
 /* Multiply the elements of "multi" by the corresponding element of "mv"
  * and return the result.
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_multi_val)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_multi_val *mv)
 {
-	int i;
-
-	if (FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
-		goto error;
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		goto error;
-
-	for (i = 0; i < multi->n; ++i) {
-		isl_val *v;
-
-		v = isl_multi_val_get_val(mv, i);
-		multi->u.p[i] = FN(EL,scale_val)(multi->u.p[i], v);
-		if (!multi->u.p[i])
-			goto error;
-	}
-
-	isl_multi_val_free(mv);
-	return multi;
-error:
-	isl_multi_val_free(mv);
-	return FN(MULTI(BASE),free)(multi);
+	return FN(MULTI(BASE),fn_multi_val)(multi, &FN(EL,scale_val), mv);
 }
 
 /* Divide the elements of "multi" by the corresponding element of "mv"
@@ -119,29 +93,7 @@ error:
 __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_down_multi_val)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_multi_val *mv)
 {
-	int i;
-
-	if (FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
-		goto error;
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	for (i = 0; i < multi->n; ++i) {
-		isl_val *v;
-
-		v = isl_multi_val_get_val(mv, i);
-		multi->u.p[i] = FN(EL,scale_down_val)(multi->u.p[i], v);
-		if (!multi->u.p[i])
-			goto error;
-	}
-
-	isl_multi_val_free(mv);
-	return multi;
-error:
-	isl_multi_val_free(mv);
-	return FN(MULTI(BASE),free)(multi);
+	return FN(MULTI(BASE),fn_multi_val)(multi, &FN(EL,scale_down_val), mv);
 }
 
 /* Compute the residues of the elements of "multi" modulo
@@ -150,29 +102,7 @@ error:
 __isl_give MULTI(BASE) *FN(MULTI(BASE),mod_multi_val)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_multi_val *mv)
 {
-	int i;
-
-	if (FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
-		goto error;
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		goto error;
-
-	for (i = 0; i < multi->n; ++i) {
-		isl_val *v;
-
-		v = isl_multi_val_get_val(mv, i);
-		multi->u.p[i] = FN(EL,mod_val)(multi->u.p[i], v);
-		if (!multi->u.p[i])
-			goto error;
-	}
-
-	isl_multi_val_free(mv);
-	return multi;
-error:
-	isl_multi_val_free(mv);
-	return FN(MULTI(BASE),free)(multi);
+	return FN(MULTI(BASE),fn_multi_val)(multi, &FN(EL,mod_val), mv);
 }
 
 /* Return the opposite of "multi".
