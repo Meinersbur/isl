@@ -293,13 +293,15 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_space_and_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_space *space,
 	__isl_take isl_space *domain)
 {
+	isl_size n;
 	int i;
 
 	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi || !space || !domain)
+	n = FN(MULTI(BASE),size)(multi);
+	if (n < 0 || !space || !domain)
 		goto error;
 
-	for (i = 0; i < multi->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		multi->u.p[i] = FN(EL,reset_domain_space)(multi->u.p[i],
 				 isl_space_copy(domain));
 		if (!multi->u.p[i])
