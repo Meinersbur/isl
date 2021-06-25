@@ -519,6 +519,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	__isl_take MULTI(BASE) *multi,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
+	isl_size size;
 	int i;
 
 	multi = FN(MULTI(BASE),cow)(multi);
@@ -535,10 +536,11 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),drop_dims)(
 	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		multi = FN(MULTI(BASE),drop_explicit_domain_dims)(multi,
 								type, first, n);
-	if (!multi)
-		return NULL;
 
-	for (i = 0; i < multi->n; ++i) {
+	size = FN(MULTI(BASE),size)(multi);
+	if (size < 0)
+		return FN(MULTI(BASE),free)(multi);
+	for (i = 0; i < size; ++i) {
 		multi->u.p[i] = FN(EL,drop_dims)(multi->u.p[i], type, first, n);
 		if (!multi->u.p[i])
 			return FN(MULTI(BASE),free)(multi);
