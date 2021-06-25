@@ -7143,6 +7143,16 @@ isl_bool isl_pw_multi_aff_is_equal(__isl_keep isl_pw_multi_aff *pma1,
 	return equal;
 }
 
+#undef SUFFIX
+#define SUFFIX	multi_aff
+#undef ARG1
+#define ARG1	isl_multi_pw_aff
+#undef ARG2
+#define ARG2	isl_multi_aff
+
+static
+#include "isl_align_params_templ.c"
+
 /* Compute the pullback of "mpa" by the function represented by "ma".
  * In other words, plug in "ma" in "mpa".
  *
@@ -7196,22 +7206,8 @@ error:
 __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_multi_aff *ma)
 {
-	isl_bool equal_params;
-
-	if (!mpa || !ma)
-		goto error;
-	equal_params = isl_space_has_equal_params(mpa->space, ma->space);
-	if (equal_params < 0)
-		goto error;
-	if (equal_params)
-		return isl_multi_pw_aff_pullback_multi_aff_aligned(mpa, ma);
-	mpa = isl_multi_pw_aff_align_params(mpa, isl_multi_aff_get_space(ma));
-	ma = isl_multi_aff_align_params(ma, isl_multi_pw_aff_get_space(mpa));
+	isl_multi_pw_aff_align_params_multi_aff(&mpa, &ma);
 	return isl_multi_pw_aff_pullback_multi_aff_aligned(mpa, ma);
-error:
-	isl_multi_pw_aff_free(mpa);
-	isl_multi_aff_free(ma);
-	return NULL;
 }
 
 /* Compute the pullback of "mpa" by the function represented by "pma".
