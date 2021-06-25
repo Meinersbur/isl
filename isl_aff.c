@@ -5690,16 +5690,18 @@ __isl_give isl_multi_aff *isl_multi_aff_substitute(
 	__isl_take isl_multi_aff *maff, enum isl_dim_type type, unsigned pos,
 	__isl_keep isl_aff *subs)
 {
+	isl_size n;
 	int i;
 
 	maff = isl_multi_aff_cow(maff);
-	if (!maff || !subs)
+	n = isl_multi_aff_size(maff);
+	if (n < 0 || !subs)
 		return isl_multi_aff_free(maff);
 
 	if (type == isl_dim_in)
 		type = isl_dim_set;
 
-	for (i = 0; i < maff->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		maff->u.p[i] = isl_aff_substitute(maff->u.p[i],
 						type, pos, subs);
 		if (!maff->u.p[i])
