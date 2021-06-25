@@ -7143,115 +7143,15 @@ isl_bool isl_pw_multi_aff_is_equal(__isl_keep isl_pw_multi_aff *pma1,
 	return equal;
 }
 
-#undef SUFFIX
-#define SUFFIX	multi_aff
-#undef ARG1
-#define ARG1	isl_multi_pw_aff
-#undef ARG2
-#define ARG2	isl_multi_aff
+#undef BASE
+#define BASE	multi_aff
 
-static
-#include "isl_align_params_templ.c"
+#include "isl_multi_pw_aff_pullback_templ.c"
 
-/* Compute the pullback of "mpa" by the function represented by "ma".
- * In other words, plug in "ma" in "mpa".
- *
- * If "mpa" has an explicit domain, then it is this domain
- * that needs to undergo a pullback, i.e., a preimage.
- */
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff(
-	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_multi_aff *ma)
-{
-	int i;
-	isl_space *space = NULL;
+#undef BASE
+#define BASE	pw_multi_aff
 
-	isl_multi_pw_aff_align_params_multi_aff(&mpa, &ma);
-	mpa = isl_multi_pw_aff_cow(mpa);
-	if (!mpa || !ma)
-		goto error;
-
-	space = isl_space_join(isl_multi_aff_get_space(ma),
-				isl_multi_pw_aff_get_space(mpa));
-	if (!space)
-		goto error;
-
-	for (i = 0; i < mpa->n; ++i) {
-		mpa->u.p[i] = isl_pw_aff_pullback_multi_aff(mpa->u.p[i],
-						    isl_multi_aff_copy(ma));
-		if (!mpa->u.p[i])
-			goto error;
-	}
-	if (isl_multi_pw_aff_has_explicit_domain(mpa)) {
-		mpa->u.dom = isl_set_preimage_multi_aff(mpa->u.dom,
-							isl_multi_aff_copy(ma));
-		if (!mpa->u.dom)
-			goto error;
-	}
-
-	isl_multi_aff_free(ma);
-	isl_space_free(mpa->space);
-	mpa->space = space;
-	return mpa;
-error:
-	isl_space_free(space);
-	isl_multi_pw_aff_free(mpa);
-	isl_multi_aff_free(ma);
-	return NULL;
-}
-
-#undef SUFFIX
-#define SUFFIX	pw_multi_aff
-#undef ARG1
-#define ARG1	isl_multi_pw_aff
-#undef ARG2
-#define ARG2	isl_pw_multi_aff
-
-static
-#include "isl_align_params_templ.c"
-
-/* Compute the pullback of "mpa" by the function represented by "pma".
- * In other words, plug in "pma" in "mpa".
- *
- * If "mpa" has an explicit domain, then it is this domain
- * that needs to undergo a pullback, i.e., a preimage.
- */
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_pw_multi_aff(
-	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_multi_aff *pma)
-{
-	int i;
-	isl_space *space = NULL;
-
-	isl_multi_pw_aff_align_params_pw_multi_aff(&mpa, &pma);
-	mpa = isl_multi_pw_aff_cow(mpa);
-	if (!mpa || !pma)
-		goto error;
-
-	space = isl_space_join(isl_pw_multi_aff_get_space(pma),
-				isl_multi_pw_aff_get_space(mpa));
-
-	for (i = 0; i < mpa->n; ++i) {
-		mpa->u.p[i] = isl_pw_aff_pullback_pw_multi_aff_aligned(
-				    mpa->u.p[i], isl_pw_multi_aff_copy(pma));
-		if (!mpa->u.p[i])
-			goto error;
-	}
-	if (isl_multi_pw_aff_has_explicit_domain(mpa)) {
-		mpa->u.dom = isl_set_preimage_pw_multi_aff(mpa->u.dom,
-						    isl_pw_multi_aff_copy(pma));
-		if (!mpa->u.dom)
-			goto error;
-	}
-
-	isl_pw_multi_aff_free(pma);
-	isl_space_free(mpa->space);
-	mpa->space = space;
-	return mpa;
-error:
-	isl_space_free(space);
-	isl_multi_pw_aff_free(mpa);
-	isl_pw_multi_aff_free(pma);
-	return NULL;
-}
+#include "isl_multi_pw_aff_pullback_templ.c"
 
 /* Apply "aff" to "mpa".  The range of "mpa" needs to be compatible
  * with the domain of "aff".  The domain of the result is the same
@@ -7425,18 +7325,6 @@ error:
 
 /* Compute the pullback of "pa" by the function represented by "mpa".
  * In other words, plug in "mpa" in "pa".
- * "pa" and "mpa" are assumed to have been aligned.
- *
- * The pullback is computed by applying "pa" to "mpa".
- */
-static __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff_aligned(
-	__isl_take isl_pw_aff *pa, __isl_take isl_multi_pw_aff *mpa)
-{
-	return isl_multi_pw_aff_apply_pw_aff_aligned(mpa, pa);
-}
-
-/* Compute the pullback of "pa" by the function represented by "mpa".
- * In other words, plug in "mpa" in "pa".
  *
  * The pullback is computed by applying "pa" to "mpa".
  */
@@ -7446,51 +7334,10 @@ __isl_give isl_pw_aff *isl_pw_aff_pullback_multi_pw_aff(
 	return isl_multi_pw_aff_apply_pw_aff(mpa, pa);
 }
 
-/* Compute the pullback of "mpa1" by the function represented by "mpa2".
- * In other words, plug in "mpa2" in "mpa1".
- *
- * We pullback each member of "mpa1" in turn.
- *
- * If "mpa1" has an explicit domain, then it is this domain
- * that needs to undergo a pullback instead, i.e., a preimage.
- */
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_pw_aff(
-	__isl_take isl_multi_pw_aff *mpa1, __isl_take isl_multi_pw_aff *mpa2)
-{
-	int i;
-	isl_space *space = NULL;
+#undef BASE
+#define BASE	multi_pw_aff
 
-	isl_multi_pw_aff_align_params_bin(&mpa1, &mpa2);
-	mpa1 = isl_multi_pw_aff_cow(mpa1);
-	if (!mpa1 || !mpa2)
-		goto error;
-
-	space = isl_space_join(isl_multi_pw_aff_get_space(mpa2),
-				isl_multi_pw_aff_get_space(mpa1));
-
-	for (i = 0; i < mpa1->n; ++i) {
-		mpa1->u.p[i] = isl_pw_aff_pullback_multi_pw_aff_aligned(
-				mpa1->u.p[i], isl_multi_pw_aff_copy(mpa2));
-		if (!mpa1->u.p[i])
-			goto error;
-	}
-
-	if (isl_multi_pw_aff_has_explicit_domain(mpa1)) {
-		mpa1->u.dom = isl_set_preimage_multi_pw_aff(mpa1->u.dom,
-						isl_multi_pw_aff_copy(mpa2));
-		if (!mpa1->u.dom)
-			goto error;
-	}
-	mpa1 = isl_multi_pw_aff_reset_space(mpa1, space);
-
-	isl_multi_pw_aff_free(mpa2);
-	return mpa1;
-error:
-	isl_space_free(space);
-	isl_multi_pw_aff_free(mpa1);
-	isl_multi_pw_aff_free(mpa2);
-	return NULL;
-}
+#include "isl_multi_pw_aff_pullback_templ.c"
 
 /* Align the parameters of "mpa1" and "mpa2", check that the ranges
  * of "mpa1" and "mpa2" live in the same space, construct map space
