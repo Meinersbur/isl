@@ -34,11 +34,13 @@ __isl_give isl_multi_pw_aff *FN(isl_multi_pw_aff_pullback,BASE)(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take TYPE *fn)
 {
 	int i;
+	isl_size n;
 	isl_space *space = NULL;
 
 	FN(isl_multi_pw_aff_align_params,BASE)(&mpa, &fn);
 	mpa = isl_multi_pw_aff_cow(mpa);
-	if (!mpa || !fn)
+	n = isl_multi_pw_aff_size(mpa);
+	if (n < 0 || !fn)
 		goto error;
 
 	space = isl_space_join(FN(TYPE,get_space)(fn),
@@ -46,7 +48,7 @@ __isl_give isl_multi_pw_aff *FN(isl_multi_pw_aff_pullback,BASE)(
 	if (!space)
 		goto error;
 
-	for (i = 0; i < mpa->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		mpa->u.p[i] = FN(isl_pw_aff_pullback,BASE)(mpa->u.p[i],
 						    FN(TYPE,copy)(fn));
 		if (!mpa->u.p[i])
