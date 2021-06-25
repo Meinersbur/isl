@@ -6113,15 +6113,16 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 {
 	int i;
 	isl_space *space;
-	isl_size n_div;
+	isl_size n, n_div;
 
 	if (ls)
 		*ls = NULL;
 
-	if (!maff)
-		return NULL;
+	n = isl_multi_aff_size(maff);
+	if (n < 0)
+		return isl_multi_aff_free(maff);
 
-	if (maff->n == 0) {
+	if (n == 0) {
 		if (ls) {
 			isl_space *space = isl_multi_aff_get_domain_space(maff);
 			*ls = isl_local_space_from_space(space);
@@ -6154,7 +6155,7 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 			return isl_multi_aff_free(maff);
 	}
 
-	for (i = 0; i < maff->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		maff->u.p[i] = isl_aff_lift(maff->u.p[i]);
 		if (!maff->u.p[i])
 			goto error;
