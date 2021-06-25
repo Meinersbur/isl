@@ -4277,13 +4277,15 @@ __isl_give isl_pw_multi_aff *isl_space_identity_pw_multi_aff_on_domain(
 static __isl_give isl_multi_aff *isl_multi_aff_substitute_equalities(
 	__isl_take isl_multi_aff *maff, __isl_take isl_basic_set *eq)
 {
+	isl_size n;
 	int i;
 
 	maff = isl_multi_aff_cow(maff);
-	if (!maff || !eq)
+	n = isl_multi_aff_size(maff);
+	if (n < 0 || !eq)
 		goto error;
 
-	for (i = 0; i < maff->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		maff->u.p[i] = isl_aff_substitute_equalities(maff->u.p[i],
 						    isl_basic_set_copy(eq));
 		if (!maff->u.p[i])
