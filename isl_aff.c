@@ -6113,6 +6113,7 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 {
 	int i;
 	isl_space *space;
+	isl_aff *aff;
 	isl_size n, n_div;
 
 	if (ls)
@@ -6134,10 +6135,9 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 
 	maff = isl_multi_aff_cow(maff);
 	maff = isl_multi_aff_align_divs(maff);
-	if (!maff)
-		return NULL;
 
-	n_div = isl_aff_dim(maff->u.p[0], isl_dim_div);
+	aff = isl_multi_aff_peek_at(maff, 0);
+	n_div = isl_aff_dim(aff, isl_dim_div);
 	if (n_div < 0)
 		return isl_multi_aff_free(maff);
 	space = isl_multi_aff_get_space(maff);
@@ -6150,7 +6150,8 @@ __isl_give isl_multi_aff *isl_multi_aff_lift(__isl_take isl_multi_aff *maff,
 	maff->space = space;
 
 	if (ls) {
-		*ls = isl_aff_get_domain_local_space(maff->u.p[0]);
+		aff = isl_multi_aff_peek_at(maff, 0);
+		*ls = isl_aff_get_domain_local_space(aff);
 		if (!*ls)
 			return isl_multi_aff_free(maff);
 	}
