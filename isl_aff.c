@@ -6060,6 +6060,7 @@ error:
 __isl_give isl_multi_aff *isl_multi_aff_align_divs(
 	__isl_take isl_multi_aff *maff)
 {
+	isl_aff *aff_0;
 	isl_size n;
 	int i;
 
@@ -6072,10 +6073,16 @@ __isl_give isl_multi_aff *isl_multi_aff_align_divs(
 	if (!maff)
 		return NULL;
 
-	for (i = 1; i < n; ++i)
-		maff->u.p[0] = isl_aff_align_divs(maff->u.p[0], maff->u.p[i]);
 	for (i = 1; i < n; ++i) {
-		maff->u.p[i] = isl_aff_align_divs(maff->u.p[i], maff->u.p[0]);
+		isl_aff *aff_i;
+
+		aff_i = isl_multi_aff_peek_at(maff, i);
+		maff->u.p[0] = isl_aff_align_divs(maff->u.p[0], aff_i);
+	}
+
+	aff_0 = isl_multi_aff_peek_at(maff, 0);
+	for (i = 1; i < n; ++i) {
+		maff->u.p[i] = isl_aff_align_divs(maff->u.p[i], aff_0);
 		if (!maff->u.p[i])
 			return isl_multi_aff_free(maff);
 	}
