@@ -4303,13 +4303,15 @@ error:
 __isl_give isl_multi_aff *isl_multi_aff_scale(__isl_take isl_multi_aff *maff,
 	isl_int f)
 {
+	isl_size n;
 	int i;
 
 	maff = isl_multi_aff_cow(maff);
-	if (!maff)
-		return NULL;
+	n = isl_multi_aff_size(maff);
+	if (n < 0)
+		return isl_multi_aff_free(maff);
 
-	for (i = 0; i < maff->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		maff->u.p[i] = isl_aff_scale(maff->u.p[i], f);
 		if (!maff->u.p[i])
 			return isl_multi_aff_free(maff);
