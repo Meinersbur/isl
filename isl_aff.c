@@ -6067,7 +6067,7 @@ __isl_give isl_multi_aff *isl_multi_aff_align_divs(
 	n = isl_multi_aff_size(maff);
 	if (n < 0)
 		return isl_multi_aff_free(maff);
-	if (n == 0)
+	if (n <= 1)
 		return maff;
 	maff = isl_multi_aff_cow(maff);
 	if (!maff)
