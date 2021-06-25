@@ -160,11 +160,8 @@ static
  */
 __isl_give EL *FN(MULTI(BASE),get_at)(__isl_keep MULTI(BASE) *multi, int pos)
 {
-	isl_ctx *ctx;
-
 	if (FN(MULTI(BASE),check_range)(multi, isl_dim_out, pos, 1) < 0)
 		return NULL;
-	ctx = FN(MULTI(BASE),get_ctx)(multi);
 	return FN(EL,copy)(multi->u.p[pos]);
 }
 
