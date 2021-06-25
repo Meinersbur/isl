@@ -793,14 +793,16 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
 	__isl_take MULTI(BASE) *multi1, __isl_take MULTI(BASE) *multi2,
 	__isl_give EL *(*fn)(__isl_take EL *, __isl_take EL *))
 {
+	isl_size n;
 	int i;
 
 	FN(MULTI(BASE),align_params_bin)(&multi1, &multi2);
 	multi1 = FN(MULTI(BASE),cow)(multi1);
-	if (FN(MULTI(BASE),check_equal_space)(multi1, multi2) < 0)
+	n = FN(MULTI(BASE),size)(multi1);
+	if (n < 0 || FN(MULTI(BASE),check_equal_space)(multi1, multi2) < 0)
 		goto error;
 
-	for (i = 0; i < multi1->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		multi1->u.p[i] = fn(multi1->u.p[i],
 						FN(EL,copy)(multi2->u.p[i]));
 		if (!multi1->u.p[i])
