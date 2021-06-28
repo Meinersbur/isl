@@ -3873,6 +3873,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 
 #include <isl_multi_no_explicit_domain.c>
 #include <isl_multi_templ.c>
+#include <isl_multi_bin_val_templ.c>
 #include <isl_multi_add_constant_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
@@ -6560,6 +6561,7 @@ error:
 #include <isl_multi_explicit_domain.c>
 #include <isl_multi_pw_aff_explicit_domain.c>
 #include <isl_multi_templ.c>
+#include <isl_multi_bin_val_templ.c>
 #include <isl_multi_add_constant_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>

@@ -15,31 +15,16 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),add_constant_val)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_val *v)
 {
 	isl_bool zero;
-	isl_size n;
-	int i;
 
 	zero = isl_val_is_zero(v);
-	n = FN(MULTI(BASE),size)(multi);
-	if (zero < 0 || n < 0)
+	if (zero < 0)
 		goto error;
-	if (zero || n == 0) {
+	if (zero) {
 		isl_val_free(v);
 		return multi;
 	}
 
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		goto error;
-
-	for (i = 0; i < n; ++i) {
-		multi->u.p[i] = FN(EL,add_constant_val)(multi->u.p[i],
-							    isl_val_copy(v));
-		if (!multi->u.p[i])
-			goto error;
-	}
-
-	isl_val_free(v);
-	return multi;
+	return FN(MULTI(BASE),fn_val)(multi, &FN(EL,add_constant_val), v);
 error:
 	FN(MULTI(BASE),free)(multi);
 	isl_val_free(v);
