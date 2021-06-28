@@ -454,6 +454,20 @@ static void test_project(isl::ctx ctx)
 	});
 }
 
+/* Perform some basic reverse tests.
+ */
+static void test_reverse(isl::ctx ctx)
+{
+	C(&isl::union_map::range_reverse, {
+	{ "{ A[] -> [B[] -> C[]]; A[] -> B[]; A[0] -> N[B[1] -> B[2]] }",
+	  "{ A[] -> [C[] -> B[]]; A[0] -> N[B[2] -> B[1]] }" },
+	{ "{ A[] -> N[B[] -> C[]] }",
+	  "{ A[] -> [C[] -> B[]] }" },
+	{ "{ A[] -> N[B[x] -> B[y]] }",
+	  "{ A[] -> N[B[*] -> B[*]] }" },
+	});
+}
+
 /* Perform some basic scaling tests.
  */
 static void test_scale(isl::ctx ctx)
@@ -506,6 +520,7 @@ static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 	{ "intersect", &test_intersect },
 	{ "gist", &test_gist },
 	{ "project out parameters", &test_project },
+	{ "reverse", &test_reverse },
 	{ "scale", &test_scale },
 	{ "id-to-id", &test_id_to_id },
 };
