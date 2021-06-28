@@ -1579,6 +1579,7 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n)
 {
+	isl_size v_src, v_dst;
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
 
@@ -1607,11 +1608,13 @@ __isl_give isl_local_space *isl_local_space_move_dims(
 			return isl_local_space_free(ls));
 
 	ls = isl_local_space_cow(ls);
-	if (!ls)
-		return NULL;
 
-	g_src_pos = 1 + isl_local_space_offset(ls, src_type) + src_pos;
-	g_dst_pos = 1 + isl_local_space_offset(ls, dst_type) + dst_pos;
+	v_src = isl_local_space_var_offset(ls, src_type);
+	v_dst = isl_local_space_var_offset(ls, dst_type);
+	if (v_src < 0 || v_dst < 0)
+		return isl_local_space_free(ls);
+	g_src_pos = 1 + 1 + v_src + src_pos;
+	g_dst_pos = 1 + 1 + v_dst + dst_pos;
 	if (dst_type > src_type)
 		g_dst_pos -= n;
 	ls->div = isl_mat_move_cols(ls->div, g_dst_pos, g_src_pos, n);
