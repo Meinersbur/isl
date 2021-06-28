@@ -7156,17 +7156,16 @@ static
 /* Compute the pullback of "mpa" by the function represented by "ma".
  * In other words, plug in "ma" in "mpa".
  *
- * The parameters of "mpa" and "ma" are assumed to have been aligned.
- *
  * If "mpa" has an explicit domain, then it is this domain
  * that needs to undergo a pullback, i.e., a preimage.
  */
-static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff_aligned(
+__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff(
 	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_multi_aff *ma)
 {
 	int i;
 	isl_space *space = NULL;
 
+	isl_multi_pw_aff_align_params_multi_aff(&mpa, &ma);
 	mpa = isl_multi_pw_aff_cow(mpa);
 	if (!mpa || !ma)
 		goto error;
@@ -7198,16 +7197,6 @@ error:
 	isl_multi_pw_aff_free(mpa);
 	isl_multi_aff_free(ma);
 	return NULL;
-}
-
-/* Compute the pullback of "mpa" by the function represented by "ma".
- * In other words, plug in "ma" in "mpa".
- */
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_pullback_multi_aff(
-	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_multi_aff *ma)
-{
-	isl_multi_pw_aff_align_params_multi_aff(&mpa, &ma);
-	return isl_multi_pw_aff_pullback_multi_aff_aligned(mpa, ma);
 }
 
 /* Compute the pullback of "mpa" by the function represented by "pma".
