@@ -2020,12 +2020,17 @@ error:
  *
  * If the range tuple is named, then the name is only preserved
  * if B and C are equal tuples, in which case the output
- * of this function is identical to the input.
+ * of this function is identical to the input, except possibly
+ * for the dimension identifiers.
+ *
+ * Make a reasonable attempt at moving the dimension identifiers
+ * along with the tuples.
  */
 __isl_give isl_space *isl_space_range_reverse(__isl_take isl_space *space)
 {
 	isl_space *nested;
 	isl_bool equal;
+	isl_size n_in;
 
 	if (isl_space_check_range_is_wrapping(space) < 0)
 		return isl_space_free(space);
@@ -2041,6 +2046,12 @@ __isl_give isl_space *isl_space_range_reverse(__isl_take isl_space *space)
 	space = isl_space_restore_nested(space, 1, nested);
 	if (!equal)
 		space = isl_space_reset_tuple_id(space, isl_dim_out);
+	nested = isl_space_peek_nested(space, 1);
+	n_in = isl_space_dim(nested, isl_dim_in);
+	if (n_in < 0)
+		return isl_space_free(space);
+	space = copy_ids(space, isl_dim_out, 0, nested, isl_dim_in);
+	space = copy_ids(space, isl_dim_out, n_in, nested, isl_dim_out);
 
 	return space;
 }
