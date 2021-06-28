@@ -36,8 +36,6 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_val_fn)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_val *v,
 	__isl_give EL *(*fn)(__isl_take EL *el, __isl_take isl_val *v))
 {
-	int i;
-
 	if (!multi || !v)
 		goto error;
 
@@ -50,18 +48,7 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_val_fn)(
 		isl_die(isl_val_get_ctx(v), isl_error_invalid,
 			"expecting rational factor", goto error);
 
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	for (i = 0; i < multi->n; ++i) {
-		multi->u.p[i] = fn(multi->u.p[i], isl_val_copy(v));
-		if (!multi->u.p[i])
-			goto error;
-	}
-
-	isl_val_free(v);
-	return multi;
+	return FN(MULTI(BASE),fn_val)(multi, fn, v);
 error:
 	isl_val_free(v);
 	return FN(MULTI(BASE),free)(multi);

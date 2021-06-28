@@ -8676,6 +8676,7 @@ error:
 #include <isl_multi_explicit_domain.c>
 #include <isl_multi_union_pw_aff_explicit_domain.c>
 #include <isl_multi_templ.c>
+#include <isl_multi_bin_val_templ.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
 #include <isl_multi_arith_templ.c>
