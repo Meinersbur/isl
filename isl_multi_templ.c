@@ -808,8 +808,10 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),bin_op)(
 		goto error;
 
 	for (i = 0; i < n; ++i) {
-		multi1->u.p[i] = fn(multi1->u.p[i],
-						FN(EL,copy)(multi2->u.p[i]));
+		EL *el2;
+
+		el2 = FN(MULTI(BASE),get_at)(multi2, i);
+		multi1->u.p[i] = fn(multi1->u.p[i], el2);
 		if (!multi1->u.p[i])
 			goto error;
 	}
