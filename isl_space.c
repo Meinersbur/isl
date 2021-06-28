@@ -383,6 +383,7 @@ static __isl_give isl_space *copy_ids(__isl_take isl_space *dst,
 		id = get_id(src, src_type, i);
 		if (!id)
 			continue;
+		isl_id_free(get_id(dst, dst_type, offset + i));
 		dst = set_id(dst, dst_type, offset + i, isl_id_copy(id));
 		if (!dst)
 			return NULL;
