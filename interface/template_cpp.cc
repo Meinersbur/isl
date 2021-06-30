@@ -541,7 +541,7 @@ static Signature map_from_range_and_domain =
 static Signature map_from_domain_and_range =
 	{ { Domain, Range }, { { Domain }, { Range } } };
 
-/* Signatures for creating an anonymous set from a parameter set.
+/* Signatures for creating an anonymous set from a parameter set
  * or a map from a domain, where the range is anonymous.
  */
 static Signature anonymous_set_from_params = { { Anonymous }, { { } } };
