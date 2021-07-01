@@ -363,9 +363,12 @@ __isl_give EL *FN(PW,take_base_at)(__isl_keep PW *pw, int pos)
  * due to a preceding call to isl_pw_*_take_base_at.
  * However, in this case, "pw" only has a single reference and
  * then the call to isl_pw_*_cow has no effect.
+ * If "inplace" is set, then replacing the base expression by "el"
+ * is known not to change the meaning of "pw".  It can therefore be replaced
+ * in all references to "pw".
  */
-__isl_give PW *FN(PW,restore_base_at)(__isl_take PW *pw, int pos,
-	__isl_take EL *el)
+static __isl_give PW *FN(PW,restore_base_at_)(__isl_take PW *pw, int pos,
+	__isl_take EL *el, int inplace)
 {
 	if (FN(PW,check_pos)(pw, pos) < 0 || !el)
 		goto error;
@@ -375,7 +378,8 @@ __isl_give PW *FN(PW,restore_base_at)(__isl_take PW *pw, int pos,
 		return pw;
 	}
 
-	pw = FN(PW,cow)(pw);
+	if (!inplace)
+		pw = FN(PW,cow)(pw);
 	if (!pw)
 		goto error;
 	FN(EL,free)(pw->p[pos].FIELD);
@@ -386,6 +390,30 @@ error:
 	FN(PW,free)(pw);
 	FN(EL,free)(el);
 	return NULL;
+}
+
+/* Set the base expression associated to
+ * the cell at position "pos" in "pw" to "el",
+ * where this base expression may be missing
+ * due to a preceding call to isl_pw_*_take_base_at.
+ */
+__isl_give PW *FN(PW,restore_base_at)(__isl_take PW *pw, int pos,
+	__isl_take EL *el)
+{
+	return FN(PW,restore_base_at_)(pw, pos, el, 0);
+}
+
+/* Set the base expression associated to
+ * the cell at position "pos" in "pw" to "el",
+ * where this base expression may be missing
+ * due to a preceding call to isl_pw_*_take_base_at.
+ * Furthermore, replacing the base expression by "el"
+ * is known not to change the meaning of "pw".
+ */
+static __isl_give PW *FN(PW,restore_base_at_inplace)(__isl_take PW *pw, int pos,
+	__isl_take EL *el)
+{
+	return FN(PW,restore_base_at_)(pw, pos, el, 1);
 }
 
 /* Create a piecewise expression with the given base expression on a universe
@@ -866,6 +894,7 @@ __isl_give isl_set *FN(PW,domain)(__isl_take PW *pw)
 static __isl_give PW *FN(PW,exploit_equalities_and_remove_if_empty)(
 	__isl_take PW *pw, int i)
 {
+	EL *el;
 	isl_basic_set *aff;
 	int empty = isl_set_plain_is_empty(pw->p[i].set);
 
@@ -882,9 +911,9 @@ static __isl_give PW *FN(PW,exploit_equalities_and_remove_if_empty)(
 	}
 
 	aff = isl_set_affine_hull(FN(PW,get_domain_at)(pw, i));
-	pw->p[i].FIELD = FN(EL,substitute_equalities)(pw->p[i].FIELD, aff);
-	if (!pw->p[i].FIELD)
-		return FN(PW,free)(pw);
+	el = FN(PW,take_base_at)(pw, i);
+	el = FN(EL,substitute_equalities)(el, aff);
+	pw = FN(PW,restore_base_at_inplace)(pw, i, el);
 
 	return pw;
 }
