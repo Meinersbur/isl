@@ -854,7 +854,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
  * multiple of d to make it positive.
  *
  *
- * Note that the above is a only a very simple heuristic for finding an
+ * Note that the above is only a very simple heuristic for finding an
  * appropriate expression.  We could try a bit harder by also considering
  * sums of constraints that involve disjoint sets of variables or
  * we could consider arbitrary linear combinations of constraints,
