@@ -96,7 +96,6 @@ static isl_stat generate_non_single_valued(__isl_take isl_map *executed,
 
 	identity = isl_set_identity(isl_map_range(isl_map_copy(executed)));
 	executed = isl_map_domain_product(executed, identity);
-	build = isl_ast_build_set_single_valued(build, 1);
 
 	list = generate_code(isl_union_map_from_map(executed), build, 1);
 
@@ -5129,14 +5128,11 @@ __isl_give isl_ast_node *isl_ast_build_node_from_schedule_map(
 	isl_ast_node *node;
 	isl_union_map *executed;
 
-	build = isl_ast_build_copy(build);
-	build = isl_ast_build_set_single_valued(build, 0);
 	schedule = isl_union_map_coalesce(schedule);
 	schedule = isl_union_map_remove_redundancies(schedule);
 	executed = isl_union_map_reverse(schedule);
 	list = generate_code(executed, isl_ast_build_copy(build), 0);
 	node = isl_ast_node_from_graft_list(list, build);
-	isl_ast_build_free(build);
 
 	return node;
 }
@@ -5905,7 +5901,6 @@ __isl_give isl_ast_node *isl_ast_build_node_from_schedule(
 	isl_schedule_free(schedule);
 
 	build = isl_ast_build_copy(build);
-	build = isl_ast_build_set_single_valued(build, 0);
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_domain)
 		isl_die(ctx, isl_error_unsupported,
 			"expecting root domain node",
