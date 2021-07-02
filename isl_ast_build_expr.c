@@ -815,11 +815,21 @@ static isl_bool parallel_or_opposite_feasible(struct isl_parallel_stat *stat,
 /* Is coefficient "i" of type "c_type" of stat->c equal or
  * opposite to coefficient "i" of type "a_type" of stat->data->div
  * modulo stat->data->div?
+ *
+ * If the coefficient of stat->data->div is zero,
+ * then parallel_or_opposite_feasible has already checked
+ * that the coefficient of stat->c is zero as well,
+ * so no further checks are needed.
  */
 static isl_bool is_parallel_or_opposite(struct isl_parallel_stat *stat,
 	enum isl_dim_type c_type, enum isl_dim_type a_type, int i)
 {
 	isl_val *v1, *v2;
+	isl_bool b;
+
+	b = isl_aff_involves_dims(stat->data->div, a_type, i, 1);
+	if (b < 0 || !b)
+		return isl_bool_not(b);
 
 	v1 = isl_constraint_get_coefficient_val(stat->c, c_type, i);
 	v2 = isl_aff_get_coefficient_val(stat->data->div, a_type, i);
