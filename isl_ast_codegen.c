@@ -132,10 +132,8 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
 }
 
 /* Generate a call expression for the single executed
- * domain element "map" and put a guard around it based on its (simplified)
- * domain.  "executed" is the original inverse schedule from which "map"
- * has been derived.  In particular, "map" is identical to "executed".
- * "executed" is only used if there is an at_each_domain callback.
+ * domain element "executed" and put a guard around it based on its (simplified)
+ * domain.
  *
  * At this stage, any pending constraints in the build can no longer
  * be simplified with respect to any enforced constraints since
@@ -149,7 +147,7 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
  * on the constructed call expression node.
  */
 static isl_stat add_domain(__isl_take isl_map *executed,
-	__isl_take isl_map *map, struct isl_generate_domain_data *data)
+	struct isl_generate_domain_data *data)
 {
 	isl_ast_build *build;
 	isl_ast_graft *graft;
@@ -160,13 +158,13 @@ static isl_stat add_domain(__isl_take isl_map *executed,
 	pending = isl_ast_build_get_pending(build);
 	build = isl_ast_build_replace_pending_by_guard(build, pending);
 
-	guard = isl_map_domain(isl_map_copy(map));
+	guard = isl_map_domain(isl_map_copy(executed));
 	guard = isl_set_compute_divs(guard);
 	guard = isl_set_coalesce_preserve(guard);
 	guard = isl_set_gist(guard, isl_ast_build_get_generated(build));
 	guard = isl_ast_build_specialize(build, guard);
 
-	graft = isl_ast_graft_alloc_domain(map, build);
+	graft = isl_ast_graft_alloc_domain(isl_map_copy(executed), build);
 	graft = at_each_domain(graft, executed, build);
 	isl_ast_build_free(build);
 	isl_map_free(executed);
@@ -220,7 +218,7 @@ static isl_stat generate_domain(__isl_take isl_map *executed, void *user)
 	if (sv < 0)
 		goto error;
 	if (sv)
-		return add_domain(executed, isl_map_copy(executed), data);
+		return add_domain(executed, data);
 
 	executed = isl_map_coalesce(executed);
 	sv = isl_map_is_single_valued(executed);
@@ -229,7 +227,7 @@ static isl_stat generate_domain(__isl_take isl_map *executed, void *user)
 	if (!sv)
 		return generate_non_single_valued(executed, data);
 
-	return add_domain(executed, isl_map_copy(executed), data);
+	return add_domain(executed, data);
 error:
 	isl_map_free(executed);
 	return isl_stat_error;
