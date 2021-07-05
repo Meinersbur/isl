@@ -147,6 +147,21 @@ static __isl_give isl_aff *steal_from_cst(__isl_take isl_aff *aff,
 	return isl_aff_add_constant_val(aff, shift);
 }
 
+/* Construct an expression representing the binary operation "type"
+ * (some division or modulo) applied to the expressions
+ * constructed from "aff" and "v".
+ */
+static __isl_give isl_ast_expr *div_mod(enum isl_ast_expr_op_type type,
+	__isl_take isl_aff *aff, __isl_take isl_val *v,
+	__isl_keep isl_ast_build *build)
+{
+	isl_ast_expr *expr1, *expr2;
+
+	expr1 = isl_ast_expr_from_aff(aff, build);
+	expr2 = isl_ast_expr_from_val(v);
+	return isl_ast_expr_alloc_binary(type, expr1, expr2);
+}
+
 /* Create an isl_ast_expr evaluating the div at position "pos" in "ls".
  * The result is simplified in terms of data->build->domain.
  * This function may change (the sign of) data->v.
@@ -186,14 +201,12 @@ static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
 {
 	isl_ctx *ctx = isl_local_space_get_ctx(ls);
 	isl_aff *aff;
-	isl_ast_expr *num, *den;
 	isl_val *d;
 	enum isl_ast_expr_op_type type;
 
 	aff = isl_local_space_get_div(ls, pos);
 	d = isl_aff_get_denominator_val(aff);
 	aff = isl_aff_scale_val(aff, isl_val_copy(d));
-	den = isl_ast_expr_from_val(isl_val_copy(d));
 
 	type = isl_ast_expr_op_fdiv_q;
 	if (isl_options_get_ast_build_prefer_pdiv(ctx)) {
@@ -221,9 +234,7 @@ static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
 			type = isl_ast_expr_op_pdiv_q;
 	}
 
-	isl_val_free(d);
-	num = isl_ast_expr_from_aff(aff, data->build);
-	return isl_ast_expr_alloc_binary(type, num, den);
+	return div_mod(type, aff, d, data->build);
 }
 
 /* Create an isl_ast_expr evaluating the specified dimension of "ls".
@@ -344,10 +355,8 @@ static __isl_give isl_ast_expr *isl_ast_expr_mod(__isl_keep isl_val *v,
 	if (!aff)
 		return NULL;
 
-	expr = isl_ast_expr_from_aff(isl_aff_copy(aff), build);
-
-	c = isl_ast_expr_from_val(isl_val_copy(d));
-	expr = isl_ast_expr_alloc_binary(isl_ast_expr_op_pdiv_r, expr, c);
+	expr = div_mod(isl_ast_expr_op_pdiv_r,
+			isl_aff_copy(aff), isl_val_copy(d), build);
 
 	if (!isl_val_is_one(v)) {
 		c = isl_ast_expr_from_val(isl_val_copy(v));
@@ -1130,8 +1139,7 @@ static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
 	aff = isl_aff_sub(aff, isl_aff_copy(rat));
 	aff = isl_aff_scale_down_val(aff, isl_val_copy(d));
 
-	rat_expr = isl_ast_expr_from_aff(rat, build);
-	rat_expr = isl_ast_expr_div(rat_expr, isl_ast_expr_from_val(d));
+	rat_expr = div_mod(isl_ast_expr_op_div, rat, d, build);
 	*expr = ast_expr_add(*expr, rat_expr);
 
 	return aff;
