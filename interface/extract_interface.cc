@@ -83,9 +83,10 @@
 #include "extract_interface.h"
 #include "generator.h"
 #include "python.h"
-#include "cpp.h"
+#include "plain_cpp.h"
 #include "cpp_conversion.h"
 #include "trace.h"
+#include "template_cpp.h"
 
 using namespace std;
 using namespace clang;
@@ -422,12 +423,15 @@ static void create_main_file_id(SourceManager &SM, const FileEntry *file)
 
 #ifdef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
 
+#include "set_lang_defaults_arg4.h"
+
 static void set_lang_defaults(CompilerInstance *Clang)
 {
 	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
 	TargetOptions &TO = Clang->getTargetOpts();
 	llvm::Triple T(TO.Triple);
-	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C, T, PO,
+	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C, T,
+					    setLangDefaultsArg4(PO),
 					    LangStandard::lang_unspecified);
 }
 
@@ -508,13 +512,16 @@ static void generate(MyASTConsumer &consumer, SourceManager &SM)
 		gen = new python_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else if (OutputLanguage.compare("cpp") == 0) {
-		gen = new cpp_generator(SM, consumer.exported_types,
+		gen = new plain_cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else if (OutputLanguage.compare("cpp-checked") == 0) {
-		gen = new cpp_generator(SM, consumer.exported_types,
+		gen = new plain_cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions, true);
 	} else if (OutputLanguage.compare("cpp-checked-conversion") == 0) {
 		gen = new cpp_conversion_generator(SM, consumer.exported_types,
+			consumer.exported_functions, consumer.functions);
+	} else if (OutputLanguage.compare("template-cpp") == 0) {
+		gen = new template_cpp_generator(SM, consumer.exported_types,
 			consumer.exported_functions, consumer.functions);
 	} else if (OutputLanguage.compare("trace") == 0) {
 		gen = new trace_generator(SM, consumer.exported_types,

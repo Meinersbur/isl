@@ -16,12 +16,71 @@
 #include <isl_polynomial_private.h>
 #include <isl_options_private.h>
 
+/* Given a polynomial "poly" that is constant in terms
+ * of the domain variables, construct a polynomial reduction
+ * of type "type" that is equal to "poly" on "bset",
+ * with the domain projected onto the parameters.
+ */
+__isl_give isl_pw_qpolynomial_fold *isl_qpolynomial_cst_bound(
+	__isl_take isl_basic_set *bset, __isl_take isl_qpolynomial *poly,
+	enum isl_fold type, isl_bool *tight)
+{
+	isl_set *dom;
+	isl_qpolynomial_fold *fold;
+	isl_pw_qpolynomial_fold *pwf;
+
+	fold = isl_qpolynomial_fold_alloc(type, poly);
+	dom = isl_set_from_basic_set(bset);
+	if (tight)
+		*tight = isl_bool_true;
+	pwf = isl_pw_qpolynomial_fold_alloc(type, dom, fold);
+	return isl_pw_qpolynomial_fold_project_domain_on_params(pwf);
+}
+
+/* Add the bound "pwf", which is not known to be tight,
+ * to the output of "bound".
+ */
+isl_stat isl_bound_add(struct isl_bound *bound,
+	__isl_take isl_pw_qpolynomial_fold *pwf)
+{
+	bound->pwf = isl_pw_qpolynomial_fold_fold(bound->pwf, pwf);
+	return isl_stat_non_null(bound->pwf);
+}
+
+/* Add the bound "pwf", which is known to be tight,
+ * to the output of "bound".
+ */
+isl_stat isl_bound_add_tight(struct isl_bound *bound,
+	__isl_take isl_pw_qpolynomial_fold *pwf)
+{
+	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(bound->pwf_tight, pwf);
+	return isl_stat_non_null(bound->pwf);
+}
+
+/* Given a polynomial "poly" that is constant in terms
+ * of the domain variables and the domain "bset",
+ * construct the corresponding polynomial reduction and
+ * add it to the tight bounds of "bound".
+ */
+static isl_stat add_constant_poly(__isl_take isl_basic_set *bset,
+	__isl_take isl_qpolynomial *poly, struct isl_bound *bound)
+{
+	isl_pw_qpolynomial_fold *pwf;
+
+	pwf = isl_qpolynomial_cst_bound(bset, poly, bound->type, NULL);
+	return isl_bound_add_tight(bound, pwf);
+}
+
 /* Compute a bound on the polynomial defined over the parametric polytope
  * using either range propagation or bernstein expansion and
  * store the result in bound->pwf and bound->pwf_tight.
  * Since bernstein expansion requires bounded domains, we apply
  * range propagation on unbounded domains.  Otherwise, we respect the choice
  * of the user.
+ *
+ * If the polynomial does not depend on the set variables
+ * then the bound is equal to the polynomial and
+ * it can be added to "bound" directly.
  */
 static isl_stat compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	__isl_take isl_qpolynomial *poly, void *user)
@@ -29,9 +88,16 @@ static isl_stat compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	struct isl_bound *bound = (struct isl_bound *)user;
 	isl_ctx *ctx;
 	int bounded;
+	int degree;
 
 	if (!bset || !poly)
 		goto error;
+
+	degree = isl_qpolynomial_degree(poly);
+	if (degree < -1)
+		goto error;
+	if (degree <= 0)
+		return add_constant_poly(bset, poly, bound);
 
 	ctx = isl_basic_set_get_ctx(bset);
 	if (ctx->opt->bound == ISL_BOUND_RANGE)
@@ -96,9 +162,8 @@ static isl_stat unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 	bound->pwf_tight = isl_pw_qpolynomial_fold_morph_domain(
 						bound->pwf_tight, morph);
 
-	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
-	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
-							bound->pwf_tight);
+	isl_bound_add(bound, top_pwf);
+	isl_bound_add_tight(bound, top_pwf_tight);
 
 	return r;
 error:
@@ -171,9 +236,8 @@ static isl_stat guarded_poly_bound(__isl_take isl_basic_set *bset,
 	bound->pwf_tight = isl_pw_qpolynomial_fold_reset_space(bound->pwf_tight,
 						    isl_space_copy(bound->dim));
 
-	bound->pwf = isl_pw_qpolynomial_fold_fold(top_pwf, bound->pwf);
-	bound->pwf_tight = isl_pw_qpolynomial_fold_fold(top_pwf_tight,
-							bound->pwf_tight);
+	isl_bound_add(bound, top_pwf);
+	isl_bound_add_tight(bound, top_pwf_tight);
 
 	return r;
 error:

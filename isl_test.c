@@ -1402,76 +1402,47 @@ static isl_stat test_plain_unshifted_simple_hull_special(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
-/* Pairs of maps and the corresponding expected results of
- * isl_map_plain_unshifted_simple_hull.
+/* Inputs for simple hull tests, consisting of
+ * the specific simple hull function, the input set and the expected result.
  */
 struct {
-	const char *map;
-	const char *hull;
-} plain_unshifted_simple_hull_tests[] = {
-	{ "{ [i] -> [j] : i >= 1 and j >= 1 or i >= 2 and j <= 10 }",
-	  "{ [i] -> [j] : i >= 1 }" },
-	{ "{ [n] -> [i,j,k] : (i mod 3 = 2 and j mod 4 = 2) or "
-		"(j mod 4 = 2 and k mod 6 = n) }",
-	  "{ [n] -> [i,j,k] : j mod 4 = 2 }" },
-};
-
-/* Basic tests for isl_map_plain_unshifted_simple_hull.
- */
-static int test_plain_unshifted_simple_hull(isl_ctx *ctx)
-{
-	int i;
-	isl_map *map;
-	isl_basic_map *hull, *expected;
-	isl_bool equal;
-
-	for (i = 0; i < ARRAY_SIZE(plain_unshifted_simple_hull_tests); ++i) {
-		const char *str;
-		str = plain_unshifted_simple_hull_tests[i].map;
-		map = isl_map_read_from_str(ctx, str);
-		str = plain_unshifted_simple_hull_tests[i].hull;
-		expected = isl_basic_map_read_from_str(ctx, str);
-		hull = isl_map_plain_unshifted_simple_hull(map);
-		equal = isl_basic_map_is_equal(hull, expected);
-		isl_basic_map_free(hull);
-		isl_basic_map_free(expected);
-		if (equal < 0)
-			return -1;
-		if (!equal)
-			isl_die(ctx, isl_error_unknown, "unexpected hull",
-				return -1);
-	}
-
-	return 0;
-}
-
-/* Pairs of sets and the corresponding expected results of
- * isl_set_unshifted_simple_hull.
- */
-struct {
+	__isl_give isl_basic_set *(*fn)(__isl_take isl_set *set);
 	const char *set;
 	const char *hull;
-} unshifted_simple_hull_tests[] = {
-	{ "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
+} simple_hull_tests[] = {
+	{ &isl_set_plain_unshifted_simple_hull,
+	  "{ [i,j] : i >= 1 and j >= 1 or i >= 2 and j <= 10 }",
+	  "{ [i,j] : i >= 1 }" },
+	{ &isl_set_plain_unshifted_simple_hull,
+	  "{ [n,i,j,k] : (i mod 3 = 2 and j mod 4 = 2) or "
+		"(j mod 4 = 2 and k mod 6 = n) }",
+	  "{ [n,i,j,k] : j mod 4 = 2 }" },
+	{ &isl_set_unshifted_simple_hull,
+	  "{ [0,x,y] : x <= -1; [1,x,y] : x <= y <= -x; [2,x,y] : x <= 1 }",
 	  "{ [t,x,y] : 0 <= t <= 2 and x <= 1 }" },
+	{ &isl_set_simple_hull,
+	  "{ [a, b] : b <= 0 and "
+			"2*floor((-2*floor((b)/2))/5) >= a - floor((b)/2); "
+	    "[a, b] : a mod 2 = 0 }",
+	  "{ [a, b] }" },
 };
 
-/* Basic tests for isl_set_unshifted_simple_hull.
+/* Basic tests for various simple hull functions.
  */
-static int test_unshifted_simple_hull(isl_ctx *ctx)
+static int test_various_simple_hull(isl_ctx *ctx)
 {
 	int i;
 	isl_set *set;
 	isl_basic_set *hull, *expected;
 	isl_bool equal;
 
-	for (i = 0; i < ARRAY_SIZE(unshifted_simple_hull_tests); ++i) {
+	for (i = 0; i < ARRAY_SIZE(simple_hull_tests); ++i) {
 		const char *str;
-		str = unshifted_simple_hull_tests[i].set;
+		str = simple_hull_tests[i].set;
 		set = isl_set_read_from_str(ctx, str);
-		str = unshifted_simple_hull_tests[i].hull;
+		str = simple_hull_tests[i].hull;
 		expected = isl_basic_set_read_from_str(ctx, str);
-		hull = isl_set_unshifted_simple_hull(set);
+		hull = simple_hull_tests[i].fn(set);
 		equal = isl_basic_set_is_equal(hull, expected);
 		isl_basic_set_free(hull);
 		isl_basic_set_free(expected);
@@ -1508,9 +1479,7 @@ static int test_simple_hull(struct isl_ctx *ctx)
 
 	if (test_plain_unshifted_simple_hull_special(ctx) < 0)
 		return -1;
-	if (test_plain_unshifted_simple_hull(ctx) < 0)
-		return -1;
-	if (test_unshifted_simple_hull(ctx) < 0)
+	if (test_various_simple_hull(ctx) < 0)
 		return -1;
 
 	return 0;
@@ -3891,35 +3860,32 @@ static int test_union(isl_ctx *ctx)
 	return 0;
 }
 
-/* Check that computing a bound of a non-zero polynomial over an unbounded
- * domain does not produce a rational value.
- * In particular, check that the upper bound is infinity.
+/* Inputs for basic isl_pw_qpolynomial_bound tests.
+ * "type" is the type of bound that should be computed.
+ * "poly" is a string representation of the input.
+ * "bound" is a string representation of the expected result.
+ * "tight" is set if the result is expected to be tight.
  */
-static int test_bound_unbounded_domain(isl_ctx *ctx)
-{
-	const char *str;
-	isl_pw_qpolynomial *pwqp;
-	isl_pw_qpolynomial_fold *pwf, *pwf2;
-	isl_bool equal;
-
-	str = "{ [m,n] -> -m * n }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	str = "{ infty }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf2 = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	equal = isl_pw_qpolynomial_fold_plain_is_equal(pwf, pwf2);
-	isl_pw_qpolynomial_fold_free(pwf);
-	isl_pw_qpolynomial_fold_free(pwf2);
-
-	if (equal < 0)
-		return -1;
-	if (!equal)
-		isl_die(ctx, isl_error_unknown,
-			"expecting infinite polynomial bound", return -1);
-
-	return 0;
-}
+static struct {
+	int tight;
+	enum isl_fold type;
+	const char *poly;
+	const char *bound;
+} bound_tests[] = {
+	/* Check that computing a bound of a non-zero polynomial
+	 * over an unbounded domain does not produce a rational value.
+	 * In particular, check that the upper bound is infinity.
+	 */
+	{ 0, isl_fold_max, "{ [m, n] -> -m * n }", "{ max(infty) }" },
+	{ 1, isl_fold_max, "{ [[a, b, c, d] -> [e]] -> 0 }",
+	  "{ [a, b, c, d] -> max(0) }" },
+	{ 1, isl_fold_max, "{ [[x] -> [x]] -> 1 : exists a : x = 2 a }",
+	  "{ [x] -> max(1) : x mod 2 = 0 }" },
+	{ 1, isl_fold_min, "{ [x=5:10] -> (x + 2)^2 }", "{ min(49) }" },
+	{ 1, isl_fold_max, "{ [0:10] -> 1 }", "{ max(1) }" },
+	{ 1, isl_fold_max, "{ [[m] -> [0:m]] -> m^2 }",
+	  "{ [m] -> max(m^2) : m >= 0 }" },
+};
 
 /* Check that the bound computation can handle differences
  * in domain dimension names of the input polynomial and its domain.
@@ -3942,39 +3908,40 @@ static isl_stat test_bound_space(isl_ctx *ctx)
 	return isl_stat_non_null(pwf);
 }
 
+/* Perform basic isl_pw_qpolynomial_bound tests.
+ */
 static int test_bound(isl_ctx *ctx)
 {
-	const char *str;
-	isl_size dim;
-	isl_pw_qpolynomial *pwqp;
-	isl_pw_qpolynomial_fold *pwf;
+	int i;
 
-	if (test_bound_unbounded_domain(ctx) < 0)
-		return -1;
 	if (test_bound_space(ctx) < 0)
 		return -1;
 
-	str = "{ [[a, b, c, d] -> [e]] -> 0 }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	dim = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in);
-	isl_pw_qpolynomial_fold_free(pwf);
-	if (dim < 0)
-		return -1;
-	if (dim != 4)
-		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
-			return -1);
+	for (i = 0; i < ARRAY_SIZE(bound_tests); ++i) {
+		const char *str;
+		enum isl_fold type;
+		isl_bool equal, tight;
+		isl_pw_qpolynomial *pwqp;
+		isl_pw_qpolynomial_fold *pwf1, *pwf2;
 
-	str = "{ [[x]->[x]] -> 1 : exists a : x = 2 a }";
-	pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
-	pwf = isl_pw_qpolynomial_bound(pwqp, isl_fold_max, NULL);
-	dim = isl_pw_qpolynomial_fold_dim(pwf, isl_dim_in);
-	isl_pw_qpolynomial_fold_free(pwf);
-	if (dim < 0)
-		return -1;
-	if (dim != 1)
-		isl_die(ctx, isl_error_unknown, "unexpected input dimension",
-			return -1);
+		str = bound_tests[i].poly;
+		pwqp = isl_pw_qpolynomial_read_from_str(ctx, str);
+		type = bound_tests[i].type;
+		pwf1 = isl_pw_qpolynomial_bound(pwqp, type, &tight);
+		str = bound_tests[i].bound;
+		pwf2 = isl_pw_qpolynomial_fold_read_from_str(ctx, str);
+		equal = isl_pw_qpolynomial_fold_plain_is_equal(pwf1, pwf2);
+		isl_pw_qpolynomial_fold_free(pwf2);
+		isl_pw_qpolynomial_fold_free(pwf1);
+		if (equal < 0)
+			return -1;
+		if (!equal)
+			isl_die(ctx, isl_error_unknown,
+				"incorrect bound result", return -1);
+		if (bound_tests[i].tight && !tight)
+			isl_die(ctx, isl_error_unknown,
+				"bound unexpectedly not tight", return -1);
+	}
 
 	return 0;
 }
@@ -7866,6 +7833,15 @@ struct isl_vertices_test_data {
 		"[n, m] -> { [1, 1, m] : 0 < m <= n }",
 		"[n, m] -> { [1, 1, 1] : 0 < m <= n }"
 	    } },
+	/* An input with implicit equality constraints among the parameters. */
+	{ "[N, M] -> { [a, b] : M >= 3 and 9 + 3M <= a <= 29 + 2N + 11M and "
+			    "2b >= M + a and 5 - 2N - M + a <= 2b <= 3 + a and "
+			    "3b >= 15 + a }",
+	  2, {
+		"[N, M] -> { [(21), (12)] : M = 3 and N >= 0 }",
+		"[N, M] -> { [(61 + 2N), (32 + N)] : M = 3 and N >= 0 }",
+	     }
+	},
 };
 
 /* Check that "vertex" corresponds to one of the vertices in data->vertex.
@@ -8726,6 +8702,34 @@ int test_sample(isl_ctx *ctx)
 	return 0;
 }
 
+/* Perform a projection on a basic set that is known to be empty
+ * but that has not been assigned a canonical representation.
+ * Earlier versions of isl would run into a stack overflow
+ * on this example.
+ */
+static int test_empty_projection(isl_ctx *ctx)
+{
+	const char *str;
+	isl_bool empty;
+	isl_basic_set *bset;
+
+	str = "{ [a, b, c, d, e, f, g, h] : 5f = 1 + 4a - b + 5c - d - 2e and "
+		"3h = 2 + b + c and 14c >= 9 - 3a + 25b and "
+		"4c <= 50 - 3a + 23b and 6b <= -39 + a and "
+		"9g >= -6 + 3a + b + c and e < a + b - 2d and "
+		"7d >= -5 + 2a + 2b and 5g >= -14 + a - 4b + d + 2e and "
+		"9g <= -28 - 5b - 2c + 3d + 6e }";
+	bset = isl_basic_set_read_from_str(ctx, str);
+	empty = isl_basic_set_is_empty(bset);
+	bset = isl_basic_set_params(bset);
+	isl_basic_set_free(bset);
+
+	if (empty < 0)
+		return -1;
+
+	return 0;
+}
+
 int test_fixed_power(isl_ctx *ctx)
 {
 	const char *str;
@@ -9269,133 +9273,6 @@ static int test_curry(isl_ctx *ctx)
 		isl_die(ctx, isl_error_unknown,
 			"curried map should not be equal to original",
 			return -1);
-
-	return 0;
-}
-
-struct {
-	const char *set;
-	const char *ma;
-	const char *res;
-} preimage_tests[] = {
-	{ "{ B[i,j] : 0 <= i < 10 and 0 <= j < 100 }",
-	  "{ A[j,i] -> B[i,j] }",
-	  "{ A[j,i] : 0 <= i < 10 and 0 <= j < 100 }" },
-	{ "{ rat: B[i,j] : 0 <= i, j and 3 i + 5 j <= 100 }",
-	  "{ A[a,b] -> B[a/2,b/6] }",
-	  "{ rat: A[a,b] : 0 <= a, b and 9 a + 5 b <= 600 }" },
-	{ "{ B[i,j] : 0 <= i, j and 3 i + 5 j <= 100 }",
-	  "{ A[a,b] -> B[a/2,b/6] }",
-	  "{ A[a,b] : 0 <= a, b and 9 a + 5 b <= 600 and "
-		    "exists i,j : a = 2 i and b = 6 j }" },
-	{ "[n] -> { S[i] : 0 <= i <= 100 }", "[n] -> { S[n] }",
-	  "[n] -> { : 0 <= n <= 100 }" },
-	{ "{ B[i] : 0 <= i < 100 and exists a : i = 4 a }",
-	  "{ A[a] -> B[2a] }",
-	  "{ A[a] : 0 <= a < 50 and exists b : a = 2 b }" },
-	{ "{ B[i] : 0 <= i < 100 and exists a : i = 4 a }",
-	  "{ A[a] -> B[([a/2])] }",
-	  "{ A[a] : 0 <= a < 200 and exists b : [a/2] = 4 b }" },
-	{ "{ B[i,j,k] : 0 <= i,j,k <= 100 }",
-	  "{ A[a] -> B[a,a,a/3] }",
-	  "{ A[a] : 0 <= a <= 100 and exists b : a = 3 b }" },
-	{ "{ B[i,j] : j = [(i)/2] } ", "{ A[i,j] -> B[i/3,j] }",
-	  "{ A[i,j] : j = [(i)/6] and exists a : i = 3 a }" },
-};
-
-static int test_preimage_basic_set(isl_ctx *ctx)
-{
-	int i;
-	isl_basic_set *bset1, *bset2;
-	isl_multi_aff *ma;
-	int equal;
-
-	for (i = 0; i < ARRAY_SIZE(preimage_tests); ++i) {
-		bset1 = isl_basic_set_read_from_str(ctx, preimage_tests[i].set);
-		ma = isl_multi_aff_read_from_str(ctx, preimage_tests[i].ma);
-		bset2 = isl_basic_set_read_from_str(ctx, preimage_tests[i].res);
-		bset1 = isl_basic_set_preimage_multi_aff(bset1, ma);
-		equal = isl_basic_set_is_equal(bset1, bset2);
-		isl_basic_set_free(bset1);
-		isl_basic_set_free(bset2);
-		if (equal < 0)
-			return -1;
-		if (!equal)
-			isl_die(ctx, isl_error_unknown, "bad preimage",
-				return -1);
-	}
-
-	return 0;
-}
-
-struct {
-	const char *map;
-	const char *ma;
-	const char *res;
-} preimage_domain_tests[] = {
-	{ "{ B[i,j] -> C[2i + 3j] : 0 <= i < 10 and 0 <= j < 100 }",
-	  "{ A[j,i] -> B[i,j] }",
-	  "{ A[j,i] -> C[2i + 3j] : 0 <= i < 10 and 0 <= j < 100 }" },
-	{ "{ B[i] -> C[i]; D[i] -> E[i] }",
-	  "{ A[i] -> B[i + 1] }",
-	  "{ A[i] -> C[i + 1] }" },
-	{ "{ B[i] -> C[i]; B[i] -> E[i] }",
-	  "{ A[i] -> B[i + 1] }",
-	  "{ A[i] -> C[i + 1]; A[i] -> E[i + 1] }" },
-	{ "{ B[i] -> C[([i/2])] }",
-	  "{ A[i] -> B[2i] }",
-	  "{ A[i] -> C[i] }" },
-	{ "{ B[i,j] -> C[([i/2]), ([(i+j)/3])] }",
-	  "{ A[i] -> B[([i/5]), ([i/7])] }",
-	  "{ A[i] -> C[([([i/5])/2]), ([(([i/5])+([i/7]))/3])] }" },
-	{ "[N] -> { B[i] -> C[([N/2]), i, ([N/3])] }",
-	  "[N] -> { A[] -> B[([N/5])] }",
-	  "[N] -> { A[] -> C[([N/2]), ([N/5]), ([N/3])] }" },
-	{ "{ B[i] -> C[i] : exists a : i = 5 a }",
-	  "{ A[i] -> B[2i] }",
-	  "{ A[i] -> C[2i] : exists a : 2i = 5 a }" },
-	{ "{ B[i] -> C[i] : exists a : i = 2 a; "
-	    "B[i] -> D[i] : exists a : i = 2 a + 1 }",
-	  "{ A[i] -> B[2i] }",
-	  "{ A[i] -> C[2i] }" },
-	{ "{ A[i] -> B[i] }", "{ C[i] -> A[(i + floor(i/3))/2] }",
-	  "{ C[i] -> B[j] : 2j = i + floor(i/3) }" },
-};
-
-static int test_preimage_union_map(isl_ctx *ctx)
-{
-	int i;
-	isl_union_map *umap1, *umap2;
-	isl_multi_aff *ma;
-	int equal;
-
-	for (i = 0; i < ARRAY_SIZE(preimage_domain_tests); ++i) {
-		umap1 = isl_union_map_read_from_str(ctx,
-						preimage_domain_tests[i].map);
-		ma = isl_multi_aff_read_from_str(ctx,
-						preimage_domain_tests[i].ma);
-		umap2 = isl_union_map_read_from_str(ctx,
-						preimage_domain_tests[i].res);
-		umap1 = isl_union_map_preimage_domain_multi_aff(umap1, ma);
-		equal = isl_union_map_is_equal(umap1, umap2);
-		isl_union_map_free(umap1);
-		isl_union_map_free(umap2);
-		if (equal < 0)
-			return -1;
-		if (!equal)
-			isl_die(ctx, isl_error_unknown, "bad preimage",
-				return -1);
-	}
-
-	return 0;
-}
-
-static int test_preimage(isl_ctx *ctx)
-{
-	if (test_preimage_basic_set(ctx) < 0)
-		return -1;
-	if (test_preimage_union_map(ctx) < 0)
-		return -1;
 
 	return 0;
 }
@@ -10846,7 +10723,6 @@ struct {
 	{ "list", &test_list },
 	{ "align parameters", &test_align_parameters },
 	{ "drop unused parameters", &test_drop_unused_parameters },
-	{ "preimage", &test_preimage },
 	{ "pullback", &test_pullback },
 	{ "AST", &test_ast },
 	{ "AST build", &test_ast_build },
@@ -10858,6 +10734,7 @@ struct {
 	{ "slice", &test_slice },
 	{ "fixed power", &test_fixed_power },
 	{ "sample", &test_sample },
+	{ "empty projection", &test_empty_projection },
 	{ "output", &test_output },
 	{ "vertices", &test_vertices },
 	{ "chambers", &test_chambers },
