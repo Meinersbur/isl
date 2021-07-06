@@ -309,7 +309,7 @@ void trace_generator::generate() {
 			while (true) {
 				i += 1;
 				auto candidate = base + to_string(i);
-				if (localvars.contains(candidate))
+				if (localvars.count(candidate))
 					continue;
 				localvars.insert(candidate);
 				return candidate;
