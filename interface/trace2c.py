@@ -153,6 +153,8 @@ class CallbackLevel(Level):
         self.args = [None]*len(callbacker.paramtys)
         if callbacker.hasret:
             self.retarg=None
+        else:
+            self.retarg=None
 
 
 class Callbacker:
@@ -377,15 +379,15 @@ def parse_callback_enter(callbacker,numargs,**kwargs):
             cb.args[i] = argobj
         
 
-def parse_callback_exit(callbacker,retty,retval=None,retptr=None):
+def parse_callback_exit(callbacker,retty='void',retval=None,retptr=None):
     global callstack
     backerptr = int(callbacker,0)  
     cblevel =  callstack[-1]
     assert cblevel.callbacker.backerptr == backerptr
     assert cblevel.callbacker.retty==retty
-    assert cblevel.retarg==None
-
-    cblevel.retarg = make_arg(ty=retty,val=retval,ptr=retptr,uselvl=cblevel)
+    if retty != 'void':
+        assert cblevel.retarg==None
+        cblevel.retarg = make_arg(ty=retty,val=retval,ptr=retptr,uselvl=cblevel)
 
     callstack.pop()
 
@@ -734,7 +736,8 @@ def update_uses(mainlevel,mutations):
                         continue
 
                 update_uses_level(invok)
-                update_uses_arg(None,invok.retarg,invok)
+                if cb.hasret:
+                    update_uses_arg(None,invok.retarg,invok)
         elif arg.IsVal:
             pass
         elif arg.IsPtr:

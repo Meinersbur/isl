@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "trace2c.py",
             "console": "integratedTerminal",
-            "args": ["C:/Users/meinersbur/build/llvm-project/isltrace.log", "-o", "C:/Users/meinersbur/build/llvm-project/isltrace.c"],
+            "args": ["C:/Users/meinersbur/build/llvm-project/quast-p8/isltrace.log", "-o", "C:/Users/meinersbur/build/llvm-project/quast-p8/isltrace.c"],
             "python": "${command:python.interpreterPath}",
             "justMyCode": true
         },

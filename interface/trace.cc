@@ -403,10 +403,11 @@ void trace_generator::generate() {
 				const FunctionProtoType* CbTy=nullptr;
 				QualType CallabckArgTy;
 				if (isIdAlloc){
-					CallabckArgTy = AstCtx.getFunctionType(AstCtx.VoidPtrTy, { AstCtx.VoidPtrTy }, {});
+					CallabckArgTy = AstCtx.getFunctionType(AstCtx.VoidTy, { AstCtx.VoidPtrTy }, {});
 					CallabckArgTy =	AstCtx.getPointerType(CallabckArgTy);
-			}	else
+				}	else {
 					CallabckArgTy = FD->getParamDecl(FuncParmIdx)->getType();
+				}
 				auto cbname = emitCallbackFunc(OS, FD, CallabckArgTy, FuncParmIdx, UserParmIdx, CbTy, isIdSetFreeUser);
 				llvm::SmallString<256> buf;
 				llvm::raw_svector_ostream cbOS(buf);

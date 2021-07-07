@@ -702,6 +702,24 @@ static const char* getLogpath() {
 }
 
 
+static bool getEnablePrint() {
+	static int enable_print = 0;
+	if (enable_print == 0) {
+		std::string v = getenv("ISLTRACE_DESC");
+		if (v == "") {
+			// default value
+			enable_print = 1;
+		}
+		else if (v == "1" || v == "true" || v == "TRUE" || v == "yes" || v == "YES" || v == "on" || v == "ON") {
+			enable_print = 1;
+		}
+		else
+			enable_print = -1;
+	}
+	return enable_print ==1;
+}
+
+
 static std::ofstream &getLogfile() {
 	static std::ofstream *logfile;
 
@@ -1826,11 +1844,13 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 
 			//if constexpr (std::is_pointer_v<RetTy>  && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>) {
 			//	using PointerT = std::remove_pointer_t<RetTy>;
+			if (getEnablePrint()) {
 				std::ostringstream dOS;
 				ResultObjPrinter<RetTy>::printResult(dOS, retval);
 				auto desc = dOS.str();
 				if (!desc.empty())
 					escape(OS, "desc", desc);
+			}
 			//}
 
 			return retval;
@@ -2071,7 +2091,6 @@ struct CbCall<UserIdx, RetTy(ParmTy...)> : public CbCallImpl<UserIdx, RetTy(Parm
 			retval = ObjCow<PointerT>::cow(retval);
 		}
 
-
 			auto& OS = openLogfile();
 			OS << "\ncallback_exit";
 			escape(OS, "callbacker", (void*)getBase().callbacker);
@@ -2091,6 +2110,9 @@ struct CbCall<UserIdx, RetTy(ParmTy...)> : public CbCallImpl<UserIdx, RetTy(Parm
 };
 
 }
+
+
+
 
 
 
