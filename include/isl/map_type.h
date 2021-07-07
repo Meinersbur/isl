@@ -29,6 +29,7 @@ ISL_DECLARE_LIST_TYPE(set)
 
 ISL_DECLARE_LIST_FN(basic_set)
 ISL_DECLARE_LIST_FN(set)
+ISL_DECLARE_LIST_FN_READ(set)
 
 #if defined(__cplusplus)
 }
