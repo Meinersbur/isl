@@ -109,7 +109,8 @@ static std::string to_string(long l)
  */
 plain_cpp_generator::plain_cpp_generator(SourceManager &SM,
 	set<RecordDecl *> &exported_types,
-	set<FunctionDecl *> exported_functions, set<FunctionDecl *> functions,
+	set<FunctionDecl *> exported_functions,
+	set<FunctionDecl *> functions,
 	bool checked) :
 		cpp_generator(SM, exported_types, exported_functions,
 			functions),

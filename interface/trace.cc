@@ -137,7 +137,7 @@ static auto getParamTyList(ASTContext&ASTCtx,const FunctionProtoType *FTy, bool 
 
 
 
-static std::string emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int CallbackFnArg, int UserPtrArg, const FunctionProtoType *&CbTy) {
+static std::string emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, QualType CallbackTy, int CallbackFnArg, int UserPtrArg, const FunctionProtoType *&CbTy, bool isCallbackerRef) {
 	PrintingPolicy Policy(FD->getASTContext().getLangOpts());
 	auto getTy = [&](QualType ty, const Twine& placeholder = {}) -> std::string {
 		llvm::SmallString<128> buf;
@@ -151,13 +151,14 @@ static std::string emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int
 
 
 	auto FName = FD->getName();
-	auto FuncParm = FD->getParamDecl(CallbackFnArg);
+	//auto FuncParm = FD->getParamDecl(CallbackFnArg);
 	ParmVarDecl* UserParm = nullptr;
 	if (UserPtrArg >= 0) {
 		UserParm = FD->getParamDecl(UserPtrArg);
 	}
 
-	CbTy = FuncParm->getType()->getPointeeType()->castAs<FunctionProtoType>();
+	//auto CallbackTy = FuncParm->getType();
+	CbTy = CallbackTy->getPointeeType()->castAs<FunctionProtoType>();
 	auto CbRetTy = CbTy->getReturnType();
 	auto CbHasRet = !CbRetTy->isVoidType();
 	// Assume the last parameter of the callback is the user pointer.
@@ -175,7 +176,7 @@ static std::string emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int
 	//}
 
 
-	auto cbname = (Twine(FName) + "_cb" + Twine(CallbackFnArg)).str();
+	auto cbname = (Twine(FName) + "_cb" + (  (CallbackFnArg >= 0) ? Twine(CallbackFnArg) : Twine())).str();
 
 	OS << "static " << getTy(CbRetTy) << " " << cbname << "(";
 	{
@@ -212,7 +213,12 @@ static std::string emitCallbackFunc(llvm::raw_ostream &OS, FunctionDecl* FD, int
 		if (CbHasRet) {
 			OS << "  using RetTy = " << getTy(CbRetTy) << ";\n";
 		}
-		OS << "  CallbackerTy* Cb = (CallbackerTy*)(param" << CbUserArg << ");\n";
+		if (isCallbackerRef) {
+			OS << "  CallbackerTy** CbRef = (CallbackerTy**)(param" << CbUserArg << ");\n";
+			OS << "  CallbackerTy* Cb = *CbRef;\n";
+		} else {
+			OS << "  CallbackerTy* Cb = (CallbackerTy*)(param" << CbUserArg << ");\n";
+		}
 
 
 		OS << "\n";
@@ -287,6 +293,7 @@ void trace_generator::generate() {
 	OS << "// ISL functions\n";
 	for (auto ci = functions_by_name.begin(); ci != functions_by_name.end(); ++ci) {
 		FunctionDecl* FD = ci->second;
+	auto &AstCtx = 	FD->getASTContext();
 		auto FName = FD->getName();
 		if (!FName.startswith("isl_"))
 			continue;
@@ -354,6 +361,10 @@ void trace_generator::generate() {
 
 
 		bool isFreeFunc = FName.endswith("_free");
+        bool isIdAlloc = (FName == "isl_id_alloc");
+        bool isIdGetUser = (FName == "isl_id_get_user");
+      //  bool isIdSetUser = (FName == "isl_id_set_user");
+        bool isIdSetFreeUser = (FName == "isl_id_set_free_user");
 		bool isUnsupported = FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call";
 		QualType RetTy = FD->getReturnType();
 		bool hasRetVal = !RetTy->isVoidType() ;
@@ -373,13 +384,30 @@ void trace_generator::generate() {
 				if (!isCallback)
 					continue;
 
-				auto UserParmIdx = -1;
-				if (FName != "isl_id_set_free_user") {
+                int FuncParmIdx;
+                if (isIdAlloc) {
+                    FuncParmIdx = -1;
+				} else {
+					FuncParmIdx = i;
+				}
+
+				int UserParmIdx;
+                if (isIdSetFreeUser) {
+                    UserParmIdx=-1;
+                } else if (isIdAlloc) {
+                    UserParmIdx = i;
+				} else {
 					UserParmIdx = i + 1;
 				}
 
 				const FunctionProtoType* CbTy=nullptr;
-				auto cbname = emitCallbackFunc(OS, FD, i, UserParmIdx,CbTy);
+				QualType CallabckArgTy;
+				if (isIdAlloc){
+					CallabckArgTy = AstCtx.getFunctionType(AstCtx.VoidPtrTy, { AstCtx.VoidPtrTy }, {});
+					CallabckArgTy =	AstCtx.getPointerType(CallabckArgTy);
+			}	else
+					CallabckArgTy = FD->getParamDecl(FuncParmIdx)->getType();
+				auto cbname = emitCallbackFunc(OS, FD, CallabckArgTy, FuncParmIdx, UserParmIdx, CbTy, isIdSetFreeUser);
 				llvm::SmallString<256> buf;
 				llvm::raw_svector_ostream cbOS(buf);
 				std::string username = "NULL";
@@ -390,10 +418,12 @@ void trace_generator::generate() {
 				}
 				std::string cbty =   (Twine("\"") + getTy(ParmTy) + Twine("\"") ).str();
 
-				if (UserParmIdx==-1)
-					cbOS << "  call.trace_cb<" << i << "," << UserParmIdx << ">(\"" << FName << "\", \"" << PName <<"\", " << username << ", " <<  cbty  << ", " << userty << ", \"" << getTy(CbTy->getReturnType()) << "\", \"" << getParamTyList(CbTy,true,false) << "\", "<< PName <<", &"<< cbname <<", (void*)nullptr);\n";
-				else
-					cbOS << "  call.trace_cb<" << i << "," << UserParmIdx << ">(\"" << FName << "\", \"" << PName <<"\", " << username << ", " <<  cbty  << ", " << userty << ", \"" << getTy(CbTy->getReturnType()) << "\", \"" << getParamTyList(CbTy,true,false) << "\", "<< PName <<", &"<< cbname <<", "<< FD->getParamDecl(UserParmIdx)->getName() <<");\n";
+				llvm::StringRef UserArg = "(void*)NULL";
+				if (UserParmIdx >= 0) {
+					UserArg =	FD->getParamDecl(UserParmIdx)->getName();
+				}
+
+				cbOS << "  call.trace_cb<" << FuncParmIdx << "," << UserParmIdx << ">(\"" << FName << "\", \"" << PName <<"\", " << username << ", " <<  cbty  << ", " << userty << ", \"" << getTy(CbTy->getReturnType()) << "\", \"" << getParamTyList(CbTy,true,false) << "\", "<< PName <<", &"<< cbname <<", "<< UserArg <<");\n";
 
 				Preargs[i] = cbOS.str().str();
 				if (UserParmIdx != -1)
@@ -418,8 +448,18 @@ void trace_generator::generate() {
 			continue;
 		}
 
+        auto callClass = "IslCall";
+        if (isIdAlloc)
+            callClass = "IslIdAllocCall";
+        else if (isIdGetUser)
+            callClass = "IslIdGetUserCall";
+       // else if (isIdSetUser)
+       //     callClass = "IslIdSetUserCall";
+        else if (isIdSetFreeUser)
+            callClass = "IslIdSetFreeUserCall";
+
 		OS << "\n";
-		OS << "  IslCall<FuncTy> call(\""<< FName <<"\", \"" << getTy(RetTy) << "\", orig);\n";
+		OS << "  " << callClass << "<FuncTy> call(\""<< FName <<"\", \"" << getTy(RetTy) << "\", orig);\n";
 
 		if (FName == "isl_ctx_parse_options") {
 			auto countarg = FD->getParamDecl(1);

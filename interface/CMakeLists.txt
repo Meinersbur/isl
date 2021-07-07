@@ -1,5 +1,5 @@
 
-add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc trace.cc)
+add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc plain_cpp.cc template_cpp.cc trace.cc)
 target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 if (MSVC)
 else ()

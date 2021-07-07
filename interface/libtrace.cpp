@@ -102,8 +102,8 @@ extern "C" {
 	isl_union_flow* isl_union_flow_cow(isl_union_flow* obj) { return obj; }
 	isl_schedule_constraints* isl_schedule_constraints_cow(isl_schedule_constraints* obj) { return obj; }
 	isl_printer* isl_printer_cow(isl_printer* obj) { return obj; }
-	isl_union_map* isl_union_map_cow(isl_union_map* umap);
-	isl_union_set* isl_union_set_cow(isl_union_set* uset) { return (isl_union_set*)isl_union_map_cow((isl_union_map*)uset); }
+	__isl_give isl_union_map* isl_union_map_cow(__isl_take isl_union_map* umap);
+	__isl_give isl_union_set* isl_union_set_cow(__isl_take isl_union_set* uset)  { return (isl_union_set*)isl_union_map_cow((isl_union_map*)uset); }
 }
 
 
@@ -458,6 +458,10 @@ struct CallbackBase {
 template<typename CallbackT>
 struct Callbacker;
 
+static std::ostream& openLogfile();
+static void escape(std::ostream &OS, const std::string& name, const std::string& val);
+static void escape(std::ostream& OS, const std::string& name, void *val);
+static void escape(std::ostream& OS, const std::string& name, int val) ;
 
 template<typename RetTy, typename ...ParamTy>
 struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
@@ -466,7 +470,16 @@ struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
 	CallbackT* replCb;
 
 	explicit Callbacker(const std::string &fname, const std::string& pname,CallbackT* origCb,CallbackT* replCb, const std::string &cbretty, const std::string &cbparamty, void *origUser)
-		: CallbackBase(fname, pname, origUser,cbretty,cbparamty), origCb(origCb), replCb(replCb) {}
+		: CallbackBase(fname, pname, origUser,cbretty,cbparamty), origCb(origCb), replCb(replCb) {
+#if 0
+        auto& OS = openLogfile();
+        OS << "\ncallbacker_created";
+	    escape(OS, "callbacker", (void*)this);
+        escape(OS, "fname",  fname);
+         escape(OS, "pname",  pname);
+				 flushLogfile();
+#endif
+        }
 
 	constexpr int getNumArgs() {
 		return sizeof...(ParamTy);
@@ -484,6 +497,9 @@ struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
 		inprogress = -1;
 	}
 };
+
+
+
 
 
 
@@ -1724,6 +1740,7 @@ struct IslCallImpl<RetTy(ParmTy...)> : public IslCallBase {
 		//ptrArgs[CbIdx] = to_hex(callbacker);
 		cbArgs[CbIdx] = callbacker;
 
+	//	static_assert(UserIdx >= 0);
 		if constexpr (UserIdx >= 0) {
 			std::get<UserIdx>(args) = callbacker;
 			std::get<UserIdx>(realArgs) = origUser;
@@ -1761,11 +1778,16 @@ struct IslCall<void(ParmTy...)>: public IslCallImpl<void(ParmTy...)> {
 
 	explicit IslCall(const char* name, const char *tystr, FuncTy* orig) : IslCallImpl<void(ParmTy...)>(name,tystr,orig) {}
 
-	void apply() {
-		getBase().beforeCall("call_proc");
+	virtual void execOrig() {
 		std::apply(getBase().orig, getBase().args);
 	}
+
+	void apply() {
+		getBase().beforeCall("call_proc");
+		execOrig();
+	}
 };
+
 
 
 
@@ -1777,9 +1799,13 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 
 	explicit IslCall(const char* name, const char *tystr, FuncTy* orig) : IslCallImpl<RetTy(ParmTy...)>(name,tystr,orig) {}
 
+	virtual RetTy execOrig()  {
+		return std::apply(getBase().orig, getBase().args);
+	}
+
 	RetTy apply() {
 	  getBase().beforeCall("call_func");
-		RetTy retval = std::apply(getBase().orig, getBase().args);
+		RetTy retval = execOrig();
 
 		if constexpr (std::is_pointer_v<RetTy>) {
 			using PointerT = std::remove_pointer_t<RetTy>;
@@ -1813,7 +1839,120 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 
 
 
+template<typename RetTy, typename... ParmTy>
+struct IslIdAllocCall;
 
+template<>
+struct IslIdAllocCall<isl_id *(isl_ctx *, const char *, void *)> : public IslCall<isl_id *(isl_ctx *, const char *, void *)> {
+	typedef   void (CallbackT)(void*);
+    using FuncTy = isl_id *(isl_ctx *, const char *, void *);
+    using BaseTy = IslCall<FuncTy>;
+		using RetTy = isl_id*;
+		BaseTy& getBase() { return *this;  }
+
+    explicit IslIdAllocCall(const char* name, const char* rettystr, FuncTy* orig) : IslCall(name, rettystr, orig) {}
+
+
+		RetTy execOrig() override {
+			// Wrap the user pointer into a dummy callbacker (should never be called, requires isl_id_set_free_user to be called first)
+			auto Id = std::get<0>(getBase().args);
+			auto Name = std::get<1>(getBase().args);
+			auto origUser = std::get<2>(getBase().args);
+			if (origUser) {
+				auto DummyCallbacker = new Callbacker<CallbackT>("isl_id_alloc", "free_func", NULL, NULL, "void*", "void*", origUser);
+				auto CallbackerRef = new decltype(DummyCallbacker)[1];
+				CallbackerRef[0] = DummyCallbacker;
+				assert(CallbackerRef[0]);  assert(&CallbackerRef[0]);  assert(CallbackerRef[0]->origUser == origUser);
+				origUser = &CallbackerRef[0];
+			}
+			return getBase().orig(Id,Name,origUser);
+		}
+};
+
+
+
+
+//extern Callbacker<void (*)(void*)> pp;
+
+
+
+
+template<typename RetTy, typename... ParmTy>
+struct IslIdGetUserCall;
+
+template<>
+struct IslIdGetUserCall<void *(isl_id *)> : public IslCall<void *(isl_id *)> {
+	typedef   void (CallbackT)(void*);
+    using FuncTy = void *(isl_id *);
+		using RetTy = void *;
+    explicit IslIdGetUserCall(const char* name, const char* rettystr, FuncTy* orig) : IslCall(name, rettystr, orig) {}
+
+		Callbacker<CallbackT>**getCallbacker() {
+			auto Id = std::get<0>(getBase().args);
+			using GetUserFuncTy = void *(isl_id *);
+			static GetUserFuncTy* origGetUser = getsym<GetUserFuncTy>("isl_id_get_user");
+			Callbacker<CallbackT>** refCallbacker = (Callbacker<CallbackT>**)(*origGetUser)(Id);
+			return refCallbacker;
+		}
+
+		RetTy execOrig() override {
+			auto refCallbacker = getCallbacker();
+			if (!refCallbacker)
+				return nullptr;
+			return (*refCallbacker)->origUser;
+		}
+};
+
+
+
+
+
+template<typename RetTy, typename... ParmTy>
+struct IslIdSetFreeUserCall;
+
+template<>
+struct IslIdSetFreeUserCall<isl_id *(isl_id *, void (*)(void *))> : public IslCall<isl_id *(isl_id *, void (*)(void *))> {
+	typedef   void (CallbackT)(void*);
+    using FuncTy = isl_id *(isl_id *,CallbackT);
+		using RetTy = isl_id *;
+		using BaseTy = IslCall<isl_id* (isl_id*, void (*)(void*))>;
+
+    explicit IslIdSetFreeUserCall(const char* name, const char* rettystr, FuncTy* orig) : IslCall(name, rettystr, orig) {}
+
+
+		Callbacker<CallbackT>* *getCallbacker() {
+			auto Id = std::get<0>(getBase().args);
+			using GetUserFuncTy = void *(isl_id *);
+			static auto origGetUser = getsym<GetUserFuncTy>("isl_id_get_user");
+			Callbacker<CallbackT>** refCallbacker = (Callbacker<CallbackT>**)(*origGetUser)(Id);
+			return refCallbacker;
+		}
+
+		template<int CbIdx, int UserIdx, typename CallbackT, typename VoidT>
+		void trace_cb(const char *fname, const char* parmname, const char* username, const char*cbty, const char *userty, const char *retty, const char* paramtys, CallbackT *origFn, CallbackT *replFn, VoidT *origUser) {
+			static_assert(CbIdx == 1);	static_assert(UserIdx == -1); assert(origUser==NULL);
+
+			// Get the origUser if any
+			auto refCallbacker = getCallbacker();
+			if (refCallbacker)
+				origUser = (*refCallbacker)->origUser;
+
+			return getBase().trace_cb<CbIdx, UserIdx>(fname,parmname,username,cbty,userty,retty,paramtys,origFn,replFn,origUser);
+		}
+
+		RetTy execOrig() override {
+			Callbacker<CallbackT>* newCallbacker = (Callbacker<CallbackT>*)cbArgs[1];
+
+			// In addition executing the original function, update the CallbackerRef
+			// If there is no callbacker, the user pointer must have been NULL and there is nothing to free
+			auto refCallbacker = getCallbacker();
+			if (!refCallbacker)
+				return std::get<0>(getBase().args);
+			(*refCallbacker) = newCallbacker;
+
+			return BaseTy::execOrig();
+		 }
+};
 
 
 
@@ -1853,7 +1992,14 @@ struct CbCallImpl<UserIdx, RetTy(ParmTy...)> : public CbCallBase {
 	Callbacker<FuncTy>* callbacker;
 	std::tuple<ParmTy...> args;
 
-	explicit CbCallImpl(Callbacker<FuncTy>* callbacker) : CbCallBase(callbacker, sizeof...(ParmTy)),callbacker{callbacker} {	}
+	explicit CbCallImpl(Callbacker<FuncTy>* callbacker) : CbCallBase(callbacker, sizeof...(ParmTy)),callbacker{callbacker} {
+#if 0
+    auto& OS = openLogfile();
+    OS << "\ncbcall_created";
+	  escape(OS, "callbacker", (void*)callbacker);
+		flushLogfile();
+#endif
+    	}
 
 	template<int N, typename ArgT>
 	void trace_arg(ArgT arg) {
@@ -1872,7 +2018,7 @@ struct CbCallImpl<UserIdx, RetTy(ParmTy...)> : public CbCallBase {
 		std::get<UserIdx>(args) = callbacker->origUser;
 		auto& OS = openLogfile();
 		OS << "\ncallback_enter";
-	  escape(OS, "callbacker", (void*)callbacker);
+	    escape(OS, "callbacker", (void*)callbacker);
 		escape(OS, "numargs", sizeof...(ParmTy));
 		for (int i = 0; i < sizeof...(ParmTy); i += 1) {
 			if (!ptrArgs[i].empty())
@@ -1897,8 +2043,8 @@ struct CbCall<UserIdx, void(ParmTy...)> : public CbCallImpl<UserIdx, void(ParmTy
 	 CbCall(Callbacker<FuncTy>* callbacker) : CbCallImpl<UserIdx, void(ParmTy...)>(callbacker) {}
 
 	void apply() {
-		getBase().	beforeApply();
-		std::apply(getBase().callbacker->origCb,getBase(). args);
+		getBase().beforeApply();
+		std::apply(getBase().callbacker->origCb,getBase().args);
 		{
 			auto& OS = openLogfile();
 			OS << "\ncallback_exit";
