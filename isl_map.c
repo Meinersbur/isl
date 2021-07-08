@@ -2891,22 +2891,13 @@ static __isl_give isl_basic_map *insert_bounds_on_div(
 	return bmap;
 }
 
-/* Remove all divs (recursively) involving any of the given dimensions
+/* Remove all divs (recursively) involving any of the given variables
  * in their definitions.
  */
-__isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
-	__isl_take isl_basic_map *bmap,
-	enum isl_dim_type type, unsigned first, unsigned n)
+static __isl_give isl_basic_map *remove_divs_involving_vars(
+	__isl_take isl_basic_map *bmap, unsigned first, unsigned n)
 {
 	int i;
-	isl_size off;
-
-	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
-		return isl_basic_map_free(bmap);
-	off = isl_basic_map_var_offset(bmap, type);
-	if (off < 0)
-		return isl_basic_map_free(bmap);
-	first += off;
 
 	for (i = bmap->n_div - 1; i >= 0; --i) {
 		isl_bool involves;
@@ -2924,6 +2915,25 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 	}
 
 	return bmap;
+}
+
+/* Remove all divs (recursively) involving any of the given dimensions
+ * in their definitions.
+ */
+__isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
+	__isl_take isl_basic_map *bmap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_size off;
+
+	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
+		return isl_basic_map_free(bmap);
+	off = isl_basic_map_var_offset(bmap, type);
+	if (off < 0)
+		return isl_basic_map_free(bmap);
+	first += off;
+
+	return remove_divs_involving_vars(bmap, first, n);
 }
 
 __isl_give isl_basic_set *isl_basic_set_remove_divs_involving_dims(
