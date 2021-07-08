@@ -6,7 +6,7 @@
  * Copyright 2016      INRIA Paris
  * Copyright 2016      Sven Verdoolaege
  * Copyright 2018-2019 Cerebras Systems
- * Copyright 2022      Cerebras Systems
+ * Copyright 2021-2022 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -20,6 +20,7 @@
  * and Centre de Recherche Inria de Paris, 2 rue Simone Iff - Voie DQ12,
  * CS 42112, 75589 Paris Cedex 12, France
  * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <string.h>
@@ -2363,6 +2364,52 @@ static int constraint_pair_has_bound(__isl_keep isl_basic_map *bmap,
 /* Return the position of an inequality constraint in "bmap"
  * that together with inequality constraint "ineq" forms
  * a pair of opposite constraints that allow at most "bound" values
+ * in their shared direction and that appears before "ineq".
+ * Return a position beyond the number of inequality constraints
+ * if no such constraint can be found.
+ *
+ * The constraints of "bmap" are assumed to have been sorted.
+ * This means that as soon as a constraint is found where the value
+ * of the last coefficient (in absolute value) is different from that of "ineq",
+ * no opposite constraint can be found.
+ * It also means that only the coefficients up to this last coefficient
+ * need to be compared.
+ *
+ * "pos" is the position of a coefficient that is known to be non-zero.
+ * If no such position is known a priori, then the value 0 can be passed in.
+ * "len" is the number of (relevant) coefficients in the constraints.
+ * "tmp" is a temporary location that can be used to store the sum.
+ */
+static isl_size find_earlier_constraint_in_pair(__isl_keep isl_basic_map *bmap,
+	int ineq, int pos, int len, isl_int bound, isl_int *tmp)
+{
+	int j;
+	int last;
+	isl_size n_ineq;
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (n_ineq < 0)
+		return isl_size_error;
+
+	last = extend_last_non_zero(bmap, ineq, pos, len);
+
+	for (j = ineq - 1; j >= 0; --j) {
+		if (!isl_int_abs_eq(bmap->ineq[ineq][1 + last],
+				    bmap->ineq[j][1 + last]))
+			return n_ineq;
+		if (!is_constraint_pair(bmap, ineq, j, last + 1))
+			continue;
+		if (constraint_pair_has_bound(bmap, ineq, j, bound, tmp))
+			return j;
+		return n_ineq;
+	}
+
+	return n_ineq;
+}
+
+/* Return the position of an inequality constraint in "bmap"
+ * that together with inequality constraint "ineq" forms
+ * a pair of opposite constraints that allow at most "bound" values
  * in their shared direction and that appears after "ineq".
  * Return a position beyond the number of inequality constraints
  * if no such constraint can be found.
@@ -3061,14 +3108,280 @@ static __isl_give isl_basic_map *remove_divs_involving_vars(
 	return bmap;
 }
 
+/* Data structure for communicating data between detect_mod and
+ * substitute_div_mod.
+ *
+ * "pos" is the position of the variable that is being examined.
+ *
+ * "lower_f" is the index of the constraint
+ *	-f(x) + m i + t m n h(alpha) >= 0
+ * "lower_g" is the index of the constraint
+ *	-g(x) + i >= 0
+ * "m" and "n" correspond to the values in the first constraint.
+ * "sum" is a temporary variable that is used internally inside detect_mod.
+ */
+struct isl_detect_mod_data {
+	unsigned pos;
+
+	int lower_f;
+	int lower_g;
+
+	isl_int m;
+	isl_int n;
+
+	isl_int sum;
+};
+
+/* Initialize "data".
+ */
+static void isl_detect_mod_data_init(struct isl_detect_mod_data *data)
+{
+	isl_int_init(data->m);
+	isl_int_init(data->n);
+	isl_int_init(data->sum);
+}
+
+/* Free any memory allocated by "data".
+ */
+static void isl_detect_mod_data_clear(struct isl_detect_mod_data *data)
+{
+	isl_int_clear(data->sum);
+	isl_int_clear(data->n);
+	isl_int_clear(data->m);
+}
+
+/* Is the variable at position data->pos
+ * equal to a specific case of a nested modulo?
+ *
+ * In particular, look for two pairs of constraints
+ *
+ *	-f(x) + m i + t m n h(alpha) >= 0
+ *	 f(x) - m i - t m n h(alpha) + c >= 0
+ *
+ * and
+ *
+ *	-g(x) + i >= 0
+ *	 g(x) - i + d >= 0
+ *
+ * where f(x) and g(x) are expressions in the other variables,
+ * excluding local variables,
+ * h(alpha) is a non-zero expression in the local variable,
+ * t is +1 or -1,
+ * c < m, and
+ * d < n.
+ *
+ * If these pairs of constraints are found,
+ * then store the constraint index of the first f-constraint in data->lower_f,
+ * the index of the first g-constraint in data->lower_g and
+ * the values m and n in data->m and data->n.
+ *
+ * The constraints are assumed to have been sorted,
+ * which means that the constraints in a pair are close to each other.
+ * The sorting also means that the f-constraints appear
+ * after the g-constraints.
+ */
+static isl_bool detect_mod(__isl_keep isl_basic_map *bmap,
+	struct isl_detect_mod_data *data)
+{
+	int i;
+	isl_size j;
+	isl_size n_ineq;
+	isl_size v_div, n_div, total;
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (n_ineq < 0 || v_div < 0 || n_div < 0 || total < 0)
+		return isl_bool_error;
+	if (n_ineq < 4)
+		return isl_bool_false;
+
+	for (i = n_ineq - 1; i >= 1; --i) {
+		isl_seq_gcd(bmap->ineq[i] + 1 + v_div, n_div, &data->n);
+		if (isl_int_is_zero(data->n))
+			return isl_bool_false;
+		isl_int_abs(data->m, bmap->ineq[i][1 + data->pos]);
+		j = find_earlier_constraint_in_pair(bmap, i, data->pos, total,
+							data->m, &data->sum);
+		if (j < 0)
+			return isl_bool_error;
+		if (j >= n_ineq)
+			continue;
+		if (!isl_int_is_divisible_by(data->n, data->m))
+			continue;
+		if (isl_int_is_pos(bmap->ineq[i][1 + data->pos]))
+			data->lower_f = i;
+		else
+			data->lower_f = j;
+		isl_int_divexact(data->n, data->n, data->m);
+		isl_int_abs(data->n, data->n);
+		break;
+	}
+	if (i < 1)
+		return isl_bool_false;
+	for (i = j - 1; i >= 1; --i) {
+		int f;
+
+		f = isl_seq_first_non_zero(bmap->ineq[i] + 1 + v_div, n_div);
+		if (f != -1)
+			continue;
+		if (!isl_int_is_one(bmap->ineq[i][1 + data->pos]) &&
+		    !isl_int_is_negone(bmap->ineq[i][1 + data->pos]))
+			continue;
+		j = find_earlier_constraint_in_pair(bmap, i, data->pos, v_div,
+							data->m, &data->sum);
+		if (j < 0)
+			return isl_bool_error;
+		if (j >= n_ineq)
+			continue;
+		if (isl_int_is_pos(bmap->ineq[i][1 + data->pos]))
+			data->lower_g = i;
+		else
+			data->lower_g = j;
+		break;
+	}
+	if (i < 1)
+		return isl_bool_false;
+	return isl_bool_true;
+}
+
+/* Given that inequality "ineq" of "bset" expresses a lower bound
+ * on the variable at position "pos" in terms of the other variables,
+ * extract this lower bound as a function of those other variables,
+ * excluding any local variables.
+ */
+static __isl_give isl_aff *extract_lower_bound_aff(
+	__isl_keep isl_basic_set *bset, int ineq, int pos)
+{
+	isl_size dim;
+	isl_ctx *ctx;
+	isl_vec *v;
+	isl_space *space;
+	isl_local_space *ls;
+
+	space = isl_basic_set_peek_space(bset);
+	dim = isl_space_dim(space, isl_dim_all);
+	if (dim < 0)
+		return NULL;
+	ls = isl_local_space_from_space(isl_space_copy(space));
+	ctx = isl_basic_set_get_ctx(bset);
+	v = extract_bound_from_constraint(ctx, bset->ineq[ineq], dim, pos);
+	return isl_aff_alloc_vec(ls, v);
+}
+
+/* Given that there are two pairs of constraints
+ *
+ *	-f(x) + m i + t m n h(alpha) >= 0
+ *	 f(x) - m i - t m n h(alpha) + c >= 0
+ *
+ * and
+ *
+ *	-g(x) + i >= 0
+ *	 g(x) - i + d >= 0
+ *
+ * where f(x) and g(x) are expressions in the other variables,
+ * excluding local variables,
+ * h(alpha) is a non-zero expression in the local variable,
+ * t is +1 or -1,
+ * c < m, and
+ * d < n,
+ * derive an expression for i and plug that into "bmap".
+ *
+ * In particular, the first pair of constraints implies
+ *
+ *	0 <= (-f(x) + m i) % (m n) <= c
+ *	0 <= (m floor(-f(x)/m) + (-f(x)) mod m + m i) % (m n) <= c
+ *	0 <= (m floor(-f(x)/m) + m i) % (m n) + (-f(x)) mod m <= c
+ *	0 <= m ((floor(-f(x)/m) + i) % n) + (-f(x)) mod m <= c
+ *
+ * or
+ *
+ *	(floor(-f(x)/m) + i) % n = 0
+ *
+ * because c < m, which can be rewritten to
+ *
+ *	(floor(-f(x)/m) + g(x) - g(x) + i) % n = 0
+ *
+ * or
+ *
+ *	(-g(x) + i) % n = (-floor(-f(x)/m) - g(x)) % n
+ *
+ * Since 0 <= -g(x) + i <= d < n,
+ *
+ *	-g(x) + i = (-floor(-f(x)/m) - g(x)) % n
+ *
+ * or
+ *
+ *	i = (-floor(-f(x)/m) - g(x)) % n + g(x)
+ *
+ * Note that the lower bounds on i derived from the original constraints are
+ *
+ *	i >= f(x)/m
+ *	i >= g(x)
+ *
+ * (ignoring local variables).
+ *
+ * The expression for i is plugged into "bmap", which results
+ * in a basic map equivalent to "bmap" given i is equal to the expression,
+ * so an equality constraint is added to ensure the meaning is preserved.
+ */
+static __isl_give isl_basic_map *substitute_div_mod(
+	__isl_take isl_basic_map *bmap, unsigned pos,
+	struct isl_detect_mod_data *data)
+{
+	isl_ctx *ctx;
+	isl_basic_set *bset, *eq;
+	isl_space *space;
+	isl_aff *g, *f, *aff, *it;
+	isl_val *v;
+	isl_size v_in;
+	isl_multi_aff *ma;
+
+	v_in = isl_basic_map_var_offset(bmap, isl_dim_in);
+	if (v_in < 0)
+		return isl_basic_map_free(bmap);
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	bset = isl_basic_map_wrap(bmap);
+	space = isl_basic_set_get_space(bset);
+	g = extract_lower_bound_aff(bset, data->lower_g, pos);
+	f = extract_lower_bound_aff(bset, data->lower_f, pos);
+	ma = isl_space_identity_multi_aff_on_domain(space);
+	aff = isl_aff_neg(isl_aff_floor(isl_aff_neg(f)));
+	aff = isl_aff_sub(aff, isl_aff_copy(g));
+	v = isl_val_int_from_isl_int(ctx, data->n);
+	aff = isl_aff_mod_val(aff, v);
+	aff = isl_aff_add(aff, g);
+	it = isl_multi_aff_get_at(ma, pos - v_in);
+	eq = isl_aff_eq_basic_set(it, isl_aff_copy(aff));
+	ma = isl_multi_aff_set_at(ma, pos - v_in, aff);
+	bset = isl_basic_set_preimage_multi_aff(bset, ma);
+	bset = isl_basic_set_intersect(bset, eq);
+	return isl_basic_set_unwrap(bset);
+}
+
 /* Remove all divs (recursively) involving any of the given dimensions
  * in their definitions.
+ *
+ * If it is a single input or output dimension that
+ * should not appear in any integer division expression and
+ * if there is indeed an integer division expression
+ * involving that dimension, then check if there are any constraints
+ * that imply that the given dimension is equal to some expression
+ * in the other dimensions.
+ * If so, plug in that expression for the given dimension
+ * so that the integer division expressions no longer
+ * involve that dimension.
  */
 __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
 	isl_size off;
+	isl_bool used;
+	isl_bool found;
+	struct isl_detect_mod_data data;
 
 	if (isl_basic_map_check_range(bmap, type, first, n) < 0)
 		return isl_basic_map_free(bmap);
@@ -3077,7 +3390,23 @@ __isl_give isl_basic_map *isl_basic_map_remove_divs_involving_dims(
 		return isl_basic_map_free(bmap);
 	first += off;
 
-	return remove_divs_involving_vars(bmap, first, n);
+	if (type == isl_dim_param || type == isl_dim_div || n != 1)
+		return remove_divs_involving_vars(bmap, first, n);
+	used = isl_basic_map_any_div_involves_vars(bmap, first, n);
+	if (used < 0)
+		return isl_basic_map_free(bmap);
+	if (!used)
+		return bmap;
+	bmap = isl_basic_map_sort_constraints(bmap);
+	isl_detect_mod_data_init(&data);
+	data.pos = first;
+	found = detect_mod(bmap, &data);
+	if (!found)
+		bmap = remove_divs_involving_vars(bmap, first, n);
+	else
+		bmap = substitute_div_mod(bmap, first, &data);
+	isl_detect_mod_data_clear(&data);
+	return bmap;
 }
 
 __isl_give isl_basic_set *isl_basic_set_remove_divs_involving_dims(
