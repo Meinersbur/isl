@@ -3,7 +3,7 @@
  * Copyright 2012-2013 Ecole Normale Superieure
  * Copyright 2014-2015 INRIA Rocquencourt
  * Copyright 2016      Sven Verdoolaege
- * Copyright 2023      Cerebras Systems
+ * Copyright 2021,2023 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -1340,6 +1340,365 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	return last_ineq < last_div;
 }
 
+/* Is the sequence of "len" coefficients "ineq" equal to "res"
+ * plus some non-trivial coefficients that are all a multiple of some number
+ * greater than "sum"?
+ * If so, this factor is stored in "gcd".
+ *
+ * The current implementation requires the coefficients
+ * in "res" to appear directly in "ineq", so that "gcd"
+ * is the gcd of the remaining coefficients.
+ * The same assumption is used in has_nested_unit_div.
+ */
+static int is_residue(isl_int *res, isl_int *ineq, isl_int sum, unsigned len,
+	isl_int *gcd)
+{
+	int j;
+
+	isl_int_set_si(*gcd, 0);
+	for (j = 0; j < len; ++j) {
+		if (!isl_int_is_zero(res[1 + j])) {
+			if (isl_int_eq(res[1 + j], ineq[1 + j]))
+				continue;
+			return 0;
+		}
+		if (!isl_int_is_zero(ineq[1 + j])) {
+			isl_int_gcd(*gcd, *gcd, ineq[1 + j]);
+			if (isl_int_le(*gcd, sum))
+				return 0;
+		}
+	}
+
+	return !isl_int_is_zero(*gcd);
+}
+
+/* Is
+ *
+ *	(cst - cst2) mod n + sum
+ *
+ * greater than or equal to n?
+ */
+static int residue_exceeded(isl_int cst, isl_int cst2, isl_int n, isl_int sum)
+{
+	int exceeded;
+	isl_int t;
+
+	isl_int_init(t);
+	isl_int_sub(t, cst, cst2);
+	isl_int_fdiv_r(t, t, n);
+	isl_int_add(t, t, sum);
+	exceeded = isl_int_ge(t, n);
+	isl_int_clear(t);
+
+	return exceeded;
+}
+
+/* Given two constraints "k" and "l" that are opposite to each other,
+ * except for the constant term, with "sum" the sum of these constant terms,
+ * check if they can be used to simplify any integer division expression.
+ *
+ * In particular, let "k" and "l" be of the form
+ *
+ *	 f(x) >= 0
+ *	-f(x) + c >= 0
+ *
+ * That is,
+ *
+ *	0 <= f(x) <= c
+ *
+ * Note that the same constraint holds for "k" and "l" interchanged, i.e.,
+ *
+ *	0 <= -f(x) + c <= c
+ *
+ * That is, the reasoning below holds for both "f(x)" and "-f(x) + c".
+ *
+ * If there is an integer division definition of the form
+ *
+ *	floor((f(x) + n h(x) + c')/(n * m))
+ *
+ * with
+ *
+ *	c' % n < n - c
+ *
+ * then it is equal to
+ *
+ *	floor((h(x) + floor(c'/n))/m)
+ *
+ * because
+ *
+ *	floor((f(x) + n h(x) + c')/(n * m))
+ *	= floor((f(x) + c' % n + n (h(x) + floor(c'/n)))/(n * m))
+ *
+ * and
+ *
+ *	0 <= f(x) + c' % n < n
+ *
+ * Note that h(x) may be equal to zero, in which case the denominator
+ * of the integer division can be used as n (and m = 1).
+ */
+static __isl_give isl_basic_map *check_for_residues_in_divs(
+	__isl_take isl_basic_map *bmap, int k, int l, isl_int sum,
+	int *progress)
+{
+	int i;
+	int p;
+	isl_ctx *ctx;
+	isl_size n_div, total;
+
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (n_div < 0 || total < 0)
+		return isl_basic_map_free(bmap);
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	p = isl_seq_last_non_zero(bmap->ineq[k] + 1, total);
+	for (i = 0; i < n_div; ++i) {
+		int c;
+		isl_bool unknown;
+
+		unknown = isl_basic_map_div_is_marked_unknown(bmap, i);
+		if (unknown < 0)
+			return isl_basic_map_free(bmap);
+		if (unknown)
+			continue;
+		if (isl_int_le(bmap->div[i][0], sum))
+			continue;
+		if (isl_int_eq(bmap->div[i][2 + p], bmap->ineq[k][1 + p]))
+			c = k;
+		else if (isl_int_eq(bmap->div[i][2 + p], bmap->ineq[l][1 + p]))
+			c = l;
+		else
+			continue;
+
+		if (isl_seq_eq(bmap->div[i] + 2, bmap->ineq[c] + 1, total))
+			isl_int_set(ctx->normalize_gcd, bmap->div[i][0]);
+		else if (!is_residue(bmap->ineq[c], bmap->div[i] + 1, sum,
+					total, &ctx->normalize_gcd))
+			continue;
+
+		if (residue_exceeded(bmap->div[i][1], bmap->ineq[c][0],
+				    ctx->normalize_gcd, sum))
+			continue;
+
+		if (!isl_int_is_divisible_by(bmap->div[i][0],
+					    ctx->normalize_gcd))
+			continue;
+
+		isl_seq_sub(bmap->div[i] + 1, bmap->ineq[c], 1 + total);
+		mark_progress(progress);
+	}
+
+	return bmap;
+}
+
+/* Is inequality "ineq" of "bmap" a constraint defining an integer division?
+ * "v_div" is the position of the first local variable.
+ * "n_div" is the number of local variables.
+ *
+ * A constraint defining an integer division must involve some local variable
+ * and could only possibly define the last local variable involved since
+ * it can only be defined in terms of earlier variables.
+ */
+static isl_bool is_div_constraint(__isl_keep isl_basic_map *bmap, int ineq,
+	unsigned v_div, unsigned n_div)
+{
+	int last;
+
+	last = isl_seq_last_non_zero(bmap->ineq[ineq] + 1 + v_div, n_div);
+	if (last < 0)
+		return isl_bool_false;
+	return isl_basic_map_is_div_constraint(bmap, bmap->ineq[ineq], last);
+}
+
+/* Does the inequality constraint "ineq" of "bmap" involve nested integer
+ * divisions with unit coefficient after removing the coefficients
+ * of inequality constraint "base"?
+ * "v_div" is the position of the first local variable.
+ * "n_div" is the number of local variables.
+ * "n" is the factor with which the constraint will be scaled down.
+ *
+ * Use the same simplifying assumption as "is_residue" that
+ * the coefficients in "base" appear directly in "ineq".
+ * Look for an integer division involving nested integer divisions
+ * that does not appear in "base" and does appear in "ineq"
+ * with a coefficient equal to "n" (up to a change of sign).
+ */
+static isl_bool has_nested_unit_div(__isl_keep isl_basic_map *bmap,
+	int base, int ineq, unsigned v_div, unsigned n_div, isl_int n)
+{
+	int j;
+
+	for (j = 0; j < n_div; ++j) {
+		isl_bool nested;
+
+		if (!isl_int_is_zero(bmap->ineq[base][1 + v_div + j]))
+			continue;
+		if (!isl_int_abs_eq(bmap->ineq[ineq][1 + v_div + j], n))
+			continue;
+		nested = isl_basic_map_div_expr_involves_vars(bmap, j,
+								v_div, n_div);
+		if (nested < 0 || nested)
+			return nested;
+	}
+
+	return isl_bool_false;
+}
+
+/* Given two constraints "k" and "l" that are opposite to each other,
+ * except for the constant term, with "sum" the sum of these constant terms,
+ * check if they can be used to simplify other constraints.
+ * Only do this for integer basic maps.
+ *
+ * In particular, let "k" and "l" be of the form
+ *
+ *	 f(x) >= 0
+ *	-f(x) + c >= 0
+ *
+ * That is,
+ *
+ *	0 <= f(x) <= c
+ *
+ * Note that the same constraint holds for "k" and "l" interchanged, i.e.,
+ *
+ *	0 <= -f(x) + c <= c
+ *
+ * That is, the reasoning below holds for both "f(x)" and "-f(x) + c".
+ *
+ * If there is some other constraint
+ *
+ *	g(x) >= 0
+ *
+ * such that
+ *
+ *	g(x) - f(x) = n h(x) + c'
+ *
+ * with
+ *
+ *	0 <= c' < n - c
+ *
+ * in particular, for the constant term,
+ *
+ *	(g(x) - f(x)) mod n + c < n
+ *
+ * then this other constraint is equivalent to
+ *
+ *	h(x) >= 0
+ *
+ * (given "k" and "l") since
+ *
+ *	0 <= f(x) + c' < n
+ *
+ * Note that the constraint does not necessarily need to be scaled down here
+ * since it would otherwise also be scaled down
+ * by isl_basic_map_normalize_constraints, but since the scaling factor
+ * is already known here, it might as well be done immediately.
+ * Also note that the current implementation only checks for constraints
+ * where the coefficients of f(x) appear directly in g(x), while it would
+ * be sufficient for the differences with the corresponding coefficients
+ * in g(x) to be multiples of n.
+ *
+ * Similarly, if there is an integer division definition of the form
+ *
+ *	floor((f(x) + n h(x) + c')/(n * m))
+ *
+ * with
+ *
+ *	c' % n < n - c
+ *
+ * then it is equal to
+ *
+ *	floor((h(x) + floor(c'/n))/m)
+ *
+ *
+ * Do not apply any simplification to constraint(s) defining integer divisions.
+ * Such constraints would first be simplified to be of the form
+ *
+ *	e + c'' >= 0
+ *
+ * and then the integer division definition would be plugged into
+ * this constraint, resulting in the original constraint and
+ * causing an infinite loop.
+ * Simplifying the integer division definitions as well mitigates
+ * some (possibly all) of this effect, but it is too fragile to rely on
+ * for avoiding infinite loops.
+ *
+ * If any nested integer divisions are involved, then a similar effect
+ * may be obtained even on constraints that do not (obviously)
+ * define an integer division through multiple steps of such substitutions.
+ * Any constraint that would result in an integer division with nested
+ * integer divisions and a unit coefficient is therefore also left untouched.
+ */
+static __isl_give isl_basic_map *check_for_residues(
+	__isl_take isl_basic_map *bmap, int k, int l, isl_int sum,
+	int *progress)
+{
+	int i;
+	int p;
+	isl_ctx *ctx;
+	isl_bool rat;
+	isl_size n_ineq, total, v_div, n_div;
+
+	rat = isl_basic_map_is_rational(bmap);
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (rat < 0 || n_ineq < 0 || total < 0 || v_div < 0 || n_div < 0)
+		return isl_basic_map_free(bmap);
+	if (rat)
+		return bmap;
+
+	bmap = check_for_residues_in_divs(bmap, k, l, sum, progress);
+	if (!bmap)
+		return bmap;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	p = isl_seq_last_non_zero(bmap->ineq[k] + 1, total);
+	for (i = 0; i < n_ineq; ++i) {
+		isl_bool skip;
+		int c;
+
+		if (i == k || i == l)
+			continue;
+		if (isl_int_is_zero(bmap->ineq[i][1 + p]))
+			continue;
+		skip = is_div_constraint(bmap, i, v_div, n_div);
+		if (skip < 0)
+			return isl_basic_map_free(bmap);
+		if (skip)
+			continue;
+		if (isl_int_eq(bmap->ineq[i][1 + p], bmap->ineq[k][1 + p]))
+			c = k;
+		else if (isl_int_eq(bmap->ineq[i][1 + p], bmap->ineq[l][1 + p]))
+			c = l;
+		else
+			continue;
+
+		if (!is_residue(bmap->ineq[c], bmap->ineq[i], sum, total,
+				&ctx->normalize_gcd))
+			continue;
+
+		skip = has_nested_unit_div(bmap, c, i, v_div, n_div,
+					ctx->normalize_gcd);
+		if (skip < 0)
+			return isl_basic_map_free(bmap);
+		if (skip)
+			continue;
+		if (residue_exceeded(bmap->ineq[i][0], bmap->ineq[c][0],
+				    ctx->normalize_gcd, sum))
+			continue;
+
+		isl_seq_sub(bmap->ineq[i], bmap->ineq[c], 1 + total);
+		bmap = scale_down_inequality(bmap, i, ctx->normalize_gcd,
+						total);
+		if (!bmap)
+			return NULL;
+		mark_progress(progress);
+	}
+
+	return bmap;
+}
+
 /* Given two constraints "k" and "l" that are opposite to each other,
  * except for the constant term, check if we can use them
  * to obtain an expression for one of the hitherto unknown divs or
@@ -1383,6 +1742,20 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 	return bmap;
 }
 
+/* Look for pairs of constraints that have equal or opposite coefficients.
+ * For each pair of constraints with equal coefficients, only keep
+ * the one which imposes the most stringent constraint, i.e.,
+ * the one with the smallest constant term.
+ * For each pair of constraints with opposite coefficients,
+ * consider the sum of the constant terms.
+ * If the sum is smaller than zero, then the constraints conflict.
+ * If the sum is equal to zero, then the constraints form
+ * an equality constraint.
+ * If the sum is greater than zero, then check whether this pair
+ * can be used to simplify any other constraints and/or,
+ * if "detect_divs" is set, whether a (better) integer division definition
+ * can be read off from the pair.
+ */
 __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	__isl_take isl_basic_map *bmap, int *progress, int detect_divs)
 {
@@ -1421,10 +1794,16 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 		l = ci.index[h] - &bmap->ineq[0];
 		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
 		if (isl_int_is_pos(sum)) {
+			int residue = 0;
+
+			bmap = check_for_residues(bmap, k, l, sum, &residue);
 			if (detect_divs)
 				bmap = check_for_div_constraints(bmap, k, l,
 								 sum, progress);
-			continue;
+			if (!residue)
+				continue;
+			mark_progress(progress);
+			break;
 		}
 		if (isl_int_is_zero(sum)) {
 			/* We need to break out of the loop after these
