@@ -46,6 +46,17 @@ void isl_seq_cpy(isl_int *dst, isl_int *src, unsigned len)
 		isl_int_set(dst[i], src[i]);
 }
 
+/* Subtract the sequence "src" from the sequence "dst",
+ * both of length "len".
+ */
+void isl_seq_sub(isl_int *dst, isl_int *src, unsigned len)
+{
+	int i;
+
+	for (i = 0; i < len; ++i)
+		isl_int_sub(dst[i], dst[i], src[i]);
+}
+
 void isl_seq_submul(isl_int *dst, isl_int f, isl_int *src, unsigned len)
 {
 	int i;
