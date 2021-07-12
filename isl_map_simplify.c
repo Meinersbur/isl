@@ -44,6 +44,28 @@ static void swap_inequality(__isl_keep isl_basic_map *bmap, int a, int b)
 	}
 }
 
+/* Scale down the inequality constraint "ineq" of length "len"
+ * by a factor of "f".
+ * All the coefficients, except the constant term,
+ * are assumed to be multiples of "f".
+ *
+ * If the factor is 1, then no scaling needs to be performed.
+ */
+static __isl_give isl_basic_map *scale_down_inequality(
+	__isl_take isl_basic_map *bmap, int ineq, isl_int f, unsigned len)
+{
+	if (!bmap)
+		return NULL;
+
+	if (isl_int_is_one(f))
+		return bmap;
+
+	isl_int_fdiv_q(bmap->ineq[ineq][0], bmap->ineq[ineq][0], f);
+	isl_seq_scale_down(bmap->ineq[ineq] + 1, bmap->ineq[ineq] + 1, f, len);
+
+	return bmap;
+}
+
 __isl_give isl_basic_map *isl_basic_map_normalize_constraints(
 	__isl_take isl_basic_map *bmap)
 {
@@ -90,10 +112,9 @@ __isl_give isl_basic_map *isl_basic_map_normalize_constraints(
 		}
 		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
 			isl_int_gcd(gcd, gcd, bmap->ineq[i][0]);
-		if (isl_int_is_one(gcd))
-			continue;
-		isl_int_fdiv_q(bmap->ineq[i][0], bmap->ineq[i][0], gcd);
-		isl_seq_scale_down(bmap->ineq[i]+1, bmap->ineq[i]+1, gcd, total);
+		bmap = scale_down_inequality(bmap, i, gcd, total);
+		if (!bmap)
+			goto error;
 	}
 	isl_int_clear(gcd);
 
