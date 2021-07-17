@@ -4801,6 +4801,8 @@ can be found then assign C<1> to C<*modulo> and C<1> to C<*residue>.
 		__isl_keep isl_set *set, int pos);
 	__isl_give isl_val *isl_set_get_stride(
 		__isl_keep isl_set *set, int pos);
+	__isl_give isl_fixed_box *isl_set_get_lattice_tile(
+		__isl_keep isl_set *set);
 
 	#include <isl/map.h>
 	__isl_give isl_stride_info *
@@ -4831,6 +4833,8 @@ can be extracted from the returned
 C<isl_fixed_box> using the functions described under "Box hull" in
 L</"Unary Operations">.  Note that the C<isl_fixed_box> object returned by
 C<isl_map_get_range_lattice_tile> is always valid.
+The function C<isl_set_get_lattice_tile> collects the same stride
+information over all set dimensions.
 For the other functions,
 the stride and offset can be extracted from the returned object
 using the following functions.

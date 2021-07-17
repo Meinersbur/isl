@@ -810,6 +810,7 @@ member_methods {
 	{ "intersect_params",	{ bin_set_params, bin_map_params } },
 	{ "intersect_domain",	{ bin_map_domain } },
 	{ "intersect_range",	{ bin_map_range } },
+	{ "lattice_tile",	{ un_set } },
 	{ "le_set",		{ set_join } },
 	{ "lt_set",		{ set_join } },
 	{ "lex_le_at",		{ map_cmp } },

@@ -484,6 +484,20 @@ __isl_give isl_fixed_box *isl_map_get_range_lattice_tile(
 	return box;
 }
 
+/* Check whether the elements lie on a rectangular lattice,
+ * possibly depending on the parameters.
+ * Return a tile in this lattice.
+ * If no stride information can be found, then return a tile of size 1
+ * (and offset 0).
+ *
+ * Consider the set as a map with a zero-dimensional domain and
+ * obtain a lattice tile of that map.
+ */
+__isl_give isl_fixed_box *isl_set_get_lattice_tile(__isl_keep isl_set *set)
+{
+	return fixed_box_as_map(set, &isl_map_get_range_lattice_tile);
+}
+
 #undef BASE
 #define BASE multi_val
 #include "print_yaml_field_templ.c"
