@@ -2418,28 +2418,43 @@ static int test_coalesce_special(struct isl_ctx *ctx)
 	return 0;
 }
 
-/* A specialized coalescing test case that would result in an assertion
- * in an earlier version of isl.
+/* Check that the union of the basic sets described by "str1" and "str2"
+ * can be coalesced.
  * The explicit call to isl_basic_set_union prevents the implicit
+ * equality constraints in the basic maps from being detected prior
+ * to the call to isl_set_coalesce, at least at the point
+ * where this function was introduced.
+ */
+static isl_stat test_coalesce_union(isl_ctx *ctx, const char *str1,
+	const char *str2)
+{
+	isl_basic_set *bset1, *bset2;
+	isl_set *set;
+
+	bset1 = isl_basic_set_read_from_str(ctx, str1);
+	bset2 = isl_basic_set_read_from_str(ctx, str2);
+	set = isl_basic_set_union(bset1, bset2);
+	set = isl_set_coalesce(set);
+	isl_set_free(set);
+
+	return isl_stat_non_null(set);
+}
+
+/* A specialized coalescing test case that would result in an assertion
+ * in an earlier version of isl.  Use test_coalesce_union with
+ * an explicit call to isl_basic_set_union to prevent the implicit
  * equality constraints in the first basic map from being detected prior
  * to the call to isl_set_coalesce, at least at the point
  * where this test case was introduced.
  */
 static isl_stat test_coalesce_special2(struct isl_ctx *ctx)
 {
-	const char *str;
-	isl_basic_set *bset1, *bset2;
-	isl_set *set;
+	const char *str1;
+	const char *str2;
 
-	str = "{ [x, y] : x, y >= 0 and x + 2y <= 1 and 2x + y <= 1 }";
-	bset1 = isl_basic_set_read_from_str(ctx, str);
-	str = "{ [x,0] : -1 <= x <= 1 and x mod 2 = 1 }" ;
-	bset2 = isl_basic_set_read_from_str(ctx, str);
-	set = isl_basic_set_union(bset1, bset2);
-	set = isl_set_coalesce(set);
-	isl_set_free(set);
-
-	return isl_stat_non_null(set);
+	str1 = "{ [x, y] : x, y >= 0 and x + 2y <= 1 and 2x + y <= 1 }";
+	str2 = "{ [x,0] : -1 <= x <= 1 and x mod 2 = 1 }";
+	return test_coalesce_union(ctx, str1, str2);
 }
 
 /* Check that calling isl_set_coalesce does not leave other sets
