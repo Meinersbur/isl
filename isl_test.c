@@ -2425,7 +2425,7 @@ static int test_coalesce_special(struct isl_ctx *ctx)
  * to the call to isl_set_coalesce, at least at the point
  * where this test case was introduced.
  */
-static int test_coalesce_special2(struct isl_ctx *ctx)
+static isl_stat test_coalesce_special2(struct isl_ctx *ctx)
 {
 	const char *str;
 	isl_basic_set *bset1, *bset2;
@@ -2439,9 +2439,7 @@ static int test_coalesce_special2(struct isl_ctx *ctx)
 	set = isl_set_coalesce(set);
 	isl_set_free(set);
 
-	if (!set)
-		return -1;
-	return 0;
+	return isl_stat_non_null(set);
 }
 
 /* Check that calling isl_set_coalesce does not leave other sets
