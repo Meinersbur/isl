@@ -2566,6 +2566,25 @@ static isl_stat test_coalesce_special6(isl_ctx *ctx)
 	return test_coalesce_intersection(ctx, s1, s2);
 }
 
+/* A specialized coalescing test case that would result in an assertion failure
+ * in an earlier version of isl.  Use test_coalesce_union with
+ * an explicit call to isl_basic_set_union to prevent the implicit
+ * equality constraints in the basic maps from being detected prior
+ * to the call to isl_set_coalesce, at least at the point
+ * where this test case was introduced.
+ */
+static isl_stat test_coalesce_special7(isl_ctx *ctx)
+{
+	const char *str1;
+	const char *str2;
+
+	str1 = "{ [a, b, c=0:17] : a <= 7 and 2b <= 11 - a and "
+			"c <= -7 + 2a and 2c >= - 3 + 3a - 2b }";
+	str2 = "{ [a, b, c] : c > -15a and c >= -7 + 2a and c < 0 and "
+			"3c <= -5 + 5a - 3b and 2b >= 11 - a }";
+	return test_coalesce_union(ctx, str1, str2);
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2594,6 +2613,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 	if (test_coalesce_special5(ctx) < 0)
 		return -1;
 	if (test_coalesce_special6(ctx) < 0)
+		return -1;
+	if (test_coalesce_special7(ctx) < 0)
 		return -1;
 
 
