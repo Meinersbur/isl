@@ -656,6 +656,7 @@ const char *isl_pw_multi_aff_get_tuple_name(__isl_keep isl_pw_multi_aff *pma,
 __isl_export
 __isl_give isl_id *isl_pw_multi_aff_get_range_tuple_id(
 	__isl_keep isl_pw_multi_aff *pma);
+__isl_export
 __isl_give isl_id *isl_pw_multi_aff_get_tuple_id(
 	__isl_keep isl_pw_multi_aff *pma, enum isl_dim_type type);
 __isl_export
