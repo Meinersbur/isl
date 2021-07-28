@@ -91,6 +91,7 @@ __isl_give isl_map *isl_map_set_domain_tuple_id(__isl_take isl_map *map,
 __isl_overload
 __isl_give isl_map *isl_map_set_range_tuple_id(__isl_take isl_map *map,
 	__isl_take isl_id *id);
+__isl_export
 __isl_give isl_map *isl_map_set_tuple_id(__isl_take isl_map *map,
 	enum isl_dim_type type, __isl_take isl_id *id);
 __isl_give isl_map *isl_map_reset_tuple_id(__isl_take isl_map *map,
