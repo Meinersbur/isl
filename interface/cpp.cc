@@ -508,6 +508,12 @@ void Method::print_param_use(ostream &os, int pos) const
 	string name = param->getName().str();
 	QualType type = param->getOriginalType();
 
+	if (type->isEnumeralType()) {
+		string typestr = type.getAsString();
+		os << "static_cast<" << typestr << ">(" << name << ")";
+		return;
+	}
+
 	if (type->isIntegerType()) {
 		os << name;
 		return;
@@ -858,6 +864,9 @@ std::string cpp_type_printer::param(int arg, QualType type) const
 
 	if (cpp_generator::is_isl_stat(type))
 		return isl_stat();
+
+	if (type->isEnumeralType())
+		return qualified(arg, "dim");
 
 	if (cpp_generator::is_isl_size(type))
 		return isl_size();

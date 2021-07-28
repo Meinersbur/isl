@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <isl/set.h>
 
 #include <functional>
 #include <memory>
@@ -184,6 +185,16 @@ inline size manage(isl_size val)
 {
 	return size(val);
 }
+
+enum class dim {
+  cst = isl_dim_cst,
+  param = isl_dim_param,
+  in = isl_dim_in,
+  out = isl_dim_out,
+  set = isl_dim_set,
+  div = isl_dim_div,
+  all = isl_dim_all
+};
 
 }
 } // namespace isl

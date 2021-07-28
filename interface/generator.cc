@@ -425,9 +425,11 @@ generator::generator(SourceManager &SM, set<RecordDecl *> &exported_types,
 		} else if (handled_sets_enum(c, method)) {
 		} else if (sets_persistent_callback(c, method)) {
 			c->persistent_callbacks.insert(method);
+#if 0
 		} else if (takes_enums(method)) {
 			std::string name = method->getName().str();
 			die(name + " has unhandled enum argument");
+#endif
 		} else {
 			string name = c->method_name(method);
 			c->methods[name].insert(method);
