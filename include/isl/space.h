@@ -83,6 +83,7 @@ __isl_export
 __isl_give isl_id *isl_space_get_dim_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, unsigned pos);
 
+__isl_export
 int isl_space_find_dim_by_id(__isl_keep isl_space *space,
 	enum isl_dim_type type, __isl_keep isl_id *id);
 int isl_space_find_dim_by_name(__isl_keep isl_space *space,
