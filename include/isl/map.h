@@ -449,6 +449,7 @@ __isl_give isl_map *isl_map_lower_bound_si(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_map *isl_map_lower_bound_val(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned pos, __isl_take isl_val *value);
+__isl_export
 __isl_give isl_map *isl_map_upper_bound_si(__isl_take isl_map *map,
 	enum isl_dim_type type, unsigned pos, int value);
 __isl_give isl_map *isl_map_upper_bound_val(__isl_take isl_map *map,
