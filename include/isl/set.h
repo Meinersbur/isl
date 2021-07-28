@@ -558,6 +558,7 @@ int isl_set_size(__isl_keep isl_set *set);
 
 __isl_give isl_basic_set *isl_basic_set_align_params(
 	__isl_take isl_basic_set *bset, __isl_take isl_space *model);
+__isl_export
 __isl_give isl_set *isl_set_align_params(__isl_take isl_set *set,
 	__isl_take isl_space *model);
 __isl_give isl_basic_set *isl_basic_set_drop_unused_params(
