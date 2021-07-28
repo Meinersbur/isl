@@ -199,6 +199,7 @@ isl_bool isl_space_is_equal(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 isl_bool isl_space_has_equal_params(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
+__isl_export
 isl_bool isl_space_has_equal_tuples(__isl_keep isl_space *space1,
 	__isl_keep isl_space *space2);
 isl_bool isl_space_tuple_is_equal(__isl_keep isl_space *space1,
