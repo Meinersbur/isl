@@ -159,6 +159,7 @@ __isl_give isl_schedule *isl_schedule_map_schedule_node_bottom_up(
 
 __isl_give isl_schedule *isl_schedule_insert_context(
 	__isl_take isl_schedule *schedule, __isl_take isl_set *context);
+__isl_export
 __isl_give isl_schedule *isl_schedule_insert_partial_schedule(
 	__isl_take isl_schedule *schedule,
 	__isl_take isl_multi_union_pw_aff *partial);
