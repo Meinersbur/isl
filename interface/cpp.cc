@@ -514,7 +514,7 @@ void Method::print_param_use(ostream &os, int pos) const
 		return;
 	}
 
-	if (type->isIntegerType()) {
+	if (type->isIntegerType() || type->isVoidPointerType()) {
 		os << name;
 		return;
 	}
@@ -879,6 +879,9 @@ std::string cpp_type_printer::param(int arg, QualType type) const
 
 	if (cpp_generator::is_callback(type))
 		return generate_callback_type(arg, type);
+
+	if (type->isVoidPointerType())
+		return "void *";
 
 	generator::die("Cannot convert type to C++ type");
 }
