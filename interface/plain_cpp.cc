@@ -648,8 +648,8 @@ void plain_cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 	osprintf(os, "// implementations for isl::%s", cppname);
 
 	printer.print_class_factory();
-	printer.print_public_constructors();
 	printer.print_protected_constructors();
+	printer.print_public_constructors();
 	printer.print_constructors();
 	printer.print_copy_assignment();
 	printer.print_destructor();
