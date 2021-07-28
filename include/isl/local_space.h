@@ -15,6 +15,7 @@ typedef struct isl_local_space isl_local_space;
 
 isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls);
 
+__isl_constructor
 __isl_give isl_local_space *isl_local_space_from_space(
 	__isl_take isl_space *space);
 
