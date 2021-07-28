@@ -688,6 +688,7 @@ __isl_give isl_map *isl_map_gist_domain(__isl_take isl_map *map,
 	__isl_take isl_set *context);
 __isl_give isl_map *isl_map_gist_range(__isl_take isl_map *map,
 	__isl_take isl_set *context);
+__isl_export
 __isl_give isl_map *isl_map_gist_params(__isl_take isl_map *map,
 	__isl_take isl_set *context);
 __isl_give isl_map *isl_map_gist_basic_map(__isl_take isl_map *map,
