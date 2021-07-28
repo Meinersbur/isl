@@ -296,6 +296,7 @@ __isl_export
 isl_bool isl_union_map_isa_map(__isl_keep isl_union_map *umap);
 __isl_export
 __isl_give isl_map *isl_union_map_as_map(__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_map *isl_map_from_union_map(__isl_take isl_union_map *umap);
 
 __isl_give isl_basic_map *isl_union_map_sample(__isl_take isl_union_map *umap);
