@@ -61,6 +61,7 @@ __isl_export
 isl_bool isl_space_has_domain_tuple_id(__isl_keep isl_space *space);
 __isl_export
 isl_bool isl_space_has_range_tuple_id(__isl_keep isl_space *space);
+__isl_export
 isl_bool isl_space_has_tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type);
 __isl_export
