@@ -82,6 +82,7 @@ __isl_give isl_multi_##BASE *isl_multi_##BASE##_from_range(		\
 __isl_overload								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_identity_multi_##BASE(	\
 	__isl_take isl_multi_##BASE *multi);				\
+__isl_export								\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_identity(		\
 	__isl_take isl_space *space);					\
 __isl_overload								\
