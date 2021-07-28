@@ -20,6 +20,7 @@ ISL_DECLARE_MULTI(id)
 isl_ctx *isl_id_get_ctx(__isl_keep isl_id *id);
 uint32_t isl_id_get_hash(__isl_keep isl_id *id);
 
+__isl_export
 __isl_give isl_id *isl_id_alloc(isl_ctx *ctx,
 	__isl_keep const char *name, void *user);
 __isl_give isl_id *isl_id_copy(isl_id *id);
