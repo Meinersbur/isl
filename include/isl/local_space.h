@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-struct isl_local_space;
+struct __isl_export isl_local_space;
 typedef struct isl_local_space isl_local_space;
 
 isl_ctx *isl_local_space_get_ctx(__isl_keep isl_local_space *ls);
