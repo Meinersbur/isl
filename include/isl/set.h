@@ -87,6 +87,7 @@ __isl_give isl_set *isl_set_set_tuple_id(__isl_take isl_set *set,
 __isl_export
 __isl_give isl_set *isl_set_reset_tuple_id(__isl_take isl_set *set);
 isl_bool isl_set_has_tuple_id(__isl_keep isl_set *set);
+__isl_export
 __isl_give isl_id *isl_set_get_tuple_id(__isl_keep isl_set *set);
 __isl_give isl_set *isl_set_reset_user(__isl_take isl_set *set);
 
