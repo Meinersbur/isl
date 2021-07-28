@@ -69,6 +69,7 @@ __isl_give isl_id *isl_space_get_domain_tuple_id(
 __isl_export
 __isl_give isl_id *isl_space_get_range_tuple_id(
 	__isl_keep isl_space *space);
+__isl_export
 __isl_give isl_id *isl_space_get_tuple_id(__isl_keep isl_space *space,
 	enum isl_dim_type type);
 __isl_give isl_space *isl_space_reset_user(__isl_take isl_space *space);
