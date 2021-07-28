@@ -22,8 +22,10 @@ extern "C" {
 isl_ctx *isl_space_get_ctx(__isl_keep isl_space *space);
 __isl_export
 __isl_give isl_space *isl_space_unit(isl_ctx *ctx);
+__isl_constructor
 __isl_give isl_space *isl_space_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned n_in, unsigned n_out);
+__isl_constructor
 __isl_give isl_space *isl_space_set_alloc(isl_ctx *ctx,
 			unsigned nparam, unsigned dim);
 __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam);
