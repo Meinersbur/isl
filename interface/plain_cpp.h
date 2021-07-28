@@ -81,6 +81,15 @@ struct plain_cpp_generator::plain_printer : public cpp_generator::class_printer 
 	void print_callback_data_decl(ParmVarDecl *param, const string &name);
 	virtual bool want_descendent_overloads(const function_set &methods)
 		override;
+	virtual void print_public_constructors() = 0;
+	virtual void print_copy_assignment() = 0;
+	virtual void print_destructor() = 0;
+	virtual void print_ptr() = 0;
+	virtual void print_downcast() = 0;
+	virtual void print_ctx() = 0;
+	virtual void print_method_separator() = 0;
+	virtual void print_persistent_callbacks() = 0;
+	void print_public_methods();
 };
 
 /* A helper class for printing method declarations of a class.
@@ -95,15 +104,16 @@ struct plain_cpp_generator::decl_printer :
 	void print_subclass_type();
 	void print_class_factory(const std::string &prefix = std::string());
 	void print_protected_constructors();
-	void print_copy_assignment();
-	void print_public_constructors();
-	void print_destructor();
-	void print_ptr();
+	virtual void print_copy_assignment() override;
+	virtual void print_public_constructors() override;
+	virtual void print_destructor() override;
+	virtual void print_ptr() override;
 	void print_isa_type_template(int indent, const isl_class &super);
-	void print_downcast();
-	void print_ctx();
+	virtual void print_downcast() override;
+	virtual void print_ctx() override;
+	virtual void print_method_separator() override;
 	void print_persistent_callback_data(FunctionDecl *method);
-	void print_persistent_callbacks();
+	virtual void print_persistent_callbacks() override;
 	virtual void print_method(const Method &method) override;
 	virtual void print_method(const ConversionMethod &method) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
@@ -127,14 +137,15 @@ struct plain_cpp_generator::impl_printer :
 	void print_check_ptr_end(const char *ptr);
 	void print_class_factory();
 	void print_protected_constructors();
-	void print_public_constructors();
-	void print_copy_assignment();
-	void print_destructor();
-	void print_ptr();
-	void print_downcast();
-	void print_ctx();
+	virtual void print_public_constructors() override;
+	virtual void print_copy_assignment() override;
+	virtual void print_destructor() override;
+	virtual void print_ptr() override;
+	virtual void print_downcast() override;
+	virtual void print_ctx() override;
+	virtual void print_method_separator() override;
 	void print_set_persistent_callback(const Method &method);
-	void print_persistent_callbacks();
+	virtual void print_persistent_callbacks() override;
 	void print_argument_validity_check(const Method &method);
 	void print_save_ctx(const Method &method);
 	void print_on_error_continue();

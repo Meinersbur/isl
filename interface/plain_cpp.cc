@@ -261,17 +261,7 @@ void plain_cpp_generator::print_class(ostream &os, const isl_class &clazz)
 	printer.print_protected_constructors();
 	osprintf(os, "\n");
 	osprintf(os, "public:\n");
-	printer.print_public_constructors();
-	printer.print_constructors();
-	printer.print_copy_assignment();
-	printer.print_destructor();
-	printer.print_ptr();
-	printer.print_downcast();
-	printer.print_ctx();
-	osprintf(os, "\n");
-	printer.print_persistent_callbacks();
-	printer.print_methods();
-	printer.print_set_enums();
+	printer.print_public_methods();
 
 	osprintf(os, "};\n");
 }
@@ -515,6 +505,13 @@ void plain_cpp_generator::decl_printer::print_ctx()
 	osprintf(os, "  inline %sctx ctx() const;\n", ns.c_str());
 }
 
+/* Print a separator between groups of method declarations.
+ */
+void plain_cpp_generator::decl_printer::print_method_separator()
+{
+	os << "\n";
+}
+
 /* Add a space to the return type "type" if needed,
  * i.e., if it is not the type of a pointer.
  */
@@ -649,16 +646,7 @@ void plain_cpp_generator::print_class_impl(ostream &os, const isl_class &clazz)
 
 	printer.print_class_factory();
 	printer.print_protected_constructors();
-	printer.print_public_constructors();
-	printer.print_constructors();
-	printer.print_copy_assignment();
-	printer.print_destructor();
-	printer.print_ptr();
-	printer.print_downcast();
-	printer.print_ctx();
-	printer.print_persistent_callbacks();
-	printer.print_methods();
-	printer.print_set_enums();
+	printer.print_public_methods();
 	printer.print_stream_insertion();
 }
 
@@ -1169,6 +1157,14 @@ void plain_cpp_generator::impl_printer::print_ctx()
 	osprintf(os, "%sctx %s::ctx() const {\n", ns.c_str(), cppname);
 	osprintf(os, "  return %sctx(%s_get_ctx(ptr));\n", ns.c_str(), name);
 	osprintf(os, "}\n");
+}
+
+/* Print a separator between groups of method definitions.
+ *
+ * No additional separator is required between method definitions.
+ */
+void plain_cpp_generator::impl_printer::print_method_separator()
+{
 }
 
 /* Print the implementations of the methods needed for the persistent callbacks
@@ -1713,6 +1709,23 @@ bool plain_cpp_generator::plain_printer::want_descendent_overloads(
 	const function_set &methods)
 {
 	return methods.size() > 1;
+}
+
+/* Print declarations or definitions of the public methods.
+ */
+void plain_cpp_generator::plain_printer::print_public_methods()
+{
+	print_public_constructors();
+	print_constructors();
+	print_copy_assignment();
+	print_destructor();
+	print_ptr();
+	print_downcast();
+	print_ctx();
+	print_method_separator();
+	print_persistent_callbacks();
+	print_methods();
+	print_set_enums();
 }
 
 /* Print the body of C function callback with the given indentation
