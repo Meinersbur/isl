@@ -46,6 +46,7 @@ __isl_give isl_ast_expr *isl_ast_expr_or(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_or_else(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
+__isl_export
 __isl_give isl_ast_expr *isl_ast_expr_le(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_lt(__isl_take isl_ast_expr *expr1,
