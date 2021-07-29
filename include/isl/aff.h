@@ -1238,6 +1238,7 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_reset_user(
 __isl_give isl_union_pw_aff *isl_union_pw_aff_empty_ctx(isl_ctx *ctx);
 __isl_give isl_union_pw_aff *isl_union_pw_aff_empty_space(
 	__isl_take isl_space *space);
+__isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_empty(
 	__isl_take isl_space *space);
 __isl_constructor
