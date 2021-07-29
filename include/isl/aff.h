@@ -686,6 +686,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_reset_user(
 int isl_pw_multi_aff_find_dim_by_name(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type, const char *name);
 
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_dims(
 	__isl_take isl_pw_multi_aff *pma,
 	enum isl_dim_type type, unsigned first, unsigned n);
