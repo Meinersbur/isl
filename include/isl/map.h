@@ -808,6 +808,7 @@ __isl_give isl_map *isl_multi_aff_as_map(__isl_take isl_multi_aff *ma);
 __isl_export
 __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff);
 
+__isl_export
 __isl_give isl_pw_aff *isl_map_dim_min(__isl_take isl_map *map, int pos);
 __isl_give isl_pw_aff *isl_map_dim_max(__isl_take isl_map *map, int pos);
 
