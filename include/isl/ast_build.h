@@ -56,6 +56,7 @@ __isl_export
 __isl_give isl_union_map *isl_ast_build_get_schedule(
 	__isl_keep isl_ast_build *build);
 
+__isl_export
 __isl_give isl_ast_build *isl_ast_build_restrict(
 	__isl_take isl_ast_build *build, __isl_take isl_set *set);
 
