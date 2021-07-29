@@ -313,6 +313,7 @@ __isl_export
 __isl_give isl_set *isl_set_detect_equalities(__isl_take isl_set *set);
 __isl_export
 __isl_give isl_basic_set *isl_set_affine_hull(__isl_take isl_set *set);
+__isl_export
 __isl_give isl_basic_set *isl_set_convex_hull(__isl_take isl_set *set);
 __isl_export
 __isl_give isl_basic_set *isl_set_polyhedral_hull(__isl_take isl_set *set);
