@@ -510,6 +510,7 @@ __isl_give isl_map *isl_map_remove_divs_involving_dims(__isl_take isl_map *map,
 __isl_give isl_map *isl_map_remove_inputs(__isl_take isl_map *map,
 	unsigned first, unsigned n);
 
+__isl_export
 __isl_give isl_basic_map *isl_basic_map_equate(__isl_take isl_basic_map *bmap,
 	enum isl_dim_type type1, int pos1, enum isl_dim_type type2, int pos2);
 __isl_give isl_basic_map *isl_basic_map_order_ge(__isl_take isl_basic_map *bmap,
