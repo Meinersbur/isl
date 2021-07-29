@@ -502,6 +502,7 @@ __isl_give isl_set *isl_set_align_divs(__isl_take isl_set *set);
 __isl_export
 __isl_give isl_multi_val *isl_set_get_plain_multi_val_if_fixed(
 	__isl_keep isl_set *set);
+__isl_export
 __isl_give isl_val *isl_set_plain_get_val_if_fixed(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
 isl_bool isl_set_dim_is_bounded(__isl_keep isl_set *set,
