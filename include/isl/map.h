@@ -733,6 +733,7 @@ isl_size isl_map_n_basic_map(__isl_keep isl_map *map);
 __isl_export
 isl_stat isl_map_foreach_basic_map(__isl_keep isl_map *map,
 	isl_stat (*fn)(__isl_take isl_basic_map *bmap, void *user), void *user);
+__isl_export
 __isl_give isl_basic_map_list *isl_map_get_basic_map_list(
 	__isl_keep isl_map *map);
 
@@ -809,7 +810,7 @@ __isl_give isl_map *isl_map_from_multi_aff(__isl_take isl_multi_aff *maff);
 __isl_give isl_pw_aff *isl_map_dim_min(__isl_take isl_map *map, int pos);
 __isl_give isl_pw_aff *isl_map_dim_max(__isl_take isl_map *map, int pos);
 
-ISL_DECLARE_LIST_FN(basic_map)
+ISL_DECLARE_EXPORTED_LIST_FN(basic_map)
 ISL_DECLARE_EXPORTED_LIST_FN(map)
 ISL_DECLARE_EXPORTED_LIST_FN_READ(map)
 
