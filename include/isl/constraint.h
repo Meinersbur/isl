@@ -67,6 +67,7 @@ __isl_give isl_basic_set *isl_basic_set_add_constraint(
 __isl_export
 __isl_give isl_map *isl_map_add_constraint(__isl_take isl_map *map,
 	__isl_take isl_constraint *constraint);
+__isl_export
 __isl_give isl_set *isl_set_add_constraint(__isl_take isl_set *set,
 	__isl_take isl_constraint *constraint);
 
