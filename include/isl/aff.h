@@ -1101,6 +1101,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_set(
 __isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_map_as_union_pw_multi_aff(
 	__isl_take isl_union_map *umap);
+__isl_constructor
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_union_map(
 	__isl_take isl_union_map *umap);
 
