@@ -293,6 +293,7 @@ __isl_give isl_multi_pw_aff *isl_map_max_multi_pw_aff(__isl_take isl_map *map);
 void isl_basic_map_print_internal(__isl_keep isl_basic_map *bmap,
 	FILE *out, int indent);
 
+__isl_export
 __isl_give isl_val *isl_basic_map_plain_get_val_if_fixed(
 	__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned pos);
