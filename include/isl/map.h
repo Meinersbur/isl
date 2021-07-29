@@ -57,6 +57,7 @@ __isl_give isl_basic_map *isl_basic_map_set_tuple_name(
 	__isl_take isl_basic_map *bmap, enum isl_dim_type type, const char *s);
 const char *isl_basic_map_get_tuple_name(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type);
+__isl_export
 isl_bool isl_map_has_tuple_name(__isl_keep isl_map *map,
 	enum isl_dim_type type);
 const char *isl_map_get_tuple_name(__isl_keep isl_map *map,
