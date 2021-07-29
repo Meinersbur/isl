@@ -1554,6 +1554,8 @@ static isl_stat add_selected_wraps_around_facet(struct isl_wraps *wraps,
 	if (isl_tab_detect_redundant(info->tab) < 0)
 		return isl_stat_error;
 	if (info->tab->empty) {
+		if (isl_tab_rollback(info->tab, snap) < 0)
+			return isl_stat_error;
 		if (!add_valid)
 			return wraps_mark_failed(wraps);
 		return isl_stat_ok;

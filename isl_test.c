@@ -2419,7 +2419,7 @@ static int test_coalesce_special(struct isl_ctx *ctx)
 }
 
 /* Check that the union of the basic sets described by "str1" and "str2"
- * can be coalesced.
+ * can be coalesced and that the result is equal to the union.
  * The explicit call to isl_basic_set_union prevents the implicit
  * equality constraints in the basic maps from being detected prior
  * to the call to isl_set_coalesce, at least at the point
@@ -2429,13 +2429,28 @@ static isl_stat test_coalesce_union(isl_ctx *ctx, const char *str1,
 	const char *str2)
 {
 	isl_basic_set *bset1, *bset2;
-	isl_set *set;
+	isl_set *set, *set2;
+	isl_bool equal;
 
 	bset1 = isl_basic_set_read_from_str(ctx, str1);
 	bset2 = isl_basic_set_read_from_str(ctx, str2);
 	set = isl_basic_set_union(bset1, bset2);
 	set = isl_set_coalesce(set);
+
+	bset1 = isl_basic_set_read_from_str(ctx, str1);
+	bset2 = isl_basic_set_read_from_str(ctx, str2);
+	set2 = isl_basic_set_union(bset1, bset2);
+
+	equal = isl_set_is_equal(set, set2);
 	isl_set_free(set);
+	isl_set_free(set2);
+
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"coalesced set not equal to input",
+			return isl_stat_error);
 
 	return isl_stat_non_null(set);
 }
@@ -2585,6 +2600,25 @@ static isl_stat test_coalesce_special7(isl_ctx *ctx)
 	return test_coalesce_union(ctx, str1, str2);
 }
 
+/* A specialized coalescing test case that would result in a disjunct
+ * getting dropped in an earlier version of isl.  Use test_coalesce_union with
+ * an explicit call to isl_basic_set_union to prevent the implicit
+ * equality constraints in the basic maps from being detected prior
+ * to the call to isl_set_coalesce, at least at the point
+ * where this test case was introduced.
+ */
+static isl_stat test_coalesce_special8(isl_ctx *ctx)
+{
+	const char *str1;
+	const char *str2;
+
+	str1 = "{ [a, b, c] : 2c <= -a and b >= -a and b <= 5 and "
+			"6c > -7a and 11c >= -5a - b and a <= 3 }";
+	str2 = "{ [a, b, c] : 6c > -7a and b >= -a and b <= 5 and "
+			"11c >= -5a - b and a >= 4 and 2b <= a and 2c <= -a }";
+	return test_coalesce_union(ctx, str1, str2);
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2616,7 +2650,8 @@ static int test_coalesce(struct isl_ctx *ctx)
 		return -1;
 	if (test_coalesce_special7(ctx) < 0)
 		return -1;
-
+	if (test_coalesce_special8(ctx) < 0)
+		return -1;
 
 	return 0;
 }
