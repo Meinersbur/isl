@@ -670,6 +670,7 @@ __isl_give isl_map *isl_map_drop_constraints_not_involving_dims(
 
 isl_bool isl_basic_map_involves_dims(__isl_keep isl_basic_map *bmap,
 	enum isl_dim_type type, unsigned first, unsigned n);
+__isl_export
 isl_bool isl_map_involves_dims(__isl_keep isl_map *map,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
