@@ -89,6 +89,7 @@ isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr);
 __isl_export
 __isl_give isl_ast_expr *isl_ast_expr_op_get_arg(__isl_keep isl_ast_expr *expr,
 	int pos);
+__isl_export
 __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
 	int pos);
 __isl_give isl_ast_expr *isl_ast_expr_set_op_arg(__isl_take isl_ast_expr *expr,
