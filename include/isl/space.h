@@ -33,6 +33,7 @@ __isl_give isl_space *isl_space_params_alloc(isl_ctx *ctx, unsigned nparam);
 __isl_give isl_space *isl_space_copy(__isl_keep isl_space *space);
 __isl_null isl_space *isl_space_free(__isl_take isl_space *space);
 
+__isl_export
 isl_bool isl_space_is_params(__isl_keep isl_space *space);
 __isl_export
 isl_bool isl_space_is_set(__isl_keep isl_space *space);
