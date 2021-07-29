@@ -228,6 +228,7 @@ isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(
 __isl_export
 __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_union_map(
 	__isl_keep isl_schedule_node *node);
+__isl_export
 __isl_give isl_union_map *isl_schedule_node_get_prefix_schedule_relation(
 	__isl_keep isl_schedule_node *node);
 __isl_give isl_union_map *isl_schedule_node_get_subtree_schedule_union_map(
