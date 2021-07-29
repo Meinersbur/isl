@@ -139,6 +139,7 @@ __isl_give isl_basic_set_list *isl_union_set_get_basic_set_list(
 __isl_export
 __isl_give isl_set_list *isl_union_set_get_set_list(
 	__isl_keep isl_union_set *uset);
+__isl_export
 isl_bool isl_union_set_contains(__isl_keep isl_union_set *uset,
 	__isl_keep isl_space *space);
 __isl_export
