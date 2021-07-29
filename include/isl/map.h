@@ -583,6 +583,7 @@ __isl_give isl_set *isl_map_range(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_map *isl_set_insert_domain(__isl_take isl_set *set,
 	__isl_take isl_space *domain);
+__isl_export
 __isl_give isl_map *isl_map_domain_map(__isl_take isl_map *map);
 __isl_export
 __isl_give isl_map *isl_map_range_map(__isl_take isl_map *map);
