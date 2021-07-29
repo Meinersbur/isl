@@ -42,6 +42,7 @@ isl_size isl_set_dim(__isl_keep isl_set *set, enum isl_dim_type type);
 
 isl_ctx *isl_basic_set_get_ctx(__isl_keep isl_basic_set *bset);
 isl_ctx *isl_set_get_ctx(__isl_keep isl_set *set);
+__isl_export
 __isl_give isl_space *isl_basic_set_get_space(__isl_keep isl_basic_set *bset);
 __isl_export
 __isl_give isl_space *isl_set_get_space(__isl_keep isl_set *set);
