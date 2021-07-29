@@ -652,6 +652,7 @@ __isl_give isl_pw_aff *isl_pw_multi_aff_get_at(
 	__isl_keep isl_pw_multi_aff *pma, int pos);
 __isl_give isl_pw_aff *isl_pw_multi_aff_get_pw_aff(
 	__isl_keep isl_pw_multi_aff *pma, int pos);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_set_pw_aff(
 	__isl_take isl_pw_multi_aff *pma, unsigned pos,
 	__isl_take isl_pw_aff *pa);
