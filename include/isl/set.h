@@ -504,6 +504,7 @@ isl_bool isl_set_dim_has_lower_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
 isl_bool isl_set_dim_has_upper_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
+__isl_export
 isl_bool isl_set_dim_has_any_lower_bound(__isl_keep isl_set *set,
 	enum isl_dim_type type, unsigned pos);
 isl_bool isl_set_dim_has_any_upper_bound(__isl_keep isl_set *set,
