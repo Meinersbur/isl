@@ -118,6 +118,7 @@ __isl_give isl_union_map *isl_union_map_flat_domain_product(
 __isl_export
 __isl_give isl_union_map *isl_union_map_range_product(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);
+__isl_export
 __isl_give isl_union_map *isl_union_map_flat_range_product(
 	__isl_take isl_union_map *umap1, __isl_take isl_union_map *umap2);
 __isl_export
