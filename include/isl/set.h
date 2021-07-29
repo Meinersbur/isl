@@ -468,6 +468,7 @@ isl_bool isl_set_is_disjoint(__isl_keep isl_set *set1,
 __isl_export
 isl_bool isl_set_is_singleton(__isl_keep isl_set *set);
 isl_bool isl_set_is_box(__isl_keep isl_set *set);
+__isl_export
 isl_bool isl_set_has_equal_space(__isl_keep isl_set *set1,
 	__isl_keep isl_set *set2);
 
