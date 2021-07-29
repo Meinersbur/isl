@@ -313,6 +313,7 @@ __isl_give isl_map *isl_space_universe_map(__isl_take isl_space *space);
 __isl_give isl_map *isl_map_nat_universe(__isl_take isl_space *space);
 __isl_export
 __isl_give isl_map *isl_map_empty(__isl_take isl_space *space);
+__isl_export
 __isl_give isl_map *isl_map_identity(__isl_take isl_space *space);
 __isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *space,
 	unsigned n);
