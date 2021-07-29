@@ -101,6 +101,7 @@ __isl_export
 isl_bool isl_map_has_domain_tuple_id(__isl_keep isl_map *map);
 __isl_export
 isl_bool isl_map_has_range_tuple_id(__isl_keep isl_map *map);
+__isl_export
 isl_bool isl_map_has_tuple_id(__isl_keep isl_map *map, enum isl_dim_type type);
 __isl_export
 __isl_give isl_id *isl_map_get_domain_tuple_id(__isl_keep isl_map *map);
