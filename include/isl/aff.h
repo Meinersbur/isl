@@ -286,6 +286,7 @@ isl_bool isl_pw_aff_involves_param_id(__isl_keep isl_pw_aff *pa,
 isl_bool isl_pw_aff_involves_dims(__isl_keep isl_pw_aff *pwaff,
 	enum isl_dim_type type, unsigned first, unsigned n);
 
+__isl_export
 isl_bool isl_pw_aff_is_cst(__isl_keep isl_pw_aff *pwaff);
 
 __isl_export
