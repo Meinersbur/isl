@@ -181,6 +181,7 @@ __isl_give isl_basic_map *isl_basic_map_preimage_range_multi_aff(
 	__isl_take isl_basic_map *bmap, __isl_take isl_multi_aff *ma);
 __isl_export
 __isl_give isl_basic_map *isl_basic_map_reverse(__isl_take isl_basic_map *bmap);
+__isl_export
 __isl_give isl_basic_set *isl_basic_map_domain(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_set *isl_basic_map_range(__isl_take isl_basic_map *bmap);
 __isl_give isl_basic_map *isl_basic_map_domain_map(
