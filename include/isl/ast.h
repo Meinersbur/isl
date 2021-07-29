@@ -60,6 +60,7 @@ __isl_give isl_ast_expr *isl_ast_expr_access(__isl_take isl_ast_expr *array,
 	__isl_take isl_ast_expr_list *indices);
 __isl_give isl_ast_expr *isl_ast_expr_call(__isl_take isl_ast_expr *function,
 	__isl_take isl_ast_expr_list *arguments);
+__isl_export
 __isl_give isl_ast_expr *isl_ast_expr_address_of(__isl_take isl_ast_expr *expr);
 
 __isl_give isl_ast_expr *isl_ast_expr_copy(__isl_keep isl_ast_expr *expr);
