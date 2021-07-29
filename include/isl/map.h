@@ -217,6 +217,7 @@ __isl_give isl_printer *isl_printer_print_basic_map(
 __isl_give char *isl_map_to_str(__isl_keep isl_map *map);
 __isl_give isl_printer *isl_printer_print_map(__isl_take isl_printer *printer,
 	__isl_keep isl_map *map);
+__isl_export
 __isl_give isl_basic_map *isl_basic_map_fix_si(__isl_take isl_basic_map *bmap,
 		enum isl_dim_type type, unsigned pos, int value);
 __isl_export
