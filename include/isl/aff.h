@@ -65,6 +65,7 @@ __isl_give isl_val *isl_aff_get_coefficient_val(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, int pos);
 int isl_aff_coefficient_sgn(__isl_keep isl_aff *aff,
 	enum isl_dim_type type, int pos);
+__isl_export
 __isl_give isl_val *isl_aff_get_denominator_val(__isl_keep isl_aff *aff);
 __isl_give isl_aff *isl_aff_set_constant_si(__isl_take isl_aff *aff, int v);
 __isl_give isl_aff *isl_aff_set_constant_val(__isl_take isl_aff *aff,
