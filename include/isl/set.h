@@ -29,6 +29,7 @@ extern "C" {
 isl_size isl_basic_set_n_dim(__isl_keep isl_basic_set *bset);
 isl_size isl_basic_set_n_param(__isl_keep isl_basic_set *bset);
 isl_size isl_basic_set_total_dim(__isl_keep const isl_basic_set *bset);
+__isl_export
 isl_size isl_basic_set_dim(__isl_keep isl_basic_set *bset,
 				enum isl_dim_type type);
 
