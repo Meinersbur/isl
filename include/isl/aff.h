@@ -907,6 +907,7 @@ __isl_give isl_union_pw_multi_aff *isl_union_set_identity_union_pw_multi_aff(
 __isl_give isl_union_pw_aff *isl_union_pw_multi_aff_get_union_pw_aff(
 	__isl_keep isl_union_pw_multi_aff *upma, int pos);
 
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_add_pw_multi_aff(
 	__isl_take isl_union_pw_multi_aff *upma,
 	__isl_take isl_pw_multi_aff *pma);
