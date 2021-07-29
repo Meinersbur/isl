@@ -212,6 +212,7 @@ __isl_export
 __isl_give isl_id *isl_schedule_node_mark_get_id(
 	__isl_keep isl_schedule_node *node);
 
+__isl_export
 isl_size isl_schedule_node_get_schedule_depth(
 	__isl_keep isl_schedule_node *node);
 __isl_export
