@@ -161,6 +161,7 @@ isl_bool isl_multi_##BASE##_involves_nan(				\
 	__isl_keep isl_multi_##BASE *multi);
 
 #define ISL_DECLARE_MULTI_DROP_DIMS(BASE)				\
+__isl_export								\
 isl_size isl_multi_##BASE##_dim(__isl_keep isl_multi_##BASE *multi,	\
 	enum isl_dim_type type);					\
 __isl_give isl_multi_##BASE *isl_multi_##BASE##_drop_dims(		\
