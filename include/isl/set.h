@@ -457,6 +457,7 @@ isl_bool isl_set_involves_dims(__isl_keep isl_set *set,
 void isl_set_print_internal(__isl_keep isl_set *set, FILE *out, int indent);
 isl_bool isl_set_plain_is_empty(__isl_keep isl_set *set);
 isl_bool isl_set_plain_is_universe(__isl_keep isl_set *set);
+__isl_export
 isl_bool isl_set_is_params(__isl_keep isl_set *set);
 __isl_export
 isl_bool isl_set_is_empty(__isl_keep isl_set *set);
