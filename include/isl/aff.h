@@ -298,6 +298,7 @@ __isl_give isl_pw_aff *isl_pw_aff_drop_unused_params(
 
 isl_bool isl_pw_aff_has_tuple_id(__isl_keep isl_pw_aff *pa,
 	enum isl_dim_type type);
+__isl_export
 __isl_give isl_id *isl_pw_aff_get_tuple_id(__isl_keep isl_pw_aff *pa,
 	enum isl_dim_type type);
 __isl_export
