@@ -76,6 +76,7 @@ __isl_give isl_val *isl_ast_expr_int_get_val(__isl_keep isl_ast_expr *expr);
 __isl_give isl_val *isl_ast_expr_get_val(__isl_keep isl_ast_expr *expr);
 __isl_export
 __isl_give isl_id *isl_ast_expr_id_get_id(__isl_keep isl_ast_expr *expr);
+__isl_export
 __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr);
 
 __isl_subclass(isl_ast_expr_op)
