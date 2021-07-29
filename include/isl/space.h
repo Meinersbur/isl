@@ -163,6 +163,7 @@ __isl_give isl_space *isl_space_add_unnamed_tuple_ui(
 __isl_overload
 __isl_give isl_space *isl_space_add_named_tuple_id_ui(
 	__isl_take isl_space *space, __isl_take isl_id *tuple_id, unsigned dim);
+__isl_export
 __isl_give isl_space *isl_space_set_from_params(__isl_take isl_space *space);
 
 __isl_export
