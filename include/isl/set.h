@@ -369,6 +369,7 @@ __isl_give isl_set *isl_set_fix_dim_si(__isl_take isl_set *set,
 __isl_give isl_basic_set *isl_basic_set_insert_dims(
 	__isl_take isl_basic_set *bset,
 	enum isl_dim_type type, unsigned pos, unsigned n);
+__isl_export
 __isl_give isl_set *isl_set_insert_dims(__isl_take isl_set *set,
 		enum isl_dim_type type, unsigned pos, unsigned n);
 __isl_give isl_basic_set *isl_basic_set_add_dims(__isl_take isl_basic_set *bset,
