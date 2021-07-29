@@ -38,6 +38,7 @@ __isl_export
 isl_size isl_map_domain_tuple_dim(__isl_keep isl_map *map);
 __isl_export
 isl_size isl_map_range_tuple_dim(__isl_keep isl_map *map);
+__isl_export
 isl_size isl_map_dim(__isl_keep isl_map *map, enum isl_dim_type type);
 
 isl_ctx *isl_basic_map_get_ctx(__isl_keep isl_basic_map *bmap);
