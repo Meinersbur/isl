@@ -18,7 +18,7 @@ ISL_DECLARE_EXPORTED_LIST_TYPE(map)
 #ifndef isl_basic_set
 struct __isl_subclass(isl_set) isl_basic_set;
 typedef struct isl_basic_set isl_basic_set;
-ISL_DECLARE_LIST_TYPE(basic_set)
+ISL_DECLARE_EXPORTED_LIST_TYPE(basic_set)
 #endif
 
 #ifndef isl_set
@@ -27,7 +27,7 @@ typedef struct isl_set isl_set;
 ISL_DECLARE_EXPORTED_LIST_TYPE(set)
 #endif
 
-ISL_DECLARE_LIST_FN(basic_set)
+ISL_DECLARE_EXPORTED_LIST_FN(basic_set)
 ISL_DECLARE_EXPORTED_LIST_FN(set)
 ISL_DECLARE_EXPORTED_LIST_FN_READ(set)
 
