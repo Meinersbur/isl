@@ -327,6 +327,7 @@ __isl_give isl_map *isl_map_lex_ge_first(__isl_take isl_space *space,
 	unsigned n);
 __isl_export
 __isl_give isl_map *isl_map_lex_gt(__isl_take isl_space *set_space);
+__isl_export
 __isl_give isl_map *isl_map_lex_ge(__isl_take isl_space *set_space);
 __isl_null isl_map *isl_map_free(__isl_take isl_map *map);
 __isl_give isl_map *isl_map_copy(__isl_keep isl_map *map);
