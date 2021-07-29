@@ -14,6 +14,7 @@ extern "C" {
 struct __isl_export ISL_HMAP;
 typedef struct ISL_HMAP	ISL_HMAP;
 
+__isl_export
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,alloc)(isl_ctx *ctx, int min_size);
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,copy)(__isl_keep ISL_HMAP *hmap);
 __isl_null ISL_HMAP *ISL_FN(ISL_HMAP,free)(__isl_take ISL_HMAP *hmap);
