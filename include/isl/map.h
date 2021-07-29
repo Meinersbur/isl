@@ -318,6 +318,7 @@ __isl_give isl_map *isl_map_lex_lt_first(__isl_take isl_space *space,
 	unsigned n);
 __isl_give isl_map *isl_map_lex_le_first(__isl_take isl_space *space,
 	unsigned n);
+__isl_export
 __isl_give isl_map *isl_map_lex_lt(__isl_take isl_space *set_space);
 __isl_export
 __isl_give isl_map *isl_map_lex_le(__isl_take isl_space *set_space);
