@@ -236,6 +236,7 @@ __isl_give isl_pw_aff *isl_pw_aff_var_on_domain(__isl_take isl_local_space *ls,
 __isl_give isl_pw_aff *isl_pw_aff_nan_on_domain_space(
 	__isl_take isl_space *space);
 __isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls);
+__isl_constructor
 __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 	__isl_take isl_val *v);
 __isl_overload
