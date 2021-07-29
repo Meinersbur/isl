@@ -636,6 +636,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_copy(
 __isl_null isl_pw_multi_aff *isl_pw_multi_aff_free(
 	__isl_take isl_pw_multi_aff *pma);
 
+__isl_export
 isl_size isl_pw_multi_aff_dim(__isl_keep isl_pw_multi_aff *pma,
 	enum isl_dim_type type);
 __isl_export
