@@ -30,6 +30,7 @@ __isl_give isl_ast_expr *isl_ast_expr_add(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_sub(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
+__isl_export
 __isl_give isl_ast_expr *isl_ast_expr_mul(__isl_take isl_ast_expr *expr1,
 	__isl_take isl_ast_expr *expr2);
 __isl_give isl_ast_expr *isl_ast_expr_div(__isl_take isl_ast_expr *expr1,
