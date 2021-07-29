@@ -490,6 +490,7 @@ __isl_give isl_basic_map *isl_basic_map_move_dims(
 	__isl_take isl_basic_map *bmap,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
+__isl_export
 __isl_give isl_map *isl_map_move_dims(__isl_take isl_map *map,
 	enum isl_dim_type dst_type, unsigned dst_pos,
 	enum isl_dim_type src_type, unsigned src_pos, unsigned n);
