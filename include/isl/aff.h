@@ -900,6 +900,7 @@ __isl_give isl_union_pw_multi_aff *isl_pw_multi_aff_to_union_pw_multi_aff(
 __isl_constructor
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_pw_multi_aff(
 	__isl_take isl_pw_multi_aff *pma);
+__isl_constructor
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_from_domain(
 	__isl_take isl_union_set *uset);
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_multi_val_on_domain(
