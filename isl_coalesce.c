@@ -3180,7 +3180,7 @@ static isl_stat tab_insert_divs(struct isl_coalesce_info *info,
 			return isl_stat_error;
 		info->bmap = isl_basic_map_cow(info->bmap);
 		info->bmap = isl_basic_map_free_inequality(info->bmap, 2 * n);
-		if (info->bmap < 0)
+		if (!info->bmap)
 			return isl_stat_error;
 
 		return fix_constant_divs(info, n, expanded);
