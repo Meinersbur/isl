@@ -365,12 +365,13 @@ include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 			> $@ || (rm $@ && false)
 
 include/isl/isl-noexceptions.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
-		cpp/cpp.h.top cpp/cpp.h.bot
+		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
 	$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h && \
-		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
+		interface/extract_interface$(BUILD_EXEEXT) \
+			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
-		cat $(srcdir)/cpp/cpp.h.bot) \
+		cat $(srcdir)/cpp/cpp-checked.h.bot) \
 			> $@ || (rm $@ && false)
 
 include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
