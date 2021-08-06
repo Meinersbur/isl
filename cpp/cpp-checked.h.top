@@ -41,7 +41,7 @@ namespace isl {
 struct checker {
 	bool checked = false;
 	~checker() {
-		ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
+		//ISLPP_ASSERT(checked, "IMPLEMENTATION ERROR: Unchecked state");
 	}
 };
 
@@ -73,8 +73,8 @@ public:
   bool is_false() const { check->checked = true; return val == isl_bool_false; }
   bool is_true() const { check->checked = true; return val == isl_bool_true; }
 
-  explicit operator bool() const {
-    ISLPP_ASSERT(check->checked, "IMPLEMENTATION ERROR: Unchecked error state");
+  operator bool() const {
+    //ISLPP_ASSERT(check->checked, "IMPLEMENTATION ERROR: Unchecked error state");
     ISLPP_ASSERT(!is_error(), "IMPLEMENTATION ERROR: Unhandled error state");
     return is_true();
   }
