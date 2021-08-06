@@ -133,8 +133,6 @@ void plain_cpp_generator::generate()
 
 	osprintf(os, "\n");
 	osprintf(os, "namespace isl {\n\n");
-	if (checked)
-		osprintf(os, "namespace checked {\n\n");
 
 	print_forward_declarations(os);
 	osprintf(os, "\n");
@@ -142,8 +140,6 @@ void plain_cpp_generator::generate()
 	osprintf(os, "\n");
 	print_implementations(os);
 
-	if (checked)
-		osprintf(os, "} // namespace checked\n");
 	osprintf(os, "} // namespace isl\n");
 }
 
@@ -1893,7 +1889,7 @@ string checked_cpp_type_printer::isl_size() const
  */
 std::string checked_cpp_type_printer::isl_namespace() const
 {
-	return "isl::checked::";
+	return "isl::";
 }
 
 /* Return the namespace of the generated C++ bindings.

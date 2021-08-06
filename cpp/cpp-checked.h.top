@@ -21,7 +21,6 @@
 #include <type_traits>
 
 namespace isl {
-namespace checked {
 
 #define ISLPP_STRINGIZE_(X) #X
 #define ISLPP_STRINGIZE(X) ISLPP_STRINGIZE_(X)
@@ -198,6 +197,5 @@ enum class dim {
   all = isl_dim_all
 };
 
-}
 } // namespace isl
 
