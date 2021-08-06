@@ -5,6 +5,8 @@
 /// polyhedral compilation, ranging from dependence analysis over scheduling
 /// to AST generation.
 
+// clang-format off
+
 #ifndef ISL_CPP_CHECKED
 #define ISL_CPP_CHECKED
 
