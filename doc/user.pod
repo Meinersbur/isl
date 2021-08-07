@@ -436,7 +436,11 @@ Installation prefix for C<GMP> (architecture-dependent files).
 
 	make
 
-=item 4 Install (optional)
+=item 4 Test (optional)
+
+	make check
+
+=item 5 Install (optional)
 
 	make install
 
