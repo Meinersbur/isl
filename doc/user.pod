@@ -1006,6 +1006,8 @@ using the following functions.
 	__isl_give isl_id *isl_id_set_free_user(
 		__isl_take isl_id *id,
 		void (*free_user)(void *user));
+	void (*isl_id_get_free_user(__isl_keep isl_id *id))
+		(void *user);
 	__isl_give isl_id *isl_id_copy(isl_id *id);
 	__isl_null isl_id *isl_id_free(__isl_take isl_id *id);
 
@@ -1017,6 +1019,7 @@ using the following functions.
 
 The callback set by C<isl_id_set_free_user> is called on the user
 pointer when the last reference to the C<isl_id> is freed.
+This callback can be retrieved using C<isl_id_get_free_user>.
 Note that C<isl_id_get_name> returns a pointer to some internal
 data structure, so the result can only be used while the
 corresponding C<isl_id> is alive.
