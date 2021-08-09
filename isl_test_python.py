@@ -159,6 +159,27 @@ def test_return():
 	test_return_bool()
 	test_return_string()
 
+# A class that is used to test isl.id.user.
+#
+class S:
+	def __init__(self):
+		self.value = 42
+
+# Test isl.id.user.
+#
+# In particular, check that the object attached to an identifier
+# can be retrieved again.
+#
+def test_user():
+	id = isl.id("test", 5)
+	id2 = isl.id("test2")
+	id3 = isl.id("S", S())
+	assert id.user() == 5, f"unexpected user object {id.user()}"
+	assert id2.user() is None, f"unexpected user object {id2.user()}"
+	s = id3.user()
+	assert isinstance(s, S), f"unexpected user object {s}"
+	assert s.value == 42, f"unexpected user object {s}"
+
 # Test that foreach functions are modeled correctly.
 #
 # Verify that closures are correctly called as callback of a 'foreach'
@@ -461,6 +482,7 @@ def test_ast_build_expr():
 #  - Object construction
 #  - Different parameter types
 #  - Different return types
+#  - isl.id.user
 #  - Foreach functions
 #  - Foreach SCC function
 #  - Every functions
@@ -472,6 +494,7 @@ def test_ast_build_expr():
 test_constructors()
 test_parameters()
 test_return()
+test_user()
 test_foreach()
 test_foreach_scc()
 test_every()

@@ -38,6 +38,8 @@ private:
 	void print_restype(FunctionDecl *fd);
 	void print(map<string, isl_class> &classes, set<string> &done);
 	void print_constructor(const isl_class &clazz, FunctionDecl *method);
+	void print_special_constructors(const isl_class &clazz);
+	void print_special_methods(const isl_class &clazz);
 	void print_upcast_constructors(const isl_class &clazz);
 	void print_new(const isl_class &clazz,
 		const string &python_name);

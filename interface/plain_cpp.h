@@ -90,6 +90,12 @@ struct plain_cpp_generator::plain_printer : public cpp_generator::class_printer 
 	virtual void print_method_separator() = 0;
 	virtual void print_persistent_callbacks() = 0;
 	void print_public_methods();
+	void print_id_constructor_user_header();
+	void print_id_user_header(bool optional);
+	virtual void print_id_constructor_user() = 0;
+	virtual void print_id_user(bool optional) = 0;
+	void print_special_id();
+	void print_special();
 };
 
 /* A helper class for printing method declarations of a class.
@@ -117,6 +123,8 @@ struct plain_cpp_generator::decl_printer :
 	virtual void print_method(const Method &method) override;
 	virtual void print_method(const ConversionMethod &method) override;
 	virtual void print_get_method(FunctionDecl *fd) override;
+	virtual void print_id_constructor_user() override;
+	virtual void print_id_user(bool optional) override;
 };
 
 /* A helper class for printing method definitions of a class.
@@ -159,6 +167,8 @@ struct plain_cpp_generator::impl_printer :
 	void print_callback_body(int indent, ParmVarDecl *param,
 		const string &name);
 	void print_callback_local(ParmVarDecl *param);
+	virtual void print_id_constructor_user() override;
+	virtual void print_id_user(bool optional) override;
 };
 
 #endif

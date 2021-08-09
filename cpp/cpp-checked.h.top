@@ -17,6 +17,11 @@
 #include <string>
 #include <type_traits>
 
+#if __cplusplus >= 201703L
+#include <any>
+#include <optional>
+#endif
+
 namespace isl {
 namespace checked {
 
@@ -106,6 +111,12 @@ public:
 	isl_ctx *get() {
 		return ptr;
 	}
+#if __cplusplus >= 201703L
+	static void free_user(void *user) {
+		std::any *p = static_cast<std::any *>(user);
+		delete p;
+	}
+#endif
 };
 
 /* Class encapsulating an isl_stat value.

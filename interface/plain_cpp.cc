@@ -370,6 +370,23 @@ void plain_cpp_generator::decl_printer::print_method(const Method &method)
 	print_full_method_header(method);
 }
 
+/* Print a declaration for a constructor for the "id" class
+ * that takes a user object.
+ */
+void plain_cpp_generator::decl_printer::print_id_constructor_user()
+{
+	print_id_constructor_user_header();
+}
+
+/* Print a declaration for an "id" method
+ * for retrieving the user object associated to the identifier.
+ * If "optional" is set, the method returns a std::optional user object.
+ */
+void plain_cpp_generator::decl_printer::print_id_user(bool optional)
+{
+	print_id_user_header(optional);
+}
+
 /* Print declarations of copy assignment operator.
  *
  * Each class has one assignment operator.
@@ -996,6 +1013,82 @@ void plain_cpp_generator::impl_printer::print_method(
 	});
 	osprintf(os, ";\n");
 	osprintf(os, "}\n");
+}
+
+/* Print a definition for a constructor for the "id" class
+ * that takes a user object.
+ *
+ * The user object is taken as a std::any and copied into
+ * a new std::any object on the heap.
+ * A pointer to this heap object is stored in the isl_id and
+ * is scheduled to be freed when the reference count of the isl_id
+ * drops to zero.
+ * If the allocation of the isl_id fails, then the heap object
+ * will not be freed automatically, so it needs to be freed manually.
+ *
+ * Unless checked C++ bindings are being generated,
+ * the ctx argument is copied into the save_ctx variable
+ * for use by print_throw_last_error, which throws an exception
+ * if the construction fails.
+ * During the function call, isl is made not to print any error message
+ * because the error message is included in the exception.
+ */
+void plain_cpp_generator::impl_printer::print_id_constructor_user()
+{
+	print_id_constructor_user_header();
+	os << "{\n";
+	if (!generator.checked) {
+		print_save_ctx("ctx");
+		print_on_error_continue();
+	}
+	os << "  std::any *p = new std::any(any);\n";
+	os << "  auto res = isl_id_alloc(ctx.get(), str.c_str(), p);\n";
+	os << "  res = isl_id_set_free_user(res, &ctx::free_user);\n";
+	os << "  if (!res) {\n";
+	os << "    delete p;\n";
+	if (!generator.checked)
+		print_throw_last_error(os);
+	os << "  }\n";
+	os << "  ptr = res;\n";
+	os << "}\n";
+}
+
+/* Print a definition for an "id" method
+ * for retrieving the user object associated to the identifier.
+ * If "optional" is set, the method returns a std::optional user object.
+ * The returned object is of a type specified by template parameter T.
+ *
+ * The isl_id needs to have been created by the constructor generated
+ * by print_id_constructor_user.  That is, it needs to have a user pointer and
+ * it needs to have its free_user callback set to &ctx::free_user.
+ * The object stored in the std::any also needs to be of the required type.
+ *
+ * If "optional" is set, return a std::nullopt if any of the checks fail.
+ * Otherwise, throw an exception_invalid (or call isl_die and
+ * return a default T in the checked C++ bindings).
+ */
+void plain_cpp_generator::impl_printer::print_id_user(bool optional)
+{
+	auto fail = [&] (const char *msg) {
+		if (optional)
+			os << "    return std::nullopt;\n";
+		else
+			generator.print_invalid(os, 4, msg, "return T()");
+	};
+	os << "\n";
+	print_id_user_header(optional);
+	os << "{\n";
+	print_check_ptr("ptr");
+	os << "  std::any *p = (std::any *) isl_id_get_user(ptr);\n";
+	os << "  if (!p)\n";
+	fail("no user pointer");
+	os << "  if (isl_id_get_free_user(ptr) != &ctx::free_user)\n";
+	fail("user pointer not attached by C++ interface");
+	os << "  T *res = std::any_cast<T>(p);\n";
+	os << "  if (!res)\n";
+	fail("user pointer not of given type");
+	os << "  return *res;\n";
+	os << "}\n";
 }
 
 /* Print implementation of copy assignment operator.
@@ -1709,6 +1802,82 @@ bool plain_cpp_generator::plain_printer::want_descendent_overloads(
 	return methods.size() > 1;
 }
 
+/* Print the header of the constructor for the "id" class
+ * that takes a user object.
+ *
+ * The user object is taken as a std::any.
+ */
+void plain_cpp_generator::plain_printer::print_id_constructor_user_header()
+{
+	if (declarations)
+		os << "  inline explicit ";
+	else
+		os << "id::";
+	os << "id(" << generator.isl_namespace() << "ctx ctx, "
+	   << "const std::string &str, const std::any &any)";
+	if (declarations)
+		os << ";";
+	os << "\n";
+}
+
+/* Print the header of the "id" method
+ * for retrieving the user object associated to the identifier.
+ * If "optional" is set, the method returns a std::optional user object.
+ * The returned object is of a type specified by template parameter T.
+ */
+void plain_cpp_generator::plain_printer::print_id_user_header(bool optional)
+{
+	auto indent = declarations ? "  " : "";
+	os << indent << "template <class T>\n";
+	os << indent << (optional ? "std::optional<T> " : "T ");
+	if (!declarations)
+		os << "id::";
+	os << (optional ? "try_" : "");
+	os << "user() const";
+	if (declarations)
+		os << ";";
+	os << "\n";
+}
+
+/* Perform printing by "fn" in a context that only gets compiled
+ * by C++17 compilers.
+ */
+static void on_cplusplus17(ostream &os, const std::function<void(void)> &fn)
+{
+	os << "#if __cplusplus >= 201703L\n";
+	fn();
+	os << "#endif\n";
+}
+
+/* Print declarations or definitions of the special methods of the "id" class
+ * that are not automatically derived from the C interface.
+ *
+ * In particular, print a constructor that takes a user pointer
+ * as well as methods for retrieving this user pointer.
+ *
+ * These methods require C++17 features.
+ */
+void plain_cpp_generator::plain_printer::print_special_id()
+{
+	os << "\n";
+	on_cplusplus17(os, [this] () {
+		print_id_constructor_user();
+		print_id_user(true);
+		print_id_user(false);
+	});
+}
+
+/* Print declarations or definitions of any special methods of this class
+ * not automatically derived from the C interface.
+ *
+ * In particular, print special methods for the "id" class.
+ */
+void plain_cpp_generator::plain_printer::print_special()
+{
+	if (clazz.name == "isl_id")
+		print_special_id();
+}
+
 /* Print declarations or definitions of the public methods.
  */
 void plain_cpp_generator::plain_printer::print_public_methods()
@@ -1724,6 +1893,7 @@ void plain_cpp_generator::plain_printer::print_public_methods()
 	print_persistent_callbacks();
 	print_methods();
 	print_set_enums();
+	print_special();
 }
 
 /* Print the body of C function callback with the given indentation
