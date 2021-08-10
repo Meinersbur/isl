@@ -446,6 +446,37 @@ Installation prefix for C<GMP> (architecture-dependent files).
 
 =back
 
+=head2 Building the foreign language bindings
+
+The tarball already contains the generated foreign language bindings,
+but they are not included in the git repository.
+Building the C++ and Python bindings relies on the LLVM/clang libraries,
+see C<http://clang.llvm.org/get_started.html>.
+The C<configure> script will not assume that these are available
+on the system.
+To enable building the foreign language bindings,
+one of the following options needs to be specified.
+
+=over
+
+=item C<--with-clang=system>
+
+Use the system clang libraries (installed in a default location).
+
+=item C<--with-clang-prefix=>I<path>
+
+Use the system clang libraries installed in I<path>.
+
+=back
+
+It is best to use the latest release of the clang libraries (12.0),
+although any release since 2.9 should work as well.
+Note that if you build the clang libraries from source,
+then you need to make sure they are also installed (using C<make install>).
+If the compiler that was used to compile the clang libraries
+is different from the default C++ compiler, then use C<CXX_FOR_BUILD>
+to specify this non-default C++ compiler when running C<isl>'s C<./configure>.
+
 =head1 Integer Set Library
 
 =head2 Memory Management
