@@ -106,6 +106,10 @@ error:
 	return FN(MULTI(BASE),free)(multi);
 }
 
+#undef TYPE
+#define TYPE	MULTI(BASE)
+#include "isl_type_check_match_range_multi_val.c"
+
 /* Multiply the elements of "multi" by the corresponding element of "mv"
  * and return the result.
  */
@@ -114,13 +118,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_multi_val)(
 {
 	int i;
 
-	if (!multi || !mv)
+	if (FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
 		goto error;
-
-	if (!isl_space_tuple_is_equal(multi->space, isl_dim_out,
-					mv->space, isl_dim_set))
-		isl_die(isl_multi_val_get_ctx(mv), isl_error_invalid,
-			"spaces don't match", goto error);
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi)
@@ -150,13 +149,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),scale_down_multi_val)(
 {
 	int i;
 
-	if (!multi || !mv)
+	if (FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
 		goto error;
-
-	if (!isl_space_tuple_is_equal(multi->space, isl_dim_out,
-					mv->space, isl_dim_set))
-		isl_die(isl_multi_val_get_ctx(mv), isl_error_invalid,
-			"spaces don't match", goto error);
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi)
@@ -186,13 +180,8 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),mod_multi_val)(
 {
 	int i;
 
-	if (!multi || !mv)
+	if (FN(MULTI(BASE),check_match_range_multi_val)(multi, mv) < 0)
 		goto error;
-
-	if (!isl_space_tuple_is_equal(multi->space, isl_dim_out,
-					mv->space, isl_dim_set))
-		isl_die(isl_multi_val_get_ctx(mv), isl_error_invalid,
-			"spaces don't match", goto error);
 
 	multi = FN(MULTI(BASE),cow)(multi);
 	if (!multi)

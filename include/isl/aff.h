@@ -212,6 +212,7 @@ void isl_aff_dump(__isl_keep isl_aff *aff);
 isl_ctx *isl_pw_aff_get_ctx(__isl_keep isl_pw_aff *pwaff);
 uint32_t isl_pw_aff_get_hash(__isl_keep isl_pw_aff *pa);
 __isl_give isl_space *isl_pw_aff_get_domain_space(__isl_keep isl_pw_aff *pwaff);
+__isl_export
 __isl_give isl_space *isl_pw_aff_get_space(__isl_keep isl_pw_aff *pwaff);
 
 __isl_constructor
@@ -737,7 +738,11 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_val(
 __isl_overload
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_val *v);
+__isl_overload
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv);
+__isl_overload
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_multi_val(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv);
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_lexmin(

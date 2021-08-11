@@ -2806,6 +2806,7 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #define DEFAULT_IS_ZERO 0
 
 #include <isl_pw_templ.c>
+#include <isl_pw_un_op_templ.c>
 #include <isl_pw_add_constant_val_templ.c>
 #include <isl_pw_bind_domain_templ.c>
 #include <isl_pw_eval.c>
@@ -3289,40 +3290,12 @@ __isl_give isl_pw_aff *isl_pw_aff_scale_down(__isl_take isl_pw_aff *pwaff,
 
 __isl_give isl_pw_aff *isl_pw_aff_floor(__isl_take isl_pw_aff *pwaff)
 {
-	int i;
-
-	pwaff = isl_pw_aff_cow(pwaff);
-	if (!pwaff)
-		return NULL;
-	if (pwaff->n == 0)
-		return pwaff;
-
-	for (i = 0; i < pwaff->n; ++i) {
-		pwaff->p[i].aff = isl_aff_floor(pwaff->p[i].aff);
-		if (!pwaff->p[i].aff)
-			return isl_pw_aff_free(pwaff);
-	}
-
-	return pwaff;
+	return isl_pw_aff_un_op(pwaff, &isl_aff_floor);
 }
 
 __isl_give isl_pw_aff *isl_pw_aff_ceil(__isl_take isl_pw_aff *pwaff)
 {
-	int i;
-
-	pwaff = isl_pw_aff_cow(pwaff);
-	if (!pwaff)
-		return NULL;
-	if (pwaff->n == 0)
-		return pwaff;
-
-	for (i = 0; i < pwaff->n; ++i) {
-		pwaff->p[i].aff = isl_aff_ceil(pwaff->p[i].aff);
-		if (!pwaff->p[i].aff)
-			return isl_pw_aff_free(pwaff);
-	}
-
-	return pwaff;
+	return isl_pw_aff_un_op(pwaff, &isl_aff_ceil);
 }
 
 /* Assuming that "cond1" and "cond2" are disjoint,
@@ -4513,6 +4486,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #define DEFAULT_IS_ZERO 0
 
 #include <isl_pw_templ.c>
+#include <isl_pw_un_op_templ.c>
 #include <isl_pw_add_constant_multi_val_templ.c>
 #include <isl_pw_add_constant_val_templ.c>
 #include <isl_pw_bind_domain_templ.c>
@@ -6727,38 +6701,33 @@ __isl_give isl_multi_pw_aff *isl_map_max_multi_pw_aff(__isl_take isl_map *map)
 	return map_opt_mpa(map, &isl_map_dim_max);
 }
 
-/* Scale the elements of "pma" by the corresponding elements of "mv".
+#undef TYPE
+#define TYPE	isl_pw_multi_aff
+#include "isl_type_check_match_range_multi_val.c"
+
+/* Apply "fn" to the base expressions of "pma" and "mv".
  */
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
-	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+static __isl_give isl_pw_multi_aff *isl_pw_multi_aff_op_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv,
+	__isl_give isl_multi_aff *(*fn)(__isl_take isl_multi_aff *ma,
+		__isl_take isl_multi_val *mv))
 {
 	int i;
-	isl_bool equal_params;
+	isl_size n;
 
-	pma = isl_pw_multi_aff_cow(pma);
-	if (!pma || !mv)
+	if (isl_pw_multi_aff_check_match_range_multi_val(pma, mv) < 0)
 		goto error;
-	if (!isl_space_tuple_is_equal(pma->dim, isl_dim_out,
-					mv->space, isl_dim_set))
-		isl_die(isl_pw_multi_aff_get_ctx(pma), isl_error_invalid,
-			"spaces don't match", goto error);
-	equal_params = isl_space_has_equal_params(pma->dim, mv->space);
-	if (equal_params < 0)
-		goto error;
-	if (!equal_params) {
-		pma = isl_pw_multi_aff_align_params(pma,
-					    isl_multi_val_get_space(mv));
-		mv = isl_multi_val_align_params(mv,
-					    isl_pw_multi_aff_get_space(pma));
-		if (!pma || !mv)
-			goto error;
-	}
 
-	for (i = 0; i < pma->n; ++i) {
-		pma->p[i].maff = isl_multi_aff_scale_multi_val(pma->p[i].maff,
-							isl_multi_val_copy(mv));
-		if (!pma->p[i].maff)
-			goto error;
+	n = isl_pw_multi_aff_n_piece(pma);
+	if (n < 0)
+		goto error;
+
+	for (i = 0; i < n; ++i) {
+		isl_multi_aff *ma;
+
+		ma = isl_pw_multi_aff_take_base_at(pma, i);
+		ma = fn(ma, isl_multi_val_copy(mv));
+		pma = isl_pw_multi_aff_restore_base_at(pma, i, ma);
 	}
 
 	isl_multi_val_free(mv);
@@ -6769,6 +6738,24 @@ error:
 	return NULL;
 }
 
+/* Scale the elements of "pma" by the corresponding elements of "mv".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+{
+	return isl_pw_multi_aff_op_multi_val(pma, mv,
+					&isl_multi_aff_scale_multi_val);
+}
+
+/* Scale the elements of "pma" down by the corresponding elements of "mv".
+ */
+__isl_give isl_pw_multi_aff *isl_pw_multi_aff_scale_down_multi_val(
+	__isl_take isl_pw_multi_aff *pma, __isl_take isl_multi_val *mv)
+{
+	return isl_pw_multi_aff_op_multi_val(pma, mv,
+					&isl_multi_aff_scale_down_multi_val);
+}
+
 /* This function is called for each entry of an isl_union_pw_multi_aff.
  * If the space of the entry matches that of data->mv,
  * then apply isl_pw_multi_aff_scale_multi_val and return the result.
@@ -6777,12 +6764,13 @@ error:
 static __isl_give isl_pw_multi_aff *union_pw_multi_aff_scale_multi_val_entry(
 	__isl_take isl_pw_multi_aff *pma, void *user)
 {
+	isl_bool equal;
 	isl_multi_val *mv = user;
 
-	if (!pma)
-		return NULL;
-	if (!isl_space_tuple_is_equal(pma->dim, isl_dim_out,
-				    mv->space, isl_dim_set)) {
+	equal = isl_pw_multi_aff_match_range_multi_val(pma, mv);
+	if (equal < 0)
+		return isl_pw_multi_aff_free(pma);
+	if (!equal) {
 		isl_space *space = isl_pw_multi_aff_get_space(pma);
 		isl_pw_multi_aff_free(pma);
 		return isl_pw_multi_aff_empty(space);

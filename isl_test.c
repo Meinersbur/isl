@@ -135,6 +135,8 @@ static const char *reparse_multi_pw_aff_tests[] = {
 	"[N] -> { [N] : N >= 0 }",
 	"[N] -> { [N, N + 1] : N >= 0 }",
 	"[N, M] -> { [(N : N >= 0), (M : M >= 0)] : N + M >= 0 }",
+	"{ [a] -> [b = a] }",
+	"{ [a] -> [b = a] : a >= 0 }",
 };
 
 #undef BASE
@@ -142,6 +144,16 @@ static const char *reparse_multi_pw_aff_tests[] = {
 
 #include "check_reparse_templ.c"
 #include "check_reparse_test_templ.c"
+
+/* String descriptions that cannot be parsed
+ * as multi piecewise affine expressions.
+ */
+static const char *parse_multi_pw_aff_fail_tests[] = {
+	"{ [a] -> [b] : b = a }",
+	"{ [a] -> [b = a] : b >= 0 }",
+};
+
+#include "check_parse_fail_test_templ.c"
 
 /* String descriptions of piecewise multi affine expressions
  * that are used for testing printing and parsing.
@@ -184,6 +196,31 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
 	return isl_stat_ok;
 }
 
+/* String descriptions that cannot be parsed
+ * as union piecewise multi affine expressions.
+ */
+static const char *parse_union_pw_multi_aff_fail_tests[] = {
+	"{ [a] -> [b] : b = a }",
+	"{ [a] -> [b = a] : b >= 0 }",
+};
+
+#undef BASE
+#define BASE union_pw_multi_aff
+
+#include "check_parse_fail_test_templ.c"
+
+/* Test parsing of union piecewise multi affine expressions.
+ *
+ * In particular, check some cases where parsing is supposed to fail.
+ */
+static isl_stat test_parse_upma(isl_ctx *ctx)
+{
+	if (check_parse_union_pw_multi_aff_fail_tests(ctx) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Test parsing of multi piecewise affine expressions by printing
  * the expressions and checking that parsing the output results
  * in the same expression.
@@ -191,6 +228,8 @@ static isl_stat test_parse_pma(isl_ctx *ctx)
  * an expression converted from a map with an output dimension name
  * that is equal to an automatically generated name, and
  * a set of expressions parsed from strings.
+ *
+ * Additionally, check some cases where parsing is supposed to fail.
  */
 static int test_parse_mpa(isl_ctx *ctx)
 {
@@ -226,6 +265,8 @@ static int test_parse_mpa(isl_ctx *ctx)
 		return -1;
 
 	if (check_reparse_multi_pw_aff_tests(ctx) < 0)
+		return -1;
+	if (check_parse_multi_pw_aff_fail_tests(ctx) < 0)
 		return -1;
 
 	return 0;
@@ -417,6 +458,8 @@ int test_parse(struct isl_ctx *ctx)
 	if (test_parse_multi(ctx) < 0)
 		return -1;
 	if (test_parse_pma(ctx) < 0)
+		return -1;
+	if (test_parse_upma(ctx) < 0)
 		return -1;
 
 	str = "{ [i] -> [-i] }";
@@ -2334,6 +2377,7 @@ struct {
 	{ 0, "{ [0:1, 0:1]; [0, 2:3] }" },
 	{ 1, "{ [a] : (a = 0 or ((1 + a) mod 2 = 0 and 0 < a <= 15) or "
 		"((a) mod 2 = 0 and 0 < a <= 15)) }" },
+	{ 1, "{ rat: [0:2]; rat: [1:3] }" },
 };
 
 /* A specialized coalescing test case that would result
@@ -2375,30 +2419,58 @@ static int test_coalesce_special(struct isl_ctx *ctx)
 	return 0;
 }
 
-/* A specialized coalescing test case that would result in an assertion
- * in an earlier version of isl.
+/* Check that the union of the basic sets described by "str1" and "str2"
+ * can be coalesced and that the result is equal to the union.
  * The explicit call to isl_basic_set_union prevents the implicit
+ * equality constraints in the basic maps from being detected prior
+ * to the call to isl_set_coalesce, at least at the point
+ * where this function was introduced.
+ */
+static isl_stat test_coalesce_union(isl_ctx *ctx, const char *str1,
+	const char *str2)
+{
+	isl_basic_set *bset1, *bset2;
+	isl_set *set, *set2;
+	isl_bool equal;
+
+	bset1 = isl_basic_set_read_from_str(ctx, str1);
+	bset2 = isl_basic_set_read_from_str(ctx, str2);
+	set = isl_basic_set_union(bset1, bset2);
+	set = isl_set_coalesce(set);
+
+	bset1 = isl_basic_set_read_from_str(ctx, str1);
+	bset2 = isl_basic_set_read_from_str(ctx, str2);
+	set2 = isl_basic_set_union(bset1, bset2);
+
+	equal = isl_set_is_equal(set, set2);
+	isl_set_free(set);
+	isl_set_free(set2);
+
+	if (equal < 0)
+		return isl_stat_error;
+	if (!equal)
+		isl_die(ctx, isl_error_unknown,
+			"coalesced set not equal to input",
+			return isl_stat_error);
+
+	return isl_stat_non_null(set);
+}
+
+/* A specialized coalescing test case that would result in an assertion
+ * in an earlier version of isl.  Use test_coalesce_union with
+ * an explicit call to isl_basic_set_union to prevent the implicit
  * equality constraints in the first basic map from being detected prior
  * to the call to isl_set_coalesce, at least at the point
  * where this test case was introduced.
  */
-static int test_coalesce_special2(struct isl_ctx *ctx)
+static isl_stat test_coalesce_special2(struct isl_ctx *ctx)
 {
-	const char *str;
-	isl_basic_set *bset1, *bset2;
-	isl_set *set;
+	const char *str1;
+	const char *str2;
 
-	str = "{ [x, y] : x, y >= 0 and x + 2y <= 1 and 2x + y <= 1 }";
-	bset1 = isl_basic_set_read_from_str(ctx, str);
-	str = "{ [x,0] : -1 <= x <= 1 and x mod 2 = 1 }" ;
-	bset2 = isl_basic_set_read_from_str(ctx, str);
-	set = isl_basic_set_union(bset1, bset2);
-	set = isl_set_coalesce(set);
-	isl_set_free(set);
-
-	if (!set)
-		return -1;
-	return 0;
+	str1 = "{ [x, y] : x, y >= 0 and x + 2y <= 1 and 2x + y <= 1 }";
+	str2 = "{ [x,0] : -1 <= x <= 1 and x mod 2 = 1 }";
+	return test_coalesce_union(ctx, str1, str2);
 }
 
 /* Check that calling isl_set_coalesce does not leave other sets
@@ -2510,6 +2582,44 @@ static isl_stat test_coalesce_special6(isl_ctx *ctx)
 	return test_coalesce_intersection(ctx, s1, s2);
 }
 
+/* A specialized coalescing test case that would result in an assertion failure
+ * in an earlier version of isl.  Use test_coalesce_union with
+ * an explicit call to isl_basic_set_union to prevent the implicit
+ * equality constraints in the basic maps from being detected prior
+ * to the call to isl_set_coalesce, at least at the point
+ * where this test case was introduced.
+ */
+static isl_stat test_coalesce_special7(isl_ctx *ctx)
+{
+	const char *str1;
+	const char *str2;
+
+	str1 = "{ [a, b, c=0:17] : a <= 7 and 2b <= 11 - a and "
+			"c <= -7 + 2a and 2c >= - 3 + 3a - 2b }";
+	str2 = "{ [a, b, c] : c > -15a and c >= -7 + 2a and c < 0 and "
+			"3c <= -5 + 5a - 3b and 2b >= 11 - a }";
+	return test_coalesce_union(ctx, str1, str2);
+}
+
+/* A specialized coalescing test case that would result in a disjunct
+ * getting dropped in an earlier version of isl.  Use test_coalesce_union with
+ * an explicit call to isl_basic_set_union to prevent the implicit
+ * equality constraints in the basic maps from being detected prior
+ * to the call to isl_set_coalesce, at least at the point
+ * where this test case was introduced.
+ */
+static isl_stat test_coalesce_special8(isl_ctx *ctx)
+{
+	const char *str1;
+	const char *str2;
+
+	str1 = "{ [a, b, c] : 2c <= -a and b >= -a and b <= 5 and "
+			"6c > -7a and 11c >= -5a - b and a <= 3 }";
+	str2 = "{ [a, b, c] : 6c > -7a and b >= -a and b <= 5 and "
+			"11c >= -5a - b and a >= 4 and 2b <= a and 2c <= -a }";
+	return test_coalesce_union(ctx, str1, str2);
+}
+
 /* Test the functionality of isl_set_coalesce.
  * That is, check that the output is always equal to the input
  * and in some cases that the result consists of a single disjunct.
@@ -2539,7 +2649,10 @@ static int test_coalesce(struct isl_ctx *ctx)
 		return -1;
 	if (test_coalesce_special6(ctx) < 0)
 		return -1;
-
+	if (test_coalesce_special7(ctx) < 0)
+		return -1;
+	if (test_coalesce_special8(ctx) < 0)
+		return -1;
 
 	return 0;
 }
@@ -3648,6 +3761,8 @@ struct {
 	{ "{ [i] -> ([(i)/2]) }", "{ [k] : exists a : k = 2a+1 }",
 	  "{ [i] -> -1/2 + 1/2 * i }" },
 	{ "{ [i] -> i^2 : i != 0 }", "{ [i] : i != 0 }", "{ [i] -> i^2 }" },
+	{ "{ [i] -> i^2 : i > 0; [i] -> i^2 : i < 0 }", "{ [i] : i != 0 }",
+	  "{ [i] -> i^2 }" },
 };
 
 /* Perform some basic isl_pw_qpolynomial_gist tests.

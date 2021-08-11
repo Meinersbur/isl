@@ -541,7 +541,7 @@ static Signature map_from_range_and_domain =
 static Signature map_from_domain_and_range =
 	{ { Domain, Range }, { { Domain }, { Range } } };
 
-/* Signatures for creating an anonymous set from a parameter set.
+/* Signatures for creating an anonymous set from a parameter set
  * or a map from a domain, where the range is anonymous.
  */
 static Signature anonymous_set_from_params = { { Anonymous }, { { } } };
@@ -592,7 +592,7 @@ static std::vector<Signature> fn_domain = { domain, set_params };
  */
 static Signature map_reverse = { { Range, Domain }, { { Domain, Range } } };
 static Signature map_range_reverse =
-	{ { Domain, { Range, Range2} }, { { Domain, { Range2, Range} } } };
+	{ { Domain, { Range2, Range } }, { { Domain, { Range, Range2 } } } };
 
 /* Signatures for constructing products.
  */
@@ -810,6 +810,7 @@ member_methods {
 	{ "intersect_params",	{ bin_set_params, bin_map_params } },
 	{ "intersect_domain",	{ bin_map_domain } },
 	{ "intersect_range",	{ bin_map_range } },
+	{ "lattice_tile",	{ un_set } },
 	{ "le_set",		{ set_join } },
 	{ "lt_set",		{ set_join } },
 	{ "lex_le_at",		{ map_cmp } },
@@ -850,10 +851,10 @@ member_methods {
 	{ "range_lattice_tile",	{ un_map } },
 	{ "range_map",		{ range_map } },
 	{ "range_product",	{ range_product } },
+	{ "range_reverse",	{ map_range_reverse } },
 	{ "range_simple_fixed_box_hull",
 				{ un_map } },
 	{ "reverse",		{ map_reverse } },
-	{ "range_reverse",	{ map_range_reverse } },
 	{ "scale",		bin_val },
 	{ "scale_down",		bin_val },
 	{ "set_at",		set_at },

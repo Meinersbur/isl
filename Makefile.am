@@ -508,6 +508,7 @@ EXTRA_DIST = \
 	bset_to_bmap.c \
 	bset_from_bmap.c \
 	isl_check_named_params_templ.c \
+	check_parse_fail_test_templ.c \
 	check_reparse_templ.c \
 	check_reparse_test_templ.c \
 	check_single_reference_templ.c \
@@ -597,6 +598,7 @@ EXTRA_DIST = \
 	isl_pw_pullback_templ.c \
 	isl_pw_range_tuple_id_templ.c \
 	isl_pw_sub_templ.c \
+	isl_pw_un_op_templ.c \
 	isl_pw_union_opt.c \
 	read_in_string_templ.c \
 	set_to_map.c \
@@ -606,6 +608,7 @@ EXTRA_DIST = \
 	isl_test_list_templ.c \
 	isl_test_plain_equal_templ.c \
 	isl_type_check_equal_space_templ.c \
+	isl_type_check_match_range_multi_val.c \
 	isl_type_has_equal_space_bin_templ.c \
 	isl_type_has_equal_space_templ.c \
 	isl_type_has_space_templ.c \
