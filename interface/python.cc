@@ -1023,9 +1023,6 @@ void python_generator::print_method_types(const isl_class &clazz)
 void python_generator::print(const isl_class &clazz)
 {
 	string p_name = type2python(clazz.subclass_name);
-	function_set::const_iterator in;
-	map<string, function_set>::const_iterator it;
-	map<FunctionDecl *, vector<set_enum> >::const_iterator ie;
 	vector<string> super = find_superclasses(clazz.type);
 	const set<FunctionDecl *> &callbacks = clazz.persistent_callbacks;
 
@@ -1045,9 +1042,8 @@ void python_generator::print(const isl_class &clazz)
 	printf("            self.ptr = keywords[\"ptr\"]\n");
 	printf("            return\n");
 
-	for (in = clazz.constructors.begin(); in != clazz.constructors.end();
-		++in)
-		print_constructor(clazz, *in);
+	for (const auto &cons : clazz.constructors)
+		print_constructor(clazz, cons);
 	print_upcast_constructors(clazz);
 	printf("        raise Error\n");
 	printf("    def __del__(self):\n");
@@ -1058,12 +1054,12 @@ void python_generator::print(const isl_class &clazz)
 	print_representation(clazz, p_name);
 	print_copy_callbacks(clazz);
 
-	for (in = callbacks.begin(); in != callbacks.end(); ++in)
-		print_method(clazz, *in, super);
-	for (it = clazz.methods.begin(); it != clazz.methods.end(); ++it)
-		print_method(clazz, it->first, it->second, super);
-	for (ie = clazz.set_enums.begin(); ie != clazz.set_enums.end(); ++ie)
-		print_set_enum(clazz, ie->first, super);
+	for (const auto &callback : callbacks)
+		print_method(clazz, callback, super);
+	for (const auto &kvp : clazz.methods)
+		print_method(clazz, kvp.first, kvp.second, super);
+	for (const auto &kvp : clazz.set_enums)
+		print_set_enum(clazz, kvp.first, super);
 
 	printf("\n");
 
