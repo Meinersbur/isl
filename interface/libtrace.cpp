@@ -508,7 +508,7 @@ static void* openlibisl() {
 	if (!handle) {
 		const char* libpath = getenv("ISLTRACE_LIBISL");
 		if (!libpath)
-			libpath = "/home/meinersbur/build/llvm-project/debug_shared/lib/libPollyISL.so"; // "libisl.so";
+			libpath = "/home/meinersbur/build/llvm-project/release-shared/lib/libPollyISL.so"; // "libisl.so";
 		handle = dlopen(libpath, RTLD_NOW);
 		if (!handle) {
 			fprintf(stderr, "Could not open true libpath at %s\n",libpath);
@@ -705,16 +705,19 @@ static const char* getLogpath() {
 static bool getEnablePrint() {
 	static int enable_print = 0;
 	if (enable_print == 0) {
-		std::string v = getenv("ISLTRACE_DESC");
-		if (v == "") {
-			// default value
-			enable_print = 1;
+		auto isltrace_desc = getenv("ISLTRACE_DESC");
+		if (isltrace_desc) {
+			std::string v = isltrace_desc;
+			if (v == "") {
+				// default value
+				enable_print = 1;
+			}
+			else if (v == "1" || v == "true" || v == "TRUE" || v == "yes" || v == "YES" || v == "on" || v == "ON") {
+				enable_print = 1;
+			}
+			else
+				enable_print = -1;
 		}
-		else if (v == "1" || v == "true" || v == "TRUE" || v == "yes" || v == "YES" || v == "on" || v == "ON") {
-			enable_print = 1;
-		}
-		else
-			enable_print = -1;
 	}
 	return enable_print ==1;
 }
