@@ -9,6 +9,9 @@
 #include <llvm/Support/Compiler.h>
 #include <clang/AST/Decl.h>
 
+
+#define LLVM_ATTRIBUTE_NORETURN
+
 using namespace std;
 using namespace clang;
 
