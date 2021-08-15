@@ -779,7 +779,7 @@ member_methods {
 	{ "ceil",		fn_un_op },
 	{ "coalesce",		un_op },
 	{ "cond",		fn_ter_op },
-	{ "constant_multi_val",	range_op },
+	{ "constant",		range_op },
 	{ "curry",		{ curry } },
 	{ "deltas",		{ transformation_domain } },
 	{ "detect_equalities",	un_op },
