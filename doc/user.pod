@@ -422,11 +422,11 @@ for values out of the 32 bit range. In most applications, C<isl> will run
 fastest with the C<imath-32> option, followed by C<gmp> and C<imath>, the
 slowest.
 
-=item C<--with-gmp-prefix>
+=item C<--with-gmp-prefix=>I<path>
 
 Installation prefix for C<GMP> (architecture-independent files).
 
-=item C<--with-gmp-exec-prefix>
+=item C<--with-gmp-exec-prefix=>I<path>
 
 Installation prefix for C<GMP> (architecture-dependent files).
 
