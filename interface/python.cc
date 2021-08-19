@@ -413,7 +413,7 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
 		print_indent(indent, "return obj\n");
 	} else if (is_string(return_type)) {
 		print_indent(indent, "if res == 0:\n");
-		print_indent(indent, "    raise\n");
+		print_indent(indent, "    raise Error\n");
 		print_indent(indent, "string = "
 		       "cast(res, c_char_p).value.decode('ascii')\n");
 
@@ -423,7 +423,7 @@ void python_generator::print_method_return(int indent, const isl_class &clazz,
 		print_indent(indent, "return string\n");
 	} else if (is_isl_neg_error(return_type)) {
 		print_indent(indent, "if res < 0:\n");
-		print_indent(indent, "    raise\n");
+		print_indent(indent, "    raise Error\n");
 		if (is_isl_bool(return_type))
 			print_indent(indent, "return bool(res)\n");
 		else if (is_isl_size(return_type))
@@ -867,7 +867,8 @@ void python_generator::print_method_type(FunctionDecl *fd)
  * if it is one of those type subclasses, then print a __new__ method.
  *
  * In the superclass, the __new__ method constructs an object
- * of the subclass type specified by the type function.
+ * of the subclass type specified by the type function,
+ * raising an error on an error type.
  * In the subclass, the __new__ method reverts to the original behavior.
  */
 void python_generator::print_new(const isl_class &clazz,
@@ -891,7 +892,7 @@ void python_generator::print_new(const isl_class &clazz,
 			printf("                return %s(**keywords)\n",
 				type2python(i->second).c_str());
 		}
-		printf("            raise\n");
+		printf("            raise Error\n");
 	}
 
 	printf("        return super(%s, cls).__new__(cls)\n",
