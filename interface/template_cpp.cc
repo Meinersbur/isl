@@ -1041,22 +1041,34 @@ static std::vector<Kind> add_name(const std::vector<Kind> &tuples)
 	return named;
 }
 
-/* Add a template class called "name", of which the methods are described
- * by "clazz" and where the corresponding base type has kinds "base_kinds".
+/* Look up the (initial) specializations of the class called "name".
+ * If no specializations have been defined, then return an empty vector.
  *
+ * Start from the initial specializations of the corresponding base type.
  * If this template class is a multi-expression, then it was derived
  * from an anonymous function type.  Replace the final Anonymous
  * tuple kind by a placeholder in this case.
  */
+static std::vector<Kind> lookup_class_tuples(const std::string &name)
+{
+	std::string base = base_type(name);
+
+	if (base_kinds.count(base) == 0)
+		return { };
+	if (name.find("multi_") != std::string::npos)
+		return add_name(base_kinds.at(base));
+	return base_kinds.at(base);
+}
+
+/* Add a template class called "name", of which the methods are described
+ * by "clazz" and the initial specializations by "class_tuples".
+ */
 void template_cpp_generator::add_template_class(const isl_class &clazz,
-	const std::string &name, const std::vector<Kind> &base_kinds)
+	const std::string &name, const std::vector<Kind> &class_tuples)
 {
 	auto isl_namespace = cpp_type_printer().isl_namespace();
 	auto super = isl_namespace + name;
-	auto class_tuples = base_kinds;
 
-	if (name.find("multi_") != std::string::npos)
-		class_tuples = add_name(class_tuples);
 	template_classes.emplace(name,
 		template_class{name, super, clazz, class_tuples});
 }
@@ -1082,11 +1094,11 @@ template_cpp_generator::template_cpp_generator(clang::SourceManager &SM,
 	for (const auto &kvp : classes) {
 		const auto &clazz = kvp.second;
 		std::string name = type2cpp(clazz);
-		std::string base = base_type(name);
+		const auto &class_tuples = lookup_class_tuples(name);
 
-		if (base_kinds.count(base) == 0)
+		if (class_tuples.empty())
 			continue;
-		add_template_class(clazz, name, base_kinds.at(base));
+		add_template_class(clazz, name, class_tuples);
 	}
 }
 
