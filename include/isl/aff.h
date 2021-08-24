@@ -230,6 +230,9 @@ __isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls);
 __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 	__isl_take isl_val *v);
 __isl_overload
+__isl_give isl_pw_aff *isl_set_pw_aff_on_domain_val(__isl_take isl_set *domain,
+	__isl_take isl_val *v);
+__isl_overload
 __isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 	__isl_take isl_set *domain, __isl_take isl_id *id);
 __isl_overload

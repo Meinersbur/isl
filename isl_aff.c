@@ -7612,6 +7612,15 @@ __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 	return isl_pw_aff_alloc(domain, aff);
 }
 
+/* This function performs the same operation as isl_pw_aff_val_on_domain,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_pw_aff *isl_set_pw_aff_on_domain_val(__isl_take isl_set *domain,
+	__isl_take isl_val *v)
+{
+	return isl_pw_aff_val_on_domain(domain, v);
+}
+
 /* Return a piecewise affine expression that is equal to the parameter
  * with identifier "id" on "domain".
  */

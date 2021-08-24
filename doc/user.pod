@@ -3774,6 +3774,9 @@ then create a piecewise expression over a given domain.
 	__isl_give isl_pw_aff *isl_pw_aff_val_on_domain(
 		__isl_take isl_set *domain,
 		__isl_take isl_val *v);
+	__isl_give isl_pw_aff *isl_set_pw_aff_on_domain_val(
+		__isl_take isl_set *domain,
+		__isl_take isl_val *v);
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_multi_val_on_domain(
 		__isl_take isl_set *domain,
@@ -3789,9 +3792,12 @@ then create a piecewise expression over a given domain.
 		__isl_take isl_set *domain,
 		__isl_take isl_id *id);
 
-C<isl_set_pw_multi_aff_on_domain_multi_val> is an alternative name
-for C<isl_pw_multi_aff_multi_val_on_domain>.
-Similarly for C<isl_set_param_pw_aff_on_domain_id> and
+C<isl_set_pw_aff_on_domain_val> is an alternative name
+for C<isl_pw_aff_val_on_domain>.
+Similarly for the pair
+C<isl_set_pw_multi_aff_on_domain_multi_val> and
+C<isl_pw_multi_aff_multi_val_on_domain> and
+for the pair C<isl_set_param_pw_aff_on_domain_id> and
 C<isl_pw_aff_param_on_domain_id>.
 
 As a convenience, a piecewise multiple expression can
