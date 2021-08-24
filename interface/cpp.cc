@@ -928,6 +928,17 @@ bool cpp_generator::is_implicit_conversion(const Method &cons)
 	return false;
 }
 
+/* Construct a list combiner for printing a list.
+ */
+Method::list_combiner Method::print_combiner(std::ostream &os)
+{
+	return {
+		[&] () { os << "("; },
+		[&] () { os << ", "; },
+		[&] () { os << ")"; }
+	};
+}
+
 /* Get kind of "method" in "clazz".
  *
  * Given the declaration of a static or member method, returns its kind.
@@ -1005,6 +1016,25 @@ int Method::num_params() const
 	return c_num_params();
 }
 
+/* Call "on_arg_skip_next" on the arguments from "start" (inclusive)
+ * to "end" (exclusive), calling the methods of "combiner"
+ * before, between and after the arguments.
+ * If "on_arg_skip_next" returns true then the next argument is skipped.
+ */
+void Method::on_arg_list(int start, int end,
+	const Method::list_combiner &combiner,
+	const std::function<bool(int i)> &on_arg_skip_next)
+{
+	combiner.before();
+	for (int i = start; i < end; ++i) {
+		if (i != start)
+			combiner.between();
+		if (on_arg_skip_next(i))
+			++i;
+	}
+	combiner.after();
+}
+
 /* Print the arguments from "start" (inclusive) to "end" (exclusive)
  * as arguments to a method of C function call, using "print_arg_skip_next"
  * to print each individual argument.  If this callback return true
@@ -1013,14 +1043,9 @@ int Method::num_params() const
 void Method::print_arg_list(std::ostream &os, int start, int end,
 	const std::function<bool(int i)> &print_arg_skip_next)
 {
-	os << "(";
-	for (int i = start; i < end; ++i) {
-		if (i != start)
-			os << ", ";
-		if (print_arg_skip_next(i))
-			++i;
-	}
-	os << ")";
+	on_arg_list(start, end, print_combiner(os), [&] (int i) {
+		return print_arg_skip_next(i);
+	});
 }
 
 /* Print the arguments from "start" (inclusive) to "end" (exclusive)

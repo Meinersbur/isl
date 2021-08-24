@@ -23,6 +23,9 @@ struct Method {
 		constructor,
 	};
 
+	struct list_combiner;
+	static list_combiner print_combiner(std::ostream &os);
+
 	Method(const isl_class &clazz, FunctionDecl *fd,
 		const std::string &name);
 	Method(const isl_class &clazz, FunctionDecl *fd);
@@ -33,6 +36,9 @@ struct Method {
 	virtual clang::ParmVarDecl *get_param(int pos) const;
 	virtual void print_param_use(ostream &os, int pos) const;
 	bool is_subclass_mutator() const;
+	static void on_arg_list(int start, int end,
+		const list_combiner &combiner,
+		const std::function<bool(int i)> &on_arg_skip_next);
 	static void print_arg_list(std::ostream &os, int start, int end,
 		const std::function<bool(int i)> &print_arg_skip_next);
 	void print_fd_arg_list(std::ostream &os, int start, int end,
@@ -45,6 +51,19 @@ struct Method {
 	const std::string name;
 	const enum Kind kind;
 	const std::vector<ParmVarDecl *> callbacks;
+};
+
+/* A data structure expressing how Method::on_arg_list should combine
+ * the arguments.
+ *
+ * In particular, "before" is called before any argument is handled;
+ * "between" is called between two arguments and
+ * "after" is called after all arguments have been handled.
+ */
+struct Method::list_combiner {
+	const std::function<void()> before;
+	const std::function<void()> between;
+	const std::function<void()> after;
 };
 
 /* A method that does not require its isl type parameters to be a copy.
