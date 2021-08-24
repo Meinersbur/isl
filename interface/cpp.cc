@@ -1101,6 +1101,20 @@ void Method::print_fd_arg_list(std::ostream &os, int start, int end,
 	on_fd_arg_list(start, end, print_combiner(os), print_arg);
 }
 
+/* Call "on_arg" on the arguments to the method call,
+ * calling the methods of "combiner" before, between and after the arguments.
+ * The first argument to "on_arg" is the position of the argument
+ * in this->fd.
+ * The second argument is the (first) position in the list of arguments
+ * with all callback arguments spliced in.
+ */
+void Method::on_cpp_arg_list(const Method::list_combiner &combiner,
+	const std::function<void(int i, int arg)> &on_arg) const
+{
+	int first_param = kind == member_method ? 1 : 0;
+	on_fd_arg_list(first_param, num_params(), combiner, on_arg);
+}
+
 /* Print the arguments to the method call, using "print_arg"
  * to print each individual argument.
  * The first argument to this callback is the position of the argument
@@ -1111,8 +1125,7 @@ void Method::print_fd_arg_list(std::ostream &os, int start, int end,
 void Method::print_cpp_arg_list(std::ostream &os,
 	const std::function<void(int i, int arg)> &print_arg) const
 {
-	int first_param = kind == member_method ? 1 : 0;
-	print_fd_arg_list(os, first_param, num_params(), print_arg);
+	on_cpp_arg_list(print_combiner(os), print_arg);
 }
 
 /* Should the parameter at position "pos" be a copy (rather than
