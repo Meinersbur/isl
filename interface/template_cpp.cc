@@ -2339,6 +2339,79 @@ void template_cpp_generator::class_printer::add_specialization(
 	instance.template_class.add_specialization(maybe_unified.second);
 }
 
+/* Does the type of the parameter at position "i" of "method" necessarily
+ * have a final Anonymous tuple?
+ *
+ * If the parameter is not of an isl type or if no specializations
+ * have been defined for the type, then it can be considered anonymous.
+ * Otherwise, if any specialization represents an anonymous function,
+ * then every specialization does, so simply check
+ * the first specialization.
+ */
+static bool param_is_anon(const Method &method, int i)
+{
+	ParmVarDecl *param = method.get_param(i);
+	QualType type = param->getOriginalType();
+
+	if (cpp_generator::is_isl_type(type)) {
+		const auto &name = type->getPointeeType().getAsString();
+		const auto &cpp = cpp_generator::type2cpp(name);
+		const auto &tuples = lookup_class_tuples(cpp);
+
+		if (tuples.empty())
+			return true;
+		return tuples[0].is_anon();
+	}
+
+	return true;
+}
+
+/* Replace the final tuple of "arg_kind" by Anonymous in "sig" and
+ * return the update signature,
+ * unless this would affect the class instance "instance_kind".
+ *
+ * If the original "instance_kind" is a special case
+ * of the result of the substitution, then "instance_kind"
+ * is not affected and the substitution can be applied
+ * to the entire signature.
+ */
+static Signature specialize_anonymous_arg(const Signature &sig,
+	const Kind &arg_kind, const Kind &instance_kind)
+{
+	const auto &subs = compute_unifier(arg_kind.back(), Anonymous);
+	const auto &specialized_instance = instance_kind.apply(subs);
+
+	if (!specializer(specialized_instance, instance_kind).first)
+		return sig;
+
+	return sig.apply(subs);
+}
+
+/* If any of the arguments of "method" is of a type that necessarily
+ * has a final Anonymous tuple, but the corresponding entry
+ * in the signature "sig" is not Anonymous, then replace
+ * that entry by Anonymous and return the updated signature,
+ * unless this would affect the class instance "instance_kind".
+ */
+static Signature specialize_anonymous_args(const Signature &sig,
+	const Method &method, const Kind &instance_kind)
+{
+	auto specialized_sig = sig;
+
+	method.on_cpp_arg_list([&] (int i, int arg) {
+		const auto &arg_kind = sig.args[arg];
+
+		if (arg_kind.is_anon())
+			return;
+		if (!param_is_anon(method, i))
+			return;
+		specialized_sig = specialize_anonymous_arg(specialized_sig,
+					arg_kind, instance_kind);
+	});
+
+	return specialized_sig;
+}
+
 /* Print a declaration or definition of the method "method"
  * if the template class specialization matches "match_arg".
  * Return true if so.
@@ -2351,6 +2424,7 @@ void template_cpp_generator::class_printer::add_specialization(
  * If the template class specialization is a special case of
  * (the renamed) "match_arg"
  * then apply the specializer to the complete (renamed) signature,
+ * specialize any anonymous arguments,
  * check that the return kind is allowed and, if so,
  * print the declaration or definition using the specialized signature.
  *
@@ -2367,6 +2441,8 @@ bool template_cpp_generator::class_printer::print_matching_method(
 	if (maybe_specializer.first) {
 		const auto &specializer = maybe_specializer.second;
 		auto specialized_sig = sig.apply(rename).apply(specializer);
+		specialized_sig = specialize_anonymous_args(specialized_sig,
+							method, instance.kind);
 		if (!is_return_kind(method, specialized_sig.ret))
 			return false;
 
