@@ -25,6 +25,7 @@ struct Method {
 
 	struct list_combiner;
 	static list_combiner print_combiner(std::ostream &os);
+	static list_combiner empty_combiner();
 
 	Method(const isl_class &clazz, FunctionDecl *fd,
 		const std::string &name);
@@ -47,6 +48,8 @@ struct Method {
 	void print_fd_arg_list(std::ostream &os, int start, int end,
 		const std::function<void(int i, int arg)> &print_arg) const;
 	void on_cpp_arg_list(const list_combiner &combiner,
+		const std::function<void(int i, int arg)> &on_arg) const;
+	void on_cpp_arg_list(
 		const std::function<void(int i, int arg)> &on_arg) const;
 	void print_cpp_arg_list(std::ostream &os,
 		const std::function<void(int i, int arg)> &print_arg) const;

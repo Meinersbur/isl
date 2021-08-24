@@ -939,6 +939,13 @@ Method::list_combiner Method::print_combiner(std::ostream &os)
 	};
 }
 
+/* Construct a list combiner for simply iterating over a list.
+ */
+Method::list_combiner Method::empty_combiner()
+{
+	return { [&] () { }, [&] () { }, [&] () { } };
+}
+
 /* Get kind of "method" in "clazz".
  *
  * Given the declaration of a static or member method, returns its kind.
@@ -1113,6 +1120,18 @@ void Method::on_cpp_arg_list(const Method::list_combiner &combiner,
 {
 	int first_param = kind == member_method ? 1 : 0;
 	on_fd_arg_list(first_param, num_params(), combiner, on_arg);
+}
+
+/* Call "on_arg" on the arguments to the method call.
+ * The first argument to "on_arg" is the position of the argument
+ * in this->fd.
+ * The second argument is the (first) position in the list of arguments
+ * with all callback arguments spliced in.
+ */
+void Method::on_cpp_arg_list(
+	const std::function<void(int i, int arg)> &on_arg) const
+{
+	on_cpp_arg_list(empty_combiner(), on_arg);
 }
 
 /* Print the arguments to the method call, using "print_arg"
