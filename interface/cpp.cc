@@ -1048,15 +1048,14 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
 	});
 }
 
-/* Print the arguments from "start" (inclusive) to "end" (exclusive)
- * as arguments to a method of C function call, using "print_arg"
- * to print each individual argument.
- * The first argument to this callback is the position of the argument
+/* Call "on_arg" on the arguments from "start" (inclusive) to "end" (exclusive),
+ * calling the methods of "combiner" before, between and after the arguments.
+ * The first argument to "on_arg" is the position of the argument
  * in this->fd.
  * The second argument is the (first) position in the list of arguments
  * with all callback arguments spliced in.
  *
- * Call print_arg_list to do the actual printing, skipping
+ * Call on_arg_list to do the actual iteration over the arguments, skipping
  * the user argument that comes after every callback argument.
  * On the C++ side no user pointer is needed, as arguments can be forwarded
  * as part of the std::function argument which specifies the callback function.
@@ -1071,20 +1070,35 @@ void Method::print_arg_list(std::ostream &os, int start, int end,
  * while the arguments (excluding the final user pointer)
  * take the following positions.
  */
-void Method::print_fd_arg_list(std::ostream &os, int start, int end,
-	const std::function<void(int i, int arg)> &print_arg) const
+void Method::on_fd_arg_list(int start, int end,
+	const Method::list_combiner &combiner,
+	const std::function<void(int i, int arg)> &on_arg) const
 {
 	int arg = start;
 
-	print_arg_list(os, start, end, [this, &print_arg, &arg] (int i) {
+	on_arg_list(start, end, combiner, [this, &on_arg, &arg] (int i) {
 		auto type = fd->getParamDecl(i)->getType();
 
-		print_arg(i, arg++);
+		on_arg(i, arg++);
 		if (!generator::is_callback(type))
 			return false;
 		arg += generator::prototype_n_args(type) - 1;
 		return true;
 	});
+}
+
+/* Print the arguments from "start" (inclusive) to "end" (exclusive)
+ * as arguments to a method of C function call, using "print_arg"
+ * to print each individual argument.
+ * The first argument to this callback is the position of the argument
+ * in this->fd.
+ * The second argument is the (first) position in the list of arguments
+ * with all callback arguments spliced in.
+ */
+void Method::print_fd_arg_list(std::ostream &os, int start, int end,
+	const std::function<void(int i, int arg)> &print_arg) const
+{
+	on_fd_arg_list(start, end, print_combiner(os), print_arg);
 }
 
 /* Print the arguments to the method call, using "print_arg"

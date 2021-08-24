@@ -41,6 +41,9 @@ struct Method {
 		const std::function<bool(int i)> &on_arg_skip_next);
 	static void print_arg_list(std::ostream &os, int start, int end,
 		const std::function<bool(int i)> &print_arg_skip_next);
+	void on_fd_arg_list(int start, int end,
+		const list_combiner &combiner,
+		const std::function<void(int i, int arg)> &on_arg) const;
 	void print_fd_arg_list(std::ostream &os, int start, int end,
 		const std::function<void(int i, int arg)> &print_arg) const;
 	void print_cpp_arg_list(std::ostream &os,
