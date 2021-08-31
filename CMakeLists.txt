@@ -3,6 +3,12 @@ cmake_minimum_required(VERSION 3.12)
 
 project("isl" C CXX)
 
+# TODO: Extract from configure.ac
+set(ISL_VERSION_MAJOR 0)
+set(ISL_VERSION_MINOR 24)
+set(ISL_VERSION_PATCH 0)
+
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
   set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
@@ -13,8 +19,11 @@ else ()
 endif ()
 set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
-#find_package(LLVM REQUIRED NO_DEFAULT_PATH)
 find_package(Clang QUIET)
+find_package(Python QUIET)
+
+# See https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
+include(GNUInstallDirs)
 
 set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
 set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")
@@ -348,13 +357,13 @@ add_library(isl ${libisl_sources})
 set_target_properties(isl PROPERTIES FOLDER "Integer Set Library")
 
 target_include_directories(isl PRIVATE "${ISL_BINARY_DIR}" "${ISL_SOURCE_DIR}" ${PIPLIB_INCLUDE_DIRS})
-target_include_directories(isl PUBLIC "${ISL_BINARY_DIR}/include" "${ISL_SOURCE_DIR}/include")
+target_include_directories(isl PUBLIC "$<BUILD_INTERFACE:${ISL_BINARY_DIR}/include>" "$<BUILD_INTERFACE:${ISL_SOURCE_DIR}/include>")
 if (USE_GMP_FOR_MP)
   target_include_directories(isl PUBLIC ${GMP_INCLUDE_DIRS})
-  target_link_libraries(isl PUBLIC ${GMP_LIBRARIES})
+  target_link_libraries(isl PRIVATE ${GMP_LIBRARIES})
 endif ()
 if (USE_IMATH_FOR_MP)
-  target_include_directories(isl PUBLIC "${ISL_SOURCE_DIR}/imath")
+  target_include_directories(isl PUBLIC "$<BUILD_INTERFACE:${ISL_SOURCE_DIR}/imath>")
 endif ()
 
 # General compiler options
@@ -373,7 +382,12 @@ macro (add_isl_executable _name)
 endmacro ()
 
 
+
 add_isl_executable(isl_test "${ISL_SOURCE_DIR}/isl_test.c")
+if (Clang_FOUND AND Python_FOUND)
+  add_isl_executable(isl_test2 "${ISL_SOURCE_DIR}/isl_test2.cc")
+  add_dependencies(isl_test2 interface-cpp)
+endif ()
 add_isl_executable(isl_test_int "${ISL_SOURCE_DIR}/isl_test_int.c")
 if (USE_IMATH_FOR_MP)
   add_isl_executable(isl_test_imath "${ISL_SOURCE_DIR}/isl_test_imath.c")
@@ -388,7 +402,7 @@ add_isl_executable(isl_closure "${ISL_SOURCE_DIR}/closure.c")
 add_isl_executable(isl_bound "${ISL_SOURCE_DIR}/bound.c")
 add_isl_executable(isl_codegen "${ISL_SOURCE_DIR}/codegen.c")
 
-if (Clang_FOUND)
+if (Clang_FOUND AND Python_FOUND)
   add_subdirectory(interface)
 endif ()
 
@@ -396,6 +410,7 @@ endif ()
 # Testing
 enable_testing()
 
+set(check_depends isl_test isl_test_int isl_codegen)
 add_test(NAME isl_test_int
   COMMAND "$<TARGET_FILE:isl_test_int>"
 )
@@ -403,21 +418,84 @@ if (USE_IMATH_FOR_MP)
 	add_test(NAME isl_test_imath
 		COMMAND "$<TARGET_FILE:isl_test_imath>"
 	)
+	list(APPEND check_depends isl_test_imath)
 endif ()
 add_test(NAME isl_test
   COMMAND "$<TARGET_FILE:isl_test>"
 )
+if (Clang_FOUND AND Python_FOUND)
+  add_test(NAME isl_test2
+    COMMAND "$<TARGET_FILE:isl_test2>"
+  )
+  list(APPEND check_depends isl_test2)
+endif ()
 add_test(NAME codegen_test
   COMMAND "${ISL_BINARY_DIR}/codegen_test.sh"
 )
 
-include(GNUInstallDirs)
-install(TARGETS isl
+
+set(ctest_test_args --output-on-failure)
+
+include(ProcessorCount)
+ProcessorCount(JOBS)
+if(NOT JOBS EQUAL 0)
+  list(APPEND ctest_test_args --jobs ${JOBS})
+endif()
+
+if(CMAKE_CONFIGURATION_TYPES)
+  list(APPEND check_command --build-config "$<CONFIGURATION>")
+endif()
+
+# CMake also has a "test" target, but it does not build dependencies/
+add_custom_target(check
+  COMMAND "${CMAKE_CTEST_COMMAND}" ${ctest_test_args}
+  VERBATIM
+  USES_TERMINAL
+)
+add_dependencies(check ${check_depends})
+
+
+
+
+# Installing
+
+install(TARGETS isl 
   EXPORT islTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(
+  FILES
+    include/isl/ctx.h
+    include/isl/aff.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#  COMPONENT Devel
 )
 
-install(DIRECTORY include/isl
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
+  VERSION "${ISL_VERSION_MAJOR}.${ISL_VERSION_MINOR}.${ISL_VERSION_PATCH}"
+  COMPATIBILITY AnyNewerVersion
 )
+
+
+set(ConfigPackageLocation lib/cmake/isl)
+set(targets_export_name "islTargets")
+configure_package_config_file(
+  "cmake/islConfig.cmake.in"
+  "islConfig.cmake"
+  INSTALL_DESTINATION  "${ConfigPackageLocation}"
+  PATH_VARS CMAKE_INSTALL_LIBDIR
+)
+
+
+install(EXPORT islTargets
+  FILE
+    islTargets.cmake
+  DESTINATION
+    ${ConfigPackageLocation}
+)
+

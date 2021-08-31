@@ -1,8 +1,11 @@
 
-add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc)
+add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc plain_cpp.cc template_cpp.cc)
 
-target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${CLANG_INCLUDE_DIRS})
-target_compile_options(extract_interface PUBLIC -fno-rtti)
+target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+if (MSVC)
+else ()
+  target_compile_options(extract_interface PUBLIC -fno-rtti)
+endif ()
 target_compile_definitions(extract_interface PRIVATE 
   ADDPATH_TAKES_4_ARGUMENTS
   "CLANG_PREFIX=\"${CLANG_INSTALL_PREFIX}\"" 
@@ -36,18 +39,36 @@ target_compile_definitions(extract_interface PRIVATE
 target_link_libraries(extract_interface PRIVATE clangBasic clangAnalysis clangAST clangLex clangEdit clangParse clangSema clangFrontend clangSerialization)
 
 
-add_custom_target(interface-python ALL
-  COMMAND extract_interface --language=python "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > python.h
-)
 
-add_custom_target(interface-cpp ALL
-  COMMAND extract_interface --language=cpp "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > cpp.h
-)
+function(gen_interface TARGET GENERATOR OUTFILE)
+  cmake_parse_arguments(ARG "" "" "PREPEND;APPEND" ${ARGN})
+  set(_outpath "${ISL_BINARY_DIR}/include/isl/${OUTFILE}")
 
-add_custom_target(interface-cpp-checked ALL
-  COMMAND extract_interface --language=cpp-checked "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > cpp-checked.h
-)
+  set(_more)
+  foreach (_prepend IN LISTS  ARG_PREPEND)
+    list(APPEND _more --prepend ${_prepend})
+  endforeach ()
+  foreach (_append IN LISTS  ARG_APPEND)
+    list(APPEND _more --append ${_append})
+  endforeach ()
+  add_custom_command(
+    OUTPUT "${_outpath}"
+    COMMAND ${Python_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${_outpath}" ${_more} $<TARGET_FILE:extract_interface> --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
+    DEPENDS  redirect_to_file.py
+    IMPLICIT_DEPENDS "${ISL_SOURCE_DIR}/all.h"
+  )
 
-add_custom_target(interface-cpp-checked-conversion ALL
-  COMMAND extract_interface --language=cpp-checked-conversion "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > cpp-checked-conversion.h
-)
+  add_custom_target(${TARGET}
+    DEPENDS "${_outpath}" 
+  )
+  add_dependencies(${TARGET} extract_interface)
+  add_dependencies(interface ${TARGET} )
+endfunction()
+
+add_custom_target(interface ALL)
+gen_interface(interface-python python python.h)
+gen_interface(interface-cpp cpp cpp.h PREPEND "${ISL_SOURCE_DIR}/cpp/cpp.h.top" "${ISL_SOURCE_DIR}/all.h" APPEND "${ISL_SOURCE_DIR}/cpp/cpp.h.bot") 
+gen_interface(interface-cpp-checked cpp-checked cpp-checked.h PREPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked.h.top" "${ISL_SOURCE_DIR}/all.h" APPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked.h.bot")
+gen_interface(interface-cpp-checked-conversion cpp-checked-conversion cpp-checked-conversion.h PREPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked-conversion.h.top" APPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked-conversion.h.bot")
+gen_interface(interface-template-cpp template-cpp typed_cpp.h PREPEND "${ISL_SOURCE_DIR}/cpp/typed_cpp.h.top" APPEND "${ISL_SOURCE_DIR}/cpp/typed_cpp.h.bot")
+
