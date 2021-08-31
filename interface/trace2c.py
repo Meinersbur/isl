@@ -299,13 +299,17 @@ def make_arg(ty,name=None,val=None,ptr=None,cb=None,uselvl=None):
 
     return arg
 
+def removeprefix(s, prefix):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
 
 def parse_call(hasret,fname,rettype,numargs,**kwargs):
     numargs=int(numargs)
     call = IslCall(funcname=fname,hasret=hasret,retty=rettype)
     for i in range(numargs):
         prefix = 'parm'+str(i)
-        popts = { k.removeprefix(prefix) : v for k,v in kwargs.items() if k.startswith(prefix) }
+        popts = { removeprefix(k, prefix) : v for k,v in kwargs.items() if k.startswith(prefix) }
 
         def parse_arg(name,type,val=None,ptr=None,cb=None):
             arg= make_arg(ty=type,name=name,val=val,ptr=ptr,cb=cb)
