@@ -198,4 +198,3 @@ enum class dim {
 };
 
 } // namespace isl
-

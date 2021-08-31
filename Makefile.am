@@ -367,7 +367,7 @@ include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 include/isl/isl-noexceptions.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
 	$(MKDIR_P) "include/isl" && \
-	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h && \
+	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
