@@ -147,6 +147,7 @@ struct plain_cpp_generator::impl_printer :
 	void print_set_persistent_callback(const Method &method);
 	virtual void print_persistent_callbacks() override;
 	void print_argument_validity_check(const Method &method);
+	void print_save_ctx(const std::string &ctx);
 	void print_save_ctx(const Method &method);
 	void print_on_error_continue();
 	void print_exceptional_execution_check(const Method &method);

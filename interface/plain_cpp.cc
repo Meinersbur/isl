@@ -756,8 +756,7 @@ void plain_cpp_generator::impl_printer::print_check_ptr_start(const char *ptr)
 		return;
 
 	print_check_ptr(ptr);
-	osprintf(os, "  auto saved_ctx = %s_get_ctx(%s);\n",
-		clazz.name.c_str(), ptr);
+	print_save_ctx(clazz.name + "_get_ctx(" + ptr + ")");
 	print_on_error_continue();
 }
 
@@ -1268,6 +1267,13 @@ void plain_cpp_generator::impl_printer::print_argument_validity_check(
 	print_throw_NULL_input(os);
 }
 
+/* Print code for saving a copy of "ctx" in a "saved_ctx" variable.
+ */
+void plain_cpp_generator::impl_printer::print_save_ctx(const std::string &ctx)
+{
+	os << "  auto saved_ctx = " << ctx << ";\n";
+}
+
 /* Print code for saving a copy of the isl::ctx available at the start
  * of the method "method" in a "saved_ctx" variable,
  * for use in exception handling.
@@ -1288,17 +1294,10 @@ void plain_cpp_generator::impl_printer::print_save_ctx(const Method &method)
 
 	if (generator.checked)
 		return;
-	if (method.kind == Method::Kind::member_method) {
-		osprintf(os, "  auto saved_ctx = ctx();\n");
-		return;
-	}
-	if (is_isl_ctx(type)) {
-		std::string name;
-
-		name = param->getName().str();
-		osprintf(os, "  auto saved_ctx = %s;\n", name.c_str());
-		return;
-	}
+	if (method.kind == Method::Kind::member_method)
+		return print_save_ctx("ctx()");
+	if (is_isl_ctx(type))
+		return print_save_ctx(param->getName().str());
 	n = method.num_params();
 	for (int i = 0; i < n; ++i) {
 		ParmVarDecl *param = method.fd->getParamDecl(i);
@@ -1306,8 +1305,7 @@ void plain_cpp_generator::impl_printer::print_save_ctx(const Method &method)
 
 		if (!is_isl_type(type))
 			continue;
-		osprintf(os, "  auto saved_ctx = %s.ctx();\n",
-			param->getName().str().c_str());
+		print_save_ctx(param->getName().str() + ".ctx()");
 		return;
 	}
 }
