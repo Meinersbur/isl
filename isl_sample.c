@@ -1153,12 +1153,10 @@ error:
 static __isl_give isl_vec *basic_set_sample(__isl_take isl_basic_set *bset,
 	int bounded)
 {
-	struct isl_ctx *ctx;
 	isl_size dim;
 	if (!bset)
 		return NULL;
 
-	ctx = bset->ctx;
 	if (isl_basic_set_plain_is_empty(bset))
 		return empty_sample(bset);
 
