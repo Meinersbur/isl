@@ -2590,12 +2590,10 @@ isl_bool isl_aff_involves_locals(__isl_keep isl_aff *aff)
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	isl_ctx *ctx;
-
 	if (!aff)
 		return NULL;
 	if (type == isl_dim_out)
-		isl_die(aff->v->ctx, isl_error_invalid,
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"cannot drop output/set dimension",
 			return isl_aff_free(aff));
 	if (type == isl_dim_in)
@@ -2603,7 +2601,6 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
 		return aff;
 
-	ctx = isl_aff_get_ctx(aff);
 	if (isl_local_space_check_range(aff->ls, type, first, n) < 0)
 		return isl_aff_free(aff);
 
