@@ -476,9 +476,8 @@ __isl_null isl_space *isl_space_free(__isl_take isl_space *space)
 static int name_ok(isl_ctx *ctx, const char *s)
 {
 	char *p;
-	long dummy;
 
-	dummy = strtol(s, &p, 0);
+	strtol(s, &p, 0);
 	if (p != s)
 		isl_die(ctx, isl_error_invalid, "name looks like a number",
 			return 0);
