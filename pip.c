@@ -112,7 +112,7 @@ static __isl_give isl_basic_set *move_parameters(__isl_take isl_basic_set *bset,
 
 	nparam = isl_basic_set_dim(context, isl_dim_param);
 	nparam_bset = isl_basic_set_dim(bset, isl_dim_param);
-	if (nparam < 0 | nparam_bset < 0)
+	if (nparam < 0 || nparam_bset < 0)
 		return isl_basic_set_free(bset);
 	if (nparam == nparam_bset)
 		return bset;
