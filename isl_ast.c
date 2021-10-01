@@ -1257,8 +1257,15 @@ static isl_stat isl_ast_node_check_user(__isl_keep isl_ast_node *node)
 __isl_give isl_ast_node *isl_ast_node_for_set_body(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *body)
 {
-	node = isl_ast_node_cow(node);
 	if (isl_ast_node_check_for(node) < 0 || !body)
+		goto error;
+	if (node->u.f.body == body) {
+		isl_ast_node_free(body);
+		return node;
+	}
+
+	node = isl_ast_node_cow(node);
+	if (!node)
 		goto error;
 
 	isl_ast_node_free(node->u.f.body);
