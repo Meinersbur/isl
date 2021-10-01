@@ -1252,9 +1252,36 @@ static isl_stat isl_ast_node_check_user(__isl_keep isl_ast_node *node)
 					"not a user node");
 }
 
-/* Replace the body of the for node "node" by "body".
+/* Return the body of the for-node "node",
+ * This may be either a copy or the body itself
+ * if there is only one reference to "node".
+ * This allows the body to be modified inplace
+ * if both "node" and its body have only a single reference.
+ * The caller is not allowed to modify "node" between this call and
+ * the subsequent call to isl_ast_node_for_restore_body.
+ * The only exception is that isl_ast_node_free can be called instead.
  */
-__isl_give isl_ast_node *isl_ast_node_for_set_body(
+static __isl_give isl_ast_node *isl_ast_node_for_take_body(
+	__isl_keep isl_ast_node *node)
+{
+	isl_ast_node *body;
+
+	if (isl_ast_node_check_for(node) < 0)
+		return NULL;
+	if (node->ref != 1)
+		return isl_ast_node_for_get_body(node);
+	body = node->u.f.body;
+	node->u.f.body = NULL;
+	return body;
+}
+
+/* Set the body of the for-node "node" to "body",
+ * where the body of "node" may be missing
+ * due to a preceding call to isl_ast_node_for_take_body.
+ * However, in this case, "node" only has a single reference and
+ * then the call to isl_ast_node_cow has no effect.
+ */
+static __isl_give isl_ast_node *isl_ast_node_for_restore_body(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *body)
 {
 	if (isl_ast_node_check_for(node) < 0 || !body)
@@ -1276,6 +1303,14 @@ error:
 	isl_ast_node_free(node);
 	isl_ast_node_free(body);
 	return NULL;
+}
+
+/* Replace the body of the for node "node" by "body".
+ */
+__isl_give isl_ast_node *isl_ast_node_for_set_body(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_node *body)
+{
+	return isl_ast_node_for_restore_body(node, body);
 }
 
 __isl_give isl_ast_node *isl_ast_node_for_get_body(
@@ -1356,9 +1391,36 @@ __isl_give isl_ast_expr *isl_ast_node_for_get_inc(
 	return isl_ast_expr_alloc_int_si(isl_ast_node_get_ctx(node), 1);
 }
 
-/* Replace the then branch of the if node "node" by "child".
+/* Return the then-branch of the if-node "node",
+ * This may be either a copy or the branch itself
+ * if there is only one reference to "node".
+ * This allows the branch to be modified inplace
+ * if both "node" and its then-branch have only a single reference.
+ * The caller is not allowed to modify "node" between this call and
+ * the subsequent call to isl_ast_node_if_restore_then_node.
+ * The only exception is that isl_ast_node_free can be called instead.
  */
-__isl_give isl_ast_node *isl_ast_node_if_set_then(
+static __isl_give isl_ast_node *isl_ast_node_if_take_then_node(
+	__isl_keep isl_ast_node *node)
+{
+	isl_ast_node *then_node;
+
+	if (isl_ast_node_check_if(node) < 0)
+		return NULL;
+	if (node->ref != 1)
+		return isl_ast_node_if_get_then_node(node);
+	then_node = node->u.i.then;
+	node->u.i.then = NULL;
+	return then_node;
+}
+
+/* Set the then-branch of the if-node "node" to "child",
+ * where the then-branch of "node" may be missing
+ * due to a preceding call to isl_ast_node_if_take_then_node.
+ * However, in this case, "node" only has a single reference and
+ * then the call to isl_ast_node_cow has no effect.
+ */
+static __isl_give isl_ast_node *isl_ast_node_if_restore_then_node(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
 {
 	if (isl_ast_node_check_if(node) < 0 || !child)
@@ -1380,6 +1442,14 @@ error:
 	isl_ast_node_free(node);
 	isl_ast_node_free(child);
 	return NULL;
+}
+
+/* Replace the then branch of the if node "node" by "child".
+ */
+__isl_give isl_ast_node *isl_ast_node_if_set_then(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
+{
+	return isl_ast_node_if_restore_then_node(node, child);
 }
 
 /* Return the then-node of the given if-node.
@@ -1435,6 +1505,59 @@ __isl_give isl_ast_node *isl_ast_node_if_get_else(
 	return isl_ast_node_if_get_else_node(node);
 }
 
+/* Return the else-branch of the if-node "node",
+ * This may be either a copy or the branch itself
+ * if there is only one reference to "node".
+ * This allows the branch to be modified inplace
+ * if both "node" and its else-branch have only a single reference.
+ * The caller is not allowed to modify "node" between this call and
+ * the subsequent call to isl_ast_node_if_restore_else_node.
+ * The only exception is that isl_ast_node_free can be called instead.
+ */
+static __isl_give isl_ast_node *isl_ast_node_if_take_else_node(
+	__isl_keep isl_ast_node *node)
+{
+	isl_ast_node *else_node;
+
+	if (isl_ast_node_check_if(node) < 0)
+		return NULL;
+	if (node->ref != 1)
+		return isl_ast_node_if_get_else_node(node);
+	else_node = node->u.i.else_node;
+	node->u.i.else_node = NULL;
+	return else_node;
+}
+
+/* Set the else-branch of the if-node "node" to "child",
+ * where the else-branch of "node" may be missing
+ * due to a preceding call to isl_ast_node_if_take_else_node.
+ * However, in this case, "node" only has a single reference and
+ * then the call to isl_ast_node_cow has no effect.
+ */
+static __isl_give isl_ast_node *isl_ast_node_if_restore_else_node(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
+{
+	if (isl_ast_node_check_if(node) < 0 || !child)
+		goto error;
+	if (node->u.i.else_node == child) {
+		isl_ast_node_free(child);
+		return node;
+	}
+
+	node = isl_ast_node_cow(node);
+	if (!node)
+		goto error;
+
+	isl_ast_node_free(node->u.i.else_node);
+	node->u.i.else_node = child;
+
+	return node;
+error:
+	isl_ast_node_free(node);
+	isl_ast_node_free(child);
+	return NULL;
+}
+
 __isl_give isl_ast_expr *isl_ast_node_if_get_cond(
 	__isl_keep isl_ast_node *node)
 {
@@ -1449,6 +1572,59 @@ __isl_give isl_ast_node_list *isl_ast_node_block_get_children(
 	if (isl_ast_node_check_block(node) < 0)
 		return NULL;
 	return isl_ast_node_list_copy(node->u.b.children);
+}
+
+/* Return the children of the block-node "node",
+ * This may be either a copy or the children themselves
+ * if there is only one reference to "node".
+ * This allows the children to be modified inplace
+ * if both "node" and its children have only a single reference.
+ * The caller is not allowed to modify "node" between this call and
+ * the subsequent call to isl_ast_node_block_restore_children.
+ * The only exception is that isl_ast_node_free can be called instead.
+ */
+static __isl_give isl_ast_node_list *isl_ast_node_block_take_children(
+	__isl_keep isl_ast_node *node)
+{
+	isl_ast_node_list *children;
+
+	if (isl_ast_node_check_block(node) < 0)
+		return NULL;
+	if (node->ref != 1)
+		return isl_ast_node_block_get_children(node);
+	children = node->u.b.children;
+	node->u.b.children = NULL;
+	return children;
+}
+
+/* Set the children of the block-node "node" to "children",
+ * where the children of "node" may be missing
+ * due to a preceding call to isl_ast_node_block_take_children.
+ * However, in this case, "node" only has a single reference and
+ * then the call to isl_ast_node_cow has no effect.
+ */
+static __isl_give isl_ast_node *isl_ast_node_block_restore_children(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_node_list *children)
+{
+	if (isl_ast_node_check_block(node) < 0 || !children)
+		goto error;
+	if (node->u.b.children == children) {
+		isl_ast_node_list_free(children);
+		return node;
+	}
+
+	node = isl_ast_node_cow(node);
+	if (!node)
+		goto error;
+
+	isl_ast_node_list_free(node->u.b.children);
+	node->u.b.children = children;
+
+	return node;
+error:
+	isl_ast_node_free(node);
+	isl_ast_node_list_free(children);
+	return NULL;
 }
 
 __isl_give isl_ast_expr *isl_ast_node_user_get_expr(
@@ -1481,6 +1657,59 @@ __isl_give isl_ast_node *isl_ast_node_mark_get_node(
 	return isl_ast_node_copy(node->u.m.node);
 }
 
+/* Return the child of the mark-node "node",
+ * This may be either a copy or the child itself
+ * if there is only one reference to "node".
+ * This allows the child to be modified inplace
+ * if both "node" and its child have only a single reference.
+ * The caller is not allowed to modify "node" between this call and
+ * the subsequent call to isl_ast_node_mark_restore_node.
+ * The only exception is that isl_ast_node_free can be called instead.
+ */
+static __isl_give isl_ast_node *isl_ast_node_mark_take_node(
+	__isl_keep isl_ast_node *node)
+{
+	isl_ast_node *child;
+
+	if (isl_ast_node_check_mark(node) < 0)
+		return NULL;
+	if (node->ref != 1)
+		return isl_ast_node_mark_get_node(node);
+	child = node->u.m.node;
+	node->u.m.node = NULL;
+	return child;
+}
+
+/* Set the child of the mark-node "node" to "child",
+ * where the child of "node" may be missing
+ * due to a preceding call to isl_ast_node_mark_take_node.
+ * However, in this case, "node" only has a single reference and
+ * then the call to isl_ast_node_cow has no effect.
+ */
+static __isl_give isl_ast_node *isl_ast_node_mark_restore_node(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
+{
+	if (isl_ast_node_check_mark(node) < 0 || !child)
+		goto error;
+	if (node->u.m.node == child) {
+		isl_ast_node_free(child);
+		return node;
+	}
+
+	node = isl_ast_node_cow(node);
+	if (!node)
+		goto error;
+
+	isl_ast_node_free(node->u.m.node);
+	node->u.m.node = child;
+
+	return node;
+error:
+	isl_ast_node_free(node);
+	isl_ast_node_free(child);
+	return NULL;
+}
+
 __isl_give isl_id *isl_ast_node_get_annotation(__isl_keep isl_ast_node *node)
 {
 	return node ? isl_id_copy(node->annotation) : NULL;
@@ -1504,31 +1733,146 @@ error:
 	return isl_ast_node_free(node);
 }
 
+static __isl_give isl_ast_node *traverse(__isl_take isl_ast_node *node,
+	__isl_give isl_ast_node *(*enter)(__isl_take isl_ast_node *node,
+		int *more, void *user),
+	__isl_give isl_ast_node *(*leave)(__isl_take isl_ast_node *node,
+		void *user),
+	void *user);
+
 /* Traverse the elements of "list" and all their descendants
- * in depth first preorder.
+ * in depth first preorder.  Call "enter" whenever a node is entered and "leave"
+ * whenever a node is left.
  *
- * Return isl_stat_ok on success and isl_stat_error on failure.
+ * Return the updated node.
  */
-static isl_stat nodelist_foreach(__isl_keep isl_ast_node_list *list,
-	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user)
+static __isl_give isl_ast_node_list *traverse_list(
+	__isl_take isl_ast_node_list *list,
+	__isl_give isl_ast_node *(*enter)(__isl_take isl_ast_node *node,
+		int *more, void *user),
+	__isl_give isl_ast_node *(*leave)(__isl_take isl_ast_node *node,
+		void *user),
+	void *user)
 {
 	int i;
 	isl_size n;
 
 	n = isl_ast_node_list_size(list);
 	if (n < 0)
-		return isl_stat_error;
+		return isl_ast_node_list_free(list);
 
 	for (i = 0; i < n; ++i) {
-		isl_stat ok;
-		isl_ast_node *node = list->p[i];
+		isl_ast_node *node;
 
-		ok = isl_ast_node_foreach_descendant_top_down(node, fn, user);
-		if (ok < 0)
-			return isl_stat_error;
+		node = isl_ast_node_list_get_at(list, i);
+		node = traverse(node, enter, leave, user);
+		list = isl_ast_node_list_set_at(list, i, node);
 	}
 
-	return isl_stat_ok;
+	return list;
+}
+
+/* Traverse the descendants of "node" (including the node itself)
+ * in depth first preorder.  Call "enter" whenever a node is entered and "leave"
+ * whenever a node is left.
+ *
+ * If "enter" sets the "more" argument to zero, then the subtree rooted
+ * at the given node is skipped.
+ *
+ * Return the updated node.
+ */
+static __isl_give isl_ast_node *traverse(__isl_take isl_ast_node *node,
+	__isl_give isl_ast_node *(*enter)(__isl_take isl_ast_node *node,
+		int *more, void *user),
+	__isl_give isl_ast_node *(*leave)(__isl_take isl_ast_node *node,
+		void *user),
+	void *user)
+{
+	int more;
+	isl_bool has_else;
+	isl_ast_node *child;
+	isl_ast_node_list *children;
+
+	node = enter(node, &more, user);
+	if (!node)
+		return NULL;
+	if (!more)
+		return node;
+
+	switch (node->type) {
+	case isl_ast_node_for:
+		child = isl_ast_node_for_take_body(node);
+		child = traverse(child, enter, leave, user);
+		node = isl_ast_node_for_restore_body(node, child);
+		return leave(node, user);
+	case isl_ast_node_if:
+		child = isl_ast_node_if_take_then_node(node);
+		child = traverse(child, enter, leave, user);
+		node = isl_ast_node_if_restore_then_node(node, child);
+		has_else = isl_ast_node_if_has_else_node(node);
+		if (has_else < 0)
+			return isl_ast_node_free(node);
+		if (!has_else)
+			return leave(node, user);
+		child = isl_ast_node_if_take_else_node(node);
+		child = traverse(child, enter, leave, user);
+		node = isl_ast_node_if_restore_else_node(node, child);
+		return leave(node, user);
+	case isl_ast_node_block:
+		children = isl_ast_node_block_take_children(node);
+		children = traverse_list(children, enter, leave, user);
+		node = isl_ast_node_block_restore_children(node, children);
+		return leave(node, user);
+	case isl_ast_node_mark:
+		child = isl_ast_node_mark_take_node(node);
+		child = traverse(child, enter, leave, user);
+		node = isl_ast_node_mark_restore_node(node, child);
+		return leave(node, user);
+	case isl_ast_node_user:
+		return leave(node, user);
+	case isl_ast_node_error:
+		return isl_ast_node_free(node);
+	}
+
+	return node;
+}
+
+/* Internal data structure storing the arguments of
+ * isl_ast_node_foreach_descendant_top_down.
+ */
+struct isl_ast_node_preorder_data {
+	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user);
+	void *user;
+};
+
+/* Enter "node" and set *more to continue traversing its descendants.
+ *
+ * In the case of a depth first preorder traversal, call data->fn and
+ * let it decide whether to continue.
+ */
+static __isl_give isl_ast_node *preorder_enter(__isl_take isl_ast_node *node,
+	int *more, void *user)
+{
+	struct isl_ast_node_preorder_data *data = user;
+	isl_bool m;
+
+	if (!node)
+		return NULL;
+	m = data->fn(node, data->user);
+	if (m < 0)
+		return isl_ast_node_free(node);
+	*more = m;
+	return node;
+}
+
+/* Leave "node".
+ *
+ * In the case of a depth first preorder traversal, nothing needs to be done.
+ */
+static __isl_give isl_ast_node *preorder_leave(__isl_take isl_ast_node *node,
+	void *user)
+{
+	return node;
 }
 
 /* Traverse the descendants of "node" (including the node itself)
@@ -1545,43 +1889,13 @@ isl_stat isl_ast_node_foreach_descendant_top_down(
 	__isl_keep isl_ast_node *node,
 	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user)
 {
-	isl_bool more;
-	isl_stat ok;
+	struct isl_ast_node_preorder_data data = { fn, user };
 
-	if (!node)
-		return isl_stat_error;
+	node = isl_ast_node_copy(node);
+	node = traverse(node, &preorder_enter, &preorder_leave, &data);
+	isl_ast_node_free(node);
 
-	more = fn(node, user);
-	if (more < 0)
-		return isl_stat_error;
-	if (!more)
-		return isl_stat_ok;
-
-	switch (node->type) {
-	case isl_ast_node_for:
-		node = node->u.f.body;
-		return isl_ast_node_foreach_descendant_top_down(node, fn, user);
-	case isl_ast_node_if:
-		ok = isl_ast_node_foreach_descendant_top_down(node->u.i.then,
-								fn, user);
-		if (ok < 0)
-			return isl_stat_error;
-		if (!node->u.i.else_node)
-			return isl_stat_ok;
-		node = node->u.i.else_node;
-		return isl_ast_node_foreach_descendant_top_down(node, fn, user);
-	case isl_ast_node_block:
-		return nodelist_foreach(node->u.b.children, fn, user);
-	case isl_ast_node_mark:
-		node = node->u.m.node;
-		return isl_ast_node_foreach_descendant_top_down(node, fn, user);
-	case isl_ast_node_user:
-		break;
-	case isl_ast_node_error:
-		return isl_stat_error;
-	}
-
-	return isl_stat_ok;
+	return isl_stat_non_null(node);
 }
 
 /* Textual C representation of the various operators.
