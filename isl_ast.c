@@ -1499,11 +1499,13 @@ static isl_stat nodelist_foreach(__isl_keep isl_ast_node_list *list,
 	isl_bool (*fn)(__isl_keep isl_ast_node *node, void *user), void *user)
 {
 	int i;
+	isl_size n;
 
-	if (!list)
+	n = isl_ast_node_list_size(list);
+	if (n < 0)
 		return isl_stat_error;
 
-	for (i = 0; i < list->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		isl_stat ok;
 		isl_ast_node *node = list->p[i];
 
