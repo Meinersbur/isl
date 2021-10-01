@@ -9723,6 +9723,25 @@ static isl_bool count_for(__isl_keep isl_ast_node *node, void *user)
 	return isl_bool_true;
 }
 
+/* If "node" is a block node, then replace it by its first child.
+ */
+static __isl_give isl_ast_node *select_first(__isl_take isl_ast_node *node,
+	void *user)
+{
+	isl_ast_node_list *children;
+	isl_ast_node *child;
+
+	if (isl_ast_node_get_type(node) != isl_ast_node_block)
+		return node;
+
+	children = isl_ast_node_block_get_children(node);
+	child = isl_ast_node_list_get_at(children, 0);
+	isl_ast_node_list_free(children);
+	isl_ast_node_free(node);
+
+	return child;
+}
+
 /* Check that the before_each_for and after_each_for callbacks
  * are called for each for loop in the generated code,
  * that they are called in the right order and that the isl_id
@@ -9731,11 +9750,15 @@ static isl_bool count_for(__isl_keep isl_ast_node *node, void *user)
  *
  * Additionally, check the basic functionality of
  * isl_ast_node_foreach_descendant_top_down by counting the number
- * of for loops in the resulting AST.
+ * of for loops in the resulting AST,
+ * as well as that of isl_ast_node_map_descendant_bottom_up
+ * by replacing the block node by its first child and
+ * counting the number of for loops again.
  */
 static isl_stat test_ast_gen1(isl_ctx *ctx)
 {
 	int count = 0;
+	int modified_count = 0;
 	const char *str;
 	isl_set *set;
 	isl_union_map *schedule;
@@ -9764,6 +9787,12 @@ static isl_stat test_ast_gen1(isl_ctx *ctx)
 							&count_for, &count) < 0)
 		tree = isl_ast_node_free(tree);
 
+	tree = isl_ast_node_map_descendant_bottom_up(tree, &select_first, NULL);
+
+	if (isl_ast_node_foreach_descendant_top_down(tree, &count_for,
+							&modified_count) < 0)
+		tree = isl_ast_node_free(tree);
+
 	if (!tree)
 		return isl_stat_error;
 
@@ -9772,6 +9801,11 @@ static isl_stat test_ast_gen1(isl_ctx *ctx)
 	if (data.before != 3 || data.after != 3 || count != 3)
 		isl_die(ctx, isl_error_unknown,
 			"unexpected number of for nodes",
+			return isl_stat_error);
+
+	if (modified_count != 2)
+		isl_die(ctx, isl_error_unknown,
+			"unexpected number of for nodes after changes",
 			return isl_stat_error);
 
 	return isl_stat_ok;

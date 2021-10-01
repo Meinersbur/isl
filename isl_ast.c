@@ -1898,6 +1898,59 @@ isl_stat isl_ast_node_foreach_descendant_top_down(
 	return isl_stat_non_null(node);
 }
 
+/* Internal data structure storing the arguments of
+ * isl_ast_node_map_descendant_bottom_up.
+ */
+struct isl_ast_node_postorder_data {
+	__isl_give isl_ast_node *(*fn)(__isl_take isl_ast_node *node,
+		void *user);
+	void *user;
+};
+
+/* Enter "node" and set *more to continue traversing its descendants.
+ *
+ * In the case of a depth-first post-order traversal,
+ * nothing needs to be done and traversal always continues.
+ */
+static __isl_give isl_ast_node *postorder_enter(__isl_take isl_ast_node *node,
+	int *more, void *user)
+{
+	*more = 1;
+	return node;
+}
+
+/* Leave "node".
+ *
+ * In the case of a depth-first post-order traversal, call data->fn.
+ */
+static __isl_give isl_ast_node *postorder_leave(__isl_take isl_ast_node *node,
+	void *user)
+{
+	struct isl_ast_node_postorder_data *data = user;
+
+	if (!node)
+		return NULL;
+
+	node = data->fn(node, data->user);
+	return node;
+}
+
+/* Traverse the descendants of "node" (including the node itself)
+ * in depth-first post-order, where the user callback is allowed to modify the
+ * visited node.
+ *
+ * Return the updated node.
+ */
+__isl_give isl_ast_node *isl_ast_node_map_descendant_bottom_up(
+	__isl_take isl_ast_node *node,
+	__isl_give isl_ast_node *(*fn)(__isl_take isl_ast_node *node,
+		void *user), void *user)
+{
+	struct isl_ast_node_postorder_data data = { fn, user };
+
+	return traverse(node, &postorder_enter, &postorder_leave, &data);
+}
+
 /* Textual C representation of the various operators.
  */
 static char *op_str_c[] = {

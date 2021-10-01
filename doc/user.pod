@@ -12051,6 +12051,18 @@ subexpressions of C<expr> of type C<isl_ast_expr_id>
 by the corresponding expression in C<id2expr>, if there is any.
 
 
+The following function can be used to modify the descendants
+of a specific node in an AST using a depth-first post-order
+traversal of those descendants (including the node itself).
+
+	#include <isl/ast.h>
+	__isl_give isl_ast_node *
+	isl_ast_node_map_descendant_bottom_up(
+		__isl_take isl_ast_node *node,
+		__isl_give isl_ast_node *(*fn)(
+			__isl_take isl_ast_node *node,
+			void *user), void *user);
+
 User specified data can be attached to an C<isl_ast_node> and obtained
 from the same C<isl_ast_node> using the following functions.
 
