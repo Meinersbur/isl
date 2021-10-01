@@ -1361,8 +1361,15 @@ __isl_give isl_ast_expr *isl_ast_node_for_get_inc(
 __isl_give isl_ast_node *isl_ast_node_if_set_then(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
 {
-	node = isl_ast_node_cow(node);
 	if (isl_ast_node_check_if(node) < 0 || !child)
+		goto error;
+	if (node->u.i.then == child) {
+		isl_ast_node_free(child);
+		return node;
+	}
+
+	node = isl_ast_node_cow(node);
+	if (!node)
 		goto error;
 
 	isl_ast_node_free(node->u.i.then);
