@@ -9713,7 +9713,7 @@ static __isl_give isl_ast_node *after_for(__isl_take isl_ast_node *node,
  * returned from the before_each_for callback is attached to
  * the isl_ast_node passed to the corresponding after_each_for call.
  */
-static int test_ast_gen1(isl_ctx *ctx)
+static isl_stat test_ast_gen1(isl_ctx *ctx)
 {
 	const char *str;
 	isl_set *set;
@@ -9739,15 +9739,16 @@ static int test_ast_gen1(isl_ctx *ctx)
 	tree = isl_ast_build_node_from_schedule_map(build, schedule);
 	isl_ast_build_free(build);
 	if (!tree)
-		return -1;
+		return isl_stat_error;
 
 	isl_ast_node_free(tree);
 
 	if (data.before != 3 || data.after != 3)
 		isl_die(ctx, isl_error_unknown,
-			"unexpected number of for nodes", return -1);
+			"unexpected number of for nodes",
+			return isl_stat_error);
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Check that the AST generator handles domains that are integrally disjoint
