@@ -9707,14 +9707,35 @@ static __isl_give isl_ast_node *after_for(__isl_take isl_ast_node *node,
 	return node;
 }
 
+/* This function is called after node in the AST generated
+ * from test_ast_gen1.
+ *
+ * Increment the count in "user" if this is a for node and
+ * return true to indicate that descendant should also be visited.
+ */
+static isl_bool count_for(__isl_keep isl_ast_node *node, void *user)
+{
+	int *count = user;
+
+	if (isl_ast_node_get_type(node) == isl_ast_node_for)
+		++*count;
+
+	return isl_bool_true;
+}
+
 /* Check that the before_each_for and after_each_for callbacks
  * are called for each for loop in the generated code,
  * that they are called in the right order and that the isl_id
  * returned from the before_each_for callback is attached to
  * the isl_ast_node passed to the corresponding after_each_for call.
+ *
+ * Additionally, check the basic functionality of
+ * isl_ast_node_foreach_descendant_top_down by counting the number
+ * of for loops in the resulting AST.
  */
 static isl_stat test_ast_gen1(isl_ctx *ctx)
 {
+	int count = 0;
 	const char *str;
 	isl_set *set;
 	isl_union_map *schedule;
@@ -9738,12 +9759,17 @@ static isl_stat test_ast_gen1(isl_ctx *ctx)
 			&after_for, &data);
 	tree = isl_ast_build_node_from_schedule_map(build, schedule);
 	isl_ast_build_free(build);
+
+	if (isl_ast_node_foreach_descendant_top_down(tree,
+							&count_for, &count) < 0)
+		tree = isl_ast_node_free(tree);
+
 	if (!tree)
 		return isl_stat_error;
 
 	isl_ast_node_free(tree);
 
-	if (data.before != 3 || data.after != 3)
+	if (data.before != 3 || data.after != 3 || count != 3)
 		isl_die(ctx, isl_error_unknown,
 			"unexpected number of for nodes",
 			return isl_stat_error);
