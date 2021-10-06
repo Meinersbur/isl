@@ -1068,6 +1068,12 @@ __isl_give isl_ast_node *isl_ast_node_dup(__isl_keep isl_ast_node *node)
 		break;
 	}
 
+	if (!node->annotation)
+		return dup;
+	dup->annotation = isl_id_copy(node->annotation);
+	if (!dup->annotation)
+		return isl_ast_node_free(dup);
+
 	return dup;
 }
 
