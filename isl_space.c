@@ -390,7 +390,7 @@ static __isl_give isl_space *copy_ids(__isl_take isl_space *dst,
 	return dst;
 }
 
-__isl_take isl_space *isl_space_dup(__isl_keep isl_space *space)
+__isl_give isl_space *isl_space_dup(__isl_keep isl_space *space)
 {
 	isl_space *dup;
 	if (!space)
