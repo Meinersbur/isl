@@ -184,7 +184,7 @@ __isl_give isl_schedule *isl_schedule_node_get_schedule(
 
 /* Return a fresh copy of "node".
  */
-__isl_take isl_schedule_node *isl_schedule_node_dup(
+__isl_give isl_schedule_node *isl_schedule_node_dup(
 	__isl_keep isl_schedule_node *node)
 {
 	if (!node)
