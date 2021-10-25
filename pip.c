@@ -12,7 +12,6 @@
 #include <isl_map_private.h>
 #include <isl/aff.h>
 #include <isl/set.h>
-#include "isl_tab.h"
 #include "isl_sample.h"
 #include "isl_scan.h"
 #include <isl_seq.h>
