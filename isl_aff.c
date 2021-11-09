@@ -5241,7 +5241,6 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	isl_vec *v;
 	isl_map *insert;
 	isl_size v_out;
-	isl_size n;
 	isl_size n_in;
 	isl_pw_multi_aff *pma;
 	isl_bool is_set;
@@ -5254,14 +5253,13 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	ctx = isl_map_get_ctx(map);
 	space = isl_space_domain(isl_map_get_space(map));
 	n_in = isl_space_dim(space, isl_dim_set);
-	n = isl_space_dim(space, isl_dim_all);
-	if (v_out < 0 || n_in < 0 || n < 0)
+	if (v_out < 0 || n_in < 0)
 		goto error;
 
-	v = isl_vec_alloc(ctx, 1 + 1 + n);
+	v = isl_vec_alloc(ctx, 1 + 1 + v_out);
 	if (v) {
 		isl_int_neg(v->el[0], hull->ineq[i][1 + v_out + d]);
-		isl_seq_cpy(v->el + 1, hull->ineq[i], 1 + n);
+		isl_seq_cpy(v->el + 1, hull->ineq[i], 1 + v_out);
 	}
 	isl_basic_map_free(hull);
 
