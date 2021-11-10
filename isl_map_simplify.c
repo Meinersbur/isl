@@ -4297,7 +4297,7 @@ static int div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	unsigned div, unsigned l, unsigned u)
 {
 	int i, j;
-	unsigned n_div;
+	isl_size n_div;
 	isl_size v_div;
 	int coalesce;
 	isl_bool opp;
