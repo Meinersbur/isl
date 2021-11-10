@@ -14359,7 +14359,8 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
  * where m > 1 and e only depends on parameters and input dimensions?
  *
  * "offset" is the offset of the output dimensions
- * "pos" is the position of output dimension x.
+ * "d" is the position of output dimension x.
+ * "total" is the total number of coefficients.
  */
 static int is_potential_div_constraint(isl_int *c, int offset, int d, int total)
 {
