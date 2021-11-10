@@ -14358,22 +14358,22 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
  *
  * where m > 1 and e only depends on parameters and input dimensions?
  *
- * "offset" is the offset of the output dimensions
- * "d" is the position of output dimension x.
- * "total" is the total number of coefficients.
+ * "v_out" is the offset to the output variables.
+ * "d" is the position of x among the output variables.
+ * "total" is the total number of variables.
  */
-static int is_potential_div_constraint(isl_int *c, int offset, int d, int total)
+static int is_potential_div_constraint(isl_int *c, int v_out, int d, int total)
 {
-	if (isl_int_is_zero(c[offset + d]))
+	if (isl_int_is_zero(c[1 + v_out + d]))
 		return 0;
-	if (isl_int_is_one(c[offset + d]))
+	if (isl_int_is_one(c[1 + v_out + d]))
 		return 0;
-	if (isl_int_is_negone(c[offset + d]))
+	if (isl_int_is_negone(c[1 + v_out + d]))
 		return 0;
-	if (isl_seq_first_non_zero(c + offset, d) != -1)
+	if (isl_seq_first_non_zero(c + 1 + v_out, d) != -1)
 		return 0;
-	if (isl_seq_first_non_zero(c + offset + d + 1,
-				    total - (offset + d + 1)) != -1)
+	if (isl_seq_first_non_zero(c + 1 + v_out + d + 1,
+				    total - (v_out + d + 1)) != -1)
 		return 0;
 	return 1;
 }
@@ -14420,7 +14420,7 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 	isl_int_init(sum);
 	for (i = 0; i < n_ineq; ++i) {
 		if (!is_potential_div_constraint(bmap->ineq[i],
-						1 + v_out, pos, 1 + total))
+						v_out, pos, total))
 			continue;
 		for (j = i + 1; j < n_ineq; ++j) {
 			if (!isl_seq_is_neg(bmap->ineq[i] + 1,
