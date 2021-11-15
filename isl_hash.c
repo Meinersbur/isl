@@ -8,7 +8,7 @@
  */
 
 #include <stdlib.h>
-#include <isl/hash.h>
+#include <isl_hash_private.h>
 #include <isl/ctx.h>
 #include "isl_config.h"
 
@@ -190,6 +190,26 @@ struct isl_hash_table_entry *isl_hash_table_find(struct isl_ctx *ctx,
 	table->entries[h].hash = key_hash;
 
 	return &table->entries[h];
+}
+
+/* Return the first entry containing data in "table".
+ * Return isl_hash_table_entry_none is there is no such entry and
+ * NULL on error.
+ */
+struct isl_hash_table_entry *isl_hash_table_first(struct isl_hash_table *table)
+{
+	size_t size;
+	uint32_t h;
+
+	if (!table->entries)
+		return NULL;
+
+	size = 1 << table->bits;
+	for (h = 0; h < size; ++ h)
+		if (table->entries[h].data)
+			return &table->entries[h];
+
+	return isl_hash_table_entry_none;
 }
 
 isl_stat isl_hash_table_foreach(isl_ctx *ctx, struct isl_hash_table *table,
