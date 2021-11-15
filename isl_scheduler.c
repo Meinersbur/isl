@@ -3424,6 +3424,16 @@ static __isl_give isl_union_set *isl_sched_graph_domain(isl_ctx *ctx,
 	return dom;
 }
 
+/* Return a union of universe domains corresponding to the nodes
+ * in the SCC with index "scc".
+ */
+__isl_give isl_union_set *isl_sched_graph_extract_scc(isl_ctx *ctx,
+	struct isl_sched_graph *graph, int scc)
+{
+	return isl_sched_graph_domain(ctx, graph,
+					&isl_sched_node_scc_exactly, scc);
+}
+
 /* Return a list of unions of universe domains, where each element
  * in the list corresponds to an SCC (or WCC) indexed by node->scc.
  */
@@ -3437,8 +3447,7 @@ __isl_give isl_union_set_list *isl_sched_graph_extract_sccs(isl_ctx *ctx,
 	for (i = 0; i < graph->scc; ++i) {
 		isl_union_set *dom;
 
-		dom = isl_sched_graph_domain(ctx, graph,
-						&isl_sched_node_scc_exactly, i);
+		dom = isl_sched_graph_extract_scc(ctx, graph, i);
 		filters = isl_union_set_list_add(filters, dom);
 	}
 
