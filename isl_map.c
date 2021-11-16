@@ -2319,6 +2319,28 @@ static int is_constraint_pair(__isl_keep isl_basic_map *bmap, int i, int j,
 	return isl_seq_is_neg(bmap->ineq[i] + 1, bmap->ineq[j] + 1, len);
 }
 
+/* Given that inequality constraints "i" and "j" of "bmap"
+ * form a pair of opposite constraints
+ *
+ *	f(x) + c1 >= 0
+ *	-f(x) + c2 >= 0
+ *
+ * or
+ *
+ *	-c1 <= f(x) <= c2
+ *
+ * do they allow for at most "bound" values in that direction?
+ * That is, is the sum of their constant terms smaller than "bound"?
+ *
+ * "tmp" is a temporary location that can be used to store the sum.
+ */
+static int constraint_pair_has_bound(__isl_keep isl_basic_map *bmap,
+	int i, int j, isl_int bound, isl_int *tmp)
+{
+	isl_int_add(*tmp, bmap->ineq[i][0], bmap->ineq[j][0]);
+	return isl_int_abs_lt(*tmp, bound);
+}
+
 /* Swap divs "a" and "b" in "bmap" (without modifying any of the constraints
  * of "bmap").
  */
@@ -14568,8 +14590,8 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 		for (j = i + 1; j < n_ineq; ++j) {
 			if (!is_constraint_pair(bmap, i, j, total))
 				continue;
-			isl_int_add(sum, bmap->ineq[i][0], bmap->ineq[j][0]);
-			if (isl_int_abs_lt(sum, bmap->ineq[i][1 + v_out + pos]))
+			if (constraint_pair_has_bound(bmap, i, j,
+					bmap->ineq[i][1 + v_out + pos], &sum))
 				break;
 		}
 		if (j < n_ineq)
