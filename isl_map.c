@@ -2310,6 +2310,25 @@ static __isl_give isl_vec *extract_bound_from_constraint(isl_ctx *ctx,
 	return v;
 }
 
+/* Return the position of the last non-zero coefficient of
+ * inequality constraint "ineq" of "bmap" or length "len",
+ * given that the coefficient at position "first" is non-zero,
+ * or that it is known that there is at least one coefficient
+ * after "first" that is non-zero.
+ */
+static int extend_last_non_zero(__isl_keep isl_basic_map *bmap, int ineq,
+	int first, unsigned len)
+{
+	int last;
+
+	last = isl_seq_last_non_zero(bmap->ineq[ineq] + 1 + first + 1,
+					len - (first + 1));
+	if (last < 0)
+		return first;
+	else
+		return first + 1 + last;
+}
+
 /* Do the inequality constraints "i" and "j" of "bmap"
  * form a pair of opposite constraints, in the (first) "len" coefficients?
  */
@@ -2348,21 +2367,39 @@ static int constraint_pair_has_bound(__isl_keep isl_basic_map *bmap,
  * Return a position beyond the number of inequality constraints
  * if no such constraint can be found.
  *
+ * The constraints of "bmap" are assumed to have been sorted.
+ * This means that as soon as a constraint is found where the value
+ * of the last coefficient (in absolute value) is different from that of "ineq",
+ * no opposite constraint can be found.
+ * It also means that only the coefficients up to this last coefficient
+ * need to be compared.
+ *
+ * "pos" is the position of a coefficient that is known to be non-zero.
+ * If no such position is known a priori, then the value 0 can be passed in.
  * "len" is the number of (relevant) coefficients in the constraints.
  * "tmp" is a temporary location that can be used to store the sum.
  */
 static isl_size find_later_constraint_in_pair(__isl_keep isl_basic_map *bmap,
-	int ineq, int len, isl_int bound, isl_int *tmp)
+	int ineq, int pos, int len, isl_int bound, isl_int *tmp)
 {
 	int j;
+	int last;
 	isl_size n_ineq;
 
 	n_ineq = isl_basic_map_n_inequality(bmap);
 	if (n_ineq < 0)
 		return isl_size_error;
 
+	last = extend_last_non_zero(bmap, ineq, pos, len);
+
 	for (j = ineq + 1; j < n_ineq; ++j) {
-		if (!is_constraint_pair(bmap, ineq, j, len))
+		if (!isl_int_abs_eq(bmap->ineq[ineq][1 + last],
+				    bmap->ineq[j][1 + last]))
+			return n_ineq;
+		if (isl_seq_last_non_zero(bmap->ineq[j] + 1 + last + 1,
+					len - (last + 1)) != -1)
+			return n_ineq;
+		if (!is_constraint_pair(bmap, ineq, j, last + 1))
 			continue;
 		if (constraint_pair_has_bound(bmap, ineq, j, bound, tmp))
 			return j;
@@ -14583,6 +14620,8 @@ static isl_bool is_potential_div_constraint(__isl_keep isl_basic_map *bmap,
  * of the upper bound constraint, m x <= e(...) + c1.
  * Otherwise, return an index beyond the number of constraints.
  *
+ * The constraints of "bmap" are assumed to have been sorted.
+ *
  * In order for the constraints above to express an integer division,
  * m needs to be greater than 1 and such that
  *
@@ -14620,7 +14659,7 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 		if (!potential)
 			continue;
 
-		j = find_later_constraint_in_pair(bmap, i, total,
+		j = find_later_constraint_in_pair(bmap, i, v_out + pos, total,
 					bmap->ineq[i][1 + v_out + pos], &sum);
 		if (j < 0)
 			goto error;

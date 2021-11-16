@@ -5361,6 +5361,9 @@ error:
  * shared by all the basic maps in "map" that force a given dimension
  * to be equal to the floor of some affine combination of the input dimensions.
  *
+ * Sort the constraints first to make it easier to find such pairs
+ * of constraints.
+ *
  * In particular, if we can find two constraints
  *
  *	e(...) + c1 - m x >= 0		i.e.,		m x <= e(...) + c1
@@ -5398,6 +5401,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 	isl_basic_map *hull;
 
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
+	hull = isl_basic_map_sort_constraints(hull);
 	dim = isl_map_dim(map, isl_dim_out);
 	n_ineq = isl_basic_map_n_inequality(hull);
 	if (dim < 0 || n_ineq < 0)
