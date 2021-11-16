@@ -5417,12 +5417,13 @@ error:
  *
  * As a special case, we first check if there is any pair of constraints,
  * shared by all the basic maps in "map" that force a given dimension
- * to be equal to the floor of some affine combination of the input dimensions.
+ * to be equal to the floor or modulo of some affine combination
+ * of the input dimensions.
  *
  * Sort the constraints first to make it easier to find such pairs
  * of constraints.
  */
-static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div_mod(
 	__isl_take isl_map *map)
 {
 	int d;
@@ -5440,6 +5441,8 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 		isl_maybe_isl_aff sub;
 
 		sub = isl_basic_map_try_find_output_div(hull, d);
+		if (sub.valid >= 0 && !sub.valid)
+			sub = isl_basic_map_try_find_output_mod(hull, d);
 		if (sub.valid < 0)
 			goto error;
 		if (!sub.valid)
@@ -5645,7 +5648,7 @@ error:
  * variables and f an expression in the parameters and input dimensions.
  * If so, we remove the stride in pw_multi_aff_from_map_stride.
  *
- * Otherwise, we continue with pw_multi_aff_from_map_check_div for a further
+ * Otherwise, we continue with pw_multi_aff_from_map_check_div_mod for a further
  * special case.
  */
 static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_strides(
@@ -5665,7 +5668,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_strides(
 
 	if (n_div == 0) {
 		isl_basic_map_free(hull);
-		return pw_multi_aff_from_map_check_div(map);
+		return pw_multi_aff_from_map_check_div_mod(map);
 	}
 
 	isl_int_init(gcd);
@@ -5701,7 +5704,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_strides(
 
 	isl_int_clear(gcd);
 	isl_basic_map_free(hull);
-	return pw_multi_aff_from_map_check_div(map);
+	return pw_multi_aff_from_map_check_div_mod(map);
 error:
 	isl_map_free(map);
 	isl_basic_map_free(hull);

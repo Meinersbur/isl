@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 #include <functional>
+#include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -63,6 +64,13 @@ static ternary_fn<A1, A2, R, T> const arg(const ternary_fn<A1, A2, R, T> &fn)
 {
 	return fn;
 }
+
+/* A description of the input and the output of a unary property.
+ */
+struct unary_prop {
+	const char *arg;
+	bool res;
+};
 
 /* A description of the input and the output of a unary operation.
  */
@@ -111,6 +119,30 @@ static bool is_equal(const T &a, const T &b)
  */
 #define THROW_INVALID(msg) \
 	isl::exception::throw_error(isl_error_invalid, msg, __FILE__, __LINE__)
+
+/* Run a sequence of tests of function "fn" with stringification "name" and
+ * with input and output described by "tests",
+ * throwing an exception when an unexpected result is produced.
+ */
+template <typename T>
+static void test(isl::ctx ctx, bool fn(const T &), const std::string &name,
+	const std::vector<unary_prop> &tests)
+{
+	for (const auto &test : tests) {
+		T obj(ctx, test.arg);
+		bool res = fn(obj);
+		std::ostringstream ss;
+
+		if (test.res == res)
+			continue;
+
+		ss << name << "(" << test.arg << ") = "
+		   << std::boolalpha << res << "\n"
+		   << "expecting: "
+		   << test.res;
+		THROW_INVALID(ss.str().c_str());
+	}
+}
 
 /* Run a sequence of tests of method "fn" with stringification "name" and
  * with input and output described by "test",
@@ -216,6 +248,17 @@ static void test_space(isl::ctx ctx)
 	});
 }
 
+/* Does the conversion of "obj" to an isl_pw_multi_aff
+ * result in an expression defined over a single cell?
+ */
+template <typename T>
+static bool has_single_cell_pma(const T &obj)
+{
+	const auto &fn = obj.as_pw_multi_aff();
+	const auto &domain = fn.domain();
+	return fn.gist(domain).isa_multi_aff();
+}
+
 /* Perform some basic conversion tests.
  *
  * In particular, check that a map with an output dimension
@@ -223,6 +266,10 @@ static void test_space(isl::ctx ctx)
  * a local variable without a known integer division expression or
  * to some linear combination of integer divisions
  * can be converted to a function expressed in the same way.
+ *
+ * Also, check that a nested modulo expression can be extracted
+ * from a set or binary relation representation, or at least
+ * that a conversion to a function does not result in multiple cells.
  */
 static void test_conversion(isl::ctx ctx)
 {
@@ -243,6 +290,19 @@ static void test_conversion(isl::ctx ctx)
 	    "exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }" },
 	{ "{ [a, b] -> [(2*floor((a)/8) + floor((b)/6))] }",
 	  "{ [a, b] -> [(2*floor((a)/8) + floor((b)/6))] }" },
+	});
+
+	C(&has_single_cell_pma<isl::set>, {
+	{ "[s=0:23] -> { A[(s//4)%3, s%4, s//12] }", true },
+	});
+
+	C(&has_single_cell_pma<isl::map>, {
+	{ "{ [a] -> [a//2] : "
+	    "exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }",
+	  true },
+	{ "{ [s=0:23, t] -> B[((s+1+2t)//4)%3, 2+(s+1+2t)%4, (s+1+2t)//12] }",
+	  true },
+	{ "{ [a=0:31] -> [b=0:3, c] : 4c = 28 - a + b }", true },
 	});
 }
 

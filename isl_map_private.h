@@ -22,6 +22,7 @@
 #include <isl/vec.h>
 #include <isl/hash.h>
 #include <isl_blk.h>
+#include <isl_maybe_aff.h>
 
 /* A "basic map" is a relation between two sets of variables,
  * called the "in" and "out" variables.
@@ -595,6 +596,8 @@ isl_bool isl_basic_map_any_div_involves_vars(__isl_keep isl_basic_map *bmap,
 	unsigned first, unsigned n);
 
 isl_size isl_basic_map_find_output_upper_div_constraint(
+	__isl_keep isl_basic_map *bmap, int pos);
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod(
 	__isl_keep isl_basic_map *bmap, int pos);
 
 __isl_give isl_mat *isl_basic_set_extract_equalities(

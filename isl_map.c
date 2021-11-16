@@ -49,6 +49,7 @@
 #include <isl_morph.h>
 #include <isl_val_private.h>
 #include <isl_printer_private.h>
+#include <isl_maybe_aff.h>
 
 #include <bset_to_bmap.c>
 #include <bset_from_bmap.c>
@@ -15006,6 +15007,247 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 error:
 	isl_int_clear(sum);
 	return isl_size_error;
+}
+
+/* Look for a pair of constraints
+ *
+ *	-g(x) + i >= 0
+ *	 g(x) - i + d >= 0
+ *
+ * in "bmap" on the output dimension at position "pos" such that
+ * g(x) is an expression in the parameters and input dimensions, and
+ * d < "n".
+ * Return the index of the first constraint if such a pair can be found.
+ * Otherwise, return an index beyond the number of inequality constraints.
+ *
+ * The constraints are assumed to have been sorted.
+ */
+static isl_size find_output_lower_mod_constraint(__isl_keep isl_basic_map *bmap,
+	int pos, isl_int n)
+{
+	int i;
+	isl_size n_ineq;
+	isl_size v_out, n_out;
+	isl_size v_div, n_div;
+	isl_size j;
+	isl_int tmp;
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_ineq < 0 || v_out < 0 || n_out < 0 || v_div < 0 || n_div < 0)
+		return isl_size_error;
+
+	isl_int_init(tmp);
+	for (i = n_ineq - 1; i >= 0; --i) {
+		if (!isl_int_is_one(bmap->ineq[i][1 + v_out + pos]) &&
+		    !isl_int_is_negone(bmap->ineq[i][1 + v_out + pos]))
+			continue;
+		if (isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_div,
+					    n_div) != -1)
+			continue;
+		if (isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_out, pos) != -1)
+			continue;
+		if (isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_out + pos + 1,
+					    n_out - (pos + 1)) != -1)
+			continue;
+		j = find_earlier_constraint_in_pair(bmap, i, v_out + pos, v_div,
+						    n, &tmp);
+		if (j >= n_ineq)
+			continue;
+		isl_int_clear(tmp);
+		if (j < 0)
+			return j;
+		if (isl_int_is_one(bmap->ineq[i][1 + v_out + pos]))
+			return i;
+		return j;
+	}
+
+	isl_int_clear(tmp);
+	return n_ineq;
+}
+
+/* Given that equality "eq" of "bset" expresses
+ * the variable at position "pos" in terms of the other variables,
+ * extract this expression as a function of those other variables,
+ * excluding any local variables.
+ */
+static __isl_give isl_aff *extract_expr_aff(
+	__isl_keep isl_basic_set *bset, int eq, int pos)
+{
+	isl_size dim;
+	isl_ctx *ctx;
+	isl_vec *v;
+	isl_space *space;
+	isl_local_space *ls;
+
+	space = isl_basic_set_peek_space(bset);
+	dim = isl_space_dim(space, isl_dim_all);
+	if (dim < 0)
+		return NULL;
+	ctx = isl_basic_set_get_ctx(bset);
+	v = extract_bound_from_constraint(ctx, bset->eq[eq], dim, pos);
+	ls = isl_local_space_from_space(isl_space_copy(space));
+	return isl_aff_alloc_vec(ls, v);
+}
+
+/* Given the presence in "bmap" of an equality constraint "eq"
+ *
+ *	f(x) + t m i + m n h(y) = 0
+ *
+ * and a pair of inequality constraints
+ *
+ *	-g(x) + i >= 0			("lower")
+ *	 g(x) - i + d >= 0
+ *
+ * where i is the output dimension at position "pos",
+ * f(x) and g(x) are expressions in the parameters and
+ * input dimensions (if any),
+ * h(y) is an expression in the other output dimensions,
+ * t is +1 or -1, and
+ * d < "n",
+ * return the expression
+ *
+ *	(-t f(x)/m - g(x)) mod n + g(x)
+ *
+ * The expression is first constructed in terms of the wrapped space of "bmap".
+ * Since this expression does not depend on the original output dimensions,
+ * they can be removed, resulting in an expression in terms
+ * of the input dimensions.
+ * If "bmap" is actually a set, then the resulting expression has no domain.
+ *
+ * Also note that the "f" variable contains "-t (f(x)/m + n h(y))"
+ * but the "n h(y)" part is removed by taking the modulo with respect to n.
+ */
+static __isl_give isl_aff *construct_mod(__isl_keep isl_basic_map *bmap,
+	int pos, int eq, int lower, isl_int n)
+{
+	isl_ctx *ctx;
+	isl_basic_set *bset;
+	isl_aff *f, *g, *mod;
+	isl_val *v;
+	isl_bool is_set;
+
+	is_set = isl_basic_map_is_set(bmap);
+	if (is_set < 0)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+
+	if (is_set)
+		bset = bset_from_bmap(isl_basic_map_copy(bmap));
+	else
+		bset = isl_basic_map_wrap(isl_basic_map_copy(bmap));
+	g = extract_lower_bound_aff(bset, lower, pos);
+	f = extract_expr_aff(bset, eq, pos);
+	isl_basic_set_free(bset);
+
+	mod = isl_aff_sub(f, isl_aff_copy(g));
+	v = isl_val_int_from_isl_int(ctx, n);
+	mod = isl_aff_mod_val(mod, v);
+	mod = isl_aff_add(mod, g);
+	if (is_set)
+		mod = isl_aff_project_domain_on_params(mod);
+	else
+		mod = isl_aff_domain_factor_domain(mod);
+
+	return mod;
+}
+
+/* Look for a combination of constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some modulo expression
+ * in the parameters and input dimensions and
+ * return this expression if found.
+ *
+ * The constraints are assumed to have been sorted.
+ *
+ * In particular look for an equality constraint
+ *
+ *	f(x) + t m i + m n h(y) = 0
+ *
+ * and a pair of inequality constraints
+ *
+ *	-g(x) + i >= 0
+ *	 g(x) - i + d >= 0
+ *
+ * where f(x) and g(x) are expressions in the parameters and input dimensions,
+ * h(y) is an expression in local variables and other output dimensions,
+ * t is +1 or -1, and
+ * d < n.
+ *
+ * If such a combination of constraints can be found
+ * then
+ *
+ *	i = -t f(x)/m - t n h(y)
+ *	i - g(x) = -t f(x)/m - t n h(y) - g(x)
+ *
+ * and so, because 0 <= i - g(x) <= d < n,
+ *
+ *	i - g(x) = (-t f(x)/m - t n h(y) - g(x)) mod n
+ *	         = (-t f(x)/m - g(x)) mod n
+ *
+ * That is,
+ *
+ *	i = (-t f(x)/m - g(x)) mod n + g(x)
+ */
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	int i, j;
+	isl_size n_eq, n_ineq;
+	isl_size v_out, n_out;
+	isl_size v_div, n_div;
+	isl_size lower;
+	isl_int gcd;
+	isl_maybe_isl_aff res = { isl_bool_false, NULL };
+
+	n_eq = isl_basic_map_n_equality(bmap);
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_eq < 0 || n_ineq < 0 ||
+	    v_out < 0 || n_out < 0 || v_div < 0 || n_div < 0)
+		goto error;
+	if (n_eq == 0 || n_ineq < 2 || n_out == 1)
+		return res;
+
+	isl_int_init(gcd);
+	for (i = 0; i < n_eq; ++i) {
+		if (isl_int_is_zero(bmap->eq[i][1 + v_out + pos]))
+			continue;
+		isl_seq_gcd(bmap->eq[i] + 1 + v_div, n_div, &gcd);
+		for (j = 0; j < n_out; ++j) {
+			if (j == pos)
+				continue;
+			isl_int_gcd(gcd, gcd, bmap->eq[i][1 + v_out + j]);
+		}
+		if (!isl_int_abs_gt(gcd, bmap->eq[i][1 + v_out + pos]))
+			continue;
+		if (!isl_int_is_divisible_by(gcd, bmap->eq[i][1 + v_out + pos]))
+			continue;
+		isl_int_divexact(gcd, gcd, bmap->eq[i][1 + v_out + pos]);
+		isl_int_abs(gcd, gcd);
+		lower = find_output_lower_mod_constraint(bmap, pos, gcd);
+		if (lower >= n_ineq)
+			continue;
+		res.valid = isl_bool_true;
+		if (lower >= 0)
+			res.value = construct_mod(bmap, v_out + pos, i,
+						lower, gcd);
+		if (!res.value)
+			res.valid = isl_bool_error;
+		isl_int_clear(gcd);
+		return res;
+	}
+
+	isl_int_clear(gcd);
+	return res;
+error:
+	res.valid = isl_bool_error;
+	return res;
 }
 
 /* Return a copy of the equality constraints of "bset" as a matrix.
