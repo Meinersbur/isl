@@ -5303,7 +5303,6 @@ error:
 static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
 {
-	isl_space *space = NULL;
 	isl_local_space *ls;
 	isl_multi_aff *ma;
 	isl_aff *aff;
@@ -5317,8 +5316,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	if (is_set < 0)
 		goto error;
 
-	space = isl_space_domain(isl_map_get_space(map));
-	n_in = isl_space_dim(space, isl_dim_set);
+	n_in = is_set ? 0 : isl_map_dim(map, isl_dim_in);
 	if (n_in < 0)
 		goto error;
 
@@ -5332,10 +5330,12 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	aff = isl_aff_floor(aff);
 	if (is_set) {
 		aff = isl_aff_project_domain_on_params(aff);
-		isl_space_free(space);
 		ma = isl_multi_aff_from_aff(aff);
 	} else {
+		isl_space *space;
+
 		aff = isl_aff_domain_factor_domain(aff);
+		space = isl_space_domain(isl_map_get_space(map));
 		ma = isl_multi_aff_identity(isl_space_map_from_set(space));
 		ma = isl_multi_aff_range_product(ma,
 						isl_multi_aff_from_aff(aff));
@@ -5349,7 +5349,6 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 
 	return pma;
 error:
-	isl_space_free(space);
 	isl_map_free(map);
 	isl_basic_map_free(hull);
 	return NULL;
