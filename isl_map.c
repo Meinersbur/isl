@@ -2341,6 +2341,36 @@ static int constraint_pair_has_bound(__isl_keep isl_basic_map *bmap,
 	return isl_int_abs_lt(*tmp, bound);
 }
 
+/* Return the position of an inequality constraint in "bmap"
+ * that together with inequality constraint "ineq" forms
+ * a pair of opposite constraints that allow at most "bound" values
+ * in their shared direction and that appears after "ineq".
+ * Return a position beyond the number of inequality constraints
+ * if no such constraint can be found.
+ *
+ * "len" is the number of (relevant) coefficients in the constraints.
+ * "tmp" is a temporary location that can be used to store the sum.
+ */
+static isl_size find_later_constraint_in_pair(__isl_keep isl_basic_map *bmap,
+	int ineq, int len, isl_int bound, isl_int *tmp)
+{
+	int j;
+	isl_size n_ineq;
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (n_ineq < 0)
+		return isl_size_error;
+
+	for (j = ineq + 1; j < n_ineq; ++j) {
+		if (!is_constraint_pair(bmap, ineq, j, len))
+			continue;
+		if (constraint_pair_has_bound(bmap, ineq, j, bound, tmp))
+			return j;
+	}
+
+	return n_ineq;
+}
+
 /* Swap divs "a" and "b" in "bmap" (without modifying any of the constraints
  * of "bmap").
  */
@@ -14564,7 +14594,8 @@ static isl_bool is_potential_div_constraint(__isl_keep isl_basic_map *bmap,
 isl_size isl_basic_map_find_output_upper_div_constraint(
 	__isl_keep isl_basic_map *bmap, int pos)
 {
-	int i, j;
+	int i;
+	isl_size j;
 	isl_size n_ineq;
 	isl_size v_out, v_div;
 	isl_size total;
@@ -14587,13 +14618,11 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 			goto error;
 		if (!potential)
 			continue;
-		for (j = i + 1; j < n_ineq; ++j) {
-			if (!is_constraint_pair(bmap, i, j, total))
-				continue;
-			if (constraint_pair_has_bound(bmap, i, j,
-					bmap->ineq[i][1 + v_out + pos], &sum))
-				break;
-		}
+
+		j = find_later_constraint_in_pair(bmap, i, total,
+					bmap->ineq[i][1 + v_out + pos], &sum);
+		if (j < 0)
+			goto error;
 		if (j < n_ineq)
 			break;
 	}
