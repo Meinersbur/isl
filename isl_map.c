@@ -2310,6 +2310,15 @@ static __isl_give isl_vec *extract_bound_from_constraint(isl_ctx *ctx,
 	return v;
 }
 
+/* Do the inequality constraints "i" and "j" of "bmap"
+ * form a pair of opposite constraints, in the (first) "len" coefficients?
+ */
+static int is_constraint_pair(__isl_keep isl_basic_map *bmap, int i, int j,
+	unsigned len)
+{
+	return isl_seq_is_neg(bmap->ineq[i] + 1, bmap->ineq[j] + 1, len);
+}
+
 /* Swap divs "a" and "b" in "bmap" (without modifying any of the constraints
  * of "bmap").
  */
@@ -14557,8 +14566,7 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 		if (!potential)
 			continue;
 		for (j = i + 1; j < n_ineq; ++j) {
-			if (!isl_seq_is_neg(bmap->ineq[i] + 1,
-					bmap->ineq[j] + 1, total))
+			if (!is_constraint_pair(bmap, i, j, total))
 				continue;
 			isl_int_add(sum, bmap->ineq[i][0], bmap->ineq[j][0]);
 			if (isl_int_abs_lt(sum, bmap->ineq[i][1 + v_out + pos]))
