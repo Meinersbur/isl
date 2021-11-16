@@ -5268,45 +5268,29 @@ error:
 
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
  * taking into account that the output dimension at position "d"
- * can be represented as
- *
- *	x = floor((e(...) + c1) / m)
- *
- * given that constraint "i" is of the form
- *
- *	e(...) + c1 - m x >= 0
- *
- * with e(...) an expression that does not involve any other output dimensions.
- *
+ * is equal to some expression f in the parameters and input dimensions
+ * represented by "aff".
  *
  * Let "map" be of the form
  *
  *	A -> B
  *
- * We construct a mapping
+ * Construct a mapping
  *
- *	A -> [A -> x = floor(...)]
+ *	A -> [A -> x = f]
  *
  * apply that to the map, obtaining
  *
- *	[A -> x = floor(...)] -> B
+ *	[A -> x = f] -> B
  *
  * and equate dimension "d" to x.
- * We then compute a isl_pw_multi_aff representation of the resulting map
- * and plug in the mapping above.
- *
- * The constraint "i" is guaranteed by the caller not to involve
- * any local variables without a known expression, but such local variables
- * may appear in other constraints.  They therefore need to be removed
- * during the construction of the affine expression.
+ * An isl_pw_multi_aff representation of this map is then computed and
+ * the above expression is plugged in in the result.
  */
-static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
-	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_plug_in(
+	__isl_take isl_map *map, int d, __isl_take isl_aff *aff)
 {
-	isl_local_space *ls;
 	isl_multi_aff *ma;
-	isl_aff *aff;
-	isl_vec *v;
 	isl_map *insert;
 	isl_size n_in;
 	isl_pw_multi_aff *pma;
@@ -5320,21 +5304,11 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	if (n_in < 0)
 		goto error;
 
-	ls = isl_basic_map_get_local_space(hull);
-	if (!is_set)
-		ls = isl_local_space_wrap(ls);
-	v = isl_basic_map_inequality_extract_output_upper_bound(hull, i, d);
-	isl_basic_map_free(hull);
-
-	aff = isl_aff_alloc_vec_prune(ls, v);
-	aff = isl_aff_floor(aff);
 	if (is_set) {
-		aff = isl_aff_project_domain_on_params(aff);
 		ma = isl_multi_aff_from_aff(aff);
 	} else {
 		isl_space *space;
 
-		aff = isl_aff_domain_factor_domain(aff);
 		space = isl_space_domain(isl_map_get_space(map));
 		ma = isl_multi_aff_identity(isl_space_map_from_set(space));
 		ma = isl_multi_aff_range_product(ma,
@@ -5350,8 +5324,66 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	return pma;
 error:
 	isl_map_free(map);
-	isl_basic_map_free(hull);
+	isl_aff_free(aff);
 	return NULL;
+}
+
+/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
+ * taking into account that the output dimension at position "d"
+ * can be represented as
+ *
+ *	x = floor((e(...) + c1) / m)
+ *
+ * given that constraint "i" is of the form
+ *
+ *	e(...) + c1 - m x >= 0
+ *
+ * with e(...) an expression that does not involve any other output dimensions.
+ *
+ *
+ * Let "map" be of the form
+ *
+ *	A -> B
+ *
+ * Create an expression
+ *
+ *	A -> x = floor(...)
+ *
+ * and continue with output dimension "d" equated to this expression,
+ * plugging it back in afterwards.
+ *
+ * The constraint "i" is guaranteed by the caller not to involve
+ * any local variables without a known expression, but such local variables
+ * may appear in other constraints.  They therefore need to be removed
+ * during the construction of the affine expression.
+ */
+static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
+	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
+{
+	isl_local_space *ls;
+	isl_aff *aff;
+	isl_vec *v;
+	isl_bool is_set;
+
+	is_set = isl_map_is_set(map);
+	if (is_set < 0)
+		hull = isl_basic_map_free(hull);
+
+	ls = isl_basic_map_get_local_space(hull);
+	if (!is_set)
+		ls = isl_local_space_wrap(ls);
+	v = isl_basic_map_inequality_extract_output_upper_bound(hull, i, d);
+	isl_basic_map_free(hull);
+
+	aff = isl_aff_alloc_vec_prune(ls, v);
+	aff = isl_aff_floor(aff);
+
+	if (is_set)
+		aff = isl_aff_project_domain_on_params(aff);
+	else
+		aff = isl_aff_domain_factor_domain(aff);
+
+	return pw_multi_aff_from_map_plug_in(map, d, aff);
 }
 
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
