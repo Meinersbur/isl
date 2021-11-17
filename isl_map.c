@@ -2366,6 +2366,7 @@ static isl_size find_later_constraint_in_pair(__isl_keep isl_basic_map *bmap,
 			continue;
 		if (constraint_pair_has_bound(bmap, ineq, j, bound, tmp))
 			return j;
+		return n_ineq;
 	}
 
 	return n_ineq;
