@@ -2275,6 +2275,41 @@ __isl_give isl_set *isl_set_set_rational(__isl_take isl_set *set)
 	return isl_map_set_rational(set);
 }
 
+/* Given a constraint "c" that expresses a bound
+ * on the variable at position "pos" in terms of the first "len" variables
+ * (other than the variable itself if pos < len), extract this bound
+ * as a function of those first "len" variables.
+ *
+ * That is, the constraint is of one of the following forms
+ *
+ *	-e(...) + m x >= 0
+ *	e(...) - m x >= 0
+ *	-e(...) + m x = 0
+ *	e(...) - m x = 0
+ *
+ * Return (e(...)) / m, with the denominator m in the first position.
+ */
+static __isl_give isl_vec *extract_bound_from_constraint(isl_ctx *ctx,
+	isl_int *c, int len, int pos)
+{
+	isl_vec *v;
+
+	v = isl_vec_alloc(ctx, 1 + 1 + len);
+	if (!v)
+		return NULL;
+	if (isl_int_is_pos(c[1 + pos])) {
+		isl_int_set(v->el[0], c[1 + pos]);
+		isl_seq_neg(v->el + 1, c, 1 + len);
+	} else {
+		isl_int_neg(v->el[0], c[1 + pos]);
+		isl_seq_cpy(v->el + 1, c, 1 + len);
+	}
+	if (pos < len)
+		isl_int_set_si(v->el[1 + 1 + pos], 0);
+
+	return v;
+}
+
 /* Swap divs "a" and "b" in "bmap" (without modifying any of the constraints
  * of "bmap").
  */
@@ -14354,7 +14389,6 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
 	__isl_keep isl_basic_map *bmap, int ineq, int pos)
 {
 	isl_ctx *ctx;
-	isl_vec *v;
 	isl_size v_out, total;
 
 	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
@@ -14362,14 +14396,8 @@ __isl_give isl_vec *isl_basic_map_inequality_extract_output_upper_bound(
 	if (v_out < 0 || total < 0)
 		return NULL;
 	ctx = isl_basic_map_get_ctx(bmap);
-	v = isl_vec_alloc(ctx, 1 + 1 + total);
-	if (!v)
-		return NULL;
-	isl_int_neg(v->el[0], bmap->ineq[ineq][1 + v_out + pos]);
-	isl_seq_cpy(v->el + 1, bmap->ineq[ineq], 1 + total);
-	isl_int_set_si(v->el[1 + 1 + v_out + pos], 0);
-
-	return v;
+	return extract_bound_from_constraint(ctx, bmap->ineq[ineq],
+							total, v_out + pos);
 }
 
 /* Is constraint "c" of "bmap" of the form
