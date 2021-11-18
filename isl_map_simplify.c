@@ -333,6 +333,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
 		isl_seq_normalize(ctx, bmap->ineq[k], 1 + total);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	}
