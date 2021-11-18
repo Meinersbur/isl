@@ -28,6 +28,27 @@
 #include <set_to_map.c>
 #include <set_from_map.c>
 
+/* Mark "bmap" as having one or more inequality constraints modified.
+ *
+ * Any modification may result in the constraints no longer being sorted and
+ * may also undo the effect of reduce_coefficients.
+ *
+ * Furthermore, it may also result
+ * in the modified constraint(s) becoming redundant or
+ * turning into an implicit equality constraint.
+ */
+static __isl_give isl_basic_map *isl_basic_map_modify_inequality(
+	__isl_take isl_basic_map *bmap)
+{
+	if (!bmap)
+		return NULL;
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
+	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
+	return bmap;
+}
+
 static void swap_equality(__isl_keep isl_basic_map *bmap, int a, int b)
 {
 	isl_int *t = bmap->eq[a];
@@ -355,12 +376,9 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		isl_seq_gcd(bmap->ineq[k], 1 + total, &ctx->normalize_gcd);
 		bmap = scale_down_inequality(bmap, k, ctx->normalize_gcd,
 						total);
+		bmap = isl_basic_map_modify_inequality(bmap);
 		if (!bmap)
 			return NULL;
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
-		ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
 	}
 
 	for (k = 0; k < bmap->n_div; ++k) {
