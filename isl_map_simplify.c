@@ -29,21 +29,25 @@
 #include <set_from_map.c>
 
 /* Mark "bmap" as having one or more inequality constraints modified.
+ * If "equivalent" is set, then this modification was done based
+ * on an equality constraint already available in "bmap".
  *
  * Any modification may result in the constraints no longer being sorted and
  * may also undo the effect of reduce_coefficients.
  *
- * Furthermore, it may also result
+ * A modification that uses extra information may also result
  * in the modified constraint(s) becoming redundant or
  * turning into an implicit equality constraint.
  */
 static __isl_give isl_basic_map *isl_basic_map_modify_inequality(
-	__isl_take isl_basic_map *bmap)
+	__isl_take isl_basic_map *bmap, int equivalent)
 {
 	if (!bmap)
 		return NULL;
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_REDUCED_COEFFICIENTS);
+	if (equivalent)
+		return bmap;
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 	ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 	return bmap;
@@ -73,7 +77,7 @@ static void swap_inequality(__isl_keep isl_basic_map *bmap, int a, int b)
  * If the factor is 0 or 1, then no scaling needs to be performed.
  *
  * If scaling is performed then take into account that the constraint
- * is modified.
+ * is modified (not simply based on an equality constraint).
  */
 static __isl_give isl_basic_map *scale_down_inequality(
 	__isl_take isl_basic_map *bmap, int ineq, isl_int f, unsigned len)
@@ -87,7 +91,7 @@ static __isl_give isl_basic_map *scale_down_inequality(
 	isl_int_fdiv_q(bmap->ineq[ineq][0], bmap->ineq[ineq][0], f);
 	isl_seq_scale_down(bmap->ineq[ineq] + 1, bmap->ineq[ineq] + 1, f, len);
 
-	bmap = isl_basic_map_modify_inequality(bmap);
+	bmap = isl_basic_map_modify_inequality(bmap, 0);
 
 	return bmap;
 }
@@ -343,11 +347,18 @@ static __isl_give isl_basic_map *normalize_div_expressions(
 	return bmap;
 }
 
-/* Assumes divs have been ordered if keep_divs is set.
+/* Eliminate the variable at position "pos" from the constraints of "bmap"
+ * using the equality constraint "eq".
+ * If "keep_divs" is set, then try and preserve
+ * the integer division expressions.  In this case, these expressions
+ * are assumed to have been ordered.
+ * If "equivalent" is set, then the elimination is performed
+ * using an equality constraint of "bmap", meaning that the meaning
+ * of the constraints is preserved.
  */
 static __isl_give isl_basic_map *eliminate_var_using_equality(
 	__isl_take isl_basic_map *bmap,
-	unsigned pos, isl_int *eq, int keep_divs, int *progress)
+	unsigned pos, isl_int *eq, int keep_divs, int equivalent, int *progress)
 {
 	isl_size total;
 	isl_size v_div;
@@ -381,7 +392,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		isl_seq_gcd(bmap->ineq[k], 1 + total, &ctx->normalize_gcd);
 		bmap = scale_down_inequality(bmap, k, ctx->normalize_gcd,
 						total);
-		bmap = isl_basic_map_modify_inequality(bmap);
+		bmap = isl_basic_map_modify_inequality(bmap, equivalent);
 		if (!bmap)
 			return NULL;
 	}
@@ -413,10 +424,17 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 	return bmap;
 }
 
-/* Assumes divs have been ordered if keep_divs is set.
+/* Eliminate and remove the local variable at position "pos" of "bmap"
+ * using the equality constraint "eq".
+ * If "keep_divs" is set, then try and preserve
+ * the integer division expressions.  In this case, these expressions
+ * are assumed to have been ordered.
+ * If "equivalent" is set, then the elimination is performed
+ * using an equality constraint of "bmap", meaning that the meaning
+ * of the constraints is preserved.
  */
 static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
-	isl_int *eq, unsigned div, int keep_divs)
+	isl_int *eq, unsigned div, int keep_divs, int equivalent)
 {
 	isl_size v_div;
 	unsigned pos;
@@ -425,7 +443,8 @@ static __isl_give isl_basic_map *eliminate_div(__isl_take isl_basic_map *bmap,
 	if (v_div < 0)
 		return isl_basic_map_free(bmap);
 	pos = v_div + div;
-	bmap = eliminate_var_using_equality(bmap, pos, eq, keep_divs, NULL);
+	bmap = eliminate_var_using_equality(bmap, pos, eq, keep_divs,
+					equivalent, NULL);
 
 	bmap = isl_basic_map_drop_div(bmap, div);
 
@@ -493,7 +512,7 @@ static __isl_give isl_basic_map *eliminate_divs_eq(
 				continue;
 			modified = 1;
 			*progress = 1;
-			bmap = eliminate_div(bmap, bmap->eq[i], d, 1);
+			bmap = eliminate_div(bmap, bmap->eq[i], d, 1, 1);
 			if (isl_basic_map_drop_equality(bmap, i) < 0)
 				return isl_basic_map_free(bmap);
 			break;
@@ -686,7 +705,7 @@ __isl_give isl_basic_map *isl_basic_map_gauss5(__isl_take isl_basic_map *bmap,
 			isl_seq_neg(bmap->eq[done], bmap->eq[done], 1+total);
 
 		bmap = eliminate_var_using_equality(bmap, last_var,
-						bmap->eq[done], 1, progress);
+						bmap->eq[done], 1, 1, progress);
 
 		if (last_var >= total_var)
 			bmap = set_div_from_eq(bmap, last_var - total_var,
@@ -932,7 +951,7 @@ static __isl_give isl_basic_map *remove_duplicate_divs(
 		k = elim_for[l] - 1;
 		isl_int_set_si(eq.data[1 + v_div + k], -1);
 		isl_int_set_si(eq.data[1 + v_div + l], 1);
-		bmap = eliminate_div(bmap, eq.data, l, 1);
+		bmap = eliminate_div(bmap, eq.data, l, 1, 0);
 		if (!bmap)
 			break;
 		isl_int_set_si(eq.data[1 + v_div + k], 0);
@@ -1796,7 +1815,7 @@ __isl_give isl_basic_map *isl_basic_map_eliminate_vars(
 			if (isl_int_is_zero(bmap->eq[i][1+d]))
 				continue;
 			bmap = eliminate_var_using_equality(bmap, d,
-							bmap->eq[i], 0, NULL);
+						    bmap->eq[i], 0, 1, NULL);
 			if (isl_basic_map_drop_equality(bmap, i) < 0)
 				return isl_basic_map_free(bmap);
 			need_gauss = 1;
