@@ -49,7 +49,7 @@ static void swap_inequality(__isl_keep isl_basic_map *bmap, int a, int b)
  * All the coefficients, except the constant term,
  * are assumed to be multiples of "f".
  *
- * If the factor is 1, then no scaling needs to be performed.
+ * If the factor is 0 or 1, then no scaling needs to be performed.
  */
 static __isl_give isl_basic_map *scale_down_inequality(
 	__isl_take isl_basic_map *bmap, int ineq, isl_int f, unsigned len)
@@ -57,7 +57,7 @@ static __isl_give isl_basic_map *scale_down_inequality(
 	if (!bmap)
 		return NULL;
 
-	if (isl_int_is_one(f))
+	if (isl_int_is_zero(f) || isl_int_is_one(f))
 		return bmap;
 
 	isl_int_fdiv_q(bmap->ineq[ineq][0], bmap->ineq[ineq][0], f);
@@ -352,7 +352,11 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		if (progress)
 			*progress = 1;
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
-		isl_seq_normalize(ctx, bmap->ineq[k], 1 + total);
+		isl_seq_gcd(bmap->ineq[k], 1 + total, &ctx->normalize_gcd);
+		bmap = scale_down_inequality(bmap, k, ctx->normalize_gcd,
+						total);
+		if (!bmap)
+			return NULL;
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_IMPLICIT);
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_SORTED);
