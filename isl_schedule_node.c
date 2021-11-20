@@ -2373,6 +2373,46 @@ __isl_give isl_schedule_node *isl_schedule_node_sequence_splice_child(
 	return node;
 }
 
+/* Given a sequence node "node", for each child that is also
+ * (the parent of) a sequence node, attach the children of that node directly
+ * as children of "node" at the position of the child,
+ * replacing this original child.
+ *
+ * Since splicing in a child may change the positions of later children,
+ * iterate through the children from last to first.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_sequence_splice_children(
+	__isl_take isl_schedule_node *node)
+{
+	int i;
+	isl_size n;
+
+	if (check_is_sequence(node) < 0)
+		return isl_schedule_node_free(node);
+	n = isl_schedule_node_n_children(node);
+	if (n < 0)
+		return isl_schedule_node_free(node);
+
+	for (i = n - 1; i >= 0; --i) {
+		enum isl_schedule_node_type type;
+		int is_seq;
+
+		node = isl_schedule_node_grandchild(node, i, 0);
+		type = isl_schedule_node_get_type(node);
+		if (type < 0)
+			return isl_schedule_node_free(node);
+		is_seq = type == isl_schedule_node_sequence;
+		node = isl_schedule_node_grandparent(node);
+
+		if (!is_seq)
+			continue;
+
+		node = isl_schedule_node_sequence_splice_child(node, i);
+	}
+
+	return node;
+}
+
 /* Update the ancestors of "node" to point to the tree that "node"
  * now points to.
  * That is, replace the child in the original parent that corresponds

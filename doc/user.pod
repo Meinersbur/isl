@@ -10639,19 +10639,26 @@ introduced expansion node.  Grouping instances of different statements
 ensures that they will be treated as a single statement by the
 AST generator up to the point of the expansion node.
 
-The following function can be used to flatten a nested
+The following functions can be used to flatten a nested
 sequence.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *
 	isl_schedule_node_sequence_splice_child(
 		__isl_take isl_schedule_node *node, int pos);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_sequence_splice_children(
+		__isl_take isl_schedule_node *node);
 
 That is, given a sequence node C<node> that has another sequence node
 in its child at position C<pos> (in particular, the child of that filter
-node is a sequence node), attach the children of that other sequence
+node is a sequence node), the function
+C<isl_schedule_node_sequence_splice_child>
+attaches the children of that other sequence
 node as children of C<node>, replacing the original child at position
 C<pos>.
+C<isl_schedule_node_sequence_splice_children> does this for all
+such children.
 
 The partial schedule of a band node can be scaled (down) or reduced using
 the following functions.

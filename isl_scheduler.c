@@ -3951,7 +3951,6 @@ static isl_stat reset_band(struct isl_sched_graph *graph)
 static __isl_give isl_schedule_node *compute_split_schedule(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
-	int is_seq;
 	isl_ctx *ctx;
 	isl_union_set_list *filters;
 
@@ -3971,18 +3970,14 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_least, &edge_src_scc_at_least,
 				graph->src_scc + 1, 0);
-	is_seq = isl_schedule_node_get_type(node) == isl_schedule_node_sequence;
 	node = isl_schedule_node_grandparent(node);
-	if (is_seq)
-		node = isl_schedule_node_sequence_splice_child(node, 1);
 	node = isl_schedule_node_grandchild(node, 0, 0);
 	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_most, &edge_dst_scc_at_most,
 				graph->src_scc, 0);
-	is_seq = isl_schedule_node_get_type(node) == isl_schedule_node_sequence;
 	node = isl_schedule_node_grandparent(node);
-	if (is_seq)
-		node = isl_schedule_node_sequence_splice_child(node, 0);
+
+	node = isl_schedule_node_sequence_splice_children(node);
 
 	return node;
 }
