@@ -4642,25 +4642,34 @@ __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 						type, first, n));
 }
 
+/* If "map" involves a parameter with identifier "id",
+ * then turn it into an existentially quantified variable.
+ */
+__isl_give isl_map *isl_map_project_out_param_id(__isl_take isl_map *map,
+	__isl_take isl_id *id)
+{
+	int pos;
+
+	if (!map || !id)
+		goto error;
+	pos = isl_map_find_dim_by_id(map, isl_dim_param, id);
+	isl_id_free(id);
+	if (pos < 0)
+		return map;
+	return isl_map_project_out(map, isl_dim_param, pos, 1);
+error:
+	isl_map_free(map);
+	isl_id_free(id);
+	return NULL;
+}
+
 /* If "set" involves a parameter with identifier "id",
  * then turn it into an existentially quantified variable.
  */
 __isl_give isl_set *isl_set_project_out_param_id(__isl_take isl_set *set,
 	__isl_take isl_id *id)
 {
-	int pos;
-
-	if (!set || !id)
-		goto error;
-	pos = isl_set_find_dim_by_id(set, isl_dim_param, id);
-	isl_id_free(id);
-	if (pos < 0)
-		return set;
-	return isl_set_project_out(set, isl_dim_param, pos, 1);
-error:
-	isl_set_free(set);
-	isl_id_free(id);
-	return NULL;
+	return set_from_map(isl_map_project_out_param_id(set_to_map(set), id));
 }
 
 /* If "set" involves any of the parameters with identifiers in "list",
