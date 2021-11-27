@@ -32,7 +32,7 @@ AX_CXX_COMPILE_STDCXX_17([], [optional])
 AC_PROG_GREP
 AC_PROG_LIBTOOL
 AC_PROG_SED
-AM_PATH_PYTHON([2.5], [], [:])
+AM_PATH_PYTHON([3.6], [], [:])
 AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
 
 AC_CHECK_PROG(CYGPATH, cygpath, cygpath, [])
