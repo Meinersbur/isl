@@ -63,8 +63,12 @@
 
 #include <isl_list_templ.c>
 
-__isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
-	__isl_take isl_vec *v)
+/* Construct an isl_aff from the given domain local space "ls" and
+ * coefficients "v", where the local space is known to be valid
+ * for an affine expression.
+ */
+static __isl_give isl_aff *isl_aff_alloc_vec_validated(
+	__isl_take isl_local_space *ls, __isl_take isl_vec *v)
 {
 	isl_aff *aff;
 
@@ -86,11 +90,16 @@ error:
 	return NULL;
 }
 
-__isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
+/* Construct an isl_aff from the given domain local space "ls" and
+ * coefficients "v".
+ *
+ * First check that "ls" is a valid domain local space
+ * for an affine expression.
+ */
+__isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
+	__isl_take isl_vec *v)
 {
 	isl_ctx *ctx;
-	isl_vec *v;
-	isl_size total;
 
 	if (!ls)
 		return NULL;
@@ -103,6 +112,23 @@ __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
 		isl_die(ctx, isl_error_invalid,
 			"domain of affine expression should be a set",
 			goto error);
+	return isl_aff_alloc_vec_validated(ls, v);
+error:
+	isl_local_space_free(ls);
+	isl_vec_free(v);
+	return NULL;
+}
+
+__isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
+{
+	isl_ctx *ctx;
+	isl_vec *v;
+	isl_size total;
+
+	if (!ls)
+		return NULL;
+
+	ctx = isl_local_space_get_ctx(ls);
 
 	total = isl_local_space_dim(ls, isl_dim_all);
 	if (total < 0)
@@ -128,8 +154,8 @@ __isl_give isl_aff *isl_aff_dup(__isl_keep isl_aff *aff)
 	if (!aff)
 		return NULL;
 
-	return isl_aff_alloc_vec(isl_local_space_copy(aff->ls),
-				 isl_vec_copy(aff->v));
+	return isl_aff_alloc_vec_validated(isl_local_space_copy(aff->ls),
+					    isl_vec_copy(aff->v));
 }
 
 __isl_give isl_aff *isl_aff_cow(__isl_take isl_aff *aff)
@@ -3944,7 +3970,7 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 		isl_int_set(v->el[0], mat->row[0][0]);
 		isl_seq_cpy(v->el + 1, mat->row[1 + i], n_col);
 		v = isl_vec_normalize(v);
-		aff = isl_aff_alloc_vec(isl_local_space_copy(ls), v);
+		aff = isl_aff_alloc_vec_validated(isl_local_space_copy(ls), v);
 		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
 
@@ -5079,7 +5105,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	isl_basic_map_free(hull);
 
 	ls = isl_local_space_from_space(isl_space_copy(space));
-	aff = isl_aff_alloc_vec(ls, v);
+	aff = isl_aff_alloc_vec_validated(ls, v);
 	aff = isl_aff_floor(aff);
 	if (is_set) {
 		isl_space_free(space);
