@@ -217,6 +217,11 @@ static void test_space(isl::ctx ctx)
 }
 
 /* Perform some basic conversion tests.
+ *
+ * In particular, check that a map with an output dimension
+ * that is equal to some integer division over a domain involving
+ * a local variable without a known integer division expression
+ * can be converted to a function expressed in the same way.
  */
 static void test_conversion(isl::ctx ctx)
 {
@@ -228,6 +233,13 @@ static void test_conversion(isl::ctx ctx)
 	C(&isl::multi_pw_aff::as_set, {
 	{ "[n] -> { [] : n >= 0 } ",
 	  "[n] -> { [] : n >= 0 } " },
+	});
+
+	C(&isl::map::as_pw_multi_aff, {
+	{ "{ [a] -> [a//2] : "
+	    "exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }",
+	  "{ [a] -> [a//2] : "
+	    "exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }" },
 	});
 }
 
