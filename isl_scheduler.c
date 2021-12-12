@@ -1562,7 +1562,7 @@ error:
  * any possible additional equalities.
  * Note that this intersection is only performed locally here.
  */
-static isl_stat graph_init(struct isl_sched_graph *graph,
+static isl_stat isl_sched_graph_init(struct isl_sched_graph *graph,
 	__isl_keep isl_schedule_constraints *sc)
 {
 	isl_ctx *ctx;
@@ -6466,7 +6466,7 @@ static isl_stat init_merge_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
 	sc = collect_constraints(graph, c->scc_in_merge, cluster_map, sc);
 	isl_union_map_free(cluster_map);
 
-	r = graph_init(merge_graph, sc);
+	r = isl_sched_graph_init(merge_graph, sc);
 
 	isl_schedule_constraints_free(sc);
 
@@ -7627,7 +7627,7 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 		return isl_schedule_from_domain(domain);
 	}
 
-	if (n < 0 || graph_init(&graph, sc) < 0)
+	if (n < 0 || isl_sched_graph_init(&graph, sc) < 0)
 		domain = isl_union_set_free(domain);
 
 	node = isl_schedule_node_from_domain(domain);
