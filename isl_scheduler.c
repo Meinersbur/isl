@@ -5861,7 +5861,7 @@ static __isl_give isl_schedule_node *isl_schedule_node_compute_finish_band(
  * Since there are only a finite number of dependences,
  * there will only be a finite number of iterations.
  */
-static isl_stat compute_schedule_wcc_band(isl_ctx *ctx,
+static isl_stat isl_schedule_node_compute_wcc_band(isl_ctx *ctx,
 	struct isl_sched_graph *graph)
 {
 	int has_coincidence;
@@ -5926,8 +5926,8 @@ static isl_stat compute_schedule_wcc_band(isl_ctx *ctx,
  * the graph as a whole and return the updated schedule node.
  *
  * The actual schedule rows of the current band are computed by
- * compute_schedule_wcc_band.  isl_schedule_node_compute_finish_band takes
- * care of integrating the band into "node" and continuing
+ * isl_schedule_node_compute_wcc_band.  isl_schedule_node_compute_finish_band
+ * takes care of integrating the band into "node" and continuing
  * the computation.
  */
 static __isl_give isl_schedule_node *compute_schedule_wcc_whole(
@@ -5939,7 +5939,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc_whole(
 		return NULL;
 
 	ctx = isl_schedule_node_get_ctx(node);
-	if (compute_schedule_wcc_band(ctx, graph) < 0)
+	if (isl_schedule_node_compute_wcc_band(ctx, graph) < 0)
 		return isl_schedule_node_free(node);
 
 	return isl_schedule_node_compute_finish_band(node, graph, 1);
@@ -6007,7 +6007,7 @@ static isl_stat clustering_init(isl_ctx *ctx, struct isl_clustering *c,
 		c->scc[i].scc = 1;
 		if (isl_sched_graph_compute_maxvar(&c->scc[i]) < 0)
 			return isl_stat_error;
-		if (compute_schedule_wcc_band(ctx, &c->scc[i]) < 0)
+		if (isl_schedule_node_compute_wcc_band(ctx, &c->scc[i]) < 0)
 			return isl_stat_error;
 		c->scc_cluster[i] = i;
 	}
@@ -7097,7 +7097,7 @@ static isl_bool try_merge(isl_ctx *ctx, struct isl_sched_graph *graph,
 		goto error;
 	if (adjust_maxvar_to_slack(ctx, &merge_graph,c) < 0)
 		goto error;
-	if (compute_schedule_wcc_band(ctx, &merge_graph) < 0)
+	if (isl_schedule_node_compute_wcc_band(ctx, &merge_graph) < 0)
 		goto error;
 	merged = ok_to_merge(ctx, graph, c, &merge_graph);
 	if (merged && merge(ctx, c, &merge_graph) < 0)
