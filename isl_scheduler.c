@@ -285,7 +285,7 @@ static int isl_sched_edge_is_condition(struct isl_sched_edge *edge)
 
 /* Is "edge" marked as a conditional validity edge?
  */
-static int is_conditional_validity(struct isl_sched_edge *edge)
+static int isl_sched_edge_is_conditional_validity(struct isl_sched_edge *edge)
 {
 	return isl_sched_edge_has_type(edge, isl_edge_conditional_validity);
 }
@@ -300,7 +300,7 @@ static int is_conditional_validity(struct isl_sched_edge *edge)
 static int is_multi_edge_type(struct isl_sched_edge *edge)
 {
 	return isl_sched_edge_is_condition(edge) ||
-		is_conditional_validity(edge);
+		isl_sched_edge_is_conditional_validity(edge);
 }
 
 /* Internal information about the dependence graph used during
@@ -1321,7 +1321,7 @@ static int merge_edge(struct isl_sched_edge *edge1,
 						    edge2->tagged_condition);
 	}
 
-	if (is_conditional_validity(edge2)) {
+	if (isl_sched_edge_is_conditional_validity(edge2)) {
 		if (!edge1->tagged_validity)
 			edge1->tagged_validity = edge2->tagged_validity;
 		else
@@ -1332,7 +1332,8 @@ static int merge_edge(struct isl_sched_edge *edge1,
 
 	if (isl_sched_edge_is_condition(edge2) && !edge1->tagged_condition)
 		return -1;
-	if (is_conditional_validity(edge2) && !edge1->tagged_validity)
+	if (isl_sched_edge_is_conditional_validity(edge2) &&
+	    !edge1->tagged_validity)
 		return -1;
 
 	return 0;
@@ -2509,7 +2510,8 @@ static isl_stat node_update_vmap(struct isl_sched_node *node)
  */
 static int is_any_validity(struct isl_sched_edge *edge)
 {
-	return is_validity(edge) || is_conditional_validity(edge);
+	return is_validity(edge) ||
+		isl_sched_edge_is_conditional_validity(edge);
 }
 
 /* How many times should we count the constraints in "edge"?
@@ -3515,7 +3517,7 @@ static int unconditionalize_adjacent_validity(struct isl_sched_graph *graph,
 		int adjacent;
 		isl_union_map *validity;
 
-		if (!is_conditional_validity(&graph->edge[i]))
+		if (!isl_sched_edge_is_conditional_validity(&graph->edge[i]))
 			continue;
 		if (is_validity(&graph->edge[i]))
 			continue;
@@ -3759,7 +3761,8 @@ static isl_stat copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
 		if (!dst_src || !dst_dst)
 			return isl_stat_error;
 		if (!is_node(dst, dst_src) || !is_node(dst, dst_dst)) {
-			if (is_validity(edge) || is_conditional_validity(edge))
+			if (is_validity(edge) ||
+			    isl_sched_edge_is_conditional_validity(edge))
 				isl_die(ctx, isl_error_internal,
 					"backward (conditional) validity edge",
 					return isl_stat_error);
@@ -5579,7 +5582,7 @@ static int need_condition_check(struct isl_sched_graph *graph)
 	for (i = 0; i < graph->n_edge; ++i) {
 		if (isl_sched_edge_is_condition(&graph->edge[i]))
 			any_condition = 1;
-		if (is_conditional_validity(&graph->edge[i]))
+		if (isl_sched_edge_is_conditional_validity(&graph->edge[i]))
 			any_conditional_validity = 1;
 	}
 
@@ -5716,7 +5719,7 @@ static int has_violated_conditional_constraint(isl_ctx *ctx,
 		isl_union_map *umap;
 		int violated;
 
-		if (!is_conditional_validity(&graph->edge[i]))
+		if (!isl_sched_edge_is_conditional_validity(&graph->edge[i]))
 			continue;
 
 		violated = is_violated(graph, i);
@@ -6388,7 +6391,7 @@ static __isl_give isl_schedule_constraints *collect_edge_constraints(
 
 	if (!sc ||
 	    (!isl_sched_edge_is_condition(edge) &&
-	     !is_conditional_validity(edge)))
+	     !isl_sched_edge_is_conditional_validity(edge)))
 		return sc;
 
 	space = isl_space_domain(isl_map_get_space(edge->map));
