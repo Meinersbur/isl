@@ -6476,9 +6476,10 @@ static isl_stat init_merge_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
  * "maxvar" is the maximal dimension for the current band.
  * "c" contains information about the clusters.
  *
- * Return the maximal number of remaining schedule rows or -1 on error.
+ * Return the maximal number of remaining schedule rows or
+ * isl_size_error on error.
  */
-static int compute_maxvar_max_slack(int maxvar, struct isl_clustering *c)
+static isl_size compute_maxvar_max_slack(int maxvar, struct isl_clustering *c)
 {
 	int i, j;
 	int max_slack;
@@ -6499,7 +6500,7 @@ static int compute_maxvar_max_slack(int maxvar, struct isl_clustering *c)
 			int slack;
 
 			if (node_update_vmap(node) < 0)
-				return -1;
+				return isl_size_error;
 			slack = node->nvar - node->rank;
 			if (slack > max_slack)
 				max_slack = slack;
@@ -6515,11 +6516,11 @@ static int compute_maxvar_max_slack(int maxvar, struct isl_clustering *c)
  * of remaining schedule rows that still need to be computed
  * is greater than "max_slack", then return the smallest current band
  * dimension of all these clusters.  Otherwise return the original value
- * of "maxvar".  Return -1 in case of any error.
+ * of "maxvar".  Return isl_size_error in case of any error.
  * Only clusters that are about to be merged are considered.
  * "c" contains information about the clusters.
  */
-static int limit_maxvar_to_slack(int maxvar, int max_slack,
+static isl_size limit_maxvar_to_slack(int maxvar, int max_slack,
 	struct isl_clustering *c)
 {
 	int i, j;
@@ -6539,7 +6540,7 @@ static int limit_maxvar_to_slack(int maxvar, int max_slack,
 			int slack;
 
 			if (node_update_vmap(node) < 0)
-				return -1;
+				return isl_size_error;
 			slack = node->nvar - node->rank;
 			if (slack > max_slack) {
 				maxvar = nvar;
@@ -6570,7 +6571,7 @@ static int limit_maxvar_to_slack(int maxvar, int max_slack,
 static isl_stat adjust_maxvar_to_slack(isl_ctx *ctx,
 	struct isl_sched_graph *merge_graph, struct isl_clustering *c)
 {
-	int max_slack, maxvar;
+	isl_size max_slack, maxvar;
 
 	max_slack = compute_maxvar_max_slack(merge_graph->maxvar, c);
 	if (max_slack < 0)
