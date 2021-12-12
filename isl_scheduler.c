@@ -3966,8 +3966,7 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	ctx = isl_schedule_node_get_ctx(node);
 	filters = extract_split(ctx, graph);
 	node = isl_schedule_node_insert_sequence(node, filters);
-	node = isl_schedule_node_child(node, 1);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 1, 0);
 
 	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_least, &edge_src_scc_at_least,
@@ -3977,8 +3976,7 @@ static __isl_give isl_schedule_node *compute_split_schedule(
 	node = isl_schedule_node_parent(node);
 	if (is_seq)
 		node = isl_schedule_node_sequence_splice_child(node, 1);
-	node = isl_schedule_node_child(node, 0);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 0, 0);
 	node = compute_sub_schedule(node, ctx, graph,
 				&node_scc_at_most, &edge_dst_scc_at_most,
 				graph->src_scc, 0);
@@ -7399,8 +7397,7 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
 
 	for (i = 0; i < graph->scc; ++i) {
 		int j = c->scc_cluster[i];
-		node = isl_schedule_node_child(node, i);
-		node = isl_schedule_node_child(node, 0);
+		node = isl_schedule_node_grandchild(node, i, 0);
 		node = compute_schedule_finish_band(node, &c->cluster[j], 0);
 		node = isl_schedule_node_parent(node);
 		node = isl_schedule_node_parent(node);
@@ -7546,8 +7543,7 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 		node = isl_schedule_node_insert_sequence(node, filters);
 
 	for (component = 0; component < graph->scc; ++component) {
-		node = isl_schedule_node_child(node, component);
-		node = isl_schedule_node_child(node, 0);
+		node = isl_schedule_node_grandchild(node, component, 0);
 		node = compute_sub_schedule(node, ctx, graph,
 				    &node_scc_exactly,
 				    &edge_scc_exactly, component, wcc);

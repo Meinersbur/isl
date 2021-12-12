@@ -10309,8 +10309,7 @@ static int test_schedule_tree_prefix(isl_ctx *ctx)
 	filters = isl_union_set_list_add(filters, uset);
 	node = isl_schedule_node_insert_sequence(node, filters);
 
-	node = isl_schedule_node_child(node, 0);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 0, 0);
 	mupa = isl_schedule_node_get_prefix_schedule_multi_union_pw_aff(node);
 	str = "([] : { S1[i,j] : i > j })";
 	mupa2 = isl_multi_union_pw_aff_read_from_str(ctx, str);
@@ -10425,8 +10424,7 @@ static int test_schedule_tree_group_2(isl_ctx *ctx)
 	uset = isl_union_set_read_from_str(ctx, str);
 	filters = isl_union_set_list_add(filters, uset);
 	node = isl_schedule_node_insert_sequence(node, filters);
-	node = isl_schedule_node_child(node, 1);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 1, 0);
 	str = "{ S2[i,j] }";
 	uset = isl_union_set_read_from_str(ctx, str);
 	filters = isl_union_set_list_from_union_set(uset);
@@ -10445,8 +10443,7 @@ static int test_schedule_tree_group_2(isl_ctx *ctx)
 	node = isl_schedule_node_parent(node);
 	id = isl_id_alloc(ctx, "group1", NULL);
 	node = isl_schedule_node_group(node, id);
-	node = isl_schedule_node_child(node, 1);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 1, 0);
 	id = isl_id_alloc(ctx, "group2", NULL);
 	node = isl_schedule_node_group(node, id);
 

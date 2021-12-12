@@ -1201,6 +1201,17 @@ __isl_give isl_schedule_node *isl_schedule_node_child(
 	return node;
 }
 
+/* Move the "node" pointer to the child at position "pos2" of the child
+ * at position "pos1".
+ */
+__isl_give isl_schedule_node *isl_schedule_node_grandchild(
+	__isl_take isl_schedule_node *node, int pos1, int pos2)
+{
+	node = isl_schedule_node_child(node, pos1);
+	node = isl_schedule_node_child(node, pos2);
+	return node;
+}
+
 /* Move the "node" pointer to the first child of the node
  * it currently points to.
  */
@@ -2323,8 +2334,7 @@ __isl_give isl_schedule_node *isl_schedule_node_sequence_splice_child(
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"not a sequence node",
 			return isl_schedule_node_free(node));
-	node = isl_schedule_node_child(node, pos);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, pos, 0);
 	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"not a sequence node",
@@ -4199,8 +4209,7 @@ static __isl_give isl_schedule_node *extend_extension(
 	disjoint = isl_union_map_is_disjoint(extension, node_extension);
 	extension = isl_union_map_union(extension, node_extension);
 	node = isl_schedule_node_extension_set_extension(node, extension);
-	node = isl_schedule_node_child(node, 0);
-	node = isl_schedule_node_child(node, pos);
+	node = isl_schedule_node_grandchild(node, 0, pos);
 
 	if (disjoint < 0)
 		return isl_schedule_node_free(node);
@@ -4325,8 +4334,7 @@ static __isl_give isl_schedule_node *graft_or_splice(
 		pos = 0;
 		node = isl_schedule_node_graft_tree(node, tree);
 	}
-	node = isl_schedule_node_child(node, pos + tree_pos);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, pos + tree_pos, 0);
 
 	return node;
 }

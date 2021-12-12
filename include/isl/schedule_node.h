@@ -98,6 +98,8 @@ __isl_give isl_schedule_node *isl_schedule_node_ancestor(
 __isl_export
 __isl_give isl_schedule_node *isl_schedule_node_child(
 	__isl_take isl_schedule_node *node, int pos);
+__isl_give isl_schedule_node *isl_schedule_node_grandchild(
+	__isl_take isl_schedule_node *node, int pos1, int pos2);
 __isl_export
 __isl_give isl_schedule_node *isl_schedule_node_first_child(
 	__isl_take isl_schedule_node *node);

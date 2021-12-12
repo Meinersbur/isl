@@ -10191,6 +10191,10 @@ exists.
 		__isl_take isl_schedule_node *node, int pos);
 	isl_bool isl_schedule_node_has_children(
 		__isl_keep isl_schedule_node *node);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_grandchild(
+		__isl_take isl_schedule_node *node,
+		int pos1, int pos2);
 	__isl_give isl_schedule_node *isl_schedule_node_first_child(
 		__isl_take isl_schedule_node *node);
 	isl_bool isl_schedule_node_has_previous_sibling(
