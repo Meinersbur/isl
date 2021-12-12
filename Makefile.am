@@ -198,6 +198,9 @@ libisl_la_SOURCES = \
 	isl_schedule_constraints.c \
 	isl_schedule_constraints.h \
 	isl_scheduler.c \
+	isl_scheduler.h \
+	isl_scheduler_clustering.c \
+	isl_scheduler_clustering.h \
 	isl_set_list.c \
 	isl_sort.c \
 	isl_sort.h \
