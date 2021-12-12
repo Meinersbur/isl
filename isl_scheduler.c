@@ -207,7 +207,8 @@ struct isl_sched_edge {
 
 /* Is "edge" marked as being of type "type"?
  */
-static int is_type(struct isl_sched_edge *edge, enum isl_edge_type type)
+static int isl_sched_edge_has_type(struct isl_sched_edge *edge,
+	enum isl_edge_type type)
 {
 	return ISL_FL_ISSET(edge->types, 1 << type);
 }
@@ -230,7 +231,7 @@ static void clear_type(struct isl_sched_edge *edge, enum isl_edge_type type)
  */
 static int is_validity(struct isl_sched_edge *edge)
 {
-	return is_type(edge, isl_edge_validity);
+	return isl_sched_edge_has_type(edge, isl_edge_validity);
 }
 
 /* Mark "edge" as a validity edge.
@@ -244,14 +245,14 @@ static void set_validity(struct isl_sched_edge *edge)
  */
 static int is_proximity(struct isl_sched_edge *edge)
 {
-	return is_type(edge, isl_edge_proximity);
+	return isl_sched_edge_has_type(edge, isl_edge_proximity);
 }
 
 /* Is "edge" marked as a local edge?
  */
 static int is_local(struct isl_sched_edge *edge)
 {
-	return is_type(edge, isl_edge_local);
+	return isl_sched_edge_has_type(edge, isl_edge_local);
 }
 
 /* Mark "edge" as a local edge.
@@ -272,21 +273,21 @@ static void clear_local(struct isl_sched_edge *edge)
  */
 static int is_coincidence(struct isl_sched_edge *edge)
 {
-	return is_type(edge, isl_edge_coincidence);
+	return isl_sched_edge_has_type(edge, isl_edge_coincidence);
 }
 
 /* Is "edge" marked as a condition edge?
  */
 static int is_condition(struct isl_sched_edge *edge)
 {
-	return is_type(edge, isl_edge_condition);
+	return isl_sched_edge_has_type(edge, isl_edge_condition);
 }
 
 /* Is "edge" marked as a conditional validity edge?
  */
 static int is_conditional_validity(struct isl_sched_edge *edge)
 {
-	return is_type(edge, isl_edge_conditional_validity);
+	return isl_sched_edge_has_type(edge, isl_edge_conditional_validity);
 }
 
 /* Is "edge" of a type that can appear multiple times between
@@ -490,7 +491,7 @@ static isl_stat graph_edge_tables_add(isl_ctx *ctx,
 	enum isl_edge_type t;
 
 	for (t = isl_edge_first; t <= isl_edge_last; ++t) {
-		if (!is_type(edge, t))
+		if (!isl_sched_edge_has_type(edge, t))
 			continue;
 		if (graph_edge_table_add(ctx, graph, t, edge) < 0)
 			return isl_stat_error;
@@ -6310,7 +6311,7 @@ static __isl_give isl_schedule_constraints *add_non_conditional_constraints(
 		if (t == isl_edge_condition ||
 		    t == isl_edge_conditional_validity)
 			continue;
-		if (!is_type(edge, t))
+		if (!isl_sched_edge_has_type(edge, t))
 			continue;
 		sc = isl_schedule_constraints_add(sc, t,
 						    isl_union_map_copy(umap));
@@ -6332,7 +6333,7 @@ static __isl_give isl_schedule_constraints *add_conditional_constraints(
 	isl_union_map *tagged;
 
 	for (t = isl_edge_condition; t <= isl_edge_conditional_validity; ++t) {
-		if (!is_type(edge, t))
+		if (!isl_sched_edge_has_type(edge, t))
 			continue;
 		if (t == isl_edge_condition)
 			tagged = isl_union_map_copy(edge->tagged_condition);
