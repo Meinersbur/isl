@@ -243,7 +243,7 @@ static void set_validity(struct isl_sched_edge *edge)
 
 /* Is "edge" marked as a proximity edge?
  */
-static int is_proximity(struct isl_sched_edge *edge)
+static int isl_sched_edge_is_proximity(struct isl_sched_edge *edge)
 {
 	return isl_sched_edge_has_type(edge, isl_edge_proximity);
 }
@@ -2410,7 +2410,7 @@ static int add_all_proximity_constraints(struct isl_sched_graph *graph,
 		int zero;
 
 		zero = force_zero(edge, use_coincidence);
-		if (!is_proximity(edge) && !zero)
+		if (!isl_sched_edge_is_proximity(edge) && !zero)
 			continue;
 		if (edge->src == edge->dst &&
 		    add_intra_proximity_constraints(graph, edge, 1, zero) < 0)
@@ -2527,7 +2527,8 @@ static int is_any_validity(struct isl_sched_edge *edge)
  */
 static int edge_multiplicity(struct isl_sched_edge *edge, int use_coincidence)
 {
-	if (is_proximity(edge) || force_zero(edge, use_coincidence))
+	if (isl_sched_edge_is_proximity(edge) ||
+	    force_zero(edge, use_coincidence))
 		return 2;
 	if (is_validity(edge))
 		return 1;
@@ -2548,7 +2549,7 @@ static int parametric_intra_edge_multiplicity(struct isl_sched_edge *edge,
 {
 	if (edge->src != edge->dst)
 		return 0;
-	if (!is_proximity(edge))
+	if (!isl_sched_edge_is_proximity(edge))
 		return 0;
 	if (force_zero(edge, use_coincidence))
 		return 0;
@@ -6031,7 +6032,7 @@ static int bad_cluster(struct isl_sched_graph *graph)
  */
 static isl_bool is_non_empty_proximity(struct isl_sched_edge *edge)
 {
-	if (!is_proximity(edge))
+	if (!isl_sched_edge_is_proximity(edge))
 		return isl_bool_false;
 	return isl_bool_not(isl_map_plain_is_empty(edge->map));
 }
@@ -6848,7 +6849,7 @@ static isl_bool ok_to_merge_proximity(isl_ctx *ctx,
 		struct isl_sched_edge *edge = &graph->edge[i];
 		isl_bool bounded;
 
-		if (!is_proximity(edge))
+		if (!isl_sched_edge_is_proximity(edge))
 			continue;
 		if (!c->scc_in_merge[edge->src->scc])
 			continue;
