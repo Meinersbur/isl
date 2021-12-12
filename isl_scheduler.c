@@ -134,7 +134,7 @@ static isl_bool node_has_tuples(const void *entry, const void *val)
 	return isl_space_has_equal_tuples(node->space, space);
 }
 
-static int node_scc_exactly(struct isl_sched_node *node, int scc)
+static int isl_sched_node_scc_exactly(struct isl_sched_node *node, int scc)
 {
 	return node->scc == scc;
 }
@@ -3652,7 +3652,8 @@ static __isl_give isl_union_set_list *extract_sccs(isl_ctx *ctx,
 	for (i = 0; i < graph->scc; ++i) {
 		isl_union_set *dom;
 
-		dom = isl_sched_graph_domain(ctx, graph, &node_scc_exactly, i);
+		dom = isl_sched_graph_domain(ctx, graph,
+						&isl_sched_node_scc_exactly, i);
 		filters = isl_union_set_list_add(filters, dom);
 	}
 
@@ -5982,7 +5983,7 @@ static isl_stat clustering_init(isl_ctx *ctx, struct isl_clustering *c,
 		return isl_stat_error;
 
 	for (i = 0; i < c->n; ++i) {
-		if (extract_sub_graph(ctx, graph, &node_scc_exactly,
+		if (extract_sub_graph(ctx, graph, &isl_sched_node_scc_exactly,
 					&edge_scc_exactly, i, &c->scc[i]) < 0)
 			return isl_stat_error;
 		c->scc[i].scc = 1;
@@ -7537,7 +7538,7 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 	for (component = 0; component < graph->scc; ++component) {
 		node = isl_schedule_node_grandchild(node, component, 0);
 		node = compute_sub_schedule(node, ctx, graph,
-				    &node_scc_exactly,
+				    &isl_sched_node_scc_exactly,
 				    &edge_scc_exactly, component, wcc);
 		node = isl_schedule_node_grandparent(node);
 	}
