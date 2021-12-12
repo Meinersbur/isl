@@ -2488,7 +2488,7 @@ static __isl_give isl_mat *extract_linear_schedule(struct isl_sched_node *node)
  * The rows are normalized to involve as few of the last
  * coefficients as possible and to have a positive initial value.
  */
-static isl_stat node_update_vmap(struct isl_sched_node *node)
+static isl_stat isl_sched_node_update_vmap(struct isl_sched_node *node)
 {
 	isl_mat *H, *U, *Q;
 
@@ -2987,7 +2987,7 @@ static isl_stat setup_lp(isl_ctx *ctx, struct isl_sched_graph *graph,
 	total = param_pos + 2 * nparam;
 	for (i = 0; i < graph->n; ++i) {
 		struct isl_sched_node *node = &graph->node[graph->sorted[i]];
-		if (node_update_vmap(node) < 0)
+		if (isl_sched_node_update_vmap(node) < 0)
 			return isl_stat_error;
 		node->start = total;
 		total += 1 + node->nparam + 2 * node->nvar;
@@ -3814,7 +3814,7 @@ static isl_stat compute_maxvar(struct isl_sched_graph *graph)
 		struct isl_sched_node *node = &graph->node[i];
 		int nvar;
 
-		if (node_update_vmap(node) < 0)
+		if (isl_sched_node_update_vmap(node) < 0)
 			return isl_stat_error;
 		nvar = node->nvar + graph->n_row - node->rank;
 		if (nvar > graph->maxvar)
@@ -6504,7 +6504,7 @@ static isl_size compute_maxvar_max_slack(int maxvar, struct isl_clustering *c)
 			struct isl_sched_node *node = &scc->node[j];
 			int slack;
 
-			if (node_update_vmap(node) < 0)
+			if (isl_sched_node_update_vmap(node) < 0)
 				return isl_size_error;
 			slack = node->nvar - node->rank;
 			if (slack > max_slack)
@@ -6544,7 +6544,7 @@ static isl_size limit_maxvar_to_slack(int maxvar, int max_slack,
 			struct isl_sched_node *node = &scc->node[j];
 			int slack;
 
-			if (node_update_vmap(node) < 0)
+			if (isl_sched_node_update_vmap(node) < 0)
 				return isl_size_error;
 			slack = node->nvar - node->rank;
 			if (slack > max_slack) {
