@@ -5795,7 +5795,7 @@ error:
  * will necessarily be empty, but the graph may still be split up
  * into weakly connected components before arriving back here.
  */
-static __isl_give isl_schedule_node *compute_schedule_finish_band(
+static __isl_give isl_schedule_node *isl_schedule_node_compute_finish_band(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
 	int initialized)
 {
@@ -5926,7 +5926,7 @@ static isl_stat compute_schedule_wcc_band(isl_ctx *ctx,
  * the graph as a whole and return the updated schedule node.
  *
  * The actual schedule rows of the current band are computed by
- * compute_schedule_wcc_band.  compute_schedule_finish_band takes
+ * compute_schedule_wcc_band.  isl_schedule_node_compute_finish_band takes
  * care of integrating the band into "node" and continuing
  * the computation.
  */
@@ -5942,7 +5942,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc_whole(
 	if (compute_schedule_wcc_band(ctx, graph) < 0)
 		return isl_schedule_node_free(node);
 
-	return compute_schedule_finish_band(node, graph, 1);
+	return isl_schedule_node_compute_finish_band(node, graph, 1);
 }
 
 /* Clustering information used by compute_schedule_wcc_clustering.
@@ -7390,7 +7390,7 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
-/* Call compute_schedule_finish_band on each of the clusters in "c"
+/* Call isl_schedule_node_compute_finish_band on each of the clusters in "c"
  * in their topological order.  This order is determined by the scc
  * fields of the nodes in "graph".
  * Combine the results in a sequence expressing the topological order.
@@ -7409,7 +7409,8 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
 	isl_union_set_list *filters;
 
 	if (graph->scc == 1)
-		return compute_schedule_finish_band(node, &c->cluster[0], 0);
+		return isl_schedule_node_compute_finish_band(node,
+							&c->cluster[0], 0);
 
 	ctx = isl_schedule_node_get_ctx(node);
 
@@ -7419,7 +7420,8 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
 	for (i = 0; i < graph->scc; ++i) {
 		int j = c->scc_cluster[i];
 		node = isl_schedule_node_grandchild(node, i, 0);
-		node = compute_schedule_finish_band(node, &c->cluster[j], 0);
+		node = isl_schedule_node_compute_finish_band(node,
+							&c->cluster[j], 0);
 		node = isl_schedule_node_grandparent(node);
 	}
 
@@ -7438,7 +7440,7 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
  * is maintained in the individual SCCs.
  * After the merging is completed, the full resulting clusters
  * are extracted and in finish_bands_clustering,
- * compute_schedule_finish_band is called on each of them to integrate
+ * isl_schedule_node_compute_finish_band is called on each of them to integrate
  * the band into "node" and to continue the computation.
  *
  * compute_weights initializes the weights that are used by find_proximity.
