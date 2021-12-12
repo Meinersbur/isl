@@ -665,7 +665,7 @@ static isl_bool graph_has_any_edge(struct isl_sched_graph *graph,
  * of strongly connected components and we cannot ignore
  * conditional validity edges during this detection.
  */
-static isl_bool graph_has_validity_edge(struct isl_sched_graph *graph,
+static isl_bool isl_sched_graph_has_validity_edge(struct isl_sched_graph *graph,
 	struct isl_sched_node *src, struct isl_sched_node *dst)
 {
 	isl_bool r;
@@ -1651,7 +1651,8 @@ static isl_bool node_follows_strong(int i, int j, void *user)
 {
 	struct isl_sched_graph *graph = user;
 
-	return graph_has_validity_edge(graph, &graph->node[j], &graph->node[i]);
+	return isl_sched_graph_has_validity_edge(graph, &graph->node[j],
+							&graph->node[i]);
 }
 
 /* Use Tarjan's algorithm for computing the strongly connected components
@@ -6133,7 +6134,8 @@ static isl_bool cluster_follows(int i, int j, void *user)
 	if (scc_cluster[graph->node[i].scc] == scc_cluster[graph->node[j].scc])
 		return isl_bool_true;
 
-	return graph_has_validity_edge(graph, &graph->node[j], &graph->node[i]);
+	return isl_sched_graph_has_validity_edge(graph, &graph->node[j],
+							&graph->node[i]);
 }
 
 /* Mark all SCCs that belong to either of the two clusters in "c"
@@ -7254,7 +7256,8 @@ static isl_bool node_follows_strong_or_same_cluster(int i, int j, void *user)
 
 	if (graph->node[i].cluster == graph->node[j].cluster)
 		return isl_bool_true;
-	return graph_has_validity_edge(graph, &graph->node[j], &graph->node[i]);
+	return isl_sched_graph_has_validity_edge(graph, &graph->node[j],
+							&graph->node[i]);
 }
 
 /* Extract the merged clusters of SCCs in "graph", sort them, and
