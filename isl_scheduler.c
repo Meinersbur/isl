@@ -3651,7 +3651,7 @@ static __isl_give isl_union_set *isl_sched_graph_domain(isl_ctx *ctx,
 /* Return a list of unions of universe domains, where each element
  * in the list corresponds to an SCC (or WCC) indexed by node->scc.
  */
-static __isl_give isl_union_set_list *extract_sccs(isl_ctx *ctx,
+static __isl_give isl_union_set_list *isl_sched_graph_extract_sccs(isl_ctx *ctx,
 	struct isl_sched_graph *graph)
 {
 	int i;
@@ -5510,7 +5510,7 @@ static __isl_give isl_schedule_node *sort_statements(
 		return carry_dependences(node, graph);
 	}
 
-	filters = extract_sccs(ctx, graph);
+	filters = isl_sched_graph_extract_sccs(ctx, graph);
 	node = isl_schedule_node_insert_sequence(node, filters);
 
 	return node;
@@ -7407,7 +7407,7 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
 
 	ctx = isl_schedule_node_get_ctx(node);
 
-	filters = extract_sccs(ctx, graph);
+	filters = isl_sched_graph_extract_sccs(ctx, graph);
 	node = isl_schedule_node_insert_sequence(node, filters);
 
 	for (i = 0; i < graph->scc; ++i) {
@@ -7550,7 +7550,7 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 	}
 
 	ctx = isl_schedule_node_get_ctx(node);
-	filters = extract_sccs(ctx, graph);
+	filters = isl_sched_graph_extract_sccs(ctx, graph);
 	if (graph->weak)
 		node = isl_schedule_node_insert_set(node, filters);
 	else
