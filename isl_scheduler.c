@@ -3906,7 +3906,7 @@ error:
 	return isl_schedule_node_free(node);
 }
 
-static int edge_scc_exactly(struct isl_sched_edge *edge, int scc)
+static int isl_sched_edge_scc_exactly(struct isl_sched_edge *edge, int scc)
 {
 	return edge->src->scc == scc && edge->dst->scc == scc;
 }
@@ -6001,7 +6001,8 @@ static isl_stat clustering_init(isl_ctx *ctx, struct isl_clustering *c,
 	for (i = 0; i < c->n; ++i) {
 		if (isl_sched_graph_extract_sub_graph(ctx, graph,
 					&isl_sched_node_scc_exactly,
-					&edge_scc_exactly, i, &c->scc[i]) < 0)
+					&isl_sched_edge_scc_exactly,
+					i, &c->scc[i]) < 0)
 			return isl_stat_error;
 		c->scc[i].scc = 1;
 		if (isl_sched_graph_compute_maxvar(&c->scc[i]) < 0)
@@ -7565,7 +7566,8 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 		node = isl_schedule_node_grandchild(node, component, 0);
 		node = compute_sub_schedule(node, ctx, graph,
 				    &isl_sched_node_scc_exactly,
-				    &edge_scc_exactly, component, wcc);
+				    &isl_sched_edge_scc_exactly,
+				    component, wcc);
 		node = isl_schedule_node_grandparent(node);
 	}
 
