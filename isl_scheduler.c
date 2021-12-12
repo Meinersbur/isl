@@ -3806,7 +3806,7 @@ static isl_stat copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
  * with only lower-dimensional domains, we make sure we will
  * compute the required amount of extra linearly independent rows.
  */
-static isl_stat compute_maxvar(struct isl_sched_graph *graph)
+static isl_stat isl_sched_graph_compute_maxvar(struct isl_sched_graph *graph)
 {
 	int i;
 
@@ -5466,9 +5466,10 @@ static __isl_give isl_schedule_node *carry_coincidence(
 /* Topologically sort statements mapped to the same schedule iteration
  * and add insert a sequence node in front of "node"
  * corresponding to this order.
- * If "initialized" is set, then it may be assumed that compute_maxvar
+ * If "initialized" is set, then it may be assumed that
+ * isl_sched_graph_compute_maxvar
  * has been called on the current band.  Otherwise, call
- * compute_maxvar if and before carry_dependences gets called.
+ * isl_sched_graph_compute_maxvar if and before carry_dependences gets called.
  *
  * If it turns out to be impossible to sort the statements apart,
  * because different dependences impose different orderings
@@ -5505,7 +5506,7 @@ static __isl_give isl_schedule_node *sort_statements(
 
 	next_band(graph);
 	if (graph->scc < graph->n) {
-		if (!initialized && compute_maxvar(graph) < 0)
+		if (!initialized && isl_sched_graph_compute_maxvar(graph) < 0)
 			return isl_schedule_node_free(node);
 		return carry_dependences(node, graph);
 	}
@@ -5763,9 +5764,10 @@ error:
 /* Examine the current band (the rows between graph->band_start and
  * graph->n_total_row), deciding whether to drop it or add it to "node"
  * and then continue with the computation of the next band, if any.
- * If "initialized" is set, then it may be assumed that compute_maxvar
+ * If "initialized" is set, then it may be assumed that
+ * isl_sched_graph_compute_maxvar
  * has been called on the current band.  Otherwise, call
- * compute_maxvar if and before carry_dependences gets called.
+ * isl_sched_graph_compute_maxvar if and before carry_dependences gets called.
  *
  * The caller keeps looking for a new row as long as
  * graph->n_row < graph->maxvar.  If the latest attempt to find
@@ -5814,7 +5816,7 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 			return compute_next_band(node, graph, 1);
 		if (graph->scc > 1)
 			return compute_component_schedule(node, graph, 1);
-		if (!initialized && compute_maxvar(graph) < 0)
+		if (!initialized && isl_sched_graph_compute_maxvar(graph) < 0)
 			return isl_schedule_node_free(node);
 		if (isl_options_get_schedule_outer_coincidence(ctx))
 			return carry_coincidence(node, graph);
@@ -5828,7 +5830,7 @@ static __isl_give isl_schedule_node *compute_schedule_finish_band(
 
 /* Construct a band of schedule rows for a connected dependence graph.
  * The caller is responsible for determining the strongly connected
- * components and calling compute_maxvar first.
+ * components and calling isl_sched_graph_compute_maxvar first.
  *
  * We try to find a sequence of as many schedule rows as possible that result
  * in non-negative dependence distances (independent of the previous rows
@@ -6000,7 +6002,7 @@ static isl_stat clustering_init(isl_ctx *ctx, struct isl_clustering *c,
 					&edge_scc_exactly, i, &c->scc[i]) < 0)
 			return isl_stat_error;
 		c->scc[i].scc = 1;
-		if (compute_maxvar(&c->scc[i]) < 0)
+		if (isl_sched_graph_compute_maxvar(&c->scc[i]) < 0)
 			return isl_stat_error;
 		if (compute_schedule_wcc_band(ctx, &c->scc[i]) < 0)
 			return isl_stat_error;
@@ -7088,7 +7090,7 @@ static isl_bool try_merge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (init_merge_graph(ctx, graph, c, &merge_graph) < 0)
 		goto error;
 
-	if (compute_maxvar(&merge_graph) < 0)
+	if (isl_sched_graph_compute_maxvar(&merge_graph) < 0)
 		goto error;
 	if (adjust_maxvar_to_slack(ctx, &merge_graph,c) < 0)
 		goto error;
@@ -7501,7 +7503,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 	if (detect_sccs(ctx, graph) < 0)
 		return isl_schedule_node_free(node);
 
-	if (compute_maxvar(graph) < 0)
+	if (isl_sched_graph_compute_maxvar(graph) < 0)
 		return isl_schedule_node_free(node);
 
 	if (need_feautrier_step(ctx, graph))
@@ -7543,7 +7545,7 @@ static __isl_give isl_schedule_node *compute_component_schedule(
 		return NULL;
 
 	if (graph->weak && graph->scc == graph->n) {
-		if (compute_maxvar(graph) < 0)
+		if (isl_sched_graph_compute_maxvar(graph) < 0)
 			return isl_schedule_node_free(node);
 		if (graph->n_row >= graph->maxvar)
 			return node;
