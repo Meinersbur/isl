@@ -3278,7 +3278,8 @@ error:
  *
  * The result is defined over the uncompressed node domain.
  */
-static __isl_give isl_multi_aff *node_extract_partial_schedule_multi_aff(
+static __isl_give isl_multi_aff *
+isl_sched_node_extract_partial_schedule_multi_aff(
 	struct isl_sched_node *node, int first, int n)
 {
 	int i;
@@ -3328,7 +3329,7 @@ static __isl_give isl_multi_aff *node_extract_schedule_multi_aff(
 	nrow = isl_mat_rows(node->sched);
 	if (nrow < 0)
 		return NULL;
-	return node_extract_partial_schedule_multi_aff(node, 0, nrow);
+	return isl_sched_node_extract_partial_schedule_multi_aff(node, 0, nrow);
 }
 
 /* Convert node->sched into a map and return this map.
@@ -4022,15 +4023,16 @@ static __isl_give isl_schedule_node *insert_current_band(
 	end = graph->n_total_row;
 	n = end - start;
 
-	ma = node_extract_partial_schedule_multi_aff(&graph->node[0], start, n);
+	ma = isl_sched_node_extract_partial_schedule_multi_aff(&graph->node[0],
+								start, n);
 	mpa = isl_multi_pw_aff_from_multi_aff(ma);
 	mupa = isl_multi_union_pw_aff_from_multi_pw_aff(mpa);
 
 	for (i = 1; i < graph->n; ++i) {
 		isl_multi_union_pw_aff *mupa_i;
 
-		ma = node_extract_partial_schedule_multi_aff(&graph->node[i],
-								start, n);
+		ma = isl_sched_node_extract_partial_schedule_multi_aff(
+						&graph->node[i], start, n);
 		mpa = isl_multi_pw_aff_from_multi_aff(ma);
 		mupa_i = isl_multi_union_pw_aff_from_multi_pw_aff(mpa);
 		mupa = isl_multi_union_pw_aff_union_add(mupa, mupa_i);
@@ -5617,7 +5619,8 @@ static __isl_give isl_map *final_row(struct isl_sched_node *node)
 	n_row = isl_mat_rows(node->sched);
 	if (n_row < 0)
 		return NULL;
-	ma = node_extract_partial_schedule_multi_aff(node, n_row - 1, 1);
+	ma = isl_sched_node_extract_partial_schedule_multi_aff(node,
+								n_row - 1, 1);
 	return isl_map_from_multi_aff(ma);
 }
 
@@ -6292,8 +6295,8 @@ static __isl_give isl_union_map *collect_cluster_map(isl_ctx *ctx,
 			isl_map *map;
 			struct isl_sched_node *node = &c->scc[i].node[j];
 
-			ma = node_extract_partial_schedule_multi_aff(node,
-								    start, n);
+			ma = isl_sched_node_extract_partial_schedule_multi_aff(
+								node, start, n);
 			ma = isl_multi_aff_set_tuple_id(ma, isl_dim_out,
 							    isl_id_copy(id));
 			map = isl_map_from_multi_aff(ma);
@@ -6669,7 +6672,8 @@ static __isl_give isl_map *extract_node_transformation(isl_ctx *ctx,
 			return NULL);
 	start = c->scc[node->scc].band_start;
 	n = c->scc[node->scc].n_total_row - start;
-	ma = node_extract_partial_schedule_multi_aff(scc_node, start, n);
+	ma = isl_sched_node_extract_partial_schedule_multi_aff(scc_node,
+								start, n);
 	space = cluster_space(&c->scc[node->scc], c->scc_cluster[node->scc]);
 	cluster_node = isl_sched_graph_find_node(ctx, merge_graph, space);
 	if (cluster_node && !isl_sched_graph_is_node(merge_graph, cluster_node))
@@ -6679,7 +6683,8 @@ static __isl_give isl_map *extract_node_transformation(isl_ctx *ctx,
 	ma = isl_multi_aff_set_tuple_id(ma, isl_dim_out, id);
 	isl_space_free(space);
 	n = merge_graph->n_total_row;
-	ma2 = node_extract_partial_schedule_multi_aff(cluster_node, 0, n);
+	ma2 = isl_sched_node_extract_partial_schedule_multi_aff(cluster_node,
+								0, n);
 	ma = isl_multi_aff_pullback_multi_aff(ma2, ma);
 
 	return isl_map_from_multi_aff(ma);
