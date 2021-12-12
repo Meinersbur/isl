@@ -1658,7 +1658,8 @@ static isl_bool node_follows_strong(int i, int j, void *user)
 /* Use Tarjan's algorithm for computing the strongly connected components
  * in the dependence graph only considering those edges defined by "follows".
  */
-static isl_stat detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph,
+static isl_stat isl_sched_graph_detect_ccs(isl_ctx *ctx,
+	struct isl_sched_graph *graph,
 	isl_bool (*follows)(int i, int j, void *user))
 {
 	int i, n;
@@ -1693,7 +1694,7 @@ static isl_stat detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph,
 static isl_stat detect_sccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	graph->weak = 0;
-	return detect_ccs(ctx, graph, &node_follows_strong);
+	return isl_sched_graph_detect_ccs(ctx, graph, &node_follows_strong);
 }
 
 /* Apply Tarjan's algorithm to detect the (weakly) connected components
@@ -1703,7 +1704,7 @@ static isl_stat detect_sccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 static isl_stat detect_wccs(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	graph->weak = 1;
-	return detect_ccs(ctx, graph, &node_follows_weak);
+	return isl_sched_graph_detect_ccs(ctx, graph, &node_follows_weak);
 }
 
 static int cmp_scc(const void *a, const void *b, void *data)
@@ -7295,7 +7296,8 @@ static isl_stat extract_clusters(isl_ctx *ctx, struct isl_sched_graph *graph,
 			return isl_stat_error;
 	}
 
-	if (detect_ccs(ctx, graph, &node_follows_strong_or_same_cluster) < 0)
+	if (isl_sched_graph_detect_ccs(ctx, graph,
+				&node_follows_strong_or_same_cluster) < 0)
 		return isl_stat_error;
 	for (i = 0; i < graph->n; ++i)
 		c->scc_cluster[graph->node[i].scc] = graph->node[i].cluster;
