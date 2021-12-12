@@ -8,6 +8,7 @@
 #include <isl/val_type.h>
 #include <isl/space_type.h>
 #include <isl/id_type.h>
+#include <isl/set_type.h>
 
 #if defined(__cplusplus)
 extern "C" {
