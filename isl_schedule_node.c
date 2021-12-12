@@ -4159,9 +4159,7 @@ static isl_bool is_disjoint_extension(__isl_keep isl_schedule_node *node,
 	isl_bool empty;
 
 	node = isl_schedule_node_copy(node);
-	node = isl_schedule_node_parent(node);
-	node = isl_schedule_node_parent(node);
-	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_ancestor(node, 3);
 	old = isl_schedule_node_extension_get_extension(node);
 	domain = isl_schedule_node_get_universe_domain(node);
 	isl_schedule_node_free(node);
