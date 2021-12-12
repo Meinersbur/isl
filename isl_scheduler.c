@@ -2482,7 +2482,7 @@ static __isl_give isl_mat *extract_linear_schedule(struct isl_sched_node *node)
  * The rows are normalized to involve as few of the last
  * coefficients as possible and to have a positive initial value.
  */
-static int node_update_vmap(struct isl_sched_node *node)
+static isl_stat node_update_vmap(struct isl_sched_node *node)
 {
 	isl_mat *H, *U, *Q;
 
@@ -2499,8 +2499,8 @@ static int node_update_vmap(struct isl_sched_node *node)
 	isl_mat_free(H);
 
 	if (!node->indep || !node->vmap || node->rank < 0)
-		return -1;
-	return 0;
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 /* Is "edge" marked as a validity or a conditional validity edge?
