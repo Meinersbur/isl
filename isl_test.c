@@ -10439,8 +10439,7 @@ static int test_schedule_tree_group_2(isl_ctx *ctx)
 	umap1 = isl_union_map_intersect_domain(umap1, uset);
 	isl_schedule_free(schedule);
 
-	node = isl_schedule_node_parent(node);
-	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_grandparent(node);
 	id = isl_id_alloc(ctx, "group1", NULL);
 	node = isl_schedule_node_group(node, id);
 	node = isl_schedule_node_grandchild(node, 1, 0);

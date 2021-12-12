@@ -1141,6 +1141,14 @@ __isl_give isl_schedule_node *isl_schedule_node_parent(
 	return isl_schedule_node_ancestor(node, 1);
 }
 
+/* Move the "node" pointer to the parent of its parent.
+ */
+__isl_give isl_schedule_node *isl_schedule_node_grandparent(
+	__isl_take isl_schedule_node *node)
+{
+	return isl_schedule_node_ancestor(node, 2);
+}
+
 /* Move the "node" pointer to the root of its schedule tree.
  */
 __isl_give isl_schedule_node *isl_schedule_node_root(
@@ -4203,8 +4211,7 @@ static __isl_give isl_schedule_node *extend_extension(
 	pos = isl_schedule_node_get_child_position(node);
 	if (pos < 0)
 		node = isl_schedule_node_free(node);
-	node = isl_schedule_node_parent(node);
-	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_grandparent(node);
 	node_extension = isl_schedule_node_extension_get_extension(node);
 	disjoint = isl_union_map_is_disjoint(extension, node_extension);
 	extension = isl_union_map_union(extension, node_extension);
