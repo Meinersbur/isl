@@ -732,7 +732,7 @@ static void clear_node(struct isl_sched_graph *graph,
 	isl_vec_free(node->max);
 }
 
-static void graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
+static void isl_sched_graph_free(isl_ctx *ctx, struct isl_sched_graph *graph)
 {
 	int i;
 
@@ -3896,10 +3896,10 @@ static __isl_give isl_schedule_node *compute_sub_schedule(
 	else
 		node = compute_schedule(node, &split);
 
-	graph_free(ctx, &split);
+	isl_sched_graph_free(ctx, &split);
 	return node;
 error:
-	graph_free(ctx, &split);
+	isl_sched_graph_free(ctx, &split);
 	return isl_schedule_node_free(node);
 }
 
@@ -6014,11 +6014,11 @@ static void clustering_free(isl_ctx *ctx, struct isl_clustering *c)
 
 	if (c->scc)
 		for (i = 0; i < c->n; ++i)
-			graph_free(ctx, &c->scc[i]);
+			isl_sched_graph_free(ctx, &c->scc[i]);
 	free(c->scc);
 	if (c->cluster)
 		for (i = 0; i < c->n; ++i)
-			graph_free(ctx, &c->cluster[i]);
+			isl_sched_graph_free(ctx, &c->cluster[i]);
 	free(c->cluster);
 	free(c->scc_cluster);
 	free(c->scc_node);
@@ -7092,10 +7092,10 @@ static isl_bool try_merge(isl_ctx *ctx, struct isl_sched_graph *graph,
 	if (merged && merge(ctx, c, &merge_graph) < 0)
 		goto error;
 
-	graph_free(ctx, &merge_graph);
+	isl_sched_graph_free(ctx, &merge_graph);
 	return merged;
 error:
-	graph_free(ctx, &merge_graph);
+	isl_sched_graph_free(ctx, &merge_graph);
 	return isl_bool_error;
 }
 
@@ -7637,7 +7637,7 @@ __isl_give isl_schedule *isl_schedule_constraints_compute_schedule(
 	sched = isl_schedule_node_get_schedule(node);
 	isl_schedule_node_free(node);
 
-	graph_free(ctx, &graph);
+	isl_sched_graph_free(ctx, &graph);
 	isl_schedule_constraints_free(sc);
 
 	return sched;
