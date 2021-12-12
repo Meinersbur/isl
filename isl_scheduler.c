@@ -3829,7 +3829,8 @@ static isl_stat isl_sched_graph_compute_maxvar(struct isl_sched_graph *graph)
  * "node_pred" and the edges satisfying "edge_pred" and store
  * the result in "sub".
  */
-static isl_stat extract_sub_graph(isl_ctx *ctx, struct isl_sched_graph *graph,
+static isl_stat isl_sched_graph_extract_sub_graph(isl_ctx *ctx,
+	struct isl_sched_graph *graph,
 	int (*node_pred)(struct isl_sched_node *node, int data),
 	int (*edge_pred)(struct isl_sched_edge *edge, int data),
 	int data, struct isl_sched_graph *sub)
@@ -3889,8 +3890,8 @@ static __isl_give isl_schedule_node *compute_sub_schedule(
 {
 	struct isl_sched_graph split = { 0 };
 
-	if (extract_sub_graph(ctx, graph, node_pred, edge_pred, data,
-				&split) < 0)
+	if (isl_sched_graph_extract_sub_graph(ctx, graph, node_pred, edge_pred,
+						data, &split) < 0)
 		goto error;
 
 	if (wcc)
@@ -5998,7 +5999,8 @@ static isl_stat clustering_init(isl_ctx *ctx, struct isl_clustering *c,
 		return isl_stat_error;
 
 	for (i = 0; i < c->n; ++i) {
-		if (extract_sub_graph(ctx, graph, &isl_sched_node_scc_exactly,
+		if (isl_sched_graph_extract_sub_graph(ctx, graph,
+					&isl_sched_node_scc_exactly,
 					&edge_scc_exactly, i, &c->scc[i]) < 0)
 			return isl_stat_error;
 		c->scc[i].scc = 1;
@@ -7294,7 +7296,8 @@ static isl_stat extract_clusters(isl_ctx *ctx, struct isl_sched_graph *graph,
 	for (i = 0; i < graph->scc; ++i) {
 		if (c->scc_cluster[i] != i)
 			continue;
-		if (extract_sub_graph(ctx, graph, &node_cluster_exactly,
+		if (isl_sched_graph_extract_sub_graph(ctx, graph,
+				&node_cluster_exactly,
 				&edge_cluster_exactly, i, &c->cluster[i]) < 0)
 			return isl_stat_error;
 		c->cluster[i].src_scc = -1;
