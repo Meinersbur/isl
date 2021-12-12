@@ -5945,7 +5945,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc_whole(
 	return isl_schedule_node_compute_finish_band(node, graph, 1);
 }
 
-/* Clustering information used by compute_schedule_wcc_clustering.
+/* Clustering information used by isl_schedule_node_compute_wcc_clustering.
  *
  * "n" is the number of SCCs in the original dependence graph
  * "scc" is an array of "n" elements, each representing an SCC
@@ -7445,7 +7445,7 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
  *
  * compute_weights initializes the weights that are used by find_proximity.
  */
-static __isl_give isl_schedule_node *compute_schedule_wcc_clustering(
+static __isl_give isl_schedule_node *isl_schedule_node_compute_wcc_clustering(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph)
 {
 	isl_ctx *ctx;
@@ -7489,12 +7489,12 @@ error:
  * as many validity dependences as possible. When all validity dependences
  * are satisfied we extend the schedule to a full-dimensional schedule.
  *
- * Call compute_schedule_wcc_whole or compute_schedule_wcc_clustering
+ * Call compute_schedule_wcc_whole or isl_schedule_node_compute_wcc_clustering
  * depending on whether the user has selected the option to try and
  * compute a schedule for the entire (weakly connected) component first.
  * If there is only a single strongly connected component (SCC), then
  * there is no point in trying to combine SCCs
- * in compute_schedule_wcc_clustering, so compute_schedule_wcc_whole
+ * in isl_schedule_node_compute_wcc_clustering, so compute_schedule_wcc_whole
  * is called instead.
  */
 static __isl_give isl_schedule_node *compute_schedule_wcc(
@@ -7518,7 +7518,7 @@ static __isl_give isl_schedule_node *compute_schedule_wcc(
 	if (graph->scc <= 1 || isl_options_get_schedule_whole_component(ctx))
 		return compute_schedule_wcc_whole(node, graph);
 	else
-		return compute_schedule_wcc_clustering(node, graph);
+		return isl_schedule_node_compute_wcc_clustering(node, graph);
 }
 
 /* Compute a schedule for each group of nodes identified by node->scc
