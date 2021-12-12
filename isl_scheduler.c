@@ -3794,7 +3794,7 @@ static isl_stat copy_edges(isl_ctx *ctx, struct isl_sched_graph *dst,
  * with only lower-dimensional domains, we make sure we will
  * compute the required amount of extra linearly independent rows.
  */
-static int compute_maxvar(struct isl_sched_graph *graph)
+static isl_stat compute_maxvar(struct isl_sched_graph *graph)
 {
 	int i;
 
@@ -3804,13 +3804,13 @@ static int compute_maxvar(struct isl_sched_graph *graph)
 		int nvar;
 
 		if (node_update_vmap(node) < 0)
-			return -1;
+			return isl_stat_error;
 		nvar = node->nvar + graph->n_row - node->rank;
 		if (nvar > graph->maxvar)
 			graph->maxvar = nvar;
 	}
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Extract the subgraph of "graph" that consists of the nodes satisfying
