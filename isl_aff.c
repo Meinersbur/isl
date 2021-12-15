@@ -262,6 +262,10 @@ __isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls)
 
 /* Return an affine expression that is equal to "val" on
  * domain local space "ls".
+ *
+ * Note that the encoding for the special value NaN
+ * is the same in isl_val and isl_aff, so this does not need
+ * to be treated in any special way.
  */
 __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 	__isl_take isl_val *val)
@@ -270,9 +274,9 @@ __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 
 	if (!ls || !val)
 		goto error;
-	if (!isl_val_is_rat(val))
+	if (!isl_val_is_rat(val) && !isl_val_is_nan(val))
 		isl_die(isl_val_get_ctx(val), isl_error_invalid,
-			"expecting rational value", goto error);
+			"expecting rational value or NaN", goto error);
 
 	aff = isl_aff_alloc(isl_local_space_copy(ls));
 	if (!aff)
