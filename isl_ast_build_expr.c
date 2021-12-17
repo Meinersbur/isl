@@ -1270,50 +1270,69 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	return data.expr;
 }
 
-/* Internal data structure for add_signed_terms.
+/* Internal data structure for coefficients_of_sign.
  *
- * "term" contains the information for adding a term.
- * "sign" is the sign of the terms that are being added.
- * "expr" collects the results.
+ * "sign" is the sign of the coefficients that should be retained.
+ * "aff" is the affine expression of which some coefficients are zeroed out.
  */
-struct isl_ast_add_signed_terms_data {
-	struct isl_ast_add_term_data *term;
+struct isl_ast_coefficients_of_sign_data {
 	int sign;
-	isl_ast_expr *expr;
+	isl_aff *aff;
 };
 
-/* Given a non-zero term in an affine expression equal to "v" times
- * the variable of type "type" at position "pos",
- * add the corresponding AST expression to data->expr,
- * if "v" has sign data->sign.
+/* Clear the specified coefficient of data->aff if the value "v"
+ * does not have the required sign.
  */
-static isl_bool add_signed_term(enum isl_dim_type type, int pos,
+static isl_bool clear_opposite_sign(enum isl_dim_type type, int pos,
 	__isl_take isl_val *v, void *user)
 {
-	struct isl_ast_add_signed_terms_data *data = user;
+	struct isl_ast_coefficients_of_sign_data *data = user;
 
-	if (data->sign * isl_val_sgn(v) <= 0) {
-		isl_val_free(v);
-		return isl_bool_true;
-	}
-	v = isl_val_abs(v);
-	data->expr =
-		isl_ast_expr_add_term(data->expr, type, pos, v, data->term);
+	if (type == isl_dim_set)
+		type = isl_dim_in;
+	if (data->sign * isl_val_sgn(v) < 0)
+		data->aff = isl_aff_set_coefficient_si(data->aff, type, pos, 0);
+	isl_val_free(v);
 
 	return isl_bool_true;
 }
 
-/* Add terms to "expr" for each variable in "aff" with a coefficient
- * with sign equal to "sign".
+/* Extract the coefficients of "aff" (excluding the constant term)
+ * that have the given sign.
+ *
+ * Take a copy of "aff" and clear the coefficients that do not have
+ * the required sign.
+ * Consider the coefficients in reverse order since clearing
+ * the coefficient of an integer division in data.aff
+ * could result in the removal of that integer division from data.aff,
+ * changing the positions of all subsequent integer divisions of data.aff,
+ * while those of "aff" remain the same.
+ */
+static __isl_give isl_aff *coefficients_of_sign(__isl_take isl_aff *aff,
+	int sign)
+{
+	struct isl_ast_coefficients_of_sign_data data;
+
+	data.sign = sign;
+	data.aff = isl_aff_copy(aff);
+	if (every_non_zero_coefficient(aff, 1, &clear_opposite_sign, &data) < 0)
+		data.aff = isl_aff_free(data.aff);
+	isl_aff_free(aff);
+
+	data.aff = isl_aff_set_constant_si(data.aff, 0);
+
+	return data.aff;
+}
+
+/* Add terms to "expr" for each variable in "aff".
  * The result is simplified in terms of data->build->domain.
  */
-static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
-	__isl_keep isl_aff *aff, int sign, struct isl_ast_add_term_data *data)
+static __isl_give isl_ast_expr *add_terms(__isl_take isl_ast_expr *expr,
+	__isl_keep isl_aff *aff, struct isl_ast_add_term_data *data)
 {
-	struct isl_ast_add_signed_terms_data terms_data = { data, sign, expr };
+	struct isl_ast_add_terms_data terms_data = { data, expr };
 
-	if (every_non_zero_coefficient(aff, 0, &add_signed_term,
-							&terms_data) < 0)
+	if (every_non_zero_coefficient(aff, 0, &add_term, &terms_data) < 0)
 		return isl_ast_expr_free(terms_data.expr);
 
 	return terms_data.expr;
@@ -1527,6 +1546,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint_no_stride(
 	isl_ctx *ctx;
 	isl_ast_expr *expr_pos;
 	isl_ast_expr *expr_neg;
+	isl_aff *aff_pos, *aff_neg;
 	struct isl_ast_add_term_data data;
 
 	ctx = isl_aff_get_ctx(aff);
@@ -1538,9 +1558,13 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint_no_stride(
 	data.build = build;
 	data.ls = isl_aff_get_domain_local_space(aff);
 	data.cst = isl_aff_get_constant_val(aff);
-	expr_pos = add_signed_terms(expr_pos, aff, 1, &data);
+
+	aff_pos = coefficients_of_sign(isl_aff_copy(aff), 1);
+	aff_neg = isl_aff_neg(coefficients_of_sign(aff, -1));
+
+	expr_pos = add_terms(expr_pos, aff_pos, &data);
 	data.cst = isl_val_neg(data.cst);
-	expr_neg = add_signed_terms(expr_neg, aff, -1, &data);
+	expr_neg = add_terms(expr_neg, aff_neg, &data);
 	data.cst = isl_val_neg(data.cst);
 	isl_local_space_free(data.ls);
 
@@ -1556,7 +1580,8 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint_no_stride(
 		expr_neg = isl_ast_expr_add_int(expr_neg, data.cst);
 	}
 
-	isl_aff_free(aff);
+	isl_aff_free(aff_pos);
+	isl_aff_free(aff_neg);
 	return construct_constraint_expr(eq, expr_pos, expr_neg);
 }
 
