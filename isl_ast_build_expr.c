@@ -1256,32 +1256,30 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_build *build)
 {
 	isl_ctx *ctx = isl_aff_get_ctx(aff);
-	isl_ast_expr *expr_neg;
+	isl_ast_expr *expr, *expr_neg;
 	struct isl_ast_add_term_data term_data;
-	struct isl_ast_add_terms_data data = { &term_data };
 
 	if (!aff)
 		return NULL;
 
-	data.expr = isl_ast_expr_alloc_int_si(ctx, 0);
+	expr = isl_ast_expr_alloc_int_si(ctx, 0);
 	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
 
-	aff = extract_rational(aff, &data.expr, build);
+	aff = extract_rational(aff, &expr, build);
 
-	aff = extract_modulos(aff, &data.expr, &expr_neg, build);
-	data.expr = ast_expr_sub(data.expr, expr_neg);
+	aff = extract_modulos(aff, &expr, &expr_neg, build);
+	expr = ast_expr_sub(expr, expr_neg);
 
 	term_data.build = build;
 	term_data.ls = isl_aff_get_domain_local_space(aff);
 	term_data.cst = isl_aff_get_constant_val(aff);
-	if (every_non_zero_coefficient(aff, 0, &add_term, &data) < 0)
-		data.expr = isl_ast_expr_free(data.expr);
+	expr = add_terms(expr, aff, &term_data);
 
-	data.expr = isl_ast_expr_add_int(data.expr, term_data.cst);
+	expr = isl_ast_expr_add_int(expr, term_data.cst);
 	isl_local_space_free(term_data.ls);
 
 	isl_aff_free(aff);
-	return data.expr;
+	return expr;
 }
 
 /* Internal data structure for coefficients_of_sign.
