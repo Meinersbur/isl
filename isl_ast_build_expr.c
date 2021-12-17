@@ -1230,6 +1230,20 @@ static isl_bool add_term(enum isl_dim_type type, int pos,
 	return isl_bool_true;
 }
 
+/* Add terms to "expr" for each variable in "aff".
+ * The result is simplified in terms of data->build->domain.
+ */
+static __isl_give isl_ast_expr *add_terms(__isl_take isl_ast_expr *expr,
+	__isl_keep isl_aff *aff, struct isl_ast_add_term_data *data)
+{
+	struct isl_ast_add_terms_data terms_data = { data, expr };
+
+	if (every_non_zero_coefficient(aff, 0, &add_term, &terms_data) < 0)
+		return isl_ast_expr_free(terms_data.expr);
+
+	return terms_data.expr;
+}
+
 /* Construct an isl_ast_expr that evaluates the affine expression "aff".
  * The result is simplified in terms of build->domain.
  *
@@ -1322,20 +1336,6 @@ static __isl_give isl_aff *coefficients_of_sign(__isl_take isl_aff *aff,
 	data.aff = isl_aff_set_constant_si(data.aff, 0);
 
 	return data.aff;
-}
-
-/* Add terms to "expr" for each variable in "aff".
- * The result is simplified in terms of data->build->domain.
- */
-static __isl_give isl_ast_expr *add_terms(__isl_take isl_ast_expr *expr,
-	__isl_keep isl_aff *aff, struct isl_ast_add_term_data *data)
-{
-	struct isl_ast_add_terms_data terms_data = { data, expr };
-
-	if (every_non_zero_coefficient(aff, 0, &add_term, &terms_data) < 0)
-		return isl_ast_expr_free(terms_data.expr);
-
-	return terms_data.expr;
 }
 
 /* Should the constant term "v" be considered positive?
