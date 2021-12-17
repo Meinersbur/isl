@@ -258,12 +258,12 @@ static __isl_give isl_ast_expr *var(struct isl_ast_add_term_data *data,
 
 /* Does "expr" represent the zero integer?
  */
-static int ast_expr_is_zero(__isl_keep isl_ast_expr *expr)
+static isl_bool ast_expr_is_zero(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
-		return -1;
+		return isl_bool_error;
 	if (expr->type != isl_ast_expr_int)
-		return 0;
+		return isl_bool_false;
 	return isl_val_is_zero(expr->u.v);
 }
 
