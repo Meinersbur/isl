@@ -1248,13 +1248,17 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
  * This results in slightly shorter expressions and may reduce the risk
  * of overflows.
  */
-static int constant_is_considered_positive(__isl_keep isl_val *v,
+static isl_bool constant_is_considered_positive(__isl_keep isl_val *v,
 	__isl_keep isl_ast_expr *pos, __isl_keep isl_ast_expr *neg)
 {
-	if (ast_expr_is_zero(pos))
-		return 1;
-	if (ast_expr_is_zero(neg))
-		return 0;
+	isl_bool zero;
+
+	zero = ast_expr_is_zero(pos);
+	if (zero < 0 || zero)
+		return zero;
+	zero = ast_expr_is_zero(neg);
+	if (zero < 0 || zero)
+		return isl_bool_not(zero);
 	return isl_val_is_pos(v);
 }
 
@@ -1428,6 +1432,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
 {
 	int i;
+	isl_bool cst_is_pos;
 	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_expr *expr_pos;
@@ -1470,7 +1475,12 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	expr_neg = add_signed_terms(expr_neg, aff, -1, &data);
 	data.cst = isl_val_neg(data.cst);
 
-	if (constant_is_considered_positive(data.cst, expr_pos, expr_neg)) {
+	cst_is_pos =
+	    constant_is_considered_positive(data.cst, expr_pos, expr_neg);
+	if (cst_is_pos < 0)
+		expr_pos = isl_ast_expr_free(expr_pos);
+
+	if (cst_is_pos) {
 		expr_pos = isl_ast_expr_add_int(expr_pos, data.cst);
 	} else {
 		data.cst = isl_val_neg(data.cst);
