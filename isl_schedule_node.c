@@ -4156,7 +4156,7 @@ static int is_disjoint_extension(__isl_keep isl_schedule_node *node,
 {
 	isl_union_map *old;
 	isl_union_set *domain;
-	int empty;
+	isl_bool empty;
 
 	node = isl_schedule_node_copy(node);
 	node = isl_schedule_node_parent(node);
