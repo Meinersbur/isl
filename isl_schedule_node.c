@@ -4151,7 +4151,7 @@ static isl_bool has_ancestors(__isl_keep isl_schedule_node *node,
  * of both the original extension and the domain elements that reach
  * that original extension?
  */
-static int is_disjoint_extension(__isl_keep isl_schedule_node *node,
+static isl_bool is_disjoint_extension(__isl_keep isl_schedule_node *node,
 	__isl_keep isl_union_map *extension)
 {
 	isl_union_map *old;
@@ -4279,7 +4279,7 @@ static __isl_give isl_schedule_node *insert_extension(
 	if (in_ext < 0)
 		goto error;
 	if (in_ext) {
-		int disjoint;
+		isl_bool disjoint;
 
 		disjoint = is_disjoint_extension(node, extension);
 		if (disjoint < 0)
