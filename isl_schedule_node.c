@@ -2292,6 +2292,20 @@ __isl_give isl_id *isl_schedule_node_mark_get_id(
 	return isl_schedule_tree_mark_get_id(node->tree);
 }
 
+/* Check that "node" is a sequence node.
+ */
+static isl_stat check_is_sequence(__isl_keep isl_schedule_node *node)
+{
+	if (!node)
+		return isl_stat_error;
+
+	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
+		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
+			"not a sequence node", return isl_stat_error);
+
+	return isl_stat_ok;
+}
+
 /* Replace the child at position "pos" of the sequence node "node"
  * by the children of sequence root node of "tree".
  */
@@ -2301,11 +2315,8 @@ __isl_give isl_schedule_node *isl_schedule_node_sequence_splice(
 {
 	isl_schedule_tree *node_tree;
 
-	if (!node || !tree)
+	if (check_is_sequence(node) < 0 || !tree)
 		goto error;
-	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
-		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a sequence node", goto error);
 	if (isl_schedule_tree_get_type(tree) != isl_schedule_node_sequence)
 		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
 			"not a sequence node", goto error);
@@ -2336,17 +2347,11 @@ __isl_give isl_schedule_node *isl_schedule_node_sequence_splice_child(
 	isl_schedule_node *child;
 	isl_schedule_tree *tree;
 
-	if (!node)
-		return NULL;
-	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
-		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a sequence node",
-			return isl_schedule_node_free(node));
+	if (check_is_sequence(node) < 0)
+		return isl_schedule_node_free(node);
 	node = isl_schedule_node_grandchild(node, pos, 0);
-	if (isl_schedule_node_get_type(node) != isl_schedule_node_sequence)
-		isl_die(isl_schedule_node_get_ctx(node), isl_error_invalid,
-			"not a sequence node",
-			return isl_schedule_node_free(node));
+	if (check_is_sequence(node) < 0)
+		return isl_schedule_node_free(node);
 	n = isl_schedule_node_n_children(node);
 	if (n < 0)
 		return isl_schedule_node_free(node);
