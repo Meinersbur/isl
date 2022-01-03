@@ -502,6 +502,23 @@ void ISL_FN(ISL_HMAP,dump)(__isl_keep ISL_HMAP *hmap)
 	isl_printer_free(printer);
 }
 
+/* Return a string representation of "hmap".
+ */
+__isl_give char *ISL_FN(ISL_HMAP,to_str)(__isl_keep ISL_HMAP *hmap)
+{
+	isl_printer *p;
+	char *s;
+
+	if (!hmap)
+		return NULL;
+	p = isl_printer_to_str(ISL_FN(ISL_HMAP,get_ctx)(hmap));
+	p = ISL_FN(isl_printer_print,ISL_HMAP_SUFFIX)(p, hmap);
+	s = isl_printer_get_str(p);
+	isl_printer_free(p);
+
+	return s;
+}
+
 #ifdef ISL_HMAP_HAVE_READ_FROM_STR
 
 /* Read an associative array from "s".

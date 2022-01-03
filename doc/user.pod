@@ -9644,11 +9644,13 @@ Note that depending on how the keys and values are being compared,
 for other types of keys and/or values, this function may be called
 C<plain_is_equal> rather than C<is_equal>.
 
-Associative arrays can be printed using the following function.
+Associative arrays can be printed using the following functions.
 
 	#include <isl/id_to_ast_expr.h>
 	__isl_give isl_printer *isl_printer_print_id_to_ast_expr(
 		__isl_take isl_printer *p,
+		__isl_keep isl_id_to_ast_expr *id2expr);
+	__isl_give char *isl_id_to_ast_expr_to_str(
 		__isl_keep isl_id_to_ast_expr *id2expr);
 
 They can be read from input using the following function.
