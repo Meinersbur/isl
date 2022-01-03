@@ -11,9 +11,10 @@ extern "C" {
 #define ISL_xFN(TYPE,NAME) TYPE ## _ ## NAME
 #define ISL_FN(TYPE,NAME) ISL_xFN(TYPE,NAME)
 
-struct ISL_HMAP;
+struct __isl_export ISL_HMAP;
 typedef struct ISL_HMAP	ISL_HMAP;
 
+__isl_constructor
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,alloc)(isl_ctx *ctx, int min_size);
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,copy)(__isl_keep ISL_HMAP *hmap);
 __isl_null ISL_HMAP *ISL_FN(ISL_HMAP,free)(__isl_take ISL_HMAP *hmap);
@@ -26,6 +27,7 @@ isl_bool ISL_FN(ISL_HMAP,has)(__isl_keep ISL_HMAP *hmap,
 	__isl_keep ISL_KEY *key);
 __isl_give ISL_VAL *ISL_FN(ISL_HMAP,get)(__isl_keep ISL_HMAP *hmap,
 	__isl_take ISL_KEY *key);
+__isl_export
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,set)(__isl_take ISL_HMAP *hmap,
 	__isl_take ISL_KEY *key, __isl_take ISL_VAL *val);
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,drop)(__isl_take ISL_HMAP *hmap,
@@ -41,11 +43,13 @@ isl_bool ISL_FN(ISL_HMAP,every)(__isl_keep ISL_HMAP *hmap,
 	void *user);
 
 #ifdef ISL_HMAP_IS_EQUAL
+__isl_export
 isl_bool ISL_HMAP_IS_EQUAL(__isl_keep ISL_HMAP *hmap1,
 	__isl_keep ISL_HMAP *hmap2);
 #endif
 
 #ifdef ISL_HMAP_HAVE_READ_FROM_STR
+__isl_constructor
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,read_from_str)(isl_ctx *ctx,
 	const char *str);
 #endif

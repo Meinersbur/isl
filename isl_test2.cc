@@ -47,6 +47,23 @@ static binary_fn<A1, R, T> const arg(const binary_fn<A1, R, T> &fn)
 	return fn;
 }
 
+/* A ternary isl function that appears in the C++ bindings
+ * as a binary method in a class T, taking extra arguments
+ * of type A1 and A2 and returning an object of type R.
+ */
+template <typename A1, typename A2, typename R, typename T>
+using ternary_fn = R (T::*)(A1, A2) const;
+
+/* A function for selecting an overload of a pointer to a binary C++ method
+ * based on the (first) argument type(s).
+ * The object type and the return type are meant to be deduced.
+ */
+template <typename A1, typename A2, typename R, typename T>
+static ternary_fn<A1, A2, R, T> const arg(const ternary_fn<A1, A2, R, T> &fn)
+{
+	return fn;
+}
+
 /* A description of the input and the output of a unary operation.
  */
 struct unary {
@@ -59,6 +76,15 @@ struct unary {
 struct binary {
 	const char *arg1;
 	const char *arg2;
+	const char *res;
+};
+
+/* A description of the inputs and the output of a ternary operation.
+ */
+struct ternary {
+	const char *arg1;
+	const char *arg2;
+	const char *arg3;
 	const char *res;
 };
 
@@ -133,6 +159,34 @@ static void test(isl::ctx ctx, R (T::*fn)(A1) const, const std::string &name,
 		   << res << "\n"
 		   << "expecting:\n"
 		   << test.res;
+		THROW_INVALID(ss.str().c_str());
+	}
+}
+
+/* Run a sequence of tests of method "fn" with stringification "name" and
+ * with inputs and output described by "test",
+ * throwing an exception when an unexpected result is produced.
+ */
+template <typename R, typename T, typename A1, typename A2>
+static void test(isl::ctx ctx, R (T::*fn)(A1, A2) const,
+	const std::string &name, const std::vector<ternary> &tests)
+{
+	for (const auto &test : tests) {
+		T obj(ctx, test.arg1);
+		A1 arg1(ctx, test.arg2);
+		A2 arg2(ctx, test.arg3);
+		R expected(ctx, test.res);
+		const auto &res = (obj.*fn)(arg1, arg2);
+		std::ostringstream ss;
+
+		if (is_equal(expected, res))
+			continue;
+
+		ss << name << "(" << test.arg1 << ", " << test.arg2 << ", "
+		   << test.arg3 << ") =\n"
+		   << res << "\n"
+		   << "expecting:\n"
+		   << expected;
 		THROW_INVALID(ss.str().c_str());
 	}
 }
@@ -312,6 +366,24 @@ static void test_scale(isl::ctx ctx)
 	});
 }
 
+/* Perform some basic isl::id_to_id tests.
+ */
+static void test_id_to_id(isl::ctx ctx)
+{
+	C((arg<isl::id, isl::id>(&isl::id_to_id::set)), {
+	{ "{ }", "a", "b",
+	  "{ a: b }" },
+	{ "{ a: b }", "a", "b",
+	  "{ a: b }" },
+	{ "{ a: c }", "a", "b",
+	  "{ a: b }" },
+	{ "{ a: b }", "b", "a",
+	  "{ a: b, b: a }" },
+	{ "{ a: b }", "b", "a",
+	  "{ b: a, a: b }" },
+	});
+}
+
 /* The list of tests to perform.
  */
 static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
@@ -323,6 +395,7 @@ static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 	{ "gist", &test_gist },
 	{ "project out parameters", &test_project },
 	{ "scale", &test_scale },
+	{ "id-to-id", &test_id_to_id },
 };
 
 /* Perform some basic checks by means of the C++ bindings.
