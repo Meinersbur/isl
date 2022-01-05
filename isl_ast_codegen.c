@@ -1125,8 +1125,6 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
 	if (!graft)
 		return NULL;
 
-	build = isl_ast_build_copy(build);
-
 	node = graft->node;
 	node->u.f.init = reduce_list(isl_ast_expr_op_max, lower, build);
 	node->u.f.inc = for_inc(build);
@@ -1138,8 +1136,6 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
 		graft = set_for_cond_from_list(graft, upper_list, build);
 	else
 		graft = set_for_cond_from_set(graft, upper_set, build);
-
-	isl_ast_build_free(build);
 
 	return graft;
 }
