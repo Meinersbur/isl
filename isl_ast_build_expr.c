@@ -1413,9 +1413,11 @@ static __isl_give isl_ast_expr *construct_constraint_expr(int eq,
 {
 	isl_ast_expr *expr;
 	enum isl_ast_expr_op_type type;
+	int pos_is_cst, neg_is_cst;
 
-	if (isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int &&
-	    isl_ast_expr_get_type(expr_neg) != isl_ast_expr_int) {
+	pos_is_cst = isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int;
+	neg_is_cst = isl_ast_expr_get_type(expr_neg) == isl_ast_expr_int;
+	if (pos_is_cst && !neg_is_cst) {
 		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_le;
 		expr = isl_ast_expr_alloc_binary(type, expr_neg, expr_pos);
 	} else {
