@@ -1284,7 +1284,7 @@ static int constant_is_considered_positive(__isl_keep isl_val *v,
  *
  * where e and e' differ by a constant.
  */
-static int is_stride_constraint(__isl_keep isl_aff *aff, int pos)
+static isl_bool is_stride_constraint(__isl_keep isl_aff *aff, int pos)
 {
 	isl_aff *div;
 	isl_val *c, *d;
@@ -1450,7 +1450,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 		aff = isl_aff_free(aff);
 	if (eq && n > 0)
 		for (i = 0; i < n; ++i) {
-			int is_stride;
+			isl_bool is_stride;
 			is_stride = is_stride_constraint(aff, i);
 			if (is_stride < 0)
 				goto error;
