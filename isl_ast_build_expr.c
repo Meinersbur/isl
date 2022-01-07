@@ -1288,7 +1288,7 @@ static int is_stride_constraint(__isl_keep isl_aff *aff, int pos)
 {
 	isl_aff *div;
 	isl_val *c, *d;
-	int eq;
+	isl_bool eq;
 
 	div = isl_aff_get_div(aff, pos);
 	c = isl_aff_get_coefficient_val(aff, isl_dim_div, pos);
