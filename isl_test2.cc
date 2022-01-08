@@ -143,6 +143,16 @@ static void test_space(isl::ctx ctx)
 	});
 }
 
+/* Perform some basic conversion tests.
+ */
+static void test_conversion(isl::ctx ctx)
+{
+	C(&isl::multi_pw_aff::as_set, {
+	{ "[n] -> { [] : n >= 0 } ",
+	  "[n] -> { [] : n >= 0 } " },
+	});
+}
+
 /* Perform some basic preimage tests.
  */
 static void test_preimage(isl::ctx ctx)
@@ -271,6 +281,7 @@ static void test_scale(isl::ctx ctx)
 static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 {
 	{ "space", &test_space },
+	{ "conversion", &test_conversion },
 	{ "preimage", &test_preimage },
 	{ "intersect", &test_intersect },
 	{ "gist", &test_gist },
