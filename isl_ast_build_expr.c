@@ -1135,7 +1135,7 @@ error:
 	return NULL;
 }
 
-/* Construct an isl_ast_expr that evaluates the affine expression "aff",
+/* Construct an isl_ast_expr that evaluates the affine expression "aff".
  * The result is simplified in terms of build->domain.
  *
  * We first extract hidden modulo computations from the affine expression
@@ -1379,7 +1379,7 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
 	return expr;
 }
 
-/* Construct an isl_ast_expr that evaluates the condition "constraint",
+/* Construct an isl_ast_expr that evaluates the condition "constraint".
  * The result is simplified in terms of build->domain.
  *
  * We first check if the constraint is an equality of the form
@@ -1412,7 +1412,7 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
  * is not), then we swap the two expressions.  This ensures that we construct,
  * e.g., "i <= 5" rather than "5 >= i".
  *
- * Furthermore, is there are no terms with positive coefficients (or no terms
+ * Furthermore, if there are no terms with positive coefficients (or no terms
  * with negative coefficients), then the constant term is added to "pos"
  * (or "neg"), ignoring the sign of the constant term.
  */
