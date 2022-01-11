@@ -13,20 +13,47 @@
 #include <isl_space_private.h>
 #include <isl_reordering.h>
 
-__isl_give isl_reordering *isl_reordering_alloc(isl_ctx *ctx, int len)
+/* Create a new reordering description based on
+ * the number of source dimensions "src_len" and
+ * (an initial value for) the number of target dimensions "dst_len".
+ *
+ * The caller still needs to fill in the space field and
+ * possibly adjust the target dimensionality if this is not known yet
+ * when this function is called.
+ */
+__isl_give isl_reordering *isl_reordering_alloc(isl_ctx *ctx, int src_len,
+	int dst_len)
 {
 	isl_reordering *exp;
 
 	exp = isl_alloc(ctx, struct isl_reordering,
-			sizeof(struct isl_reordering) + (len - 1) * sizeof(int));
+		sizeof(struct isl_reordering) + (src_len - 1) * sizeof(int));
 	if (!exp)
 		return NULL;
 
 	exp->ref = 1;
-	exp->len = len;
+	exp->src_len = src_len;
+	exp->dst_len = dst_len;
 	exp->space = NULL;
 
 	return exp;
+}
+
+/* Set r->dst_len to the total dimensionality of r->space.
+ */
+static __isl_give isl_reordering *isl_reordering_set_dst_len_from_space(
+	__isl_take isl_reordering *r)
+{
+	isl_size n;
+
+	if (!r)
+		return NULL;
+
+	n = isl_space_dim(r->space, isl_dim_all);
+	if (n < 0)
+		return isl_reordering_free(r);
+	r->dst_len = n;
+	return r;
 }
 
 __isl_give isl_reordering *isl_reordering_copy(__isl_keep isl_reordering *exp)
@@ -46,14 +73,15 @@ __isl_give isl_reordering *isl_reordering_dup(__isl_keep isl_reordering *r)
 	if (!r)
 		return NULL;
 
-	dup = isl_reordering_alloc(isl_reordering_get_ctx(r), r->len);
+	dup = isl_reordering_alloc(isl_reordering_get_ctx(r),
+				    r->src_len, r->dst_len);
 	if (!dup)
 		return NULL;
 
 	dup->space = isl_reordering_get_space(r);
 	if (!dup->space)
 		return isl_reordering_free(dup);
-	for (i = 0; i < dup->len; ++i)
+	for (i = 0; i < dup->src_len; ++i)
 		dup->pos[i] = r->pos[i];
 
 	return dup;
@@ -125,7 +153,7 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 		return NULL;
 
 	ctx = isl_space_get_ctx(alignee);
-	exp = isl_reordering_alloc(ctx, n_alignee);
+	exp = isl_reordering_alloc(ctx, n_alignee, n_alignee);
 	if (!exp)
 		return NULL;
 
@@ -160,9 +188,7 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 		}
 	}
 
-	if (!exp->space)
-		return isl_reordering_free(exp);
-	return exp;
+	return isl_reordering_set_dst_len_from_space(exp);
 error:
 	isl_reordering_free(exp);
 	return NULL;
@@ -193,7 +219,7 @@ __isl_give isl_reordering *isl_reordering_unbind_params_insert_domain(
 		return NULL;
 
 	ctx = isl_space_get_ctx(space);
-	r = isl_reordering_alloc(ctx, dim);
+	r = isl_reordering_alloc(ctx, dim, dim);
 	if (!r)
 		return NULL;
 
@@ -237,7 +263,7 @@ __isl_give isl_reordering *isl_reordering_unbind_params_insert_domain(
 	for (i = 0; i < n; ++i)
 		r->pos[first + i] = first + offset + i;
 
-	return r;
+	return isl_reordering_set_dst_len_from_space(r);
 }
 
 __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
@@ -260,14 +286,15 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 	dim = isl_space_dim(space, isl_dim_all);
 	if (dim < 0)
 		return isl_reordering_free(exp);
-	offset = dim - exp->len;
-	res = isl_reordering_alloc(ctx, exp->len + extra);
+	offset = dim - exp->src_len;
+	res = isl_reordering_alloc(ctx, exp->src_len + extra,
+					exp->dst_len + extra);
 	if (!res)
 		goto error;
 	res->space = isl_reordering_get_space(exp);
-	for (i = 0; i < exp->len; ++i)
+	for (i = 0; i < exp->src_len; ++i)
 		res->pos[i] = exp->pos[i];
-	for (i = exp->len; i < res->len; ++i)
+	for (i = exp->src_len; i < res->src_len; ++i)
 		res->pos[i] = offset + i;
 
 	isl_reordering_free(exp);
@@ -289,7 +316,8 @@ __isl_give isl_reordering *isl_reordering_extend_space(
 	if (!exp || dim < 0)
 		goto error;
 
-	res = isl_reordering_extend(isl_reordering_copy(exp), dim - exp->len);
+	res = isl_reordering_extend(isl_reordering_copy(exp),
+				    dim - exp->src_len);
 	res = isl_reordering_cow(res);
 	if (!res)
 		goto error;
@@ -314,7 +342,7 @@ void isl_reordering_dump(__isl_keep isl_reordering *exp)
 	int i;
 
 	isl_space_dump(exp->space);
-	for (i = 0; i < exp->len; ++i)
+	for (i = 0; i < exp->src_len; ++i)
 		fprintf(stderr, "%d -> %d; ", i, exp->pos[i]);
 	fprintf(stderr, "\n");
 }

@@ -649,7 +649,7 @@ static __isl_give isl_vec *vec_reorder(__isl_take isl_vec *vec,
 		goto error;
 	isl_seq_cpy(res->el, vec->el, 2);
 	isl_seq_clr(res->el + 2, res->size - 2);
-	for (i = 0; i < r->len; ++i)
+	for (i = 0; i < r->src_len; ++i)
 		isl_int_set(res->el[2 + r->pos[i]], vec->el[2 + i]);
 
 	isl_reordering_free(r);
