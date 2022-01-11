@@ -8,7 +8,7 @@
  * The number of dimensions (i.e., the range of values) in the result
  * may be larger than the number of dimensions in the input.
  * In particular, the possible values of the entries in pos ranges from 0 to
- * the total dimension of dim - 1, unless isl_reordering_extend
+ * the total dimension of "space" - 1, unless isl_reordering_extend
  * has been called.
  */
 struct isl_reordering {
