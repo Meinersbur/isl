@@ -8601,6 +8601,7 @@ struct {
 	{ "{ [i] -> [i] : i mod 2 = 0 }", "{ [4] }", "4" },
 	{ "{ [i] -> [i] : i mod 2 = 0 }", "{ [3] }", "NaN" },
 	{ "{ [i] -> [i] : i mod 2 = 0 }", "{ [x] : false }", "NaN" },
+	{ "[m, n] -> { [2m + 3n] }", "[n=1, m=10] -> { : }", "23" },
 };
 
 /* Perform basic isl_pw_aff_eval tests.
