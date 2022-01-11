@@ -184,14 +184,16 @@ __isl_give isl_reordering *isl_reordering_unbind_params_insert_domain(
 {
 	int i, n;
 	int offset, first;
+	isl_size dim;
 	isl_ctx *ctx;
 	isl_reordering *r;
 
-	if (!space || !tuple)
+	dim = isl_space_dim(space, isl_dim_all);
+	if (dim < 0 || !tuple)
 		return NULL;
 
 	ctx = isl_space_get_ctx(space);
-	r = isl_reordering_alloc(ctx, isl_space_dim(space, isl_dim_all));
+	r = isl_reordering_alloc(ctx, dim);
 	if (!r)
 		return NULL;
 
@@ -229,9 +231,9 @@ __isl_give isl_reordering *isl_reordering_unbind_params_insert_domain(
 		r->pos[pos] = offset + i;
 	}
 
-	offset = isl_space_dim(r->space, isl_dim_all) - r->len;
+	offset = isl_space_dim(r->space, isl_dim_all) - dim;
 	first = isl_space_dim(space, isl_dim_param);
-	n = r->len - first;
+	n = dim - first;
 	for (i = 0; i < n; ++i)
 		r->pos[first + i] = first + offset + i;
 
