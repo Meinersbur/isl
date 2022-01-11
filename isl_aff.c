@@ -662,8 +662,6 @@ __isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
 		isl_reordering *exp;
 
 		exp = isl_parameter_alignment_reordering(domain_space, model);
-		exp = isl_reordering_extend_space(exp,
-					isl_space_copy(domain_space));
 		aff = isl_aff_realign_domain(aff, exp);
 	}
 

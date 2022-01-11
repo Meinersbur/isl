@@ -639,7 +639,7 @@ __isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_space *mode
 
 		space = FN(PW,get_domain_space)(pw);
 		exp = isl_parameter_alignment_reordering(space, model);
-		exp = isl_reordering_extend_space(exp, space);
+		isl_space_free(space);
 		pw = FN(PW,realign_domain)(pw, exp);
 	}
 

@@ -512,7 +512,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 	}
 	domain_space = FN(MULTI(BASE),get_domain_space)(multi);
 	exp = isl_parameter_alignment_reordering(domain_space, model);
-	exp = isl_reordering_extend_space(exp, domain_space);
+	isl_space_free(domain_space);
 	multi = FN(MULTI(BASE),realign_domain)(multi, exp);
 
 	isl_space_free(model);

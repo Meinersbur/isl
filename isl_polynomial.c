@@ -4498,8 +4498,6 @@ __isl_give isl_qpolynomial *isl_qpolynomial_align_params(
 		isl_reordering *exp;
 
 		exp = isl_parameter_alignment_reordering(domain_space, model);
-		exp = isl_reordering_extend_space(exp,
-					isl_space_copy(domain_space));
 		qp = isl_qpolynomial_realign_domain(qp, exp);
 	}
 

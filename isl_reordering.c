@@ -138,26 +138,29 @@ __isl_give isl_space *isl_reordering_get_space(__isl_keep isl_reordering *r)
  * to the corresponding parameters in a new dimension specification
  * that has the parameters of "aligner" first, followed by
  * any remaining parameters of "alignee" that do not occur in "aligner".
+ * The other dimensions of "alignee" are mapped to subsequent positions
+ * in order.
  */
 __isl_give isl_reordering *isl_parameter_alignment_reordering(
 	__isl_keep isl_space *alignee, __isl_keep isl_space *aligner)
 {
-	int i, j;
+	int i, j, offset;
 	isl_ctx *ctx;
 	isl_reordering *exp;
-	isl_size n_alignee, n_aligner;
+	isl_size dim, n_alignee, n_aligner;
 
+	dim = isl_space_dim(alignee, isl_dim_all);
 	n_alignee = isl_space_dim(alignee, isl_dim_param);
 	n_aligner = isl_space_dim(aligner, isl_dim_param);
-	if (n_alignee < 0 || n_aligner < 0)
+	if (dim < 0 || n_alignee < 0 || n_aligner < 0)
 		return NULL;
 
 	ctx = isl_space_get_ctx(alignee);
-	exp = isl_reordering_alloc(ctx, n_alignee, n_alignee);
+	exp = isl_reordering_alloc(ctx, dim, dim);
 	if (!exp)
 		return NULL;
 
-	exp->space = isl_space_params(isl_space_copy(aligner));
+	exp->space = isl_space_replace_params(isl_space_copy(alignee), aligner);
 
 	for (i = 0; i < n_alignee; ++i) {
 		isl_id *id_i;
@@ -188,7 +191,15 @@ __isl_give isl_reordering *isl_parameter_alignment_reordering(
 		}
 	}
 
-	return isl_reordering_set_dst_len_from_space(exp);
+	exp = isl_reordering_set_dst_len_from_space(exp);
+	if (!exp)
+		return NULL;
+
+	offset = exp->dst_len - exp->src_len;
+	for (i = n_alignee; i < dim; ++i)
+		exp->pos[i] = offset + i;
+
+	return exp;
 error:
 	isl_reordering_free(exp);
 	return NULL;

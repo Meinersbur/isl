@@ -12519,7 +12519,6 @@ __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
 
 		space = isl_map_peek_space(map);
 		exp = isl_parameter_alignment_reordering(space, model);
-		exp = isl_reordering_extend_space(exp, isl_space_copy(space));
 		map = isl_map_realign(map, exp);
 	}
 
@@ -12565,8 +12564,6 @@ __isl_give isl_basic_map *isl_basic_map_align_params(
 		struct isl_dim_map *dim_map;
 
 		exp = isl_parameter_alignment_reordering(bmap_space, model);
-		exp = isl_reordering_extend_space(exp,
-					isl_space_copy(bmap_space));
 		dim_map = isl_dim_map_from_reordering(exp);
 		bmap = isl_basic_map_realign(bmap,
 				    isl_reordering_get_space(exp),
