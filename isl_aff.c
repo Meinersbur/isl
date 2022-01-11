@@ -624,37 +624,6 @@ __isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
 	return isl_aff_reset_domain_space(aff, domain);
 }
 
-/* Reorder the coefficients of the affine expression based
- * on the given reordering.
- * The reordering r is assumed to have been extended with the local
- * variables.
- */
-static __isl_give isl_vec *vec_reorder(__isl_take isl_vec *vec,
-	__isl_take isl_reordering *r)
-{
-	isl_vec *res;
-	int i;
-
-	if (!vec || !r)
-		goto error;
-
-	res = isl_vec_alloc(vec->ctx, 2 + r->dst_len);
-	if (!res)
-		goto error;
-	isl_seq_cpy(res->el, vec->el, 2);
-	isl_seq_clr(res->el + 2, res->size - 2);
-	for (i = 0; i < r->src_len; ++i)
-		isl_int_set(res->el[2 + r->pos[i]], vec->el[2 + i]);
-
-	isl_reordering_free(r);
-	isl_vec_free(vec);
-	return res;
-error:
-	isl_vec_free(vec);
-	isl_reordering_free(r);
-	return NULL;
-}
-
 /* Reorder the dimensions of the domain of "aff" according
  * to the given reordering.
  */
@@ -666,7 +635,7 @@ __isl_give isl_aff *isl_aff_realign_domain(__isl_take isl_aff *aff,
 		goto error;
 
 	r = isl_reordering_extend(r, aff->ls->div->n_row);
-	aff->v = vec_reorder(aff->v, isl_reordering_copy(r));
+	aff->v = isl_vec_reorder(aff->v, 2, isl_reordering_copy(r));
 	aff->ls = isl_local_space_realign(aff->ls, r);
 
 	if (!aff->v || !aff->ls)
