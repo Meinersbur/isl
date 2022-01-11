@@ -630,21 +630,15 @@ __isl_give isl_aff *isl_aff_reset_space_and_domain(__isl_take isl_aff *aff,
  * variables.
  */
 static __isl_give isl_vec *vec_reorder(__isl_take isl_vec *vec,
-	__isl_take isl_reordering *r, int n_div)
+	__isl_take isl_reordering *r)
 {
-	isl_space *space;
 	isl_vec *res;
-	isl_size dim;
 	int i;
 
 	if (!vec || !r)
 		goto error;
 
-	space = isl_reordering_peek_space(r);
-	dim = isl_space_dim(space, isl_dim_all);
-	if (dim < 0)
-		goto error;
-	res = isl_vec_alloc(vec->ctx, 2 + dim + n_div);
+	res = isl_vec_alloc(vec->ctx, 2 + r->dst_len);
 	if (!res)
 		goto error;
 	isl_seq_cpy(res->el, vec->el, 2);
@@ -672,8 +666,7 @@ __isl_give isl_aff *isl_aff_realign_domain(__isl_take isl_aff *aff,
 		goto error;
 
 	r = isl_reordering_extend(r, aff->ls->div->n_row);
-	aff->v = vec_reorder(aff->v, isl_reordering_copy(r),
-				aff->ls->div->n_row);
+	aff->v = vec_reorder(aff->v, isl_reordering_copy(r));
 	aff->ls = isl_local_space_realign(aff->ls, r);
 
 	if (!aff->v || !aff->ls)
