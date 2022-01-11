@@ -58,6 +58,11 @@ static
 static
 #include "isl_type_check_equal_space_templ.c"
 
+#undef TYPE
+#define TYPE isl_point
+
+#include "isl_check_named_params_templ.c"
+
 __isl_give isl_point *isl_point_alloc(__isl_take isl_space *space,
 	__isl_take isl_vec *vec)
 {
