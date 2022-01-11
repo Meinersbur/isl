@@ -271,10 +271,8 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 {
 	int i;
 	isl_ctx *ctx;
-	isl_space *space;
 	isl_reordering *res;
 	int offset;
-	isl_size dim;
 
 	if (!exp)
 		return NULL;
@@ -282,11 +280,7 @@ __isl_give isl_reordering *isl_reordering_extend(__isl_take isl_reordering *exp,
 		return exp;
 
 	ctx = isl_reordering_get_ctx(exp);
-	space = isl_reordering_peek_space(exp);
-	dim = isl_space_dim(space, isl_dim_all);
-	if (dim < 0)
-		return isl_reordering_free(exp);
-	offset = dim - exp->src_len;
+	offset = exp->dst_len - exp->src_len;
 	res = isl_reordering_alloc(ctx, exp->src_len + extra,
 					exp->dst_len + extra);
 	if (!res)
