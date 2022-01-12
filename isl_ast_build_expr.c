@@ -1399,6 +1399,33 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
 	return expr;
 }
 
+/* Construct an isl_ast_expr evaluating
+ *
+ *	"expr_pos" == "expr_neg", if "eq" is set, or
+ *	"expr_pos" >= "expr_neg", if "eq" is not set
+ *
+ * However, if "expr_pos" is an integer constant (and "expr_neg" is not),
+ * then the two expressions are interchanged.  This ensures that,
+ * e.g., "i <= 5" is constructed rather than "5 >= i".
+ */
+static __isl_give isl_ast_expr *construct_constraint_expr(int eq,
+	__isl_take isl_ast_expr *expr_pos, __isl_take isl_ast_expr *expr_neg)
+{
+	isl_ast_expr *expr;
+	enum isl_ast_expr_op_type type;
+
+	if (isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int &&
+	    isl_ast_expr_get_type(expr_neg) != isl_ast_expr_int) {
+		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_le;
+		expr = isl_ast_expr_alloc_binary(type, expr_neg, expr_pos);
+	} else {
+		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_ge;
+		expr = isl_ast_expr_alloc_binary(type, expr_pos, expr_neg);
+	}
+
+	return expr;
+}
+
 /* Construct an isl_ast_expr that evaluates the condition "constraint".
  * The result is simplified in terms of build->domain.
  *
@@ -1420,7 +1447,7 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
  * and then collect all the terms with a positive coefficient in cons_pos
  * and the terms with a negative coefficient in cons_neg.
  *
- * The result is then of the form
+ * The result is then essentially of the form
  *
  *	(isl_ast_expr_op_ge, expr(pos), expr(-neg)))
  *
@@ -1428,11 +1455,7 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
  *
  *	(isl_ast_expr_op_eq, expr(pos), expr(-neg)))
  *
- * However, if the first expression is an integer constant (and the second
- * is not), then we swap the two expressions.  This ensures that we construct,
- * e.g., "i <= 5" rather than "5 >= i".
- *
- * Furthermore, if there are no terms with positive coefficients (or no terms
+ * However, if there are no terms with positive coefficients (or no terms
  * with negative coefficients), then the constant term is added to "pos"
  * (or "neg"), ignoring the sign of the constant term.
  */
@@ -1445,10 +1468,8 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	isl_ctx *ctx;
 	isl_ast_expr *expr_pos;
 	isl_ast_expr *expr_neg;
-	isl_ast_expr *expr;
 	isl_aff *aff;
 	isl_bool eq;
-	enum isl_ast_expr_op_type type;
 	struct isl_ast_add_term_data data;
 
 	aff = isl_constraint_get_aff(constraint);
@@ -1495,17 +1516,8 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 		expr_neg = isl_ast_expr_add_int(expr_neg, data.cst);
 	}
 
-	if (isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int &&
-	    isl_ast_expr_get_type(expr_neg) != isl_ast_expr_int) {
-		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_le;
-		expr = isl_ast_expr_alloc_binary(type, expr_neg, expr_pos);
-	} else {
-		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_ge;
-		expr = isl_ast_expr_alloc_binary(type, expr_pos, expr_neg);
-	}
-
 	isl_aff_free(aff);
-	return expr;
+	return construct_constraint_expr(eq, expr_pos, expr_neg);
 error:
 	isl_aff_free(aff);
 	return NULL;
