@@ -1428,24 +1428,11 @@ static __isl_give isl_ast_expr *construct_constraint_expr(int eq,
 	return expr;
 }
 
-/* Construct an isl_ast_expr that evaluates the condition "constraint".
+/* Construct an isl_ast_expr that evaluates the condition "aff" == 0
+ * (if "eq" is set) or "aff" >= 0 (otherwise).
  * The result is simplified in terms of build->domain.
  *
- * We first check if the constraint is an equality of the form
- *
- *	e - d floor(e/d) = 0
- *
- * i.e.,
- *
- *	e mod d = 0
- *
- * If so, we convert it to
- *
- *	(isl_ast_expr_op_eq,
- *		(isl_ast_expr_op_zdiv_r, expr(e), expr(d)), expr(0))
- *
- * Otherwise, let the constraint by either "a >= 0" or "a == 0".
- * We first extract hidden modulo computations from "a"
+ * We first extract hidden modulo computations from "aff"
  * and then collect all the terms with a positive coefficient in cons_pos
  * and the terms with a negative coefficient in cons_neg.
  *
@@ -1461,37 +1448,14 @@ static __isl_give isl_ast_expr *construct_constraint_expr(int eq,
  * with negative coefficients), then the constant term is added to "pos"
  * (or "neg"), ignoring the sign of the constant term.
  */
-static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
-	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
+static __isl_give isl_ast_expr *isl_ast_expr_from_constraint_no_stride(
+	int eq, __isl_take isl_aff *aff, __isl_keep isl_ast_build *build)
 {
-	int i;
 	isl_bool cst_is_pos;
-	isl_size n;
 	isl_ctx *ctx;
 	isl_ast_expr *expr_pos;
 	isl_ast_expr *expr_neg;
-	isl_aff *aff;
-	isl_bool eq;
 	struct isl_ast_add_term_data data;
-
-	aff = isl_constraint_get_aff(constraint);
-	eq = isl_constraint_is_equality(constraint);
-	isl_constraint_free(constraint);
-	if (eq < 0)
-		goto error;
-
-	n = isl_aff_dim(aff, isl_dim_div);
-	if (n < 0)
-		aff = isl_aff_free(aff);
-	if (eq && n > 0)
-		for (i = 0; i < n; ++i) {
-			isl_bool is_stride;
-			is_stride = is_stride_constraint(aff, i);
-			if (is_stride < 0)
-				goto error;
-			if (is_stride)
-				return extract_stride_constraint(aff, i, build);
-		}
 
 	ctx = isl_aff_get_ctx(aff);
 	expr_pos = isl_ast_expr_alloc_int_si(ctx, 0);
@@ -1520,6 +1484,52 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 
 	isl_aff_free(aff);
 	return construct_constraint_expr(eq, expr_pos, expr_neg);
+}
+
+/* Construct an isl_ast_expr that evaluates the condition "constraint".
+ * The result is simplified in terms of build->domain.
+ *
+ * We first check if the constraint is an equality of the form
+ *
+ *	e - d floor(e/d) = 0
+ *
+ * i.e.,
+ *
+ *	e mod d = 0
+ *
+ * If so, we convert it to
+ *
+ *	(isl_ast_expr_op_eq,
+ *		(isl_ast_expr_op_zdiv_r, expr(e), expr(d)), expr(0))
+ */
+static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
+	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
+{
+	int i;
+	isl_size n;
+	isl_aff *aff;
+	isl_bool eq;
+
+	aff = isl_constraint_get_aff(constraint);
+	eq = isl_constraint_is_equality(constraint);
+	isl_constraint_free(constraint);
+	if (eq < 0)
+		goto error;
+
+	n = isl_aff_dim(aff, isl_dim_div);
+	if (n < 0)
+		aff = isl_aff_free(aff);
+	if (eq && n > 0)
+		for (i = 0; i < n; ++i) {
+			isl_bool is_stride;
+			is_stride = is_stride_constraint(aff, i);
+			if (is_stride < 0)
+				goto error;
+			if (is_stride)
+				return extract_stride_constraint(aff, i, build);
+		}
+
+	return isl_ast_expr_from_constraint_no_stride(eq, aff, build);
 error:
 	isl_aff_free(aff);
 	return NULL;
