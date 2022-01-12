@@ -1434,16 +1434,15 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	isl_ast_expr *expr_neg;
 	isl_ast_expr *expr;
 	isl_aff *aff;
-	int eq;
+	isl_bool eq;
 	enum isl_ast_expr_op_type type;
 	struct isl_ast_add_term_data data;
-
-	if (!constraint)
-		return NULL;
 
 	aff = isl_constraint_get_aff(constraint);
 	eq = isl_constraint_is_equality(constraint);
 	isl_constraint_free(constraint);
+	if (eq < 0)
+		goto error;
 
 	n = isl_aff_dim(aff, isl_dim_div);
 	if (n < 0)
