@@ -736,19 +736,21 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
 	int i, t;
 	isl_size n[2];
-	int parallel = 1, opposite = 1;
+	isl_bool parallel = isl_bool_true, opposite = isl_bool_true;
 
 	for (t = 0; t < 2; ++t) {
 		n[t] = isl_constraint_dim(c, c_type[t]);
 		if (n[t] < 0)
 			goto error;
 		for (i = 0; i < n[t]; ++i) {
-			int a, b;
+			isl_bool a, b;
 
 			a = isl_constraint_involves_dims(c, c_type[t], i, 1);
 			b = isl_aff_involves_dims(data->div, a_type[t], i, 1);
+			if (a < 0 || b < 0)
+				goto error;
 			if (a != b)
-				parallel = opposite = 0;
+				parallel = opposite = isl_bool_false;
 		}
 	}
 
@@ -757,7 +759,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 
 		v = isl_val_abs(isl_constraint_get_constant_val(c));
 		if (isl_val_cmp_si(v, 1 << 15) > 0)
-			parallel = opposite = 0;
+			parallel = opposite = isl_bool_false;
 		isl_val_free(v);
 	}
 
@@ -782,6 +784,8 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 			}
 			isl_val_free(v1);
 			isl_val_free(v2);
+			if (parallel < 0 || opposite < 0)
+				goto error;
 		}
 	}
 
