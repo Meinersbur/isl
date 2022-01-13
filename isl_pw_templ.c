@@ -634,11 +634,12 @@ __isl_give PW *FN(PW,align_params)(__isl_take PW *pw, __isl_take isl_space *mode
 	if (equal_params < 0)
 		goto error;
 	if (!equal_params) {
+		isl_space *space;
 		isl_reordering *exp;
 
-		exp = isl_parameter_alignment_reordering(pw->dim, model);
-		exp = isl_reordering_extend_space(exp,
-					FN(PW,get_domain_space)(pw));
+		space = FN(PW,get_domain_space)(pw);
+		exp = isl_parameter_alignment_reordering(space, model);
+		exp = isl_reordering_extend_space(exp, space);
 		pw = FN(PW,realign_domain)(pw, exp);
 	}
 
