@@ -285,12 +285,11 @@ __isl_give isl_union_map *isl_union_map_align_params(
 	__isl_take isl_union_map *umap, __isl_take isl_space *model)
 {
 	struct isl_union_align data = { NULL, NULL };
+	isl_space *space;
 	isl_bool equal_params;
 
-	if (!umap || !model)
-		goto error;
-
-	equal_params = isl_space_has_equal_params(umap->dim, model);
+	space = isl_union_map_peek_space(umap);
+	equal_params = isl_space_has_equal_params(space, model);
 	if (equal_params < 0)
 		goto error;
 	if (equal_params) {
@@ -298,7 +297,7 @@ __isl_give isl_union_map *isl_union_map_align_params(
 		return umap;
 	}
 
-	data.exp = isl_parameter_alignment_reordering(umap->dim, model);
+	data.exp = isl_parameter_alignment_reordering(space, model);
 	if (!data.exp)
 		goto error;
 
