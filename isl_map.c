@@ -12514,10 +12514,12 @@ __isl_give isl_map *isl_map_align_params(__isl_take isl_map *map,
 	if (aligned < 0)
 		goto error;
 	if (!aligned) {
+		isl_space *space;
 		isl_reordering *exp;
 
-		exp = isl_parameter_alignment_reordering(map->dim, model);
-		exp = isl_reordering_extend_space(exp, isl_map_get_space(map));
+		space = isl_map_peek_space(map);
+		exp = isl_parameter_alignment_reordering(space, model);
+		exp = isl_reordering_extend_space(exp, isl_space_copy(space));
 		map = isl_map_realign(map, exp);
 	}
 
