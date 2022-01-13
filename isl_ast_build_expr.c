@@ -1070,6 +1070,76 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 	return data.aff;
 }
 
+/* Call "fn" on every non-zero coefficient of "aff",
+ * passing it in the type of dimension (in terms of the domain),
+ * the position and the value, as long as "fn" returns isl_bool_true.
+ */
+static isl_bool every_non_zero_coefficient(__isl_keep isl_aff *aff,
+	isl_bool (*fn)(enum isl_dim_type type, int pos, __isl_take isl_val *v,
+		void *user),
+	void *user)
+{
+	int i, j;
+	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
+	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
+	isl_val *v;
+
+	for (i = 0; i < 3; ++i) {
+		isl_size n;
+
+		n = isl_aff_dim(aff, t[i]);
+		if (n < 0)
+			return isl_bool_error;
+		for (j = 0; j < n; ++j) {
+			isl_bool ok;
+
+			v = isl_aff_get_coefficient_val(aff, t[i], j);
+			ok = isl_val_is_zero(v);
+			if (ok >= 0 && !ok)
+				ok = fn(l[i], j, v, user);
+			else
+				isl_val_free(v);
+			if (ok < 0 || !ok)
+				return ok;
+		}
+	}
+
+	return isl_bool_true;
+}
+
+/* Internal data structure for extract_rational.
+ *
+ * "d" is the denominator of the original affine expression.
+ * "ls" is its domain local space.
+ * "rat" collects the rational part.
+ */
+struct isl_ast_extract_rational_data {
+	isl_val *d;
+	isl_local_space *ls;
+
+	isl_aff *rat;
+};
+
+/* Given a non-zero term in an affine expression equal to "v" times
+ * the variable of type "type" at position "pos",
+ * add it to data->rat if "v" is not a multiple of data->d.
+ */
+static isl_bool add_rational(enum isl_dim_type type, int pos,
+	__isl_take isl_val *v, void *user)
+{
+	struct isl_ast_extract_rational_data *data = user;
+	isl_aff *rat;
+
+	if (isl_val_is_divisible_by(v, data->d)) {
+		isl_val_free(v);
+		return isl_bool_true;
+	}
+	rat = isl_aff_var_on_domain(isl_local_space_copy(data->ls), type, pos);
+	rat = isl_aff_scale_val(rat, v);
+	data->rat = isl_aff_add(data->rat, rat);
+	return isl_bool_true;
+}
+
 /* Check if aff involves any non-integer coefficients.
  * If so, split aff into
  *
@@ -1081,76 +1151,78 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_expr **expr, __isl_keep isl_ast_build *build)
 {
-	int i, j;
-	isl_size n;
-	isl_aff *rat = NULL;
-	isl_local_space *ls = NULL;
+	struct isl_ast_extract_rational_data data = { NULL };
 	isl_ast_expr *rat_expr;
-	isl_val *v, *d;
-	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
-	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
+	isl_val *v;
 
 	if (!aff)
 		return NULL;
-	d = isl_aff_get_denominator_val(aff);
-	if (!d)
+	data.d = isl_aff_get_denominator_val(aff);
+	if (!data.d)
 		goto error;
-	if (isl_val_is_one(d)) {
-		isl_val_free(d);
+	if (isl_val_is_one(data.d)) {
+		isl_val_free(data.d);
 		return aff;
 	}
 
-	aff = isl_aff_scale_val(aff, isl_val_copy(d));
+	aff = isl_aff_scale_val(aff, isl_val_copy(data.d));
 
-	ls = isl_aff_get_domain_local_space(aff);
-	rat = isl_aff_zero_on_domain(isl_local_space_copy(ls));
+	data.ls = isl_aff_get_domain_local_space(aff);
+	data.rat = isl_aff_zero_on_domain(isl_local_space_copy(data.ls));
 
-	for (i = 0; i < 3; ++i) {
-		n = isl_aff_dim(aff, t[i]);
-		if (n < 0)
-			goto error;
-		for (j = 0; j < n; ++j) {
-			isl_aff *rat_j;
-
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
-			if (!v)
-				goto error;
-			if (isl_val_is_divisible_by(v, d)) {
-				isl_val_free(v);
-				continue;
-			}
-			rat_j = isl_aff_var_on_domain(isl_local_space_copy(ls),
-							l[i], j);
-			rat_j = isl_aff_scale_val(rat_j, v);
-			rat = isl_aff_add(rat, rat_j);
-		}
-	}
+	if (every_non_zero_coefficient(aff, &add_rational, &data) < 0)
+		goto error;
 
 	v = isl_aff_get_constant_val(aff);
-	if (isl_val_is_divisible_by(v, d)) {
+	if (isl_val_is_divisible_by(v, data.d)) {
 		isl_val_free(v);
 	} else {
 		isl_aff *rat_0;
 
-		rat_0 = isl_aff_val_on_domain(isl_local_space_copy(ls), v);
-		rat = isl_aff_add(rat, rat_0);
+		rat_0 = isl_aff_val_on_domain(isl_local_space_copy(data.ls), v);
+		data.rat = isl_aff_add(data.rat, rat_0);
 	}
 
-	isl_local_space_free(ls);
+	isl_local_space_free(data.ls);
 
-	aff = isl_aff_sub(aff, isl_aff_copy(rat));
-	aff = isl_aff_scale_down_val(aff, isl_val_copy(d));
+	aff = isl_aff_sub(aff, isl_aff_copy(data.rat));
+	aff = isl_aff_scale_down_val(aff, isl_val_copy(data.d));
 
-	rat_expr = div_mod(isl_ast_expr_op_div, rat, d, build);
+	rat_expr = div_mod(isl_ast_expr_op_div, data.rat, data.d, build);
 	*expr = ast_expr_add(*expr, rat_expr);
 
 	return aff;
 error:
-	isl_aff_free(rat);
-	isl_local_space_free(ls);
+	isl_aff_free(data.rat);
+	isl_local_space_free(data.ls);
 	isl_aff_free(aff);
-	isl_val_free(d);
+	isl_val_free(data.d);
 	return NULL;
+}
+
+/* Internal data structure for isl_ast_expr_from_aff.
+ *
+ * "term" contains the information for adding a term.
+ * "expr" collects the results.
+ */
+struct isl_ast_add_terms_data {
+	struct isl_ast_add_term_data *term;
+	isl_ast_expr *expr;
+};
+
+/* Given a non-zero term in an affine expression equal to "v" times
+ * the variable of type "type" at position "pos",
+ * add the corresponding AST expression to data->expr.
+ */
+static isl_bool add_term(enum isl_dim_type type, int pos,
+	__isl_take isl_val *v, void *user)
+{
+	struct isl_ast_add_terms_data *data = user;
+
+	data->expr =
+		isl_ast_expr_add_term(data->expr, type, pos, v, data->term);
+
+	return isl_bool_true;
 }
 
 /* Construct an isl_ast_expr that evaluates the affine expression "aff".
@@ -1164,50 +1236,66 @@ error:
 __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_build *build)
 {
-	int i, j;
-	isl_size n;
-	isl_val *v;
 	isl_ctx *ctx = isl_aff_get_ctx(aff);
-	isl_ast_expr *expr, *expr_neg;
-	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
-	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
-	struct isl_ast_add_term_data data;
+	isl_ast_expr *expr_neg;
+	struct isl_ast_add_term_data term_data;
+	struct isl_ast_add_terms_data data = { &term_data };
 
 	if (!aff)
 		return NULL;
 
-	expr = isl_ast_expr_alloc_int_si(ctx, 0);
+	data.expr = isl_ast_expr_alloc_int_si(ctx, 0);
 	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
 
-	aff = extract_rational(aff, &expr, build);
+	aff = extract_rational(aff, &data.expr, build);
 
-	aff = extract_modulos(aff, &expr, &expr_neg, build);
-	expr = ast_expr_sub(expr, expr_neg);
+	aff = extract_modulos(aff, &data.expr, &expr_neg, build);
+	data.expr = ast_expr_sub(data.expr, expr_neg);
 
-	data.build = build;
-	data.ls = isl_aff_get_domain_local_space(aff);
-	data.cst = isl_aff_get_constant_val(aff);
-	for (i = 0; i < 3; ++i) {
-		n = isl_aff_dim(aff, t[i]);
-		if (n < 0)
-			expr = isl_ast_expr_free(expr);
-		for (j = 0; j < n; ++j) {
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
-			if (!v)
-				expr = isl_ast_expr_free(expr);
-			if (isl_val_is_zero(v)) {
-				isl_val_free(v);
-				continue;
-			}
-			expr = isl_ast_expr_add_term(expr, l[i], j, v, &data);
-		}
-	}
+	term_data.build = build;
+	term_data.ls = isl_aff_get_domain_local_space(aff);
+	term_data.cst = isl_aff_get_constant_val(aff);
+	if (every_non_zero_coefficient(aff, &add_term, &data) < 0)
+		data.expr = isl_ast_expr_free(data.expr);
 
-	expr = isl_ast_expr_add_int(expr, data.cst);
-	isl_local_space_free(data.ls);
+	data.expr = isl_ast_expr_add_int(data.expr, term_data.cst);
+	isl_local_space_free(term_data.ls);
 
 	isl_aff_free(aff);
-	return expr;
+	return data.expr;
+}
+
+/* Internal data structure for add_signed_terms.
+ *
+ * "term" contains the information for adding a term.
+ * "sign" is the sign of the terms that are being added.
+ * "expr" collects the results.
+ */
+struct isl_ast_add_signed_terms_data {
+	struct isl_ast_add_term_data *term;
+	int sign;
+	isl_ast_expr *expr;
+};
+
+/* Given a non-zero term in an affine expression equal to "v" times
+ * the variable of type "type" at position "pos",
+ * add the corresponding AST expression to data->expr,
+ * if "v" has sign data->sign.
+ */
+static isl_bool add_signed_term(enum isl_dim_type type, int pos,
+	__isl_take isl_val *v, void *user)
+{
+	struct isl_ast_add_signed_terms_data *data = user;
+
+	if (data->sign * isl_val_sgn(v) <= 0) {
+		isl_val_free(v);
+		return isl_bool_true;
+	}
+	v = isl_val_abs(v);
+	data->expr =
+		isl_ast_expr_add_term(data->expr, type, pos, v, data->term);
+
+	return isl_bool_true;
 }
 
 /* Add terms to "expr" for each variable in "aff" with a coefficient
@@ -1217,28 +1305,12 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 	__isl_keep isl_aff *aff, int sign, struct isl_ast_add_term_data *data)
 {
-	int i, j;
-	isl_val *v;
-	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
-	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
+	struct isl_ast_add_signed_terms_data terms_data = { data, sign, expr };
 
+	if (every_non_zero_coefficient(aff, &add_signed_term, &terms_data) < 0)
+		return isl_ast_expr_free(terms_data.expr);
 
-	for (i = 0; i < 3; ++i) {
-		isl_size n = isl_aff_dim(aff, t[i]);
-		if (n < 0)
-			expr = isl_ast_expr_free(expr);
-		for (j = 0; j < n; ++j) {
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
-			if (sign * isl_val_sgn(v) <= 0) {
-				isl_val_free(v);
-				continue;
-			}
-			v = isl_val_abs(v);
-			expr = isl_ast_expr_add_term(expr, l[i], j, v, data);
-		}
-	}
-
-	return expr;
+	return terms_data.expr;
 }
 
 /* Should the constant term "v" be considered positive?
