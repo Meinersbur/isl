@@ -4487,20 +4487,19 @@ error:
 __isl_give isl_qpolynomial *isl_qpolynomial_align_params(
 	__isl_take isl_qpolynomial *qp, __isl_take isl_space *model)
 {
+	isl_space *domain_space;
 	isl_bool equal_params;
 
-	if (!qp || !model)
-		goto error;
-
-	equal_params = isl_space_has_equal_params(qp->dim, model);
+	domain_space = isl_qpolynomial_peek_domain_space(qp);
+	equal_params = isl_space_has_equal_params(domain_space, model);
 	if (equal_params < 0)
 		goto error;
 	if (!equal_params) {
 		isl_reordering *exp;
 
-		exp = isl_parameter_alignment_reordering(qp->dim, model);
+		exp = isl_parameter_alignment_reordering(domain_space, model);
 		exp = isl_reordering_extend_space(exp,
-					isl_qpolynomial_get_domain_space(qp));
+					isl_space_copy(domain_space));
 		qp = isl_qpolynomial_realign_domain(qp, exp);
 	}
 
