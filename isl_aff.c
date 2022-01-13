@@ -651,20 +651,19 @@ error:
 __isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
 	__isl_take isl_space *model)
 {
+	isl_space *domain_space;
 	isl_bool equal_params;
 
-	if (!aff || !model)
-		goto error;
-
-	equal_params = isl_space_has_equal_params(aff->ls->dim, model);
+	domain_space = isl_aff_peek_domain_space(aff);
+	equal_params = isl_space_has_equal_params(domain_space, model);
 	if (equal_params < 0)
 		goto error;
 	if (!equal_params) {
 		isl_reordering *exp;
 
-		exp = isl_parameter_alignment_reordering(aff->ls->dim, model);
+		exp = isl_parameter_alignment_reordering(domain_space, model);
 		exp = isl_reordering_extend_space(exp,
-					isl_aff_get_domain_space(aff));
+					isl_space_copy(domain_space));
 		aff = isl_aff_realign_domain(aff, exp);
 	}
 
