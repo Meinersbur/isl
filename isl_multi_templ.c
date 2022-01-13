@@ -482,6 +482,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 {
 	isl_ctx *ctx;
 	isl_bool equal_params;
+	isl_space *domain_space;
 	isl_reordering *exp;
 
 	if (!multi || !model)
@@ -509,9 +510,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 		if (!multi)
 			goto error;
 	}
-	exp = isl_parameter_alignment_reordering(multi->space, model);
-	exp = isl_reordering_extend_space(exp,
-				    FN(MULTI(BASE),get_domain_space)(multi));
+	domain_space = FN(MULTI(BASE),get_domain_space)(multi);
+	exp = isl_parameter_alignment_reordering(domain_space, model);
+	exp = isl_reordering_extend_space(exp, domain_space);
 	multi = FN(MULTI(BASE),realign_domain)(multi, exp);
 
 	isl_space_free(model);
