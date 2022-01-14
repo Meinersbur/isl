@@ -1073,8 +1073,11 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 /* Call "fn" on every non-zero coefficient of "aff",
  * passing it in the type of dimension (in terms of the domain),
  * the position and the value, as long as "fn" returns isl_bool_true.
+ * If "reverse" is set, then the coefficients are considered in reverse order
+ * within each type.
  */
 static isl_bool every_non_zero_coefficient(__isl_keep isl_aff *aff,
+	int reverse,
 	isl_bool (*fn)(enum isl_dim_type type, int pos, __isl_take isl_val *v,
 		void *user),
 	void *user)
@@ -1092,11 +1095,13 @@ static isl_bool every_non_zero_coefficient(__isl_keep isl_aff *aff,
 			return isl_bool_error;
 		for (j = 0; j < n; ++j) {
 			isl_bool ok;
+			int pos;
 
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
+			pos = reverse ? n - 1 - j : j;
+			v = isl_aff_get_coefficient_val(aff, t[i], pos);
 			ok = isl_val_is_zero(v);
 			if (ok >= 0 && !ok)
-				ok = fn(l[i], j, v, user);
+				ok = fn(l[i], pos, v, user);
 			else
 				isl_val_free(v);
 			if (ok < 0 || !ok)
@@ -1170,7 +1175,7 @@ static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
 	data.ls = isl_aff_get_domain_local_space(aff);
 	data.rat = isl_aff_zero_on_domain(isl_local_space_copy(data.ls));
 
-	if (every_non_zero_coefficient(aff, &add_rational, &data) < 0)
+	if (every_non_zero_coefficient(aff, 0, &add_rational, &data) < 0)
 		goto error;
 
 	v = isl_aff_get_constant_val(aff);
@@ -1255,7 +1260,7 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	term_data.build = build;
 	term_data.ls = isl_aff_get_domain_local_space(aff);
 	term_data.cst = isl_aff_get_constant_val(aff);
-	if (every_non_zero_coefficient(aff, &add_term, &data) < 0)
+	if (every_non_zero_coefficient(aff, 0, &add_term, &data) < 0)
 		data.expr = isl_ast_expr_free(data.expr);
 
 	data.expr = isl_ast_expr_add_int(data.expr, term_data.cst);
@@ -1307,7 +1312,8 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 {
 	struct isl_ast_add_signed_terms_data terms_data = { data, sign, expr };
 
-	if (every_non_zero_coefficient(aff, &add_signed_term, &terms_data) < 0)
+	if (every_non_zero_coefficient(aff, 0, &add_signed_term,
+							&terms_data) < 0)
 		return isl_ast_expr_free(terms_data.expr);
 
 	return terms_data.expr;
