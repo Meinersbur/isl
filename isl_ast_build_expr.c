@@ -40,6 +40,8 @@ static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff,
 /* Internal data structure used inside isl_ast_expr_add_term.
  * The domain of "build" is used to simplify the expressions.
  * "build" needs to be set by the caller of isl_ast_expr_add_term.
+ * "ls" is the domain local space of the affine expression
+ * of which a term is being added.
  * "cst" is the constant term of the expression in which the added term
  * appears.  It may be modified by isl_ast_expr_add_term.
  *
@@ -48,6 +50,7 @@ static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff,
  */
 struct isl_ast_add_term_data {
 	isl_ast_build *build;
+	isl_local_space *ls;
 	isl_val *cst;
 	isl_val *v;
 };
@@ -162,11 +165,11 @@ static __isl_give isl_ast_expr *div_mod(enum isl_ast_expr_op_type type,
 	return isl_ast_expr_alloc_binary(type, expr1, expr2);
 }
 
-/* Create an isl_ast_expr evaluating the div at position "pos" in "ls".
+/* Create an isl_ast_expr evaluating the div at position "pos" in data->ls.
  * The result is simplified in terms of data->build->domain.
  * This function may change (the sign of) data->v.
  *
- * "ls" is known to be non-NULL.
+ * data->ls is known to be non-NULL.
  *
  * Let the div be of the form floor(e/d).
  * If the ast_build_prefer_pdiv option is set then we check if "e"
@@ -197,14 +200,14 @@ static __isl_give isl_ast_expr *div_mod(enum isl_ast_expr_op_type type,
  * with s the minimal shift that makes the argument non-negative.
  */
 static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
-	__isl_keep isl_local_space *ls, int pos)
+	int pos)
 {
-	isl_ctx *ctx = isl_local_space_get_ctx(ls);
+	isl_ctx *ctx = isl_local_space_get_ctx(data->ls);
 	isl_aff *aff;
 	isl_val *d;
 	enum isl_ast_expr_op_type type;
 
-	aff = isl_local_space_get_div(ls, pos);
+	aff = isl_local_space_get_div(data->ls, pos);
 	d = isl_aff_get_denominator_val(aff);
 	aff = isl_aff_scale_val(aff, isl_val_copy(d));
 
@@ -237,33 +240,33 @@ static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
 	return div_mod(type, aff, d, data->build);
 }
 
-/* Create an isl_ast_expr evaluating the specified dimension of "ls".
+/* Create an isl_ast_expr evaluating the specified dimension of data->ls.
  * The result is simplified in terms of data->build->domain.
  * This function may change (the sign of) data->v.
  *
  * The isl_ast_expr is constructed based on the type of the dimension.
  * - divs are constructed by var_div
  * - set variables are constructed from the iterator isl_ids in data->build
- * - parameters are constructed from the isl_ids in "ls"
+ * - parameters are constructed from the isl_ids in data->ls
  */
 static __isl_give isl_ast_expr *var(struct isl_ast_add_term_data *data,
-	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos)
+	enum isl_dim_type type, int pos)
 {
-	isl_ctx *ctx = isl_local_space_get_ctx(ls);
+	isl_ctx *ctx = isl_local_space_get_ctx(data->ls);
 	isl_id *id;
 
 	if (type == isl_dim_div)
-		return var_div(data, ls, pos);
+		return var_div(data, pos);
 
 	if (type == isl_dim_set) {
 		id = isl_ast_build_get_iterator_id(data->build, pos);
 		return isl_ast_expr_from_id(id);
 	}
 
-	if (!isl_local_space_has_dim_id(ls, type, pos))
+	if (!isl_local_space_has_dim_id(data->ls, type, pos))
 		isl_die(ctx, isl_error_internal, "unnamed dimension",
 			return NULL);
-	id = isl_local_space_get_dim_id(ls, type, pos);
+	id = isl_local_space_get_dim_id(data->ls, type, pos);
 	return isl_ast_expr_from_id(id);
 }
 
@@ -404,7 +407,7 @@ error:
 	return NULL;
 }
 
-/* Add an expression for "*v" times the specified dimension of "ls"
+/* Add an expression for "*v" times the specified dimension of data->ls
  * to expr.
  * If the dimension is an integer division, then this function
  * may modify data->cst in order to make the numerator non-negative.
@@ -428,8 +431,7 @@ error:
  *
  */
 static __isl_give isl_ast_expr *isl_ast_expr_add_term(
-	__isl_take isl_ast_expr *expr,
-	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos,
+	__isl_take isl_ast_expr *expr, enum isl_dim_type type, int pos,
 	__isl_take isl_val *v, struct isl_ast_add_term_data *data)
 {
 	isl_ast_expr *term;
@@ -438,7 +440,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_add_term(
 		return NULL;
 
 	data->v = v;
-	term = var(data, ls, type, pos);
+	term = var(data, type, pos);
 	v = data->v;
 
 	if (isl_val_is_neg(v) && !ast_expr_is_zero(expr)) {
@@ -1169,7 +1171,6 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	isl_ast_expr *expr, *expr_neg;
 	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
 	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
-	isl_local_space *ls;
 	struct isl_ast_add_term_data data;
 
 	if (!aff)
@@ -1183,9 +1184,8 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	aff = extract_modulos(aff, &expr, &expr_neg, build);
 	expr = ast_expr_sub(expr, expr_neg);
 
-	ls = isl_aff_get_domain_local_space(aff);
-
 	data.build = build;
+	data.ls = isl_aff_get_domain_local_space(aff);
 	data.cst = isl_aff_get_constant_val(aff);
 	for (i = 0; i < 3; ++i) {
 		n = isl_aff_dim(aff, t[i]);
@@ -1199,14 +1199,13 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 				isl_val_free(v);
 				continue;
 			}
-			expr = isl_ast_expr_add_term(expr,
-							ls, l[i], j, v, &data);
+			expr = isl_ast_expr_add_term(expr, l[i], j, v, &data);
 		}
 	}
 
 	expr = isl_ast_expr_add_int(expr, data.cst);
+	isl_local_space_free(data.ls);
 
-	isl_local_space_free(ls);
 	isl_aff_free(aff);
 	return expr;
 }
@@ -1222,9 +1221,7 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 	isl_val *v;
 	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
 	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
-	isl_local_space *ls;
 
-	ls = isl_aff_get_domain_local_space(aff);
 
 	for (i = 0; i < 3; ++i) {
 		isl_size n = isl_aff_dim(aff, t[i]);
@@ -1237,12 +1234,9 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
 				continue;
 			}
 			v = isl_val_abs(v);
-			expr = isl_ast_expr_add_term(expr,
-						ls, l[i], j, v, data);
+			expr = isl_ast_expr_add_term(expr, l[i], j, v, data);
 		}
 	}
-
-	isl_local_space_free(ls);
 
 	return expr;
 }
@@ -1464,11 +1458,13 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint_no_stride(
 	aff = extract_modulos(aff, &expr_pos, &expr_neg, build);
 
 	data.build = build;
+	data.ls = isl_aff_get_domain_local_space(aff);
 	data.cst = isl_aff_get_constant_val(aff);
 	expr_pos = add_signed_terms(expr_pos, aff, 1, &data);
 	data.cst = isl_val_neg(data.cst);
 	expr_neg = add_signed_terms(expr_neg, aff, -1, &data);
 	data.cst = isl_val_neg(data.cst);
+	isl_local_space_free(data.ls);
 
 	cst_is_pos =
 	    constant_is_considered_positive(data.cst, expr_pos, expr_neg);
