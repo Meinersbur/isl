@@ -1,15 +1,18 @@
 /*
  * Copyright 2012-2013 Ecole Normale Superieure
+ * Copyright 2022      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
  * Written by Sven Verdoolaege,
  * Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <string.h>
 
 #include <isl/id.h>
+#include <isl/stream.h>
 #include <isl/val.h>
 #include <isl_ast_private.h>
 
@@ -2636,6 +2639,176 @@ __isl_give isl_printer *isl_printer_print_ast_expr(__isl_take isl_printer *p,
 	}
 
 	return p;
+}
+
+#undef KEY
+#define KEY		enum isl_ast_expr_op_type
+#undef KEY_ERROR
+#define KEY_ERROR	isl_ast_expr_op_error
+#undef KEY_END
+#define KEY_END		(isl_ast_expr_op_address_of + 1)
+#undef KEY_STR
+#define KEY_STR		op_str
+#undef KEY_EXTRACT
+#define KEY_EXTRACT	extract_op_type
+#undef KEY_GET
+#define KEY_GET		get_op_type
+#include "extract_key.c"
+
+/* Return the next token, which is assumed to be a key in a YAML mapping,
+ * from "s" as a string.
+ */
+static __isl_give char *next_key(__isl_keep isl_stream *s)
+{
+	struct isl_token *tok;
+	char *str;
+	isl_ctx *ctx;
+
+	if (!s)
+		return NULL;
+	tok = isl_stream_next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return NULL;
+	}
+	ctx = isl_stream_get_ctx(s);
+	str = isl_token_get_str(ctx, tok);
+	isl_token_free(tok);
+	return str;
+}
+
+/* Remove the next token, which is assumed to be the key "expected"
+ * in a YAML mapping, from "s" and move to the corresponding value.
+ */
+static isl_stat eat_key(__isl_keep isl_stream *s, const char *expected)
+{
+	char *str;
+	int ok;
+
+	str = next_key(s);
+	if (!str)
+		return isl_stat_error;
+	ok = !strcmp(str, expected);
+	free(str);
+
+	if (!ok) {
+		isl_stream_error(s, NULL, "expecting different key");
+		return isl_stat_error;
+	}
+
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
+#undef EL_BASE
+#define EL_BASE ast_expr
+
+#include <isl_list_read_yaml_templ.c>
+
+/* Read an isl_ast_expr object of type isl_ast_expr_op from "s",
+ * where the "op" key has already been read by the caller.
+ *
+ * Read the operation type and the arguments and
+ * return the corresponding isl_ast_expr object.
+ */
+static __isl_give isl_ast_expr *read_op(__isl_keep isl_stream *s)
+{
+	enum isl_ast_expr_op_type op;
+	isl_ast_expr_list *list;
+
+	op = get_op_type(s);
+	if (op < 0)
+		return NULL;
+	if (isl_stream_yaml_next(s) < 0)
+		return NULL;
+	if (eat_key(s, "args") < 0)
+		return NULL;
+
+	list = isl_stream_yaml_read_ast_expr_list(s);
+
+	return alloc_op(op, list);
+}
+
+/* Read an isl_ast_expr object of type isl_ast_expr_id from "s",
+ * where the "id" key has already been read by the caller.
+ */
+static __isl_give isl_ast_expr *read_id(__isl_keep isl_stream *s)
+{
+	return isl_ast_expr_from_id(isl_stream_read_id(s));
+}
+
+/* Read an isl_ast_expr object of type isl_ast_expr_int from "s",
+ * where the "val" key has already been read by the caller.
+ */
+static __isl_give isl_ast_expr *read_int(__isl_keep isl_stream *s)
+{
+	return isl_ast_expr_from_val(isl_stream_read_val(s));
+}
+
+#undef KEY
+#define KEY		enum isl_ast_expr_type
+#undef KEY_ERROR
+#define KEY_ERROR	isl_ast_expr_error
+#undef KEY_END
+#define KEY_END		(isl_ast_expr_int + 1)
+#undef KEY_STR
+#define KEY_STR		expr_str
+#undef KEY_EXTRACT
+#define KEY_EXTRACT	extract_expr_type
+#undef KEY_GET
+#define KEY_GET		get_expr_type
+#include "extract_key.c"
+
+/* Read an isl_ast_expr object from "s".
+ *
+ * The keys in the YAML mapping are assumed to appear
+ * in the same order as the one in which they are printed
+ * by print_ast_expr_isl.
+ * In particular, the isl_ast_expr_op type, which is the only one
+ * with more than one element, is identified by the "op" key and
+ * not by the "args" key.
+ */
+__isl_give isl_ast_expr *isl_stream_read_ast_expr(__isl_keep isl_stream *s)
+{
+	enum isl_ast_expr_type type;
+	isl_bool more;
+	isl_ast_expr *expr;
+
+	if (isl_stream_yaml_read_start_mapping(s))
+		return NULL;
+	more = isl_stream_yaml_next(s);
+	if (more < 0)
+		return NULL;
+	if (!more) {
+		isl_stream_error(s, NULL, "missing key");
+		return NULL;
+	}
+
+	type = get_expr_type(s);
+	if (type < 0)
+		return NULL;
+	if (isl_stream_yaml_next(s) < 0)
+		return NULL;
+	switch (type) {
+	case isl_ast_expr_op:
+		expr = read_op(s);
+		break;
+	case isl_ast_expr_id:
+		expr = read_id(s);
+		break;
+	case isl_ast_expr_int:
+		expr = read_int(s);
+		break;
+	case isl_ast_expr_error:
+		return NULL;
+	}
+
+	if (isl_stream_yaml_read_end_mapping(s) < 0)
+		return isl_ast_expr_free(expr);
+
+	return expr;
 }
 
 static __isl_give isl_printer *print_ast_node_isl(__isl_take isl_printer *p,

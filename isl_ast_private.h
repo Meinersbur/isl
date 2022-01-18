@@ -7,6 +7,7 @@
 #include <isl/map.h>
 #include <isl/vec.h>
 #include <isl/list.h>
+#include <isl/stream.h>
 
 #undef EL
 #define EL isl_ast_expr
@@ -41,6 +42,8 @@ __isl_give isl_ast_expr *isl_ast_expr_op_add_arg(__isl_take isl_ast_expr *expr,
 __isl_give isl_ast_expr *isl_ast_expr_alloc_binary(
 	enum isl_ast_expr_op_type type,
 	__isl_take isl_ast_expr *expr1, __isl_take isl_ast_expr *expr2);
+
+__isl_give isl_ast_expr *isl_stream_read_ast_expr(__isl_keep isl_stream *s);
 
 #undef EL
 #define EL isl_ast_node
