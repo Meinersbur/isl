@@ -538,6 +538,7 @@ EXTRA_DIST = \
 	isl_list_templ.c \
 	isl_list_templ.h \
 	isl_list_read_templ.c \
+	isl_list_read_yaml_templ.c \
 	isl_map_bound_templ.c \
 	isl_map_lexopt_templ.c \
 	isl_maybe_ast_graft_list.h \

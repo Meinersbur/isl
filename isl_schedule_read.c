@@ -443,32 +443,17 @@ error:
 	return NULL;
 }
 
+#undef EL_BASE
+#define EL_BASE val
+
+#include <isl_list_read_yaml_templ.c>
+
 /* Read a sequence of integers from "s" (representing the coincident
  * property of a band node).
  */
 static __isl_give isl_val_list *read_coincident(__isl_keep isl_stream *s)
 {
-	isl_ctx *ctx;
-	isl_val_list *list;
-	isl_bool more;
-
-	ctx = isl_stream_get_ctx(s);
-
-	if (isl_stream_yaml_read_start_sequence(s) < 0)
-		return NULL;
-
-	list = isl_val_list_alloc(ctx, 0);
-	while ((more = isl_stream_yaml_next(s)) == isl_bool_true) {
-		isl_val *val;
-
-		val = isl_stream_read_val(s);
-		list = isl_val_list_add(list, val);
-	}
-
-	if (more < 0 || isl_stream_yaml_read_end_sequence(s) < 0)
-		list = isl_val_list_free(list);
-
-	return list;
+	return isl_stream_yaml_read_val_list(s);
 }
 
 /* Set the (initial) coincident properties of "band" according to
@@ -598,36 +583,25 @@ error:
 	return NULL;
 }
 
+#undef EL_BASE
+#define EL_BASE schedule_tree
+
+#include <isl_list_read_yaml_templ.c>
+
 /* Read a subtree with root node of type "type" from "s".
  * The node is represented by a sequence of children.
  */
 static __isl_give isl_schedule_tree *read_children(isl_stream *s,
 	enum isl_schedule_node_type type)
 {
-	isl_ctx *ctx;
 	isl_schedule_tree_list *list;
-	isl_bool more;
-
-	ctx = isl_stream_get_ctx(s);
 
 	isl_token_free(isl_stream_next_token(s));
 
 	if (isl_stream_yaml_next(s) < 0)
 		return NULL;
 
-	if (isl_stream_yaml_read_start_sequence(s) < 0)
-		return NULL;
-
-	list = isl_schedule_tree_list_alloc(ctx, 0);
-	while ((more = isl_stream_yaml_next(s)) == isl_bool_true) {
-		isl_schedule_tree *tree;
-
-		tree = isl_stream_read_schedule_tree(s);
-		list = isl_schedule_tree_list_add(list, tree);
-	}
-
-	if (more < 0 || isl_stream_yaml_read_end_sequence(s) < 0)
-		list = isl_schedule_tree_list_free(list);
+	list = isl_stream_yaml_read_schedule_tree_list(s);
 
 	return isl_schedule_tree_from_children(type, list);
 }
