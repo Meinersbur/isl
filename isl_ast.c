@@ -2551,6 +2551,14 @@ static __isl_give isl_printer *print_arguments(__isl_take isl_printer *p,
 	return p;
 }
 
+/* Textual representations of the YAML keys for an isl_ast_expr object.
+ */
+static char *expr_str[] = {
+	[isl_ast_expr_op] = "op",
+	[isl_ast_expr_id] = "id",
+	[isl_ast_expr_int] = "val",
+};
+
 /* Print "expr" to "p" in isl format.
  *
  * In particular, print the isl_ast_expr as a YAML document.
@@ -2575,21 +2583,21 @@ static __isl_give isl_printer *print_ast_expr_isl(__isl_take isl_printer *p,
 		op = isl_ast_expr_get_op_type(expr);
 		if (op == isl_ast_expr_op_error)
 			return isl_printer_free(p);
-		p = isl_printer_print_str(p, "op");
+		p = isl_printer_print_str(p, expr_str[type]);
 		p = isl_printer_yaml_next(p);
 		p = isl_printer_print_str(p, op_str[op]);
 		p = isl_printer_yaml_next(p);
 		p = print_arguments(p, expr);
 		break;
 	case isl_ast_expr_id:
-		p = isl_printer_print_str(p, "id");
+		p = isl_printer_print_str(p, expr_str[type]);
 		p = isl_printer_yaml_next(p);
 		id = isl_ast_expr_get_id(expr);
 		p = isl_printer_print_id(p, id);
 		isl_id_free(id);
 		break;
 	case isl_ast_expr_int:
-		p = isl_printer_print_str(p, "val");
+		p = isl_printer_print_str(p, expr_str[type]);
 		p = isl_printer_yaml_next(p);
 		v = isl_ast_expr_get_val(expr);
 		p = isl_printer_print_val(p, v);
