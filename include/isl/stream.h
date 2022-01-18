@@ -75,6 +75,7 @@ enum isl_token_type isl_stream_register_keyword(__isl_keep isl_stream *s,
 	const char *name);
 
 struct isl_obj isl_stream_read_obj(__isl_keep isl_stream *s);
+__isl_give isl_id *isl_stream_read_id(__isl_keep isl_stream *s);
 __isl_give isl_val *isl_stream_read_val(__isl_keep isl_stream *s);
 __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s);
 __isl_give isl_map *isl_stream_read_map(__isl_keep isl_stream *s);
