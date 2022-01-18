@@ -56,6 +56,12 @@ static char *key_str[] = {
 #define KEY_ERROR isl_schedule_key_error
 #undef KEY_END
 #define KEY_END isl_schedule_key_end
+#undef KEY_STR
+#define KEY_STR key_str
+#undef KEY_EXTRACT
+#define KEY_EXTRACT extract_key
+#undef KEY_GET
+#define KEY_GET get_key
 #include "extract_key.c"
 
 static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(

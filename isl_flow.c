@@ -1873,6 +1873,12 @@ __isl_give char *isl_union_access_info_to_str(
 #define KEY_ERROR isl_ai_key_error
 #undef KEY_END
 #define KEY_END isl_ai_key_end
+#undef KEY_STR
+#define KEY_STR key_str
+#undef KEY_EXTRACT
+#define KEY_EXTRACT extract_key
+#undef KEY_GET
+#define KEY_GET get_key
 #include "extract_key.c"
 
 #undef BASE
