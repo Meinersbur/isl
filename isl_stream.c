@@ -918,9 +918,9 @@ static int get_yaml_indent(__isl_keep isl_stream *s)
 }
 
 /* Move to the next state at the innermost level.
- * Return 1 if successful.
- * Return 0 if we are at the end of the innermost level.
- * Return -1 on error.
+ * Return isl_bool_true if successful.
+ * Return isl_bool_false if we are at the end of the innermost level.
+ * Return isl_bool_error on error.
  *
  * If we are in state isl_yaml_mapping_key_start, then we have just
  * started a mapping and we are expecting a key.  If the mapping started
@@ -956,7 +956,7 @@ static int get_yaml_indent(__isl_keep isl_stream *s)
  * If the first token is not a dash or if it has a smaller indentation,
  * then we have reached the end of the current sequence.
  */
-int isl_stream_yaml_next(__isl_keep isl_stream *s)
+isl_bool isl_stream_yaml_next(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 	enum isl_yaml_state state;
@@ -965,88 +965,88 @@ int isl_stream_yaml_next(__isl_keep isl_stream *s)
 	state = current_state(s);
 	if (state == isl_yaml_none)
 		isl_die(s->ctx, isl_error_invalid,
-			"not in YAML element", return -1);
+			"not in YAML element", return isl_bool_error);
 	switch (state) {
 	case isl_yaml_mapping_key_start:
 		if (get_yaml_indent(s) == ISL_YAML_INDENT_FLOW &&
 		    isl_stream_next_token_is(s, '}'))
-			return 0;
+			return isl_bool_false;
 		if (update_state(s, isl_yaml_mapping_key) < 0)
-			return -1;
-		return 1;
+			return isl_bool_error;
+		return isl_bool_true;
 	case isl_yaml_mapping_key:
 		tok = isl_stream_next_token(s);
 		if (!tok) {
 			if (s->eof)
 				isl_stream_error(s, NULL, "unexpected EOF");
-			return -1;
+			return isl_bool_error;
 		}
 		if (tok->type == ':') {
 			isl_token_free(tok);
 			if (update_state(s, isl_yaml_mapping_val) < 0)
-				return -1;
-			return 1;
+				return isl_bool_error;
+			return isl_bool_true;
 		}
 		isl_stream_error(s, tok, "expecting ':'");
 		isl_stream_push_token(s, tok);
-		return -1;
+		return isl_bool_error;
 	case isl_yaml_mapping_val:
 		if (get_yaml_indent(s) == ISL_YAML_INDENT_FLOW) {
 			if (!isl_stream_eat_if_available(s, ','))
-				return 0;
+				return isl_bool_false;
 			if (update_state(s, isl_yaml_mapping_key) < 0)
-				return -1;
-			return 1;
+				return isl_bool_error;
+			return isl_bool_true;
 		}
 		tok = isl_stream_next_token(s);
 		if (!tok)
-			return 0;
+			return isl_bool_false;
 		indent = tok->col - 1;
 		isl_stream_push_token(s, tok);
 		if (indent < get_yaml_indent(s))
-			return 0;
+			return isl_bool_false;
 		if (update_state(s, isl_yaml_mapping_key) < 0)
-			return -1;
-		return 1;
+			return isl_bool_error;
+		return isl_bool_true;
 	case isl_yaml_sequence_start:
 		if (get_yaml_indent(s) == ISL_YAML_INDENT_FLOW) {
 			if (isl_stream_next_token_is(s, ']'))
-				return 0;
+				return isl_bool_false;
 			if (update_state(s, isl_yaml_sequence) < 0)
-				return -1;
-			return 1;
+				return isl_bool_error;
+			return isl_bool_true;
 		}
 		tok = isl_stream_next_token(s);
 		if (!tok) {
 			if (s->eof)
 				isl_stream_error(s, NULL, "unexpected EOF");
-			return -1;
+			return isl_bool_error;
 		}
 		if (tok->type == '-') {
 			isl_token_free(tok);
 			if (update_state(s, isl_yaml_sequence) < 0)
-				return -1;
-			return 1;
+				return isl_bool_error;
+			return isl_bool_true;
 		}
 		isl_stream_error(s, tok, "expecting '-'");
 		isl_stream_push_token(s, tok);
-		return 0;
+		return isl_bool_false;
 	case isl_yaml_sequence:
 		if (get_yaml_indent(s) == ISL_YAML_INDENT_FLOW)
-			return isl_stream_eat_if_available(s, ',');
+			return isl_bool_ok(isl_stream_eat_if_available(s, ','));
 		tok = isl_stream_next_token(s);
 		if (!tok)
-			return 0;
+			return isl_bool_false;
 		indent = tok->col - 1;
 		if (indent < get_yaml_indent(s) || tok->type != '-') {
 			isl_stream_push_token(s, tok);
-			return 0;
+			return isl_bool_false;
 		}
 		isl_token_free(tok);
-		return 1;
+		return isl_bool_true;
 	default:
 		isl_die(s->ctx, isl_error_internal,
-			"unexpected state", return -1);
+			"unexpected state", return isl_bool_error);
 	}
 }
 

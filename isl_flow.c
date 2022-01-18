@@ -1893,7 +1893,7 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 {
 	isl_ctx *ctx;
 	isl_union_access_info *info;
-	int more;
+	isl_bool more;
 	int sink_set = 0;
 	int schedule_set = 0;
 
@@ -1902,7 +1902,7 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 
 	ctx = isl_stream_get_ctx(s);
 	info = isl_union_access_info_alloc(ctx);
-	while ((more = isl_stream_yaml_next(s)) > 0) {
+	while ((more = isl_stream_yaml_next(s)) == isl_bool_true) {
 		enum isl_ai_key key;
 		isl_union_map *access, *schedule_map;
 		isl_schedule *schedule;

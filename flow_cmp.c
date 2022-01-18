@@ -59,7 +59,7 @@ static FILE *open_or_die(const char *filename)
  */
 int main(int argc, char **argv)
 {
-	int more;
+	isl_bool more;
 	isl_ctx *ctx;
 	struct options *options;
 	FILE *input1, *input2;
@@ -84,8 +84,8 @@ int main(int argc, char **argv)
 		isl_die(ctx, isl_error_unknown, "arg2 not a YAML mapping",
 			return EXIT_FAILURE);
 
-	while ((more = isl_stream_yaml_next(s1)) > 0) {
-		int more2;
+	while ((more = isl_stream_yaml_next(s1)) == isl_bool_true) {
+		isl_bool more2;
 		isl_bool equal;
 		isl_union_map *umap1, *umap2;
 

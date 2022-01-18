@@ -588,7 +588,7 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 {
 	isl_ctx *ctx;
 	isl_schedule_constraints *sc;
-	int more;
+	isl_bool more;
 	int domain_set = 0;
 
 	if (isl_stream_yaml_read_start_mapping(s))
@@ -596,7 +596,7 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 
 	ctx = isl_stream_get_ctx(s);
 	sc = isl_schedule_constraints_alloc(ctx);
-	while ((more = isl_stream_yaml_next(s)) > 0) {
+	while ((more = isl_stream_yaml_next(s)) == isl_bool_true) {
 		enum isl_sc_key key;
 		isl_set *context;
 		isl_union_set *domain;

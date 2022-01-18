@@ -89,7 +89,7 @@ int isl_stream_yaml_read_start_mapping(__isl_keep isl_stream *s);
 int isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s);
 int isl_stream_yaml_read_start_sequence(__isl_keep isl_stream *s);
 int isl_stream_yaml_read_end_sequence(__isl_keep isl_stream *s);
-int isl_stream_yaml_next(__isl_keep isl_stream *s);
+isl_bool isl_stream_yaml_next(__isl_keep isl_stream *s);
 
 #if defined(__cplusplus)
 }
