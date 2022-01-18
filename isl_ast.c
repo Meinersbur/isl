@@ -3280,6 +3280,284 @@ __isl_give isl_printer *isl_ast_node_list_print(
 	return p;
 }
 
+/* Is the next token on "s" the start of a YAML sequence
+ * (rather than a YAML mapping)?
+ *
+ * A YAML sequence starts with either a '[' or a '-', depending on the format.
+ */
+static isl_bool next_is_sequence(__isl_keep isl_stream *s)
+{
+	struct isl_token *tok;
+	int type;
+	int seq;
+
+	tok = isl_stream_next_token(s);
+	if (!tok)
+		return isl_bool_error;
+	type = isl_token_get_type(tok);
+	seq = type == '[' || type == '-';
+	isl_stream_push_token(s, tok);
+
+	return isl_bool_ok(seq);
+}
+
+#undef EL_BASE
+#define EL_BASE ast_node
+
+#include <isl_list_read_yaml_templ.c>
+
+/* Read an isl_ast_node object of type isl_ast_node_block from "s".
+ */
+static __isl_give isl_ast_node *read_block(__isl_keep isl_stream *s)
+{
+	isl_ast_node_list *children;
+
+	children = isl_stream_yaml_read_ast_node_list(s);
+	return isl_ast_node_block_from_children(children);
+}
+
+/* Textual representation of the first YAML key used
+ * while printing an isl_ast_node of a given type.
+ *
+ * An isl_ast_node of type isl_ast_node_block is not printed
+ * as a YAML mapping and is therefore assigned a dummy key.
+ */
+static char *node_first_str[] = {
+	[isl_ast_node_for] = "iterator",
+	[isl_ast_node_mark] = "mark",
+	[isl_ast_node_user] = "user",
+	[isl_ast_node_if] = "guard",
+	[isl_ast_node_block] = "",
+};
+
+#undef KEY
+#define KEY		enum isl_ast_node_type
+#undef KEY_ERROR
+#define KEY_ERROR	isl_ast_node_error
+#undef KEY_END
+#define KEY_END		(isl_ast_node_user + 1)
+#undef KEY_STR
+#define KEY_STR		node_first_str
+#undef KEY_EXTRACT
+#define KEY_EXTRACT	extract_node_type
+#undef KEY_GET
+#define KEY_GET		get_node_type
+#include "extract_key.c"
+
+static __isl_give isl_ast_node *read_body(__isl_keep isl_stream *s,
+	__isl_take isl_ast_node *node)
+{
+	if (eat_key(s, "body") < 0)
+		return isl_ast_node_free(node);
+	node = isl_ast_node_for_set_body(node, isl_stream_read_ast_node(s));
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_ast_node_free(node);
+	return node;
+}
+
+/* Read an isl_ast_node object of type isl_ast_node_for from "s",
+ * where the initial "iterator" key has already been read by the caller.
+ *
+ * If the initial value is printed as the value of the key "value",
+ * then the for-loop is degenerate and can at most have
+ * a further "body" element.
+ * Otherwise, the for-loop also has "cond" and "inc" elements.
+ */
+static __isl_give isl_ast_node *read_for(__isl_keep isl_stream *s)
+{
+	isl_id *id;
+	isl_ast_expr *expr;
+	isl_ast_node *node;
+	char *key;
+	isl_bool more;
+	int is_value, is_init;
+
+	expr = isl_stream_read_ast_expr(s);
+	id = isl_ast_expr_id_get_id(expr);
+	isl_ast_expr_free(expr);
+	if (!id)
+		return NULL;
+	if (isl_stream_yaml_next(s) < 0)
+		id = isl_id_free(id);
+
+	node = isl_ast_node_alloc_for(id);
+
+	key = next_key(s);
+	if (!key)
+		return isl_ast_node_free(node);
+	is_value = !strcmp(key, "value");
+	is_init = !strcmp(key, "init");
+	free(key);
+	if (!is_value && !is_init)
+		isl_die(isl_stream_get_ctx(s), isl_error_invalid,
+			"unexpected key", return isl_ast_node_free(node));
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_ast_node_free(node);
+	node = isl_ast_node_for_set_init(node, isl_stream_read_ast_expr(s));
+	if ((more = isl_stream_yaml_next(s)) < 0)
+		return isl_ast_node_free(node);
+	if (is_value) {
+		node = isl_ast_node_for_mark_degenerate(node);
+		if (more)
+			node = read_body(s, node);
+		return node;
+	}
+
+	if (eat_key(s, "cond") < 0)
+		return isl_ast_node_free(node);
+	node = isl_ast_node_for_set_cond(node, isl_stream_read_ast_expr(s));
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_ast_node_free(node);
+	if (eat_key(s, "inc") < 0)
+		return isl_ast_node_free(node);
+	node = isl_ast_node_for_set_inc(node, isl_stream_read_ast_expr(s));
+	if ((more = isl_stream_yaml_next(s)) < 0)
+		return isl_ast_node_free(node);
+
+	if (more)
+		node = read_body(s, node);
+
+	return node;
+}
+
+/* Read an isl_ast_node object of type isl_ast_node_mark from "s",
+ * where the initial "mark" key has already been read by the caller.
+ */
+static __isl_give isl_ast_node *read_mark(__isl_keep isl_stream *s)
+{
+	isl_id *id;
+	isl_ast_node *node;
+
+	id = isl_stream_read_id(s);
+	if (!id)
+		return NULL;
+	if (isl_stream_yaml_next(s) < 0)
+		goto error;
+	if (eat_key(s, "node") < 0)
+		goto error;
+	node = isl_stream_read_ast_node(s);
+	node = isl_ast_node_alloc_mark(id, node);
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_ast_node_free(node);
+	return node;
+error:
+	isl_id_free(id);
+	return NULL;
+}
+
+/* Read an isl_ast_node object of type isl_ast_node_user from "s",
+ * where the "user" key has already been read by the caller.
+ */
+static __isl_give isl_ast_node *read_user(__isl_keep isl_stream *s)
+{
+	isl_ast_node *node;
+
+	node = isl_ast_node_alloc_user(isl_stream_read_ast_expr(s));
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_ast_node_free(node);
+	return node;
+}
+
+/* Read an isl_ast_node object of type isl_ast_node_if from "s",
+ * where the initial "guard" key has already been read by the caller.
+ */
+static __isl_give isl_ast_node *read_if(__isl_keep isl_stream *s)
+{
+	isl_bool more;
+	isl_ast_node *node;
+
+	node = isl_ast_node_alloc_if(isl_stream_read_ast_expr(s));
+	if ((more = isl_stream_yaml_next(s)) < 0)
+		return isl_ast_node_free(node);
+	if (!more)
+		return node;
+
+	if (eat_key(s, "then") < 0)
+		return isl_ast_node_free(node);
+	node = isl_ast_node_if_set_then(node, isl_stream_read_ast_node(s));
+	if ((more = isl_stream_yaml_next(s)) < 0)
+		return isl_ast_node_free(node);
+	if (!more)
+		return node;
+
+	if (eat_key(s, "else") < 0)
+		return isl_ast_node_free(node);
+	node = isl_ast_node_if_set_else_node(node, isl_stream_read_ast_node(s));
+	if (isl_stream_yaml_next(s) < 0)
+		return isl_ast_node_free(node);
+
+	return node;
+}
+
+/* Read an isl_ast_node object from "s".
+ *
+ * A block node is printed as a YAML sequence by print_ast_node_isl.
+ * Every other node type is printed as a YAML mapping.
+ *
+ * First check if the next element is a sequence and if so,
+ * read a block node.
+ * Otherwise, read a node based on the first mapping key
+ * that is used to print a node type.
+ * Note that the keys in the YAML mapping are assumed to appear
+ * in the same order as the one in which they are printed
+ * by print_ast_node_isl.
+ */
+__isl_give isl_ast_node *isl_stream_read_ast_node(__isl_keep isl_stream *s)
+{
+	enum isl_ast_node_type type;
+	isl_bool more;
+	isl_bool seq;
+	isl_ast_node *node;
+
+	seq = next_is_sequence(s);
+	if (seq < 0)
+		return NULL;
+	if (seq)
+		return read_block(s);
+
+	if (isl_stream_yaml_read_start_mapping(s))
+		return NULL;
+	more = isl_stream_yaml_next(s);
+	if (more < 0)
+		return NULL;
+	if (!more) {
+		isl_stream_error(s, NULL, "missing key");
+		return NULL;
+	}
+
+	type = get_node_type(s);
+	if (type < 0)
+		return NULL;
+	if (isl_stream_yaml_next(s) < 0)
+		return NULL;
+
+	switch (type) {
+	case isl_ast_node_block:
+		isl_die(isl_stream_get_ctx(s), isl_error_internal,
+			"block cannot be detected as mapping",
+			return NULL);
+	case isl_ast_node_for:
+		node = read_for(s);
+		break;
+	case isl_ast_node_mark:
+		node = read_mark(s);
+		break;
+	case isl_ast_node_user:
+		node = read_user(s);
+		break;
+	case isl_ast_node_if:
+		node = read_if(s);
+		break;
+	case isl_ast_node_error:
+		return NULL;
+	}
+
+	if (isl_stream_yaml_read_end_mapping(s) < 0)
+		return isl_ast_node_free(node);
+
+	return node;
+}
+
 #define ISL_AST_MACRO_FDIV_Q	(1 << 0)
 #define ISL_AST_MACRO_MIN	(1 << 1)
 #define ISL_AST_MACRO_MAX	(1 << 2)

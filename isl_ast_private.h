@@ -111,6 +111,8 @@ __isl_give isl_ast_node *isl_ast_node_for_set_body(
 __isl_give isl_ast_node *isl_ast_node_if_set_then(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child);
 
+__isl_give isl_ast_node *isl_stream_read_ast_node(__isl_keep isl_stream *s);
+
 struct isl_ast_print_options {
 	int ref;
 	isl_ctx *ctx;
