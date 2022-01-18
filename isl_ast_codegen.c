@@ -786,15 +786,16 @@ static __isl_give isl_ast_graft *refine_degenerate(
 	__isl_keep isl_ast_build *sub_build)
 {
 	isl_pw_aff *value;
+	isl_ast_expr *init;
 
 	if (!graft || !sub_build)
 		return isl_ast_graft_free(graft);
 
 	value = isl_pw_aff_copy(sub_build->value);
 
-	graft->node->u.f.init = isl_ast_build_expr_from_pw_aff_internal(build,
-						value);
-	if (!graft->node->u.f.init)
+	init = isl_ast_build_expr_from_pw_aff_internal(build, value);
+	graft->node = isl_ast_node_for_set_init(graft->node, init);
+	if (!graft->node)
 		return isl_ast_graft_free(graft);
 
 	return graft;
@@ -1023,10 +1024,10 @@ static __isl_give isl_ast_graft *set_for_cond_from_list(
 	bound = reduce_list(isl_ast_expr_op_min, list, build);
 	iterator = isl_ast_expr_copy(graft->node->u.f.iterator);
 	cond = isl_ast_expr_alloc_binary(type, iterator, bound);
-	graft->node->u.f.cond = cond;
+	graft->node = isl_ast_node_for_set_cond(graft->node, cond);
 
 	isl_pw_aff_list_free(list);
-	if (!graft->node->u.f.cond)
+	if (!graft->node)
 		return isl_ast_graft_free(graft);
 	return graft;
 }
@@ -1044,8 +1045,8 @@ static __isl_give isl_ast_graft *set_for_cond_from_set(
 		return NULL;
 
 	cond = isl_ast_build_expr_from_set_internal(build, isl_set_copy(set));
-	graft->node->u.f.cond = cond;
-	if (!graft->node->u.f.cond)
+	graft->node = isl_ast_node_for_set_cond(graft->node, cond);
+	if (!graft->node)
 		return isl_ast_graft_free(graft);
 	return graft;
 }
@@ -1112,16 +1113,16 @@ static __isl_give isl_ast_graft *set_for_node_expressions(
 	int use_list, __isl_keep isl_pw_aff_list *upper_list,
 	__isl_keep isl_set *upper_set, __isl_keep isl_ast_build *build)
 {
-	isl_ast_node *node;
+	isl_ast_expr *init;
 
 	if (!graft)
 		return NULL;
 
-	node = graft->node;
-	node->u.f.init = reduce_list(isl_ast_expr_op_max, lower, build);
-	node->u.f.inc = for_inc(build);
+	init = reduce_list(isl_ast_expr_op_max, lower, build);
+	graft->node = isl_ast_node_for_set_init(graft->node, init);
+	graft->node = isl_ast_node_for_set_inc(graft->node, for_inc(build));
 
-	if (!node->u.f.init || !node->u.f.inc)
+	if (!graft->node)
 		graft = isl_ast_graft_free(graft);
 
 	if (use_list)

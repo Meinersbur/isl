@@ -100,6 +100,12 @@ __isl_give isl_ast_node *isl_ast_node_alloc_mark(__isl_take isl_id *id,
 	__isl_take isl_ast_node *node);
 __isl_give isl_ast_node *isl_ast_node_from_ast_node_list(
 	__isl_take isl_ast_node_list *list);
+__isl_give isl_ast_node *isl_ast_node_for_set_init(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_expr *init);
+__isl_give isl_ast_node *isl_ast_node_for_set_cond(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_expr *init);
+__isl_give isl_ast_node *isl_ast_node_for_set_inc(
+	__isl_take isl_ast_node *node, __isl_take isl_ast_expr *init);
 __isl_give isl_ast_node *isl_ast_node_for_set_body(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *body);
 __isl_give isl_ast_node *isl_ast_node_if_set_then(

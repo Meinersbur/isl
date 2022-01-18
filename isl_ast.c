@@ -1274,6 +1274,36 @@ static isl_stat isl_ast_node_check_user(__isl_keep isl_ast_node *node)
 #undef NODE_TYPE
 #define NODE_TYPE	for
 #undef FIELD_NAME
+#define FIELD_NAME	init
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_expr
+#undef FIELD
+#define FIELD		u.f.init
+#include "isl_ast_node_set_field_templ.c"
+
+#undef NODE_TYPE
+#define NODE_TYPE	for
+#undef FIELD_NAME
+#define FIELD_NAME	cond
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_expr
+#undef FIELD
+#define FIELD		u.f.cond
+#include "isl_ast_node_set_field_templ.c"
+
+#undef NODE_TYPE
+#define NODE_TYPE	for
+#undef FIELD_NAME
+#define FIELD_NAME	inc
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_expr
+#undef FIELD
+#define FIELD		u.f.inc
+#include "isl_ast_node_set_field_templ.c"
+
+#undef NODE_TYPE
+#define NODE_TYPE	for
+#undef FIELD_NAME
 #define FIELD_NAME	body
 #undef FIELD_TYPE
 #define FIELD_TYPE	isl_ast_node
