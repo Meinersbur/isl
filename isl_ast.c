@@ -146,6 +146,32 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 	return options;
 }
 
+/* Create a new operation expression of operation type "op",
+ * with "n_arg" as yet unspecified arguments.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_alloc_op(isl_ctx *ctx,
+	enum isl_ast_expr_op_type op, int n_arg)
+{
+	isl_ast_expr *expr;
+
+	expr = isl_calloc_type(ctx, isl_ast_expr);
+	if (!expr)
+		return NULL;
+
+	expr->ctx = ctx;
+	isl_ctx_ref(ctx);
+	expr->ref = 1;
+	expr->type = isl_ast_expr_op;
+	expr->u.op.op = op;
+	expr->u.op.n_arg = n_arg;
+	expr->u.op.args = isl_calloc_array(ctx, isl_ast_expr *, n_arg);
+
+	if (n_arg && !expr->u.op.args)
+		return isl_ast_expr_free(expr);
+
+	return expr;
+}
+
 __isl_give isl_ast_expr *isl_ast_expr_copy(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
@@ -409,32 +435,6 @@ isl_bool isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 
 	isl_die(isl_ast_expr_get_ctx(expr1), isl_error_internal,
 		"unhandled case", return isl_bool_error);
-}
-
-/* Create a new operation expression of operation type "op",
- * with "n_arg" as yet unspecified arguments.
- */
-__isl_give isl_ast_expr *isl_ast_expr_alloc_op(isl_ctx *ctx,
-	enum isl_ast_expr_op_type op, int n_arg)
-{
-	isl_ast_expr *expr;
-
-	expr = isl_calloc_type(ctx, isl_ast_expr);
-	if (!expr)
-		return NULL;
-
-	expr->ctx = ctx;
-	isl_ctx_ref(ctx);
-	expr->ref = 1;
-	expr->type = isl_ast_expr_op;
-	expr->u.op.op = op;
-	expr->u.op.n_arg = n_arg;
-	expr->u.op.args = isl_calloc_array(ctx, isl_ast_expr *, n_arg);
-
-	if (n_arg && !expr->u.op.args)
-		return isl_ast_expr_free(expr);
-
-	return expr;
 }
 
 /* Create a new id expression representing "id".
