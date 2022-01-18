@@ -591,7 +591,7 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 	isl_bool more;
 	int domain_set = 0;
 
-	if (isl_stream_yaml_read_start_mapping(s))
+	if (isl_stream_yaml_read_start_mapping(s) < 0)
 		return NULL;
 
 	ctx = isl_stream_get_ctx(s);

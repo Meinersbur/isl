@@ -77,10 +77,10 @@ int main(int argc, char **argv)
 	s1 = isl_stream_new_file(ctx, input1);
 	s2 = isl_stream_new_file(ctx, input2);
 
-	if (isl_stream_yaml_read_start_mapping(s1))
+	if (isl_stream_yaml_read_start_mapping(s1) < 0)
 		isl_die(ctx, isl_error_unknown, "arg1 not a YAML mapping",
 			return EXIT_FAILURE);
-	if (isl_stream_yaml_read_start_mapping(s2))
+	if (isl_stream_yaml_read_start_mapping(s2) < 0)
 		isl_die(ctx, isl_error_unknown, "arg2 not a YAML mapping",
 			return EXIT_FAILURE);
 

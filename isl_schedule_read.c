@@ -465,7 +465,7 @@ static __isl_give isl_val_list *read_coincident(__isl_keep isl_stream *s)
 		list = isl_val_list_add(list, val);
 	}
 
-	if (more < 0 || isl_stream_yaml_read_end_sequence(s))
+	if (more < 0 || isl_stream_yaml_read_end_sequence(s) < 0)
 		list = isl_val_list_free(list);
 
 	return list;
@@ -615,7 +615,7 @@ static __isl_give isl_schedule_tree *read_children(isl_stream *s,
 	if (isl_stream_yaml_next(s) < 0)
 		return NULL;
 
-	if (isl_stream_yaml_read_start_sequence(s))
+	if (isl_stream_yaml_read_start_sequence(s) < 0)
 		return NULL;
 
 	list = isl_schedule_tree_list_alloc(ctx, 0);
@@ -626,7 +626,7 @@ static __isl_give isl_schedule_tree *read_children(isl_stream *s,
 		list = isl_schedule_tree_list_add(list, tree);
 	}
 
-	if (more < 0 || isl_stream_yaml_read_end_sequence(s))
+	if (more < 0 || isl_stream_yaml_read_end_sequence(s) < 0)
 		list = isl_schedule_tree_list_free(list);
 
 	return isl_schedule_tree_from_children(type, list);
@@ -660,7 +660,7 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 	isl_schedule_tree *tree = NULL;
 	isl_bool more;
 
-	if (isl_stream_yaml_read_start_mapping(s))
+	if (isl_stream_yaml_read_start_mapping(s) < 0)
 		return NULL;
 	more = isl_stream_yaml_next(s);
 	if (more < 0)

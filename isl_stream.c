@@ -847,19 +847,19 @@ static int push_state(__isl_keep isl_stream *s, enum isl_yaml_state state)
 }
 
 /* Remove the innermost active YAML element from the stack.
- * Return 0 on success and -1 on failure.
+ * Return isl_stat_ok on success and isl_stat_error on failure.
  */
-static int pop_state(__isl_keep isl_stream *s)
+static isl_stat pop_state(__isl_keep isl_stream *s)
 {
 	if (!s)
-		return -1;
+		return isl_stat_error;
 	if (s->yaml_depth < 1)
 		isl_die(isl_stream_get_ctx(s), isl_error_invalid,
-			"not in YAML construct", return -1);
+			"not in YAML construct", return isl_stat_error);
 
 	s->yaml_depth--;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Set the state of the innermost active YAML element to "state".
@@ -894,15 +894,15 @@ static enum isl_yaml_state current_state(__isl_keep isl_stream *s)
  * If "indent" is equal to ISL_YAML_INDENT_FLOW, then this means
  * that the current element is in flow format.
  */
-static int set_yaml_indent(__isl_keep isl_stream *s, int indent)
+static isl_stat set_yaml_indent(__isl_keep isl_stream *s, int indent)
 {
 	if (s->yaml_depth < 1)
 		isl_die(s->ctx, isl_error_internal,
-			"not in YAML element", return -1);
+			"not in YAML element", return isl_stat_error);
 
 	s->yaml_indent[s->yaml_depth - 1] = indent;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Return the indentation of the innermost active YAML element
@@ -1051,7 +1051,7 @@ isl_bool isl_stream_yaml_next(__isl_keep isl_stream *s)
 }
 
 /* Start reading a YAML mapping.
- * Return 0 on success and -1 on error.
+ * Return isl_stat_ok on success and isl_stat_error on error.
  *
  * If the first token on the stream is a '{' then we remove this token
  * from the stream and keep track of the fact that the mapping
@@ -1060,19 +1060,19 @@ isl_bool isl_stream_yaml_next(__isl_keep isl_stream *s)
  * keep track of its indentation, but keep the token on the stream.
  * In both cases, the next token we expect is the first key of the mapping.
  */
-int isl_stream_yaml_read_start_mapping(__isl_keep isl_stream *s)
+isl_stat isl_stream_yaml_read_start_mapping(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 	int indent;
 
 	if (push_state(s, isl_yaml_mapping_key_start) < 0)
-		return -1;
+		return isl_stat_error;
 
 	tok = isl_stream_next_token(s);
 	if (!tok) {
 		if (s->eof)
 			isl_stream_error(s, NULL, "unexpected EOF");
-		return -1;
+		return isl_stat_error;
 	}
 	if (isl_token_get_type(tok) == '{') {
 		isl_token_free(tok);
@@ -1085,21 +1085,21 @@ int isl_stream_yaml_read_start_mapping(__isl_keep isl_stream *s)
 }
 
 /* Finish reading a YAML mapping.
- * Return 0 on success and -1 on error.
+ * Return isl_stat_ok on success and isl_stat_error on error.
  *
  * If the mapping started with a '{', then we expect a '}' to close
  * the mapping.
  * Otherwise, we double-check that the next token (if any)
  * has a smaller indentation than that of the current mapping.
  */
-int isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s)
+isl_stat isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 	int indent;
 
 	if (get_yaml_indent(s) == ISL_YAML_INDENT_FLOW) {
 		if (isl_stream_eat(s, '}') < 0)
-			return -1;
+			return isl_stat_error;
 		return pop_state(s);
 	}
 
@@ -1112,13 +1112,13 @@ int isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s)
 
 	if (indent >= get_yaml_indent(s))
 		isl_die(isl_stream_get_ctx(s), isl_error_invalid,
-			"mapping not finished", return -1);
+			"mapping not finished", return isl_stat_error);
 
 	return pop_state(s);
 }
 
 /* Start reading a YAML sequence.
- * Return 0 on success and -1 on error.
+ * Return isl_stat_ok on success and isl_stat_error on error.
  *
  * If the first token on the stream is a '[' then we remove this token
  * from the stream and keep track of the fact that the sequence
@@ -1129,19 +1129,19 @@ int isl_stream_yaml_read_end_mapping(__isl_keep isl_stream *s)
  * In both cases, the next token we expect is the first element
  * of the sequence.
  */
-int isl_stream_yaml_read_start_sequence(__isl_keep isl_stream *s)
+isl_stat isl_stream_yaml_read_start_sequence(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 	int indent;
 
 	if (push_state(s, isl_yaml_sequence_start) < 0)
-		return -1;
+		return isl_stat_error;
 
 	tok = isl_stream_next_token(s);
 	if (!tok) {
 		if (s->eof)
 			isl_stream_error(s, NULL, "unexpected EOF");
-		return -1;
+		return isl_stat_error;
 	}
 	if (isl_token_get_type(tok) == '[') {
 		isl_token_free(tok);
@@ -1154,7 +1154,7 @@ int isl_stream_yaml_read_start_sequence(__isl_keep isl_stream *s)
 }
 
 /* Finish reading a YAML sequence.
- * Return 0 on success and -1 on error.
+ * Return isl_stat_ok on success and isl_stat_error on error.
  *
  * If the sequence started with a '[', then we expect a ']' to close
  * the sequence.
@@ -1162,7 +1162,7 @@ int isl_stream_yaml_read_start_sequence(__isl_keep isl_stream *s)
  * is not a dash or that it has a smaller indentation than
  * that of the current sequence.
  */
-int isl_stream_yaml_read_end_sequence(__isl_keep isl_stream *s)
+isl_stat isl_stream_yaml_read_end_sequence(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok;
 	int indent;
@@ -1170,7 +1170,7 @@ int isl_stream_yaml_read_end_sequence(__isl_keep isl_stream *s)
 
 	if (get_yaml_indent(s) == ISL_YAML_INDENT_FLOW) {
 		if (isl_stream_eat(s, ']') < 0)
-			return -1;
+			return isl_stat_error;
 		return pop_state(s);
 	}
 
@@ -1184,7 +1184,7 @@ int isl_stream_yaml_read_end_sequence(__isl_keep isl_stream *s)
 
 	if (indent >= get_yaml_indent(s) && dash)
 		isl_die(isl_stream_get_ctx(s), isl_error_invalid,
-			"sequence not finished", return -1);
+			"sequence not finished", return isl_stat_error);
 
 	return pop_state(s);
 }

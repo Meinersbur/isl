@@ -1897,7 +1897,7 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 	int sink_set = 0;
 	int schedule_set = 0;
 
-	if (isl_stream_yaml_read_start_mapping(s))
+	if (isl_stream_yaml_read_start_mapping(s) < 0)
 		return NULL;
 
 	ctx = isl_stream_get_ctx(s);
