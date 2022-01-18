@@ -8,6 +8,11 @@
 #include <isl/vec.h>
 #include <isl/list.h>
 
+#undef EL
+#define EL isl_ast_expr
+
+#include <isl_list_templ.h>
+
 /* An expression is either an integer, an identifier or an operation
  * with zero or more arguments.
  */
@@ -28,11 +33,6 @@ struct isl_ast_expr {
 		} op;
 	} u;
 };
-
-#undef EL
-#define EL isl_ast_expr
-
-#include <isl_list_templ.h>
 
 __isl_give isl_ast_expr *isl_ast_expr_alloc_int_si(isl_ctx *ctx, int i);
 __isl_give isl_ast_expr *isl_ast_expr_alloc_op(isl_ctx *ctx,
