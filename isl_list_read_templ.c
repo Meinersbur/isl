@@ -16,7 +16,7 @@
  * In particular, the elements are separated by a comma and
  * the entire list is surrounded by parentheses.
  */
-static __isl_give LIST(EL) *FN(isl_stream_read,LIST(EL_BASE))(isl_stream *s)
+__isl_give LIST(EL) *FN(isl_stream_read,LIST(EL_BASE))(isl_stream *s)
 {
 	isl_ctx *ctx;
 	LIST(EL) *list;
