@@ -702,8 +702,6 @@ static __isl_give isl_ast_expr *reduce_list(enum isl_ast_expr_op_type type,
 
 	ctx = isl_pw_aff_list_get_ctx(list);
 	expr = isl_ast_expr_alloc_op(ctx, type, n);
-	if (!expr)
-		return NULL;
 
 	list = isl_pw_aff_list_copy(list);
 	list = isl_pw_aff_list_sort(list, &reduce_list_cmp, NULL);
@@ -715,17 +713,11 @@ static __isl_give isl_ast_expr *reduce_list(enum isl_ast_expr_op_type type,
 
 		expr_i = isl_ast_build_expr_from_pw_aff_internal(build,
 				isl_pw_aff_list_get_pw_aff(list, i));
-		if (!expr_i)
-			goto error;
-		expr->u.op.args[i] = expr_i;
+		expr = isl_ast_expr_op_add_arg(expr, expr_i);
 	}
 
 	isl_pw_aff_list_free(list);
 	return expr;
-error:
-	isl_pw_aff_list_free(list);
-	isl_ast_expr_free(expr);
-	return NULL;
 }
 
 /* Add guards implied by the "generated constraints",

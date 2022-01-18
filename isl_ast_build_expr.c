@@ -2024,17 +2024,13 @@ static __isl_give isl_ast_expr *ast_expr_from_aff_list(
 	op_type = state == isl_state_min ? isl_ast_expr_op_min
 					 : isl_ast_expr_op_max;
 	expr = isl_ast_expr_alloc_op(isl_ast_build_get_ctx(build), op_type, n);
-	if (!expr)
-		goto error;
 
 	for (i = 0; i < n; ++i) {
 		isl_ast_expr *expr_i;
 
 		aff = isl_aff_list_get_aff(list, i);
 		expr_i = isl_ast_expr_from_aff(aff, build);
-		if (!expr_i)
-			goto error;
-		expr->u.op.args[i] = expr_i;
+		expr = isl_ast_expr_op_add_arg(expr, expr_i);
 	}
 
 	isl_aff_list_free(list);
@@ -2045,21 +2041,22 @@ error:
 	return NULL;
 }
 
-/* Extend the expression in "next" to take into account
+/* Extend the list of expressions in "next" to take into account
  * the piece at position "pos" in "data", allowing for a further extension
  * for the next piece(s).
- * In particular, "next" is set to a select operation that selects
+ * In particular, "next" is extended with a select operation that selects
  * an isl_ast_expr corresponding to data->aff_list on data->set and
  * to an expression that will be filled in by later calls.
- * Return a pointer to this location.
+ * Return a pointer to the arguments of this select operation.
  * Afterwards, the state of "data" is set to isl_state_none.
  *
  * The constraints of data->set are added to the generated
  * constraints of the build such that they can be exploited to simplify
  * the AST expression constructed from data->aff_list.
  */
-static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
-	int pos, isl_ast_expr **next)
+static isl_ast_expr_list **add_intermediate_piece(
+	struct isl_from_pw_aff_data *data,
+	int pos, isl_ast_expr_list **next)
 {
 	isl_ctx *ctx;
 	isl_ast_build *build;
@@ -2072,26 +2069,26 @@ static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
 	ternary = isl_ast_expr_alloc_op(ctx, isl_ast_expr_op_select, 3);
 	gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
 	arg = isl_ast_build_expr_from_set_internal(data->build, gist);
-	ternary = isl_ast_expr_set_op_arg(ternary, 0, arg);
+	ternary = isl_ast_expr_op_add_arg(ternary, arg);
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_restrict_generated(build, set);
 	arg = ast_expr_from_aff_list(data->p[pos].aff_list,
 					data->p[pos].state, build);
 	data->p[pos].aff_list = NULL;
 	isl_ast_build_free(build);
-	ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
+	ternary = isl_ast_expr_op_add_arg(ternary, arg);
 	data->p[pos].state = isl_state_none;
 	if (!ternary)
 		return NULL;
 
-	*next = ternary;
-	return &ternary->u.op.args[2];
+	*next = isl_ast_expr_list_add(*next, ternary);
+	return &ternary->u.op.args;
 }
 
-/* Extend the expression in "next" to take into account
+/* Extend the list of expressions in "next" to take into account
  * the final piece, located at position "pos" in "data".
- * In particular, "next" is set to evaluate data->aff_list
- * and the domain is ignored.
+ * In particular, "next" is extended with an expression
+ * to evaluate data->aff_list and the domain is ignored.
  * Return isl_stat_ok on success and isl_stat_error on failure.
  *
  * The constraints of data->set are however added to the generated
@@ -2099,9 +2096,10 @@ static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
  * the AST expression constructed from data->aff_list.
  */
 static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
-	int pos, isl_ast_expr **next)
+	int pos, isl_ast_expr_list **next)
 {
 	isl_ast_build *build;
+	isl_ast_expr *last;
 
 	if (data->p[pos].state == isl_state_none)
 		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
@@ -2110,8 +2108,9 @@ static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_restrict_generated(build, data->p[pos].set);
 	data->p[pos].set = NULL;
-	*next = ast_expr_from_aff_list(data->p[pos].aff_list,
+	last = ast_expr_from_aff_list(data->p[pos].aff_list,
 						data->p[pos].state, build);
+	*next = isl_ast_expr_list_add(*next, last);
 	data->p[pos].aff_list = NULL;
 	isl_ast_build_free(build);
 	data->p[pos].state = isl_state_none;
@@ -2152,17 +2151,25 @@ static int sort_pieces_cmp(const void *p1, const void *p2, void *arg)
  *
  * Construct intermediate AST expressions for the initial pieces and
  * finish off with the final pieces.
+ *
+ * Any piece that is not the very first is added to the list of arguments
+ * of the previously constructed piece.
+ * In order not to have to special case the first piece,
+ * an extra list is created to hold the final result.
  */
 static isl_ast_expr *build_pieces(struct isl_from_pw_aff_data *data)
 {
 	int i;
-	isl_ast_expr *res = NULL;
-	isl_ast_expr **next = &res;
+	isl_ctx *ctx;
+	isl_ast_expr_list *res_list;
+	isl_ast_expr_list **next = &res_list;
+	isl_ast_expr *res;
 
 	if (data->p[data->n].state != isl_state_none)
 		data->n++;
+	ctx = isl_ast_build_get_ctx(data->build);
 	if (data->n == 0)
-		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
+		isl_die(ctx, isl_error_invalid,
 			"cannot handle void expression", return NULL);
 
 	for (i = 0; i < data->n; ++i) {
@@ -2174,18 +2181,26 @@ static isl_ast_expr *build_pieces(struct isl_from_pw_aff_data *data)
 
 	if (isl_sort(data->p, data->n, sizeof(data->p[0]),
 			&sort_pieces_cmp, NULL) < 0)
-		return isl_ast_expr_free(res);
+		return NULL;
 
+	res_list = isl_ast_expr_list_alloc(ctx, 1);
+	if (!res_list)
+		return NULL;
 	for (i = 0; i + 1 < data->n; ++i) {
 		next = add_intermediate_piece(data, i, next);
 		if (!next)
-			return isl_ast_expr_free(res);
+			goto error;
 	}
 
 	if (add_last_piece(data, data->n - 1, next) < 0)
-		return isl_ast_expr_free(res);
+		goto error;
 
+	res = isl_ast_expr_list_get_at(res_list, 0);
+	isl_ast_expr_list_free(res_list);
 	return res;
+error:
+	isl_ast_expr_list_free(res_list);
+	return NULL;
 }
 
 /* Is the domain of the current entry of "data", which is assumed
@@ -2510,14 +2525,14 @@ static __isl_give isl_ast_expr *isl_ast_build_with_arguments(
 
 	n = isl_multi_pw_aff_dim(mpa, isl_dim_out);
 	expr = n >= 0 ? isl_ast_expr_alloc_op(ctx, type, 1 + n) : NULL;
-	expr = isl_ast_expr_set_op_arg(expr, 0, arg0);
+	expr = isl_ast_expr_op_add_arg(expr, arg0);
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
 		isl_ast_expr *arg;
 
 		pa = isl_multi_pw_aff_get_pw_aff(mpa, i);
 		arg = isl_ast_build_expr_from_pw_aff_internal(build, pa);
-		expr = isl_ast_expr_set_op_arg(expr, 1 + i, arg);
+		expr = isl_ast_expr_op_add_arg(expr, arg);
 	}
 
 	isl_multi_pw_aff_free(mpa);

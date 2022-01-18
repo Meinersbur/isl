@@ -147,29 +147,46 @@ __isl_give isl_ast_print_options *isl_ast_print_options_set_print_for(
 }
 
 /* Create a new operation expression of operation type "op",
- * with "n_arg" as yet unspecified arguments.
+ * with arguments "args".
  */
-__isl_give isl_ast_expr *isl_ast_expr_alloc_op(isl_ctx *ctx,
-	enum isl_ast_expr_op_type op, int n_arg)
+static __isl_give isl_ast_expr *alloc_op(enum isl_ast_expr_op_type op,
+	__isl_take isl_ast_expr_list *args)
 {
+	isl_ctx *ctx;
 	isl_ast_expr *expr;
 
+	if (!args)
+		return NULL;
+
+	ctx = isl_ast_expr_list_get_ctx(args);
 	expr = isl_calloc_type(ctx, isl_ast_expr);
 	if (!expr)
-		return NULL;
+		goto error;
 
 	expr->ctx = ctx;
 	isl_ctx_ref(ctx);
 	expr->ref = 1;
 	expr->type = isl_ast_expr_op;
 	expr->u.op.op = op;
-	expr->u.op.n_arg = n_arg;
-	expr->u.op.args = isl_calloc_array(ctx, isl_ast_expr *, n_arg);
-
-	if (n_arg && !expr->u.op.args)
-		return isl_ast_expr_free(expr);
+	expr->u.op.args = args;
 
 	return expr;
+error:
+	isl_ast_expr_list_free(args);
+	return NULL;
+}
+
+/* Create a new operation expression of operation type "op",
+ * which will end up having "n_arg" arguments.
+ * The caller still needs to add those arguments.
+ */
+__isl_give isl_ast_expr *isl_ast_expr_alloc_op(isl_ctx *ctx,
+	enum isl_ast_expr_op_type op, int n_arg)
+{
+	isl_ast_expr_list *args;
+
+	args = isl_ast_expr_list_alloc(ctx, n_arg);
+	return alloc_op(op, args);
 }
 
 __isl_give isl_ast_expr *isl_ast_expr_copy(__isl_keep isl_ast_expr *expr)
@@ -183,14 +200,11 @@ __isl_give isl_ast_expr *isl_ast_expr_copy(__isl_keep isl_ast_expr *expr)
 
 __isl_give isl_ast_expr *isl_ast_expr_dup(__isl_keep isl_ast_expr *expr)
 {
-	int i;
-	isl_ctx *ctx;
 	isl_ast_expr *dup;
 
 	if (!expr)
 		return NULL;
 
-	ctx = isl_ast_expr_get_ctx(expr);
 	switch (expr->type) {
 	case isl_ast_expr_int:
 		dup = isl_ast_expr_from_val(isl_val_copy(expr->u.v));
@@ -199,13 +213,8 @@ __isl_give isl_ast_expr *isl_ast_expr_dup(__isl_keep isl_ast_expr *expr)
 		dup = isl_ast_expr_from_id(isl_id_copy(expr->u.id));
 		break;
 	case isl_ast_expr_op:
-		dup = isl_ast_expr_alloc_op(ctx,
-					    expr->u.op.op, expr->u.op.n_arg);
-		if (!dup)
-			return NULL;
-		for (i = 0; i < expr->u.op.n_arg; ++i)
-			dup->u.op.args[i] =
-				isl_ast_expr_copy(expr->u.op.args[i]);
+		dup = alloc_op(expr->u.op.op,
+				isl_ast_expr_list_copy(expr->u.op.args));
 		break;
 	case isl_ast_expr_error:
 		dup = NULL;
@@ -230,8 +239,6 @@ __isl_give isl_ast_expr *isl_ast_expr_cow(__isl_take isl_ast_expr *expr)
 
 __isl_null isl_ast_expr *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
 {
-	int i;
-
 	if (!expr)
 		return NULL;
 
@@ -248,10 +255,7 @@ __isl_null isl_ast_expr *isl_ast_expr_free(__isl_take isl_ast_expr *expr)
 		isl_id_free(expr->u.id);
 		break;
 	case isl_ast_expr_op:
-		if (expr->u.op.args)
-			for (i = 0; i < expr->u.op.n_arg; ++i)
-				isl_ast_expr_free(expr->u.op.args[i]);
-		free(expr->u.op.args);
+		isl_ast_expr_list_free(expr->u.op.args);
 		break;
 	case isl_ast_expr_error:
 		break;
@@ -344,7 +348,7 @@ isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr)
 {
 	if (isl_ast_expr_check_op(expr) < 0)
 		return isl_size_error;
-	return expr->u.op.n_arg;
+	return isl_ast_expr_list_size(expr->u.op.args);
 }
 
 /* This is an alternative name for the function above.
@@ -361,11 +365,8 @@ __isl_give isl_ast_expr *isl_ast_expr_op_get_arg(__isl_keep isl_ast_expr *expr,
 {
 	if (isl_ast_expr_check_op(expr) < 0)
 		return NULL;
-	if (pos < 0 || pos >= expr->u.op.n_arg)
-		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"index out of bounds", return NULL);
 
-	return isl_ast_expr_copy(expr->u.op.args[pos]);
+	return isl_ast_expr_list_get_at(expr->u.op.args, pos);
 }
 
 /* This is an alternative name for the function above.
@@ -376,25 +377,130 @@ __isl_give isl_ast_expr *isl_ast_expr_get_op_arg(__isl_keep isl_ast_expr *expr,
 	return isl_ast_expr_op_get_arg(expr, pos);
 }
 
+/* Return a copy of the arguments of the operation represented by "expr".
+ */
+static __isl_give isl_ast_expr_list *isl_ast_expr_op_get_args(
+	__isl_keep isl_ast_expr *expr)
+{
+	if (isl_ast_expr_check_op(expr) < 0)
+		return NULL;
+	return isl_ast_expr_list_copy(expr->u.op.args);
+}
+
+/* Return the arguments of the operation expression "expr".
+ * This may be either a copy or the arguments themselves
+ * if there is only one reference to "expr".
+ * This allows the arguments to be modified inplace
+ * if both "expr" and its arguments have only a single reference.
+ * The caller is not allowed to modify "expr" between this call and
+ * the subsequent call to isl_ast_expr_op_restore_args.
+ * The only exception is that isl_ast_expr_free can be called instead.
+ */
+static __isl_give isl_ast_expr_list *isl_ast_expr_op_take_args(
+	__isl_keep isl_ast_expr *expr)
+{
+	isl_ast_expr_list *args;
+
+	if (isl_ast_expr_check_op(expr) < 0)
+		return NULL;
+	if (expr->ref != 1)
+		return isl_ast_expr_op_get_args(expr);
+	args = expr->u.op.args;
+	expr->u.op.args = NULL;
+	return args;
+}
+
+/* Set the arguments of the operation expression "expr" to "args",
+ * where the arguments of "args" may be missing
+ * due to a preceding call to isl_ast_expr_op_take_args.
+ * However, in this case, "expr" only has a single reference and
+ * then the call to isl_ast_expr_cow has no effect.
+ */
+static __isl_give isl_ast_expr *isl_ast_expr_op_restore_args(
+	__isl_take isl_ast_expr *expr, __isl_take isl_ast_expr_list *args)
+{
+	if (isl_ast_expr_check_op(expr) < 0 || !args)
+		goto error;
+	if (expr->u.op.args == args) {
+		isl_ast_expr_list_free(args);
+		return expr;
+	}
+
+	expr = isl_ast_expr_cow(expr);
+	if (!expr)
+		goto error;
+
+	isl_ast_expr_list_free(expr->u.op.args);
+	expr->u.op.args = args;
+
+	return expr;
+error:
+	isl_ast_expr_free(expr);
+	isl_ast_expr_list_free(args);
+	return NULL;
+}
+
+/* Add "arg" to the arguments of the operation expression "expr".
+ */
+__isl_give isl_ast_expr *isl_ast_expr_op_add_arg(__isl_take isl_ast_expr *expr,
+	__isl_take isl_ast_expr *arg)
+{
+	isl_ast_expr_list *args;
+
+	args = isl_ast_expr_op_take_args(expr);
+	args = isl_ast_expr_list_add(args, arg);
+	expr = isl_ast_expr_op_restore_args(expr, args);
+
+	return expr;
+}
+
 /* Replace the argument at position "pos" of "expr" by "arg".
  */
 __isl_give isl_ast_expr *isl_ast_expr_set_op_arg(__isl_take isl_ast_expr *expr,
 	int pos, __isl_take isl_ast_expr *arg)
 {
-	expr = isl_ast_expr_cow(expr);
-	if (isl_ast_expr_check_op(expr) < 0 || !arg)
-		goto error;
-	if (pos < 0 || pos >= expr->u.op.n_arg)
-		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"index out of bounds", goto error);
+	isl_ast_expr_list *args;
 
-	isl_ast_expr_free(expr->u.op.args[pos]);
-	expr->u.op.args[pos] = arg;
+	args = isl_ast_expr_op_take_args(expr);
+	args = isl_ast_expr_list_set_at(args, pos, arg);
+	expr = isl_ast_expr_op_restore_args(expr, args);
 
 	return expr;
-error:
-	isl_ast_expr_free(arg);
-	return isl_ast_expr_free(expr);
+}
+
+/* Are the lists of AST expressions "list1" and "list2" the same?
+ */
+static isl_bool isl_ast_expr_list_is_equal(__isl_keep isl_ast_expr_list *list1,
+	__isl_keep isl_ast_expr_list *list2)
+{
+	int i;
+	isl_size n1, n2;
+
+	if (!list1 || !list2)
+		return isl_bool_error;
+	if (list1 == list2)
+		return isl_bool_true;
+
+	n1 = isl_ast_expr_list_size(list1);
+	n2 = isl_ast_expr_list_size(list2);
+	if (n1 < 0 || n2 < 0)
+		return isl_bool_error;
+	if (n1 != n2)
+		return isl_bool_false;
+	for (i = 0; i < n1; ++i) {
+		isl_ast_expr *expr1, *expr2;
+		isl_bool equal;
+
+		expr1 = isl_ast_expr_list_get_at(list1, i);
+		expr2 = isl_ast_expr_list_get_at(list2, i);
+		equal = isl_ast_expr_is_equal(expr1, expr2);
+		isl_ast_expr_free(expr1);
+		isl_ast_expr_free(expr2);
+		if (equal < 0 || !equal)
+			return equal;
+	}
+
+	return isl_bool_true;
 }
 
 /* Is "expr1" equal to "expr2"?
@@ -402,8 +508,6 @@ error:
 isl_bool isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 	__isl_keep isl_ast_expr *expr2)
 {
-	int i;
-
 	if (!expr1 || !expr2)
 		return isl_bool_error;
 
@@ -419,16 +523,8 @@ isl_bool isl_ast_expr_is_equal(__isl_keep isl_ast_expr *expr1,
 	case isl_ast_expr_op:
 		if (expr1->u.op.op != expr2->u.op.op)
 			return isl_bool_false;
-		if (expr1->u.op.n_arg != expr2->u.op.n_arg)
-			return isl_bool_false;
-		for (i = 0; i < expr1->u.op.n_arg; ++i) {
-			isl_bool equal;
-			equal = isl_ast_expr_is_equal(expr1->u.op.args[i],
-							expr2->u.op.args[i]);
-			if (equal < 0 || !equal)
-				return equal;
-		}
-		return isl_bool_true;
+		return isl_ast_expr_list_is_equal(expr1->u.op.args,
+						expr2->u.op.args);
 	case isl_ast_expr_error:
 		return isl_bool_error;
 	}
@@ -523,21 +619,19 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_unary(
 {
 	isl_ctx *ctx;
 	isl_ast_expr *expr = NULL;
+	isl_ast_expr_list *args;
 
 	if (!arg)
 		return NULL;
 
 	ctx = isl_ast_expr_get_ctx(arg);
 	expr = isl_ast_expr_alloc_op(ctx, type, 1);
-	if (!expr)
-		goto error;
 
-	expr->u.op.args[0] = arg;
+	args = isl_ast_expr_op_take_args(expr);
+	args = isl_ast_expr_list_add(args, arg);
+	expr = isl_ast_expr_op_restore_args(expr, args);
 
 	return expr;
-error:
-	isl_ast_expr_free(arg);
-	return NULL;
 }
 
 /* Create an expression representing the negation of "arg".
@@ -572,17 +666,18 @@ __isl_give isl_ast_expr *isl_ast_expr_alloc_binary(
 {
 	isl_ctx *ctx;
 	isl_ast_expr *expr = NULL;
+	isl_ast_expr_list *args;
 
 	if (!expr1 || !expr2)
 		goto error;
 
 	ctx = isl_ast_expr_get_ctx(expr1);
 	expr = isl_ast_expr_alloc_op(ctx, type, 2);
-	if (!expr)
-		goto error;
 
-	expr->u.op.args[0] = expr1;
-	expr->u.op.args[1] = expr2;
+	args = isl_ast_expr_op_take_args(expr);
+	args = isl_ast_expr_list_add(args, expr1);
+	args = isl_ast_expr_list_add(args, expr2);
+	expr = isl_ast_expr_op_restore_args(expr, args);
 
 	return expr;
 error:
@@ -724,37 +819,8 @@ static __isl_give isl_ast_expr *ast_expr_with_arguments(
 	enum isl_ast_expr_op_type type, __isl_take isl_ast_expr *arg0,
 	__isl_take isl_ast_expr_list *arguments)
 {
-	int i;
-	isl_size n;
-	isl_ctx *ctx;
-	isl_ast_expr *res = NULL;
-
-	if (!arg0 || !arguments)
-		goto error;
-
-	ctx = isl_ast_expr_get_ctx(arg0);
-	n = isl_ast_expr_list_n_ast_expr(arguments);
-	if (n < 0)
-		goto error;
-	res = isl_ast_expr_alloc_op(ctx, type, 1 + n);
-	if (!res)
-		goto error;
-	for (i = 0; i < n; ++i) {
-		isl_ast_expr *arg;
-		arg = isl_ast_expr_list_get_ast_expr(arguments, i);
-		res->u.op.args[1 + i] = arg;
-		if (!arg)
-			goto error;
-	}
-	res->u.op.args[0] = arg0;
-
-	isl_ast_expr_list_free(arguments);
-	return res;
-error:
-	isl_ast_expr_free(arg0);
-	isl_ast_expr_list_free(arguments);
-	isl_ast_expr_free(res);
-	return NULL;
+	arguments = isl_ast_expr_list_insert(arguments, 0, arg0);
+	return alloc_op(type, arguments);
 }
 
 /* Create an expression representing an access to "array" with index
@@ -775,6 +841,18 @@ __isl_give isl_ast_expr *isl_ast_expr_call(__isl_take isl_ast_expr *function,
 	return ast_expr_with_arguments(isl_ast_expr_op_call, function, arguments);
 }
 
+/* Wrapper around isl_ast_expr_substitute_ids for use
+ * as an isl_ast_expr_list_map callback.
+ */
+static __isl_give isl_ast_expr *substitute_ids(__isl_take isl_ast_expr *expr,
+	void *user)
+{
+	isl_id_to_ast_expr *id2expr = user;
+
+	return isl_ast_expr_substitute_ids(expr,
+					    isl_id_to_ast_expr_copy(id2expr));
+}
+
 /* For each subexpression of "expr" of type isl_ast_expr_id,
  * if it appears in "id2expr", then replace it by the corresponding
  * expression.
@@ -782,8 +860,8 @@ __isl_give isl_ast_expr *isl_ast_expr_call(__isl_take isl_ast_expr *function,
 __isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
 	__isl_take isl_ast_expr *expr, __isl_take isl_id_to_ast_expr *id2expr)
 {
-	int i;
 	isl_maybe_isl_ast_expr m;
+	isl_ast_expr_list *args;
 
 	if (!expr || !id2expr)
 		goto error;
@@ -801,25 +879,9 @@ __isl_give isl_ast_expr *isl_ast_expr_substitute_ids(
 		expr = m.value;
 		break;
 	case isl_ast_expr_op:
-		for (i = 0; i < expr->u.op.n_arg; ++i) {
-			isl_ast_expr *arg;
-			arg = isl_ast_expr_copy(expr->u.op.args[i]);
-			arg = isl_ast_expr_substitute_ids(arg,
-					    isl_id_to_ast_expr_copy(id2expr));
-			if (arg == expr->u.op.args[i]) {
-				isl_ast_expr_free(arg);
-				continue;
-			}
-			if (!arg)
-				expr = isl_ast_expr_free(expr);
-			expr = isl_ast_expr_cow(expr);
-			if (!expr) {
-				isl_ast_expr_free(arg);
-				break;
-			}
-			isl_ast_expr_free(expr->u.op.args[i]);
-			expr->u.op.args[i] = arg;
-		}
+		args = isl_ast_expr_op_take_args(expr);
+		args = isl_ast_expr_list_map(args, &substitute_ids, id2expr);
+		expr = isl_ast_expr_op_restore_args(expr, args);
 		break;
 	case isl_ast_expr_error:
 		expr = isl_ast_expr_free(expr);
@@ -1671,7 +1733,7 @@ static __isl_give isl_printer *print_sub_expr_c(__isl_take isl_printer *p,
 	if (!expr)
 		return isl_printer_free(p);
 
-	arg = expr->u.op.args[pos];
+	arg = isl_ast_expr_list_get_at(expr->u.op.args, pos);
 	need_parens = sub_expr_need_parens(expr->u.op.op, arg, left);
 
 	if (need_parens)
@@ -1679,6 +1741,9 @@ static __isl_give isl_printer *print_sub_expr_c(__isl_take isl_printer *p,
 	p = print_ast_expr_c(p, arg);
 	if (need_parens)
 		p = isl_printer_print_str(p, ")");
+
+	isl_ast_expr_free(arg);
+
 	return p;
 }
 
@@ -1842,21 +1907,40 @@ static const char *get_op_str_c(__isl_keep isl_printer *p,
 	return op_str_c[type];
 }
 
+/* Print the expression at position "pos" in "list" in C format.
+ */
+static __isl_give isl_printer *print_at_c(__isl_take isl_printer *p,
+	__isl_keep isl_ast_expr_list *list, int pos)
+{
+	isl_ast_expr *expr;
+
+	expr = isl_ast_expr_list_get_at(list, pos);
+	p = print_ast_expr_c(p, expr);
+	isl_ast_expr_free(expr);
+
+	return p;
+}
+
 /* Print a min or max reduction "expr" in C format.
  */
 static __isl_give isl_printer *print_min_max_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	int i = 0;
+	isl_size n;
 
-	for (i = 1; i < expr->u.op.n_arg; ++i) {
+	n = isl_ast_expr_list_size(expr->u.op.args);
+	if (n < 0)
+		return isl_printer_free(p);
+
+	for (i = 1; i < n; ++i) {
 		p = isl_printer_print_str(p, get_op_str_c(p, expr->u.op.op));
 		p = isl_printer_print_str(p, "(");
 	}
-	p = isl_printer_print_ast_expr(p, expr->u.op.args[0]);
-	for (i = 1; i < expr->u.op.n_arg; ++i) {
+	p = print_at_c(p, expr->u.op.args, 0);
+	for (i = 1; i < n; ++i) {
 		p = isl_printer_print_str(p, ", ");
-		p = print_ast_expr_c(p, expr->u.op.args[i]);
+		p = print_at_c(p, expr->u.op.args, i);
 		p = isl_printer_print_str(p, ")");
 	}
 
@@ -1871,13 +1955,18 @@ static __isl_give isl_printer *print_call_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	int i = 0;
+	isl_size n;
 
-	p = print_ast_expr_c(p, expr->u.op.args[0]);
+	n = isl_ast_expr_list_size(expr->u.op.args);
+	if (n < 0)
+		return isl_printer_free(p);
+
+	p = print_at_c(p, expr->u.op.args, 0);
 	p = isl_printer_print_str(p, "(");
-	for (i = 1; i < expr->u.op.n_arg; ++i) {
+	for (i = 1; i < n; ++i) {
 		if (i != 1)
 			p = isl_printer_print_str(p, ", ");
-		p = print_ast_expr_c(p, expr->u.op.args[i]);
+		p = print_at_c(p, expr->u.op.args, i);
 	}
 	p = isl_printer_print_str(p, ")");
 
@@ -1892,11 +1981,16 @@ static __isl_give isl_printer *print_access_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
 	int i = 0;
+	isl_size n;
 
-	p = print_ast_expr_c(p, expr->u.op.args[0]);
-	for (i = 1; i < expr->u.op.n_arg; ++i) {
+	n = isl_ast_expr_list_size(expr->u.op.args);
+	if (n < 0)
+		return isl_printer_free(p);
+
+	p = print_at_c(p, expr->u.op.args, 0);
+	for (i = 1; i < n; ++i) {
 		p = isl_printer_print_str(p, "[");
-		p = print_ast_expr_c(p, expr->u.op.args[i]);
+		p = print_at_c(p, expr->u.op.args, i);
 		p = isl_printer_print_str(p, "]");
 	}
 
@@ -1908,6 +2002,8 @@ static __isl_give isl_printer *print_access_c(__isl_take isl_printer *p,
 static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 	__isl_keep isl_ast_expr *expr)
 {
+	isl_size n;
+
 	if (!p)
 		return NULL;
 	if (!expr)
@@ -1923,7 +2019,10 @@ static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 			p = print_access_c(p, expr);
 			break;
 		}
-		if (expr->u.op.n_arg == 1) {
+		n = isl_ast_expr_list_size(expr->u.op.args);
+		if (n < 0)
+			return isl_printer_free(p);
+		if (n == 1) {
 			p = isl_printer_print_str(p,
 						get_op_str_c(p, expr->u.op.op));
 			p = print_sub_expr_c(p, expr, 0, 0);
@@ -1935,9 +2034,9 @@ static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 			name = get_op_str_c(p, isl_ast_expr_op_fdiv_q);
 			p = isl_printer_print_str(p, name);
 			p = isl_printer_print_str(p, "(");
-			p = print_ast_expr_c(p, expr->u.op.args[0]);
+			p = print_at_c(p, expr->u.op.args, 0);
 			p = isl_printer_print_str(p, ", ");
-			p = print_ast_expr_c(p, expr->u.op.args[1]);
+			p = print_at_c(p, expr->u.op.args, 1);
 			p = isl_printer_print_str(p, ")");
 			break;
 		}
@@ -1948,14 +2047,14 @@ static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 		}
 		if (expr->u.op.op == isl_ast_expr_op_cond ||
 		    expr->u.op.op == isl_ast_expr_op_select) {
-			p = print_ast_expr_c(p, expr->u.op.args[0]);
+			p = print_at_c(p, expr->u.op.args, 0);
 			p = isl_printer_print_str(p, " ? ");
-			p = print_ast_expr_c(p, expr->u.op.args[1]);
+			p = print_at_c(p, expr->u.op.args, 1);
 			p = isl_printer_print_str(p, " : ");
-			p = print_ast_expr_c(p, expr->u.op.args[2]);
+			p = print_at_c(p, expr->u.op.args, 2);
 			break;
 		}
-		if (expr->u.op.n_arg != 2)
+		if (n != 2)
 			isl_die(isl_printer_get_ctx(p), isl_error_internal,
 				"operation should have two arguments",
 				return isl_printer_free(p));
@@ -2629,13 +2728,26 @@ __isl_give isl_printer *isl_ast_node_list_print(
 				 ISL_AST_MACRO_MIN | \
 				 ISL_AST_MACRO_MAX)
 
+static int ast_expr_required_macros(__isl_keep isl_ast_expr *expr, int macros);
+
+/* Wrapper around ast_expr_required_macros for use
+ * as an isl_ast_expr_list_foreach callback.
+ */
+static isl_stat entry_required_macros(__isl_take isl_ast_expr *expr, void *user)
+{
+	int *macros = user;
+
+	*macros = ast_expr_required_macros(expr, *macros);
+	isl_ast_expr_free(expr);
+
+	return isl_stat_ok;
+}
+
 /* If "expr" contains an isl_ast_expr_op_min, isl_ast_expr_op_max or
  * isl_ast_expr_op_fdiv_q then set the corresponding bit in "macros".
  */
 static int ast_expr_required_macros(__isl_keep isl_ast_expr *expr, int macros)
 {
-	int i;
-
 	if (macros == ISL_AST_MACRO_ALL)
 		return macros;
 
@@ -2649,8 +2761,8 @@ static int ast_expr_required_macros(__isl_keep isl_ast_expr *expr, int macros)
 	if (expr->u.op.op == isl_ast_expr_op_fdiv_q)
 		macros |= ISL_AST_MACRO_FDIV_Q;
 
-	for (i = 0; i < expr->u.op.n_arg; ++i)
-		macros = ast_expr_required_macros(expr->u.op.args[i], macros);
+	isl_ast_expr_list_foreach(expr->u.op.args,
+				&entry_required_macros, &macros);
 
 	return macros;
 }
