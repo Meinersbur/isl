@@ -14,6 +14,7 @@
 
 #include <isl/id.h>
 #include <isl/space.h>
+#include <isl/stream.h>
 #include <isl_ast_private.h>
 #include <isl_ast_build_expr.h>
 #include <isl_ast_build_private.h>
@@ -22,11 +23,14 @@
 
 static __isl_give isl_ast_graft *isl_ast_graft_copy(
 	__isl_keep isl_ast_graft *graft);
+static __isl_give isl_ast_graft *isl_stream_read_ast_graft(
+	__isl_keep isl_stream *s);
 
 #undef EL_BASE
 #define EL_BASE ast_graft
 
 #include <isl_list_templ.c>
+#include <isl_list_read_templ.c>
 
 #undef BASE
 #define BASE ast_graft
@@ -1500,4 +1504,77 @@ __isl_give isl_printer *isl_printer_print_ast_graft(__isl_take isl_printer *p,
 	p = isl_printer_print_str(p, ")");
 
 	return p;
+}
+
+#undef KEY
+#define KEY enum isl_graft_key
+#undef KEY_ERROR
+#define KEY_ERROR isl_graft_key_error
+#undef KEY_END
+#define KEY_END isl_graft_key_end
+#undef KEY_STR
+#define KEY_STR key_str
+#undef KEY_EXTRACT
+#define KEY_EXTRACT extract_key
+#undef KEY_GET
+#define KEY_GET get_key
+#include "extract_key.c"
+
+/* Read the key "key" from "s", along with the subsequent colon.
+ */
+static isl_stat read_key(__isl_keep isl_stream *s, enum isl_graft_key key)
+{
+	enum isl_graft_key extracted;
+
+	extracted = get_key(s);
+	if (extracted < 0)
+		return isl_stat_error;
+	if (extracted != key)
+		isl_die(isl_stream_get_ctx(s), isl_error_invalid,
+			"expecting different field", return isl_stat_error);
+	if (isl_stream_eat(s, ':') < 0)
+		return isl_stat_error;
+	return isl_stat_ok;
+}
+
+/* Read an isl_ast_graft object from "s".
+ *
+ * Read the pieces in the way they are printed in isl_printer_print_ast_graft.
+ */
+static __isl_give isl_ast_graft *isl_stream_read_ast_graft(
+	__isl_keep isl_stream *s)
+{
+	isl_set *guard;
+	isl_basic_set *enforced = NULL;
+	isl_ast_node *node = NULL;
+
+	if (isl_stream_eat(s, '(') < 0)
+		return NULL;
+	if (read_key(s, isl_graft_key_guard) < 0)
+		return NULL;
+	guard = isl_stream_read_set(s);
+	if (!guard)
+		goto error;
+	if (isl_stream_eat(s, ',') < 0)
+		goto error;
+	if (read_key(s, isl_graft_key_enforced) < 0)
+		goto error;
+	enforced = isl_stream_read_basic_set(s);
+	if (!enforced)
+		goto error;
+	if (isl_stream_eat(s, ',') < 0)
+		goto error;
+	if (read_key(s, isl_graft_key_node) < 0)
+		goto error;
+	node = isl_stream_read_ast_node(s);
+	if (!node)
+		goto error;
+	if (isl_stream_eat(s, ')') < 0)
+		goto error;
+	return graft_alloc(node, guard, enforced);
+error:
+	isl_set_free(guard);
+	isl_basic_set_free(enforced);
+	isl_ast_node_free(node);
+	return NULL;
 }
