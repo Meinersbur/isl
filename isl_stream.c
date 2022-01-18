@@ -1046,7 +1046,7 @@ int isl_stream_yaml_next(__isl_keep isl_stream *s)
 		return 1;
 	default:
 		isl_die(s->ctx, isl_error_internal,
-			"unexpected state", return 0);
+			"unexpected state", return -1);
 	}
 }
 
