@@ -12,6 +12,7 @@
 
 #include <isl/ctx.h>
 #include <isl/hash.h>
+#include <isl/stream.h>
 
 #define ISL_xCAT(A,B) A ## B
 #define ISL_CAT(A,B) ISL_xCAT(A,B)
@@ -423,3 +424,66 @@ void ISL_FN(ISL_HMAP,dump)(__isl_keep ISL_HMAP *hmap)
 
 	isl_printer_free(printer);
 }
+
+#ifdef ISL_HMAP_HAVE_READ_FROM_STR
+
+/* Read an associative array from "s".
+ * The input format corresponds to the way associative arrays are printed
+ * by isl_printer_print_*_to_*.
+ * In particular, each key-value pair is separated by a colon,
+ * the key-value pairs are separated by a comma and
+ * the entire associative array is surrounded by braces.
+ */
+__isl_give ISL_HMAP *ISL_FN(isl_stream_read,ISL_HMAP_SUFFIX)(isl_stream *s)
+{
+	isl_ctx *ctx;
+	ISL_HMAP *hmap;
+
+	if (!s)
+		return NULL;
+	ctx = isl_stream_get_ctx(s);
+	hmap = ISL_FN(ISL_HMAP,alloc)(ctx, 0);
+	if (!hmap)
+		return NULL;
+	if (isl_stream_eat(s, '{') < 0)
+		return ISL_FN(ISL_HMAP,free)(hmap);
+	if (isl_stream_eat_if_available(s, '}'))
+		return hmap;
+	do {
+		ISL_KEY *key;
+		ISL_VAL *val = NULL;
+
+		key = ISL_KEY_READ(s);
+		if (isl_stream_eat(s, ':') >= 0)
+			val = ISL_VAL_READ(s);
+		hmap = ISL_FN(ISL_HMAP,set)(hmap, key, val);
+		if (!hmap)
+			return NULL;
+	} while (isl_stream_eat_if_available(s, ','));
+	if (isl_stream_eat(s, '}') < 0)
+		return ISL_FN(ISL_HMAP,free)(hmap);
+	return hmap;
+}
+
+/* Read an associative array from the string "str".
+ * The input format corresponds to the way associative arrays are printed
+ * by isl_printer_print_*_to_*.
+ * In particular, each key-value pair is separated by a colon,
+ * the key-value pairs are separated by a comma and
+ * the entire associative array is surrounded by braces.
+ */
+__isl_give ISL_HMAP *ISL_FN(ISL_HMAP,read_from_str)(isl_ctx *ctx,
+	const char *str)
+{
+	ISL_HMAP *hmap;
+	isl_stream *s;
+
+	s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	hmap = ISL_FN(isl_stream_read,ISL_HMAP_SUFFIX)(s);
+	isl_stream_free(s);
+	return hmap;
+}
+
+#endif

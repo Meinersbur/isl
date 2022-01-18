@@ -9634,6 +9634,13 @@ Associative arrays can be printed using the following function.
 		__isl_take isl_printer *p,
 		__isl_keep isl_id_to_ast_expr *id2expr);
 
+They can be read from input using the following function.
+
+	#include <isl/id_to_ast_expr.h>
+	__isl_give isl_id_to_ast_expr *
+	isl_id_to_ast_expr_read_from_str(isl_ctx *ctx,
+		const char *str);
+
 =head2 Vectors
 
 Vectors can be created, copied and freed using the following functions.
