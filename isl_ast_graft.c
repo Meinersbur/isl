@@ -1441,6 +1441,25 @@ __isl_give isl_ast_graft_list *isl_ast_graft_list_group_on_guard(
 	return list;
 }
 
+/* An enumeration of the keys that appear in the textual representation
+ * of an isl_sat_graft object.
+ */
+enum isl_graft_key {
+	isl_graft_key_error = -1,
+	isl_graft_key_guard,
+	isl_graft_key_enforced,
+	isl_graft_key_node,
+	isl_graft_key_end
+};
+
+/* Textual representations of the keys for an isl_sat_graft object.
+ */
+static char *key_str[] = {
+	[isl_graft_key_guard] = "guard",
+	[isl_graft_key_enforced] = "enforced",
+	[isl_graft_key_node] = "node",
+};
+
 __isl_give isl_printer *isl_printer_print_ast_graft(__isl_take isl_printer *p,
 	__isl_keep isl_ast_graft *graft)
 {
@@ -1450,13 +1469,16 @@ __isl_give isl_printer *isl_printer_print_ast_graft(__isl_take isl_printer *p,
 		return isl_printer_free(p);
 
 	p = isl_printer_print_str(p, "(");
-	p = isl_printer_print_str(p, "guard: ");
+	p = isl_printer_print_str(p, key_str[isl_graft_key_guard]);
+	p = isl_printer_print_str(p, ": ");
 	p = isl_printer_print_set(p, graft->guard);
 	p = isl_printer_print_str(p, ", ");
-	p = isl_printer_print_str(p, "enforced: ");
+	p = isl_printer_print_str(p, key_str[isl_graft_key_enforced]);
+	p = isl_printer_print_str(p, ": ");
 	p = isl_printer_print_basic_set(p, graft->enforced);
 	p = isl_printer_print_str(p, ", ");
-	p = isl_printer_print_str(p, "node: ");
+	p = isl_printer_print_str(p, key_str[isl_graft_key_node]);
+	p = isl_printer_print_str(p, ": ");
 	p = isl_printer_print_ast_node(p, graft->node);
 	p = isl_printer_print_str(p, ")");
 
