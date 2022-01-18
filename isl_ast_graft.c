@@ -45,37 +45,54 @@ __isl_give isl_ast_node *isl_ast_graft_get_node(
 	return graft ? isl_ast_node_copy(graft->node) : NULL;
 }
 
-/* Create a graft for "node" with no guards and no enforced conditions.
+/* Create a graft for "node" with guards "guard" and
+ * enforced conditions "enforced".
  */
-__isl_give isl_ast_graft *isl_ast_graft_alloc(
-	__isl_take isl_ast_node *node, __isl_keep isl_ast_build *build)
+static isl_ast_graft *graft_alloc(__isl_take isl_ast_node *node,
+	__isl_take isl_set *guard, __isl_take isl_basic_set *enforced)
 {
 	isl_ctx *ctx;
-	isl_space *space;
 	isl_ast_graft *graft;
 
-	if (!node)
-		return NULL;
+	if (!node || !guard || !enforced)
+		goto error;
 
 	ctx = isl_ast_node_get_ctx(node);
 	graft = isl_calloc_type(ctx, isl_ast_graft);
 	if (!graft)
 		goto error;
 
-	space = isl_ast_build_get_space(build, 1);
-
 	graft->ref = 1;
 	graft->node = node;
-	graft->guard = isl_set_universe(isl_space_copy(space));
-	graft->enforced = isl_basic_set_universe(space);
-
-	if (!graft->guard || !graft->enforced)
-		return isl_ast_graft_free(graft);
+	graft->guard = guard;
+	graft->enforced = enforced;
 
 	return graft;
 error:
 	isl_ast_node_free(node);
+	isl_set_free(guard);
+	isl_basic_set_free(enforced);
 	return NULL;
+}
+
+/* Create a graft for "node" with no guards and no enforced conditions.
+ */
+__isl_give isl_ast_graft *isl_ast_graft_alloc(
+	__isl_take isl_ast_node *node, __isl_keep isl_ast_build *build)
+{
+	isl_space *space;
+	isl_set *guard;
+	isl_basic_set *enforced;
+
+	if (!node)
+		return NULL;
+
+	space = isl_ast_build_get_space(build, 1);
+
+	guard = isl_set_universe(isl_space_copy(space));
+	enforced = isl_basic_set_universe(space);
+
+	return graft_alloc(node, guard, enforced);
 }
 
 /* Create a graft with no guards and no enforced conditions
