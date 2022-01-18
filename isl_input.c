@@ -3266,7 +3266,9 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_basic_set *basic_set_read(__isl_keep isl_stream *s)
+/* Read an isl_basic_set object from "s".
+ */
+__isl_give isl_basic_set *isl_stream_read_basic_set(__isl_keep isl_stream *s)
 {
 	isl_basic_map *bmap;
 	bmap = basic_map_read(s);
@@ -3300,7 +3302,7 @@ __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
 	isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	bset = basic_set_read(s);
+	bset = isl_stream_read_basic_set(s);
 	isl_stream_free(s);
 	return bset;
 }
@@ -3324,7 +3326,7 @@ __isl_give isl_basic_set *isl_basic_set_read_from_str(isl_ctx *ctx,
 	isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	bset = basic_set_read(s);
+	bset = isl_stream_read_basic_set(s);
 	isl_stream_free(s);
 	return bset;
 }
