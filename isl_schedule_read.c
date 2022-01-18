@@ -458,7 +458,7 @@ static __isl_give isl_val_list *read_coincident(__isl_keep isl_stream *s)
 		return NULL;
 
 	list = isl_val_list_alloc(ctx, 0);
-	while  ((more = isl_stream_yaml_next(s)) > 0) {
+	while ((more = isl_stream_yaml_next(s)) > 0) {
 		isl_val *val;
 
 		val = isl_stream_read_val(s);
