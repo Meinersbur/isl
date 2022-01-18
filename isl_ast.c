@@ -1659,19 +1659,25 @@ static int sub_expr_need_parens(enum isl_ast_expr_op_type op,
 	return 0;
 }
 
-/* Print "expr" as a subexpression of an "op" operation in C format.
+/* Print the subexpression at position "pos" of operation expression "expr"
+ * in C format.
  * If "left" is set, then "expr" is the left-most operand.
  */
 static __isl_give isl_printer *print_sub_expr_c(__isl_take isl_printer *p,
-	enum isl_ast_expr_op_type op, __isl_keep isl_ast_expr *expr, int left)
+	__isl_keep isl_ast_expr *expr, int pos, int left)
 {
 	int need_parens;
+	isl_ast_expr *arg;
 
-	need_parens = sub_expr_need_parens(op, expr, left);
+	if (!expr)
+		return isl_printer_free(p);
+
+	arg = expr->u.op.args[pos];
+	need_parens = sub_expr_need_parens(expr->u.op.op, arg, left);
 
 	if (need_parens)
 		p = isl_printer_print_str(p, "(");
-	p = print_ast_expr_c(p, expr);
+	p = print_ast_expr_c(p, arg);
 	if (need_parens)
 		p = isl_printer_print_str(p, ")");
 	return p;
@@ -1921,8 +1927,7 @@ static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 		if (expr->u.op.n_arg == 1) {
 			p = isl_printer_print_str(p,
 						get_op_str_c(p, expr->u.op.op));
-			p = print_sub_expr_c(p, expr->u.op.op,
-						expr->u.op.args[0], 0);
+			p = print_sub_expr_c(p, expr, 0, 0);
 			break;
 		}
 		if (expr->u.op.op == isl_ast_expr_op_fdiv_q) {
@@ -1955,13 +1960,13 @@ static __isl_give isl_printer *print_ast_expr_c(__isl_take isl_printer *p,
 			isl_die(isl_printer_get_ctx(p), isl_error_internal,
 				"operation should have two arguments",
 				return isl_printer_free(p));
-		p = print_sub_expr_c(p, expr->u.op.op, expr->u.op.args[0], 1);
+		p = print_sub_expr_c(p, expr, 0, 1);
 		if (expr->u.op.op != isl_ast_expr_op_member)
 			p = isl_printer_print_str(p, " ");
 		p = isl_printer_print_str(p, get_op_str_c(p, expr->u.op.op));
 		if (expr->u.op.op != isl_ast_expr_op_member)
 			p = isl_printer_print_str(p, " ");
-		p = print_sub_expr_c(p, expr->u.op.op, expr->u.op.args[1], 0);
+		p = print_sub_expr_c(p, expr, 1, 0);
 		break;
 	case isl_ast_expr_id:
 		p = isl_printer_print_str(p, isl_id_get_name(expr->u.id));
