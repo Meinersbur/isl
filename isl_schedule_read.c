@@ -722,10 +722,8 @@ static __isl_give isl_schedule_tree *isl_stream_read_schedule_tree(
 		return NULL;
 	}
 
-	if (isl_stream_yaml_read_end_mapping(s) < 0) {
-		isl_stream_error(s, NULL, "unexpected extra elements");
+	if (isl_stream_yaml_read_end_mapping(s) < 0)
 		return isl_schedule_tree_free(tree);
-	}
 
 	return tree;
 }

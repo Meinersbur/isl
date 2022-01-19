@@ -121,14 +121,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 
-	if (isl_stream_yaml_read_end_mapping(s1) < 0) {
-		isl_stream_error(s1, NULL, "unexpected extra elements");
+	if (isl_stream_yaml_read_end_mapping(s1) < 0)
 		return EXIT_FAILURE;
-	}
-	if (isl_stream_yaml_read_end_mapping(s2) < 0) {
-		isl_stream_error(s2, NULL, "unexpected extra elements");
+	if (isl_stream_yaml_read_end_mapping(s2) < 0)
 		return EXIT_FAILURE;
-	}
 
 	isl_stream_free(s1);
 	isl_stream_free(s2);

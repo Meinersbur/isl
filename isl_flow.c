@@ -1945,10 +1945,8 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 	if (more < 0)
 		return isl_union_access_info_free(info);
 
-	if (isl_stream_yaml_read_end_mapping(s) < 0) {
-		isl_stream_error(s, NULL, "unexpected extra elements");
+	if (isl_stream_yaml_read_end_mapping(s) < 0)
 		return isl_union_access_info_free(info);
-	}
 
 	if (!sink_set) {
 		isl_stream_error(s, NULL, "no sink specified");

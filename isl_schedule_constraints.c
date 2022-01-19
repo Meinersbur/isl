@@ -637,10 +637,8 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 	if (more < 0)
 		return isl_schedule_constraints_free(sc);
 
-	if (isl_stream_yaml_read_end_mapping(s) < 0) {
-		isl_stream_error(s, NULL, "unexpected extra elements");
+	if (isl_stream_yaml_read_end_mapping(s) < 0)
 		return isl_schedule_constraints_free(sc);
-	}
 
 	if (!domain_set) {
 		isl_stream_error(s, NULL, "no domain specified");
