@@ -282,17 +282,25 @@ __isl_give isl_id *isl_ast_expr_get_id(__isl_keep isl_ast_expr *expr)
 	return isl_ast_expr_id_get_id(expr);
 }
 
+/* Check that "expr" is of type isl_ast_expr_op.
+ */
+static isl_stat isl_ast_expr_check_op(__isl_keep isl_ast_expr *expr)
+{
+	if (!expr)
+		return isl_stat_error;
+	if (expr->type != isl_ast_expr_op)
+		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
+			"expression not an operation", return isl_stat_error);
+	return isl_stat_ok;
+}
+
 /* Return the type of operation represented by "expr".
  */
 enum isl_ast_expr_op_type isl_ast_expr_op_get_type(
 	__isl_keep isl_ast_expr *expr)
 {
-	if (!expr)
+	if (isl_ast_expr_check_op(expr) < 0)
 		return isl_ast_expr_op_error;
-	if (expr->type != isl_ast_expr_op)
-		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"expression not an operation",
-			return isl_ast_expr_op_error);
 	return expr->u.op.op;
 }
 
@@ -308,11 +316,8 @@ enum isl_ast_expr_op_type isl_ast_expr_get_op_type(
  */
 isl_size isl_ast_expr_op_get_n_arg(__isl_keep isl_ast_expr *expr)
 {
-	if (!expr)
+	if (isl_ast_expr_check_op(expr) < 0)
 		return isl_size_error;
-	if (expr->type != isl_ast_expr_op)
-		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"expression not an operation", return isl_size_error);
 	return expr->u.op.n_arg;
 }
 
@@ -328,11 +333,8 @@ isl_size isl_ast_expr_get_op_n_arg(__isl_keep isl_ast_expr *expr)
 __isl_give isl_ast_expr *isl_ast_expr_op_get_arg(__isl_keep isl_ast_expr *expr,
 	int pos)
 {
-	if (!expr)
+	if (isl_ast_expr_check_op(expr) < 0)
 		return NULL;
-	if (expr->type != isl_ast_expr_op)
-		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"expression not an operation", return NULL);
 	if (pos < 0 || pos >= expr->u.op.n_arg)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"index out of bounds", return NULL);
@@ -354,11 +356,8 @@ __isl_give isl_ast_expr *isl_ast_expr_set_op_arg(__isl_take isl_ast_expr *expr,
 	int pos, __isl_take isl_ast_expr *arg)
 {
 	expr = isl_ast_expr_cow(expr);
-	if (!expr || !arg)
+	if (isl_ast_expr_check_op(expr) < 0 || !arg)
 		goto error;
-	if (expr->type != isl_ast_expr_op)
-		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
-			"expression not an operation", goto error);
 	if (pos < 0 || pos >= expr->u.op.n_arg)
 		isl_die(isl_ast_expr_get_ctx(expr), isl_error_invalid,
 			"index out of bounds", goto error);
