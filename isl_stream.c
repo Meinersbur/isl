@@ -101,6 +101,15 @@ __isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok)
 	return isl_val_int_from_isl_int(ctx, tok->u.v);
 }
 
+/* Does the given token have a string representation?
+ */
+isl_bool isl_token_has_str(struct isl_token *tok)
+{
+	if (!tok)
+		return isl_bool_error;
+	return isl_bool_ok(tok->u.s != NULL);
+}
+
 /* Given a token with a string representation, return a copy of this string.
  */
 __isl_give char *isl_token_get_str(isl_ctx *ctx, struct isl_token *tok)

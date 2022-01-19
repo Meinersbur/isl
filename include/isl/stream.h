@@ -44,6 +44,7 @@ enum isl_token_type { ISL_TOKEN_ERROR = -1,
 struct isl_token;
 
 __isl_give isl_val *isl_token_get_val(isl_ctx *ctx, struct isl_token *tok);
+isl_bool isl_token_has_str(struct isl_token *tok);
 __isl_give char *isl_token_get_str(isl_ctx *ctx, struct isl_token *tok);
 int isl_token_get_type(struct isl_token *tok);
 void isl_token_free(struct isl_token *tok);
