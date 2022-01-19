@@ -892,7 +892,7 @@ static enum isl_yaml_state current_state(__isl_keep isl_stream *s)
 
 /* Set the indentation of the innermost active YAML element to "indent".
  * If "indent" is equal to ISL_YAML_INDENT_FLOW, then this means
- * that the current elemient is in flow format.
+ * that the current element is in flow format.
  */
 static int set_yaml_indent(__isl_keep isl_stream *s, int indent)
 {
