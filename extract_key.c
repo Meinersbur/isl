@@ -34,7 +34,7 @@ static KEY KEY_EXTRACT(__isl_keep isl_stream *s, struct isl_token *tok)
 		return KEY_ERROR;
 
 	for (key = 0; key < KEY_END; ++key) {
-		if (!strcmp(name, KEY_STR[key]))
+		if (KEY_STR[key] && !strcmp(name, KEY_STR[key]))
 			break;
 	}
 	free(name);
