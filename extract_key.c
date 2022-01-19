@@ -15,15 +15,15 @@
  */
 static KEY extract_key(__isl_keep isl_stream *s, struct isl_token *tok)
 {
-	int type;
+	isl_bool has_string;
 	char *name;
 	KEY key;
 	isl_ctx *ctx;
 
-	if (!tok)
+	has_string = isl_token_has_str(tok);
+	if (has_string < 0)
 		return KEY_ERROR;
-	type = isl_token_get_type(tok);
-	if (type != ISL_TOKEN_IDENT && type != ISL_TOKEN_STRING) {
+	if (!has_string) {
 		isl_stream_error(s, tok, "expecting key");
 		return KEY_ERROR;
 	}
