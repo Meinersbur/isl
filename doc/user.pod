@@ -11856,6 +11856,10 @@ A member access.
 This operation has two arguments, a structure and the name of
 the member of the structure being accessed.
 
+=item C<isl_ast_expr_op_address_of>
+
+The address of its single argument, which is always an array access.
+
 =back
 
 	#include <isl/ast.h>
