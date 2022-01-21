@@ -6,6 +6,7 @@
  * Copyright 2016      Sven Verdoolaege
  * Copyright 2018,2020 Cerebras Systems
  * Copyright 2021      Sven Verdoolaege
+ * Copyright 2022      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -16,6 +17,7 @@
  * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
  * B.P. 105 - 78153 Le Chesnay, France
  * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <isl_ctx_private.h>
@@ -3741,26 +3743,133 @@ __isl_give isl_pw_aff *isl_pw_aff_max(__isl_take isl_pw_aff *pwaff1,
 	return pw_aff_min_max(pwaff1, pwaff2, 1);
 }
 
-static __isl_give isl_pw_aff *pw_aff_list_reduce(
-	__isl_take isl_pw_aff_list *list,
-	__isl_give isl_pw_aff *(*fn)(__isl_take isl_pw_aff *pwaff1,
-					__isl_take isl_pw_aff *pwaff2))
+/* Does "pa" not involve any NaN?
+ */
+static isl_bool pw_aff_no_nan(__isl_keep isl_pw_aff *pa, void *user)
+{
+	return isl_bool_not(isl_pw_aff_involves_nan(pa));
+}
+
+/* Does any element of "list" involve any NaN?
+ *
+ * That is, is it not the case that every element does not involve any NaN?
+ */
+static isl_bool isl_pw_aff_list_involves_nan(__isl_keep isl_pw_aff_list *list)
+{
+	return isl_bool_not(isl_pw_aff_list_every(list, &pw_aff_no_nan, NULL));
+}
+
+/* Replace "list" (consisting of "n" elements, of which
+ * at least one element involves a NaN)
+ * by a NaN on the shared domain of the elements.
+ *
+ * In principle, the result could be refined to only being NaN
+ * on the parts of this domain where at least one of the elements is NaN.
+ */
+static __isl_give isl_pw_aff *replace_list_by_nan(
+	__isl_take isl_pw_aff_list *list, int n)
 {
 	int i;
-	isl_ctx *ctx;
-	isl_pw_aff *res;
+	isl_set *dom;
 
-	if (!list)
-		return NULL;
+	dom = isl_pw_aff_domain(isl_pw_aff_list_get_at(list, 0));
+	for (i = 1; i < n; ++i) {
+		isl_set *dom_i;
 
-	ctx = isl_pw_aff_list_get_ctx(list);
-	if (list->n < 1)
-		isl_die(ctx, isl_error_invalid,
+		dom_i = isl_pw_aff_domain(isl_pw_aff_list_get_at(list, i));
+		dom = isl_set_intersect(dom, dom_i);
+	}
+
+	isl_pw_aff_list_free(list);
+	return nan_on_domain_set(dom);
+}
+
+/* Return the set where the element at "pos1" of "list" is less than or
+ * equal to the element at "pos2".
+ * Equality is only allowed if "pos1" is smaller than "pos2".
+ */
+static __isl_give isl_set *less(__isl_keep isl_pw_aff_list *list,
+	int pos1, int pos2)
+{
+	isl_pw_aff *pa1, *pa2;
+
+	pa1 = isl_pw_aff_list_get_at(list, pos1);
+	pa2 = isl_pw_aff_list_get_at(list, pos2);
+
+	if (pos1 < pos2)
+		return isl_pw_aff_le_set(pa1, pa2);
+	else
+		return isl_pw_aff_lt_set(pa1, pa2);
+}
+
+/* Return an isl_pw_aff that maps each element in the intersection of the
+ * domains of the piecewise affine expressions in "list"
+ * to the maximal (if "max" is set) or minimal (if "max" is not set)
+ * expression in "list" at that element.
+ * If any expression involves any NaN, then return a NaN
+ * on the shared domain as result.
+ *
+ * If "list" has n elements, then the result consists of n pieces,
+ * where, in the case of a minimum, each piece has as value expression
+ * the value expression of one of the elements and as domain
+ * the set of elements where that value expression
+ * is less than (or equal) to the other value expressions.
+ * In the case of a maximum, the condition is
+ * that all the other value expressions are less than (or equal)
+ * to the given value expression.
+ *
+ * In order to produce disjoint pieces, a pair of elements
+ * in the original domain is only allowed to be equal to each other
+ * on exactly one of the two pieces corresponding to the two elements.
+ * The position in the list is used to break ties.
+ * In particular, in the case of a minimum,
+ * in the piece corresponding to a given element,
+ * this element is allowed to be equal to any later element in the list,
+ * but not to any earlier element in the list.
+ */
+static __isl_give isl_pw_aff *isl_pw_aff_list_opt(
+	__isl_take isl_pw_aff_list *list, int max)
+{
+	int i, j;
+	isl_bool has_nan;
+	isl_size n;
+	isl_space *space;
+	isl_pw_aff *pa, *res;
+
+	n = isl_pw_aff_list_size(list);
+	if (n < 0)
+		goto error;
+	if (n < 1)
+		isl_die(isl_pw_aff_list_get_ctx(list), isl_error_invalid,
 			"list should contain at least one element", goto error);
 
-	res = isl_pw_aff_copy(list->p[0]);
-	for (i = 1; i < list->n; ++i)
-		res = fn(res, isl_pw_aff_copy(list->p[i]));
+	has_nan = isl_pw_aff_list_involves_nan(list);
+	if (has_nan < 0)
+		goto error;
+	if (has_nan)
+		return replace_list_by_nan(list, n);
+
+	pa = isl_pw_aff_list_get_at(list, 0);
+	space = isl_pw_aff_get_space(pa);
+	isl_pw_aff_free(pa);
+	res = isl_pw_aff_empty(space);
+
+	for (i = 0; i < n; ++i) {
+		pa = isl_pw_aff_list_get_at(list, i);
+		for (j = 0; j < n; ++j) {
+			isl_set *dom;
+
+			if (j == i)
+				continue;
+			if (max)
+				dom = less(list, j, i);
+			else
+				dom = less(list, i, j);
+
+			pa = isl_pw_aff_intersect_domain(pa, dom);
+		}
+		res =  isl_pw_aff_add_disjoint(res, pa);
+	}
 
 	isl_pw_aff_list_free(list);
 	return res;
@@ -3775,7 +3884,7 @@ error:
  */
 __isl_give isl_pw_aff *isl_pw_aff_list_min(__isl_take isl_pw_aff_list *list)
 {
-	return pw_aff_list_reduce(list, &isl_pw_aff_min);
+	return isl_pw_aff_list_opt(list, 0);
 }
 
 /* Return an isl_pw_aff that maps each element in the intersection of the
@@ -3784,7 +3893,7 @@ __isl_give isl_pw_aff *isl_pw_aff_list_min(__isl_take isl_pw_aff_list *list)
  */
 __isl_give isl_pw_aff *isl_pw_aff_list_max(__isl_take isl_pw_aff_list *list)
 {
-	return pw_aff_list_reduce(list, &isl_pw_aff_max);
+	return isl_pw_aff_list_opt(list, 1);
 }
 
 /* Mark the domains of "pwaff" as rational.
