@@ -3644,6 +3644,21 @@ static isl_bool either_involves_nan(__isl_keep isl_pw_aff *pa1,
 	return isl_pw_aff_involves_nan(pa2);
 }
 
+/* Return a piecewise affine expression defined on the specified domain
+ * that represents NaN.
+ */
+static __isl_give isl_pw_aff *nan_on_domain_set(__isl_take isl_set *dom)
+{
+	isl_local_space *ls;
+	isl_pw_aff *pa;
+
+	ls = isl_local_space_from_space(isl_set_get_space(dom));
+	pa = isl_pw_aff_nan_on_domain(ls);
+	pa = isl_pw_aff_intersect_domain(pa, dom);
+
+	return pa;
+}
+
 /* Replace "pa1" and "pa2" (at least one of which involves a NaN)
  * by a NaN on their shared domain.
  *
@@ -3653,16 +3668,10 @@ static isl_bool either_involves_nan(__isl_keep isl_pw_aff *pa1,
 static __isl_give isl_pw_aff *replace_by_nan(__isl_take isl_pw_aff *pa1,
 	__isl_take isl_pw_aff *pa2)
 {
-	isl_local_space *ls;
 	isl_set *dom;
-	isl_pw_aff *pa;
 
 	dom = isl_set_intersect(isl_pw_aff_domain(pa1), isl_pw_aff_domain(pa2));
-	ls = isl_local_space_from_space(isl_set_get_space(dom));
-	pa = isl_pw_aff_nan_on_domain(ls);
-	pa = isl_pw_aff_intersect_domain(pa, dom);
-
-	return pa;
+	return nan_on_domain_set(dom);
 }
 
 static __isl_give isl_pw_aff *pw_aff_min(__isl_take isl_pw_aff *pwaff1,
