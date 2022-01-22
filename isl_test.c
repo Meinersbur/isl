@@ -442,6 +442,16 @@ struct {
 	  "{ [x, floor(x/4)] }" },
 	{ "{ [10//4] }",
 	  "{ [2] }" },
+	{ "[a, b, c, d] -> { [max(a,b,c,d)] }",
+	  "[a, b, c, d] -> { [a] : b < a and c < a and d < a; "
+		"[b] : b >= a and c < b and d < b; "
+		"[c] : c >= a and c >= b and d < c; "
+		"[d] : d >= a and d >= b and d >= c }" },
+	{ "[a, b, c, d] -> { [min(a,b,c,d)] }",
+	  "[a, b, c, d] -> { [a] : b >= a and c >= a and d >= a; "
+		"[b] : b < a and c >= b and d >= b; "
+		"[c] : c < b and c < a and d >= c; "
+		"[d] : d < c and d < b and d < a }" },
 };
 
 int test_parse(struct isl_ctx *ctx)
