@@ -3631,7 +3631,7 @@ error:
 	return NULL;
 }
 
-/* Does either of "pa1" or "pa2" involve any NaN2?
+/* Does either of "pa1" or "pa2" involve any NaN?
  */
 static isl_bool either_involves_nan(__isl_keep isl_pw_aff *pa1,
 	__isl_keep isl_pw_aff *pa2)
