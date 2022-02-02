@@ -3,11 +3,11 @@
 
 #include <isl/space.h>
 
-/* pos maps original dimensions to new dimensions.
+/* "pos" maps original dimensions to new dimensions.
  * The final space is given by "space".
  * The number of dimensions (i.e., the range of values) in the result
  * may be larger than the number of dimensions in the input.
- * In particular, the possible values of the entries in pos ranges from 0 to
+ * In particular, the possible values of the entries in "pos" ranges from 0 to
  * the total dimension of "space" - 1, unless isl_reordering_extend
  * has been called.
  */
