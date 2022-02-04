@@ -323,7 +323,7 @@ error:
 	return ISL_FN(ISL_HMAP,free)(hmap);
 }
 
-/* Internal data structure for isl_map_to_basic_set_foreach.
+/* Internal data structure for isl_*_to_*_foreach.
  *
  * fn is the function that should be called on each entry.
  * user is the user-specified final argument to fn.
