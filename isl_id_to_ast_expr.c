@@ -9,6 +9,7 @@
 #define ISL_VAL		isl_ast_expr
 #define ISL_HMAP_SUFFIX	id_to_ast_expr
 #define ISL_HMAP	isl_id_to_ast_expr
+#define ISL_HMAP_IS_EQUAL	isl_id_to_ast_expr_is_equal
 #define ISL_KEY_IS_EQUAL	isl_id_is_equal
 #define ISL_VAL_IS_EQUAL	isl_ast_expr_is_equal
 #define ISL_KEY_PRINT		isl_printer_print_id

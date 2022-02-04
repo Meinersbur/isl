@@ -399,6 +399,45 @@ isl_bool ISL_FN(ISL_HMAP,every)(__isl_keep ISL_HMAP *hmap,
 				      &call_on_pair, &data);
 }
 
+#ifdef ISL_HMAP_IS_EQUAL
+
+/* Does "hmap" have an entry with key "key" and value "val"?
+ */
+static isl_bool has_entry(__isl_keep ISL_KEY *key, __isl_keep ISL_VAL *val,
+	void *user)
+{
+	ISL_HMAP *hmap = user;
+	ISL_MAYBE(ISL_VAL) maybe_val;
+	isl_bool equal;
+
+	maybe_val = ISL_FN(ISL_HMAP,try_get)(hmap, key);
+	if (maybe_val.valid < 0 || !maybe_val.valid)
+		return maybe_val.valid;
+	equal = ISL_VAL_IS_EQUAL(maybe_val.value, val);
+	ISL_FN(ISL_VAL,free)(maybe_val.value);
+	return equal;
+}
+
+/* Is "hmap1" (obviously) equal to "hmap2"?
+ *
+ * In particular, do the two associative arrays have
+ * the same number of entries and does every entry of the first
+ * also appear in the second?
+ */
+isl_bool ISL_HMAP_IS_EQUAL(__isl_keep ISL_HMAP *hmap1,
+	__isl_keep ISL_HMAP *hmap2)
+{
+	if (!hmap1 || !hmap2)
+		return isl_bool_error;
+	if (hmap1 == hmap2)
+		return isl_bool_true;
+	if (hmap1->table.n != hmap2->table.n)
+		return isl_bool_false;
+	return ISL_FN(ISL_HMAP,every)(hmap1, &has_entry, hmap2);
+}
+
+#endif
+
 /* Internal data structure for print_pair.
  *
  * p is the printer on which the associative array is being printed.

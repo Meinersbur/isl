@@ -9632,6 +9632,18 @@ Associative arrays can be modified using the following functions.
 		__isl_take isl_id_to_ast_expr *id2expr,
 		__isl_take isl_id *key);
 
+Associative arrays can be checked for (obvious) equality
+using the following function.
+
+	#include <isl/id_to_ast_expr.h>
+	isl_bool isl_id_to_ast_expr_is_equal(
+		__isl_take isl_id_to_ast_expr *id2expr1,
+		__isl_take isl_id_to_ast_expr *id2expr2);
+
+Note that depending on how the keys and values are being compared,
+for other types of keys and/or values, this function may be called
+C<plain_is_equal> rather than C<is_equal>.
+
 Associative arrays can be printed using the following function.
 
 	#include <isl/id_to_ast_expr.h>

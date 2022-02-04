@@ -9,6 +9,7 @@
 #define ISL_VAL			isl_ast_graft_list
 #define ISL_HMAP_SUFFIX		set_to_ast_graft_list
 #define ISL_HMAP		isl_set_to_ast_graft_list
+#define ISL_HMAP_IS_EQUAL	isl_set_to_ast_graft_list_plain_is_equal
 #define ISL_KEY_IS_EQUAL	isl_set_plain_is_equal
 #define ISL_VAL_IS_EQUAL	isl_ast_graft_list_is_identical
 #define ISL_KEY_PRINT		isl_printer_print_set

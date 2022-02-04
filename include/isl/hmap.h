@@ -40,6 +40,11 @@ isl_bool ISL_FN(ISL_HMAP,every)(__isl_keep ISL_HMAP *hmap,
 		void *user),
 	void *user);
 
+#ifdef ISL_HMAP_IS_EQUAL
+isl_bool ISL_HMAP_IS_EQUAL(__isl_keep ISL_HMAP *hmap1,
+	__isl_keep ISL_HMAP *hmap2);
+#endif
+
 #ifdef ISL_HMAP_HAVE_READ_FROM_STR
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,read_from_str)(isl_ctx *ctx,
 	const char *str);
