@@ -230,6 +230,31 @@ isl_stat isl_hash_table_foreach(isl_ctx *ctx, struct isl_hash_table *table,
 	return isl_stat_ok;
 }
 
+/* Does "test" succeed on every (non-empty) entry of "table"?
+ */
+isl_bool isl_hash_table_every(isl_ctx *ctx, struct isl_hash_table *table,
+	isl_bool (*test)(void **entry, void *user), void *user)
+{
+	size_t size;
+	uint32_t h;
+
+	if (!table->entries)
+		return isl_bool_error;
+
+	size = 1 << table->bits;
+	for (h = 0; h < size; ++ h) {
+		isl_bool r;
+
+		if (!table->entries[h].data)
+			continue;
+		r = test(&table->entries[h].data, user);
+		if (r < 0 || !r)
+			return r;
+	}
+
+	return isl_bool_true;
+}
+
 void isl_hash_table_remove(struct isl_ctx *ctx,
 				struct isl_hash_table *table,
 				struct isl_hash_table_entry *entry)
