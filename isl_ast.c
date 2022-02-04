@@ -1271,6 +1271,16 @@ static isl_stat isl_ast_node_check_user(__isl_keep isl_ast_node *node)
 					"not a user node");
 }
 
+#undef NODE_TYPE
+#define NODE_TYPE	for
+#undef FIELD_NAME
+#define FIELD_NAME	body
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_node
+#undef FIELD
+#define FIELD		u.f.body
+#include "isl_ast_node_set_field_templ.c"
+
 /* Return the body of the for-node "node",
  * This may be either a copy or the body itself
  * if there is only one reference to "node".
@@ -1297,39 +1307,12 @@ static __isl_give isl_ast_node *isl_ast_node_for_take_body(
 /* Set the body of the for-node "node" to "body",
  * where the body of "node" may be missing
  * due to a preceding call to isl_ast_node_for_take_body.
- * However, in this case, "node" only has a single reference and
- * then the call to isl_ast_node_cow has no effect.
+ * However, in this case, "node" only has a single reference.
  */
 static __isl_give isl_ast_node *isl_ast_node_for_restore_body(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *body)
 {
-	if (isl_ast_node_check_for(node) < 0 || !body)
-		goto error;
-	if (node->u.f.body == body) {
-		isl_ast_node_free(body);
-		return node;
-	}
-
-	node = isl_ast_node_cow(node);
-	if (!node)
-		goto error;
-
-	isl_ast_node_free(node->u.f.body);
-	node->u.f.body = body;
-
-	return node;
-error:
-	isl_ast_node_free(node);
-	isl_ast_node_free(body);
-	return NULL;
-}
-
-/* Replace the body of the for node "node" by "body".
- */
-__isl_give isl_ast_node *isl_ast_node_for_set_body(
-	__isl_take isl_ast_node *node, __isl_take isl_ast_node *body)
-{
-	return isl_ast_node_for_restore_body(node, body);
+	return isl_ast_node_for_set_body(node, body);
 }
 
 __isl_give isl_ast_node *isl_ast_node_for_get_body(
@@ -1410,6 +1393,16 @@ __isl_give isl_ast_expr *isl_ast_node_for_get_inc(
 	return isl_ast_expr_alloc_int_si(isl_ast_node_get_ctx(node), 1);
 }
 
+#undef NODE_TYPE
+#define NODE_TYPE	if
+#undef FIELD_NAME
+#define FIELD_NAME	then
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_node
+#undef FIELD
+#define FIELD		u.i.then
+#include "isl_ast_node_set_field_templ.c"
+
 /* Return the then-branch of the if-node "node",
  * This may be either a copy or the branch itself
  * if there is only one reference to "node".
@@ -1436,39 +1429,12 @@ static __isl_give isl_ast_node *isl_ast_node_if_take_then_node(
 /* Set the then-branch of the if-node "node" to "child",
  * where the then-branch of "node" may be missing
  * due to a preceding call to isl_ast_node_if_take_then_node.
- * However, in this case, "node" only has a single reference and
- * then the call to isl_ast_node_cow has no effect.
+ * However, in this case, "node" only has a single reference.
  */
 static __isl_give isl_ast_node *isl_ast_node_if_restore_then_node(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
 {
-	if (isl_ast_node_check_if(node) < 0 || !child)
-		goto error;
-	if (node->u.i.then == child) {
-		isl_ast_node_free(child);
-		return node;
-	}
-
-	node = isl_ast_node_cow(node);
-	if (!node)
-		goto error;
-
-	isl_ast_node_free(node->u.i.then);
-	node->u.i.then = child;
-
-	return node;
-error:
-	isl_ast_node_free(node);
-	isl_ast_node_free(child);
-	return NULL;
-}
-
-/* Replace the then branch of the if node "node" by "child".
- */
-__isl_give isl_ast_node *isl_ast_node_if_set_then(
-	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
-{
-	return isl_ast_node_if_restore_then_node(node, child);
+	return isl_ast_node_if_set_then(node, child);
 }
 
 /* Return the then-node of the given if-node.
@@ -1524,6 +1490,17 @@ __isl_give isl_ast_node *isl_ast_node_if_get_else(
 	return isl_ast_node_if_get_else_node(node);
 }
 
+#undef NODE_TYPE
+#define NODE_TYPE	if
+#undef FIELD_NAME
+#define FIELD_NAME	else_node
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_node
+#undef FIELD
+#define FIELD		u.i.else_node
+static
+#include "isl_ast_node_set_field_templ.c"
+
 /* Return the else-branch of the if-node "node",
  * This may be either a copy or the branch itself
  * if there is only one reference to "node".
@@ -1550,31 +1527,12 @@ static __isl_give isl_ast_node *isl_ast_node_if_take_else_node(
 /* Set the else-branch of the if-node "node" to "child",
  * where the else-branch of "node" may be missing
  * due to a preceding call to isl_ast_node_if_take_else_node.
- * However, in this case, "node" only has a single reference and
- * then the call to isl_ast_node_cow has no effect.
+ * However, in this case, "node" only has a single reference.
  */
 static __isl_give isl_ast_node *isl_ast_node_if_restore_else_node(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
 {
-	if (isl_ast_node_check_if(node) < 0 || !child)
-		goto error;
-	if (node->u.i.else_node == child) {
-		isl_ast_node_free(child);
-		return node;
-	}
-
-	node = isl_ast_node_cow(node);
-	if (!node)
-		goto error;
-
-	isl_ast_node_free(node->u.i.else_node);
-	node->u.i.else_node = child;
-
-	return node;
-error:
-	isl_ast_node_free(node);
-	isl_ast_node_free(child);
-	return NULL;
+	return isl_ast_node_if_set_else_node(node, child);
 }
 
 __isl_give isl_ast_expr *isl_ast_node_if_get_cond(
@@ -1592,6 +1550,17 @@ __isl_give isl_ast_node_list *isl_ast_node_block_get_children(
 		return NULL;
 	return isl_ast_node_list_copy(node->u.b.children);
 }
+
+#undef NODE_TYPE
+#define NODE_TYPE	block
+#undef FIELD_NAME
+#define FIELD_NAME	children
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_node_list
+#undef FIELD
+#define FIELD		u.b.children
+static
+#include "isl_ast_node_set_field_templ.c"
 
 /* Return the children of the block-node "node",
  * This may be either a copy or the children themselves
@@ -1619,31 +1588,12 @@ static __isl_give isl_ast_node_list *isl_ast_node_block_take_children(
 /* Set the children of the block-node "node" to "children",
  * where the children of "node" may be missing
  * due to a preceding call to isl_ast_node_block_take_children.
- * However, in this case, "node" only has a single reference and
- * then the call to isl_ast_node_cow has no effect.
+ * However, in this case, "node" only has a single reference.
  */
 static __isl_give isl_ast_node *isl_ast_node_block_restore_children(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node_list *children)
 {
-	if (isl_ast_node_check_block(node) < 0 || !children)
-		goto error;
-	if (node->u.b.children == children) {
-		isl_ast_node_list_free(children);
-		return node;
-	}
-
-	node = isl_ast_node_cow(node);
-	if (!node)
-		goto error;
-
-	isl_ast_node_list_free(node->u.b.children);
-	node->u.b.children = children;
-
-	return node;
-error:
-	isl_ast_node_free(node);
-	isl_ast_node_list_free(children);
-	return NULL;
+	return isl_ast_node_block_set_children(node, children);
 }
 
 __isl_give isl_ast_expr *isl_ast_node_user_get_expr(
@@ -1676,6 +1626,17 @@ __isl_give isl_ast_node *isl_ast_node_mark_get_node(
 	return isl_ast_node_copy(node->u.m.node);
 }
 
+#undef NODE_TYPE
+#define NODE_TYPE	mark
+#undef FIELD_NAME
+#define FIELD_NAME	node
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_ast_node
+#undef FIELD
+#define FIELD		u.m.node
+static
+#include "isl_ast_node_set_field_templ.c"
+
 /* Return the child of the mark-node "node",
  * This may be either a copy or the child itself
  * if there is only one reference to "node".
@@ -1702,31 +1663,12 @@ static __isl_give isl_ast_node *isl_ast_node_mark_take_node(
 /* Set the child of the mark-node "node" to "child",
  * where the child of "node" may be missing
  * due to a preceding call to isl_ast_node_mark_take_node.
- * However, in this case, "node" only has a single reference and
- * then the call to isl_ast_node_cow has no effect.
+ * However, in this case, "node" only has a single reference.
  */
 static __isl_give isl_ast_node *isl_ast_node_mark_restore_node(
 	__isl_take isl_ast_node *node, __isl_take isl_ast_node *child)
 {
-	if (isl_ast_node_check_mark(node) < 0 || !child)
-		goto error;
-	if (node->u.m.node == child) {
-		isl_ast_node_free(child);
-		return node;
-	}
-
-	node = isl_ast_node_cow(node);
-	if (!node)
-		goto error;
-
-	isl_ast_node_free(node->u.m.node);
-	node->u.m.node = child;
-
-	return node;
-error:
-	isl_ast_node_free(node);
-	isl_ast_node_free(child);
-	return NULL;
+	return isl_ast_node_mark_set_node(node, child);
 }
 
 __isl_give isl_id *isl_ast_node_get_annotation(__isl_keep isl_ast_node *node)

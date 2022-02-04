@@ -515,6 +515,7 @@ EXTRA_DIST = \
 	isl_aff_lex_templ.c \
 	isl_align_params_templ.c \
 	isl_align_params_bin_templ.c \
+	isl_ast_node_set_field_templ.c \
 	basis_reduction_templ.c \
 	isl_bind_domain_templ.c \
 	bset_to_bmap.c \
