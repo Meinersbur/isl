@@ -361,6 +361,44 @@ isl_stat ISL_FN(ISL_HMAP,foreach)(__isl_keep ISL_HMAP *hmap,
 				      &call_on_copy, &data);
 }
 
+/* Internal data structure for isl_*_to_*_every.
+ *
+ * "test" is the function that should be called on each entry,
+ * until any invocation returns isl_bool_false.
+ * "test_user" is the user-specified final argument to "test".
+ */
+ISL_S(every_data) {
+	isl_bool (*test)(__isl_keep ISL_KEY *key, __isl_keep ISL_VAL *val,
+		void *user);
+	void *test_user;
+};
+
+/* Call data->test on the key and value in *entry.
+ */
+static isl_bool call_on_pair(void **entry, void *user)
+{
+	ISL_S(pair) *pair = *entry;
+	ISL_S(every_data) *data = (ISL_S(every_data) *) user;
+
+	return data->test(pair->key, pair->val, data->test_user);
+}
+
+/* Does "test" succeed on every entry of "hmap"?
+ */
+isl_bool ISL_FN(ISL_HMAP,every)(__isl_keep ISL_HMAP *hmap,
+	isl_bool (*test)(__isl_keep ISL_KEY *key, __isl_keep ISL_VAL *val,
+		void *user),
+	void *user)
+{
+	ISL_S(every_data) data = { test, user };
+
+	if (!hmap)
+		return isl_bool_error;
+
+	return isl_hash_table_every(hmap->ctx, &hmap->table,
+				      &call_on_pair, &data);
+}
+
 /* Internal data structure for print_pair.
  *
  * p is the printer on which the associative array is being printed.

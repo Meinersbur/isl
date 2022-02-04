@@ -9604,6 +9604,11 @@ Associative arrays can be inspected using the following functions.
 		isl_stat (*fn)(__isl_take isl_id *key,
 			__isl_take isl_ast_expr *val, void *user),
 		void *user);
+	isl_bool isl_id_to_ast_expr_every(
+		__isl_keep isl_id_to_ast_expr *id2expr,
+		isl_bool (*test)(__isl_keep isl_id *key,
+			__isl_keep isl_ast_expr *val, void *user),
+		void *user);
 
 The function C<isl_id_to_ast_expr_try_get> returns a structure
 containing two elements, C<valid> and C<value>.

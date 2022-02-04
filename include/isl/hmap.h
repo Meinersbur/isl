@@ -35,6 +35,10 @@ isl_stat ISL_FN(ISL_HMAP,foreach)(__isl_keep ISL_HMAP *hmap,
 	isl_stat (*fn)(__isl_take ISL_KEY *key, __isl_take ISL_VAL *val,
 		void *user),
 	void *user);
+isl_bool ISL_FN(ISL_HMAP,every)(__isl_keep ISL_HMAP *hmap,
+	isl_bool (*test)(__isl_keep ISL_KEY *key, __isl_keep ISL_VAL *val,
+		void *user),
+	void *user);
 
 #ifdef ISL_HMAP_HAVE_READ_FROM_STR
 __isl_give ISL_HMAP *ISL_FN(ISL_HMAP,read_from_str)(isl_ctx *ctx,
