@@ -1676,22 +1676,31 @@ __isl_give isl_id *isl_ast_node_get_annotation(__isl_keep isl_ast_node *node)
 	return node ? isl_id_copy(node->annotation) : NULL;
 }
 
+/* Check that "node" is of any type.
+ * That is, simply check that it is a valid node.
+ */
+static isl_stat isl_ast_node_check_any(__isl_keep isl_ast_node *node)
+{
+	return isl_stat_non_null(node);
+}
+
+#undef NODE_TYPE
+#define NODE_TYPE	any
+#undef FIELD_NAME
+#define FIELD_NAME	annotation
+#undef FIELD_TYPE
+#define FIELD_TYPE	isl_id
+#undef FIELD
+#define FIELD		annotation
+static
+#include "isl_ast_node_set_field_templ.c"
+
 /* Replace node->annotation by "annotation".
  */
 __isl_give isl_ast_node *isl_ast_node_set_annotation(
 	__isl_take isl_ast_node *node, __isl_take isl_id *annotation)
 {
-	node = isl_ast_node_cow(node);
-	if (!node || !annotation)
-		goto error;
-
-	isl_id_free(node->annotation);
-	node->annotation = annotation;
-
-	return node;
-error:
-	isl_id_free(annotation);
-	return isl_ast_node_free(node);
+	return isl_ast_node_any_set_annotation(node, annotation);
 }
 
 static __isl_give isl_ast_node *traverse(__isl_take isl_ast_node *node,
