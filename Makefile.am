@@ -594,6 +594,7 @@ EXTRA_DIST = \
 	print_yaml_field_templ.c \
 	isl_power_templ.c \
 	isl_project_out_all_params_templ.c \
+	isl_project_out_param_templ.c \
 	isl_pw_macro.h \
 	isl_pw_templ.c \
 	isl_pw_templ.h \

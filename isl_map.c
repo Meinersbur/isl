@@ -4615,6 +4615,7 @@ error:
 #undef TYPE
 #define TYPE	isl_map
 #include "isl_project_out_all_params_templ.c"
+#include "isl_project_out_param_templ.c"
 
 /* Turn all the dimensions of type "type", except the "n" starting at "first"
  * into existentially quantified variables.
@@ -4642,27 +4643,6 @@ __isl_give isl_set *isl_set_project_out(__isl_take isl_set *set,
 						type, first, n));
 }
 
-/* If "map" involves a parameter with identifier "id",
- * then turn it into an existentially quantified variable.
- */
-__isl_give isl_map *isl_map_project_out_param_id(__isl_take isl_map *map,
-	__isl_take isl_id *id)
-{
-	int pos;
-
-	if (!map || !id)
-		goto error;
-	pos = isl_map_find_dim_by_id(map, isl_dim_param, id);
-	isl_id_free(id);
-	if (pos < 0)
-		return map;
-	return isl_map_project_out(map, isl_dim_param, pos, 1);
-error:
-	isl_map_free(map);
-	isl_id_free(id);
-	return NULL;
-}
-
 /* If "set" involves a parameter with identifier "id",
  * then turn it into an existentially quantified variable.
  */
@@ -4670,33 +4650,6 @@ __isl_give isl_set *isl_set_project_out_param_id(__isl_take isl_set *set,
 	__isl_take isl_id *id)
 {
 	return set_from_map(isl_map_project_out_param_id(set_to_map(set), id));
-}
-
-/* If "map" involves any of the parameters with identifiers in "list",
- * then turn them into existentially quantified variables.
- */
-__isl_give isl_map *isl_map_project_out_param_id_list(__isl_take isl_map *map,
-	__isl_take isl_id_list *list)
-{
-	int i;
-	isl_size n;
-
-	n = isl_id_list_size(list);
-	if (n < 0)
-		goto error;
-	for (i = 0; i < n; ++i) {
-		isl_id *id;
-
-		id = isl_id_list_get_at(list, i);
-		map = isl_map_project_out_param_id(map, id);
-	}
-
-	isl_id_list_free(list);
-	return map;
-error:
-	isl_id_list_free(list);
-	isl_map_free(map);
-	return NULL;
 }
 
 /* If "set" involves any of the parameters with identifiers in "list",
