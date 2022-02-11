@@ -488,6 +488,9 @@ __isl_give isl_basic_map *isl_basic_map_project_out(
 __isl_overload
 __isl_give isl_map *isl_map_project_out_param_id(__isl_take isl_map *map,
 	__isl_take isl_id *id);
+__isl_overload
+__isl_give isl_map *isl_map_project_out_param_id_list(__isl_take isl_map *map,
+	__isl_take isl_id_list *list);
 __isl_give isl_map *isl_map_project_out(__isl_take isl_map *map,
 		enum isl_dim_type type, unsigned first, unsigned n);
 __isl_export

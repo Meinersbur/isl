@@ -4672,10 +4672,10 @@ __isl_give isl_set *isl_set_project_out_param_id(__isl_take isl_set *set,
 	return set_from_map(isl_map_project_out_param_id(set_to_map(set), id));
 }
 
-/* If "set" involves any of the parameters with identifiers in "list",
+/* If "map" involves any of the parameters with identifiers in "list",
  * then turn them into existentially quantified variables.
  */
-__isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
+__isl_give isl_map *isl_map_project_out_param_id_list(__isl_take isl_map *map,
 	__isl_take isl_id_list *list)
 {
 	int i;
@@ -4688,15 +4688,28 @@ __isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
 		isl_id *id;
 
 		id = isl_id_list_get_at(list, i);
-		set = isl_set_project_out_param_id(set, id);
+		map = isl_map_project_out_param_id(map, id);
 	}
 
 	isl_id_list_free(list);
-	return set;
+	return map;
 error:
 	isl_id_list_free(list);
-	isl_set_free(set);
+	isl_map_free(map);
 	return NULL;
+}
+
+/* If "set" involves any of the parameters with identifiers in "list",
+ * then turn them into existentially quantified variables.
+ */
+__isl_give isl_set *isl_set_project_out_param_id_list(__isl_take isl_set *set,
+	__isl_take isl_id_list *list)
+{
+	isl_map *map;
+
+	map = set_to_map(set);
+	map = isl_map_project_out_param_id_list(map, list);
+	return set_from_map(map);
 }
 
 /* Project out all parameters from "set" by existentially quantifying
