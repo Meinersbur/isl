@@ -5627,6 +5627,14 @@ The function C<isl_union_set_project_out> can only project out
 parameters.
 
 	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_project_out_param_id(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_id *id);
+	__isl_give isl_union_map *
+	isl_union_map_project_out_param_id_list(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_id_list *list);
 	__isl_give isl_union_map *isl_union_map_project_out(
 		__isl_take isl_union_map *umap,
 		enum isl_dim_type type, unsigned first, unsigned n);

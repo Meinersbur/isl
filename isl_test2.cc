@@ -253,6 +253,23 @@ static void test_gist(isl::ctx ctx)
 	});
 }
 
+/* Perform tests that project out parameters.
+ */
+static void test_project(isl::ctx ctx)
+{
+	C(arg<isl::id>(&isl::union_map::project_out_param), {
+	{ "[N] -> { D[i] -> A[0:N-1]; D[i] -> B[i] }", "N",
+	  "{ D[i] -> A[0:]; D[i] -> B[i] }" },
+	{ "[N] -> { D[i] -> A[0:N-1]; D[i] -> B[i] }", "M",
+	  "[N] -> { D[i] -> A[0:N-1]; D[i] -> B[i] }" },
+	});
+
+	C(arg<isl::id_list>(&isl::union_map::project_out_param), {
+	{ "[M, N, O] -> { D[i] -> A[j] : i <= j < M, N, O }", "(M, N)",
+	  "[O] -> { D[i] -> A[j] : i <= j < O }" },
+	});
+}
+
 /* Perform some basic scaling tests.
  */
 static void test_scale(isl::ctx ctx)
@@ -285,6 +302,7 @@ static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 	{ "preimage", &test_preimage },
 	{ "intersect", &test_intersect },
 	{ "gist", &test_gist },
+	{ "project out parameters", &test_project },
 	{ "scale", &test_scale },
 };
 

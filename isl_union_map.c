@@ -208,6 +208,18 @@ int isl_union_map_find_dim_by_name(__isl_keep isl_union_map *umap,
 	return isl_space_find_dim_by_name(umap->dim, type, name);
 }
 
+/* Return the position of the parameter with id "id" in "umap".
+ * Return -1 if no such dimension can be found.
+ */
+static int isl_union_map_find_dim_by_id(__isl_keep isl_union_map *umap,
+	enum isl_dim_type type, __isl_keep isl_id *id)
+{
+	isl_space *space;
+
+	space = isl_union_map_peek_space(umap);
+	return isl_space_find_dim_by_id(space, type, id);
+}
+
 __isl_give isl_space *isl_union_set_get_space(__isl_keep isl_union_set *uset)
 {
 	return isl_union_map_get_space(uset);
@@ -4018,6 +4030,7 @@ __isl_give isl_union_map *isl_union_map_project_out(
 #undef TYPE
 #define TYPE	isl_union_map
 #include "isl_project_out_all_params_templ.c"
+#include "isl_project_out_param_templ.c"
 
 /* Turn the "n" dimensions of type "type", starting at "first"
  * into existentially quantified variables.
