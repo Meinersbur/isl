@@ -180,6 +180,17 @@ static void test_intersect(isl::ctx ctx)
 	});
 }
 
+/* Perform some basic gist tests.
+ */
+static void test_gist(isl::ctx ctx)
+{
+	C(&isl::pw_aff::gist_params, {
+	{ "[N] -> { D[x] -> [x] : N >= 0; D[x] -> [0] : N < 0 }",
+	  "[N] -> { : N >= 0 }",
+	  "[N] -> { D[x] -> [x] }" },
+	});
+}
+
 /* Perform some basic scaling tests.
  */
 static void test_scale(isl::ctx ctx)
@@ -209,6 +220,7 @@ static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 {
 	{ "preimage", &test_preimage },
 	{ "intersect", &test_intersect },
+	{ "gist", &test_gist },
 	{ "scale", &test_scale },
 };
 
