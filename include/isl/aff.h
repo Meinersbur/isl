@@ -153,6 +153,7 @@ __isl_give isl_aff *isl_aff_align_params(__isl_take isl_aff *aff,
 __isl_export
 __isl_give isl_aff *isl_aff_gist(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
+__isl_export
 __isl_give isl_aff *isl_aff_gist_params(__isl_take isl_aff *aff,
 	__isl_take isl_set *context);
 
@@ -385,6 +386,7 @@ __isl_give isl_pw_aff *isl_pw_aff_coalesce(__isl_take isl_pw_aff *pa);
 __isl_export
 __isl_give isl_pw_aff *isl_pw_aff_gist(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
+__isl_export
 __isl_give isl_pw_aff *isl_pw_aff_gist_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_set *context);
 
@@ -535,6 +537,7 @@ __isl_give isl_multi_val *isl_multi_aff_get_constant_multi_val(
 __isl_export
 __isl_give isl_multi_aff *isl_multi_aff_floor(__isl_take isl_multi_aff *ma);
 
+__isl_export
 __isl_give isl_multi_aff *isl_multi_aff_gist_params(
 	__isl_take isl_multi_aff *maff, __isl_take isl_set *context);
 __isl_export
@@ -805,6 +808,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_unused_params(
 __isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_coalesce(
 	__isl_take isl_pw_multi_aff *pma);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_gist_params(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_set *set);
 __isl_export
