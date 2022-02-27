@@ -893,8 +893,9 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
 }
 
 /* Compute the gist of "pw" with respect to the domain constraints
- * of "context".  Call "fn_el" to compute the gist of the elements
- * and "fn_dom" to compute the gist of the domains.
+ * of "context".  Call "fn_el" to compute the gist of the elements,
+ * "fn_dom" to compute the gist of the domains and
+ * "intersect_context" to intersect the domain with the context.
  *
  * If the piecewise expression is empty or the context is the universe,
  * then nothing can be simplified.
@@ -904,7 +905,9 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 	__isl_give EL *(*fn_el)(__isl_take EL *el,
 				    __isl_take isl_set *set),
 	__isl_give isl_set *(*fn_dom)(__isl_take isl_set *set,
-				    __isl_take isl_basic_set *bset))
+				    __isl_take isl_basic_set *bset),
+	__isl_give isl_set *intersect_context(__isl_take isl_set *set,
+		__isl_take isl_set *context))
 {
 	int i;
 	int is_universe;
@@ -966,7 +969,7 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 				return FN(PW,gist_last)(pw, context, fn_el);
 			}
 		}
-		set_i = isl_set_intersect(isl_set_copy(pw->p[i].set),
+		set_i = intersect_context(isl_set_copy(pw->p[i].set),
 						 isl_set_copy(context));
 		empty = isl_set_plain_is_empty(set_i);
 		pw->p[i].FIELD = fn_el(pw->p[i].FIELD, set_i);
@@ -997,7 +1000,8 @@ __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 {
 	FN(PW,align_params_set)(&pw, &context);
 	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist),
-					&isl_set_gist_basic_set);
+					&isl_set_gist_basic_set,
+					&isl_set_intersect);
 }
 
 __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
@@ -1005,7 +1009,8 @@ __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
 {
 	FN(PW,align_params_set)(&pw, &context);
 	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist_params),
-					&isl_set_gist_params_basic_set);
+					&isl_set_gist_params_basic_set,
+					&isl_set_intersect_params);
 }
 
 /* Return -1 if the piece "p1" should be sorted before "p2"
