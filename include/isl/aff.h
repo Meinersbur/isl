@@ -304,6 +304,7 @@ __isl_give isl_pw_aff *isl_pw_aff_reset_tuple_id(__isl_take isl_pw_aff *pa,
 	enum isl_dim_type type);
 __isl_give isl_pw_aff *isl_pw_aff_reset_user(__isl_take isl_pw_aff *pa);
 
+__isl_export
 __isl_give isl_set *isl_pw_aff_params(__isl_take isl_pw_aff *pwa);
 __isl_export
 __isl_give isl_set *isl_pw_aff_domain(__isl_take isl_pw_aff *pwaff);
