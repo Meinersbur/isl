@@ -559,9 +559,12 @@ static std::vector<Signature> each_scc =
 static Signature map_from_range_and_domain =
 	{ { Domain, Range }, { { Range }, { Domain } } };
 
-/* Signature for creating a map from a domain,
- * where the range is given by an extra argument.
+
+/* Signatures for creating a set from a parameter set or
+ * a map from a domain,
+ * where the domain/range is given by an extra argument.
  */
+static Signature set_from_params = { { Domain }, { { }, { Domain } } };
 static Signature map_from_domain_and_range =
 	{ { Domain, Range }, { { Domain }, { Range } } };
 
@@ -573,11 +576,6 @@ static Signature anonymous_map_from_domain =
 	{ { Domain, Anonymous }, { { Domain } } };
 static std::vector<Signature> anonymous_from_domain =
 	{ anonymous_set_from_params, anonymous_map_from_domain };
-
-/* Signature for creating a set from a parameter set,
- * where the domain is given by an extra argument.
- */
-static Signature set_from_params = { { Domain }, { { }, { Domain } } };
 
 /* Signatures for creating an anonymous function from a domain,
  * where the second argument is an identifier (with an anonymous tuple).
