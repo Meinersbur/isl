@@ -567,6 +567,8 @@ static Signature map_from_range_and_domain =
 static Signature set_from_params = { { Domain }, { { }, { Domain } } };
 static Signature map_from_domain_and_range =
 	{ { Domain, Range }, { { Domain }, { Range } } };
+static std::vector<Signature> from_domain =
+	{ set_from_params, map_from_domain_and_range };
 
 /* Signatures for creating an anonymous set from a parameter set
  * or a map from a domain, where the range is anonymous.
@@ -857,7 +859,7 @@ member_methods {
 	{ "min_val",		range_op },
 	{ "min_multi_val",	range_op },
 	{ "mod",		bin_val },
-	{ "on_domain",		{ map_from_domain_and_range } },
+	{ "on_domain",		from_domain },
 	{ "neg",		fn_un_op },
 	{ "offset",		fn_un_op },
 	{ "param_on_domain",	anonymous_from_domain_bin_anon },
