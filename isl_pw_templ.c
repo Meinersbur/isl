@@ -861,13 +861,12 @@ __isl_give PW *FN(PW,subtract_domain)(__isl_take PW *pw,
 /* Compute the gist of "pw" with respect to the domain constraints
  * of "context" for the case where the domain of the last element
  * of "pw" is equal to "context".
- * Call "fn_el" to compute the gist of this element, replace
+ * Compute the gist of this element, replace
  * its domain by the universe and drop all other elements
  * as their domains are necessarily disjoint from "context".
  */
 static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
-	__isl_take isl_set *context,
-	__isl_give EL *(*fn_el)(__isl_take EL *el, __isl_take isl_set *set))
+	__isl_take isl_set *context)
 {
 	int i;
 	isl_space *space;
@@ -881,7 +880,7 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
 	pw->n = 1;
 
 	space = isl_set_get_space(context);
-	pw->p[0].FIELD = fn_el(pw->p[0].FIELD, context);
+	pw->p[0].FIELD = FN(EL,gist)(pw->p[0].FIELD, context);
 	context = isl_set_universe(space);
 	isl_set_free(pw->p[0].set);
 	pw->p[0].set = context;
@@ -893,8 +892,8 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
 }
 
 /* Compute the gist of "pw" with respect to the domain constraints
- * of "context".  Call "fn_el" to compute the gist of the elements,
- * "fn_dom" to compute the gist of the domains and
+ * of "context".
+ * Call "fn_dom" to compute the gist of the domains and
  * "intersect_context" to intersect the domain with the context.
  *
  * If the piecewise expression is empty or the context is the universe,
@@ -902,8 +901,6 @@ static __isl_give PW *FN(PW,gist_last)(__isl_take PW *pw,
  */
 static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 	__isl_take isl_set *context,
-	__isl_give EL *(*fn_el)(__isl_take EL *el,
-				    __isl_take isl_set *set),
 	__isl_give isl_set *(*fn_dom)(__isl_take isl_set *set,
 				    __isl_take isl_basic_set *bset),
 	__isl_give isl_set *intersect_context(__isl_take isl_set *set,
@@ -949,7 +946,7 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 		if (equal < 0)
 			goto error;
 		if (equal)
-			return FN(PW,gist_last)(pw, context, fn_el);
+			return FN(PW,gist_last)(pw, context);
 	}
 
 	context = isl_set_compute_divs(context);
@@ -966,13 +963,13 @@ static __isl_give PW *FN(PW,gist_aligned)(__isl_take PW *pw,
 				goto error;
 			if (equal) {
 				isl_basic_set_free(hull);
-				return FN(PW,gist_last)(pw, context, fn_el);
+				return FN(PW,gist_last)(pw, context);
 			}
 		}
 		set_i = intersect_context(isl_set_copy(pw->p[i].set),
 						 isl_set_copy(context));
 		empty = isl_set_plain_is_empty(set_i);
-		pw->p[i].FIELD = fn_el(pw->p[i].FIELD, set_i);
+		pw->p[i].FIELD = FN(EL,gist)(pw->p[i].FIELD, set_i);
 		pw->p[i].set = fn_dom(pw->p[i].set, isl_basic_set_copy(hull));
 		if (empty < 0 || !pw->p[i].FIELD || !pw->p[i].set)
 			goto error;
@@ -999,8 +996,7 @@ error:
 __isl_give PW *FN(PW,gist)(__isl_take PW *pw, __isl_take isl_set *context)
 {
 	FN(PW,align_params_set)(&pw, &context);
-	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist),
-					&isl_set_gist_basic_set,
+	return FN(PW,gist_aligned)(pw, context, &isl_set_gist_basic_set,
 					&isl_set_intersect);
 }
 
@@ -1008,8 +1004,7 @@ __isl_give PW *FN(PW,gist_params)(__isl_take PW *pw,
 	__isl_take isl_set *context)
 {
 	FN(PW,align_params_set)(&pw, &context);
-	return FN(PW,gist_aligned)(pw, context, &FN(EL,gist_params),
-					&isl_set_gist_params_basic_set,
+	return FN(PW,gist_aligned)(pw, context, &isl_set_gist_params_basic_set,
 					&isl_set_intersect_params);
 }
 
