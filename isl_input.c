@@ -1719,6 +1719,31 @@ static __isl_give isl_map *read_map_tuple(__isl_keep isl_stream *s,
 	return map_from_tuple(tuple, map, type, v, rational);
 }
 
+/* Read the parameter domain of an expression from "s" (if any) and
+ * check that it does not involve any constraints.
+ * "v" contains a description of the identifiers parsed so far
+ * (of which there should not be any at this point) and is extended
+ * by this function.
+ */
+static __isl_give isl_set *read_universe_params(__isl_keep isl_stream *s,
+	struct vars *v)
+{
+	isl_set *dom;
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			return isl_set_free(dom);
+	}
+	if (!isl_set_plain_is_universe(dom))
+		isl_die(s->ctx, isl_error_invalid,
+			"expecting universe parameter domain",
+			return isl_set_free(dom));
+
+	return dom;
+}
+
 /* Given two equal-length lists of piecewise affine expression with the space
  * of "set" as domain, construct a set in the same space that expresses
  * that "left" and "right" satisfy the comparison "type".
@@ -3886,15 +3911,9 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 	if (!v)
 		return NULL;
 
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (!isl_set_plain_is_universe(dom))
-		isl_die(s->ctx, isl_error_invalid,
-			"expecting universe parameter domain", goto error);
+	dom = read_universe_params(s, v);
+	if (!dom)
+		goto error;
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
