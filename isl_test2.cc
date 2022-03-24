@@ -28,6 +28,13 @@ static binary_fn<A1, R, T> const arg(const binary_fn<A1, R, T> &fn)
 	return fn;
 }
 
+/* A description of the input and the output of a unary operation.
+ */
+struct unary {
+	const char *arg;
+	const char *res;
+};
+
 /* A description of the inputs and the output of a binary operation.
  */
 struct binary {
@@ -61,6 +68,31 @@ static bool is_equal(const T &a, const T &b)
 	isl::exception::throw_error(isl_error_invalid, msg, __FILE__, __LINE__)
 
 /* Run a sequence of tests of method "fn" with stringification "name" and
+ * with input and output described by "test",
+ * throwing an exception when an unexpected result is produced.
+ */
+template <typename R, typename T>
+static void test(isl::ctx ctx, R (T::*fn)() const, const std::string &name,
+	const std::vector<unary> &tests)
+{
+	for (const auto &test : tests) {
+		T obj(ctx, test.arg);
+		R expected(ctx, test.res);
+		const auto &res = (obj.*fn)();
+		std::ostringstream ss;
+
+		if (is_equal(expected, res))
+			continue;
+
+		ss << name << "(" << test.arg << ") =\n"
+		   << res << "\n"
+		   << "expecting:\n"
+		   << expected;
+		THROW_INVALID(ss.str().c_str());
+	}
+}
+
+/* Run a sequence of tests of method "fn" with stringification "name" and
  * with inputs and output described by "test",
  * throwing an exception when an unexpected result is produced.
  */
@@ -90,6 +122,26 @@ static void test(isl::ctx ctx, R (T::*fn)(A1) const, const std::string &name,
  * as extra argument a stringification of "FN".
  */
 #define C(FN, ...) test(ctx, FN, #FN, __VA_ARGS__)
+
+/* Perform some basic isl::space tests.
+ */
+static void test_space(isl::ctx ctx)
+{
+	C(&isl::space::domain, {
+	{ "{ A[] -> B[] }", "{ A[] }" },
+	{ "{ A[C[] -> D[]] -> B[E[] -> F[]] }", "{ A[C[] -> D[]] }" },
+	});
+
+	C(&isl::space::range, {
+	{ "{ A[] -> B[] }", "{ B[] }" },
+	{ "{ A[C[] -> D[]] -> B[E[] -> F[]] }", "{ B[E[] -> F[]] }" },
+	});
+
+	C(&isl::space::params, {
+	{ "{ A[] -> B[] }", "{ : }" },
+	{ "{ A[C[] -> D[]] -> B[E[] -> F[]] }", "{ : }" },
+	});
+}
 
 /* Perform some basic preimage tests.
  */
@@ -218,6 +270,7 @@ static void test_scale(isl::ctx ctx)
  */
 static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 {
+	{ "space", &test_space },
 	{ "preimage", &test_preimage },
 	{ "intersect", &test_intersect },
 	{ "gist", &test_gist },
