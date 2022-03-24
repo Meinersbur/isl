@@ -4349,6 +4349,10 @@ Objects can be read from input using the following functions.
 	__isl_give isl_multi_val *isl_multi_val_read_from_str(
 		isl_ctx *ctx, const char *str);
 
+	#include <isl/space.h>
+	__isl_give isl_space *isl_space_read_from_str(
+		isl_ctx *ctx, const char *str);
+
 	#include <isl/set.h>
 	__isl_give isl_basic_set *isl_basic_set_read_from_file(
 		isl_ctx *ctx, FILE *input);

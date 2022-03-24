@@ -1854,6 +1854,20 @@ error:
 	return NULL;
 }
 
+/* Read an isl_space object from "str".
+ */
+__isl_give isl_space *isl_space_read_from_str(isl_ctx *ctx,
+	const char *str)
+{
+	struct isl_space *space;
+	isl_stream *s = isl_stream_new_str(ctx, str);
+	if (!s)
+		return NULL;
+	space = isl_stream_read_space(s);
+	isl_stream_free(s);
+	return space;
+}
+
 /* Given two equal-length lists of piecewise affine expression with the space
  * of "set" as domain, construct a set in the same space that expresses
  * that "left" and "right" satisfy the comparison "type".
