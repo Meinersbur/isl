@@ -2,7 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
- * Copyright 2019      Cerebras Systems
+ * Copyright 2019,2022 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -1752,6 +1752,106 @@ static __isl_give isl_set *read_universe_params(__isl_keep isl_stream *s,
 			return isl_set_free(dom));
 
 	return dom;
+}
+
+/* This function is called for each element in a tuple inside read_space_tuples.
+ * Add a new variable to "v" and adjust "space" accordingly
+ * if the variable has a name.
+ */
+static __isl_give isl_space *read_tuple_id(__isl_keep isl_stream *s,
+	struct vars *v, __isl_take isl_space *space, int rational, void *user)
+{
+	struct isl_token *tok;
+
+	tok = next_token(s);
+	if (!tok) {
+		isl_stream_error(s, NULL, "unexpected EOF");
+		return isl_space_free(space);
+	}
+
+	if (tok->type == ISL_TOKEN_IDENT) {
+		int n = v->n;
+		int p = vars_pos(v, tok->u.s, -1);
+		if (p < 0)
+			goto error;
+		if (p < n) {
+			isl_stream_error(s, tok, "expecting fresh identifier");
+			goto error;
+		}
+		space = space_set_last_dim_name(space, v->v->name);
+	} else if (tok->type == '*') {
+		if (vars_add_anon(v) < 0)
+			goto error;
+	} else {
+		isl_stream_error(s, tok, "expecting identifier or '*'");
+		goto error;
+	}
+
+	isl_token_free(tok);
+	return space;
+error:
+	isl_token_free(tok);
+	return isl_space_free(space);
+}
+
+/* Given a parameter space "params", extend it with one or two tuples
+ * read from "s".
+ * "v" contains a description of the identifiers parsed so far and is extended
+ * by this function.
+ */
+static __isl_give isl_space *read_space_tuples(__isl_keep isl_stream *s,
+	struct vars *v, __isl_take isl_space *params)
+{
+	isl_space *space, *ran;
+
+	space = read_tuple_space(s, v, isl_space_copy(params), 1, 1,
+				&read_tuple_id, NULL);
+	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
+		ran = read_tuple_space(s, v, isl_space_copy(params), 1, 1,
+					&read_tuple_id, NULL);
+		space = isl_space_unwrap(isl_space_product(space, ran));
+	}
+	isl_space_free(params);
+
+	return space;
+}
+
+/* Read an isl_space object from "s".
+ *
+ * First read the parameters (if any).
+ *
+ * Then check if the description is of the special form "{ : }",
+ * in which case it represents a parameter space.
+ * Otherwise, it has one or two tuples.
+ */
+__isl_give isl_space *isl_stream_read_space(__isl_keep isl_stream *s)
+{
+	struct vars *v;
+	isl_set *dom;
+	isl_space *space;
+
+	v = vars_new(s->ctx);
+	if (!v)
+		return NULL;
+	dom = read_universe_params(s, v);
+	space = isl_set_get_space(dom);
+	isl_set_free(dom);
+
+	if (isl_stream_eat(s, '{'))
+		goto error;
+
+	if (!isl_stream_eat_if_available(s, ':'))
+		space = read_space_tuples(s, v, space);
+
+	if (isl_stream_eat(s, '}'))
+		goto error;
+
+	vars_free(v);
+	return space;
+error:
+	vars_free(v);
+	isl_space_free(space);
+	return NULL;
 }
 
 /* Given two equal-length lists of piecewise affine expression with the space
