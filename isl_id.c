@@ -191,6 +191,16 @@ __isl_give isl_id *isl_id_set_free_user(__isl_take isl_id *id,
 	return id;
 }
 
+/* Retrieve the callback set by isl_id_set_free_user,
+ * or NULL if no such callback was set.
+ */
+void (*isl_id_get_free_user(__isl_keep isl_id *id))(void *user)
+{
+	if (!id)
+		return NULL;
+	return id->free_user;
+}
+
 /* If the id has a negative refcount, then it is a static isl_id
  * and should not be freed.
  */

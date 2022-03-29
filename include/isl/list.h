@@ -89,9 +89,10 @@ __isl_give isl_##EL##_list *isl_##EL##_list_sort(			\
 	int (*cmp)(__isl_keep struct isl_##EL *a,			\
 		__isl_keep struct isl_##EL *b,				\
 		void *user), void *user);				\
+EXPORT									\
 isl_stat isl_##EL##_list_foreach_scc(__isl_keep isl_##EL##_list *list,	\
-	isl_bool (*follows)(__isl_keep struct isl_##EL *a,		\
-			__isl_keep struct isl_##EL *b, void *user),	\
+	isl_bool (*follows)(__isl_keep isl_##EL *a,			\
+			__isl_keep isl_##EL *b, void *user),		\
 	void *follows_user,						\
 	isl_stat (*fn)(__isl_take isl_##EL##_list *scc, void *user),	\
 	void *fn_user);							\

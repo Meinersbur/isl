@@ -1247,7 +1247,7 @@ struct isl_ast_count_constraints_data {
 };
 
 /* Increment data->n_indep, data->lower or data->upper depending
- * on whether "c" is independenct of dimensions data->pos,
+ * on whether "c" is independent of dimensions data->pos,
  * a lower bound or an upper bound.
  */
 static isl_stat count_constraints(__isl_take isl_constraint *c, void *user)

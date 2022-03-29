@@ -165,6 +165,7 @@ static const char *reparse_pw_multi_aff_tests[] = {
 	"{ [x, x] -> [x % 4] }",
 	"{ [x, x + 1] -> [x % 4] : x mod 3 = 1 }",
 	"{ [x, x mod 2] -> [x % 4] }",
+	"{ [a] -> [a//2] : exists (e0: 8*floor((-a + e0)/8) <= -8 - a + 8e0) }",
 };
 
 #undef BASE
@@ -10308,8 +10309,7 @@ static int test_schedule_tree_prefix(isl_ctx *ctx)
 	filters = isl_union_set_list_add(filters, uset);
 	node = isl_schedule_node_insert_sequence(node, filters);
 
-	node = isl_schedule_node_child(node, 0);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 0, 0);
 	mupa = isl_schedule_node_get_prefix_schedule_multi_union_pw_aff(node);
 	str = "([] : { S1[i,j] : i > j })";
 	mupa2 = isl_multi_union_pw_aff_read_from_str(ctx, str);
@@ -10424,8 +10424,7 @@ static int test_schedule_tree_group_2(isl_ctx *ctx)
 	uset = isl_union_set_read_from_str(ctx, str);
 	filters = isl_union_set_list_add(filters, uset);
 	node = isl_schedule_node_insert_sequence(node, filters);
-	node = isl_schedule_node_child(node, 1);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 1, 0);
 	str = "{ S2[i,j] }";
 	uset = isl_union_set_read_from_str(ctx, str);
 	filters = isl_union_set_list_from_union_set(uset);
@@ -10440,12 +10439,10 @@ static int test_schedule_tree_group_2(isl_ctx *ctx)
 	umap1 = isl_union_map_intersect_domain(umap1, uset);
 	isl_schedule_free(schedule);
 
-	node = isl_schedule_node_parent(node);
-	node = isl_schedule_node_parent(node);
+	node = isl_schedule_node_grandparent(node);
 	id = isl_id_alloc(ctx, "group1", NULL);
 	node = isl_schedule_node_group(node, id);
-	node = isl_schedule_node_child(node, 1);
-	node = isl_schedule_node_child(node, 0);
+	node = isl_schedule_node_grandchild(node, 1, 0);
 	id = isl_id_alloc(ctx, "group2", NULL);
 	node = isl_schedule_node_group(node, id);
 

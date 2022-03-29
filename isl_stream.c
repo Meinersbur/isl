@@ -752,7 +752,7 @@ int isl_stream_eat(__isl_keep isl_stream *s, int type)
 		return 0;
 	}
 	isl_stream_error(s, tok, "expecting other token");
-	isl_stream_push_token(s, tok);
+	isl_token_free(tok);
 	return -1;
 }
 

@@ -8580,6 +8580,46 @@ __isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
 						set_to_map(range), &control));
 }
 
+/* Given a map "map" in a space [A -> B] -> C and a set "domain"
+ * in the space A, return the intersection.
+ *
+ * The set "domain" is extended to a set living in the space [A -> B] and
+ * the domain of "map" is intersected with this set.
+ */
+__isl_give isl_map *isl_map_intersect_domain_wrapped_domain(
+	__isl_take isl_map *map, __isl_take isl_set *domain)
+{
+	isl_space *space;
+	isl_set *factor;
+
+	isl_map_align_params_set(&map, &domain);
+	space = isl_map_get_space(map);
+	space = isl_space_domain_wrapped_range(space);
+	factor = isl_set_universe(space);
+	domain = isl_set_product(domain, factor);
+	return isl_map_intersect_domain(map, domain);
+}
+
+/* Given a map "map" in a space A -> [B -> C] and a set "domain"
+ * in the space B, return the intersection.
+ *
+ * The set "domain" is extended to a set living in the space [B -> C] and
+ * the range of "map" is intersected with this set.
+ */
+__isl_give isl_map *isl_map_intersect_range_wrapped_domain(
+	__isl_take isl_map *map, __isl_take isl_set *domain)
+{
+	isl_space *space;
+	isl_set *factor;
+
+	isl_map_align_params_set(&map, &domain);
+	space = isl_map_get_space(map);
+	space = isl_space_range_wrapped_range(space);
+	factor = isl_set_universe(space);
+	domain = isl_set_product(domain, factor);
+	return isl_map_intersect_range(map, domain);
+}
+
 __isl_give isl_map *isl_map_apply_domain(__isl_take isl_map *map1,
 	__isl_take isl_map *map2)
 {
@@ -10354,6 +10394,18 @@ int isl_basic_map_plain_cmp(__isl_keep isl_basic_map *bmap1,
 			return cmp;
 	}
 	for (i = 0; i < bmap1->n_div; ++i) {
+		isl_bool unknown1, unknown2;
+
+		unknown1 = isl_basic_map_div_is_marked_unknown(bmap1, i);
+		unknown2 = isl_basic_map_div_is_marked_unknown(bmap2, i);
+		if (unknown1 < 0 || unknown2 < 0)
+			return -1;
+		if (unknown1 && unknown2)
+			continue;
+		if (unknown1)
+			return 1;
+		if (unknown2)
+			return -1;
 		cmp = isl_seq_cmp(bmap1->div[i], bmap2->div[i], 1+1+total);
 		if (cmp)
 			return cmp;

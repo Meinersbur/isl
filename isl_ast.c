@@ -1018,6 +1018,11 @@ __isl_give isl_ast_node *isl_ast_node_copy(__isl_keep isl_ast_node *node)
 	return node;
 }
 
+/* Return a fresh copy of "node".
+ *
+ * In the case of a degenerate for node, take into account
+ * that "cond" and "inc" are NULL.
+ */
 __isl_give isl_ast_node *isl_ast_node_dup(__isl_keep isl_ast_node *node)
 {
 	isl_ast_node *dup;
@@ -1039,13 +1044,17 @@ __isl_give isl_ast_node *isl_ast_node_dup(__isl_keep isl_ast_node *node)
 			return isl_ast_node_free(dup);
 		break;
 	case isl_ast_node_for:
+		dup->u.f.degenerate = node->u.f.degenerate;
 		dup->u.f.iterator = isl_ast_expr_copy(node->u.f.iterator);
 		dup->u.f.init = isl_ast_expr_copy(node->u.f.init);
+		dup->u.f.body = isl_ast_node_copy(node->u.f.body);
+		if (!dup->u.f.iterator || !dup->u.f.init || !dup->u.f.body)
+			return isl_ast_node_free(dup);
+		if (node->u.f.degenerate)
+			break;
 		dup->u.f.cond = isl_ast_expr_copy(node->u.f.cond);
 		dup->u.f.inc = isl_ast_expr_copy(node->u.f.inc);
-		dup->u.f.body = isl_ast_node_copy(node->u.f.body);
-		if (!dup->u.f.iterator || !dup->u.f.init || !dup->u.f.cond ||
-		    !dup->u.f.inc || !dup->u.f.body)
+		if (!dup->u.f.cond || !dup->u.f.inc)
 			return isl_ast_node_free(dup);
 		break;
 	case isl_ast_node_block:
@@ -1067,6 +1076,12 @@ __isl_give isl_ast_node *isl_ast_node_dup(__isl_keep isl_ast_node *node)
 	case isl_ast_node_error:
 		break;
 	}
+
+	if (!node->annotation)
+		return dup;
+	dup->annotation = isl_id_copy(node->annotation);
+	if (!dup->annotation)
+		return isl_ast_node_free(dup);
 
 	return dup;
 }

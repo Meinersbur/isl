@@ -343,7 +343,7 @@ under the MIT license.
 
 The source of C<isl> can be obtained either as a tarball
 or from the git repository.  Both are available from
-L<http://isl.gforge.inria.fr/>.
+L<https://libisl.sourceforge.io/>.
 The installation process depends on how you obtained
 the source.
 
@@ -1006,6 +1006,8 @@ using the following functions.
 	__isl_give isl_id *isl_id_set_free_user(
 		__isl_take isl_id *id,
 		void (*free_user)(void *user));
+	void (*isl_id_get_free_user(__isl_keep isl_id *id))
+		(void *user);
 	__isl_give isl_id *isl_id_copy(isl_id *id);
 	__isl_null isl_id *isl_id_free(__isl_take isl_id *id);
 
@@ -1017,6 +1019,7 @@ using the following functions.
 
 The callback set by C<isl_id_set_free_user> is called on the user
 pointer when the last reference to the C<isl_id> is freed.
+This callback can be retrieved using C<isl_id_get_free_user>.
 Note that C<isl_id_get_name> returns a pointer to some internal
 data structure, so the result can only be used while the
 corresponding C<isl_id> is alive.
@@ -3774,6 +3777,9 @@ then create a piecewise expression over a given domain.
 	__isl_give isl_pw_aff *isl_pw_aff_val_on_domain(
 		__isl_take isl_set *domain,
 		__isl_take isl_val *v);
+	__isl_give isl_pw_aff *isl_set_pw_aff_on_domain_val(
+		__isl_take isl_set *domain,
+		__isl_take isl_val *v);
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_multi_val_on_domain(
 		__isl_take isl_set *domain,
@@ -3785,9 +3791,17 @@ then create a piecewise expression over a given domain.
 	__isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 		__isl_take isl_set *domain,
 		__isl_take isl_id *id);
+	__isl_give isl_pw_aff *isl_set_param_pw_aff_on_domain_id(
+		__isl_take isl_set *domain,
+		__isl_take isl_id *id);
 
-C<isl_set_pw_multi_aff_on_domain_multi_val> is an alternative name
-for C<isl_pw_multi_aff_multi_val_on_domain>.
+C<isl_set_pw_aff_on_domain_val> is an alternative name
+for C<isl_pw_aff_val_on_domain>.
+Similarly for the pair
+C<isl_set_pw_multi_aff_on_domain_multi_val> and
+C<isl_pw_multi_aff_multi_val_on_domain> and
+for the pair C<isl_set_param_pw_aff_on_domain_id> and
+C<isl_pw_aff_param_on_domain_id>.
 
 As a convenience, a piecewise multiple expression can
 also be created from a piecewise expression.
@@ -5523,6 +5537,18 @@ in the domain of the input function.
 		__isl_take isl_space *space);
 	__isl_give isl_space *isl_space_params(
 		__isl_take isl_space *space);
+	__isl_give isl_space *
+	isl_space_domain_wrapped_domain(
+		__isl_take isl_space *space);
+	__isl_give isl_space *
+	isl_space_domain_wrapped_range(
+		__isl_take isl_space *space);
+	__isl_give isl_space *
+	isl_space_range_wrapped_domain(
+		__isl_take isl_space *space);
+	__isl_give isl_space *
+	isl_space_range_wrapped_range(
+		__isl_take isl_space *space);
 
 	#include <isl/local_space.h>
 	__isl_give isl_local_space *isl_local_space_domain(
@@ -5553,6 +5579,8 @@ in the domain of the input function.
 		__isl_take isl_basic_set *bset);
 	__isl_give isl_set *isl_set_params(__isl_take isl_set *set);
 
+The function C<isl_space_domain_wrapped_domain> returns the domain
+of the binary relation wrapped inside the domain of the input.
 The function C<isl_set_project_onto_map> returns a relation
 that projects the input set onto the given set dimensions.
 
@@ -6566,6 +6594,10 @@ there is one, negative infinity or infinity if the problem is unbounded and
 NaN if the problem is empty.
 
 	#include <isl/ilp.h>
+	__isl_give isl_val *isl_pw_aff_min_val(
+		__isl_take isl_pw_aff *pa);
+	__isl_give isl_val *isl_pw_aff_max_val(
+		__isl_take isl_pw_aff *pa);
 	__isl_give isl_multi_val *
 	isl_pw_multi_aff_min_multi_val(
 		__isl_take isl_pw_multi_aff *pma);
@@ -7400,6 +7432,14 @@ the same (number of) parameters.
 	isl_map_intersect_range_factor_range(
 		__isl_take isl_map *map,
 		__isl_take isl_map *factor);
+	__isl_give isl_map *
+	isl_map_intersect_domain_wrapped_domain(
+		__isl_take isl_map *map,
+		__isl_take isl_set *domain);
+	__isl_give isl_map *
+	isl_map_intersect_range_wrapped_domain(
+		__isl_take isl_map *map,
+		__isl_take isl_set *domain);
 
 	#include <isl/union_set.h>
 	__isl_give isl_union_set *isl_union_set_intersect_params(
@@ -7454,6 +7494,14 @@ the same (number of) parameters.
 	isl_union_map_intersect_range_factor_range(
 		__isl_take isl_union_map *umap,
 		__isl_take isl_union_map *factor);
+	__isl_give isl_union_map *
+	isl_union_map_intersect_domain_wrapped_domain_union_set(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_set *domain);
+	__isl_give isl_union_map *
+	isl_union_map_intersect_range_wrapped_domain_union_set(
+		__isl_take isl_union_map *umap,
+		__isl_take isl_union_set *domain);
 
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_intersect_domain(
@@ -10132,6 +10180,9 @@ exists.
 		__isl_keep isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_parent(
 		__isl_take isl_schedule_node *node);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_grandparent(
+		__isl_take isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_root(
 		__isl_take isl_schedule_node *node);
 	__isl_give isl_schedule_node *isl_schedule_node_ancestor(
@@ -10143,6 +10194,10 @@ exists.
 		__isl_take isl_schedule_node *node, int pos);
 	isl_bool isl_schedule_node_has_children(
 		__isl_keep isl_schedule_node *node);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_grandchild(
+		__isl_take isl_schedule_node *node,
+		int pos1, int pos2);
 	__isl_give isl_schedule_node *isl_schedule_node_first_child(
 		__isl_take isl_schedule_node *node);
 	isl_bool isl_schedule_node_has_previous_sibling(
@@ -10584,19 +10639,26 @@ introduced expansion node.  Grouping instances of different statements
 ensures that they will be treated as a single statement by the
 AST generator up to the point of the expansion node.
 
-The following function can be used to flatten a nested
+The following functions can be used to flatten a nested
 sequence.
 
 	#include <isl/schedule_node.h>
 	__isl_give isl_schedule_node *
 	isl_schedule_node_sequence_splice_child(
 		__isl_take isl_schedule_node *node, int pos);
+	__isl_give isl_schedule_node *
+	isl_schedule_node_sequence_splice_children(
+		__isl_take isl_schedule_node *node);
 
 That is, given a sequence node C<node> that has another sequence node
 in its child at position C<pos> (in particular, the child of that filter
-node is a sequence node), attach the children of that other sequence
+node is a sequence node), the function
+C<isl_schedule_node_sequence_splice_child>
+attaches the children of that other sequence
 node as children of C<node>, replacing the original child at position
 C<pos>.
+C<isl_schedule_node_sequence_splice_children> does this for all
+such children.
 
 The partial schedule of a band node can be scaled (down) or reduced using
 the following functions.

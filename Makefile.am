@@ -27,6 +27,10 @@ if HAVE_CXX11
   noinst_PROGRAMS += isl_test2 isl_test_cpp
   TESTS += isl_test2 isl_test_cpp isl_test_cpp_failed.sh
 endif
+if HAVE_CXX17
+  noinst_PROGRAMS += isl_test_cpp17 isl_test_cpp17-checked
+  TESTS += isl_test_cpp17 isl_test_cpp17-checked
+endif
 endif
 if HAVE_CLANG
 if HAVE_CXX11
@@ -194,6 +198,9 @@ libisl_la_SOURCES = \
 	isl_schedule_constraints.c \
 	isl_schedule_constraints.h \
 	isl_scheduler.c \
+	isl_scheduler.h \
+	isl_scheduler_clustering.c \
+	isl_scheduler_clustering.h \
 	isl_set_list.c \
 	isl_sort.c \
 	isl_sort.h \
@@ -327,11 +334,23 @@ isl_test_cpp_failed_SOURCES = \
 isl_test_cpp_failed_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_failed_LDADD = libisl.la @MP_LIBS@
 
+isl_test_cpp17_SOURCES = \
+	isl_test_cpp17.cc \
+	include/isl/cpp.h
+isl_test_cpp17_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp17_LDADD = libisl.la @MP_LIBS@
+
 isl_test_cpp_checked_SOURCES = \
 	isl_test_cpp-checked.cc \
 	include/isl/cpp-checked.h
 isl_test_cpp_checked_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_checked_LDADD = libisl.la @MP_LIBS@
+
+isl_test_cpp17_checked_SOURCES = \
+	isl_test_cpp17-checked.cc \
+	include/isl/cpp.h
+isl_test_cpp17_checked_LDFLAGS = @MP_LDFLAGS@
+isl_test_cpp17_checked_LDADD = libisl.la @MP_LIBS@
 
 isl_test_cpp_checked_conversion_SOURCES = \
 	isl_test_cpp-checked-conversion.cc \
@@ -506,6 +525,7 @@ EXTRA_DIST = \
 	isl_copy_tuple_id_templ.c \
 	isl_domain_factor_templ.c \
 	extract_key.c \
+	isl_ilp_opt_fn_val_templ.c \
 	isl_ilp_opt_multi_val_templ.c \
 	isl_ilp_opt_val_templ.c \
 	has_single_reference_templ.c \
@@ -637,6 +657,7 @@ EXTRA_DIST = \
 	python \
 	isl_test_cpp-generic.cc \
 	isl_test_cpp_failed.sh \
+	isl_test_cpp17-generic.cc \
 	isl_test_python.py \
 	test_inputs
 

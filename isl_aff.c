@@ -63,8 +63,12 @@
 
 #include <isl_list_templ.c>
 
-__isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
-	__isl_take isl_vec *v)
+/* Construct an isl_aff from the given domain local space "ls" and
+ * coefficients "v", where the local space is known to be valid
+ * for an affine expression.
+ */
+static __isl_give isl_aff *isl_aff_alloc_vec_validated(
+	__isl_take isl_local_space *ls, __isl_take isl_vec *v)
 {
 	isl_aff *aff;
 
@@ -86,11 +90,16 @@ error:
 	return NULL;
 }
 
-__isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
+/* Construct an isl_aff from the given domain local space "ls" and
+ * coefficients "v".
+ *
+ * First check that "ls" is a valid domain local space
+ * for an affine expression.
+ */
+__isl_give isl_aff *isl_aff_alloc_vec(__isl_take isl_local_space *ls,
+	__isl_take isl_vec *v)
 {
 	isl_ctx *ctx;
-	isl_vec *v;
-	isl_size total;
 
 	if (!ls)
 		return NULL;
@@ -103,6 +112,23 @@ __isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
 		isl_die(ctx, isl_error_invalid,
 			"domain of affine expression should be a set",
 			goto error);
+	return isl_aff_alloc_vec_validated(ls, v);
+error:
+	isl_local_space_free(ls);
+	isl_vec_free(v);
+	return NULL;
+}
+
+__isl_give isl_aff *isl_aff_alloc(__isl_take isl_local_space *ls)
+{
+	isl_ctx *ctx;
+	isl_vec *v;
+	isl_size total;
+
+	if (!ls)
+		return NULL;
+
+	ctx = isl_local_space_get_ctx(ls);
 
 	total = isl_local_space_dim(ls, isl_dim_all);
 	if (total < 0)
@@ -128,8 +154,8 @@ __isl_give isl_aff *isl_aff_dup(__isl_keep isl_aff *aff)
 	if (!aff)
 		return NULL;
 
-	return isl_aff_alloc_vec(isl_local_space_copy(aff->ls),
-				 isl_vec_copy(aff->v));
+	return isl_aff_alloc_vec_validated(isl_local_space_copy(aff->ls),
+					    isl_vec_copy(aff->v));
 }
 
 __isl_give isl_aff *isl_aff_cow(__isl_take isl_aff *aff)
@@ -236,6 +262,10 @@ __isl_give isl_pw_aff *isl_pw_aff_nan_on_domain(__isl_take isl_local_space *ls)
 
 /* Return an affine expression that is equal to "val" on
  * domain local space "ls".
+ *
+ * Note that the encoding for the special value NaN
+ * is the same in isl_val and isl_aff, so this does not need
+ * to be treated in any special way.
  */
 __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 	__isl_take isl_val *val)
@@ -244,9 +274,9 @@ __isl_give isl_aff *isl_aff_val_on_domain(__isl_take isl_local_space *ls,
 
 	if (!ls || !val)
 		goto error;
-	if (!isl_val_is_rat(val))
+	if (!isl_val_is_rat(val) && !isl_val_is_nan(val))
 		isl_die(isl_val_get_ctx(val), isl_error_invalid,
-			"expecting rational value", goto error);
+			"expecting rational value or NaN", goto error);
 
 	aff = isl_aff_alloc(isl_local_space_copy(ls));
 	if (!aff)
@@ -2590,12 +2620,10 @@ isl_bool isl_aff_involves_locals(__isl_keep isl_aff *aff)
 __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	isl_ctx *ctx;
-
 	if (!aff)
 		return NULL;
 	if (type == isl_dim_out)
-		isl_die(aff->v->ctx, isl_error_invalid,
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"cannot drop output/set dimension",
 			return isl_aff_free(aff));
 	if (type == isl_dim_in)
@@ -2603,7 +2631,6 @@ __isl_give isl_aff *isl_aff_drop_dims(__isl_take isl_aff *aff,
 	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
 		return aff;
 
-	ctx = isl_aff_get_ctx(aff);
 	if (isl_local_space_check_range(aff->ls, type, first, n) < 0)
 		return isl_aff_free(aff);
 
@@ -2669,12 +2696,10 @@ __isl_give isl_aff *isl_aff_from_range(__isl_take isl_aff *aff)
 __isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
 	enum isl_dim_type type, unsigned first, unsigned n)
 {
-	isl_ctx *ctx;
-
 	if (!aff)
 		return NULL;
 	if (type == isl_dim_out)
-		isl_die(aff->v->ctx, isl_error_invalid,
+		isl_die(isl_aff_get_ctx(aff), isl_error_invalid,
 			"cannot insert output/set dimensions",
 			return isl_aff_free(aff));
 	if (type == isl_dim_in)
@@ -2682,7 +2707,6 @@ __isl_give isl_aff *isl_aff_insert_dims(__isl_take isl_aff *aff,
 	if (n == 0 && !isl_local_space_is_named_or_nested(aff->ls, type))
 		return aff;
 
-	ctx = isl_aff_get_ctx(aff);
 	if (isl_local_space_check_range(aff->ls, type, first, 0) < 0)
 		return isl_aff_free(aff);
 
@@ -3950,7 +3974,7 @@ __isl_give isl_multi_aff *isl_multi_aff_from_aff_mat(
 		isl_int_set(v->el[0], mat->row[0][0]);
 		isl_seq_cpy(v->el + 1, mat->row[1 + i], n_col);
 		v = isl_vec_normalize(v);
-		aff = isl_aff_alloc_vec(isl_local_space_copy(ls), v);
+		aff = isl_aff_alloc_vec_validated(isl_local_space_copy(ls), v);
 		ma = isl_multi_aff_set_aff(ma, i, aff);
 	}
 
@@ -5085,7 +5109,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	isl_basic_map_free(hull);
 
 	ls = isl_local_space_from_space(isl_space_copy(space));
-	aff = isl_aff_alloc_vec(ls, v);
+	aff = isl_aff_alloc_vec_validated(ls, v);
 	aff = isl_aff_floor(aff);
 	if (is_set) {
 		isl_space_free(space);
@@ -7612,6 +7636,15 @@ __isl_give isl_pw_aff *isl_pw_aff_val_on_domain(__isl_take isl_set *domain,
 	return isl_pw_aff_alloc(domain, aff);
 }
 
+/* This function performs the same operation as isl_pw_aff_val_on_domain,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_pw_aff *isl_set_pw_aff_on_domain_val(__isl_take isl_set *domain,
+	__isl_take isl_val *v)
+{
+	return isl_pw_aff_val_on_domain(domain, v);
+}
+
 /* Return a piecewise affine expression that is equal to the parameter
  * with identifier "id" on "domain".
  */
@@ -7627,6 +7660,16 @@ __isl_give isl_pw_aff *isl_pw_aff_param_on_domain_id(
 	aff = isl_aff_param_on_domain_space_id(space, id);
 
 	return isl_pw_aff_alloc(domain, aff);
+}
+
+/* This function performs the same operation as
+ * isl_pw_aff_param_on_domain_id,
+ * but is considered as a function on an isl_set when exported.
+ */
+__isl_give isl_pw_aff *isl_set_param_pw_aff_on_domain_id(
+	__isl_take isl_set *domain, __isl_take isl_id *id)
+{
+	return isl_pw_aff_param_on_domain_id(domain, id);
 }
 
 /* Return a multi affine expression that is equal to "mv" on domain

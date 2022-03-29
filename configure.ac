@@ -27,11 +27,12 @@ AX_GCC_WARN_UNUSED_RESULT
 AX_C___ATTRIBUTE__
 
 AX_CXX_COMPILE_STDCXX_11_NO_OVERRIDE
+AX_CXX_COMPILE_STDCXX_17([], [optional])
 
 AC_PROG_GREP
 AC_PROG_LIBTOOL
 AC_PROG_SED
-AM_PATH_PYTHON([2.5], [], [:])
+AM_PATH_PYTHON([3.6], [], [:])
 AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
 
 AC_CHECK_PROG(CYGPATH, cygpath, cygpath, [])
@@ -83,6 +84,7 @@ AM_CONDITIONAL(IMATH_FOR_MP, test x$with_int = ximath -o x$with_int = ximath-32)
 AM_CONDITIONAL(GMP_FOR_MP, test x$with_int = xgmp)
 
 AM_CONDITIONAL(HAVE_CXX11, test "x$HAVE_CXX11" = "x1")
+AM_CONDITIONAL(HAVE_CXX17, test "x$HAVE_CXX17" = "x1")
 AM_CONDITIONAL(SMALL_INT_OPT, test "x$with_int" = "ximath-32")
 AS_IF([test "x$with_int" = "ximath-32"], [
 	AC_DEFINE([USE_SMALL_INT_OPT], [], [Use small integer optimization])

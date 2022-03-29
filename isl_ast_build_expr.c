@@ -99,7 +99,7 @@ static int is_non_neg_after_stealing(__isl_keep isl_aff *aff,
 	return non_neg;
 }
 
-/* Given the numerator "aff' of the argument of an integer division
+/* Given the numerator "aff" of the argument of an integer division
  * with denominator "d", steal part of the constant term of
  * the expression in which the integer division appears to make it
  * non-negative over data->build->domain.
@@ -115,7 +115,7 @@ static int is_non_neg_after_stealing(__isl_keep isl_aff *aff,
  * That is, compute the minimal value "m" of "aff" over
  * data->build->domain and take
  *
- *	s = ceil(m/d)
+ *	s = ceil(-m/d)
  *
  * such that
  *
@@ -854,7 +854,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
  * multiple of d to make it positive.
  *
  *
- * Note that the above is a only a very simple heuristic for finding an
+ * Note that the above is only a very simple heuristic for finding an
  * appropriate expression.  We could try a bit harder by also considering
  * sums of constraints that involve disjoint sets of variables or
  * we could consider arbitrary linear combinations of constraints,
