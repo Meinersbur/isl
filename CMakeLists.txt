@@ -299,6 +299,7 @@ set (libisl_common_sources
 	isl_schedule_tree.c
 	isl_schedule_constraints.c
 	isl_scheduler.c
+	isl_scheduler_clustering.c
 	isl_set_list.c
 	isl_sort.c
 	isl_space.c
