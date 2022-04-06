@@ -8743,6 +8743,10 @@ __isl_give isl_multi_union_pw_aff *isl_multi_aff_to_multi_union_pw_aff(
 
 /* Construct and return a multi union piecewise affine expression
  * that is equal to the given multi piecewise affine expression.
+ *
+ * If the resulting multi union piecewise affine expression has
+ * an explicit domain, then assign it the domain of the input.
+ * In other cases, the domain is stored in the individual elements.
  */
 __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_pw_aff(
 	__isl_take isl_multi_pw_aff *mpa)
@@ -8769,6 +8773,14 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_from_multi_pw_aff(
 		pa = isl_multi_pw_aff_get_pw_aff(mpa, i);
 		upa = isl_union_pw_aff_from_pw_aff(pa);
 		mupa = isl_multi_union_pw_aff_restore_check_space(mupa, i, upa);
+	}
+	if (isl_multi_union_pw_aff_has_explicit_domain(mupa)) {
+		isl_union_set *dom;
+		isl_multi_pw_aff *copy;
+
+		copy = isl_multi_pw_aff_copy(mpa);
+		dom = isl_union_set_from_set(isl_multi_pw_aff_domain(copy));
+		mupa = isl_multi_union_pw_aff_intersect_domain(mupa, dom);
 	}
 
 	isl_multi_pw_aff_free(mpa);
