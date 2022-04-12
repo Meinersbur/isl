@@ -1094,6 +1094,20 @@ static __isl_give isl_space *space_set_dim_name(__isl_take isl_space *space,
 	return space;
 }
 
+/* Set the name of the last (output) dimension of "space" to "name",
+ * ignoring any primes in "name".
+ */
+static __isl_give isl_space *space_set_last_dim_name(
+	__isl_take isl_space *space, char *name)
+{
+	isl_size pos;
+
+	pos = isl_space_dim(space, isl_dim_out);
+	if (pos < 0)
+		return isl_space_free(space);
+	return space_set_dim_name(space, pos - 1, name);
+}
+
 /* Construct an isl_pw_aff defined on a "space" (with v->n variables)
  * that is equal to the last of those variables.
  */
@@ -1543,11 +1557,7 @@ static __isl_give isl_space *read_tuple_pw_aff_el(__isl_keep isl_stream *s,
 		isl_token_free(tok);
 		pa = identity_tuple_el(v);
 	} else if (new_name) {
-		isl_size pos = isl_space_dim(space, isl_dim_out);
-		if (pos < 0)
-			goto error;
-		pos -= 1;
-		space = space_set_dim_name(space, pos, v->v->name);
+		space = space_set_last_dim_name(space, v->v->name);
 		isl_token_free(tok);
 		if (isl_stream_eat_if_available(s, '='))
 			pa = read_tuple_var_def(s, v, rational);
