@@ -22,7 +22,7 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
 if HAVE_CPP_ISL_H
-  CPP_H = include/isl/cpp.h include/isl/typed_cpp.h
+  CPP_H = include/isl/cpp.h include/isl/typed_cpp.h include/isl/cpp-checked-conversion.h include/isl/cpp-checked.h
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test2 isl_test_cpp
   TESTS += isl_test2 isl_test_cpp isl_test_cpp_failed.sh
