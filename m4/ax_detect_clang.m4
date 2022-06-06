@@ -77,7 +77,7 @@ AC_LANG_PUSH(C++)
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CLANG_CXXFLAGS -I$srcdir $CPPFLAGS"
 AC_CHECK_HEADER([clang/Basic/SourceLocation.h], [],
-	[AC_ERROR([clang header file not found])])
+	[AC_MSG_ERROR([clang header file not found])])
 AC_EGREP_HEADER([getDefaultTargetTriple], [llvm/Support/Host.h], [],
 	[AC_DEFINE([getDefaultTargetTriple], [getHostTriple],
 	[Define to getHostTriple for older versions of clang])])
