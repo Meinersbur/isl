@@ -948,9 +948,12 @@ static __isl_give PW *FN(PW,exploit_equalities_and_remove_if_empty)(
 	__isl_take PW *pw, int i)
 {
 	EL *el;
+	isl_set *domain;
 	isl_basic_set *aff;
-	int empty = isl_set_plain_is_empty(pw->p[i].set);
+	int empty;
 
+	domain = FN(PW,peek_domain_at)(pw, i);
+	empty = isl_set_plain_is_empty(domain);
 	if (empty < 0)
 		return FN(PW,free)(pw);
 	if (empty) {
