@@ -326,10 +326,11 @@ error:
 __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_domain_space)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_space *domain)
 {
-	isl_space *space;
+	isl_space *space, *multi_space;
 
+	multi_space = FN(MULTI(BASE),get_space)(multi);
 	space = isl_space_extend_domain_with_range(isl_space_copy(domain),
-						isl_space_copy(multi->space));
+						multi_space);
 	return FN(MULTI(BASE),reset_space_and_domain)(multi, space, domain);
 }
 
