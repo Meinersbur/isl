@@ -193,6 +193,12 @@ AC_EGREP_HEADER([IK_C], [clang/Frontend/FrontendOptions.h], [],
 	 AC_DEFINE_UNQUOTED([IK_C], [$IK_C],
 	 [Define to Language::C or InputKind::C for newer versions of clang])
 	])
+# llvmorg-15-init-7544-g93471e65df48
+AC_EGREP_HEADER([setLangDefaults], [clang/Basic/LangOptions.h],
+	[SETLANGDEFAULTS=LangOptions],
+	[SETLANGDEFAULTS=CompilerInvocation])
+AC_DEFINE_UNQUOTED([SETLANGDEFAULTS], [$SETLANGDEFAULTS],
+	[Define to class with setLangDefaults method])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <clang/Basic/TargetOptions.h>
 	#include <clang/Lex/PreprocessorOptions.h>
@@ -205,7 +211,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	TargetOptions TO;
 	llvm::Triple T(TO.Triple);
 	PreprocessorOptions PO;
-	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
+	SETLANGDEFAULTS::setLangDefaults(Clang->getLangOpts(), IK_C,
 			T, setLangDefaultsArg4(PO),
 			LangStandard::lang_unspecified);
 ]])], [AC_DEFINE([SETLANGDEFAULTS_TAKES_5_ARGUMENTS], [],
