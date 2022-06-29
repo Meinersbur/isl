@@ -815,6 +815,7 @@ member_methods {
 	{ "domain_map",		{ domain_map } },
 	{ "domain_product",	{ domain_product } },
 	{ "drop",		ter_int_int },
+	{ "drop_unused_params",	un_op },
 	{ "eq_at",		{ map_cmp } },
 	{ "every",		each },
 	{ "extract",		bin_op },

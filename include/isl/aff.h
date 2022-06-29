@@ -291,6 +291,7 @@ __isl_give isl_pw_aff *isl_pw_aff_project_domain_on_params(
 
 __isl_give isl_pw_aff *isl_pw_aff_align_params(__isl_take isl_pw_aff *pwaff,
 	__isl_take isl_space *model);
+__isl_export
 __isl_give isl_pw_aff *isl_pw_aff_drop_unused_params(
 	__isl_take isl_pw_aff *pa);
 
@@ -803,6 +804,7 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_project_domain_on_params(
 
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_align_params(
 	__isl_take isl_pw_multi_aff *pma, __isl_take isl_space *model);
+__isl_export
 __isl_give isl_pw_multi_aff *isl_pw_multi_aff_drop_unused_params(
 	__isl_take isl_pw_multi_aff *pma);
 
@@ -965,6 +967,7 @@ isl_union_pw_multi_aff_preimage_domain_wrapped_domain_union_pw_multi_aff(
 
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_align_params(
 	__isl_take isl_union_pw_multi_aff *upma, __isl_take isl_space *model);
+__isl_export
 __isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_drop_unused_params(
 	__isl_take isl_union_pw_multi_aff *upma);
 
@@ -1312,6 +1315,7 @@ __isl_give isl_union_pw_aff *isl_union_pw_aff_mod_val(
 
 __isl_give isl_union_pw_aff *isl_union_pw_aff_align_params(
 	__isl_take isl_union_pw_aff *upa, __isl_take isl_space *model);
+__isl_export
 __isl_give isl_union_pw_aff *isl_union_pw_aff_drop_unused_params(
 	__isl_take isl_union_pw_aff *upa);
 
