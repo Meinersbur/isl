@@ -12612,7 +12612,7 @@ __isl_give isl_map *isl_map_drop_unused_params(__isl_take isl_map *map)
 		if (involves < 0)
 			return isl_map_free(map);
 		if (!involves)
-			map = isl_map_project_out(map, isl_dim_param, i, 1);
+			map = isl_map_drop(map, isl_dim_param, i, 1);
 	}
 
 	return map;
