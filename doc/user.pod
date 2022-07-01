@@ -7071,6 +7071,16 @@ All parameters need to be named.
 	__isl_give isl_map *isl_map_drop_unused_params(
 		__isl_take isl_map *map);
 
+	#include <isl/union_set.h>
+	__isl_give isl_union_set *
+	isl_union_set_drop_unused_params(
+		__isl_take isl_union_set *uset);
+
+	#include <isl/union_map.h>
+	__isl_give isl_union_map *
+	isl_union_map_drop_unused_params(
+		__isl_take isl_union_map *umap);
+
 	#include <isl/aff.h>
 	__isl_give isl_pw_aff *isl_pw_aff_drop_unused_params(
 		__isl_take isl_pw_aff *pa);

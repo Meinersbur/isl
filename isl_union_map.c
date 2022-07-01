@@ -337,9 +337,36 @@ __isl_give isl_union_set *isl_union_set_align_params(
 	return isl_union_map_align_params(uset, model);
 }
 
+/* This is a wrapper around isl_union_map_project_out for use
+ * by isl_union_map_drop_unused_params.
+ *
+ * In particular, this function is only called on parameters
+ * that are not involved in the description of "umap".
+ * Dropping those parameters is therefore equivalent
+ * to projecting them out.
+ */
+static __isl_give isl_union_map *isl_union_map_drop_dims(
+	__isl_take isl_union_map *umap,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	return isl_union_map_project_out(umap, type, first, n);
+}
+
 #undef TYPE
 #define TYPE	isl_union_map
 #include "isl_check_named_params_templ.c"
+#include "isl_drop_unused_params_templ.c"
+
+/* Drop all parameters not referenced by "uset".
+ */
+__isl_give isl_union_set *isl_union_set_drop_unused_params(
+	__isl_take isl_union_set *uset)
+{
+	isl_union_map *umap;
+
+	umap = isl_union_map_drop_unused_params(uset_to_umap(uset));
+	return uset_from_umap(umap);
+}
 
 __isl_give isl_union_map *isl_union_map_union(__isl_take isl_union_map *umap1,
 	__isl_take isl_union_map *umap2)
