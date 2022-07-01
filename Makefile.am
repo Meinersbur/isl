@@ -528,6 +528,7 @@ EXTRA_DIST = \
 	check_type_range_templ.c \
 	isl_copy_tuple_id_templ.c \
 	isl_domain_factor_templ.c \
+	isl_drop_unused_params_templ.c \
 	extract_key.c \
 	isl_from_range_templ.c \
 	isl_ilp_opt_fn_val_templ.c \

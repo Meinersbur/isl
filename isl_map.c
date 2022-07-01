@@ -12594,29 +12594,10 @@ __isl_give isl_basic_set *isl_basic_set_align_params(
 	return isl_basic_map_align_params(bset, model);
 }
 
-/* Drop all parameters not referenced by "map".
- */
-__isl_give isl_map *isl_map_drop_unused_params(__isl_take isl_map *map)
-{
-	int i;
-	isl_size n;
-
-	n = isl_map_dim(map, isl_dim_param);
-	if (isl_map_check_named_params(map) < 0 || n < 0)
-		return isl_map_free(map);
-
-	for (i = n - 1; i >= 0; i--) {
-		isl_bool involves;
-
-		involves = isl_map_involves_dims(map, isl_dim_param, i, 1);
-		if (involves < 0)
-			return isl_map_free(map);
-		if (!involves)
-			map = isl_map_drop(map, isl_dim_param, i, 1);
-	}
-
-	return map;
-}
+#undef TYPE
+#define TYPE	isl_map
+#define isl_map_drop_dims	isl_map_drop
+#include "isl_drop_unused_params_templ.c"
 
 /* Drop all parameters not referenced by "set".
  */
@@ -12626,31 +12607,10 @@ __isl_give isl_set *isl_set_drop_unused_params(
 	return set_from_map(isl_map_drop_unused_params(set_to_map(set)));
 }
 
-/* Drop all parameters not referenced by "bmap".
- */
-__isl_give isl_basic_map *isl_basic_map_drop_unused_params(
-	__isl_take isl_basic_map *bmap)
-{
-	isl_size nparam;
-	int i;
-
-	nparam = isl_basic_map_dim(bmap, isl_dim_param);
-	if (nparam < 0 || isl_basic_map_check_named_params(bmap) < 0)
-		return isl_basic_map_free(bmap);
-
-	for (i = nparam - 1; i >= 0; i--) {
-		isl_bool involves;
-
-		involves = isl_basic_map_involves_dims(bmap,
-							isl_dim_param, i, 1);
-		if (involves < 0)
-			return isl_basic_map_free(bmap);
-		if (!involves)
-			bmap = isl_basic_map_drop(bmap, isl_dim_param, i, 1);
-	}
-
-	return bmap;
-}
+#undef TYPE
+#define TYPE	isl_basic_map
+#define isl_basic_map_drop_dims	isl_basic_map_drop
+#include "isl_drop_unused_params_templ.c"
 
 /* Drop all parameters not referenced by "bset".
  */
