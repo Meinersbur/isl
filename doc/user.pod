@@ -469,7 +469,7 @@ Use the system clang libraries installed in I<path>.
 
 =back
 
-It is best to use the latest release of the clang libraries (12.0),
+It is best to use the latest release of the clang libraries (14.0),
 although any release since 2.9 should work as well.
 Note that if you build the clang libraries from source,
 then you need to make sure they are also installed (using C<make install>).
