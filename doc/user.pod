@@ -7087,6 +7087,12 @@ All parameters need to be named.
 	__isl_give isl_pw_multi_aff *
 	isl_pw_multi_aff_drop_unused_params(
 		__isl_take isl_pw_multi_aff *pma);
+	__isl_give isl_union_pw_aff *
+	isl_union_pw_aff_drop_unused_params(
+		__isl_take isl_union_pw_aff *upa);
+	__isl_give isl_union_pw_multi_aff *
+	isl_union_pw_multi_aff_drop_unused_params(
+		__isl_take isl_union_pw_multi_aff *upma);
 
 	#include <isl/polynomial.h>
 	__isl_give isl_pw_qpolynomial *
@@ -7095,6 +7101,12 @@ All parameters need to be named.
 	__isl_give isl_pw_qpolynomial_fold *
 	isl_pw_qpolynomial_fold_drop_unused_params(
 		__isl_take isl_pw_qpolynomial_fold *pwf);
+	__isl_give isl_union_pw_qpolynomial *
+	isl_union_pw_qpolynomial_drop_unused_params(
+		__isl_take isl_union_pw_qpolynomial *upwqp);
+	__isl_give isl_union_pw_qpolynomial_fold *
+	isl_union_pw_qpolynomial_fold_drop_unused_params(
+		__isl_take isl_union_pw_qpolynomial_fold *upwf);
 
 =item * Unary Arithmetic Operations
 
