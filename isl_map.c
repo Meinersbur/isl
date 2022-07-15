@@ -6,6 +6,7 @@
  * Copyright 2016      INRIA Paris
  * Copyright 2016      Sven Verdoolaege
  * Copyright 2018-2019 Cerebras Systems
+ * Copyright 2022      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -4031,6 +4032,22 @@ static __isl_give isl_basic_map *isl_basic_map_reverse_wrapped(
 	return bmap;
 }
 
+/* Given a basic map (A -> B) -> C, return the corresponding basic map
+ * (B -> A) -> C.
+ */
+static __isl_give isl_basic_map *isl_basic_map_domain_reverse(
+	__isl_take isl_basic_map *bmap)
+{
+	isl_space *space;
+
+	space = isl_basic_map_peek_space(bmap);
+	if (isl_space_check_domain_is_wrapping(space) < 0)
+		return isl_basic_map_free(bmap);
+	bmap = isl_basic_map_reverse_wrapped(bmap, isl_dim_in);
+
+	return bmap;
+}
+
 /* Given a basic map A -> (B -> C), return the corresponding basic map
  * A -> (C -> B).
  */
@@ -7213,6 +7230,14 @@ __isl_give isl_map *isl_map_reverse(__isl_take isl_map *map)
 {
 	return isl_map_transform(map, &isl_space_reverse,
 					&isl_basic_map_reverse);
+}
+
+/* Given a map (A -> B) -> C, return the corresponding map (B -> A) -> C.
+ */
+__isl_give isl_map *isl_map_domain_reverse(__isl_take isl_map *map)
+{
+	return isl_map_transform(map, &isl_space_domain_reverse,
+					&isl_basic_map_domain_reverse);
 }
 
 /* Given a map A -> (B -> C), return the corresponding map A -> (C -> B).
