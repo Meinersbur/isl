@@ -521,6 +521,20 @@ error:
 	return NULL;
 }
 
+#if !DEFAULT_IS_ZERO
+
+/* Compute the sum of "u1" and "u2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ */
+__isl_give UNION *FN(UNION,union_add)(__isl_take UNION *u1,
+	__isl_take UNION *u2)
+{
+	return FN(UNION,union_add_)(u1, u2);
+}
+
+#endif
+
 __isl_give UNION *FN(FN(UNION,from),BASE)(__isl_take PART *part)
 {
 	isl_space *space;
