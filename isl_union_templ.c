@@ -647,24 +647,6 @@ __isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
 #endif
 }
 
-#ifndef NO_SUB
-/* Subtract "u2" from "u1" and return the result.
- *
- * If the base expressions have a default zero value, then
- * reuse isl_union_*_add to ensure the result
- * is computed on the union of the domains of "u1" and "u2".
- * Otherwise, compute the result directly on their shared domain.
- */
-__isl_give UNION *FN(UNION,sub)(__isl_take UNION *u1, __isl_take UNION *u2)
-{
-#if DEFAULT_IS_ZERO
-	return FN(UNION,add)(u1, FN(UNION,neg)(u2));
-#else
-	return FN(UNION,match_bin_op)(u1, u2, &FN(PART,sub));
-#endif
-}
-#endif
-
 S(UNION,any_set_data) {
 	isl_set *set;
 	__isl_give PW *(*fn)(__isl_take PW*, __isl_take isl_set*);

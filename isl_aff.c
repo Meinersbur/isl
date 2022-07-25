@@ -2813,6 +2813,7 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 
 #include <isl_union_single.c>
 #include <isl_union_neg.c>
+#include <isl_union_sub_templ.c>
 
 #undef BASE
 #define BASE aff
@@ -4621,6 +4622,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_union_multi.c>
 #include "isl_union_locals_templ.c"
 #include <isl_union_neg.c>
+#include <isl_union_sub_templ.c>
 
 #undef BASE
 #define BASE multi_aff

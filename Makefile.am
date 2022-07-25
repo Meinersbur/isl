@@ -647,6 +647,7 @@ EXTRA_DIST = \
 	isl_union_map_lex_templ.c \
 	isl_union_neg.c \
 	isl_union_pw_templ.c \
+	isl_union_sub_templ.c \
 	libisl-gdb.py \
 	doc/CodingStyle \
 	doc/SubmittingPatches \

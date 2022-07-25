@@ -3128,6 +3128,7 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
 #include <isl_union_single.c>
 #include <isl_union_eval.c>
 #include <isl_union_neg.c>
+#include <isl_union_sub_templ.c>
 
 int isl_pw_qpolynomial_is_one(__isl_keep isl_pw_qpolynomial *pwqp)
 {

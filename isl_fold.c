@@ -964,8 +964,6 @@ static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
 #undef BASE
 #define BASE pw_qpolynomial_fold
 
-#define NO_SUB
-
 #include <isl_union_single.c>
 #include <isl_union_eval.c>
 
