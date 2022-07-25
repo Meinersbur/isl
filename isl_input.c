@@ -3768,7 +3768,7 @@ __isl_give isl_pw_aff *isl_pw_aff_read_from_str(isl_ctx *ctx, const char *str)
  * Note that the function read_tuple accepts tuples where some output or
  * set dimensions are defined in terms of other output or set dimensions
  * since this function is also used to read maps.  As a special case,
- * read_tuple also accept dimensions that are defined in terms of themselves
+ * read_tuple also accepts dimensions that are defined in terms of themselves
  * (i.e., that are not defined).
  * These cases are not allowed when extracting an isl_multi_pw_aff so check
  * that the definitions of the output/set dimensions do not involve any
