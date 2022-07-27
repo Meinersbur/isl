@@ -1740,6 +1740,25 @@ static __isl_give isl_set *read_universe_params(__isl_keep isl_stream *s,
 	return dom;
 }
 
+/* Read the parameter domain of an expression from "s" (if any),
+ * check that it does not involve any constraints and return its space.
+ * "v" contains a description of the identifiers parsed so far
+ * (of which there should not be any at this point) and is extended
+ * by this function.
+ */
+static __isl_give isl_space *read_params(__isl_keep isl_stream *s,
+	struct vars *v)
+{
+	isl_space *space;
+	isl_set *set;
+
+	set = read_universe_params(s, v);
+	space = isl_set_get_space(set);
+	isl_set_free(set);
+
+	return space;
+}
+
 /* This function is called for each element in a tuple inside read_space_tuples.
  * Add a new variable to "v" and adjust "space" accordingly
  * if the variable has a name.
@@ -1813,15 +1832,12 @@ static __isl_give isl_space *read_space_tuples(__isl_keep isl_stream *s,
 __isl_give isl_space *isl_stream_read_space(__isl_keep isl_stream *s)
 {
 	struct vars *v;
-	isl_set *dom;
 	isl_space *space;
 
 	v = vars_new(s->ctx);
 	if (!v)
 		return NULL;
-	dom = read_universe_params(s, v);
-	space = isl_set_get_space(dom);
-	isl_set_free(dom);
+	space = read_params(s, v);
 
 	if (isl_stream_eat(s, '{'))
 		goto error;
@@ -3878,19 +3894,18 @@ __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 {
 	struct vars *v;
-	isl_set *dom = NULL;
 	isl_multi_pw_aff *tuple = NULL;
 	int i;
 	isl_size dim, n;
-	isl_space *space, *dom_space;
+	isl_space *space, *dom_space = NULL;
 	isl_multi_aff *ma = NULL;
 
 	v = vars_new(s->ctx);
 	if (!v)
 		return NULL;
 
-	dom = read_universe_params(s, v);
-	if (!dom)
+	dom_space = read_params(s, v);
+	if (!dom_space)
 		goto error;
 	if (isl_stream_eat(s, '{'))
 		goto error;
@@ -3899,7 +3914,6 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 	if (!tuple)
 		goto error;
 	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
-		isl_set *set;
 		isl_space *space;
 		isl_bool has_expr;
 
@@ -3910,8 +3924,7 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 			isl_die(s->ctx, isl_error_invalid,
 				"expecting universe domain", goto error);
 		space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
-		set = isl_set_universe(space);
-		dom = isl_set_intersect_params(set, dom);
+		dom_space = isl_space_align_params(space, dom_space);
 		isl_multi_pw_aff_free(tuple);
 		tuple = read_tuple(s, v, 0, 0);
 		if (!tuple)
@@ -3922,16 +3935,14 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 		goto error;
 
 	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
-	dim = isl_set_dim(dom, isl_dim_all);
+	dim = isl_space_dim(dom_space, isl_dim_all);
 	if (n < 0 || dim < 0)
 		goto error;
-	dom_space = isl_set_get_space(dom);
 	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
 	space = isl_space_align_params(space, isl_space_copy(dom_space));
 	if (!isl_space_is_params(dom_space))
 		space = isl_space_map_from_domain_and_range(
 				isl_space_copy(dom_space), space);
-	isl_space_free(dom_space);
 	ma = isl_multi_aff_alloc(space);
 
 	for (i = 0; i < n; ++i) {
@@ -3954,12 +3965,12 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 
 	isl_multi_pw_aff_free(tuple);
 	vars_free(v);
-	isl_set_free(dom);
+	isl_space_free(dom_space);
 	return ma;
 error:
 	isl_multi_pw_aff_free(tuple);
 	vars_free(v);
-	isl_set_free(dom);
+	isl_space_free(dom_space);
 	isl_multi_aff_free(ma);
 	return NULL;
 }
