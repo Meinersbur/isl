@@ -3857,32 +3857,6 @@ __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 #define TYPE_BASE	union_pw_multi_aff
 #include "isl_read_from_str_templ.c"
 
-/* Assuming "pa" represents a single affine expression defined on a universe
- * domain, extract this affine expression.
- */
-static __isl_give isl_aff *aff_from_pw_aff(__isl_take isl_pw_aff *pa)
-{
-	isl_aff *aff;
-
-	if (!pa)
-		return NULL;
-	if (pa->n != 1)
-		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
-			"expecting single affine expression",
-			goto error);
-	if (!isl_set_plain_is_universe(pa->p[0].set))
-		isl_die(isl_pw_aff_get_ctx(pa), isl_error_invalid,
-			"expecting universe domain",
-			goto error);
-
-	aff = isl_aff_copy(pa->p[0].aff);
-	isl_pw_aff_free(pa);
-	return aff;
-error:
-	isl_pw_aff_free(pa);
-	return NULL;
-}
-
 #undef BASE
 #define BASE val
 
@@ -3964,7 +3938,7 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 		isl_pw_aff *pa;
 		isl_aff *aff;
 		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
-		aff = aff_from_pw_aff(pa);
+		aff = isl_pw_aff_as_aff(pa);
 		if (!aff)
 			goto error;
 		if (isl_aff_involves_dims(aff, isl_dim_in, dim, i + 1)) {
