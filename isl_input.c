@@ -259,29 +259,6 @@ __isl_give isl_val *isl_val_read_from_str(isl_ctx *ctx, const char *str)
 	return val;
 }
 
-/* Perform an integer division on *f and
- * an integer value read from the stream.
- */
-static isl_stat int_div_by_cst(__isl_keep isl_stream *s, isl_int *f)
-{
-	struct isl_token *tok;
-
-	tok = next_token(s);
-	if (!tok || tok->type != ISL_TOKEN_VALUE) {
-		isl_stream_error(s, tok, "expecting constant value");
-		goto error;
-	}
-
-	isl_int_fdiv_q(*f, *f, tok->u.v);
-
-	isl_token_free(tok);
-
-	return isl_stat_ok;
-error:
-	isl_token_free(tok);
-	return isl_stat_error;
-}
-
 static isl_stat accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
 {
 	struct isl_token *tok;
@@ -625,18 +602,6 @@ error2:
 	return NULL;
 }
 
-static __isl_give isl_pw_aff *add_cst(__isl_take isl_pw_aff *pwaff, isl_int v)
-{
-	isl_aff *aff;
-	isl_space *space;
-
-	space = isl_pw_aff_get_domain_space(pwaff);
-	aff = isl_aff_zero_on_domain(isl_local_space_from_space(space));
-	aff = isl_aff_add_constant(aff, v);
-
-	return isl_pw_aff_add(pwaff, isl_pw_aff_from_aff(aff));
-}
-
 /* Return a piecewise affine expression defined on the specified domain
  * that represents NaN.
  */
@@ -673,8 +638,13 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 		if (tok->type == '(' || is_start_of_div(tok) ||
 		    tok->type == ISL_TOKEN_MIN || tok->type == ISL_TOKEN_MAX ||
 		    tok->type == ISL_TOKEN_IDENT ||
+		    tok->type == ISL_TOKEN_VALUE ||
 		    tok->type == ISL_TOKEN_AFF) {
 			isl_pw_aff *term;
+			if (tok->type == ISL_TOKEN_VALUE && sign < 0) {
+				isl_int_neg(tok->u.v, tok->u.v);
+				sign = 1;
+			}
 			isl_stream_push_token(s, tok);
 			tok = NULL;
 			term = accept_affine_factor(s,
@@ -685,31 +655,6 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 				res = isl_pw_aff_add(res, term);
 			if (!res)
 				goto error;
-		} else if (tok->type == ISL_TOKEN_VALUE) {
-			if (sign < 0)
-				isl_int_neg(tok->u.v, tok->u.v);
-			if (isl_stream_eat_if_available(s, '*') ||
-			    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
-				isl_pw_aff *term;
-				if (isl_stream_eat_if_available(s, '-'))
-					isl_int_neg(tok->u.v, tok->u.v);
-				term = accept_affine_factor(s,
-						    isl_space_copy(space), v);
-				term = isl_pw_aff_scale(term, tok->u.v);
-				if (op < 0)
-					term = isl_pw_aff_neg(term);
-				res = isl_pw_aff_add(res, term);
-				if (!res)
-					goto error;
-			} else {
-				if (isl_stream_eat_if_available(s,
-							ISL_TOKEN_INT_DIV) &&
-				    int_div_by_cst(s, &tok->u.v) < 0)
-					goto error;
-				if (op < 0)
-					isl_int_neg(tok->u.v, tok->u.v);
-				res = add_cst(res, tok->u.v);
-			}
 		} else if (tok->type == ISL_TOKEN_NAN) {
 			res = isl_pw_aff_add(res, nan_on_domain(space));
 		} else {
