@@ -3858,6 +3858,27 @@ __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 
 #include <isl_multi_read_no_explicit_domain_templ.c>
 
+/* Set entry "pos" of "ma" to the corresponding entry in "tuple",
+ * as obtained from read_tuple().
+ * The "n" output dimensions also appear among the input dimensions
+ * at position "first".
+ *
+ * The entry is not allowed to depend on any (other) output dimensions.
+ */
+static __isl_give isl_multi_aff *isl_multi_aff_set_tuple_entry(
+	__isl_take isl_multi_aff *ma, __isl_take isl_pw_aff *tuple_el,
+	int pos, unsigned first, unsigned n)
+{
+	isl_space *space;
+	isl_pw_aff *pa;
+	isl_aff *aff;
+
+	space = isl_multi_aff_get_domain_space(ma);
+	pa = separate_tuple_entry(tuple_el, pos, first, n, space);
+	aff = isl_pw_aff_as_aff(pa);
+	return isl_multi_aff_set_aff(ma, pos, aff);
+}
+
 /* Read a multi-affine expression from "s".
  * If the multi-affine expression has a domain, then the tuple
  * representing this domain cannot involve any affine expressions.
@@ -3922,12 +3943,9 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
-		isl_aff *aff;
+
 		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
-		space = isl_multi_aff_get_domain_space(ma);
-		pa = separate_tuple_entry(pa, i, dim, n, space);
-		aff = isl_pw_aff_as_aff(pa);
-		ma = isl_multi_aff_set_aff(ma, i, aff);
+		ma = isl_multi_aff_set_tuple_entry(ma, pa, i, dim, n);
 	}
 
 	isl_multi_pw_aff_free(tuple);
