@@ -559,7 +559,8 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 		res = isl_pw_aff_from_aff(aff);
 		isl_token_free(tok);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
-		if (isl_stream_eat_if_available(s, '*')) {
+		if (isl_stream_eat_if_available(s, '*') ||
+		    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
 			if (isl_stream_eat_if_available(s, '-'))
 				isl_int_neg(tok->u.v, tok->u.v);
 			res = accept_affine_factor(s, isl_space_copy(space), v);
