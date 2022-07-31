@@ -741,7 +741,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 	for (t = 0; t < 2; ++t) {
 		n[t] = isl_constraint_dim(c, c_type[t]);
 		if (n[t] < 0)
-			return isl_stat_error;
+			goto error;
 		for (i = 0; i < n[t]; ++i) {
 			int a, b;
 
@@ -797,6 +797,9 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 		return isl_stat_error;
 
 	return isl_stat_ok;
+error:
+	isl_constraint_free(c);
+	return isl_stat_error;
 }
 
 /* Given that data->v * div_i in data->aff is of the form
