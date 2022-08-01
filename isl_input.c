@@ -2396,8 +2396,8 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 		return NULL;
 	}
 	if (tok->type != ISL_TOKEN_VALUE || tok2->type != ISL_TOKEN_VALUE) {
-		isl_stream_push_token(s, tok2);
-		isl_stream_push_token(s, tok);
+		isl_token_free(tok2);
+		isl_token_free(tok);
 		isl_stream_error(s, NULL,
 				 "expecting constraint matrix dimensions");
 		return NULL;
@@ -2415,7 +2415,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 		if (tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok,
 				    "expecting number of output dimensions");
-			isl_stream_push_token(s, tok);
+			isl_token_free(tok);
 			goto error;
 		}
 		out = isl_int_get_si(tok->u.v);
@@ -2425,8 +2425,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 		if (!tok || tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok,
 				    "expecting number of input dimensions");
-			if (tok)
-				isl_stream_push_token(s, tok);
+			isl_token_free(tok);
 			goto error;
 		}
 		in = isl_int_get_si(tok->u.v);
@@ -2436,8 +2435,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 		if (!tok || tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok,
 				    "expecting number of existentials");
-			if (tok)
-				isl_stream_push_token(s, tok);
+			isl_token_free(tok);
 			goto error;
 		}
 		local = isl_int_get_si(tok->u.v);
@@ -2447,8 +2445,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 		if (!tok || tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok,
 				    "expecting number of parameters");
-			if (tok)
-				isl_stream_push_token(s, tok);
+			isl_token_free(tok);
 			goto error;
 		}
 		nparam = isl_int_get_si(tok->u.v);
@@ -2477,7 +2474,7 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 	tok = isl_stream_next_token_on_same_line(s);
 	if (tok) {
 		isl_stream_error(s, tok, "unexpected extra token on line");
-		isl_stream_push_token(s, tok);
+		isl_token_free(tok);
 		goto error;
 	}
 
