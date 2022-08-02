@@ -182,7 +182,9 @@ error:
  *	"-" "infty"	->	-infty
  *	"NaN"		->	NaN
  *	n "/" d		->	n/d
+ *	"-" n "/" d	->	-n/d
  *	v		->	v
+ *	"-" v		->	-v
  *
  * where n, d and v are integer constants.
  */
@@ -190,8 +192,11 @@ __isl_give isl_val *isl_stream_read_val(__isl_keep isl_stream *s)
 {
 	struct isl_token *tok = NULL;
 	struct isl_token *tok2 = NULL;
+	int sign = 1;
 	isl_val *val;
 
+	if (isl_stream_eat_if_available(s, '-'))
+		sign = -1;
 	tok = next_token(s);
 	if (!tok) {
 		isl_stream_error(s, NULL, "unexpected EOF");
@@ -199,14 +204,12 @@ __isl_give isl_val *isl_stream_read_val(__isl_keep isl_stream *s)
 	}
 	if (tok->type == ISL_TOKEN_INFTY) {
 		isl_token_free(tok);
-		return isl_val_infty(s->ctx);
+		if (sign > 0)
+			return isl_val_infty(s->ctx);
+		else
+			return isl_val_neginfty(s->ctx);
 	}
-	if (tok->type == '-' &&
-	    isl_stream_eat_if_available(s, ISL_TOKEN_INFTY)) {
-		isl_token_free(tok);
-		return isl_val_neginfty(s->ctx);
-	}
-	if (tok->type == ISL_TOKEN_NAN) {
+	if (sign > 0 && tok->type == ISL_TOKEN_NAN) {
 		isl_token_free(tok);
 		return isl_val_nan(s->ctx);
 	}
@@ -214,6 +217,9 @@ __isl_give isl_val *isl_stream_read_val(__isl_keep isl_stream *s)
 		isl_stream_error(s, tok, "expecting value");
 		goto error;
 	}
+
+	if (sign < 0)
+		isl_int_neg(tok->u.v, tok->u.v);
 
 	if (isl_stream_eat_if_available(s, '/')) {
 		tok2 = next_token(s);
@@ -280,6 +286,8 @@ static isl_stat accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
 {
 	struct isl_token *tok;
 
+	if (isl_stream_eat_if_available(s, '-'))
+		isl_int_neg(*f, *f);
 	tok = next_token(s);
 	if (!tok || tok->type != ISL_TOKEN_VALUE) {
 		isl_stream_error(s, tok, "expecting constant value");
@@ -397,13 +405,18 @@ static struct isl_token *next_signed_value_fn(__isl_keep isl_stream *s,
 	struct isl_token *(*next)(__isl_keep isl_stream *s), char *msg)
 {
 	struct isl_token *tok;
+	int sign = 1;
 
+	if (isl_stream_eat_if_available(s, '-'))
+		sign = -1;
 	tok = next(s);
 	if (!tok || tok->type != ISL_TOKEN_VALUE) {
 		isl_stream_error(s, tok, msg);
 		isl_token_free(tok);
 		return NULL;
 	}
+	if (sign < 0)
+		isl_int_neg(tok->u.v, tok->u.v);
 	return tok;
 }
 
@@ -547,6 +560,8 @@ static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
 		isl_token_free(tok);
 	} else if (tok->type == ISL_TOKEN_VALUE) {
 		if (isl_stream_eat_if_available(s, '*')) {
+			if (isl_stream_eat_if_available(s, '-'))
+				isl_int_neg(tok->u.v, tok->u.v);
 			res = accept_affine_factor(s, isl_space_copy(space), v);
 			res = isl_pw_aff_scale(res, tok->u.v);
 		} else {
@@ -635,6 +650,7 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 	struct isl_token *tok = NULL;
 	isl_local_space *ls;
 	isl_pw_aff *res;
+	int op = 1;
 	int sign = 1;
 
 	ls = isl_local_space_from_space(isl_space_copy(space));
@@ -662,22 +678,25 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 			tok = NULL;
 			term = accept_affine_factor(s,
 						    isl_space_copy(space), v);
-			if (sign < 0)
+			if (op * sign < 0)
 				res = isl_pw_aff_sub(res, term);
 			else
 				res = isl_pw_aff_add(res, term);
 			if (!res)
 				goto error;
-			sign = 1;
 		} else if (tok->type == ISL_TOKEN_VALUE) {
 			if (sign < 0)
 				isl_int_neg(tok->u.v, tok->u.v);
 			if (isl_stream_eat_if_available(s, '*') ||
 			    isl_stream_next_token_is(s, ISL_TOKEN_IDENT)) {
 				isl_pw_aff *term;
+				if (isl_stream_eat_if_available(s, '-'))
+					isl_int_neg(tok->u.v, tok->u.v);
 				term = accept_affine_factor(s,
 						    isl_space_copy(space), v);
 				term = isl_pw_aff_scale(term, tok->u.v);
+				if (op < 0)
+					term = isl_pw_aff_neg(term);
 				res = isl_pw_aff_add(res, term);
 				if (!res)
 					goto error;
@@ -686,9 +705,10 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 							ISL_TOKEN_INT_DIV) &&
 				    int_div_by_cst(s, &tok->u.v) < 0)
 					goto error;
+				if (op < 0)
+					isl_int_neg(tok->u.v, tok->u.v);
 				res = add_cst(res, tok->u.v);
 			}
-			sign = 1;
 		} else if (tok->type == ISL_TOKEN_NAN) {
 			res = isl_pw_aff_add(res, nan_on_domain(space));
 		} else {
@@ -701,15 +721,13 @@ static __isl_give isl_pw_aff *accept_affine(__isl_keep isl_stream *s,
 		isl_token_free(tok);
 
 		tok = next_token(s);
+		sign = 1;
 		if (tok && tok->type == '-') {
-			sign = -sign;
+			op = -1;
 			isl_token_free(tok);
 		} else if (tok && tok->type == '+') {
-			/* nothing */
+			op = 1;
 			isl_token_free(tok);
-		} else if (tok && tok->type == ISL_TOKEN_VALUE &&
-			   isl_int_is_neg(tok->u.v)) {
-			isl_stream_push_token(s, tok);
 		} else {
 			if (tok)
 				isl_stream_push_token(s, tok);
@@ -2710,13 +2728,6 @@ static __isl_give isl_pw_qpolynomial *read_term(__isl_keep isl_stream *s,
 			isl_token_free(tok);
 			pwqp2 = read_factor(s, map, v);
 			pwqp = isl_pw_qpolynomial_sub(pwqp, pwqp2);
-		} else if (tok->type == ISL_TOKEN_VALUE &&
-			    isl_int_is_neg(tok->u.v)) {
-			isl_pw_qpolynomial *pwqp2;
-
-			isl_stream_push_token(s, tok);
-			pwqp2 = read_factor(s, map, v);
-			pwqp = isl_pw_qpolynomial_add(pwqp, pwqp2);
 		} else {
 			isl_stream_push_token(s, tok);
 			break;

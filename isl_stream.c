@@ -446,15 +446,13 @@ static struct isl_token *next_token(__isl_keep isl_stream *s, int same_line)
 		}
 		if (c != -1)
 			isl_stream_ungetc(s, c);
-		if (!isdigit(c)) {
-			tok = isl_token_new(s->ctx, line, col, old_line != line);
-			if (!tok)
-				return NULL;
-			tok->type = (enum isl_token_type) '-';
-			return tok;
-		}
+		tok = isl_token_new(s->ctx, line, col, old_line != line);
+		if (!tok)
+			return NULL;
+		tok->type = (enum isl_token_type) '-';
+		return tok;
 	}
-	if (c == '-' || isdigit(c)) {
+	if (isdigit(c)) {
 		int minus = c == '-';
 		tok = isl_token_new(s->ctx, line, col, old_line != line);
 		if (!tok)
