@@ -390,6 +390,42 @@ static __isl_give isl_pw_aff *pw_aff_div_by_cst(__isl_keep isl_stream *s,
 	return pa;
 }
 
+/* Return the (signed) value that is next on the stream,
+ * using "next" to read the next token and printing "msg" in case of an error.
+ */
+static struct isl_token *next_signed_value_fn(__isl_keep isl_stream *s,
+	struct isl_token *(*next)(__isl_keep isl_stream *s), char *msg)
+{
+	struct isl_token *tok;
+
+	tok = next(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, msg);
+		isl_token_free(tok);
+		return NULL;
+	}
+	return tok;
+}
+
+/* Return the (signed) value that is next on the stream,
+ * printing "msg" in case of an error.
+ */
+static struct isl_token *next_signed_value(__isl_keep isl_stream *s, char *msg)
+{
+	return next_signed_value_fn(s, &isl_stream_next_token, msg);
+}
+
+/* Return the (signed) value that is next on the stream,
+ * provided it is on the same line,
+ * printing "msg" in case of an error.
+ */
+static struct isl_token *next_signed_value_on_same_line(
+	__isl_keep isl_stream *s, char *msg)
+{
+	return next_signed_value_fn(s,
+				    &isl_stream_next_token_on_same_line, msg);
+}
+
 /* Is "tok" the start of an integer division?
  */
 static int is_start_of_div(struct isl_token *tok)
@@ -2340,13 +2376,10 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 		return isl_basic_map_free(bmap);
 	for (j = 0; j < 1 + total; ++j) {
 		isl_size pos;
-		tok = isl_stream_next_token_on_same_line(s);
-		if (!tok || tok->type != ISL_TOKEN_VALUE) {
-			isl_stream_error(s, tok,
+		tok = next_signed_value_on_same_line(s,
 					"expecting coefficient on same line");
-			isl_token_free(tok);
+		if (!tok)
 			goto error;
-		}
 		pos = polylib_pos_to_isl_pos(bmap, j);
 		if (pos >= 0)
 			isl_int_set(c[pos], tok->u.v);
@@ -3453,11 +3486,9 @@ static __isl_give isl_vec *isl_vec_read_polylib(__isl_keep isl_stream *s)
 	vec = isl_vec_alloc(s->ctx, size);
 
 	for (j = 0; j < size; ++j) {
-		tok = isl_stream_next_token(s);
-		if (!tok || tok->type != ISL_TOKEN_VALUE) {
-			isl_stream_error(s, tok, "expecting constant value");
+		tok = next_signed_value(s, "expecting constant value");
+		if (!tok)
 			goto error;
-		}
 		isl_int_set(vec->el[j], tok->u.v);
 		isl_token_free(tok);
 	}
