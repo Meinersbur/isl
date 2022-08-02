@@ -2471,6 +2471,9 @@ static __isl_give isl_basic_map *basic_map_read_polylib(
 	for (i = 0; i < n_row; ++i)
 		bmap = basic_map_read_polylib_constraint(s, bmap);
 
+	if (!bmap)
+		return NULL;
+
 	tok = isl_stream_next_token_on_same_line(s);
 	if (tok) {
 		isl_stream_error(s, tok, "unexpected extra token on line");
