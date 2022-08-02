@@ -2340,15 +2340,10 @@ static __isl_give isl_basic_map *basic_map_read_polylib_constraint(
 		return isl_basic_map_free(bmap);
 	for (j = 0; j < 1 + total; ++j) {
 		isl_size pos;
-		tok = isl_stream_next_token(s);
+		tok = isl_stream_next_token_on_same_line(s);
 		if (!tok || tok->type != ISL_TOKEN_VALUE) {
-			isl_stream_error(s, tok, "expecting coefficient");
-			isl_token_free(tok);
-			goto error;
-		}
-		if (tok->on_new_line) {
 			isl_stream_error(s, tok,
-				"coefficient should not appear on new line");
+					"expecting coefficient on same line");
 			isl_token_free(tok);
 			goto error;
 		}
