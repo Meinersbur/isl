@@ -1367,12 +1367,12 @@ static __isl_give isl_pw_aff *accept_piecewise_affine(__isl_keep isl_stream *s,
 			pa = accept_extended_affine(s, isl_space_copy(space),
 							v, rational);
 		}
-		if (isl_stream_eat_if_available(s, ':'))
+		if (pa && isl_stream_eat_if_available(s, ':'))
 			pa = update_piecewise_affine_colon(pa, s, v, rational);
 
 		res = isl_pw_aff_union_add(res, pa);
 
-		if (seen_paren && isl_stream_eat(s, ')'))
+		if (!res || (seen_paren && isl_stream_eat(s, ')')))
 			goto error;
 	} while (isl_stream_eat_if_available(s, ';'));
 
