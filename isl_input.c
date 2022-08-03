@@ -1490,7 +1490,7 @@ static __isl_give isl_space *read_tuple_space(__isl_keep isl_stream *s,
 	} else
 		res = read_tuple_list(s, v, isl_space_copy(space),
 					rational, comma, read_el, user);
-	if (isl_stream_eat(s, ']'))
+	if (!res || isl_stream_eat(s, ']'))
 		goto error;
 
 	if (name) {
