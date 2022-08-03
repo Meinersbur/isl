@@ -466,13 +466,18 @@ error:
 static __isl_give isl_pw_aff *pw_aff_div_by_cst(__isl_keep isl_stream *s,
 	__isl_take isl_pw_aff *pa)
 {
-	isl_int f;
-	isl_int_init(f);
-	isl_int_set_si(f, 1);
-	if (accept_cst_factor(s, &f) < 0)
-		pa = isl_pw_aff_free(pa);
-	pa = isl_pw_aff_scale_down(pa, f);
-	isl_int_clear(f);
+	struct isl_token *tok;
+
+	tok = next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting denominator");
+		isl_token_free(tok);
+		return isl_pw_aff_free(pa);
+	}
+
+	pa = isl_pw_aff_scale_down(pa,  tok->u.v);
+
+	isl_token_free(tok);
 
 	return pa;
 }
