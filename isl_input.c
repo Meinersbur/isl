@@ -434,7 +434,6 @@ static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
 			goto error;
 		if (tok->type != ISL_TOKEN_VALUE) {
 			isl_stream_error(s, tok, "expected denominator");
-			isl_stream_push_token(s, tok);
 			goto error;
 		}
 		pwaff = isl_pw_aff_scale_down(pwaff,  tok->u.v);
