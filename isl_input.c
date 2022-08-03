@@ -369,6 +369,27 @@ error:
 	return NULL;
 }
 
+/* Divide "pa" by an integer constant read from the stream.
+ */
+static __isl_give isl_pw_aff *pw_aff_div_by_cst(__isl_keep isl_stream *s,
+	__isl_take isl_pw_aff *pa)
+{
+	struct isl_token *tok;
+
+	tok = next_token(s);
+	if (!tok || tok->type != ISL_TOKEN_VALUE) {
+		isl_stream_error(s, tok, "expecting denominator");
+		isl_token_free(tok);
+		return isl_pw_aff_free(pa);
+	}
+
+	pa = isl_pw_aff_scale_down(pa,  tok->u.v);
+
+	isl_token_free(tok);
+
+	return pa;
+}
+
 /* Is "tok" the start of an integer division?
  */
 static int is_start_of_div(struct isl_token *tok)
@@ -459,27 +480,6 @@ error:
 	isl_space_free(space);
 	isl_pw_aff_free(pwaff);
 	return NULL;
-}
-
-/* Divide "pa" by an integer constant read from the stream.
- */
-static __isl_give isl_pw_aff *pw_aff_div_by_cst(__isl_keep isl_stream *s,
-	__isl_take isl_pw_aff *pa)
-{
-	struct isl_token *tok;
-
-	tok = next_token(s);
-	if (!tok || tok->type != ISL_TOKEN_VALUE) {
-		isl_stream_error(s, tok, "expecting denominator");
-		isl_token_free(tok);
-		return isl_pw_aff_free(pa);
-	}
-
-	pa = isl_pw_aff_scale_down(pa,  tok->u.v);
-
-	isl_token_free(tok);
-
-	return pa;
 }
 
 static __isl_give isl_pw_aff *accept_affine_factor(__isl_keep isl_stream *s,
