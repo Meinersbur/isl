@@ -422,7 +422,6 @@ static int is_start_of_div(struct isl_token *tok)
 static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
 	__isl_take isl_space *space, struct vars *v)
 {
-	struct isl_token *tok;
 	int f = 0;
 	int c = 0;
 	int extra = 0;
@@ -450,15 +449,7 @@ static __isl_give isl_pw_aff *accept_div(__isl_keep isl_stream *s,
 		if (isl_stream_eat(s, ','))
 			goto error;
 
-		tok = next_token(s);
-		if (!tok)
-			goto error;
-		if (tok->type != ISL_TOKEN_VALUE) {
-			isl_stream_error(s, tok, "expected denominator");
-			goto error;
-		}
-		pwaff = isl_pw_aff_scale_down(pwaff,  tok->u.v);
-		isl_token_free(tok);
+		pwaff = pw_aff_div_by_cst(s, pwaff);
 	}
 
 	if (c)
