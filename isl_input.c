@@ -3234,7 +3234,8 @@ __isl_give isl_union_set *isl_stream_read_union_set(__isl_keep isl_stream *s)
 	return extract_union_set(s->ctx, obj);
 }
 
-static __isl_give isl_basic_map *basic_map_read(__isl_keep isl_stream *s)
+static __isl_give isl_basic_map *isl_stream_read_basic_map(
+	__isl_keep isl_stream *s)
 {
 	struct isl_obj obj;
 	struct isl_map *map;
@@ -3271,7 +3272,7 @@ error:
 __isl_give isl_basic_set *isl_stream_read_basic_set(__isl_keep isl_stream *s)
 {
 	isl_basic_map *bmap;
-	bmap = basic_map_read(s);
+	bmap = isl_stream_read_basic_map(s);
 	if (!bmap)
 		return NULL;
 	if (!isl_basic_map_may_be_set(bmap))
@@ -3290,7 +3291,7 @@ __isl_give isl_basic_map *isl_basic_map_read_from_file(isl_ctx *ctx,
 	isl_stream *s = isl_stream_new_file(ctx, input);
 	if (!s)
 		return NULL;
-	bmap = basic_map_read(s);
+	bmap = isl_stream_read_basic_map(s);
 	isl_stream_free(s);
 	return bmap;
 }
@@ -3314,7 +3315,7 @@ __isl_give isl_basic_map *isl_basic_map_read_from_str(isl_ctx *ctx,
 	isl_stream *s = isl_stream_new_str(ctx, str);
 	if (!s)
 		return NULL;
-	bmap = basic_map_read(s);
+	bmap = isl_stream_read_basic_map(s);
 	isl_stream_free(s);
 	return bmap;
 }
