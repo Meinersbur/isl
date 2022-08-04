@@ -739,19 +739,6 @@ __isl_give isl_schedule *isl_schedule_read_from_file(isl_ctx *ctx, FILE *input)
 	return schedule;
 }
 
-/* Read an isl_schedule from "str".
- */
-__isl_give isl_schedule *isl_schedule_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	struct isl_stream *s;
-	isl_schedule *schedule;
-
-	s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	schedule = isl_stream_read_schedule(s);
-	isl_stream_free(s);
-
-	return schedule;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	schedule
+#include "isl_read_from_str_templ.c"

@@ -671,22 +671,9 @@ __isl_give isl_schedule_constraints *isl_schedule_constraints_read_from_file(
 	return sc;
 }
 
-/* Read an isl_schedule_constraints object from the string "str".
- */
-__isl_give isl_schedule_constraints *isl_schedule_constraints_read_from_str(
-	isl_ctx *ctx, const char *str)
-{
-	struct isl_stream *s;
-	isl_schedule_constraints *sc;
-
-	s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	sc = isl_stream_read_schedule_constraints(s);
-	isl_stream_free(s);
-
-	return sc;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	schedule_constraints
+#include "isl_read_from_str_templ.c"
 
 /* Align the parameters of the fields of "sc".
  */

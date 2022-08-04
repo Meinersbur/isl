@@ -246,18 +246,9 @@ error:
 	return NULL;
 }
 
-/* Read an isl_val from "str".
- */
-__isl_give isl_val *isl_val_read_from_str(isl_ctx *ctx, const char *str)
-{
-	isl_val *val;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	val = isl_stream_read_val(s);
-	isl_stream_free(s);
-	return val;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	val
+#include "isl_read_from_str_templ.c"
 
 static isl_stat accept_cst_factor(__isl_keep isl_stream *s, isl_int *f)
 {
@@ -1849,19 +1840,9 @@ error:
 	return NULL;
 }
 
-/* Read an isl_space object from "str".
- */
-__isl_give isl_space *isl_space_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	struct isl_space *space;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	space = isl_stream_read_space(s);
-	isl_stream_free(s);
-	return space;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	space
+#include "isl_read_from_str_templ.c"
 
 /* Given two equal-length lists of piecewise affine expression with the space
  * of "set" as domain, construct a set in the same space that expresses
@@ -3308,29 +3289,13 @@ __isl_give isl_basic_set *isl_basic_set_read_from_file(isl_ctx *ctx,
 	return bset;
 }
 
-__isl_give isl_basic_map *isl_basic_map_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	struct isl_basic_map *bmap;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	bmap = isl_stream_read_basic_map(s);
-	isl_stream_free(s);
-	return bmap;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	basic_map
+#include "isl_read_from_str_templ.c"
 
-__isl_give isl_basic_set *isl_basic_set_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	isl_basic_set *bset;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	bset = isl_stream_read_basic_set(s);
-	isl_stream_free(s);
-	return bset;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	basic_set
+#include "isl_read_from_str_templ.c"
 
 __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 	FILE *input)
@@ -3344,17 +3309,9 @@ __isl_give isl_map *isl_map_read_from_file(struct isl_ctx *ctx,
 	return map;
 }
 
-__isl_give isl_map *isl_map_read_from_str(struct isl_ctx *ctx,
-	const char *str)
-{
-	struct isl_map *map;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	map = isl_stream_read_map(s);
-	isl_stream_free(s);
-	return map;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	map
+#include "isl_read_from_str_templ.c"
 
 __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 	FILE *input)
@@ -3368,16 +3325,9 @@ __isl_give isl_set *isl_set_read_from_file(struct isl_ctx *ctx,
 	return set;
 }
 
-__isl_give isl_set *isl_set_read_from_str(isl_ctx *ctx, const char *str)
-{
-	isl_set *set;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	set = isl_stream_read_set(s);
-	isl_stream_free(s);
-	return set;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	set
+#include "isl_read_from_str_templ.c"
 
 __isl_give isl_union_map *isl_union_map_read_from_file(isl_ctx *ctx,
 	FILE *input)
@@ -3391,17 +3341,9 @@ __isl_give isl_union_map *isl_union_map_read_from_file(isl_ctx *ctx,
 	return umap;
 }
 
-__isl_give isl_union_map *isl_union_map_read_from_str(struct isl_ctx *ctx,
-		const char *str)
-{
-	isl_union_map *umap;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	umap = isl_stream_read_union_map(s);
-	isl_stream_free(s);
-	return umap;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	union_map
+#include "isl_read_from_str_templ.c"
 
 __isl_give isl_union_set *isl_union_set_read_from_file(isl_ctx *ctx,
 	FILE *input)
@@ -3415,17 +3357,9 @@ __isl_give isl_union_set *isl_union_set_read_from_file(isl_ctx *ctx,
 	return uset;
 }
 
-__isl_give isl_union_set *isl_union_set_read_from_str(struct isl_ctx *ctx,
-		const char *str)
-{
-	isl_union_set *uset;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	uset = isl_stream_read_union_set(s);
-	isl_stream_free(s);
-	return uset;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	union_set
+#include "isl_read_from_str_templ.c"
 
 static __isl_give isl_vec *isl_vec_read_polylib(__isl_keep isl_stream *s)
 {
@@ -3492,17 +3426,9 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_str(isl_ctx *ctx,
-		const char *str)
-{
-	isl_pw_qpolynomial *pwqp;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	pwqp = isl_stream_read_pw_qpolynomial(s);
-	isl_stream_free(s);
-	return pwqp;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	pw_qpolynomial
+#include "isl_read_from_str_templ.c"
 
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_read_from_file(isl_ctx *ctx,
 		FILE *input)
@@ -3535,22 +3461,9 @@ error:
 	return NULL;
 }
 
-/* Read an isl_pw_qpolynomial_fold from "str".
- */
-__isl_give isl_pw_qpolynomial_fold *isl_pw_qpolynomial_fold_read_from_str(
-	isl_ctx *ctx, const char *str)
-{
-	isl_pw_qpolynomial_fold *pwqp;
-	isl_stream *s;
-
-	s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	pwqp = isl_stream_read_pw_qpolynomial_fold(s);
-	isl_stream_free(s);
-
-	return pwqp;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	pw_qpolynomial_fold
+#include "isl_read_from_str_templ.c"
 
 /* Is the next token an identifier not in "v"?
  */
@@ -3719,27 +3632,13 @@ error:
 	return NULL;
 }
 
-__isl_give isl_aff *isl_aff_read_from_str(isl_ctx *ctx, const char *str)
-{
-	isl_aff *aff;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	aff = isl_stream_read_aff(s);
-	isl_stream_free(s);
-	return aff;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	aff
+#include "isl_read_from_str_templ.c"
 
-__isl_give isl_pw_aff *isl_pw_aff_read_from_str(isl_ctx *ctx, const char *str)
-{
-	isl_pw_aff *pa;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	pa = isl_stream_read_pw_aff(s);
-	isl_stream_free(s);
-	return pa;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	pw_aff
+#include "isl_read_from_str_templ.c"
 
 /* Extract an isl_multi_pw_aff with domain space "dom_space"
  * from a tuple "tuple" read by read_tuple.
@@ -3930,31 +3829,13 @@ __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 	return isl_union_pw_multi_aff_as_pw_multi_aff(upma);
 }
 
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	isl_pw_multi_aff *pma;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	pma = isl_stream_read_pw_multi_aff(s);
-	isl_stream_free(s);
-	return pma;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	pw_multi_aff
+#include "isl_read_from_str_templ.c"
 
-/* Read an isl_union_pw_multi_aff from "str".
- */
-__isl_give isl_union_pw_multi_aff *isl_union_pw_multi_aff_read_from_str(
-	isl_ctx *ctx, const char *str)
-{
-	isl_union_pw_multi_aff *upma;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	upma = isl_stream_read_union_pw_multi_aff(s);
-	isl_stream_free(s);
-	return upma;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	union_pw_multi_aff
+#include "isl_read_from_str_templ.c"
 
 /* Assuming "pa" represents a single affine expression defined on a universe
  * domain, extract this affine expression.
@@ -4089,17 +3970,9 @@ error:
 	return NULL;
 }
 
-__isl_give isl_multi_aff *isl_multi_aff_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	isl_multi_aff *maff;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	maff = isl_stream_read_multi_aff(s);
-	isl_stream_free(s);
-	return maff;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	multi_aff
+#include "isl_read_from_str_templ.c"
 
 /* Read an isl_multi_pw_aff from "s".
  *
@@ -4178,19 +4051,9 @@ error:
 	return NULL;
 }
 
-/* Read an isl_multi_pw_aff from "str".
- */
-__isl_give isl_multi_pw_aff *isl_multi_pw_aff_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	isl_multi_pw_aff *mpa;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	mpa = isl_stream_read_multi_pw_aff(s);
-	isl_stream_free(s);
-	return mpa;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	multi_pw_aff
+#include "isl_read_from_str_templ.c"
 
 /* Read the body of an isl_union_pw_aff from "s" with parameter domain "dom".
  */
@@ -4267,19 +4130,9 @@ error:
 	return NULL;
 }
 
-/* Read an isl_union_pw_aff from "str".
- */
-__isl_give isl_union_pw_aff *isl_union_pw_aff_read_from_str(isl_ctx *ctx,
-	const char *str)
-{
-	isl_union_pw_aff *upa;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	upa = isl_stream_read_union_pw_aff(s);
-	isl_stream_free(s);
-	return upa;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	union_pw_aff
+#include "isl_read_from_str_templ.c"
 
 /* This function is called for each element in a tuple inside
  * isl_stream_read_multi_union_pw_aff.
@@ -4566,19 +4419,9 @@ __isl_give isl_multi_union_pw_aff *isl_stream_read_multi_union_pw_aff(
 	return mupa;
 }
 
-/* Read an isl_multi_union_pw_aff from "str".
- */
-__isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_read_from_str(
-	isl_ctx *ctx, const char *str)
-{
-	isl_multi_union_pw_aff *mupa;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	mupa = isl_stream_read_multi_union_pw_aff(s);
-	isl_stream_free(s);
-	return mupa;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	multi_union_pw_aff
+#include "isl_read_from_str_templ.c"
 
 __isl_give isl_union_pw_qpolynomial *isl_stream_read_union_pw_qpolynomial(
 	__isl_keep isl_stream *s)
@@ -4600,14 +4443,6 @@ error:
 	return NULL;
 }
 
-__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_read_from_str(
-	isl_ctx *ctx, const char *str)
-{
-	isl_union_pw_qpolynomial *upwqp;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	upwqp = isl_stream_read_union_pw_qpolynomial(s);
-	isl_stream_free(s);
-	return upwqp;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	union_pw_qpolynomial
+#include "isl_read_from_str_templ.c"
