@@ -952,6 +952,7 @@ static __isl_give isl_qpolynomial_fold *isl_qpolynomial_fold_zero_in_space(
 
 #include <isl_pw_templ.c>
 #include <isl_pw_eval.c>
+#include <isl_pw_fix_templ.c>
 #include <isl_pw_insert_dims_templ.c>
 #include <isl_pw_lift_templ.c>
 #include <isl_pw_morph_templ.c>
