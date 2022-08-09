@@ -615,6 +615,7 @@ EXTRA_DIST = \
 	isl_pw_pullback_templ.c \
 	isl_pw_range_tuple_id_templ.c \
 	isl_pw_scale_templ.c \
+	isl_pw_split_dims_templ.c \
 	isl_pw_sub_templ.c \
 	isl_pw_un_op_templ.c \
 	isl_pw_union_opt.c \

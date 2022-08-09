@@ -2802,6 +2802,7 @@ static __isl_give isl_aff *isl_aff_zero_in_space(__isl_take isl_space *space)
 #include <isl_pw_neg_templ.c>
 #include <isl_pw_pullback_templ.c>
 #include <isl_pw_scale_templ.c>
+#include <isl_pw_split_dims_templ.c>
 #include <isl_pw_sub_templ.c>
 #include <isl_pw_union_opt.c>
 
@@ -4607,6 +4608,7 @@ __isl_give isl_set *isl_multi_aff_lex_gt_set(__isl_take isl_multi_aff *ma1,
 #include <isl_pw_neg_templ.c>
 #include <isl_pw_pullback_templ.c>
 #include <isl_pw_range_tuple_id_templ.c>
+#include <isl_pw_split_dims_templ.c>
 #include <isl_pw_union_opt.c>
 
 #undef BASE

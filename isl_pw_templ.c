@@ -1548,32 +1548,6 @@ isl_size FN(PW,dim)(__isl_keep PW *pw, enum isl_dim_type type)
 	return isl_space_dim(FN(PW,peek_space)(pw), type);
 }
 
-__isl_give PW *FN(PW,split_dims)(__isl_take PW *pw,
-	enum isl_dim_type type, unsigned first, unsigned n)
-{
-	int i;
-	isl_size n_piece;
-
-	n_piece = FN(PW,n_piece)(pw);
-	if (n_piece < 0)
-		return FN(PW,free)(pw);
-	if (n == 0)
-		return pw;
-
-	if (type == isl_dim_in)
-		type = isl_dim_set;
-
-	for (i = 0; i < n; ++i) {
-		isl_set *domain;
-
-		domain = FN(PW,take_domain_at)(pw, i);
-		domain = isl_set_split_dims(domain, type, first, n);
-		pw = FN(PW,restore_domain_at)(pw, i, domain);
-	}
-
-	return pw;
-}
-
 __isl_give isl_space *FN(PW,get_domain_space)(__isl_keep PW *pw)
 {
 	return pw ? isl_space_domain(isl_space_copy(pw->dim)) : NULL;
