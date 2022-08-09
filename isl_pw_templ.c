@@ -381,7 +381,7 @@ static __isl_keep EL *FN(PW,peek_base_at)(__isl_keep PW *pw, int pos)
 /* Return a copy of the base expression associated to
  * the cell at position "pos" in "pw".
  */
-__isl_give EL *FN(PW,get_base_at)(__isl_keep PW *pw, int pos)
+static __isl_give EL *FN(PW,get_base_at)(__isl_keep PW *pw, int pos)
 {
 	return FN(EL,copy)(FN(PW,peek_base_at)(pw, pos));
 }
@@ -397,7 +397,7 @@ __isl_give EL *FN(PW,get_base_at)(__isl_keep PW *pw, int pos)
  * a subsequent call to isl_pw_*_restore_*.
  * The only exception is that isl_pw_*_free can be called instead.
  */
-__isl_give EL *FN(PW,take_base_at)(__isl_keep PW *pw, int pos)
+static __isl_give EL *FN(PW,take_base_at)(__isl_keep PW *pw, int pos)
 {
 	EL *el;
 
@@ -452,7 +452,7 @@ error:
  * where this base expression may be missing
  * due to a preceding call to isl_pw_*_take_base_at.
  */
-__isl_give PW *FN(PW,restore_base_at)(__isl_take PW *pw, int pos,
+static __isl_give PW *FN(PW,restore_base_at)(__isl_take PW *pw, int pos,
 	__isl_take EL *el)
 {
 	return FN(PW,restore_base_at_)(pw, pos, el, 0);
