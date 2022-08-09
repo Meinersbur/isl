@@ -3109,6 +3109,7 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
 
 #include <isl_pw_templ.c>
 #include <isl_pw_un_op_templ.c>
+#include <isl_pw_add_disjoint_templ.c>
 #include <isl_pw_eval.c>
 #include <isl_pw_fix_templ.c>
 #include <isl_pw_insert_dims_templ.c>

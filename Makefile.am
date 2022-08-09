@@ -602,6 +602,7 @@ EXTRA_DIST = \
 	isl_pw_add_constant_templ.c \
 	isl_pw_add_constant_multi_val_templ.c \
 	isl_pw_add_constant_val_templ.c \
+	isl_pw_add_disjoint_templ.c \
 	isl_pw_bind_domain_templ.c \
 	isl_pw_eval.c \
 	isl_pw_fix_templ.c \
