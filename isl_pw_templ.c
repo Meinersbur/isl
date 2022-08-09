@@ -308,7 +308,7 @@ static __isl_keep isl_set *FN(PW,peek_domain_at)(__isl_keep PW *pw, int pos)
 
 /* Return a copy of the cell at position "pos" in "pw".
  */
-__isl_give isl_set *FN(PW,get_domain_at)(__isl_keep PW *pw, int pos)
+static __isl_give isl_set *FN(PW,get_domain_at)(__isl_keep PW *pw, int pos)
 {
 	return isl_set_copy(FN(PW,peek_domain_at)(pw, pos));
 }
