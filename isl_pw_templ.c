@@ -1505,15 +1505,24 @@ __isl_give PW *FN(PW,drop_unused_params)(__isl_take PW *pw)
 	return pw;
 }
 
-__isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
-	enum isl_dim_type type, unsigned pos, isl_int v)
+/* Fix the value of the variable at position "pos" of type "type" of "pw"
+ * to be equal to "v".
+ */
+__isl_give PW *FN(PW,fix_val)(__isl_take PW *pw,
+	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
 {
 	int i;
 	isl_size n;
 
+	if (!v)
+		return FN(PW,free)(pw);
+	if (!isl_val_is_int(v))
+		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
+			"expecting integer value", goto error);
+
 	n = FN(PW,n_piece)(pw);
 	if (n < 0)
-		return FN(PW,free)(pw);
+		goto error;
 
 	if (type == isl_dim_in)
 		type = isl_dim_set;
@@ -1522,29 +1531,12 @@ __isl_give PW *FN(PW,fix_dim)(__isl_take PW *pw,
 		isl_set *domain;
 
 		domain = FN(PW,take_domain_at)(pw, i);
-		domain = isl_set_fix(domain, type, pos, v);
+		domain = isl_set_fix(domain, type, pos, v->n);
 		pw = FN(PW,restore_domain_at)(pw, i, domain);
 		pw = FN(PW,exploit_equalities_and_remove_if_empty)(pw, i);
 	}
 
-	return pw;
-}
-
-/* Fix the value of the variable at position "pos" of type "type" of "pw"
- * to be equal to "v".
- */
-__isl_give PW *FN(PW,fix_val)(__isl_take PW *pw,
-	enum isl_dim_type type, unsigned pos, __isl_take isl_val *v)
-{
-	if (!v)
-		return FN(PW,free)(pw);
-	if (!isl_val_is_int(v))
-		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
-			"expecting integer value", goto error);
-
-	pw = FN(PW,fix_dim)(pw, type, pos, v->n);
 	isl_val_free(v);
-
 	return pw;
 error:
 	isl_val_free(v);
