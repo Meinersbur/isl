@@ -4488,6 +4488,9 @@ To actually print something, use
 	#include <isl/val.h>
 	__isl_give isl_printer *isl_printer_print_val(
 		__isl_take isl_printer *p, __isl_keep isl_val *v);
+	__isl_give isl_printer *isl_printer_print_multi_val(
+		__isl_take isl_printer *p,
+		__isl_keep isl_multi_val *mv);
 
 	#include <isl/set.h>
 	__isl_give isl_printer *isl_printer_print_basic_set(
@@ -4514,11 +4517,6 @@ To actually print something, use
 	__isl_give isl_printer *isl_printer_print_union_map(
 		__isl_take isl_printer *p,
 		__isl_keep isl_union_map *umap);
-
-	#include <isl/val.h>
-	__isl_give isl_printer *isl_printer_print_multi_val(
-		__isl_take isl_printer *p,
-		__isl_keep isl_multi_val *mv);
 
 	#include <isl/id.h>
 	__isl_give isl_printer *isl_printer_print_multi_id(
