@@ -975,25 +975,9 @@ static __isl_give PW *FN(PW,exploit_equalities_and_remove_if_empty)(
 	return pw;
 }
 
-/* Convert a piecewise expression defined over a parameter domain
- * into one that is defined over a zero-dimensional set.
- */
-__isl_give PW *FN(PW,from_range)(__isl_take PW *pw)
-{
-	isl_space *space;
-
-	if (!pw)
-		return NULL;
-	if (!isl_space_is_set(pw->dim))
-		isl_die(FN(PW,get_ctx)(pw), isl_error_invalid,
-			"not living in a set space", return FN(PW,free)(pw));
-
-	space = FN(PW,get_space)(pw);
-	space = isl_space_from_range(space);
-	pw = FN(PW,reset_space)(pw, space);
-
-	return pw;
-}
+#undef TYPE
+#define TYPE	PW
+#include "isl_from_range_templ.c"
 
 /* Fix the value of the given parameter or domain dimension of "pw"
  * to be equal to "value".
