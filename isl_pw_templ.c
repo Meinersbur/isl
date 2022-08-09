@@ -894,10 +894,6 @@ static __isl_give PW *FN(PW,exploit_equalities_and_remove_if_empty)(
 	return pw;
 }
 
-#undef TYPE
-#define TYPE	PW
-#include "isl_from_range_templ.c"
-
 /* Restrict the domain of "pw" by combining each cell
  * with "set" through a call to "fn", where "fn" may be
  * isl_set_intersect, isl_set_intersect_params, isl_set_intersect_factor_domain,
