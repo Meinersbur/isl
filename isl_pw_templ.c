@@ -2042,7 +2042,7 @@ __isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
  * to return NULL, so we need to make sure we don't change the
  * meaning of any possible other copies of "pw".
  */
-__isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
+static __isl_give PW *FN(PW,normalize)(__isl_take PW *pw)
 {
 	int i;
 	isl_set *set;
