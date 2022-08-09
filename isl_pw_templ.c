@@ -57,7 +57,7 @@ __isl_give PW *FN(PW,ZERO)(__isl_take isl_space *space OPT_TYPE_PARAM)
  * Do this independently of the values of "set" and "el",
  * such that this function can be used by isl_pw_*_dup.
  */
-__isl_give PW *FN(PW,add_dup_piece)(__isl_take PW *pw,
+static __isl_give PW *FN(PW,add_dup_piece)(__isl_take PW *pw,
 	__isl_take isl_set *set, __isl_take EL *el)
 {
 	isl_ctx *ctx;
