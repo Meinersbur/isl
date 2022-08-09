@@ -243,7 +243,7 @@ __isl_give isl_space *FN(PW,get_space)(__isl_keep PW *pw)
  * a subsequent call to isl_pw_*_restore_*.
  * The only exception is that isl_pw_*_free can be called instead.
  */
-__isl_give isl_space *FN(PW,take_space)(__isl_keep PW *pw)
+static __isl_give isl_space *FN(PW,take_space)(__isl_keep PW *pw)
 {
 	isl_space *space;
 
@@ -261,7 +261,7 @@ __isl_give isl_space *FN(PW,take_space)(__isl_keep PW *pw)
  * However, in this case, "pw" only has a single reference and
  * then the call to isl_pw_*_cow has no effect.
  */
-__isl_give PW *FN(PW,restore_space)(__isl_take PW *pw,
+static __isl_give PW *FN(PW,restore_space)(__isl_take PW *pw,
 	__isl_take isl_space *space)
 {
 	if (!pw || !space)
