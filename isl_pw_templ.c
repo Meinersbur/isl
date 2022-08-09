@@ -576,7 +576,7 @@ isl_bool FN(PW,IS_ZERO)(__isl_keep PW *pw)
 	return isl_bool_ok(pw->n == 0);
 }
 
-__isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
+static __isl_give PW *FN(PW,realign_domain)(__isl_take PW *pw,
 	__isl_take isl_reordering *exp)
 {
 	int i;
