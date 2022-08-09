@@ -1909,7 +1909,7 @@ static __isl_give PW *FN(PW,negate_type)(__isl_take PW *pw)
 }
 #endif
 
-__isl_give PW *FN(PW,mul_isl_int)(__isl_take PW *pw, isl_int v)
+__isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
 {
 	int i;
 	isl_size n;
@@ -2026,11 +2026,6 @@ error:
 	isl_val_free(v);
 	FN(PW,free)(pw);
 	return NULL;
-}
-
-__isl_give PW *FN(PW,scale)(__isl_take PW *pw, isl_int v)
-{
-	return FN(PW,mul_isl_int)(pw, v);
 }
 
 /* Apply some normalization to "pw".
