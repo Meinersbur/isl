@@ -3196,7 +3196,7 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_printer *print_pw_multi_aff_body(
+static __isl_give isl_printer *print_body_pw_multi_aff(
 	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
 {
 	int i;
@@ -3230,7 +3230,7 @@ static __isl_give isl_printer *print_pw_multi_aff_isl(__isl_take isl_printer *p,
 
 	p = print_param_tuple(p, pma->dim, &data);
 	p = isl_printer_print_str(p, "{ ");
-	p = print_pw_multi_aff_body(p, pma);
+	p = print_body_pw_multi_aff(p, pma);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -3321,7 +3321,7 @@ static isl_stat print_pw_multi_aff_body_wrap(__isl_take isl_pw_multi_aff *pma,
 		data->p = isl_printer_print_str(data->p, "; ");
 	data->first = 0;
 
-	data->p = print_pw_multi_aff_body(data->p, pma);
+	data->p = print_body_pw_multi_aff(data->p, pma);
 	isl_pw_multi_aff_free(pma);
 
 	return isl_stat_ok;
