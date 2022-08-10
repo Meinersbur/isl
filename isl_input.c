@@ -3694,8 +3694,8 @@ static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_tuple_entry(
  *
  * Check that none of the expressions depend on any other output/set dimensions.
  */
-static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
-	__isl_take isl_space *dom_space, __isl_keep isl_multi_pw_aff *tuple)
+static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_tuple(
+	__isl_take isl_space *dom_space, __isl_take isl_multi_pw_aff *tuple)
 {
 	int i;
 	isl_size dim, n;
@@ -3720,6 +3720,7 @@ static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
 		mpa = isl_multi_pw_aff_set_tuple_entry(mpa, pa, i, dim, n);
 	}
 
+	isl_multi_pw_aff_free(tuple);
 	return mpa;
 }
 
@@ -3739,7 +3740,7 @@ static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
  * If so, convert the tuple into the domain of the isl_multi_pw_aff and
  * read in the next tuple.  This tuple (or the first tuple if it was
  * not followed by a "->") is then converted into an isl_multi_pw_aff
- * through a call to extract_mpa_from_tuple.
+ * through a call to isl_multi_pw_aff_from_tuple.
  * The domain of the result is intersected with the domain.
  *
  * Note that the last tuple may introduce new identifiers,
@@ -3765,8 +3766,7 @@ static __isl_give isl_multi_pw_aff *read_conditional_multi_pw_aff(
 		if (!tuple)
 			goto error;
 	}
-	mpa = extract_mpa_from_tuple(isl_set_get_space(dom), tuple);
-	isl_multi_pw_aff_free(tuple);
+	mpa = isl_multi_pw_aff_from_tuple(isl_set_get_space(dom), tuple);
 	if (!mpa)
 		dom = isl_set_free(dom);
 
