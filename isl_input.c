@@ -4051,8 +4051,7 @@ __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 	}
 
 	vars_drop(v, v->n - n_dom);
-	if (isl_stream_eat_if_available(s, ':'))
-		dom = read_formula(s, v, dom, 0);
+	dom = read_optional_formula(s, dom, v, 0);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
