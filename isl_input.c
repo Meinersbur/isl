@@ -3696,28 +3696,33 @@ static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
 	return mpa;
 }
 
-/* Read a tuple of affine expressions, together with optional constraints
- * on the domain from "s".  "dom" represents the initial constraints
- * on the domain.
+/* Read a tuple of piecewise affine expressions,
+ * including optional constraints on the domain from "s".
+ * "dom" represents the initial constraints on the domain.
  *
- * The isl_multi_aff may live in either a set or a map space.
+ * The input format is similar to that of a map, except that any conditions
+ * on the domains should be specified inside the tuple since each
+ * piecewise affine expression may have a different domain.
+ * However, additional, shared conditions can also be specified.
+ * This is especially useful for setting the explicit domain
+ * of a zero-dimensional isl_multi_pw_aff.
+ *
+ * The isl_multi_pw_aff may live in either a set or a map space.
  * First read the first tuple and check if it is followed by a "->".
  * If so, convert the tuple into the domain of the isl_multi_pw_aff and
  * read in the next tuple.  This tuple (or the first tuple if it was
  * not followed by a "->") is then converted into an isl_multi_pw_aff
  * through a call to extract_mpa_from_tuple.
- * The result is converted to an isl_pw_multi_aff and
- * its domain is intersected with the domain.
+ * The domain of the result is intersected with the domain.
  *
  * Note that the last tuple may introduce new identifiers,
  * but these cannot be referenced in the description of the domain.
  */
-static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
+static __isl_give isl_multi_pw_aff *read_conditional_multi_pw_aff(
 	__isl_keep isl_stream *s, __isl_take isl_set *dom, struct vars *v)
 {
 	isl_multi_pw_aff *tuple;
 	isl_multi_pw_aff *mpa;
-	isl_pw_multi_aff *pma;
 	int n = v->n;
 	int n_dom;
 
@@ -3743,13 +3748,28 @@ static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
 
 	vars_drop(v, v->n - n);
 
-	pma = isl_pw_multi_aff_from_multi_pw_aff(mpa);
-	pma = isl_pw_multi_aff_intersect_domain(pma, dom);
+	mpa = isl_multi_pw_aff_intersect_domain(mpa, dom);
 
-	return pma;
+	return mpa;
 error:
 	isl_set_free(dom);
 	return NULL;
+}
+
+/* Read a tuple of affine expressions, together with optional constraints
+ * on the domain from "s".  "dom" represents the initial constraints
+ * on the domain.
+ *
+ * Read a tuple of piecewise affine expressions with optional constraints and
+ * convert the result to an isl_pw_multi_aff on the shared domain.
+ */
+static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
+	__isl_keep isl_stream *s, __isl_take isl_set *dom, struct vars *v)
+{
+	isl_multi_pw_aff *mpa;
+
+	mpa = read_conditional_multi_pw_aff(s, dom, v);
+	return isl_pw_multi_aff_from_multi_pw_aff(mpa);
 }
 
 /* Read an isl_union_pw_multi_aff from "s".
