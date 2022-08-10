@@ -2854,12 +2854,14 @@ static __isl_give isl_printer *print_body_pw_aff(
 		return isl_printer_free(p);
 
 	for (i = 0; i < pa->n; ++i) {
+		isl_aff *aff;
 		isl_space *space;
 
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		p = print_body_aff(p, pa->p[i].aff);
-		space = isl_aff_get_domain_space(pa->p[i].aff);
+		aff = isl_pw_aff_peek_base_at(pa, i);
+		p = print_body_aff(p, aff);
+		space = isl_aff_get_domain_space(aff);
 		p = print_disjuncts(set_to_map(pa->p[i].set), space, p, 0);
 		isl_space_free(space);
 	}
