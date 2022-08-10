@@ -3207,12 +3207,14 @@ static __isl_give isl_printer *print_body_pw_multi_aff(
 		goto error;
 
 	for (i = 0; i < pma->n; ++i) {
+		isl_multi_aff *ma;
 		isl_space *space;
 
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		p = print_body_multi_aff(p, pma->p[i].maff);
-		space = isl_multi_aff_get_domain_space(pma->p[i].maff);
+		ma = isl_pw_multi_aff_peek_base_at(pma, i);
+		p = print_body_multi_aff(p, ma);
+		space = isl_multi_aff_get_domain_space(ma);
 		p = print_disjuncts(set_to_map(pma->p[i].set), space, p, 0);
 		isl_space_free(space);
 	}
