@@ -630,6 +630,7 @@ EXTRA_DIST = \
 	set_to_map.c \
 	set_from_map.c \
 	set_list_from_map_list_inl.c \
+	isl_stream_read_with_params_templ.c \
 	isl_tab_lexopt_templ.c \
 	isl_test_list_templ.c \
 	isl_test_plain_equal_templ.c \

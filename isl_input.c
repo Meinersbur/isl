@@ -3627,46 +3627,13 @@ static __isl_give isl_pw_aff *isl_stream_read_with_params_pw_aff(
 	return pa;
 }
 
-__isl_give isl_pw_aff *isl_stream_read_pw_aff(__isl_keep isl_stream *s)
-{
-	struct vars *v;
-	isl_set *dom = NULL;
-	isl_pw_aff *pa = NULL;
-
-	v = vars_new(s->ctx);
-	if (!v)
-		return NULL;
-
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (isl_stream_eat(s, '{'))
-		goto error;
-
-	pa = isl_stream_read_with_params_pw_aff(s, dom, v);
-
-	if (isl_stream_eat(s, '}'))
-		goto error;
-
-	vars_free(v);
-	isl_set_free(dom);
-	return pa;
-error:
-	vars_free(v);
-	isl_set_free(dom);
-	isl_pw_aff_free(pa);
-	return NULL;
-}
-
 #undef TYPE_BASE
 #define TYPE_BASE	aff
 #include "isl_read_from_str_templ.c"
 
 #undef TYPE_BASE
 #define TYPE_BASE	pw_aff
+#include "isl_stream_read_with_params_templ.c"
 #include "isl_read_from_str_templ.c"
 
 /* Given that "pa" is the element at position "pos" of a tuple
@@ -3847,46 +3814,8 @@ isl_stream_read_with_params_union_pw_multi_aff(__isl_keep isl_stream *s,
 	return upma;
 }
 
-/* Read an isl_union_pw_multi_aff from "s".
- *
- * In particular, first read the parameters and then read a sequence
- * of zero or more tuples of affine expressions with optional conditions and
- * add them up.
- */
 __isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
-	__isl_keep isl_stream *s)
-{
-	struct vars *v;
-	isl_set *dom;
-	isl_union_pw_multi_aff *upma = NULL;
-
-	v = vars_new(s->ctx);
-	if (!v)
-		return NULL;
-
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (isl_stream_eat(s, '{'))
-		goto error;
-
-	upma = isl_stream_read_with_params_union_pw_multi_aff(s, dom, v);
-
-	if (isl_stream_eat(s, '}'))
-		goto error;
-
-	isl_set_free(dom);
-	vars_free(v);
-	return upma;
-error:
-	isl_union_pw_multi_aff_free(upma);
-	isl_set_free(dom);
-	vars_free(v);
-	return NULL;
-}
+	__isl_keep isl_stream *s);
 
 /* Read an isl_pw_multi_aff from "s".
  *
@@ -3916,6 +3845,7 @@ __isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
 
 #undef TYPE_BASE
 #define TYPE_BASE	union_pw_multi_aff
+#include "isl_stream_read_with_params_templ.c"
 #include "isl_read_from_str_templ.c"
 
 #undef BASE
@@ -4025,45 +3955,9 @@ static __isl_give isl_multi_pw_aff *isl_stream_read_with_params_multi_pw_aff(
 	return read_conditional_multi_pw_aff(s, isl_set_copy(dom), v);
 }
 
-/* Read an isl_multi_pw_aff from "s".
- */
-__isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
-	__isl_keep isl_stream *s)
-{
-	struct vars *v;
-	isl_set *dom = NULL;
-	isl_multi_pw_aff *mpa = NULL;
-
-	v = vars_new(s->ctx);
-	if (!v)
-		return NULL;
-
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (isl_stream_eat(s, '{'))
-		goto error;
-
-	mpa = isl_stream_read_with_params_multi_pw_aff(s, dom, v);
-
-	if (isl_stream_eat(s, '}'))
-		goto error;
-
-	vars_free(v);
-	isl_set_free(dom);
-	return mpa;
-error:
-	vars_free(v);
-	isl_set_free(dom);
-	isl_multi_pw_aff_free(mpa);
-	return NULL;
-}
-
 #undef TYPE_BASE
 #define TYPE_BASE	multi_pw_aff
+#include "isl_stream_read_with_params_templ.c"
 #include "isl_read_from_str_templ.c"
 
 /* Read the body of an isl_union_pw_aff from "s" with parameter domain "dom".
@@ -4109,49 +4003,9 @@ static __isl_give isl_union_pw_aff *isl_stream_read_with_params_union_pw_aff(
 	return read_union_pw_aff_with_dom(s, isl_set_copy(dom), v);
 }
 
-/* Read an isl_union_pw_aff from "s".
- *
- * First check if there are any paramters, then read in the opening brace
- * and use read_union_pw_aff_with_dom to read in the body of
- * the isl_union_pw_aff.  Finally, read the closing brace.
- */
-__isl_give isl_union_pw_aff *isl_stream_read_union_pw_aff(
-	__isl_keep isl_stream *s)
-{
-	struct vars *v;
-	isl_set *dom;
-	isl_union_pw_aff *upa = NULL;
-
-	v = vars_new(s->ctx);
-	if (!v)
-		return NULL;
-
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (isl_stream_eat(s, '{'))
-		goto error;
-
-	upa = isl_stream_read_with_params_union_pw_aff(s, dom, v);
-
-	if (isl_stream_eat(s, '}'))
-		goto error;
-
-	vars_free(v);
-	isl_set_free(dom);
-	return upa;
-error:
-	vars_free(v);
-	isl_set_free(dom);
-	isl_union_pw_aff_free(upa);
-	return NULL;
-}
-
 #undef TYPE_BASE
 #define TYPE_BASE	union_pw_aff
+#include "isl_stream_read_with_params_templ.c"
 #include "isl_read_from_str_templ.c"
 
 /* This function is called for each element in a tuple inside
