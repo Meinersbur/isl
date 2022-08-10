@@ -3598,26 +3598,15 @@ error:
 	return NULL;
 }
 
-__isl_give isl_pw_aff *isl_stream_read_pw_aff(__isl_keep isl_stream *s)
+/* Read an isl_pw_aff from "s" with parameter domain "dom".
+ * "v" contains a description of the identifiers parsed so far.
+ */
+static __isl_give isl_pw_aff *isl_stream_read_with_params_pw_aff(
+	__isl_keep isl_stream *s, __isl_keep isl_set *dom, struct vars *v)
 {
-	struct vars *v;
-	isl_set *dom = NULL;
 	isl_set *aff_dom;
-	isl_pw_aff *pa = NULL;
+	isl_pw_aff *pa;
 	int n;
-
-	v = vars_new(s->ctx);
-	if (!v)
-		return NULL;
-
-	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
-	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
-		if (isl_stream_eat(s, ISL_TOKEN_TO))
-			goto error;
-	}
-	if (isl_stream_eat(s, '{'))
-		goto error;
 
 	n = v->n;
 	aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
@@ -3634,6 +3623,30 @@ __isl_give isl_pw_aff *isl_stream_read_pw_aff(__isl_keep isl_stream *s)
 
 		pa = isl_pw_aff_union_add(pa, pa_i);
 	}
+
+	return pa;
+}
+
+__isl_give isl_pw_aff *isl_stream_read_pw_aff(__isl_keep isl_stream *s)
+{
+	struct vars *v;
+	isl_set *dom = NULL;
+	isl_pw_aff *pa = NULL;
+
+	v = vars_new(s->ctx);
+	if (!v)
+		return NULL;
+
+	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
+	if (next_is_tuple(s)) {
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		if (isl_stream_eat(s, ISL_TOKEN_TO))
+			goto error;
+	}
+	if (isl_stream_eat(s, '{'))
+		goto error;
+
+	pa = isl_stream_read_with_params_pw_aff(s, dom, v);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
