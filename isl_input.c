@@ -4100,6 +4100,15 @@ static __isl_give isl_union_pw_aff *read_union_pw_aff_with_dom(
 	return upa;
 }
 
+/* Read an isl_union_pw_aff from "s" with parameter domain "dom".
+ * "v" contains a description of the identifiers parsed so far.
+ */
+static __isl_give isl_union_pw_aff *isl_stream_read_with_params_union_pw_aff(
+	__isl_keep isl_stream *s, __isl_keep isl_set *dom, struct vars *v)
+{
+	return read_union_pw_aff_with_dom(s, isl_set_copy(dom), v);
+}
+
 /* Read an isl_union_pw_aff from "s".
  *
  * First check if there are any paramters, then read in the opening brace
@@ -4126,7 +4135,7 @@ __isl_give isl_union_pw_aff *isl_stream_read_union_pw_aff(
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
-	upa = read_union_pw_aff_with_dom(s, isl_set_copy(dom), v);
+	upa = isl_stream_read_with_params_union_pw_aff(s, dom, v);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
