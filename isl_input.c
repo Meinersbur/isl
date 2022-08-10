@@ -3796,33 +3796,13 @@ isl_stream_read_with_params_union_pw_multi_aff(__isl_keep isl_stream *s,
 	return upma;
 }
 
-__isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
-	__isl_keep isl_stream *s);
-
-/* Read an isl_pw_multi_aff from "s".
- *
- * Read a more generic isl_union_pw_multi_aff first and
- * then check that the result lives in a single space.
- */
-__isl_give isl_pw_multi_aff *isl_stream_read_pw_multi_aff(
-	__isl_keep isl_stream *s)
-{
-	isl_bool single_space;
-	isl_union_pw_multi_aff *upma;
-
-	upma = isl_stream_read_union_pw_multi_aff(s);
-	single_space = isl_union_pw_multi_aff_isa_pw_multi_aff(upma);
-	if (single_space < 0)
-		upma = isl_union_pw_multi_aff_free(upma);
-	else if (!single_space)
-		isl_die(s->ctx, isl_error_invalid,
-			"expecting expression in single space",
-			upma = isl_union_pw_multi_aff_free(upma));
-	return isl_union_pw_multi_aff_as_pw_multi_aff(upma);
-}
+#undef BASE
+#define BASE	multi_aff
+#include "isl_stream_read_pw_with_params_templ.c"
 
 #undef TYPE_BASE
 #define TYPE_BASE	pw_multi_aff
+#include "isl_stream_read_with_params_templ.c"
 #include "isl_read_from_str_templ.c"
 
 #undef TYPE_BASE
