@@ -2806,7 +2806,7 @@ static __isl_give isl_printer *print_aff_body(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *print_aff(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_body_aff(__isl_take isl_printer *p,
 	__isl_keep isl_aff *aff)
 {
 	struct isl_print_space_data data = { 0 };
@@ -2834,7 +2834,7 @@ static __isl_give isl_printer *print_aff_isl(__isl_take isl_printer *p,
 
 	p = print_param_tuple(p, aff->ls->dim, &data);
 	p = isl_printer_print_str(p, "{ ");
-	p = print_aff(p, aff);
+	p = print_body_aff(p, aff);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -2858,7 +2858,7 @@ static __isl_give isl_printer *print_body_pw_aff(
 
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		p = print_aff(p, pa->p[i].aff);
+		p = print_body_aff(p, pa->p[i].aff);
 		space = isl_aff_get_domain_space(pa->p[i].aff);
 		p = print_disjuncts(set_to_map(pa->p[i].set), space, p, 0);
 		isl_space_free(space);
