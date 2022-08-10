@@ -3153,7 +3153,7 @@ static __isl_give isl_printer *print_dim_ma(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *print_multi_aff(__isl_take isl_printer *p,
+static __isl_give isl_printer *print_body_multi_aff(__isl_take isl_printer *p,
 	__isl_keep isl_multi_aff *maff)
 {
 	struct isl_print_space_data data = { 0 };
@@ -3173,7 +3173,7 @@ static __isl_give isl_printer *print_multi_aff_isl(__isl_take isl_printer *p,
 
 	p = print_param_tuple(p, maff->space, &data);
 	p = isl_printer_print_str(p, "{ ");
-	p = print_multi_aff(p, maff);
+	p = print_body_multi_aff(p, maff);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -3209,7 +3209,7 @@ static __isl_give isl_printer *print_body_pw_multi_aff(
 
 		if (i)
 			p = isl_printer_print_str(p, "; ");
-		p = print_multi_aff(p, pma->p[i].maff);
+		p = print_body_multi_aff(p, pma->p[i].maff);
 		space = isl_multi_aff_get_domain_space(pma->p[i].maff);
 		p = print_disjuncts(set_to_map(pma->p[i].set), space, p, 0);
 		isl_space_free(space);
