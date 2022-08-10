@@ -4016,6 +4016,15 @@ error:
 #define TYPE_BASE	multi_aff
 #include "isl_read_from_str_templ.c"
 
+/* Read an isl_multi_pw_aff from "s" with parameter domain "dom"..
+ * "v" contains a description of the identifiers parsed so far.
+ */
+static __isl_give isl_multi_pw_aff *isl_stream_read_with_params_multi_pw_aff(
+	__isl_keep isl_stream *s, __isl_keep isl_set *dom, struct vars *v)
+{
+	return read_conditional_multi_pw_aff(s, isl_set_copy(dom), v);
+}
+
 /* Read an isl_multi_pw_aff from "s".
  */
 __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
@@ -4038,7 +4047,7 @@ __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
-	mpa = read_conditional_multi_pw_aff(s, isl_set_copy(dom), v);
+	mpa = isl_stream_read_with_params_multi_pw_aff(s, dom, v);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
