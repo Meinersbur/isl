@@ -3598,29 +3598,40 @@ error:
 	return NULL;
 }
 
-/* Read an isl_pw_aff from "s" with parameter domain "dom".
+/* Read an affine expression, together with optional constraints
+ * on the domain from "s".  "dom" represents the initial constraints
+ * on the parameter domain.
  * "v" contains a description of the identifiers parsed so far.
  */
-static __isl_give isl_pw_aff *isl_stream_read_with_params_pw_aff(
-	__isl_keep isl_stream *s, __isl_keep isl_set *dom, struct vars *v)
+static __isl_give isl_pw_aff *read_conditional_aff(__isl_keep isl_stream *s,
+	__isl_take isl_set *dom, struct vars *v)
 {
 	isl_set *aff_dom;
 	isl_pw_aff *pa;
 	int n;
 
 	n = v->n;
-	aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
+	aff_dom = read_aff_domain(s, dom, v);
 	pa = read_pw_aff_with_dom(s, aff_dom, v);
 	vars_drop(v, v->n - n);
+
+	return pa;
+}
+
+/* Read an isl_pw_aff from "s" with parameter domain "dom".
+ * "v" contains a description of the identifiers parsed so far.
+ */
+static __isl_give isl_pw_aff *isl_stream_read_with_params_pw_aff(
+	__isl_keep isl_stream *s, __isl_keep isl_set *dom, struct vars *v)
+{
+	isl_pw_aff *pa;
+
+	pa = read_conditional_aff(s, isl_set_copy(dom), v);
 
 	while (isl_stream_eat_if_available(s, ';')) {
 		isl_pw_aff *pa_i;
 
-		n = v->n;
-		aff_dom = read_aff_domain(s, isl_set_copy(dom), v);
-		pa_i = read_pw_aff_with_dom(s, aff_dom, v);
-		vars_drop(v, v->n - n);
-
+		pa_i = read_conditional_aff(s, isl_set_copy(dom), v);
 		pa = isl_pw_aff_union_add(pa, pa_i);
 	}
 
