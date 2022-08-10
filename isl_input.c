@@ -3815,6 +3815,38 @@ static __isl_give isl_pw_multi_aff *read_conditional_multi_aff(
 	return isl_pw_multi_aff_from_multi_pw_aff(mpa);
 }
 
+/* Read an isl_union_pw_multi_aff from "s" with parameter domain "dom".
+ * "v" contains a description of the identifiers parsed so far.
+ *
+ * In particular, read a sequence
+ * of zero or more tuples of affine expressions with optional conditions and
+ * add them up.
+ */
+static __isl_give isl_union_pw_multi_aff *
+isl_stream_read_with_params_union_pw_multi_aff(__isl_keep isl_stream *s,
+	__isl_keep isl_set *dom, struct vars *v)
+{
+	isl_union_pw_multi_aff *upma;
+
+	upma = isl_union_pw_multi_aff_empty(isl_set_get_space(dom));
+
+	do {
+		isl_pw_multi_aff *pma;
+		isl_union_pw_multi_aff *upma2;
+
+		if (isl_stream_next_token_is(s, '}'))
+			break;
+
+		pma = read_conditional_multi_aff(s, isl_set_copy(dom), v);
+		upma2 = isl_union_pw_multi_aff_from_pw_multi_aff(pma);
+		upma = isl_union_pw_multi_aff_union_add(upma, upma2);
+		if (!upma)
+			return NULL;
+	} while (isl_stream_eat_if_available(s, ';'));
+
+	return upma;
+}
+
 /* Read an isl_union_pw_multi_aff from "s".
  *
  * In particular, first read the parameters and then read a sequence
@@ -3841,21 +3873,7 @@ __isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
-	upma = isl_union_pw_multi_aff_empty(isl_set_get_space(dom));
-
-	do {
-		isl_pw_multi_aff *pma;
-		isl_union_pw_multi_aff *upma2;
-
-		if (isl_stream_next_token_is(s, '}'))
-			break;
-
-		pma = read_conditional_multi_aff(s, isl_set_copy(dom), v);
-		upma2 = isl_union_pw_multi_aff_from_pw_multi_aff(pma);
-		upma = isl_union_pw_multi_aff_union_add(upma, upma2);
-		if (!upma)
-			goto error;
-	} while (isl_stream_eat_if_available(s, ';'));
+	upma = isl_stream_read_with_params_union_pw_multi_aff(s, dom, v);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
