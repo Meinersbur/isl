@@ -3618,25 +3618,9 @@ static __isl_give isl_pw_aff *read_conditional_aff(__isl_keep isl_stream *s,
 	return pa;
 }
 
-/* Read an isl_pw_aff from "s" with parameter domain "dom".
- * "v" contains a description of the identifiers parsed so far.
- */
-static __isl_give isl_pw_aff *isl_stream_read_with_params_pw_aff(
-	__isl_keep isl_stream *s, __isl_keep isl_set *dom, struct vars *v)
-{
-	isl_pw_aff *pa;
-
-	pa = read_conditional_aff(s, isl_set_copy(dom), v);
-
-	while (isl_stream_eat_if_available(s, ';')) {
-		isl_pw_aff *pa_i;
-
-		pa_i = read_conditional_aff(s, isl_set_copy(dom), v);
-		pa = isl_pw_aff_union_add(pa, pa_i);
-	}
-
-	return pa;
-}
+#undef BASE
+#define BASE	aff
+#include "isl_stream_read_pw_with_params_templ.c"
 
 #undef TYPE_BASE
 #define TYPE_BASE	aff
