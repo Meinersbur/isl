@@ -371,7 +371,7 @@ error:
 /* Return the base expression associated to
  * the cell at position "pos" in "pw".
  */
-static __isl_keep EL *FN(PW,peek_base_at)(__isl_keep PW *pw, int pos)
+__isl_keep EL *FN(PW,peek_base_at)(__isl_keep PW *pw, int pos)
 {
 	if (FN(PW,check_pos)(pw, pos) < 0)
 		return NULL;
