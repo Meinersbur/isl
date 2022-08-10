@@ -2842,50 +2842,9 @@ error:
 	return NULL;
 }
 
-/* Print the body of an isl_pw_aff, i.e., a semicolon delimited
- * sequence of affine expressions, each followed by constraints.
- */
-static __isl_give isl_printer *print_body_pw_aff(
-	__isl_take isl_printer *p, __isl_keep isl_pw_aff *pa)
-{
-	int i;
-
-	if (!pa)
-		return isl_printer_free(p);
-
-	for (i = 0; i < pa->n; ++i) {
-		isl_aff *aff;
-		isl_space *space;
-
-		if (i)
-			p = isl_printer_print_str(p, "; ");
-		aff = isl_pw_aff_peek_base_at(pa, i);
-		p = print_body_aff(p, aff);
-		space = isl_aff_get_domain_space(aff);
-		p = print_disjuncts(set_to_map(pa->p[i].set), space, p, 0);
-		isl_space_free(space);
-	}
-
-	return p;
-}
-
-static __isl_give isl_printer *print_pw_aff_isl(__isl_take isl_printer *p,
-	__isl_keep isl_pw_aff *pwaff)
-{
-	struct isl_print_space_data data = { 0 };
-
-	if (!pwaff)
-		goto error;
-
-	p = print_param_tuple(p, pwaff->dim, &data);
-	p = isl_printer_print_str(p, "{ ");
-	p = print_body_pw_aff(p, pwaff);
-	p = isl_printer_print_str(p, " }");
-	return p;
-error:
-	isl_printer_free(p);
-	return NULL;
-}
+#undef BASE
+#define BASE	aff
+#include "isl_pw_print_templ.c"
 
 static __isl_give isl_printer *print_ls_name_c(__isl_take isl_printer *p,
 	__isl_keep isl_local_space *ls, enum isl_dim_type type, unsigned pos)
@@ -3198,49 +3157,9 @@ error:
 	return NULL;
 }
 
-static __isl_give isl_printer *print_body_pw_multi_aff(
-	__isl_take isl_printer *p, __isl_keep isl_pw_multi_aff *pma)
-{
-	int i;
-
-	if (!pma)
-		goto error;
-
-	for (i = 0; i < pma->n; ++i) {
-		isl_multi_aff *ma;
-		isl_space *space;
-
-		if (i)
-			p = isl_printer_print_str(p, "; ");
-		ma = isl_pw_multi_aff_peek_base_at(pma, i);
-		p = print_body_multi_aff(p, ma);
-		space = isl_multi_aff_get_domain_space(ma);
-		p = print_disjuncts(set_to_map(pma->p[i].set), space, p, 0);
-		isl_space_free(space);
-	}
-	return p;
-error:
-	isl_printer_free(p);
-	return NULL;
-}
-
-static __isl_give isl_printer *print_pw_multi_aff_isl(__isl_take isl_printer *p,
-	__isl_keep isl_pw_multi_aff *pma)
-{
-	struct isl_print_space_data data = { 0 };
-
-	if (!pma)
-		goto error;
-
-	p = print_param_tuple(p, pma->dim, &data);
-	p = isl_printer_print_str(p, "{ ");
-	p = print_body_pw_multi_aff(p, pma);
-	p = isl_printer_print_str(p, " }");
-	return p;
-error:
-	isl_printer_free(p);
-	return NULL;
-}
+#undef BASE
+#define BASE	multi_aff
+#include "isl_pw_print_templ.c"
 
 /* Print the unnamed, single-dimensional piecewise multi affine expression "pma"
  * to "p".
