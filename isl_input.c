@@ -3689,40 +3689,10 @@ static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_tuple_entry(
 	return isl_multi_pw_aff_set_pw_aff(mpa, pos, pa);
 }
 
-/* Extract an isl_multi_pw_aff with domain space "dom_space"
- * from a tuple "tuple" read by read_tuple.
- *
- * Check that none of the expressions depend on any other output/set dimensions.
- */
-static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_from_tuple(
-	__isl_take isl_space *dom_space, __isl_take isl_multi_pw_aff *tuple)
-{
-	int i;
-	isl_size dim, n;
-	isl_space *space;
-	isl_multi_pw_aff *mpa;
+#undef BASE
+#define BASE pw_aff
 
-	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
-	dim = isl_space_dim(dom_space, isl_dim_all);
-	if (n < 0 || dim < 0)
-		dom_space = isl_space_free(dom_space);
-	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
-	space = isl_space_align_params(space, isl_space_copy(dom_space));
-	if (!isl_space_is_params(dom_space))
-		space = isl_space_map_from_domain_and_range(
-				isl_space_copy(dom_space), space);
-	isl_space_free(dom_space);
-	mpa = isl_multi_pw_aff_alloc(space);
-
-	for (i = 0; i < n; ++i) {
-		isl_pw_aff *pa;
-		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
-		mpa = isl_multi_pw_aff_set_tuple_entry(mpa, pa, i, dim, n);
-	}
-
-	isl_multi_pw_aff_free(tuple);
-	return mpa;
-}
+#include <isl_multi_from_tuple_templ.c>
 
 /* Read a tuple of piecewise affine expressions,
  * including optional constraints on the domain from "s".
@@ -3896,21 +3866,22 @@ static __isl_give isl_multi_aff *isl_multi_aff_set_tuple_entry(
 	return isl_multi_aff_set_aff(ma, pos, aff);
 }
 
+#undef BASE
+#define BASE aff
+
+#include <isl_multi_from_tuple_templ.c>
+
 /* Read a multi-affine expression from "s".
  * If the multi-affine expression has a domain, then the tuple
  * representing this domain cannot involve any affine expressions.
  * The tuple representing the actual expressions needs to consist
- * of only affine expressions.  Moreover, these expressions can
- * only depend on parameters and input dimensions and not on other
- * output dimensions.
+ * of only affine expressions.
  */
 __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 {
 	struct vars *v;
 	isl_multi_pw_aff *tuple = NULL;
-	int i;
-	isl_size dim, n;
-	isl_space *space, *dom_space = NULL;
+	isl_space *dom_space = NULL;
 	isl_multi_aff *ma = NULL;
 
 	v = vars_new(s->ctx);
@@ -3947,27 +3918,9 @@ __isl_give isl_multi_aff *isl_stream_read_multi_aff(__isl_keep isl_stream *s)
 	if (isl_stream_eat(s, '}'))
 		goto error;
 
-	n = isl_multi_pw_aff_dim(tuple, isl_dim_out);
-	dim = isl_space_dim(dom_space, isl_dim_all);
-	if (n < 0 || dim < 0)
-		goto error;
-	space = isl_space_range(isl_multi_pw_aff_get_space(tuple));
-	space = isl_space_align_params(space, isl_space_copy(dom_space));
-	if (!isl_space_is_params(dom_space))
-		space = isl_space_map_from_domain_and_range(
-				isl_space_copy(dom_space), space);
-	ma = isl_multi_aff_alloc(space);
+	ma = isl_multi_aff_from_tuple(dom_space, tuple);
 
-	for (i = 0; i < n; ++i) {
-		isl_pw_aff *pa;
-
-		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
-		ma = isl_multi_aff_set_tuple_entry(ma, pa, i, dim, n);
-	}
-
-	isl_multi_pw_aff_free(tuple);
 	vars_free(v);
-	isl_space_free(dom_space);
 	return ma;
 error:
 	isl_multi_pw_aff_free(tuple);
