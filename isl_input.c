@@ -3995,33 +3995,12 @@ error:
 #include "isl_read_from_str_templ.c"
 
 /* Read an isl_multi_pw_aff from "s".
- *
- * The input format is similar to that of map, except that any conditions
- * on the domains should be specified inside the tuple since each
- * piecewise affine expression may have a different domain.
- * However, additional, shared conditions can also be specified.
- * This is especially useful for setting the explicit domain
- * of a zero-dimensional isl_multi_pw_aff.
- *
- * Since we do not know in advance if the isl_multi_pw_aff lives
- * in a set or a map space, we first read the first tuple and check
- * if it is followed by a "->".  If so, we convert the tuple into
- * the domain of the isl_multi_pw_aff and read in the next tuple.
- * This tuple (or the first tuple if it was not followed by a "->")
- * is then converted into the isl_multi_pw_aff through a call
- * to extract_mpa_from_tuple and the domain of the result
- * is intersected with the domain.
- *
- * Note that the last tuple may introduce new identifiers,
- * but these cannot be referenced in the description of the domain.
  */
 __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 	__isl_keep isl_stream *s)
 {
-	int n_dom;
 	struct vars *v;
 	isl_set *dom = NULL;
-	isl_multi_pw_aff *tuple = NULL;
 	isl_multi_pw_aff *mpa = NULL;
 
 	v = vars_new(s->ctx);
@@ -4037,33 +4016,15 @@ __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 	if (isl_stream_eat(s, '{'))
 		goto error;
 
-	n_dom = v->n;
-	tuple = read_tuple(s, v, 0, 0);
-	if (!tuple)
-		goto error;
-	if (isl_stream_eat_if_available(s, ISL_TOKEN_TO)) {
-		isl_map *map = map_from_tuple(tuple, dom, isl_dim_in, v, 0);
-		dom = isl_map_domain(map);
-		n_dom = v->n;
-		tuple = read_tuple(s, v, 0, 0);
-		if (!tuple)
-			goto error;
-	}
-
-	vars_drop(v, v->n - n_dom);
-	dom = read_optional_formula(s, dom, v, 0);
+	mpa = read_conditional_multi_pw_aff(s, isl_set_copy(dom), v);
 
 	if (isl_stream_eat(s, '}'))
 		goto error;
 
-	mpa = extract_mpa_from_tuple(isl_set_get_space(dom), tuple);
-
-	isl_multi_pw_aff_free(tuple);
 	vars_free(v);
-	mpa = isl_multi_pw_aff_intersect_domain(mpa, dom);
+	isl_set_free(dom);
 	return mpa;
 error:
-	isl_multi_pw_aff_free(tuple);
 	vars_free(v);
 	isl_set_free(dom);
 	isl_multi_pw_aff_free(mpa);
