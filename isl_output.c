@@ -2845,7 +2845,7 @@ error:
 /* Print the body of an isl_pw_aff, i.e., a semicolon delimited
  * sequence of affine expressions, each followed by constraints.
  */
-static __isl_give isl_printer *print_pw_aff_body(
+static __isl_give isl_printer *print_body_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_pw_aff *pa)
 {
 	int i;
@@ -2877,7 +2877,7 @@ static __isl_give isl_printer *print_pw_aff_isl(__isl_take isl_printer *p,
 
 	p = print_param_tuple(p, pwaff->dim, &data);
 	p = isl_printer_print_str(p, "{ ");
-	p = print_pw_aff_body(p, pwaff);
+	p = print_body_pw_aff(p, pwaff);
 	p = isl_printer_print_str(p, " }");
 	return p;
 error:
@@ -3064,7 +3064,7 @@ static isl_stat print_pw_aff_body_wrap(__isl_take isl_pw_aff *pa,
 		data->p = isl_printer_print_str(data->p, "; ");
 	data->first = 0;
 
-	data->p = print_pw_aff_body(data->p, pa);
+	data->p = print_body_pw_aff(data->p, pa);
 	isl_pw_aff_free(pa);
 
 	return data->p ? isl_stat_ok : isl_stat_error;
