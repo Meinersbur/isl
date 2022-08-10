@@ -3670,6 +3670,25 @@ static __isl_give isl_pw_aff *separate_tuple_entry(__isl_take isl_pw_aff *pa,
 	return pa;
 }
 
+/* Set entry "pos" of "mpa" to the corresponding entry in "tuple",
+ * as obtained from read_tuple().
+ * The "n" output dimensions also appear among the input dimensions
+ * at position "first".
+ *
+ * The entry is not allowed to depend on any (other) output dimensions.
+ */
+static __isl_give isl_multi_pw_aff *isl_multi_pw_aff_set_tuple_entry(
+	__isl_take isl_multi_pw_aff *mpa, __isl_take isl_pw_aff *tuple_el,
+	int pos, unsigned first, unsigned n)
+{
+	isl_space *space;
+	isl_pw_aff *pa;
+
+	space = isl_multi_pw_aff_get_domain_space(mpa);
+	pa = separate_tuple_entry(tuple_el, pos, first, n, space);
+	return isl_multi_pw_aff_set_pw_aff(mpa, pos, pa);
+}
+
 /* Extract an isl_multi_pw_aff with domain space "dom_space"
  * from a tuple "tuple" read by read_tuple.
  *
@@ -3698,9 +3717,7 @@ static __isl_give isl_multi_pw_aff *extract_mpa_from_tuple(
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
 		pa = isl_multi_pw_aff_get_pw_aff(tuple, i);
-		space = isl_multi_pw_aff_get_domain_space(mpa);
-		pa = separate_tuple_entry(pa, i, dim, n, space);
-		mpa = isl_multi_pw_aff_set_pw_aff(mpa, i, pa);
+		mpa = isl_multi_pw_aff_set_tuple_entry(mpa, pa, i, dim, n);
 	}
 
 	return mpa;
