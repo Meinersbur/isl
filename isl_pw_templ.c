@@ -748,6 +748,23 @@ error:
 	return NULL;
 }
 
+#if !DEFAULT_IS_ZERO
+
+/* Compute the sum of "pw1" and "pw2 on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ *
+ * This function is only defined for object types that do not have
+ * a default zero value.  For other object types, this function
+ * is simply called "add".
+ */
+__isl_give PW *FN(PW,union_add)(__isl_take PW *pw1, __isl_take PW *pw2)
+{
+	return FN(PW,union_add_)(pw1, pw2);
+}
+
+#endif
+
 /* This function is currently only used from isl_aff.c
  */
 static __isl_give PW *FN(PW,on_shared_domain_in)(__isl_take PW *pw1,

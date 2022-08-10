@@ -3494,12 +3494,6 @@ __isl_give isl_pw_aff *isl_pw_aff_add(__isl_take isl_pw_aff *pwaff1,
 	return isl_pw_aff_on_shared_domain(pwaff1, pwaff2, &isl_aff_add);
 }
 
-__isl_give isl_pw_aff *isl_pw_aff_union_add(__isl_take isl_pw_aff *pwaff1,
-	__isl_take isl_pw_aff *pwaff2)
-{
-	return isl_pw_aff_union_add_(pwaff1, pwaff2);
-}
-
 __isl_give isl_pw_aff *isl_pw_aff_mul(__isl_take isl_pw_aff *pwaff1,
 	__isl_take isl_pw_aff *pwaff2)
 {
@@ -4753,12 +4747,6 @@ __isl_give isl_pw_multi_aff *isl_pw_multi_aff_sub(
 	isl_pw_multi_aff_align_params_bin(&pma1, &pma2);
 	return isl_pw_multi_aff_on_shared_domain(pma1, pma2,
 						&isl_multi_aff_sub);
-}
-
-__isl_give isl_pw_multi_aff *isl_pw_multi_aff_union_add(
-	__isl_take isl_pw_multi_aff *pma1, __isl_take isl_pw_multi_aff *pma2)
-{
-	return isl_pw_multi_aff_union_add_(pma1, pma2);
 }
 
 /* Compute the sum of "upa1" and "upa2" on the union of their domains,
