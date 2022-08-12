@@ -1635,7 +1635,7 @@ static isl_stat print_map_body(__isl_take isl_map *map, void *user)
 /* Print the body of "umap" (everything except the parameter declarations)
  * to "p" in isl format.
  */
-static __isl_give isl_printer *isl_printer_print_union_map_isl_body(
+static __isl_give isl_printer *print_body_union_map(
 	__isl_take isl_printer *p, __isl_keep isl_union_map *umap)
 {
 	struct isl_union_print_data data;
@@ -1655,7 +1655,7 @@ static __isl_give isl_printer *isl_printer_print_union_map_isl_body(
 static __isl_give isl_printer *isl_printer_print_union_set_isl_body(
 	__isl_take isl_printer *p, __isl_keep isl_union_set *uset)
 {
-	return isl_printer_print_union_map_isl_body(p, uset_to_umap(uset));
+	return print_body_union_map(p, uset_to_umap(uset));
 }
 
 /* Print the isl_union_map "umap" to "p" in isl format.
@@ -1670,7 +1670,7 @@ static __isl_give isl_printer *isl_union_map_print_isl(
 	p = print_param_tuple(p, space, &space_data);
 	isl_space_free(space);
 
-	p = isl_printer_print_union_map_isl_body(p, umap);
+	p = print_body_union_map(p, umap);
 
 	return p;
 }
