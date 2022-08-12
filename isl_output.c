@@ -1660,8 +1660,8 @@ static __isl_give isl_printer *isl_printer_print_union_set_isl_body(
 
 /* Print the isl_union_map "umap" to "p" in isl format.
  */
-static __isl_give isl_printer *isl_union_map_print_isl(
-	__isl_keep isl_union_map *umap, __isl_take isl_printer *p)
+static __isl_give isl_printer *print_union_map_isl(__isl_take isl_printer *p,
+	__isl_keep isl_union_map *umap)
 {
 	struct isl_print_space_data space_data = { 0 };
 	isl_space *space;
@@ -1706,7 +1706,7 @@ __isl_give isl_printer *isl_printer_print_union_map(__isl_take isl_printer *p,
 		goto error;
 
 	if (p->output_format == ISL_FORMAT_ISL)
-		return isl_union_map_print_isl(umap, p);
+		return print_union_map_isl(p, umap);
 	if (p->output_format == ISL_FORMAT_LATEX)
 		return isl_union_map_print_latex(umap, p);
 
@@ -1724,7 +1724,7 @@ __isl_give isl_printer *isl_printer_print_union_set(__isl_take isl_printer *p,
 		goto error;
 
 	if (p->output_format == ISL_FORMAT_ISL)
-		return isl_union_map_print_isl(uset_to_umap(uset), p);
+		return print_union_map_isl(p, uset_to_umap(uset));
 	if (p->output_format == ISL_FORMAT_LATEX)
 		return isl_union_map_print_latex(uset_to_umap(uset), p);
 
