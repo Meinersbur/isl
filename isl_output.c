@@ -1456,8 +1456,8 @@ static __isl_give isl_printer *print_split_map(__isl_take isl_printer *p,
 	return p;
 }
 
-static __isl_give isl_printer *isl_map_print_isl_body(__isl_keep isl_map *map,
-	__isl_take isl_printer *p)
+static __isl_give isl_printer *print_body_map(__isl_take isl_printer *p,
+	__isl_keep isl_map *map)
 {
 	struct isl_print_space_data data = { 0 };
 	struct isl_aff_split *split = NULL;
@@ -1486,7 +1486,7 @@ static __isl_give isl_printer *isl_map_print_isl(__isl_keep isl_map *map,
 
 	p = print_param_tuple(p, map->dim, &data);
 	p = isl_printer_print_str(p, s_open_set[0]);
-	p = isl_map_print_isl_body(map, p);
+	p = print_body_map(p, map);
 	p = isl_printer_print_str(p, s_close_set[0]);
 	return p;
 }
@@ -1626,7 +1626,7 @@ static isl_stat print_map_body(__isl_take isl_map *map, void *user)
 		data->p = isl_printer_print_str(data->p, "; ");
 	data->first = 0;
 
-	data->p = isl_map_print_isl_body(map, data->p);
+	data->p = print_body_map(data->p, map);
 	isl_map_free(map);
 
 	return isl_stat_ok;
