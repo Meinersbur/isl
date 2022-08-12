@@ -1617,37 +1617,9 @@ struct isl_union_print_data {
 	int first;
 };
 
-static isl_stat print_map_body(__isl_take isl_map *map, void *user)
-{
-	struct isl_union_print_data *data;
-	data = (struct isl_union_print_data *)user;
-
-	if (!data->first)
-		data->p = isl_printer_print_str(data->p, "; ");
-	data->first = 0;
-
-	data->p = print_body_map(data->p, map);
-	isl_map_free(map);
-
-	return isl_stat_ok;
-}
-
-/* Print the body of "umap" (everything except the parameter declarations)
- * to "p" in isl format.
- */
-static __isl_give isl_printer *print_body_union_map(
-	__isl_take isl_printer *p, __isl_keep isl_union_map *umap)
-{
-	struct isl_union_print_data data;
-
-	p = isl_printer_print_str(p, s_open_set[0]);
-	data.p = p;
-	data.first = 1;
-	isl_union_map_foreach_map(umap, &print_map_body, &data);
-	p = data.p;
-	p = isl_printer_print_str(p, s_close_set[0]);
-	return p;
-}
+#undef BASE
+#define BASE	map
+#include "isl_union_print_templ.c"
 
 /* Print the body of "uset" (everything except the parameter declarations)
  * to "p" in isl format.
@@ -1656,23 +1628,6 @@ static __isl_give isl_printer *isl_printer_print_union_set_isl_body(
 	__isl_take isl_printer *p, __isl_keep isl_union_set *uset)
 {
 	return print_body_union_map(p, uset_to_umap(uset));
-}
-
-/* Print the isl_union_map "umap" to "p" in isl format.
- */
-static __isl_give isl_printer *print_union_map_isl(__isl_take isl_printer *p,
-	__isl_keep isl_union_map *umap)
-{
-	struct isl_print_space_data space_data = { 0 };
-	isl_space *space;
-
-	space = isl_union_map_get_space(umap);
-	p = print_param_tuple(p, space, &space_data);
-	isl_space_free(space);
-
-	p = print_body_union_map(p, umap);
-
-	return p;
 }
 
 static isl_stat print_latex_map_body(__isl_take isl_map *map, void *user)
@@ -2287,40 +2242,9 @@ error:
 	return NULL;
 }
 
-static isl_stat print_pwqp_body(__isl_take isl_pw_qpolynomial *pwqp, void *user)
-{
-	struct isl_union_print_data *data;
-	data = (struct isl_union_print_data *)user;
-
-	if (!data->first)
-		data->p = isl_printer_print_str(data->p, "; ");
-	data->first = 0;
-
-	data->p = print_body_pw_qpolynomial(data->p, pwqp);
-	isl_pw_qpolynomial_free(pwqp);
-
-	return isl_stat_ok;
-}
-
-static __isl_give isl_printer *print_union_pw_qpolynomial_isl(
-	__isl_take isl_printer *p, __isl_keep isl_union_pw_qpolynomial *upwqp)
-{
-	struct isl_union_print_data data;
-	struct isl_print_space_data space_data = { 0 };
-	isl_space *space;
-
-	space = isl_union_pw_qpolynomial_get_space(upwqp);
-	p = print_param_tuple(p, space, &space_data);
-	isl_space_free(space);
-	p = isl_printer_print_str(p, "{ ");
-	data.p = p;
-	data.first = 1;
-	isl_union_pw_qpolynomial_foreach_pw_qpolynomial(upwqp, &print_pwqp_body,
-							&data);
-	p = data.p;
-	p = isl_printer_print_str(p, " }");
-	return p;
-}
+#undef BASE
+#define BASE	pw_qpolynomial
+#include "isl_union_print_templ.c"
 
 __isl_give isl_printer *isl_printer_print_union_pw_qpolynomial(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_qpolynomial *upwqp)
@@ -2447,42 +2371,9 @@ void isl_pw_qpolynomial_fold_print(__isl_keep isl_pw_qpolynomial_fold *pwf,
 	isl_printer_free(p);
 }
 
-static isl_stat print_pwf_body(__isl_take isl_pw_qpolynomial_fold *pwf,
-	void *user)
-{
-	struct isl_union_print_data *data;
-	data = (struct isl_union_print_data *)user;
-
-	if (!data->first)
-		data->p = isl_printer_print_str(data->p, "; ");
-	data->first = 0;
-
-	data->p = print_body_pw_qpolynomial_fold(data->p, pwf);
-	isl_pw_qpolynomial_fold_free(pwf);
-
-	return isl_stat_ok;
-}
-
-static __isl_give isl_printer *print_union_pw_qpolynomial_fold_isl(
-	__isl_take isl_printer *p,
-	__isl_keep isl_union_pw_qpolynomial_fold *upwf)
-{
-	struct isl_union_print_data data;
-	struct isl_print_space_data space_data = { 0 };
-	isl_space *space;
-
-	space = isl_union_pw_qpolynomial_fold_get_space(upwf);
-	p = print_param_tuple(p, space, &space_data);
-	isl_space_free(space);
-	p = isl_printer_print_str(p, "{ ");
-	data.p = p;
-	data.first = 1;
-	isl_union_pw_qpolynomial_fold_foreach_pw_qpolynomial_fold(upwf,
-							&print_pwf_body, &data);
-	p = data.p;
-	p = isl_printer_print_str(p, " }");
-	return p;
-}
+#undef BASE
+#define BASE	pw_qpolynomial_fold
+#include "isl_union_print_templ.c"
 
 __isl_give isl_printer *isl_printer_print_union_pw_qpolynomial_fold(
 	__isl_take isl_printer *p,
@@ -3009,64 +2900,9 @@ error:
 	return NULL;
 }
 
-/* Print "pa" in a sequence of isl_pw_affs delimited by semicolons.
- * Each isl_pw_aff itself is also printed as semicolon delimited
- * sequence of pieces.
- * If data->first = 1, then this is the first in the sequence.
- * Update data->first to tell the next element that it is not the first.
- */
-static isl_stat print_pw_aff_body_wrap(__isl_take isl_pw_aff *pa,
-	void *user)
-{
-	struct isl_union_print_data *data;
-	data = (struct isl_union_print_data *) user;
-
-	if (!data->first)
-		data->p = isl_printer_print_str(data->p, "; ");
-	data->first = 0;
-
-	data->p = print_body_pw_aff(data->p, pa);
-	isl_pw_aff_free(pa);
-
-	return data->p ? isl_stat_ok : isl_stat_error;
-}
-
-/* Print the body of an isl_union_pw_aff, i.e., a semicolon delimited
- * sequence of affine expressions, each followed by constraints,
- * with the sequence enclosed in braces.
- */
-static __isl_give isl_printer *print_body_union_pw_aff(
-	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa)
-{
-	struct isl_union_print_data data = { p, 1 };
-
-	p = isl_printer_print_str(p, s_open_set[0]);
-	data.p = p;
-	if (isl_union_pw_aff_foreach_pw_aff(upa,
-					    &print_pw_aff_body_wrap, &data) < 0)
-		data.p = isl_printer_free(data.p);
-	p = data.p;
-	p = isl_printer_print_str(p, s_close_set[0]);
-
-	return p;
-}
-
-/* Print the isl_union_pw_aff "upa" to "p" in isl format.
- *
- * The individual isl_pw_affs are delimited by a semicolon.
- */
-static __isl_give isl_printer *print_union_pw_aff_isl(
-	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa)
-{
-	struct isl_print_space_data data = { 0 };
-	isl_space *space;
-
-	space = isl_union_pw_aff_get_space(upa);
-	p = print_param_tuple(p, space, &data);
-	isl_space_free(space);
-	p = print_body_union_pw_aff(p, upa);
-	return p;
-}
+#undef BASE
+#define BASE	pw_aff
+#include "isl_union_print_templ.c"
 
 /* Print the isl_union_pw_aff "upa" to "p".
  *
@@ -3234,41 +3070,9 @@ error:
 	return NULL;
 }
 
-static isl_stat print_pw_multi_aff_body_wrap(__isl_take isl_pw_multi_aff *pma,
-	void *user)
-{
-	struct isl_union_print_data *data;
-	data = (struct isl_union_print_data *) user;
-
-	if (!data->first)
-		data->p = isl_printer_print_str(data->p, "; ");
-	data->first = 0;
-
-	data->p = print_body_pw_multi_aff(data->p, pma);
-	isl_pw_multi_aff_free(pma);
-
-	return isl_stat_ok;
-}
-
-static __isl_give isl_printer *print_union_pw_multi_aff_isl(
-	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma)
-{
-	struct isl_union_print_data data;
-	struct isl_print_space_data space_data = { 0 };
-	isl_space *space;
-
-	space = isl_union_pw_multi_aff_get_space(upma);
-	p = print_param_tuple(p, space, &space_data);
-	isl_space_free(space);
-	p = isl_printer_print_str(p, s_open_set[0]);
-	data.p = p;
-	data.first = 1;
-	isl_union_pw_multi_aff_foreach_pw_multi_aff(upma,
-					&print_pw_multi_aff_body_wrap, &data);
-	p = data.p;
-	p = isl_printer_print_str(p, s_close_set[0]);
-	return p;
-}
+#undef BASE
+#define BASE	pw_multi_aff
+#include "isl_union_print_templ.c"
 
 __isl_give isl_printer *isl_printer_print_union_pw_multi_aff(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_multi_aff *upma)
