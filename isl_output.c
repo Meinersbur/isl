@@ -3035,7 +3035,7 @@ static isl_stat print_pw_aff_body_wrap(__isl_take isl_pw_aff *pa,
  * sequence of affine expressions, each followed by constraints,
  * with the sequence enclosed in braces.
  */
-static __isl_give isl_printer *print_union_pw_aff_body(
+static __isl_give isl_printer *print_body_union_pw_aff(
 	__isl_take isl_printer *p, __isl_keep isl_union_pw_aff *upa)
 {
 	struct isl_union_print_data data = { p, 1 };
@@ -3064,7 +3064,7 @@ static __isl_give isl_printer *print_union_pw_aff_isl(
 	space = isl_union_pw_aff_get_space(upa);
 	p = print_param_tuple(p, space, &data);
 	isl_space_free(space);
-	p = print_union_pw_aff_body(p, upa);
+	p = print_body_union_pw_aff(p, upa);
 	return p;
 }
 
@@ -3503,7 +3503,7 @@ static __isl_give isl_printer *print_union_pw_aff_dim(__isl_take isl_printer *p,
 	isl_union_pw_aff *upa;
 
 	upa = isl_multi_union_pw_aff_get_union_pw_aff(mupa, pos);
-	p = print_union_pw_aff_body(p, upa);
+	p = print_body_union_pw_aff(p, upa);
 	isl_union_pw_aff_free(upa);
 
 	return p;
