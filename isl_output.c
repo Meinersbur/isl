@@ -2092,7 +2092,7 @@ void isl_pw_qpolynomial_print(__isl_keep isl_pw_qpolynomial *pwqp, FILE *out,
 	isl_printer_free(p);
 }
 
-static __isl_give isl_printer *isl_pwf_print_isl_body(
+static __isl_give isl_printer *print_body_pw_qpolynomial_fold(
 	__isl_take isl_printer *p, __isl_keep isl_pw_qpolynomial_fold *pwf)
 {
 	struct isl_print_space_data data = { 0 };
@@ -2130,7 +2130,7 @@ static __isl_give isl_printer *print_pw_qpolynomial_fold_isl(
 		}
 		p = isl_printer_print_str(p, "0");
 	}
-	p = isl_pwf_print_isl_body(p, pwf);
+	p = print_body_pw_qpolynomial_fold(p, pwf);
 	p = isl_printer_print_str(p, " }");
 	return p;
 }
@@ -2457,7 +2457,7 @@ static isl_stat print_pwf_body(__isl_take isl_pw_qpolynomial_fold *pwf,
 		data->p = isl_printer_print_str(data->p, "; ");
 	data->first = 0;
 
-	data->p = isl_pwf_print_isl_body(data->p, pwf);
+	data->p = print_body_pw_qpolynomial_fold(data->p, pwf);
 	isl_pw_qpolynomial_fold_free(pwf);
 
 	return isl_stat_ok;
