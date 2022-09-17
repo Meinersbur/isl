@@ -3,6 +3,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2012-2013 Ecole Normale Superieure
  * Copyright 2014      INRIA Rocquencourt
+ * Copyright 2022      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -13,6 +14,7 @@
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
  * B.P. 105 - 78153 Le Chesnay, France
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <assert.h>
@@ -8227,12 +8229,38 @@ static int test_union_map(isl_ctx *ctx)
 	return 0;
 }
 
+#undef BASE
+#define BASE	union_pw_qpolynomial
+#include "isl_test_plain_equal_templ.c"
+
+/* Check that the result of applying "fn" to "a" and "b"
+ * in (obviously) equal to "res".
+ */
+static isl_stat test_union_pw_op(isl_ctx *ctx, const char *a, const char *b,
+	__isl_give isl_union_pw_qpolynomial *(*fn)(
+		__isl_take isl_union_pw_qpolynomial *upwqp1,
+		__isl_take isl_union_pw_qpolynomial *upwqp2),
+	const char *res)
+{
+	isl_stat r;
+	isl_union_pw_qpolynomial *upwqp1, *upwqp2;
+
+	upwqp1 = isl_union_pw_qpolynomial_read_from_str(ctx, a);
+	upwqp2 = isl_union_pw_qpolynomial_read_from_str(ctx, b);
+	upwqp1 = fn(upwqp1, upwqp2);
+	r = union_pw_qpolynomial_check_plain_equal(upwqp1, res);
+	isl_union_pw_qpolynomial_free(upwqp1);
+
+	return r;
+}
+
 int test_union_pw(isl_ctx *ctx)
 {
 	int equal;
 	const char *str;
 	isl_union_set *uset;
 	isl_union_pw_qpolynomial *upwqp1, *upwqp2;
+	const char *a, *b;
 
 	str = "{ [x] -> x^2 }";
 	upwqp1 = isl_union_pw_qpolynomial_read_from_str(ctx, str);
@@ -8247,6 +8275,25 @@ int test_union_pw(isl_ctx *ctx)
 		return -1;
 	if (!equal)
 		isl_die(ctx, isl_error_unknown, "unexpected result", return -1);
+
+	a = "{ A[x] -> x^2 : x >= 0; B[x] -> x }";
+	b = "{ A[x] -> x }";
+	str = "{ A[x] -> x^2 + x : x >= 0; A[x] -> x : x < 0; B[x] -> x }";
+	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_add, str) < 0)
+		return -1;
+	str = "{ A[x] -> x^2 - x : x >= 0; A[x] -> -x : x < 0; B[x] -> x }";
+	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_sub, str) < 0)
+		return -1;
+
+	str = "{ A[x] -> 0 }";
+	a = "{ A[x] -> 1 }";
+	b = "{ A[x] -> -1 }";
+	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_add, str) < 0)
+		return -1;
+	a = "{ A[x] -> 1 }";
+	b = "{ A[x] -> 1 }";
+	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_sub, str) < 0)
+		return -1;
 
 	return 0;
 }
