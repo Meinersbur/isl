@@ -8275,6 +8275,16 @@ int test_union_pw(isl_ctx *ctx)
 	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_sub, str) < 0)
 		return -1;
 
+	str = "{ A[x] -> 0 }";
+	a = "{ A[x] -> 1 }";
+	b = "{ A[x] -> -1 }";
+	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_add, str) < 0)
+		return -1;
+	a = "{ A[x] -> 1 }";
+	b = "{ A[x] -> 1 }";
+	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_sub, str) < 0)
+		return -1;
+
 	return 0;
 }
 

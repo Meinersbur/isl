@@ -201,9 +201,7 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 			goto error;
 		entry->data = FN(PART,union_add_)(entry->data,
 						FN(PART,copy)(part));
-		if (!entry->data)
-			goto error;
-		empty = FN(PART,IS_ZERO)(part);
+		empty = FN(PART,IS_ZERO)(entry->data);
 		if (empty < 0)
 			goto error;
 		if (empty)
