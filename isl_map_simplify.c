@@ -1776,22 +1776,24 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 
 	for (i = 0; i < n_div; ++i) {
 		isl_bool set_div;
+		int c;
 
 		if (isl_int_is_zero(bmap->ineq[k][total + i]))
 			continue;
-		if (isl_int_abs_ge(sum, bmap->ineq[k][total + i]))
+		if (isl_int_is_pos(bmap->ineq[k][total + i]))
+			c = k;
+		else
+			c = l;
+		if (isl_int_ge(sum, bmap->ineq[c][total + i]))
 			continue;
-		set_div = better_div_constraint(bmap, i, k);
+		set_div = better_div_constraint(bmap, i, c);
 		if (set_div >= 0 && set_div)
-			set_div = ok_to_set_div_from_bound(bmap, i, k);
+			set_div = ok_to_set_div_from_bound(bmap, i, c);
 		if (set_div < 0)
 			return isl_basic_map_free(bmap);
 		if (!set_div)
 			continue;
-		if (isl_int_is_pos(bmap->ineq[k][total + i]))
-			bmap = set_div_from_lower_bound(bmap, i, k);
-		else
-			bmap = set_div_from_lower_bound(bmap, i, l);
+		bmap = set_div_from_lower_bound(bmap, i, c);
 		mark_progress(progress);
 		break;
 	}
