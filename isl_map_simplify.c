@@ -1816,6 +1816,8 @@ static __isl_give isl_basic_map *check_for_div_constraints(
  * can be used to simplify any other constraints and/or,
  * if "detect_divs" is set, whether a (better) integer division definition
  * can be read off from the pair.
+ *
+ * Only check each pair once (with k < l).
  */
 static __isl_give isl_basic_map *exploit_opposite_constraints(
 	__isl_take isl_basic_map *bmap, int *opposite,
@@ -1831,6 +1833,8 @@ static __isl_give isl_basic_map *exploit_opposite_constraints(
 		if (!opposite[k])
 			continue;
 		l = opposite[k] - 1;
+		if (l < k)
+			continue;
 		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
 		if (isl_int_is_pos(sum)) {
 			int residue = 0;
