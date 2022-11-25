@@ -1793,10 +1793,15 @@ static __isl_give isl_basic_map *check_for_residues(
  * Use the lower bound of this pair if it is better than
  * any previously known expression and
  * if there is no risk of introducing circular definitions.
+ * "opposite" describes all pairs of opposite constraints.
+ * It is an array of size equal to the number of inequality constraints
+ * with as entries either
+ * - zero, if the constraint has no opposite, or
+ * - 1 + the position of the opposite constraint.
  */
 static __isl_give isl_basic_map *check_for_div_constraints(
-	__isl_take isl_basic_map *bmap, int k, int l, isl_int sum,
-	int *progress)
+	__isl_take isl_basic_map *bmap, int *opposite,
+	int k, int l, isl_int sum, int *progress)
 {
 	int i;
 	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
@@ -1872,8 +1877,8 @@ static __isl_give isl_basic_map *exploit_opposite_constraints(
 
 			bmap = check_for_residues(bmap, k, l, sum, &residue);
 			if (detect_divs)
-				bmap = check_for_div_constraints(bmap, k, l,
-								 sum, progress);
+				bmap = check_for_div_constraints(bmap, opposite,
+							k, l, sum, progress);
 			if (!residue)
 				continue;
 			mark_progress(progress);
