@@ -1798,10 +1798,15 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 	return bmap;
 }
 
-/* Look for pairs of constraints that have equal or opposite coefficients.
- * For each pair of constraints with equal coefficients, only keep
- * the one which imposes the most stringent constraint, i.e.,
- * the one with the smallest constant term.
+/* Exploit the pairs of inequality constraints of "bmap"
+ * with opposite coefficients.  They are described by "opposite",
+ * an array of size equal to the number of inequality constraints
+ * with as entries either
+ * - zero, if the constraint has no opposite, or
+ * - 1 + the position of the opposite constraint.
+ * Detect (better) integer division expressions if "detect_divs" is set.
+ * Set *progress if any progress is made.
+ *
  * For each pair of constraints with opposite coefficients,
  * consider the sum of the constant terms.
  * If the sum is smaller than zero, then the constraints conflict.
@@ -1812,37 +1817,13 @@ static __isl_give isl_basic_map *check_for_div_constraints(
  * if "detect_divs" is set, whether a (better) integer division definition
  * can be read off from the pair.
  */
-__isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
-	__isl_take isl_basic_map *bmap, int *progress, int detect_divs)
+static __isl_give isl_basic_map *exploit_opposite_constraints(
+	__isl_take isl_basic_map *bmap, int *opposite,
+	int *progress, int detect_divs)
 {
-	struct isl_constraint_index ci;
-	int k, l, h;
-	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
+	int k, l;
 	isl_int sum;
-	int *opposite;
 
-	if (total < 0 || bmap->n_ineq <= 1)
-		return bmap;
-
-	if (create_constraint_index(&ci, bmap) < 0)
-		return bmap;
-
-	h = isl_seq_get_hash_bits(bmap->ineq[0] + 1, total, ci.bits);
-	ci.index[h] = &bmap->ineq[0];
-	for (k = 1; k < bmap->n_ineq; ++k) {
-		h = hash_index(&ci, bmap, k);
-		if (!ci.index[h]) {
-			ci.index[h] = &bmap->ineq[k];
-			continue;
-		}
-		l = ci.index[h] - &bmap->ineq[0];
-		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
-			swap_inequality(bmap, k, l);
-		isl_basic_map_drop_inequality(bmap, k);
-		--k;
-	}
-	opposite = detect_opposites(&ci, bmap);
-	constraint_index_free(&ci);
 	if (!opposite)
 		return bmap;
 	isl_int_init(sum);
@@ -1880,6 +1861,49 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	free(opposite);
 
 	return bmap;
+}
+
+/* Look for pairs of constraints that have equal or opposite coefficients.
+ * Detect (better) integer division expressions if "detect_divs" is set.
+ *
+ * For each pair of constraints with equal coefficients, only keep
+ * the one which imposes the most stringent constraint, i.e.,
+ * the one with the smallest constant term.
+ * Detect opposite constraints and handle them
+ * in exploit_opposite_constraints.
+ */
+__isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
+	__isl_take isl_basic_map *bmap, int *progress, int detect_divs)
+{
+	struct isl_constraint_index ci;
+	int k, l, h;
+	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
+	int *opposite;
+
+	if (total < 0 || bmap->n_ineq <= 1)
+		return bmap;
+
+	if (create_constraint_index(&ci, bmap) < 0)
+		return bmap;
+
+	h = isl_seq_get_hash_bits(bmap->ineq[0] + 1, total, ci.bits);
+	ci.index[h] = &bmap->ineq[0];
+	for (k = 1; k < bmap->n_ineq; ++k) {
+		h = hash_index(&ci, bmap, k);
+		if (!ci.index[h]) {
+			ci.index[h] = &bmap->ineq[k];
+			continue;
+		}
+		l = ci.index[h] - &bmap->ineq[0];
+		if (isl_int_lt(bmap->ineq[k][0], bmap->ineq[l][0]))
+			swap_inequality(bmap, k, l);
+		isl_basic_map_drop_inequality(bmap, k);
+		--k;
+	}
+	opposite = detect_opposites(&ci, bmap);
+	constraint_index_free(&ci);
+	return exploit_opposite_constraints(bmap, opposite, progress,
+								detect_divs);
 }
 
 /* Detect all pairs of inequalities that form an equality.
