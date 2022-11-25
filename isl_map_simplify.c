@@ -886,6 +886,47 @@ static isl_bool constraint_index_is_redundant(struct isl_constraint_index *ci,
 	return isl_int_ge(ineq[0], (*ci->index[h])[0]);
 }
 
+/* Look for pairs of inequality constraints in "bmap"
+ * that are opposite to each other apart from the constant term.
+ * "ci" contains a hash table of the inequality constraints of "bmap".
+ * Return an array of size equal to the number of inequality constraints
+ * with as entries either
+ * - zero, if the constraint has no opposite, or
+ * - 1 + the position of the opposite constraint.
+ */
+static int *detect_opposites(struct isl_constraint_index *ci,
+	__isl_keep isl_basic_map *bmap)
+{
+	isl_size n_ineq;
+	int k, l, h;
+	isl_ctx *ctx;
+	int *opposite;
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (n_ineq < 0)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+	opposite = isl_calloc_array(ctx, int, n_ineq);
+	if (!opposite)
+		return NULL;
+
+	for (k = 0; k < n_ineq - 1; ++k) {
+		if (opposite[k])
+			continue;
+		isl_seq_neg(bmap->ineq[k] + 1, bmap->ineq[k] + 1, ci->total);
+		h = hash_index(ci, bmap, k);
+		isl_seq_neg(bmap->ineq[k] + 1, bmap->ineq[k] + 1, ci->total);
+		if (!ci->index[h])
+			continue;
+		l = ci->index[h] - &bmap->ineq[0];
+
+		opposite[k] = 1 + l;
+		opposite[l] = 1 + k;
+	}
+
+	return opposite;
+}
+
 /* If we can eliminate more than one div, then we need to make
  * sure we do it from last div to first div, in order not to
  * change the position of the other divs that still need to
@@ -1778,6 +1819,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 	int k, l, h;
 	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
 	isl_int sum;
+	int *opposite;
 
 	if (total < 0 || bmap->n_ineq <= 1)
 		return bmap;
@@ -1799,14 +1841,15 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 		isl_basic_map_drop_inequality(bmap, k);
 		--k;
 	}
+	opposite = detect_opposites(&ci, bmap);
+	constraint_index_free(&ci);
+	if (!opposite)
+		return bmap;
 	isl_int_init(sum);
 	for (k = 0; bmap && k < bmap->n_ineq-1; ++k) {
-		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
-		h = hash_index(&ci, bmap, k);
-		isl_seq_neg(bmap->ineq[k]+1, bmap->ineq[k]+1, total);
-		if (!ci.index[h])
+		if (!opposite[k])
 			continue;
-		l = ci.index[h] - &bmap->ineq[0];
+		l = opposite[k] - 1;
 		isl_int_add(sum, bmap->ineq[k][0], bmap->ineq[l][0]);
 		if (isl_int_is_pos(sum)) {
 			int residue = 0;
@@ -1834,8 +1877,8 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 		break;
 	}
 	isl_int_clear(sum);
+	free(opposite);
 
-	constraint_index_free(&ci);
 	return bmap;
 }
 
