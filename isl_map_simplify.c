@@ -1783,6 +1783,260 @@ static __isl_give isl_basic_map *check_for_residues(
 	return bmap;
 }
 
+/* Given constraints of the form
+ *
+ *	-n f + g + m n e + c1 >= 0	(l)
+ *	g + c3 >= 0			(i)
+ *	-g + c4 >= 0			(j)
+ *
+ * with e the local variable at position "div",
+ * does the following condition hold?
+ *
+ *	c3 + c4 + (c1 - c3) % n < m n
+ *
+ * "v_div" is the position of the first local variable.
+ */
+static int is_residue_div_pair(__isl_take isl_basic_map *bmap,
+	int l, int div, unsigned v_div, int i, int j, isl_int n)
+{
+	isl_int tmp;
+	int ok;
+
+	isl_int_init(tmp);
+	isl_int_sub(tmp, bmap->ineq[l][0], bmap->ineq[i][0]);
+	isl_int_fdiv_r(tmp, tmp, n);
+	isl_int_add(tmp, tmp, bmap->ineq[i][0]);
+	isl_int_add(tmp, tmp, bmap->ineq[j][0]);
+	ok = isl_int_lt(tmp, bmap->ineq[l][1 + v_div + div]);
+	isl_int_clear(tmp);
+
+	return ok;
+}
+
+/* Given a lower bound constraint at position "l" of "bmap"
+ * on local variable "div" such that the sum of the constant terms
+ * of this constraint and the corresponding upper bound is equal to "sum",
+ * as well as a separate pair of opposite constraints "i" and "j"
+ * such that the sum of their constant terms is smaller than
+ * the coefficient of "div" in "l",
+ * check if this pair can be used to derive a reduced expression
+ * for the local variable.
+ * "total" is the total number of variables.
+ * "v_div" is the position of the first local variable.
+ * Set *progress if anything is changed.
+ *
+ * In particular, let l be the constraint
+ *
+ *	-n f + g + m n e + c1 >= 0
+ *
+ * The opposite constraint is
+ *
+ *	n f - g - m n e + c2 >= 0
+ *
+ * with c1 + c2 equal to "sum".
+ *
+ * The constraints i and j are of the form
+ *
+ *	h + c3 >= 0
+ *	-h + c4 >= 0
+ *
+ * with c3 + c4 < m n.
+ * First check that h is equal to g for some n greater than "sum".
+ * The constraints i and j are then of the form
+ *
+ *	g + c3 >= 0
+ *	-g + c4 >= 0
+ *
+ * From constraint "l" and its opposite,
+ *
+ *	g + m n e - c2 <= n f <= g + m n e + c1
+ *
+ * combined with the fact that c1 + c2 < n, the following expression
+ * can be obtained:
+ *
+ *	f = floor((g + m n e + c1)/n) = floor((g + c1)/n) + m e
+ *
+ * Replacing c1 with
+ *
+ *	c1 = c3 + (c1 - c3) = c3 + n floor((c1 - c3)/n) + (c1 - c3) % n
+ *
+ * results in
+ *
+ *	f = floor((g + c3 + (c1 - c3) % n)/n) + floor((c1 - c3)/n) + m e
+ *
+ * From the constraints i and j, together with c3 + c4 < m n,
+ *
+ *	0 <= g + c3 < m n
+ *
+ * Since (c1 - c3) % n is non-negative,
+ *
+ *	0 <= g + c3 + (c1 - c3) % n
+ *
+ * holds as well.  However,
+ *
+ *	g + c3 + (c1 - c3) % n < m n
+ *
+ * may not necessarily hold.  It is however the case if
+ *
+ *	c3 + c4 + (c1 - c3) % n < m n
+ *
+ * holds, which is checked in is_residue_div_pair.
+ *
+ * Given
+ *
+ *	0 <= g + c3 + (c1 - c3) % n < m n
+ *
+ * also
+ *
+ *	0 <= floor((g + c3 + (c1 - c3) % n) / n) < m
+ *
+ * holds.
+ *
+ * So,
+ *
+ *	f = floor((g + c3 + (c1 - c3) % n)/n) + floor((c1 - c3)/n) + m e
+ *
+ * and
+ *
+ *	0 <= floor((g + c3 + (c1 - c3) % n) / n) < m
+ *
+ * This means
+ *
+ *	f - floor((c1 - c3)/n)
+ *
+ * is equal to a multiple of m plus a value between 0 and m - 1.
+ * That is,
+ *
+ *	e = floor((f - floor((c1 - c3)/n))/m)
+ *
+ * Construct the inequality constraint
+ *
+ *	-n f + m n e + c1 - c3 >= 0
+ *
+ * scale it down to
+ *
+ *	-f + m e + floor((c1 - c3)/n) >= 0
+ *
+ * and add m - 1, to obtain
+ *
+ *	-f + m e + floor((c1 - c3)/n) + m - 1 >= 0
+ *
+ * This constraint can then be used by set_div_from_lower_bound_if_better
+ * to obtain
+ *
+ *	e = floor((f - floor((c1 - c3)/n))/m)
+ *
+ * Adding m - 1 is needed to be able to reuse set_div_from_lower_bound,
+ * which subtracts this amount from the constraint (by adding it
+ * to the negated constraint).
+ */
+static __isl_give isl_basic_map *set_residue_div(__isl_take isl_basic_map *bmap,
+	int l, isl_int sum, int div,
+	unsigned v_div, unsigned total, int i, int j, int *progress)
+{
+	isl_ctx *ctx;
+	isl_vec *v;
+
+	if (!bmap)
+		return NULL;
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	if (!is_residue(bmap->ineq[i], bmap->ineq[l], sum, total,
+	    &ctx->normalize_gcd))
+		return bmap;
+
+	if (!is_residue_div_pair(bmap, l, div, v_div, i, j, ctx->normalize_gcd))
+		return bmap;
+
+	v = isl_vec_alloc(ctx, 1 + total);
+	if (!v)
+		return isl_basic_map_free(bmap);
+	isl_seq_cpy(v->el, bmap->ineq[l], 1 + total);
+	isl_seq_sub(v->el, bmap->ineq[i], 1 + total);
+	scale_down_inequality(v->el, ctx->normalize_gcd, total);
+	isl_int_add(v->el[0], v->el[0], v->el[1 + v_div + div]);
+	isl_int_sub_ui(v->el[0], v->el[0], 1);
+	bmap = set_div_from_lower_bound_if_better(bmap, div, v->el, progress);
+	isl_vec_free(v);
+
+	return bmap;
+}
+
+/* Given a lower bound constraint at position "l" of "bmap"
+ * on local variable "div" such that the sum of the constant terms
+ * of this constraint and the corresponding upper bound is equal to "sum",
+ * check if some other pair of constraints can be found in "opposite"
+ * that can be used to derive a reduced expression for the local variable.
+ * "opposite" describes all pairs of opposite constraints.
+ * It is an array of size equal to the number of inequality constraints
+ * with as entries either
+ * - zero, if the constraint has no opposite, or
+ * - 1 + the position of the opposite constraint.
+ * Set *progress if anything is changed.
+ *
+ * In particular, let l be the constraint
+ *
+ *	-n f + g + m n e + c1 >= 0
+ *
+ * The opposite constraint is
+ *
+ *	n f - g - m n e + c2 >= 0
+ *
+ * with c1 + c2 equal to "sum".
+ *
+ * Look for a pair of constraints
+ *
+ *	g + c3 >= 0
+ *	-g + c4 >= 0
+ *
+ * with c3 + c4 < m n that can be used to obtain a reduced expression for e.
+ * First look for any pair of constraints with constant terms
+ * that satisfy c3 + c4 < m n and then check whether either of them
+ * can be used in this way.
+ */
+static __isl_give isl_basic_map *check_for_residue_div(
+	__isl_take isl_basic_map *bmap, int *opposite, int l, isl_int sum,
+	int div, int *progress)
+{
+	int i;
+	isl_size n, v_div, total;
+	isl_ctx *ctx;
+
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	n = isl_basic_map_n_inequality(bmap);
+	if (v_div < 0 || total < 0 || n < 0)
+		return isl_basic_map_free(bmap);
+
+	ctx = isl_basic_map_get_ctx(bmap);
+	for (i = 0; i < n; ++i) {
+		int j;
+
+		if (i == l)
+			continue;
+		if (!opposite[i])
+			continue;
+		j = opposite[i] - 1;
+		if (j < i)
+			continue;
+		if (j == l)
+			continue;
+		if (!isl_int_is_zero(bmap->ineq[i][1 + v_div + div]))
+			continue;
+		isl_int_add(ctx->normalize_gcd,
+				bmap->ineq[i][0], bmap->ineq[j][0]);
+		if (isl_int_ge(ctx->normalize_gcd,
+				bmap->ineq[l][1 + v_div + div]))
+			continue;
+		bmap = set_residue_div(bmap, l, sum, div, v_div, total, i, j,
+					progress);
+		bmap = set_residue_div(bmap, l, sum, div, v_div, total, j, i,
+					progress);
+	}
+
+	return bmap;
+}
+
 /* Given two constraints "k" and "l" that are opposite to each other,
  * except for the constant term, check if we can use them
  * to obtain an expression for one of the hitherto unknown divs or
@@ -1793,6 +2047,11 @@ static __isl_give isl_basic_map *check_for_residues(
  * Use the lower bound of this pair if it is better than
  * any previously known expression and
  * if there is no risk of introducing circular definitions.
+ * If, moreover, this coefficient is a non-trivial multiple
+ * of a value greater than the sum and if some other pair of constraints
+ * can be found that can be used to eliminate coefficients
+ * that are not a multiple of this value, then a more simplified
+ * expression can be obtained.
  * "opposite" describes all pairs of opposite constraints.
  * It is an array of size equal to the number of inequality constraints
  * with as entries either
@@ -1822,6 +2081,8 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 			c = l;
 		if (isl_int_ge(sum, bmap->ineq[c][total + i]))
 			continue;
+		bmap = check_for_residue_div(bmap, opposite, c, sum, i,
+						&div_set);
 		bmap = set_div_from_lower_bound_if_better(bmap, i,
 						bmap->ineq[c], &div_set);
 		if (!bmap)

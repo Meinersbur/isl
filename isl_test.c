@@ -1592,6 +1592,10 @@ static struct {
 	  "[N] -> { [N//2] }", "{ [5] }" },
 	{ "[N] -> { [N//2+N//3:N//2+N//3+4] }",
 	  "[N] -> { [N//2+N//3] }", "{ [5] }" },
+	{ "[N] -> { [a=0:59, b=0:1] : 15N - a <= 60b <= 59 + 15N - a and "
+	    "-22 + 20b <= 20*floor((-1 + 15N - a)/60) < 20b and "
+	    "60*floor((-1 + 15N - a)/60) <= -46 + 15N - a }",
+	  "[N] -> { [(15*((N) mod 4)), (floor((N)/4))] }", "{ [15, 1] }" },
 };
 
 /* Perform basic isl_set_get_simple_fixed_box_hull tests.
