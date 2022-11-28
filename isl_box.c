@@ -330,6 +330,9 @@ static isl_stat compute_size_in_direction(__isl_take isl_constraint *c,
  * an affine expression is constructed from the lower bound.
  * This lower bound may therefore not have any unknown local variables.
  * Eliminate any unknown local variables up front.
+ * Furthermore, the lower bound can clearly not involve
+ * (any local variables that involve) the output dimension itself,
+ * so any such local variables are eliminated as well.
  * No such restriction needs to be imposed on the set over which
  * the size is computed.
  */
@@ -355,6 +358,8 @@ static __isl_give isl_fixed_box *set_dim_extent(__isl_take isl_fixed_box *box,
 	bset = isl_basic_set_remove_unknown_divs(bset);
 	if (info.pos < 0)
 		bset = isl_basic_set_free(bset);
+	bset = isl_basic_set_remove_divs_involving_dims(bset, isl_dim_set,
+							info.pos, 1);
 	if (isl_basic_set_foreach_constraint(bset,
 					&compute_size_in_direction, &info) < 0)
 		box = isl_fixed_box_free(box);
