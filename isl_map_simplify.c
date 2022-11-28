@@ -1391,6 +1391,29 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	return last_ineq < last_div;
 }
 
+/* Given a lower bound "ineq" on local variable "div" of "bmap"
+ * that could in theory be used to define an integer division expression,
+ * do so if it is better than the current expression (if any) and
+ * if there is no risk of introducing circular definitions.
+ * Set *progress if anything is changed.
+ */
+static __isl_give isl_basic_map *set_div_from_lower_bound_if_better(
+	__isl_take isl_basic_map *bmap, int div, isl_int *ineq, int *progress)
+{
+	isl_bool set_div;
+
+	set_div = better_div_constraint(bmap, div, ineq);
+	if (set_div >= 0 && set_div)
+		set_div = ok_to_set_div_from_bound(bmap, div, ineq);
+	if (set_div < 0)
+		return isl_basic_map_free(bmap);
+	if (!set_div)
+		return bmap;
+	bmap = set_div_from_lower_bound(bmap, div, ineq);
+	mark_progress(progress);
+	return bmap;
+}
+
 /* Is the sequence of "len" coefficients "ineq" equal to "res"
  * plus some non-trivial coefficients that are all a multiple of some number
  * greater than "sum"?
@@ -1757,10 +1780,9 @@ static __isl_give isl_basic_map *check_for_residues(
  * "sum" is the sum of the constant terms of the constraints.
  * If this sum is strictly smaller than the coefficient of one
  * of the divs, then this pair can be used to define the div.
- * To avoid the introduction of circular definitions of divs, we
- * do not use the pair if the resulting expression would refer to
- * any other undefined divs or if any known div is defined in
- * terms of the unknown div.
+ * Use the lower bound of this pair if it is better than
+ * any previously known expression and
+ * if there is no risk of introducing circular definitions.
  */
 static __isl_give isl_basic_map *check_for_div_constraints(
 	__isl_take isl_basic_map *bmap, int k, int l, isl_int sum,
@@ -1774,7 +1796,7 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 		return isl_basic_map_free(bmap);
 
 	for (i = 0; i < n_div; ++i) {
-		isl_bool set_div;
+		int div_set = 0;
 		int c;
 
 		if (isl_int_is_zero(bmap->ineq[k][total + i]))
@@ -1785,15 +1807,12 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 			c = l;
 		if (isl_int_ge(sum, bmap->ineq[c][total + i]))
 			continue;
-		set_div = better_div_constraint(bmap, i, bmap->ineq[c]);
-		if (set_div >= 0 && set_div)
-			set_div = ok_to_set_div_from_bound(bmap, i,
-							    bmap->ineq[c]);
-		if (set_div < 0)
-			return isl_basic_map_free(bmap);
-		if (!set_div)
+		bmap = set_div_from_lower_bound_if_better(bmap, i,
+						bmap->ineq[c], &div_set);
+		if (!bmap)
+			return NULL;
+		if (!div_set)
 			continue;
-		bmap = set_div_from_lower_bound(bmap, i, bmap->ineq[c]);
 		mark_progress(progress);
 		break;
 	}
