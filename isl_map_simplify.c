@@ -1304,12 +1304,12 @@ error:
 }
 
 static __isl_give isl_basic_map *set_div_from_lower_bound(
-	__isl_take isl_basic_map *bmap, int div, int ineq)
+	__isl_take isl_basic_map *bmap, int div, isl_int *ineq)
 {
 	unsigned total = isl_basic_map_offset(bmap, isl_dim_div);
 
-	isl_seq_neg(bmap->div[div] + 1, bmap->ineq[ineq], total + bmap->n_div);
-	isl_int_set(bmap->div[div][0], bmap->ineq[ineq][total + div]);
+	isl_seq_neg(bmap->div[div] + 1, ineq, total + bmap->n_div);
+	isl_int_set(bmap->div[div][0], ineq[total + div]);
 	isl_int_add(bmap->div[div][1], bmap->div[div][1], bmap->div[div][0]);
 	isl_int_sub_ui(bmap->div[div][1], bmap->div[div][1], 1);
 	isl_int_set_si(bmap->div[div][1 + total + div], 0);
@@ -1793,7 +1793,7 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 			return isl_basic_map_free(bmap);
 		if (!set_div)
 			continue;
-		bmap = set_div_from_lower_bound(bmap, i, c);
+		bmap = set_div_from_lower_bound(bmap, i, bmap->ineq[c]);
 		mark_progress(progress);
 		break;
 	}
@@ -5727,7 +5727,8 @@ static __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs_ineq(
 		if (set_div < 0)
 			return isl_basic_map_free(bmap);
 		if (set_div) {
-			bmap = set_div_from_lower_bound(bmap, i, last_pos);
+			bmap = set_div_from_lower_bound(bmap, i,
+							bmap->ineq[last_pos]);
 			return drop_redundant_divs_again(bmap, pairs, 1);
 		}
 		pairs[i] = 0;
