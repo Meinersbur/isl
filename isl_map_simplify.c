@@ -81,7 +81,7 @@ static void swap_inequality(__isl_keep isl_basic_map *bmap, int a, int b)
  * If scaling is performed then take into account that the constraint
  * is modified (not simply based on an equality constraint).
  */
-static __isl_give isl_basic_map *scale_down_inequality(
+static __isl_give isl_basic_map *scale_down_bmap_inequality(
 	__isl_take isl_basic_map *bmap, int ineq, isl_int f, unsigned len)
 {
 	if (!bmap)
@@ -144,7 +144,7 @@ __isl_give isl_basic_map *isl_basic_map_normalize_constraints(
 		}
 		if (ISL_F_ISSET(bmap, ISL_BASIC_MAP_RATIONAL))
 			isl_int_gcd(gcd, gcd, bmap->ineq[i][0]);
-		bmap = scale_down_inequality(bmap, i, gcd, total);
+		bmap = scale_down_bmap_inequality(bmap, i, gcd, total);
 		if (!bmap)
 			goto error;
 	}
@@ -399,7 +399,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 		mark_progress(progress);
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
 		isl_seq_gcd(bmap->ineq[k], 1 + total, &ctx->normalize_gcd);
-		bmap = scale_down_inequality(bmap, k, ctx->normalize_gcd,
+		bmap = scale_down_bmap_inequality(bmap, k, ctx->normalize_gcd,
 						total);
 		bmap = isl_basic_map_modify_inequality(bmap, equivalent);
 		if (!bmap)
@@ -1763,7 +1763,7 @@ static __isl_give isl_basic_map *check_for_residues(
 			continue;
 
 		isl_seq_sub(bmap->ineq[i], bmap->ineq[c], 1 + total);
-		bmap = scale_down_inequality(bmap, i, ctx->normalize_gcd,
+		bmap = scale_down_bmap_inequality(bmap, i, ctx->normalize_gcd,
 						total);
 		if (!bmap)
 			return NULL;
