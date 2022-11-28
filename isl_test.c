@@ -1588,6 +1588,10 @@ static struct {
 	{ "[N] -> { [w = 0:17] : exists (e0: w < 2N and "
 	    "-1 + w <= e0 <= w and 2e0 >= N + w and w <= 2e0 <= 15 + w) }",
 	  "[N] -> { [N] }", "{ [9] }" },
+	{ "[N] -> { [N//2:N//2+4] }",
+	  "[N] -> { [N//2] }", "{ [5] }" },
+	{ "[N] -> { [N//2+N//3:N//2+N//3+4] }",
+	  "[N] -> { [N//2+N//3] }", "{ [5] }" },
 };
 
 /* Perform basic isl_set_get_simple_fixed_box_hull tests.

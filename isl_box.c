@@ -246,23 +246,10 @@ struct isl_size_info {
 /* Is "c" a suitable bound on dimension "pos" for use as a lower bound
  * of a fixed-size range.
  * In particular, it needs to be a lower bound on "pos".
- * In order for the final offset not to be too complicated,
- * the constraint itself should also not involve any integer divisions.
  */
 static isl_bool is_suitable_bound(__isl_keep isl_constraint *c, unsigned pos)
 {
-	isl_size n_div;
-	isl_bool is_bound, any_divs;
-
-	is_bound = isl_constraint_is_lower_bound(c, isl_dim_set, pos);
-	if (is_bound < 0 || !is_bound)
-		return is_bound;
-
-	n_div = isl_constraint_dim(c, isl_dim_div);
-	if (n_div < 0)
-		return isl_bool_error;
-	any_divs = isl_constraint_involves_dims(c, isl_dim_div, 0, n_div);
-	return isl_bool_not(any_divs);
+	return isl_constraint_is_lower_bound(c, isl_dim_set, pos);
 }
 
 /* Given a constraint from the basic set describing the bounds on
