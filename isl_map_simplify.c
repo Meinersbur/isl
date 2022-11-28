@@ -75,6 +75,17 @@ static void swap_inequality(__isl_keep isl_basic_map *bmap, int a, int b)
  * by a factor of "f".
  * All the coefficients, except the constant term,
  * are assumed to be multiples of "f".
+ */
+static void scale_down_inequality(isl_int *ineq, isl_int f, unsigned len)
+{
+	isl_int_fdiv_q(ineq[0], ineq[0], f);
+	isl_seq_scale_down(ineq + 1, ineq + 1, f, len);
+}
+
+/* Scale down the inequality constraint "ineq" of length "len"
+ * by a factor of "f".
+ * All the coefficients, except the constant term,
+ * are assumed to be multiples of "f".
  *
  * If the factor is 0 or 1, then no scaling needs to be performed.
  *
@@ -90,8 +101,7 @@ static __isl_give isl_basic_map *scale_down_bmap_inequality(
 	if (isl_int_is_zero(f) || isl_int_is_one(f))
 		return bmap;
 
-	isl_int_fdiv_q(bmap->ineq[ineq][0], bmap->ineq[ineq][0], f);
-	isl_seq_scale_down(bmap->ineq[ineq] + 1, bmap->ineq[ineq] + 1, f, len);
+	scale_down_inequality(bmap->ineq[ineq], f, len);
 
 	bmap = isl_basic_map_modify_inequality(bmap, 0);
 
