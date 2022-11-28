@@ -1787,7 +1787,7 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 		if (set_div < 0)
 			return isl_basic_map_free(bmap);
 		if (!set_div)
-			break;
+			continue;
 		if (isl_int_is_pos(bmap->ineq[k][total + i]))
 			bmap = set_div_from_lower_bound(bmap, i, k);
 		else
