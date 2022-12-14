@@ -3998,6 +3998,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 
 #undef DOMBASE
 #define DOMBASE set
+#include <isl_multi_check_domain_templ.c>
 #include <isl_multi_gist.c>
 
 #undef DOMBASE
@@ -6667,11 +6668,11 @@ error:
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_dims.c>
 #include <isl_multi_from_base_templ.c>
+#include <isl_multi_check_domain_templ.c>
 #include <isl_multi_gist.c>
 #include <isl_multi_hash.c>
 #include <isl_multi_identity_templ.c>
 #include <isl_multi_insert_domain_templ.c>
-#include <isl_multi_check_domain_templ.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_min_max_templ.c>
 #include <isl_multi_move_dims_templ.c>
@@ -8616,8 +8617,8 @@ error:
 #include <isl_multi_dim_id_templ.c>
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
-#include <isl_multi_gist.c>
 #include <isl_multi_check_domain_templ.c>
+#include <isl_multi_gist.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_tuple_id_templ.c>

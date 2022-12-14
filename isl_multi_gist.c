@@ -16,6 +16,8 @@
 __isl_give MULTI(BASE) *FN(MULTI(BASE),gist)(__isl_take MULTI(BASE) *multi,
 	__isl_take DOM *context)
 {
+	if (FN(MULTI(BASE),check_compatible_domain)(multi, context) < 0)
+		context = FN(DOM,free)(context);
 	return FN(FN(MULTI(BASE),apply),DOMBASE)(multi, context, &FN(EL,gist));
 }
 
