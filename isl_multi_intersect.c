@@ -49,12 +49,12 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect)(
 		goto error;
 	multi_dom = FN(MULTI(BASE),get_explicit_domain)(multi);
 	if (!is_params) {
-		domain = FN(DOM,intersect)(multi_dom, domain);
+		multi_dom = FN(DOM,intersect)(multi_dom, domain);
 	} else {
-		domain = FN(MULTI(BASE),params_domain_intersect)(multi_dom,
+		multi_dom = FN(MULTI(BASE),params_domain_intersect)(multi_dom,
 								domain);
 	}
-	multi = FN(MULTI(BASE),set_explicit_domain)(multi, domain);
+	multi = FN(MULTI(BASE),set_explicit_domain)(multi, multi_dom);
 	return multi;
 error:
 	FN(MULTI(BASE),free)(multi);
