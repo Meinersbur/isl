@@ -62,8 +62,6 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect)(
 
 	if (FN(FN(MULTI(BASE),align_params),DOMBASE)(&multi, &domain) < 0)
 		goto error;
-	if (FN(MULTI(BASE),check_compatible_domain)(multi, domain) < 0)
-		goto error;
 	if (FN(MULTI(BASE),check_has_explicit_domain)(multi) < 0)
 		goto error;
 	is_params = FN(DOM,is_params)(multi->u.dom);
@@ -94,6 +92,8 @@ error:
 __isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_domain)(
 	__isl_take MULTI(BASE) *multi, __isl_take DOM *domain)
 {
+	if (FN(MULTI(BASE),check_compatible_domain)(multi, domain) < 0)
+		domain = FN(DOM,free)(domain);
 	if (FN(MULTI(BASE),has_explicit_domain)(multi))
 		return FN(MULTI(BASE),domain_intersect)(multi, domain);
 	return FN(FN(MULTI(BASE),apply),DOMBASE)(multi, domain,
