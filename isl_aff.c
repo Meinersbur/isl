@@ -3976,6 +3976,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_un_op_templ.c>
 #include <isl_multi_bin_val_templ.c>
 #include <isl_multi_add_constant_templ.c>
+#include <isl_multi_align_set.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_bind_domain_templ.c>
@@ -6656,6 +6657,7 @@ error:
 #include <isl_multi_un_op_templ.c>
 #include <isl_multi_bin_val_templ.c>
 #include <isl_multi_add_constant_templ.c>
+#include <isl_multi_align_set.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_bind_templ.c>
@@ -6668,7 +6670,6 @@ error:
 #include <isl_multi_gist.c>
 #include <isl_multi_hash.c>
 #include <isl_multi_identity_templ.c>
-#include <isl_multi_align_set.c>
 #include <isl_multi_insert_domain_templ.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_min_max_templ.c>
@@ -8604,6 +8605,8 @@ error:
 #include <isl_multi_templ.c>
 #include <isl_multi_un_op_templ.c>
 #include <isl_multi_bin_val_templ.c>
+#include <isl_multi_align_set.c>
+#include <isl_multi_align_union_set.c>
 #include <isl_multi_apply_set.c>
 #include <isl_multi_apply_union_set.c>
 #include <isl_multi_arith_templ.c>
@@ -8613,8 +8616,6 @@ error:
 #include <isl_multi_floor.c>
 #include <isl_multi_from_base_templ.c>
 #include <isl_multi_gist.c>
-#include <isl_multi_align_set.c>
-#include <isl_multi_align_union_set.c>
 #include <isl_multi_intersect.c>
 #include <isl_multi_nan_templ.c>
 #include <isl_multi_tuple_id_templ.c>
