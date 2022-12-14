@@ -3977,7 +3977,6 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #include <isl_multi_bin_val_templ.c>
 #include <isl_multi_add_constant_templ.c>
 #include <isl_multi_align_set.c>
-#include <isl_multi_apply_set.c>
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_bind_domain_templ.c>
 #include <isl_multi_cmp.c>
@@ -3999,6 +3998,7 @@ static __isl_give isl_basic_set *isl_multi_aff_domain(
 #undef DOMBASE
 #define DOMBASE set
 #include <isl_multi_check_domain_templ.c>
+#include <isl_multi_apply_set_no_explicit_domain_templ.c>
 #include <isl_multi_gist.c>
 
 #undef DOMBASE
@@ -6659,7 +6659,7 @@ error:
 #include <isl_multi_bin_val_templ.c>
 #include <isl_multi_add_constant_templ.c>
 #include <isl_multi_align_set.c>
-#include <isl_multi_apply_set.c>
+#include <isl_multi_apply_set_explicit_domain_templ.c>
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_bind_templ.c>
 #include <isl_multi_bind_domain_templ.c>
@@ -8609,8 +8609,8 @@ error:
 #include <isl_multi_bin_val_templ.c>
 #include <isl_multi_align_set.c>
 #include <isl_multi_align_union_set.c>
-#include <isl_multi_apply_set.c>
-#include <isl_multi_apply_union_set.c>
+#include <isl_multi_apply_set_explicit_domain_templ.c>
+#include <isl_multi_apply_union_set_explicit_domain_templ.c>
 #include <isl_multi_arith_templ.c>
 #include <isl_multi_bind_templ.c>
 #include <isl_multi_coalesce.c>

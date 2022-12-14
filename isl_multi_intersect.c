@@ -28,39 +28,6 @@ static __isl_give DOM *FN(MULTI(BASE),params_domain_intersect)(DOM *dom1,
 	return dom2;
 }
 
-/* Intersect the explicit domain of "multi" with "domain".
- *
- * In the case of an isl_multi_union_pw_aff object, the explicit domain
- * is allowed to have only constraints on the parameters, while
- * "domain" contains actual domain elements.  Handle this case specifically.
- */
-static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect)(
-	__isl_take MULTI(BASE) *multi, __isl_take DOM *domain)
-{
-	isl_bool is_params;
-	DOM *multi_dom;
-
-	if (FN(FN(MULTI(BASE),align_params),DOMBASE)(&multi, &domain) < 0)
-		goto error;
-	multi_dom = FN(MULTI(BASE),get_explicit_domain)(multi);
-	is_params = FN(DOM,is_params)(multi_dom);
-	if (is_params < 0) {
-		FN(DOM,free)(domain);
-		multi_dom = FN(DOM,free)(multi_dom);
-	} else if (!is_params) {
-		multi_dom = FN(DOM,intersect)(multi_dom, domain);
-	} else {
-		multi_dom = FN(MULTI(BASE),params_domain_intersect)(multi_dom,
-								domain);
-	}
-	multi = FN(MULTI(BASE),set_explicit_domain)(multi, multi_dom);
-	return multi;
-error:
-	FN(MULTI(BASE),free)(multi);
-	FN(DOM,free)(domain);
-	return NULL;
-}
-
 /* Intersect the domain of "multi" with "domain".
  *
  * If "multi" has an explicit domain, then only this domain
@@ -71,27 +38,10 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_domain)(
 {
 	if (FN(MULTI(BASE),check_compatible_domain)(multi, domain) < 0)
 		domain = FN(DOM,free)(domain);
-	if (FN(MULTI(BASE),has_explicit_domain)(multi))
-		return FN(MULTI(BASE),domain_intersect)(multi, domain);
 	return FN(FN(MULTI(BASE),apply),DOMBASE)(multi, domain,
-					&FN(EL,intersect_domain));
-}
-
-/* Intersect the parameter domain of the explicit domain of "multi"
- * with "domain".
- */
-static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect_params)(
-	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
-{
-	DOM *multi_dom;
-
-	FN(MULTI(BASE),align_params_set)(&multi, &domain);
-
-	multi_dom = FN(MULTI(BASE),get_explicit_domain)(multi);
-	multi_dom = FN(DOM,intersect_params)(multi_dom, domain);
-	multi = FN(MULTI(BASE),set_explicit_domain)(multi, multi_dom);
-
-	return multi;
+				&FN(EL,intersect_domain),
+				&FN(DOM,intersect),
+				&FN(MULTI(BASE),params_domain_intersect));
 }
 
 /* Intersect the parameter domain of "multi" with "domain".
@@ -102,8 +52,8 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect_params)(
 __isl_give MULTI(BASE) *FN(MULTI(BASE),intersect_params)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_set *domain)
 {
-	if (FN(MULTI(BASE),has_explicit_domain)(multi))
-		return FN(MULTI(BASE),domain_intersect_params)(multi, domain);
 	return FN(MULTI(BASE),apply_set)(multi, domain,
-					&FN(EL,intersect_params));
+					&FN(EL,intersect_params),
+					&FN(DOM,intersect_params),
+					&FN(DOM,intersect_params));
 }

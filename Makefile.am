@@ -558,8 +558,11 @@ EXTRA_DIST = \
 	isl_multi_align_set.c \
 	isl_multi_align_union_set.c \
 	isl_multi_apply_templ.c \
-	isl_multi_apply_set.c \
-	isl_multi_apply_union_set.c \
+	isl_multi_apply_explicit_domain_templ.c \
+	isl_multi_apply_no_explicit_domain_templ.c \
+	isl_multi_apply_set_explicit_domain_templ.c \
+	isl_multi_apply_set_no_explicit_domain_templ.c \
+	isl_multi_apply_union_set_explicit_domain_templ.c \
 	isl_multi_arith_templ.c \
 	isl_multi_bin_val_templ.c \
 	isl_multi_bind_domain_templ.c \
