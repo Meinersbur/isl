@@ -15,7 +15,7 @@
  *
  * The parameters of "multi" and "set" are assumed to have been aligned.
  */
-__isl_give MULTI(BASE) *FN(FN(MULTI(BASE),apply_aligned),APPLY_DOMBASE)(
+static __isl_give MULTI(BASE) *FN(FN(MULTI(BASE),apply_aligned),APPLY_DOMBASE)(
 	__isl_take MULTI(BASE) *multi, __isl_take APPLY_DOM *set,
 	__isl_give EL *(*fn)(EL *el, __isl_take APPLY_DOM *set))
 {
