@@ -555,7 +555,6 @@ EXTRA_DIST = \
 	isl_multi_templ.c \
 	isl_multi_templ.h \
 	isl_multi_add_constant_templ.c \
-	isl_multi_align_templ.c \
 	isl_multi_align_set.c \
 	isl_multi_align_union_set.c \
 	isl_multi_apply_templ.c \
