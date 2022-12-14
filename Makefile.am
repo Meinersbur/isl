@@ -563,6 +563,7 @@ EXTRA_DIST = \
 	isl_multi_arith_templ.c \
 	isl_multi_bin_val_templ.c \
 	isl_multi_bind_domain_templ.c \
+	isl_multi_check_domain_templ.c \
 	isl_multi_cmp.c \
 	isl_multi_coalesce.c \
 	isl_multi_dim_id_templ.c \
