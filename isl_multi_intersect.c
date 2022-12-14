@@ -10,13 +10,29 @@
 
 #include <isl_multi_macro.h>
 
+/* Intersect the parameter domain "dom1" with "dom2".
+ * That is, intersect the parameters of "dom2" with "dom1".
+ *
+ * Even though "dom1" is known to only involve parameter constraints,
+ * it may be of type isl_union_set, so explicitly convert it
+ * to an isl_set first.
+ */
+static __isl_give DOM *FN(MULTI(BASE),params_domain_intersect)(DOM *dom1,
+	__isl_take DOM *dom2)
+{
+	isl_set *params;
+
+	params = FN(DOM,params)(dom1);
+	dom2 = FN(DOM,intersect_params)(dom2, params);
+
+	return dom2;
+}
+
 /* Intersect the explicit domain of "multi" with "domain".
  *
  * In the case of an isl_multi_union_pw_aff object, the explicit domain
  * is allowed to have only constraints on the parameters, while
- * "domain" contains actual domain elements.  In this case,
- * "domain" is intersected with those parameter constraints and
- * then used as the explicit domain of "multi".
+ * "domain" contains actual domain elements.  Handle this case specifically.
  */
 static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect)(
 	__isl_take MULTI(BASE) *multi, __isl_take DOM *domain)
@@ -35,10 +51,8 @@ static __isl_give MULTI(BASE) *FN(MULTI(BASE),domain_intersect)(
 	if (!is_params) {
 		domain = FN(DOM,intersect)(multi_dom, domain);
 	} else {
-		isl_set *params;
-
-		params = FN(DOM,params)(multi_dom);
-		domain = FN(DOM,intersect_params)(domain, params);
+		domain = FN(MULTI(BASE),params_domain_intersect)(multi_dom,
+								domain);
 	}
 	multi = FN(MULTI(BASE),set_explicit_domain)(multi, domain);
 	return multi;
