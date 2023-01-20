@@ -604,6 +604,7 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 	sc = isl_schedule_constraints_alloc(ctx);
 	while ((more = isl_stream_yaml_next(s)) == isl_bool_true) {
 		enum isl_sc_key key;
+		enum isl_edge_type type;
 		isl_set *context;
 		isl_union_set *domain;
 		isl_union_map *constraints;
@@ -633,8 +634,10 @@ __isl_give isl_schedule_constraints *isl_stream_read_schedule_constraints(
 		case isl_sc_key_condition:
 		case isl_sc_key_conditional_validity:
 		case isl_sc_key_proximity:
+			type = (enum isl_edge_type) key;
 			constraints = read_union_map(s);
-			sc = isl_schedule_constraints_set(sc, key, constraints);
+			sc = isl_schedule_constraints_set(sc, type,
+								constraints);
 			if (!sc)
 				return NULL;
 			break;
