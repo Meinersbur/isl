@@ -1910,6 +1910,7 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 	info = isl_union_access_info_alloc(ctx);
 	while ((more = isl_stream_yaml_next(s)) == isl_bool_true) {
 		enum isl_ai_key key;
+		enum isl_access_type type;
 		isl_union_map *access, *schedule_map;
 		isl_schedule *schedule;
 
@@ -1925,8 +1926,9 @@ __isl_give isl_union_access_info *isl_stream_read_union_access_info(
 		case isl_ai_key_must_source:
 		case isl_ai_key_may_source:
 		case isl_ai_key_kill:
+			type = (enum isl_access_type) key;
 			access = read_union_map(s);
-			info = isl_union_access_info_set(info, key, access);
+			info = isl_union_access_info_set(info, type, access);
 			if (!info)
 				return NULL;
 			break;
