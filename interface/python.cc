@@ -596,7 +596,8 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 	FunctionDecl *fd, int drop_ctx)
 {
 	int num_params = fd->getNumParams();
-	int first = generator::is_static(clazz, fd) ? drop_ctx : 1;
+	bool is_static = generator::is_static(clazz, fd);
+	int first = is_static ? drop_ctx : 1;
 	std::vector<bool> convert(num_params);
 
 	printf("        if len(args) == %d", num_params - drop_ctx);
