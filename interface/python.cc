@@ -571,6 +571,13 @@ static void print_argument_check(QualType type, int i)
 	}
 }
 
+/* Is any element of "vector" set?
+ */
+static bool any(const std::vector<bool> &vector)
+{
+	return std::find(vector.begin(), vector.end(), true) != vector.end();
+}
+
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
  * expected by "fd".
@@ -613,7 +620,7 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 	}
 	printf(":\n");
 
-	if (std::find(convert.begin(), convert.end(), true) == convert.end())
+	if (!any(convert))
 		return;
 	print_indent(12, "args = list(args)\n");
 	for (int i = first; i < num_params; ++i) {
