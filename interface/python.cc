@@ -580,7 +580,9 @@ static bool any(const std::vector<bool> &vector)
 
 /* Print a test that checks whether the arguments passed
  * to the Python method correspond to the arguments
- * expected by "fd".
+ * expected by "fd" and
+ * check if the object on which the method is called, if any,
+ * is of the right type.
  * "drop_ctx" is set if the first argument of "fd" is an isl_ctx,
  * which does not appear as an argument to the Python method.
  *
@@ -589,7 +591,9 @@ static bool any(const std::vector<bool> &vector)
  * to be of the type as prescribed by the second input argument
  * of the conversion function.
  * The corresponding arguments are then converted to the expected types
- * if needed.  The argument tuple first needs to be converted to a list
+ * if needed.
+ * The object on which the method is called is also converted if needed.
+ * The argument tuple first needs to be converted to a list
  * in order to be able to modify the entries.
  */
 void python_generator::print_argument_checks(const isl_class &clazz,
@@ -621,14 +625,16 @@ void python_generator::print_argument_checks(const isl_class &clazz,
 	}
 	printf(":\n");
 
-	if (!any(convert))
+	if (is_static && !any(convert))
 		return;
 	print_indent(12, "args = list(args)\n");
+	first = is_static ? drop_ctx : 0;
 	for (int i = first; i < num_params; ++i) {
+		bool is_self = !is_static && i == 0;
 		ParmVarDecl *param = fd->getParamDecl(i);
 		string type;
 
-		if (!convert[i])
+		if (!is_self && !convert[i])
 			continue;
 		type = type2python(extract_type(param->getOriginalType()));
 		print_type_check(12, type, var_arg_fmt,
