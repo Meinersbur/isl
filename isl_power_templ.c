@@ -8,6 +8,9 @@
  *
  * The result is coalesced in an attempt to reduce the number of disjuncts
  * that result from repeated applications.
+ * Similarly, look for implicit equality constraints in an attempt
+ * to reduce the number of local variables that get introduced
+ * during the repeated applications.
  */
 static __isl_give TYPE *FN(TYPE,fixed_power_apply)(__isl_take TYPE *map1,
 	__isl_keep TYPE *map2)
@@ -15,6 +18,7 @@ static __isl_give TYPE *FN(TYPE,fixed_power_apply)(__isl_take TYPE *map1,
 	TYPE *res;
 
 	res = FN(TYPE,apply_range)(map1, FN(TYPE,copy)(map2));
+	res = FN(TYPE,detect_equalities)(res);
 	res = FN(TYPE,coalesce)(res);
 
 	return res;
