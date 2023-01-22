@@ -8922,25 +8922,6 @@ static int test_empty_projection(isl_ctx *ctx)
 	return 0;
 }
 
-int test_fixed_power(isl_ctx *ctx)
-{
-	const char *str;
-	isl_map *map;
-	isl_val *exp;
-	int equal;
-
-	str = "{ [i] -> [i + 1] }";
-	map = isl_map_read_from_str(ctx, str);
-	exp = isl_val_int_from_si(ctx, 23);
-	map = isl_map_fixed_power_val(map, exp);
-	equal = map_check_equal(map, "{ [i] -> [i + 23] }");
-	isl_map_free(map);
-	if (equal < 0)
-		return -1;
-
-	return 0;
-}
-
 int test_slice(isl_ctx *ctx)
 {
 	const char *str;
@@ -10981,7 +10962,6 @@ struct {
 	{ "residue class", &test_residue_class },
 	{ "div", &test_div },
 	{ "slice", &test_slice },
-	{ "fixed power", &test_fixed_power },
 	{ "sample", &test_sample },
 	{ "empty projection", &test_empty_projection },
 	{ "output", &test_output },

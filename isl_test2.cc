@@ -292,6 +292,16 @@ static void test_preimage(isl::ctx ctx)
 	});
 }
 
+/* Perform some basic fixed power tests.
+ */
+static void test_fixed_power(isl::ctx ctx)
+{
+	C(arg<isl::val>(&isl::map::fixed_power), {
+	{ "{ [i] -> [i + 1] }", "23",
+	  "{ [i] -> [i + 23] }" },
+	});
+}
+
 /* Perform some basic intersection tests.
  */
 static void test_intersect(isl::ctx ctx)
@@ -391,6 +401,7 @@ static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 	{ "space", &test_space },
 	{ "conversion", &test_conversion },
 	{ "preimage", &test_preimage },
+	{ "fixed power", &test_fixed_power },
 	{ "intersect", &test_intersect },
 	{ "gist", &test_gist },
 	{ "project out parameters", &test_project },
