@@ -281,6 +281,15 @@ struct isl_size_info {
 	isl_aff *offset;
 };
 
+/* Free all memory allocated for "info".
+ */
+static void isl_size_info_clear(struct isl_size_info *info)
+{
+	isl_val_free(info->size);
+	isl_aff_free(info->offset);
+	isl_basic_set_free(info->bset);
+}
+
 /* Is "c" a suitable bound on dimension "pos" for use as a lower bound
  * of a fixed-size range.
  * In particular, it needs to be a lower bound on "pos".
@@ -397,9 +406,7 @@ static __isl_give isl_fixed_box *set_dim_extent(__isl_take isl_fixed_box *box,
 						     info.offset, info.size);
 	else
 		box = isl_fixed_box_invalidate(box);
-	isl_val_free(info.size);
-	isl_aff_free(info.offset);
-	isl_basic_set_free(info.bset);
+	isl_size_info_clear(&info);
 
 	return box;
 }
