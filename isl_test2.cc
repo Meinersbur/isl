@@ -465,21 +465,22 @@ static void test_box_hull(isl::ctx ctx)
 	  "{ offset: [N] -> { [(15*((N) mod 4)), (floor((N)/4))] }, "
 	    "size: { [15, 1] } }" },
 	{ "{ [i=-3:7] : i mod 4 = 0 }",
-	  "{ offset: { [(-3)] }, size: { [8] } }" },
+	  "{ offset: { [(0)] }, size: { [5] } }" },
 	{ "[N] -> { [i, N - 4i] : -14 + N <= 16i <= 1 + N }",
-	  "{ offset: [N] -> { [(floor((1 + N)/16)), (N + floor((2 - N)/4))] }, "
-	    "size: { [1, 4] } }" },
+	  "{ offset: [N] -> { [(floor((1 + N)/16)), "
+			      "(4 + N + 4*floor((-2 - N)/16))] }, "
+	    "size: { [1, 1] } }" },
 	});
 
 	C(&isl::map::range_simple_fixed_box_hull, {
 	{ "{ [N] -> [i, N - 4i] : -14 + N <= 16i <= 1 + N }",
 	  "{ offset: { [N] -> [(floor((1 + N)/16)), "
-			      "(N + floor((2 - N)/4))] }, "
-	    "size: { [1, 4] } }" },
+			      "(4 + N + 4*floor((-2 - N)/16))] }, "
+	    "size: { [1, 1] } }" },
 	{ "{ [N] -> [i, j] : 4j = N - i and -1 + 3N <= 4i <= 14 + 3N }",
-	  "{ offset: { [N] -> [(N + floor((2 - N)/4)), "
+	  "{ offset: { [N] -> [(4 + N + 4*floor((-2 - N)/16)), "
 			      "(floor((1 + N)/16))] }, "
-	    "size: { [4, 1] } }" },
+	    "size: { [1, 1] } }" },
 	});
 }
 
