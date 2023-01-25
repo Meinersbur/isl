@@ -2586,6 +2586,7 @@ class multi_val {
   inline isl::checked::multi_val flat_range_product(isl::checked::multi_val multi2) const;
   inline boolean has_range_tuple_id() const;
   inline boolean involves_nan() const;
+  inline boolean is_equal(const isl::checked::multi_val &mv2) const;
   inline isl::checked::val_list list() const;
   inline isl::checked::val_list get_list() const;
   inline isl::checked::multi_val max(isl::checked::multi_val multi2) const;
@@ -12840,6 +12841,12 @@ boolean multi_val::has_range_tuple_id() const
 boolean multi_val::involves_nan() const
 {
   auto res = isl_multi_val_involves_nan(get());
+  return manage(res);
+}
+
+boolean multi_val::is_equal(const isl::checked::multi_val &mv2) const
+{
+  auto res = isl_multi_val_is_equal(get(), mv2.get());
   return manage(res);
 }
 

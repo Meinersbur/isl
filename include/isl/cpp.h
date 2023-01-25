@@ -2652,6 +2652,7 @@ class multi_val {
   inline isl::multi_val flat_range_product(isl::multi_val multi2) const;
   inline bool has_range_tuple_id() const;
   inline bool involves_nan() const;
+  inline bool is_equal(const isl::multi_val &mv2) const;
   inline isl::val_list list() const;
   inline isl::val_list get_list() const;
   inline isl::multi_val max(isl::multi_val multi2) const;
@@ -17153,6 +17154,18 @@ bool multi_val::involves_nan() const
   auto saved_ctx = ctx();
   options_scoped_set_on_error saved_on_error(saved_ctx, exception::on_error);
   auto res = isl_multi_val_involves_nan(get());
+  if (res < 0)
+    exception::throw_last_error(saved_ctx);
+  return res;
+}
+
+bool multi_val::is_equal(const isl::multi_val &mv2) const
+{
+  if (!ptr || mv2.is_null())
+    exception::throw_invalid("NULL input", __FILE__, __LINE__);
+  auto saved_ctx = ctx();
+  options_scoped_set_on_error saved_on_error(saved_ctx, exception::on_error);
+  auto res = isl_multi_val_is_equal(get(), mv2.get());
   if (res < 0)
     exception::throw_last_error(saved_ctx);
   return res;
