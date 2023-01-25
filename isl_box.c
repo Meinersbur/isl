@@ -207,12 +207,20 @@ isl_bool isl_fixed_box_is_valid(__isl_keep isl_fixed_box *box)
 
 /* Return the offsets of the box "box".
  */
-__isl_give isl_multi_aff *isl_fixed_box_get_offset(
+static __isl_keep isl_multi_aff *isl_fixed_box_peek_offset(
 	__isl_keep isl_fixed_box *box)
 {
 	if (!box)
 		return NULL;
-	return isl_multi_aff_copy(box->offset);
+	return box->offset;
+}
+
+/* Return a copy of the offsets of the box "box".
+ */
+__isl_give isl_multi_aff *isl_fixed_box_get_offset(
+	__isl_keep isl_fixed_box *box)
+{
+	return isl_multi_aff_copy(isl_fixed_box_peek_offset(box));
 }
 
 /* Return the sizes of the box "box".
