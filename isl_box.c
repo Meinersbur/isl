@@ -498,6 +498,21 @@ __isl_give isl_fixed_box *isl_set_get_lattice_tile(__isl_keep isl_set *set)
 	return fixed_box_as_map(set, &isl_map_get_range_lattice_tile);
 }
 
+/* An enumeration of the keys that may appear in a YAML mapping
+ * of an isl_fixed_box object.
+ */
+enum isl_fb_key {
+	isl_fb_key_offset,
+	isl_fb_key_size,
+};
+
+/* Textual representations of the YAML keys for an isl_fixed_box object.
+ */
+static char *key_str[] = {
+	[isl_fb_key_offset] = "offset",
+	[isl_fb_key_size] = "size",
+};
+
 #undef BASE
 #define BASE multi_val
 #include "print_yaml_field_templ.c"
@@ -516,8 +531,9 @@ __isl_give isl_printer *isl_printer_print_fixed_box(
 		return isl_printer_free(p);
 
 	p = isl_printer_yaml_start_mapping(p);
-	p = print_yaml_field_multi_aff(p, "offset", box->offset);
-	p = print_yaml_field_multi_val(p, "size", box->size);
+	p = print_yaml_field_multi_aff(p, key_str[isl_fb_key_offset],
+					box->offset);
+	p = print_yaml_field_multi_val(p, key_str[isl_fb_key_size], box->size);
 	p = isl_printer_yaml_end_mapping(p);
 
 	return p;
