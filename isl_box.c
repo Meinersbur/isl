@@ -225,11 +225,19 @@ __isl_give isl_multi_aff *isl_fixed_box_get_offset(
 
 /* Return the sizes of the box "box".
  */
-__isl_give isl_multi_val *isl_fixed_box_get_size(__isl_keep isl_fixed_box *box)
+static __isl_keep isl_multi_val *isl_fixed_box_peek_size(
+	__isl_keep isl_fixed_box *box)
 {
 	if (!box)
 		return NULL;
-	return isl_multi_val_copy(box->size);
+	return box->size;
+}
+
+/* Return a copy of the sizes of the box "box".
+ */
+__isl_give isl_multi_val *isl_fixed_box_get_size(__isl_keep isl_fixed_box *box)
+{
+	return isl_multi_val_copy(isl_fixed_box_peek_size(box));
 }
 
 /* Data used in set_dim_extent and compute_size_in_direction.
