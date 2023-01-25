@@ -240,6 +240,28 @@ __isl_give isl_multi_val *isl_fixed_box_get_size(__isl_keep isl_fixed_box *box)
 	return isl_multi_val_copy(isl_fixed_box_peek_size(box));
 }
 
+/* Is "box1" obviously equal to "box2"?
+ *
+ * That is, does it have the same size and obviously the same offset?
+ */
+isl_bool isl_fixed_box_plain_is_equal(__isl_keep isl_fixed_box *box1,
+	__isl_keep isl_fixed_box *box2)
+{
+	isl_multi_aff *offset1, *offset2;
+	isl_multi_val *size1, *size2;
+	isl_bool equal;
+
+	size1 = isl_fixed_box_peek_size(box1);
+	size2 = isl_fixed_box_peek_size(box2);
+	equal = isl_multi_val_is_equal(size1, size2);
+	if (equal < 0 || !equal)
+		return equal;
+
+	offset1 = isl_fixed_box_peek_offset(box1);
+	offset2 = isl_fixed_box_peek_offset(box2);
+	return isl_multi_aff_plain_is_equal(offset1, offset2);
+}
+
 /* Data used in set_dim_extent and compute_size_in_direction.
  *
  * "bset" is a wrapped copy of the basic map that has the selected

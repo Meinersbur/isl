@@ -1808,6 +1808,7 @@ class fixed_box {
   inline bool is_valid() const;
   inline isl::multi_aff offset() const;
   inline isl::multi_aff get_offset() const;
+  inline bool plain_is_equal(const isl::fixed_box &box2) const;
   inline isl::multi_val size() const;
   inline isl::multi_val get_size() const;
   inline isl::space space() const;
@@ -10928,6 +10929,18 @@ isl::multi_aff fixed_box::offset() const
 isl::multi_aff fixed_box::get_offset() const
 {
   return offset();
+}
+
+bool fixed_box::plain_is_equal(const isl::fixed_box &box2) const
+{
+  if (!ptr || box2.is_null())
+    exception::throw_invalid("NULL input", __FILE__, __LINE__);
+  auto saved_ctx = ctx();
+  options_scoped_set_on_error saved_on_error(saved_ctx, exception::on_error);
+  auto res = isl_fixed_box_plain_is_equal(get(), box2.get());
+  if (res < 0)
+    exception::throw_last_error(saved_ctx);
+  return res;
 }
 
 isl::multi_val fixed_box::size() const

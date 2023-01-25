@@ -6564,6 +6564,14 @@ The box can be copied and freed using the following functions.
 	__isl_null isl_fixed_box *isl_fixed_box_free(
 		__isl_take isl_fixed_box *box);
 
+The following function checks whether two C<isl_fixed_box> objects
+are obviously the same.
+
+	#include <isl/fixed_box.h>
+	isl_bool isl_fixed_box_plain_is_equal(
+		__isl_keep isl_fixed_box *box1,
+		__isl_keep isl_fixed_box *box2);
+
 An object of type C<isl_fixed_box> can be read from input
 using the following function.
 
