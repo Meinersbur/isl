@@ -6499,6 +6499,14 @@ The box can be copied and freed using the following functions.
 	__isl_null isl_fixed_box *isl_fixed_box_free(
 		__isl_take isl_fixed_box *box);
 
+An object of type C<isl_fixed_box> can be read from input
+using the following function.
+
+	#include <isl/fixed_box.h>
+	__isl_give isl_fixed_box *
+	isl_fixed_box_read_from_str(isl_ctx *ctx,
+		const char *str);
+
 A representation of the information contained in an object
 of type C<isl_fixed_box> can be obtained using
 
