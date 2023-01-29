@@ -172,6 +172,15 @@ EXEEXT=$ac_cv_exeext
 BUILD_EXEEXT=$ac_cv_build_exeext; ac_build_exeext=$ac_cv_build_exeext
 OBJEXT=$ac_cv_objext
 BUILD_OBJEXT=$ac_cv_build_objext; ac_build_objext=$ac_cv_build_objext],[[]])
+dnl Similarly to _AC_COMPILER_EXEEXT and _AC_COMPILER_OBJEXT,
+dnl the line
+dnl	AC_SUBST([$1DEPMODE], [depmode=$am_cv_$1_dependencies_compiler_type])
+dnl of _AM_DEPENDENCIES no longer sets CCDEPMODE_FOR_BUILD,
+dnl but overrides CCDEPMODE.
+dnl Restore CCDEPMODE and set CCDEPMODE_FOR_BUILD.
+AC_SUBST(CCDEPMODE_FOR_BUILD)dnl
+CCDEPMODE=depmode=$am_cv_CC_dependencies_compiler_type
+CCDEPMODE_FOR_BUILD=depmode=$am_cv_build_CC_dependencies_compiler_type
 AC_SUBST([CFLAGS_FOR_BUILD])dnl
 AC_SUBST([CPPFLAGS_FOR_BUILD])dnl
 AC_SUBST([LDFLAGS_FOR_BUILD])dnl
