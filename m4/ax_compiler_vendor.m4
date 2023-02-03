@@ -13,7 +13,7 @@
 #   $ax_cv_cxx_compiler_vendor for C++ or $ax_cv_fc_compiler_vendor for
 #   (modern) Fortran.  The value is one of "intel", "ibm", "pathscale",
 #   "clang" (LLVM), "cray", "fujitsu", "sdcc", "sx", "nvhpc" (NVIDIA HPC
-#   Compiler), "portland" (PGI), "gnu" (GCC), "sun" (Oracle Developer
+#   Compiler), "portland" (PGI), "pcc", "gnu" (GCC), "sun" (Oracle Developer
 #   Studio), "hp", "dec", "borland", "comeau", "kai", "lcc", "sgi",
 #   "microsoft", "metrowerks", "watcom", "tcc" (Tiny CC) or "unknown" (if
 #   the compiler cannot be determined).
@@ -81,6 +81,7 @@ AC_DEFUN([AX_COMPILER_VENDOR], [dnl
 		sx:		_SX
 		nvhpc:		__NVCOMPILER
 		portland:	__PGI
+		pcc:		__PCC__
 		gnu:		__GNUC__
 		sun:		__SUNPRO_C,__SUNPRO_CC,__SUNPRO_F90,__SUNPRO_F95
 		hp:		__HP_cc,__HP_aCC
