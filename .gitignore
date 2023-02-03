@@ -18,6 +18,7 @@ config.log
 config.status
 config.sub
 configure
+configure~
 depcomp
 doc/Makefile
 doc/Makefile.in
