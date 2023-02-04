@@ -4176,6 +4176,19 @@ __isl_keep isl_basic_set *isl_tab_peek_bset(struct isl_tab *tab)
 	return bset_from_bmap(tab->bmap);
 }
 
+/* Print information about a tab variable representing a variable or
+ * a constraint.
+ * In particular, print its position (row or column) in the tableau and
+ * an indication of whether it is zero and/or redundant.
+ */
+static void print_tab_var(FILE *out, struct isl_tab_var *var)
+{
+	fprintf(out, "%c%d%s", var->is_row ? 'r' : 'c',
+				var->index,
+				var->is_zero ? " [=0]" :
+				var->is_redundant ? " [R]" : "");
+}
+
 static void isl_tab_print_internal(__isl_keep struct isl_tab *tab,
 	FILE *out, int indent)
 {
@@ -4199,20 +4212,14 @@ static void isl_tab_print_internal(__isl_keep struct isl_tab *tab,
 			fprintf(out, (i == tab->n_param ||
 				      i == tab->n_var - tab->n_div) ? "; "
 								    : ", ");
-		fprintf(out, "%c%d%s", tab->var[i].is_row ? 'r' : 'c',
-					tab->var[i].index,
-					tab->var[i].is_zero ? " [=0]" :
-					tab->var[i].is_redundant ? " [R]" : "");
+		print_tab_var(out, &tab->var[i]);
 	}
 	fprintf(out, "]\n");
 	fprintf(out, "%*s[", indent, "");
 	for (i = 0; i < tab->n_con; ++i) {
 		if (i)
 			fprintf(out, ", ");
-		fprintf(out, "%c%d%s", tab->con[i].is_row ? 'r' : 'c',
-					tab->con[i].index,
-					tab->con[i].is_zero ? " [=0]" :
-					tab->con[i].is_redundant ? " [R]" : "");
+		print_tab_var(out, &tab->con[i]);
 	}
 	fprintf(out, "]\n");
 	fprintf(out, "%*s[", indent, "");
