@@ -4179,14 +4179,16 @@ __isl_keep isl_basic_set *isl_tab_peek_bset(struct isl_tab *tab)
 /* Print information about a tab variable representing a variable or
  * a constraint.
  * In particular, print its position (row or column) in the tableau and
- * an indication of whether it is zero and/or redundant.
+ * an indication of whether it is zero, redundant and/or frozen.
+ * Note that only constraints can be frozen.
  */
 static void print_tab_var(FILE *out, struct isl_tab_var *var)
 {
-	fprintf(out, "%c%d%s", var->is_row ? 'r' : 'c',
+	fprintf(out, "%c%d%s%s", var->is_row ? 'r' : 'c',
 				var->index,
 				var->is_zero ? " [=0]" :
-				var->is_redundant ? " [R]" : "");
+				var->is_redundant ? " [R]" : "",
+				var->frozen ? " [F]" : "");
 }
 
 static void isl_tab_print_internal(__isl_keep struct isl_tab *tab,
