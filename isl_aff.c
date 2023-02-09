@@ -5329,8 +5329,8 @@ error:
 	return NULL;
 }
 
-/* Look for a pair of constraints in "hull" that ensure
- * that output dimension "d" is equal to some integer division expression
+/* Look for a pair of constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some integer division expression
  * in the parameters and input dimensions and
  * return this expression if found.
  *
@@ -5368,7 +5368,7 @@ error:
  * during the construction of the affine expression.
  */
 static __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div(
-	__isl_keep isl_basic_map *hull, int d)
+	__isl_keep isl_basic_map *bmap, int pos)
 {
 	isl_size i;
 	isl_size n_ineq;
@@ -5378,24 +5378,24 @@ static __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div(
 	isl_vec *v;
 	isl_bool is_set;
 
-	n_ineq = isl_basic_map_n_inequality(hull);
+	n_ineq = isl_basic_map_n_inequality(bmap);
 	if (n_ineq < 0)
 		goto error;
 
-	i = isl_basic_map_find_output_upper_div_constraint(hull, d);
+	i = isl_basic_map_find_output_upper_div_constraint(bmap, pos);
 	if (i < 0)
 		goto error;
 	if (i >= n_ineq)
 		return res;
 
-	is_set = isl_basic_map_is_set(hull);
+	is_set = isl_basic_map_is_set(bmap);
 	if (is_set < 0)
-		hull = isl_basic_map_free(hull);
+		bmap = isl_basic_map_free(bmap);
 
-	ls = isl_basic_map_get_local_space(hull);
+	ls = isl_basic_map_get_local_space(bmap);
 	if (!is_set)
 		ls = isl_local_space_wrap(ls);
-	v = isl_basic_map_inequality_extract_output_upper_bound(hull, i, d);
+	v = isl_basic_map_inequality_extract_output_upper_bound(bmap, i, pos);
 
 	aff = isl_aff_alloc_vec_prune(ls, v);
 	aff = isl_aff_floor(aff);
