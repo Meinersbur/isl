@@ -5413,6 +5413,22 @@ error:
 	return res;
 }
 
+/* Look for a combination of constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some integer division or
+ * modulo expression in the parameters and input dimensions and
+ * return this expression if found.
+ */
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div_mod(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	isl_maybe_isl_aff div;
+
+	div = isl_basic_map_try_find_output_div(bmap, pos);
+	if (div.valid < 0 || div.valid)
+		return div;
+	return isl_basic_map_try_find_output_mod(bmap, pos);
+}
+
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
  *
  * As a special case, we first check if there is any pair of constraints,
@@ -5440,9 +5456,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div_mod(
 	for (d = 0; d < dim; ++d) {
 		isl_maybe_isl_aff sub;
 
-		sub = isl_basic_map_try_find_output_div(hull, d);
-		if (sub.valid >= 0 && !sub.valid)
-			sub = isl_basic_map_try_find_output_mod(hull, d);
+		sub = isl_basic_map_try_find_output_div_mod(hull, d);
 		if (sub.valid < 0)
 			goto error;
 		if (!sub.valid)
