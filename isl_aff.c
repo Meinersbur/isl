@@ -5224,6 +5224,50 @@ error:
 	return NULL;
 }
 
+/* Given an affine expression "aff", return an extended multi-affine expression
+ * that also includes an identity on the domain.
+ * In other words, the returned expression can be used to extend the domain
+ * with an extra dimension corresponding to "aff".
+ *
+ * That is, if "aff" is of the form
+ *
+ *	A -> f
+ *
+ * then return
+ *
+ *	A -> [A -> f]
+ *
+ * However, if "aff" is of the form
+ *
+ *	f
+ *
+ * i.e., "aff" lives in a set space rather than a map space,
+ * then simply return
+ *
+ *	f
+ */
+__isl_give isl_multi_aff *isl_aff_as_domain_extension(__isl_take isl_aff *aff)
+{
+	isl_bool is_set;
+	isl_multi_aff *ma;
+
+	is_set = isl_space_is_params(isl_aff_peek_domain_space(aff));
+	if (is_set < 0)
+		return isl_multi_aff_from_aff(isl_aff_free(aff));
+
+	ma = isl_multi_aff_from_aff(aff);
+	if (!is_set) {
+		isl_space *space;
+		isl_multi_aff *id;
+
+		space = isl_aff_get_domain_space(aff);
+		id = isl_multi_aff_identity(isl_space_map_from_set(space));
+		ma = isl_multi_aff_range_product(id, ma);
+	}
+
+	return ma;
+}
+
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
  * taking into account that the output dimension at position "d"
  * is equal to some expression f in the parameters and input dimensions
@@ -5252,26 +5296,12 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_plug_in(
 	isl_map *insert;
 	isl_size n_in;
 	isl_pw_multi_aff *pma;
-	isl_bool is_set;
 
-	is_set = isl_space_is_params(isl_aff_peek_domain_space(aff));
-	if (is_set < 0)
-		goto error;
-
-	n_in = is_set ? 0 : isl_aff_dim(aff, isl_dim_in);
+	n_in = isl_aff_dim(aff, isl_dim_in);
 	if (n_in < 0)
 		goto error;
 
-	ma = isl_multi_aff_from_aff(aff);
-	if (!is_set) {
-		isl_space *space;
-		isl_multi_aff *id;
-
-		space = isl_aff_get_domain_space(aff);
-		id = isl_multi_aff_identity(isl_space_map_from_set(space));
-		ma = isl_multi_aff_range_product(id, ma);
-	}
-
+	ma = isl_aff_as_domain_extension(aff);
 	insert = isl_map_from_multi_aff_internal(isl_multi_aff_copy(ma));
 	map = isl_map_apply_domain(map, insert);
 	map = isl_map_equate(map, isl_dim_in, n_in, isl_dim_out, d);
