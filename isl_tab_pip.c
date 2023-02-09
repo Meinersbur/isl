@@ -4351,6 +4351,39 @@ static isl_bool is_known_div_not_involving(__isl_keep isl_basic_map *bmap,
 	return isl_bool_not(involves);
 }
 
+/* Check if integer division "div" of "src" also occurs in "dst",
+ * where the integer division "div" is known to involve
+ * only the first "n_shared" variables.
+ * If so, return its position within the local variables.
+ * Otherwise, return a position beyond the local variables.
+ */
+static isl_size find_div_involving_only(__isl_keep isl_basic_map *dst,
+	__isl_keep isl_basic_map *src, unsigned div, unsigned n_shared)
+{
+	int i;
+	isl_size total;
+	isl_size n_div;
+
+	total = isl_basic_map_dim(dst, isl_dim_all);
+	n_div = isl_basic_map_dim(dst, isl_dim_div);
+	if (total < 0 || n_div < 0)
+		return isl_size_error;
+
+	for (i = 0; i < n_div; ++i) {
+		isl_bool ok;
+
+		ok = is_known_div_not_involving(dst, i,
+						n_shared, total - n_shared);
+		if (ok < 0)
+			return isl_size_error;
+		if (!ok)
+			continue;
+		if (isl_seq_eq(dst->div[i], src->div[div], 2 + n_shared))
+			return i;
+	}
+	return n_div;
+}
+
 /* Check if integer division "div" of "dom" also occurs in "bmap".
  * If so, return its position within the divs.
  * Otherwise, return a position beyond the integer divisions.
@@ -4358,16 +4391,14 @@ static isl_bool is_known_div_not_involving(__isl_keep isl_basic_map *bmap,
 static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 	__isl_keep isl_basic_set *dom, unsigned div)
 {
-	int i;
-	isl_size b_v_div, d_v_div;
+	isl_size d_v_div;
 	isl_size n_div, d_n_div;
 	isl_bool ok;
 
-	b_v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	d_v_div = isl_basic_set_var_offset(dom, isl_dim_div);
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
 	d_n_div = isl_basic_set_dim(dom, isl_dim_div);
-	if (b_v_div < 0 || d_v_div < 0 || n_div < 0 || d_n_div < 0)
+	if (d_v_div < 0 || n_div < 0 || d_n_div < 0)
 		return isl_size_error;
 
 	ok = is_known_div_not_involving(bset_to_bmap(dom), div,
@@ -4377,19 +4408,7 @@ static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 	if (!ok)
 		return n_div;
 
-	for (i = 0; i < n_div; ++i) {
-		isl_bool ok;
-
-		ok = is_known_div_not_involving(bmap, i,
-					d_v_div, (b_v_div - d_v_div) + n_div);
-		if (ok < 0)
-			return isl_size_error;
-		if (!ok)
-			continue;
-		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_v_div))
-			return i;
-	}
-	return n_div;
+	return find_div_involving_only(bmap, bset_to_bmap(dom), div, d_v_div);
 }
 
 /* The correspondence between the variables in the main tableau,
