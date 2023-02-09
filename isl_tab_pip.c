@@ -4455,10 +4455,8 @@ static struct isl_sol *basic_map_partial_lexopt_base_sol(
 	struct isl_sol *sol = NULL;
 	struct isl_context *context;
 
-	if (dom->n_div) {
-		dom = isl_basic_set_sort_divs(dom);
-		bmap = align_context_divs(bmap, dom);
-	}
+	dom = isl_basic_set_sort_divs(dom);
+	bmap = align_context_divs(bmap, dom);
 	sol = init(bmap, dom, !!empty, max);
 	if (!sol)
 		goto error;
