@@ -15278,6 +15278,148 @@ error:
 	return res;
 }
 
+/* Construct an isl_aff from the given domain local space "ls" and
+ * coefficients "v", where the local space may involve
+ * local variables without a known expression, as long as these
+ * do not have a non-zero coefficient in "v".
+ * These need to be pruned away first since an isl_aff cannot
+ * reference any local variables without a known expression.
+ * For simplicity, remove all local variables that have a zero coefficient and
+ * that are not used in other local variables with a non-zero coefficient.
+ */
+static __isl_give isl_aff *isl_aff_alloc_vec_prune(
+	__isl_take isl_local_space *ls, __isl_take isl_vec *v)
+{
+	int i;
+	isl_size n_div, v_div;
+
+	n_div = isl_local_space_dim(ls, isl_dim_div);
+	v_div = isl_local_space_var_offset(ls, isl_dim_div);
+	if (n_div < 0 || v_div < 0 || !v)
+		goto error;
+	for (i = n_div - 1; i >= 0; --i) {
+		isl_bool involves;
+
+		if (!isl_int_is_zero(v->el[1 + 1 + v_div + i]))
+			continue;
+		involves = isl_local_space_involves_dims(ls, isl_dim_div, i, 1);
+		if (involves < 0)
+			goto error;
+		if (involves)
+			continue;
+		ls = isl_local_space_drop_dims(ls, isl_dim_div, i, 1);
+		v = isl_vec_drop_els(v, 1 + 1 + v_div + i, 1);
+		if (!v)
+			goto error;
+	}
+
+	return isl_aff_alloc_vec(ls, v);
+error:
+	isl_local_space_free(ls);
+	isl_vec_free(v);
+	return NULL;
+}
+
+/* Look for a pair of constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some integer division expression
+ * in the parameters and input dimensions and
+ * return this expression if found.
+ *
+ * In particular, looks for a pair of constraints
+ *
+ *	e(...) + c1 - m x >= 0		i.e.,		m x <= e(...) + c1
+ *
+ * and
+ *
+ *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
+ *
+ * where m > 1 and e only depends on parameters and input dimensions,
+ * and such that
+ *
+ *	c1 + c2 < m			i.e.,		-c2 >= c1 - (m - 1)
+ *
+ * If such a pair of constraints can be found
+ * then
+ *
+ *	x = floor((e(...) + c1) / m)
+ *
+ * with e(...) an expression that does not involve any other output dimensions.
+ *
+ * Note that we know that
+ *
+ *	c1 + c2 >= 1
+ *
+ * If c1 + c2 were 0, then we would have detected an equality during
+ * simplification.  If c1 + c2 were negative, then we would have detected
+ * a contradiction.
+ *
+ * The constraint defining the integer division is guaranteed not to involve
+ * any local variables without a known expression, but such local variables
+ * may appear in other constraints.  They therefore need to be removed
+ * during the construction of the affine expression.
+ */
+static __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	isl_size i;
+	isl_size n_ineq;
+	isl_maybe_isl_aff res = { isl_bool_false, NULL };
+	isl_local_space *ls;
+	isl_aff *aff;
+	isl_vec *v;
+	isl_bool is_set;
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	if (n_ineq < 0)
+		goto error;
+
+	i = isl_basic_map_find_output_upper_div_constraint(bmap, pos);
+	if (i < 0)
+		goto error;
+	if (i >= n_ineq)
+		return res;
+
+	is_set = isl_basic_map_is_set(bmap);
+	if (is_set < 0)
+		bmap = isl_basic_map_free(bmap);
+
+	ls = isl_basic_map_get_local_space(bmap);
+	if (!is_set)
+		ls = isl_local_space_wrap(ls);
+	v = isl_basic_map_inequality_extract_output_upper_bound(bmap, i, pos);
+
+	aff = isl_aff_alloc_vec_prune(ls, v);
+	aff = isl_aff_floor(aff);
+
+	if (is_set)
+		aff = isl_aff_project_domain_on_params(aff);
+	else
+		aff = isl_aff_domain_factor_domain(aff);
+
+	res.valid = isl_bool_true;
+	res.value = aff;
+	return res;
+error:
+	res.valid = isl_bool_error;
+	return res;
+}
+
+/* Look for a combination of constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some integer division or
+ * modulo expression in the parameters and input dimensions and
+ * return this expression if found.
+ */
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div_mod(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	isl_maybe_isl_aff div;
+
+	div = isl_basic_map_try_find_output_div(bmap, pos);
+	if (div.valid < 0 || div.valid)
+		return div;
+	return isl_basic_map_try_find_output_mod(bmap, pos);
+}
+
 /* Return a copy of the equality constraints of "bset" as a matrix.
  */
 __isl_give isl_mat *isl_basic_set_extract_equalities(

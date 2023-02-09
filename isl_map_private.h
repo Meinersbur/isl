@@ -603,6 +603,8 @@ isl_size isl_basic_map_find_output_upper_div_constraint(
 	__isl_keep isl_basic_map *bmap, int pos);
 __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod(
 	__isl_keep isl_basic_map *bmap, int pos);
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div_mod(
+	__isl_keep isl_basic_map *bmap, int pos);
 
 __isl_give isl_mat *isl_basic_set_extract_equalities(
 	__isl_keep isl_basic_set *bset);
