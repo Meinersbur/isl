@@ -5254,11 +5254,11 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_plug_in(
 	isl_pw_multi_aff *pma;
 	isl_bool is_set;
 
-	is_set = isl_map_is_set(map);
+	is_set = isl_space_is_params(isl_aff_peek_domain_space(aff));
 	if (is_set < 0)
 		goto error;
 
-	n_in = is_set ? 0 : isl_map_dim(map, isl_dim_in);
+	n_in = is_set ? 0 : isl_aff_dim(aff, isl_dim_in);
 	if (n_in < 0)
 		goto error;
 
@@ -5267,7 +5267,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_plug_in(
 	} else {
 		isl_space *space;
 
-		space = isl_space_domain(isl_map_get_space(map));
+		space = isl_aff_get_domain_space(aff);
 		ma = isl_multi_aff_identity(isl_space_map_from_set(space));
 		ma = isl_multi_aff_range_product(ma,
 						isl_multi_aff_from_aff(aff));
