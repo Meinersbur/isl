@@ -15420,6 +15420,34 @@ __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div_mod(
 	return isl_basic_map_try_find_output_mod(bmap, pos);
 }
 
+/* Look for a combination of constraints in "bmap" that ensure
+ * that any output dimension is equal to some integer division or
+ * modulo expression in the parameters and input dimensions and
+ * return this expression if found.
+ * The position of the output dimension (if any) is returned in "pos".
+ */
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_any_output_div_mod(
+	__isl_keep isl_basic_map *bmap, int *pos)
+{
+	isl_size dim;
+	isl_maybe_isl_aff res = { isl_bool_false, NULL };
+
+	dim = isl_basic_map_dim(bmap, isl_dim_out);
+	if (dim < 0)
+		goto error;
+
+	for (*pos = 0; *pos < dim; ++*pos) {
+		res = isl_basic_map_try_find_output_div_mod(bmap, *pos);
+		if (res.valid < 0 || res.valid)
+			return res;
+	}
+
+	return res;
+error:
+	res.valid = isl_bool_error;
+	return res;
+}
+
 /* Return a copy of the equality constraints of "bset" as a matrix.
  */
 __isl_give isl_mat *isl_basic_set_extract_equalities(

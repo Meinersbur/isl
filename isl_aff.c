@@ -5300,32 +5300,23 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div_mod(
 	__isl_take isl_map *map)
 {
 	int d;
-	isl_size dim;
 	isl_basic_map *hull;
+	isl_maybe_isl_aff sub;
 
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	hull = isl_basic_map_sort_constraints(hull);
-	dim = isl_map_dim(map, isl_dim_out);
-	if (dim < 0)
-		goto error;
 
-	dim = isl_map_dim(map, isl_dim_out);
-	for (d = 0; d < dim; ++d) {
-		isl_maybe_isl_aff sub;
+	sub = isl_basic_map_try_find_any_output_div_mod(hull, &d);
 
-		sub = isl_basic_map_try_find_output_div_mod(hull, d);
-		if (sub.valid < 0)
-			goto error;
-		if (!sub.valid)
-			continue;
-		isl_basic_map_free(hull);
-		return pw_multi_aff_from_map_plug_in(map, d, sub.value);
-	}
 	isl_basic_map_free(hull);
+
+	if (sub.valid < 0)
+		goto error;
+	if (sub.valid)
+		return pw_multi_aff_from_map_plug_in(map, d, sub.value);
 	return pw_multi_aff_from_map_base(map);
 error:
 	isl_map_free(map);
-	isl_basic_map_free(hull);
 	return NULL;
 }
 
