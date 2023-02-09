@@ -454,7 +454,7 @@ static void test_lexmin(isl::ctx ctx)
 	 * The lexicographic minimum of both should consist of a single cell.
 	 */
 	{ "{ [a=0:11] -> [b] : -1 + b <= 2*floor((a)/6) <= b }", true },
-	{ "{ [a=0:11] -> [b=0:3] : -1 + b <= 2*floor((a)/6) <= b }", false },
+	{ "{ [a=0:11] -> [b=0:3] : -1 + b <= 2*floor((a)/6) <= b }", true },
 	});
 }
 

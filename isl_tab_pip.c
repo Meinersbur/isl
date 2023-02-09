@@ -2,6 +2,7 @@
  * Copyright 2008-2009 Katholieke Universiteit Leuven
  * Copyright 2010      INRIA Saclay
  * Copyright 2016-2017 Sven Verdoolaege
+ * Copyright 2023      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -9,6 +10,7 @@
  * Computerwetenschappen, Celestijnenlaan 200A, B-3001 Leuven, Belgium
  * and INRIA Saclay - Ile-de-France, Parc Club Orsay Universite,
  * ZAC des vignes, 4 rue Jacques Monod, 91893 Orsay, France 
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <isl_ctx_private.h>
@@ -4411,6 +4413,71 @@ static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 	return find_div_involving_only(bmap, bset_to_bmap(dom), div, d_v_div);
 }
 
+/* Copy integer division "div" of "bmap", which is known to only involve
+ * the first "n_shared" variables, to "dom" at position "dom_div".
+ */
+static __isl_give isl_basic_set *copy_div(__isl_take isl_basic_set *dom,
+	__isl_keep isl_basic_map *bmap,
+	unsigned div, unsigned n_shared, unsigned dom_div)
+{
+	isl_vec *v;
+	isl_size total;
+
+	total = isl_basic_set_dim(dom, isl_dim_all);
+	if (total < 0)
+		return isl_basic_set_free(dom);
+
+	v = isl_vec_alloc(isl_basic_set_get_ctx(dom), 1 + 1 + total);
+	if (!v)
+		return isl_basic_set_free(dom);
+
+	isl_seq_cpy(v->el, bmap->div[div], 1 + 1 + n_shared);
+	isl_seq_clr(v->el + 1 + 1 + n_shared, total - n_shared);
+	dom = isl_basic_set_insert_div(dom, dom_div, v);
+	dom = isl_basic_set_add_div_constraints(dom, dom_div);
+	isl_vec_free(v);
+
+	return dom;
+}
+
+/* Copy the integer divisions of "bmap" that only involve variables in "dom" and
+ * that do not already appear in "dom" to "dom".
+ */
+static __isl_give isl_basic_set *copy_divs(__isl_take isl_basic_set *dom,
+	__isl_keep isl_basic_map *bmap)
+{
+	int i;
+	isl_size dom_n_div, bmap_n_div, total;
+	isl_size v_out;
+
+	dom_n_div = isl_basic_set_dim(dom, isl_dim_div);
+	bmap_n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	if (dom_n_div < 0 || bmap_n_div < 0 || total < 0 || v_out < 0)
+		return isl_basic_set_free(dom);
+
+	for (i = 0; i < bmap_n_div; ++i) {
+		isl_bool ok;
+		isl_size pos;
+
+		ok = is_known_div_not_involving(bmap, i, v_out, total - v_out);
+		if (ok < 0)
+			return isl_basic_set_free(dom);
+		if (!ok)
+			continue;
+		pos = find_div_involving_only(bset_to_bmap(dom),
+						bmap, i, v_out);
+		if (pos < 0)
+			return isl_basic_set_free(dom);
+		if (pos < dom_n_div)
+			continue;
+		dom = copy_div(dom, bmap, i, v_out, dom_n_div++);
+	}
+
+	return dom;
+}
+
 /* The correspondence between the variables in the main tableau,
  * the context tableau, and the input map and domain is as follows.
  * The first n_param and the last n_div variables of the main tableau
@@ -4485,6 +4552,10 @@ error:
  * may depend on the known integer divisions, while anything that
  * depends on any variable starting from the first unknown integer
  * division is ignored in sol_pma_add.
+ * First copy over any integer divisions from "bmap" that do not
+ * already appear in "dom".  This ensures that the tableau
+ * will not be split on the corresponding integer division constraints
+ * since they will be known to hold in "dom".
  */
 static struct isl_sol *basic_map_partial_lexopt_base_sol(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
@@ -4496,6 +4567,7 @@ static struct isl_sol *basic_map_partial_lexopt_base_sol(
 	struct isl_sol *sol = NULL;
 	struct isl_context *context;
 
+	dom = copy_divs(dom, bmap);
 	dom = isl_basic_set_sort_divs(dom);
 	bmap = align_context_divs(bmap, dom);
 	sol = init(bmap, dom, !!empty, max);
