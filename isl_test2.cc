@@ -353,6 +353,11 @@ static void test_intersect(isl::ctx ctx)
  */
 static void test_gist(isl::ctx ctx)
 {
+	C(arg<isl::set>(&isl::pw_aff::gist), {
+	{ "{ [x] -> [x] : x != 0 }", "{ [x] : x < -1 or x > 1 }",
+	  "{ [x] -> [x] : x != 0 }" },
+	});
+
 	C(&isl::pw_aff::gist_params, {
 	{ "[N] -> { D[x] -> [x] : N >= 0; D[x] -> [0] : N < 0 }",
 	  "[N] -> { : N >= 0 }",
