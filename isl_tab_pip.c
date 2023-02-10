@@ -5114,6 +5114,7 @@ static __isl_give isl_basic_set *extract_domain(__isl_keep isl_basic_map *bmap,
 #define TYPE	isl_map
 #undef SUFFIX
 #define SUFFIX
+#define isl_map_pullback_multi_aff isl_map_preimage_domain_multi_aff
 #include "isl_tab_lexopt_templ.c"
 
 /* Extract the subsequence of the sample value of "tab"
