@@ -355,7 +355,7 @@ static void test_gist(isl::ctx ctx)
 {
 	C(arg<isl::set>(&isl::pw_aff::gist), {
 	{ "{ [x] -> [x] : x != 0 }", "{ [x] : x < -1 or x > 1 }",
-	  "{ [x] -> [x] : x != 0 }" },
+	  "{ [x] -> [x] }" },
 	});
 
 	C(&isl::pw_aff::gist_params, {
