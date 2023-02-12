@@ -47,7 +47,11 @@
 #endif
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/CommandLine.h>
+#ifdef HAVE_TARGETPARSER_HOST_H
+#include <llvm/TargetParser/Host.h>
+#else
 #include <llvm/Support/Host.h>
+#endif
 #include <llvm/Support/ManagedStatic.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/ASTConsumer.h>
