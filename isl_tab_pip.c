@@ -4335,6 +4335,22 @@ error:
 	sol->error = 1;
 }
 
+/* Is the local variable "div" of "bmap" an integer division
+ * with a known expression that does not involve the "n" variables
+ * starting at "first"?
+ */
+static isl_bool is_known_div_not_involving(__isl_keep isl_basic_map *bmap,
+	unsigned div, unsigned first, unsigned n)
+{
+	isl_bool unknown, involves;
+
+	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
+	if (unknown < 0 || unknown)
+		return isl_bool_not(unknown);
+	involves = isl_basic_map_div_expr_involves_vars(bmap, div, first, n);
+	return isl_bool_not(involves);
+}
+
 /* Check if integer division "div" of "dom" also occurs in "bmap".
  * If so, return its position within the divs.
  * Otherwise, return a position beyond the integer divisions.
@@ -4360,18 +4376,13 @@ static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 		return n_div;
 
 	for (i = 0; i < n_div; ++i) {
-		isl_bool unknown, involves;
+		isl_bool ok;
 
-		unknown = isl_basic_map_div_is_marked_unknown(bmap, i);
-		if (unknown < 0)
-			return isl_size_error;
-		if (unknown)
-			continue;
-		involves = isl_basic_map_div_expr_involves_vars(bmap, i,
+		ok = is_known_div_not_involving(bmap, i,
 					d_v_div, (b_v_div - d_v_div) + n_div);
-		if (involves < 0)
+		if (ok < 0)
 			return isl_size_error;
-		if (involves)
+		if (!ok)
 			continue;
 		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_v_div))
 			return i;
