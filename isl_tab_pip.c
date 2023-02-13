@@ -4361,6 +4361,7 @@ static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 	int i;
 	isl_size b_v_div, d_v_div;
 	isl_size n_div, d_n_div;
+	isl_bool ok;
 
 	b_v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	d_v_div = isl_basic_set_var_offset(dom, isl_dim_div);
@@ -4369,10 +4370,11 @@ static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 	if (b_v_div < 0 || d_v_div < 0 || n_div < 0 || d_n_div < 0)
 		return isl_size_error;
 
-	if (isl_int_is_zero(dom->div[div][0]))
-		return n_div;
-	if (isl_seq_first_non_zero(dom->div[div] + 2 + d_v_div,
-				    d_n_div) != -1)
+	ok = is_known_div_not_involving(bset_to_bmap(dom), div,
+					d_v_div, d_n_div);
+	if (ok < 0)
+		return isl_size_error;
+	if (!ok)
 		return n_div;
 
 	for (i = 0; i < n_div; ++i) {
