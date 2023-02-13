@@ -4360,15 +4360,18 @@ static isl_size find_context_div(__isl_keep isl_basic_map *bmap,
 		return n_div;
 
 	for (i = 0; i < n_div; ++i) {
-		isl_bool unknown;
+		isl_bool unknown, involves;
 
 		unknown = isl_basic_map_div_is_marked_unknown(bmap, i);
 		if (unknown < 0)
 			return isl_size_error;
 		if (unknown)
 			continue;
-		if (isl_seq_first_non_zero(bmap->div[i] + 2 + d_v_div,
-					   (b_v_div - d_v_div) + n_div) != -1)
+		involves = isl_basic_map_div_expr_involves_vars(bmap, i,
+					d_v_div, (b_v_div - d_v_div) + n_div);
+		if (involves < 0)
+			return isl_size_error;
+		if (involves)
 			continue;
 		if (isl_seq_eq(bmap->div[i], dom->div[div], 2 + d_v_div))
 			return i;
