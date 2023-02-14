@@ -435,6 +435,29 @@ static void test_intersect(isl::ctx ctx)
 	});
 }
 
+/* Is the expression for the lexicographic minimum of "obj"
+ * defined over a single cell?
+ */
+template <typename T>
+static bool lexmin_has_single_cell(const T &obj)
+{
+	return has_single_cell(obj.lexmin_pw_multi_aff());
+}
+
+/* Perform some basic lexicographic minimization tests.
+ */
+static void test_lexmin(isl::ctx ctx)
+{
+	C(&lexmin_has_single_cell<isl::map>, {
+	/* The following two inputs represent the same binary relation,
+	 * the second with extra redundant constraints.
+	 * The lexicographic minimum of both should consist of a single cell.
+	 */
+	{ "{ [a=0:11] -> [b] : -1 + b <= 2*floor((a)/6) <= b }", true },
+	{ "{ [a=0:11] -> [b=0:3] : -1 + b <= 2*floor((a)/6) <= b }", false },
+	});
+}
+
 /* Perform some basic gist tests.
  */
 static void test_gist(isl::ctx ctx)
@@ -692,6 +715,7 @@ static std::vector<std::pair<const char *, void (*)(isl::ctx)>> tests =
 	{ "preimage", &test_preimage },
 	{ "fixed power", &test_fixed_power },
 	{ "intersect", &test_intersect },
+	{ "lexmin", &test_lexmin },
 	{ "gist", &test_gist },
 	{ "project out parameters", &test_project },
 	{ "reverse", &test_reverse },
