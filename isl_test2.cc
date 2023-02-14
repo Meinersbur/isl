@@ -248,15 +248,21 @@ static void test_space(isl::ctx ctx)
 	});
 }
 
+/* Is "fn" an expression defined over a single cell?
+ */
+static bool has_single_cell(const isl::pw_multi_aff &fn)
+{
+	const auto &domain = fn.domain();
+	return fn.gist(domain).isa_multi_aff();
+}
+
 /* Does the conversion of "obj" to an isl_pw_multi_aff
  * result in an expression defined over a single cell?
  */
 template <typename T>
 static bool has_single_cell_pma(const T &obj)
 {
-	const auto &fn = obj.as_pw_multi_aff();
-	const auto &domain = fn.domain();
-	return fn.gist(domain).isa_multi_aff();
+	return has_single_cell(obj.as_pw_multi_aff());
 }
 
 /* Perform some basic conversion tests.
