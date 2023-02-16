@@ -159,6 +159,7 @@ libisl_la_SOURCES = \
 	isl_map_to_basic_set.c \
 	isl_mat.c \
 	isl_mat_private.h \
+	isl_maybe_aff.h \
 	isl_morph.c \
 	isl_morph.h \
 	isl_id.c \

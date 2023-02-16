@@ -34,6 +34,7 @@
 #include <isl/set.h>
 #include <isl_val_private.h>
 #include <isl_point_private.h>
+#include <isl_maybe_aff.h>
 #include <isl_config.h>
 
 #undef EL_BASE
@@ -5328,30 +5329,64 @@ error:
 	return NULL;
 }
 
-/* Return the integer division expression for the output dimension at "d"
- * taking into account that the output dimension at position "d"
- * can be represented as
+/* Look for a pair of constraints in "hull" that ensure
+ * that output dimension "d" is equal to some integer division expression
+ * in the parameters and input dimensions and
+ * return this expression if found.
+ *
+ * In particular, looks for a pair of constraints
+ *
+ *	e(...) + c1 - m x >= 0		i.e.,		m x <= e(...) + c1
+ *
+ * and
+ *
+ *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
+ *
+ * where m > 1 and e only depends on parameters and input dimensions,
+ * and such that
+ *
+ *	c1 + c2 < m			i.e.,		-c2 >= c1 - (m - 1)
+ *
+ * If such a pair of constraints can be found
+ * then
  *
  *	x = floor((e(...) + c1) / m)
  *
- * given that constraint "i" is of the form
- *
- *	e(...) + c1 - m x >= 0
- *
  * with e(...) an expression that does not involve any other output dimensions.
  *
- * The constraint "i" is guaranteed by the caller not to involve
+ * Note that we know that
+ *
+ *	c1 + c2 >= 1
+ *
+ * If c1 + c2 were 0, then we would have detected an equality during
+ * simplification.  If c1 + c2 were negative, then we would have detected
+ * a contradiction.
+ *
+ * The constraint defining the integer division is guaranteed not to involve
  * any local variables without a known expression, but such local variables
  * may appear in other constraints.  They therefore need to be removed
  * during the construction of the affine expression.
  */
-static __isl_give isl_aff *isl_basic_map_extract_output_div(
-	__isl_keep isl_basic_map *hull, int d, int i)
+static __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_div(
+	__isl_keep isl_basic_map *hull, int d)
 {
+	isl_size i;
+	isl_size n_ineq;
+	isl_maybe_isl_aff res = { isl_bool_false, NULL };
 	isl_local_space *ls;
 	isl_aff *aff;
 	isl_vec *v;
 	isl_bool is_set;
+
+	n_ineq = isl_basic_map_n_inequality(hull);
+	if (n_ineq < 0)
+		goto error;
+
+	i = isl_basic_map_find_output_upper_div_constraint(hull, d);
+	if (i < 0)
+		goto error;
+	if (i >= n_ineq)
+		return res;
 
 	is_set = isl_basic_map_is_set(hull);
 	if (is_set < 0)
@@ -5370,7 +5405,12 @@ static __isl_give isl_aff *isl_basic_map_extract_output_div(
 	else
 		aff = isl_aff_domain_factor_domain(aff);
 
-	return aff;
+	res.valid = isl_bool_true;
+	res.value = aff;
+	return res;
+error:
+	res.valid = isl_bool_error;
+	return res;
 }
 
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
@@ -5381,62 +5421,31 @@ static __isl_give isl_aff *isl_basic_map_extract_output_div(
  *
  * Sort the constraints first to make it easier to find such pairs
  * of constraints.
- *
- * In particular, if we can find two constraints
- *
- *	e(...) + c1 - m x >= 0		i.e.,		m x <= e(...) + c1
- *
- * and
- *
- *	-e(...) + c2 + m x >= 0		i.e.,		m x >= e(...) - c2
- *
- * where m > 1 and e only depends on parameters and input dimensions,
- * and such that
- *
- *	c1 + c2 < m			i.e.,		-c2 >= c1 - (m - 1)
- *
- * then we know that we can take
- *
- *	x = floor((e(...) + c1) / m)
- *
- * without having to perform any computation.
- *
- * Note that we know that
- *
- *	c1 + c2 >= 1
- *
- * If c1 + c2 were 0, then we would have detected an equality during
- * simplification.  If c1 + c2 were negative, then we would have detected
- * a contradiction.
  */
 static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 	__isl_take isl_map *map)
 {
 	int d;
 	isl_size dim;
-	isl_size i;
-	isl_size n_ineq;
 	isl_basic_map *hull;
 
 	hull = isl_map_unshifted_simple_hull(isl_map_copy(map));
 	hull = isl_basic_map_sort_constraints(hull);
 	dim = isl_map_dim(map, isl_dim_out);
-	n_ineq = isl_basic_map_n_inequality(hull);
-	if (dim < 0 || n_ineq < 0)
+	if (dim < 0)
 		goto error;
 
 	dim = isl_map_dim(map, isl_dim_out);
 	for (d = 0; d < dim; ++d) {
-		isl_aff *sub;
+		isl_maybe_isl_aff sub;
 
-		i = isl_basic_map_find_output_upper_div_constraint(hull, d);
-		if (i < 0)
+		sub = isl_basic_map_try_find_output_div(hull, d);
+		if (sub.valid < 0)
 			goto error;
-		if (i >= n_ineq)
+		if (!sub.valid)
 			continue;
-		sub = isl_basic_map_extract_output_div(hull, d, i);
 		isl_basic_map_free(hull);
-		return pw_multi_aff_from_map_plug_in(map, d, sub);
+		return pw_multi_aff_from_map_plug_in(map, d, sub.value);
 	}
 	isl_basic_map_free(hull);
 	return pw_multi_aff_from_map_base(map);
