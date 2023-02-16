@@ -3659,6 +3659,32 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	return qp;
 }
 
+/* Given a quasi-polynomial on a domain (A -> B),
+ * interchange A and B in the wrapped domain
+ * to obtain a quasi-polynomial on the domain (B -> A).
+ */
+__isl_give isl_qpolynomial *isl_qpolynomial_domain_reverse(
+	__isl_take isl_qpolynomial *qp)
+{
+	isl_space *space;
+	isl_size n_in, n_out, offset;
+
+	space = isl_qpolynomial_peek_domain_space(qp);
+	offset = isl_space_offset(space, isl_dim_set);
+	n_in = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_in);
+	n_out = isl_space_wrapped_dim(space, isl_dim_set, isl_dim_out);
+	if (offset < 0 || n_in < 0 || n_out < 0)
+		return isl_qpolynomial_free(qp);
+
+	qp = local_poly_move_dims(qp, offset, offset + n_in, n_out);
+
+	space = isl_qpolynomial_take_domain_space(qp);
+	space = isl_space_wrapped_reverse(space);
+	qp = isl_qpolynomial_restore_domain_space(qp, space);
+
+	return qp;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_from_affine(
 	__isl_take isl_space *space, isl_int *f, isl_int denom)
 {

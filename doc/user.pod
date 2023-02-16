@@ -5462,6 +5462,11 @@ earlier dimensions before those that involve later dimensions.
 	__isl_give isl_union_map *isl_union_map_range_reverse(
 		__isl_take isl_union_map *umap);
 
+	#include <isl/polynomial.h>
+	__isl_give isl_qpolynomial *
+	isl_qpolynomial_domain_reverse(
+		__isl_take isl_qpolynomial *qp);
+
 The function C<isl_space_range_reverse> reverses the relation
 that is embedded in the range of the input map space.
 The identifier of the range, if any, is only preserved
