@@ -3278,6 +3278,7 @@ static __isl_give isl_qpolynomial *isl_qpolynomial_zero_in_space(
 #define BASE pw_qpolynomial
 
 #include <isl_union_single.c>
+#include <isl_union_domain_reverse_templ.c>
 #include <isl_union_eval.c>
 #include <isl_union_neg.c>
 #include <isl_union_sub_templ.c>

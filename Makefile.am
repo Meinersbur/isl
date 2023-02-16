@@ -655,6 +655,7 @@ EXTRA_DIST = \
 	isl_union_templ.c \
 	isl_union_single.c \
 	isl_union_multi.c \
+	isl_union_domain_reverse_templ.c \
 	isl_union_eval.c \
 	isl_union_locals_templ.c \
 	isl_union_map_lex_templ.c \

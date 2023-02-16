@@ -8223,6 +8223,7 @@ static isl_stat test_union_pw_op(isl_ctx *ctx, const char *a, const char *b,
 int test_union_pw(isl_ctx *ctx)
 {
 	int equal;
+	isl_stat r;
 	const char *str;
 	isl_union_set *uset;
 	isl_union_pw_qpolynomial *upwqp1, *upwqp2;
@@ -8259,6 +8260,16 @@ int test_union_pw(isl_ctx *ctx)
 	a = "{ A[x] -> 1 }";
 	b = "{ A[x] -> 1 }";
 	if (test_union_pw_op(ctx, a, b, &isl_union_pw_qpolynomial_sub, str) < 0)
+		return -1;
+
+	str = "{ [A[x] -> B[y,z]] -> x^2 + y * floor(x/4) * floor(z/2); "
+		"C[z] -> z^3 }";
+	upwqp1 = isl_union_pw_qpolynomial_read_from_str(ctx, str);
+	upwqp1 = isl_union_pw_qpolynomial_domain_reverse(upwqp1);
+	str = "{ [B[y,z] -> A[x]] -> x^2 + y * floor(x/4) * floor(z/2) }";
+	r = union_pw_qpolynomial_check_plain_equal(upwqp1, str);
+	isl_union_pw_qpolynomial_free(upwqp1);
+	if (r < 0)
 		return -1;
 
 	return 0;

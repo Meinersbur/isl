@@ -630,6 +630,8 @@ int isl_union_pw_qpolynomial_find_dim_by_name(
 	__isl_keep isl_union_pw_qpolynomial *upwqp,
 	enum isl_dim_type type, const char *name);
 
+__isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_domain_reverse(
+	__isl_take isl_union_pw_qpolynomial *upwqp);
 __isl_give isl_union_pw_qpolynomial *isl_union_pw_qpolynomial_drop_dims(
 	__isl_take isl_union_pw_qpolynomial *upwqp,
 	enum isl_dim_type type, unsigned first, unsigned n);
