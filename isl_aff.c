@@ -5328,7 +5328,7 @@ error:
 	return NULL;
 }
 
-/* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map,
+/* Return the integer division expression for the output dimension at "d"
  * taking into account that the output dimension at position "d"
  * can be represented as
  *
@@ -5340,32 +5340,20 @@ error:
  *
  * with e(...) an expression that does not involve any other output dimensions.
  *
- *
- * Let "map" be of the form
- *
- *	A -> B
- *
- * Create an expression
- *
- *	A -> x = floor(...)
- *
- * and continue with output dimension "d" equated to this expression,
- * plugging it back in afterwards.
- *
  * The constraint "i" is guaranteed by the caller not to involve
  * any local variables without a known expression, but such local variables
  * may appear in other constraints.  They therefore need to be removed
  * during the construction of the affine expression.
  */
-static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
-	__isl_take isl_map *map, __isl_take isl_basic_map *hull, int d, int i)
+static __isl_give isl_aff *isl_basic_map_extract_output_div(
+	__isl_keep isl_basic_map *hull, int d, int i)
 {
 	isl_local_space *ls;
 	isl_aff *aff;
 	isl_vec *v;
 	isl_bool is_set;
 
-	is_set = isl_map_is_set(map);
+	is_set = isl_basic_map_is_set(hull);
 	if (is_set < 0)
 		hull = isl_basic_map_free(hull);
 
@@ -5373,7 +5361,6 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	if (!is_set)
 		ls = isl_local_space_wrap(ls);
 	v = isl_basic_map_inequality_extract_output_upper_bound(hull, i, d);
-	isl_basic_map_free(hull);
 
 	aff = isl_aff_alloc_vec_prune(ls, v);
 	aff = isl_aff_floor(aff);
@@ -5383,7 +5370,7 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_div(
 	else
 		aff = isl_aff_domain_factor_domain(aff);
 
-	return pw_multi_aff_from_map_plug_in(map, d, aff);
+	return aff;
 }
 
 /* Try and create an isl_pw_multi_aff that is equivalent to the given isl_map.
@@ -5440,12 +5427,16 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_div(
 
 	dim = isl_map_dim(map, isl_dim_out);
 	for (d = 0; d < dim; ++d) {
+		isl_aff *sub;
+
 		i = isl_basic_map_find_output_upper_div_constraint(hull, d);
 		if (i < 0)
 			goto error;
 		if (i >= n_ineq)
 			continue;
-		return pw_multi_aff_from_map_div(map, hull, d, i);
+		sub = isl_basic_map_extract_output_div(hull, d, i);
+		isl_basic_map_free(hull);
+		return pw_multi_aff_from_map_plug_in(map, d, sub);
 	}
 	isl_basic_map_free(hull);
 	return pw_multi_aff_from_map_base(map);
