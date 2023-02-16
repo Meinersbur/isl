@@ -236,6 +236,8 @@ __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_scale_down_val(
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_pow(
 	__isl_take isl_pw_qpolynomial *pwqp, unsigned exponent);
 
+__isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_domain_reverse(
+	__isl_take isl_pw_qpolynomial *pwqp);
 __isl_give isl_pw_qpolynomial *isl_pw_qpolynomial_insert_dims(
 	__isl_take isl_pw_qpolynomial *pwqp, enum isl_dim_type type,
 	unsigned first, unsigned n);
