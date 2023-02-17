@@ -455,6 +455,30 @@ static void test_lexmin(isl::ctx ctx)
 	 */
 	{ "{ [a=0:11] -> [b] : -1 + b <= 2*floor((a)/6) <= b }", true },
 	{ "{ [a=0:11] -> [b=0:3] : -1 + b <= 2*floor((a)/6) <= b }", true },
+
+	{ "{ [a = 0:2, b = 0:1] -> [c = 0:9, d = (-a + b) mod 3] : "
+	    "10a + 5b - 3c <= 5d <= 12 + 10a + 5b - 3c }", false },
+	});
+
+	C(&isl::map::lexmin_pw_multi_aff, {
+	/* The following two inputs represent the same binary relation,
+	 * the second with some redundant constraints removed.
+	 * The lexicographic minimum of both should consist of a single cell.
+	 */
+	{ "{ [a=0:3] -> [b=a//2] : 0 <= b <= 1 }",
+	  "{ [a=0:3] -> [(a - floor((1 + a)/2))] }" },
+	{ "{ [a] -> [b=a//2] : 0 <= b <= 1 }",
+	  "{ [a=0:1] -> [(0)]; [a=2:3] -> [(1)] }" },
+
+	{ "{ [a = 0:2, b = 0:1] -> [c = 0:9, d = (-a + b) mod 3] : "
+	    "10a + 5b - 3c <= 5d <= 12 + 10a + 5b - 3c }",
+	  "{ [a = 0:2, b = 0:1] -> [(0), (2a + b)] : b <= 2 - 2a; "
+	    "[a = 0:2, b = 0:1] -> [(5), (-3 + 2a + b)] : 3 - 2a <= b }" },
+	});
+
+	C(&isl::set::lexmin_pw_multi_aff, {
+	{ "[a] -> { [b=a//2] : 0 <= b <= 1 }",
+	  "[a] -> { [(0)] : 0 <= a <= 1; [(1)] : 2 <= a <= 3 }" },
 	});
 }
 
