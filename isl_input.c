@@ -1718,10 +1718,14 @@ error:
  */
 static __isl_give isl_map *read_map_tuple(__isl_keep isl_stream *s,
 	__isl_take isl_map *map, enum isl_dim_type type, struct vars *v,
-	int rational, int comma)
+	int comma)
 {
+	isl_bool rational;
 	isl_multi_pw_aff *tuple;
 
+	rational = isl_map_is_rational(map);
+	if (rational < 0)
+		return isl_map_free(map);
 	tuple = read_tuple(s, v, rational, comma);
 	if (!tuple)
 		return isl_map_free(map);
@@ -1742,7 +1746,7 @@ static __isl_give isl_set *read_universe_params(__isl_keep isl_stream *s,
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			return isl_set_free(dom);
 	}
@@ -2831,7 +2835,7 @@ static struct isl_obj obj_read_body(__isl_keep isl_stream *s,
 	if (!next_is_tuple(s))
 		return obj_read_poly_or_fold(s, map, v, n);
 
-	map = read_map_tuple(s, map, isl_dim_in, v, rational, 0);
+	map = read_map_tuple(s, map, isl_dim_in, v, 0);
 	if (!map)
 		goto error;
 	tok = isl_stream_next_token(s);
@@ -2844,7 +2848,7 @@ static struct isl_obj obj_read_body(__isl_keep isl_stream *s,
 			isl_set *set = isl_map_domain(map);
 			return obj_read_poly_or_fold(s, set, v, n);
 		}
-		map = read_map_tuple(s, map, isl_dim_out, v, rational, 0);
+		map = read_map_tuple(s, map, isl_dim_out, v, 0);
 		if (!map)
 			goto error;
 	} else {
@@ -3096,7 +3100,7 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 	map = isl_map_universe(isl_space_params_alloc(s->ctx, 0));
 	if (tok->type == '[') {
 		isl_stream_push_token(s, tok);
-		map = read_map_tuple(s, map, isl_dim_param, v, 0, 0);
+		map = read_map_tuple(s, map, isl_dim_param, v, 0);
 		if (!map)
 			goto error;
 		tok = isl_stream_next_token(s);
@@ -3124,7 +3128,7 @@ static struct isl_obj obj_read(__isl_keep isl_stream *s)
 		isl_token_free(tok);
 		if (isl_stream_eat(s, '='))
 			goto error;
-		map = read_map_tuple(s, map, isl_dim_param, v, 0, 1);
+		map = read_map_tuple(s, map, isl_dim_param, v, 1);
 		if (!map)
 			goto error;
 	} else
@@ -3613,7 +3617,7 @@ static __isl_give isl_set *read_aff_domain(__isl_keep isl_stream *s,
 	tok = isl_stream_next_token(s);
 	if (tok && (tok->type == ISL_TOKEN_IDENT || tok->is_keyword)) {
 		isl_stream_push_token(s, tok);
-		return read_map_tuple(s, dom, isl_dim_set, v, 0, 0);
+		return read_map_tuple(s, dom, isl_dim_set, v, 0);
 	}
 	if (!tok || tok->type != '[') {
 		isl_stream_error(s, tok, "expecting '['");
@@ -3625,7 +3629,7 @@ static __isl_give isl_set *read_aff_domain(__isl_keep isl_stream *s,
 		isl_stream_push_token(s, tok2);
 	if (is_empty || next_is_tuple(s) || next_is_fresh_ident(s, v)) {
 		isl_stream_push_token(s, tok);
-		dom = read_map_tuple(s, dom, isl_dim_set, v, 0, 0);
+		dom = read_map_tuple(s, dom, isl_dim_set, v, 0);
 	} else
 		isl_stream_push_token(s, tok);
 
@@ -3704,7 +3708,7 @@ __isl_give isl_pw_aff *isl_stream_read_pw_aff(__isl_keep isl_stream *s)
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -3893,7 +3897,7 @@ __isl_give isl_union_pw_multi_aff *isl_stream_read_union_pw_multi_aff(
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -4158,7 +4162,7 @@ __isl_give isl_multi_pw_aff *isl_stream_read_multi_pw_aff(
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -4266,7 +4270,7 @@ __isl_give isl_union_pw_aff *isl_stream_read_union_pw_aff(
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -4535,7 +4539,7 @@ static __isl_give isl_multi_union_pw_aff *read_multi_union_pw_aff_core(
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_param_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}

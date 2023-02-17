@@ -147,6 +147,11 @@ static void test_space(isl::ctx ctx)
  */
 static void test_conversion(isl::ctx ctx)
 {
+	C(&isl::set::as_pw_multi_aff, {
+	{ "[N=0:] -> { [] }",
+	  "[N=0:] -> { [] }" },
+	});
+
 	C(&isl::multi_pw_aff::as_set, {
 	{ "[n] -> { [] : n >= 0 } ",
 	  "[n] -> { [] : n >= 0 } " },
