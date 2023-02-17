@@ -5262,15 +5262,14 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_plug_in(
 	if (n_in < 0)
 		goto error;
 
-	if (is_set) {
-		ma = isl_multi_aff_from_aff(aff);
-	} else {
+	ma = isl_multi_aff_from_aff(aff);
+	if (!is_set) {
 		isl_space *space;
+		isl_multi_aff *id;
 
 		space = isl_aff_get_domain_space(aff);
-		ma = isl_multi_aff_identity(isl_space_map_from_set(space));
-		ma = isl_multi_aff_range_product(ma,
-						isl_multi_aff_from_aff(aff));
+		id = isl_multi_aff_identity(isl_space_map_from_set(space));
+		ma = isl_multi_aff_range_product(id, ma);
 	}
 
 	insert = isl_map_from_multi_aff_internal(isl_multi_aff_copy(ma));
