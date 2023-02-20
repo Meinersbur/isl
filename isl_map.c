@@ -14114,10 +14114,13 @@ static __isl_give isl_map *isl_map_preimage_pw_multi_aff_aligned(
 		goto error;
 
 	if (pma->n == 0) {
+		isl_space *space;
+
+		space = isl_pw_multi_aff_get_domain_space(pma);
 		isl_pw_multi_aff_free(pma);
-		res = isl_map_empty(isl_map_get_space(map));
+		space = isl_space_set(isl_map_get_space(map), type, space);
 		isl_map_free(map);
-		return res;
+		return isl_map_empty(space);
 	}
 
 	res = isl_map_preimage_multi_aff(isl_map_copy(map), type,

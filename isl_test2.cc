@@ -256,6 +256,12 @@ static void test_preimage(isl::ctx ctx)
 	  "{ A[i,j] : j = [(i)/6] and exists a : i = 3 a }" },
 	});
 
+	C(arg<isl::pw_multi_aff>(&isl::set::preimage), {
+	{ "{ B[i,j] : 0 <= i < 10 and 0 <= j < 100 }",
+	  "{ A[j,i] -> B[i,j] : false }",
+	  "{ A[j,i] : false }" },
+	});
+
 	C(arg<isl::multi_aff>(&isl::union_map::preimage_domain), {
 	{ "{ B[i,j] -> C[2i + 3j] : 0 <= i < 10 and 0 <= j < 100 }",
 	  "{ A[j,i] -> B[i,j] }",
