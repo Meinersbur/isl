@@ -3570,6 +3570,41 @@ static int *reordering_move(isl_ctx *ctx,
 	return reordering;
 }
 
+/* Move the "n" variables starting at "src_pos" of "local" to "dst_pos".
+ * Only modify the polynomial expression and the local variables of "qp".
+ * The caller is responsible for modifying the space accordingly.
+ */
+static __isl_give isl_qpolynomial *local_poly_move_dims(
+	__isl_take isl_qpolynomial *qp,
+	unsigned dst_pos, unsigned src_pos, unsigned n)
+{
+	isl_ctx *ctx;
+	isl_size total;
+	int *reordering;
+	isl_local *local;
+	isl_poly *poly;
+
+	local = isl_qpolynomial_take_local(qp);
+	local = isl_local_move_vars(local, dst_pos, src_pos, n);
+	qp = isl_qpolynomial_restore_local(qp, local);
+	qp = sort_divs(qp);
+
+	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
+	if (total < 0)
+		return isl_qpolynomial_free(qp);
+	ctx = isl_qpolynomial_get_ctx(qp);
+	reordering = reordering_move(ctx, total, dst_pos, src_pos, n);
+	if (!reordering)
+		return isl_qpolynomial_free(qp);
+
+	poly = isl_qpolynomial_take_poly(qp);
+	poly = reorder(poly, reordering);
+	qp = isl_qpolynomial_restore_poly(qp, poly);
+	free(reordering);
+
+	return qp;
+}
+
 __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	__isl_take isl_qpolynomial *qp,
 	enum isl_dim_type dst_type, unsigned dst_pos,
@@ -3578,12 +3613,8 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	isl_ctx *ctx;
 	unsigned g_dst_pos;
 	unsigned g_src_pos;
-	isl_size total;
 	isl_size src_off, dst_off;
-	int *reordering;
 	isl_space *space;
-	isl_local *local;
-	isl_poly *poly;
 
 	if (!qp)
 		return NULL;
@@ -3618,22 +3649,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_move_dims(
 	if (dst_type > src_type)
 		g_dst_pos -= n;
 
-	local = isl_qpolynomial_take_local(qp);
-	local = isl_local_move_vars(local, g_dst_pos, g_src_pos, n);
-	qp = isl_qpolynomial_restore_local(qp, local);
-	qp = sort_divs(qp);
-
-	total = isl_qpolynomial_domain_dim(qp, isl_dim_all);
-	if (total < 0)
-		return isl_qpolynomial_free(qp);
-	reordering = reordering_move(ctx, total, g_dst_pos, g_src_pos, n);
-	if (!reordering)
-		return isl_qpolynomial_free(qp);
-
-	poly = isl_qpolynomial_take_poly(qp);
-	poly = reorder(poly, reordering);
-	qp = isl_qpolynomial_restore_poly(qp, poly);
-	free(reordering);
+	qp = local_poly_move_dims(qp, g_dst_pos, g_src_pos, n);
 
 	space = isl_qpolynomial_take_domain_space(qp);
 	space = isl_space_move_dims(space, dst_type, dst_pos,
