@@ -3691,7 +3691,7 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 {
 	isl_space *space;
 	isl_local_space *ls;
-	isl_qpolynomial *poly;
+	isl_qpolynomial *polynomial;
 
 	if (!qp || !bset)
 		return isl_stat_error;
@@ -3701,12 +3701,12 @@ isl_stat isl_qpolynomial_as_polynomial_on_domain(__isl_keep isl_qpolynomial *qp,
 
 	space = isl_space_copy(qp->dim);
 	space = isl_space_add_dims(space, isl_dim_set, qp->div->n_row);
-	poly = isl_qpolynomial_alloc(space, 0, isl_poly_copy(qp->poly));
+	polynomial = isl_qpolynomial_alloc(space, 0, isl_poly_copy(qp->poly));
 	bset = isl_basic_set_copy(bset);
 	ls = isl_qpolynomial_get_domain_local_space(qp);
 	bset = isl_local_space_lift_basic_set(ls, bset);
 
-	return fn(bset, poly, user);
+	return fn(bset, polynomial, user);
 }
 
 /* Return total degree in variables first (inclusive) up to last (exclusive).
