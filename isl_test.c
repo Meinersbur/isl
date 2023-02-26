@@ -4036,6 +4036,8 @@ static struct {
 	{ 1, isl_fold_max, "{ [0:10] -> 1 }", "{ max(1) }" },
 	{ 1, isl_fold_max, "{ [[m] -> [0:m]] -> m^2 }",
 	  "{ [m] -> max(m^2) : m >= 0 }" },
+	{ 1, isl_fold_max, "{ [[a=0:1] -> [b=0:1]] -> (floor((a + b)/2)) }",
+	  "{ [a=0:1] -> max(a) }" },
 };
 
 /* Check that the bound computation can handle differences
