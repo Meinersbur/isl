@@ -171,8 +171,10 @@ error:
 }
 
 /* Update bound->pwf and bound->pwf_tight with a bound
- * of type bound->type on the polynomial "poly" over the domain "bset",
- * by calling "unwrapped" on unwrapped versions of "bset and "poly".
+ * of type bound->type on the (quasi-)polynomial "qp" over the domain "bset",
+ * by calling "unwrapped" on unwrapped versions of "bset and "qp".
+ * If "qp" is a polynomial, then "unwrapped" will also be called
+ * on a polynomial.
  *
  * If the original problem did not have a wrapped relation in the domain,
  * then call "unwrapped" directly.
@@ -185,16 +187,16 @@ error:
  * add the results to bound->pwf and bound->pwf_tight.
  *
  * Note that even though "bset" is known to live in the same space
- * as the domain of "poly", the names of the set dimensions
+ * as the domain of "qp", the names of the set dimensions
  * may be different (or missing).  Make sure the naming is exactly
  * the same before turning these dimensions into parameters
  * to ensure that the spaces are still the same after
  * this operation.
  */
 static isl_stat unwrap(__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly,
+	__isl_take isl_qpolynomial *qp,
 	isl_stat (*unwrapped)(__isl_take isl_basic_set *bset,
-		__isl_take isl_qpolynomial *poly, struct isl_bound *bound),
+		__isl_take isl_qpolynomial *qp, struct isl_bound *bound),
 	struct isl_bound *bound)
 {
 	isl_space *space;
@@ -205,19 +207,19 @@ static isl_stat unwrap(__isl_take isl_basic_set *bset,
 	isl_stat r;
 
 	if (!bound->wrapping)
-		return unwrapped(bset, poly, bound);
+		return unwrapped(bset, qp, bound);
 
 	nparam = isl_space_dim(bound->dim, isl_dim_param);
 	n_in = isl_space_dim(bound->dim, isl_dim_in);
 	if (nparam < 0 || n_in < 0)
 		goto error;
 
-	space = isl_qpolynomial_get_domain_space(poly);
+	space = isl_qpolynomial_get_domain_space(qp);
 	bset = isl_basic_set_reset_space(bset, space);
 
 	bset = isl_basic_set_move_dims(bset, isl_dim_param, nparam,
 					isl_dim_set, 0, n_in);
-	poly = isl_qpolynomial_move_dims(poly, isl_dim_param, nparam,
+	qp = isl_qpolynomial_move_dims(qp, isl_dim_param, nparam,
 					isl_dim_in, 0, n_in);
 
 	space = isl_basic_set_get_space(bset);
@@ -232,7 +234,7 @@ static isl_stat unwrap(__isl_take isl_basic_set *bset,
 						  bound->type);
 	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(space, bound->type);
 
-	r = unwrapped(bset, poly, bound);
+	r = unwrapped(bset, qp, bound);
 
 	bound->pwf = isl_pw_qpolynomial_fold_reset_space(bound->pwf,
 						    isl_space_copy(bound->dim));
@@ -245,7 +247,7 @@ static isl_stat unwrap(__isl_take isl_basic_set *bset,
 	return r;
 error:
 	isl_basic_set_free(bset);
-	isl_qpolynomial_free(poly);
+	isl_qpolynomial_free(qp);
 	return isl_stat_error;
 }
 
