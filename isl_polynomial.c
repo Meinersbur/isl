@@ -2220,6 +2220,14 @@ isl_bool isl_poly_is_affine(__isl_keep isl_poly *poly)
 	return isl_poly_is_affine(rec->p[0]);
 }
 
+/* Can "qp" be converted to an isl_aff?
+ * That is, does it represent a quasi-affine expression?
+ */
+isl_bool isl_qpolynomial_isa_aff(__isl_keep isl_qpolynomial *qp)
+{
+	return isl_poly_is_affine(isl_qpolynomial_peek_poly(qp));
+}
+
 isl_bool isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp)
 {
 	if (!qp)
@@ -2228,7 +2236,7 @@ isl_bool isl_qpolynomial_is_affine(__isl_keep isl_qpolynomial *qp)
 	if (qp->div->n_row > 0)
 		return isl_bool_false;
 
-	return isl_poly_is_affine(isl_qpolynomial_peek_poly(qp));
+	return isl_qpolynomial_isa_aff(qp);
 }
 
 static void update_coeff(__isl_keep isl_vec *aff,
@@ -5402,7 +5410,7 @@ __isl_give isl_aff *isl_qpolynomial_as_aff(__isl_take isl_qpolynomial *qp)
 	isl_aff *aff;
 	isl_bool is_affine;
 
-	is_affine = isl_poly_is_affine(isl_qpolynomial_peek_poly(qp));
+	is_affine = isl_qpolynomial_isa_aff(qp);
 	if (is_affine < 0)
 		goto error;
 	if (!is_affine)

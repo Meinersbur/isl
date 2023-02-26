@@ -3053,6 +3053,8 @@ A quasi-polynomial that can also be represented as a quasi-affine expression
 can be converted using the function below.
 
 	#include <isl/polynomial.h>
+	isl_bool isl_qpolynomial_isa_aff(
+		__isl_keep isl_qpolynomial *qp);
 	__isl_give isl_aff *isl_qpolynomial_as_aff(
 		__isl_take isl_qpolynomial *qp);
 
