@@ -116,9 +116,8 @@ error:
 }
 
 static isl_stat unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, void *user)
+	__isl_take isl_qpolynomial *poly, struct isl_bound *bound)
 {
-	struct isl_bound *bound = (struct isl_bound *)user;
 	isl_pw_qpolynomial_fold *top_pwf;
 	isl_pw_qpolynomial_fold *top_pwf_tight;
 	isl_space *space;
@@ -201,7 +200,7 @@ static isl_stat guarded_poly_bound(__isl_take isl_basic_set *bset,
 	isl_stat r;
 
 	if (!bound->wrapping)
-		return unwrapped_guarded_poly_bound(bset, poly, user);
+		return unwrapped_guarded_poly_bound(bset, poly, bound);
 
 	nparam = isl_space_dim(bound->dim, isl_dim_param);
 	n_in = isl_space_dim(bound->dim, isl_dim_in);
@@ -228,7 +227,7 @@ static isl_stat guarded_poly_bound(__isl_take isl_basic_set *bset,
 						  bound->type);
 	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(space, bound->type);
 
-	r = unwrapped_guarded_poly_bound(bset, poly, user);
+	r = unwrapped_guarded_poly_bound(bset, poly, bound);
 
 	bound->pwf = isl_pw_qpolynomial_fold_reset_space(bound->pwf,
 						    isl_space_copy(bound->dim));
