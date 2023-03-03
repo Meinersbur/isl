@@ -8005,8 +8005,8 @@ isl_union_pw_multi_aff_apply_union_pw_multi_aff(
 	return isl_union_pw_multi_aff_pullback_union_pw_multi_aff(upma2, upma1);
 }
 
-#undef TYPE
-#define TYPE isl_pw_multi_aff
+#undef BASE
+#define BASE pw_multi_aff
 static
 #include "isl_copy_tuple_id_templ.c"
 

@@ -8439,8 +8439,8 @@ error:
 	return NULL;
 }
 
-#undef TYPE
-#define TYPE isl_map
+#undef BASE
+#define BASE map
 static
 #include "isl_copy_tuple_id_templ.c"
 
@@ -8619,11 +8619,20 @@ __isl_give isl_set *isl_set_intersect_factor_range(__isl_take isl_set *set,
 						set_to_map(range), &control));
 }
 
+#undef BASE
+#define BASE set
+static
+#include "isl_copy_tuple_id_templ.c"
+
 /* Given a map "map" in a space [A -> B] -> C and a set "domain"
  * in the space A, return the intersection.
  *
  * The set "domain" is extended to a set living in the space [A -> B] and
  * the domain of "map" is intersected with this set.
+ *
+ * If "map" has an identifier on the domain tuple,
+ * then this identifier needs to be set on this product
+ * before the intersection is computed.
  */
 __isl_give isl_map *isl_map_intersect_domain_wrapped_domain(
 	__isl_take isl_map *map, __isl_take isl_set *domain)
@@ -8636,6 +8645,8 @@ __isl_give isl_map *isl_map_intersect_domain_wrapped_domain(
 	space = isl_space_domain_wrapped_range(space);
 	factor = isl_set_universe(space);
 	domain = isl_set_product(domain, factor);
+	space = isl_map_peek_space(map);
+	domain = isl_set_copy_tuple_id(domain, isl_dim_set, space, isl_dim_in);
 	return isl_map_intersect_domain(map, domain);
 }
 
@@ -8644,6 +8655,10 @@ __isl_give isl_map *isl_map_intersect_domain_wrapped_domain(
  *
  * The set "domain" is extended to a set living in the space [B -> C] and
  * the range of "map" is intersected with this set.
+ *
+ * If "map" has an identifier on the range tuple,
+ * then this identifier needs to be set on this product
+ * before the intersection is computed.
  */
 __isl_give isl_map *isl_map_intersect_range_wrapped_domain(
 	__isl_take isl_map *map, __isl_take isl_set *domain)
@@ -8656,6 +8671,8 @@ __isl_give isl_map *isl_map_intersect_range_wrapped_domain(
 	space = isl_space_range_wrapped_range(space);
 	factor = isl_set_universe(space);
 	domain = isl_set_product(domain, factor);
+	space = isl_map_peek_space(map);
+	domain = isl_set_copy_tuple_id(domain, isl_dim_set, space, isl_dim_out);
 	return isl_map_intersect_range(map, domain);
 }
 
