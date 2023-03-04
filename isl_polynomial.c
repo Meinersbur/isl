@@ -3572,7 +3572,7 @@ static int *reordering_move(isl_ctx *ctx,
 	return reordering;
 }
 
-/* Move the "n" variables starting at "src_pos" of "local" to "dst_pos".
+/* Move the "n" variables starting at "src_pos" of "qp" to "dst_pos".
  * Only modify the polynomial expression and the local variables of "qp".
  * The caller is responsible for modifying the space accordingly.
  */
