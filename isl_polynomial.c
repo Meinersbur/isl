@@ -467,7 +467,7 @@ error:
 }
 
 __isl_give isl_qpolynomial *isl_qpolynomial_reset_domain_space(
-	__isl_keep isl_qpolynomial *qp, __isl_take isl_space *space)
+	__isl_take isl_qpolynomial *qp, __isl_take isl_space *space)
 {
 	return isl_qpolynomial_restore_domain_space(qp, space);
 }
