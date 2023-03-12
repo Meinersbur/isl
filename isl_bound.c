@@ -83,9 +83,8 @@ static isl_stat add_constant_poly(__isl_take isl_basic_set *bset,
  * it can be added to "bound" directly.
  */
 static isl_stat compressed_guarded_poly_bound(__isl_take isl_basic_set *bset,
-	__isl_take isl_qpolynomial *poly, void *user)
+	__isl_take isl_qpolynomial *poly, struct isl_bound *bound)
 {
-	struct isl_bound *bound = (struct isl_bound *)user;
 	isl_ctx *ctx;
 	int bounded;
 	int degree;
@@ -132,7 +131,7 @@ static isl_stat unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 		goto error;
 
 	if (bset->n_eq == 0)
-		return compressed_guarded_poly_bound(bset, poly, user);
+		return compressed_guarded_poly_bound(bset, poly, bound);
 
 	morph = isl_basic_set_full_compression(bset);
 
@@ -151,7 +150,7 @@ static isl_stat unwrapped_guarded_poly_bound(__isl_take isl_basic_set *bset,
 						  bound->type);
 	bound->pwf_tight = isl_pw_qpolynomial_fold_zero(space, bound->type);
 
-	r = compressed_guarded_poly_bound(bset, poly, user);
+	r = compressed_guarded_poly_bound(bset, poly, bound);
 
 	morph = isl_morph_dom_params(morph);
 	morph = isl_morph_ran_params(morph);
