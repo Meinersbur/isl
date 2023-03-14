@@ -915,11 +915,13 @@ member_methods {
 };
 
 /* Signatures for constructors of multi-expressions
- * from a space and a list.
+ * from a space and a list, with a special case for multi-union-expressions.
  */
 static Signature from_list_set = { { Domain }, { { Domain }, { Anonymous } } };
 static Signature from_list_map =
 	{ { Domain, Range }, { { Domain, Range }, { Domain, Anonymous } } };
+static Signature from_list_map_union =
+	{ { Domain, Range }, { { Range }, { Domain, Anonymous } } };
 
 /* Signatures for methods of types containing a given substring
  * that override the default signatures, where larger substrings
@@ -928,6 +930,15 @@ static Signature from_list_map =
  * In particular, "gist" is usually a regular binary operation,
  * but for any type derived from "aff", the argument refers
  * to the domain of the function.
+ *
+ * When constructing a multi-expression from a space and a list,
+ * the kind of the space is usually the same as that of
+ * the constructed multi-expression.  However, if the constructed object
+ * is a multi-union-expression, then the space is the fixed range space
+ * of the multi-union-expression, so it always has a single tuple.
+ * This happens in particular for constructing objects
+ * of type "multi_union_pw_aff".
+ * See also the "space" method below.
  *
  * The "size" method can usually simply be inherited from
  * the corresponding plain C++ type, but for a "fixed_box",
@@ -947,6 +958,9 @@ static Signature from_list_map =
 static const infix_map_map special_member_methods {
 	{ "gist",
 	  { { "aff",		{ bin_set_params, bin_map_domain } } }
+	},
+	{ "multi_union_pw_aff",
+	  { { "space",		{ from_list_set, from_list_map_union } } }
 	},
 	{ "size",
 	  { { "fixed_box",	range_op } },
