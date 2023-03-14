@@ -914,6 +914,13 @@ member_methods {
 	{ "zero_on_domain",	{ anonymous_map_from_domain } },
 };
 
+/* Signatures for constructors of multi-expressions
+ * from a space and a list.
+ */
+static Signature from_list_set = { { Domain }, { { Domain }, { Anonymous } } };
+static Signature from_list_map =
+	{ { Domain, Range }, { { Domain, Range }, { Domain, Anonymous } } };
+
 /* Signatures for methods of types containing a given substring
  * that override the default signatures, where larger substrings
  * appear first.
@@ -1883,13 +1890,6 @@ void template_cpp_generator::class_printer::print_static_method(
 {
 	print_special_method(method, static_methods);
 }
-
-/* Signatures for constructors of multi-expressions
- * from a space and a list.
- */
-static Signature from_list_set = { { Domain }, { { Domain }, { Anonymous } } };
-static Signature from_list_map =
-	{ { Domain, Range }, { { Domain, Range }, { Domain, Anonymous } } };
 
 /* Signatures for constructors from a string.
  */
