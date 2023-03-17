@@ -238,17 +238,15 @@ error:
  * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
  * should be computed over the domain of "bmap".  "empty" is also NULL
  * in this case.
+ * All information in "dom" (if any) is assumed to be available in "bmap"
+ * as well.
  * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
  * then we compute the rational optimum.  Otherwise, we compute
  * the integral optimum.
  *
  * We perform some preprocessing.
- *
- * First intersect the domain of "bmap" with "dom" (if any)
- * to make all information available to "bmap".
- *
  * As the PILP solver does not
- * handle implicit equalities very well, we also make sure all
+ * handle implicit equalities very well, we first make sure all
  * the equalities are explicitly available.
  *
  * We also remove redundant constraints.  This is only needed because of the
@@ -256,7 +254,7 @@ error:
  * for symmetries on the constraints, before we set up the main tableau.
  * It is then no good to look for symmetries on possibly redundant constraints.
  */
-__isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
+static __isl_give TYPE *SF(basic_map_partial_lexopt_intersected,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, unsigned flags)
 {
@@ -265,10 +263,7 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	if (empty)
 		*empty = NULL;
 
-	if (!ISL_FL_ISSET(flags, ISL_OPT_FULL))
-		bmap = isl_basic_map_intersect_domain(bmap,
-						    isl_basic_set_copy(dom));
-	else
+	if (ISL_FL_ISSET(flags, ISL_OPT_FULL))
 		dom = extract_domain(bmap, flags);
 
 	max = ISL_FL_ISSET(flags, ISL_OPT_MAX);
@@ -280,4 +275,31 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	bmap = isl_basic_map_remove_redundancies(bmap);
 
 	return SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty, max);
+}
+
+/* Compute the lexicographic minimum (or maximum if "flags" includes
+ * ISL_OPT_MAX) of "bmap" over the domain "dom" and return the result as
+ * either a map or a piecewise multi-affine expression depending on TYPE.
+ * If "empty" is not NULL, then *empty is assigned a set that
+ * contains those parts of the domain where there is no solution.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and the optimum
+ * should be computed over the domain of "bmap".  "empty" is also NULL
+ * in this case.
+ * If "bmap" is marked as rational (ISL_BASIC_MAP_RATIONAL),
+ * then we compute the rational optimum.  Otherwise, we compute
+ * the integral optimum.
+ *
+ * Intersect the domain of "bmap" with "dom" (if any)
+ * to make all information available to "bmap" and
+ * continue with further processing.
+ */
+__isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, unsigned flags)
+{
+	if (!ISL_FL_ISSET(flags, ISL_OPT_FULL))
+		bmap = isl_basic_map_intersect_domain(bmap,
+						    isl_basic_set_copy(dom));
+	return SF(basic_map_partial_lexopt_intersected,SUFFIX)(bmap, dom,
+								empty, flags);
 }
