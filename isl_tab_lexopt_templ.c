@@ -259,7 +259,6 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	__isl_give isl_set **empty, unsigned flags)
 {
 	int max, full;
-	isl_bool compatible;
 
 	if (empty)
 		*empty = NULL;
@@ -267,12 +266,6 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	full = ISL_FL_ISSET(flags, ISL_OPT_FULL);
 	if (full)
 		dom = extract_domain(bmap, flags);
-	compatible = isl_basic_map_compatible_domain(bmap, dom);
-	if (compatible < 0)
-		goto error;
-	if (!compatible)
-		isl_die(isl_basic_map_get_ctx(bmap), isl_error_invalid,
-			"domain does not match input", goto error);
 
 	max = ISL_FL_ISSET(flags, ISL_OPT_MAX);
 	if (isl_basic_set_dim(dom, isl_dim_all) == 0)
@@ -286,8 +279,4 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	bmap = isl_basic_map_remove_redundancies(bmap);
 
 	return SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty, max);
-error:
-	isl_basic_set_free(dom);
-	isl_basic_map_free(bmap);
-	return NULL;
 }
