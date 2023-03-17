@@ -242,29 +242,33 @@ error:
  * then we compute the rational optimum.  Otherwise, we compute
  * the integral optimum.
  *
- * We perform some preprocessing.  As the PILP solver does not
- * handle implicit equalities very well, we first make sure all
+ * We perform some preprocessing.
+ *
+ * First intersect the domain of "bmap" with "dom" (if any)
+ * to make all information available to "bmap".
+ *
+ * As the PILP solver does not
+ * handle implicit equalities very well, we also make sure all
  * the equalities are explicitly available.
  *
- * We also add context constraints to the basic map and remove
- * redundant constraints.  This is only needed because of the
+ * We also remove redundant constraints.  This is only needed because of the
  * way we handle simple symmetries.  In particular, we currently look
  * for symmetries on the constraints, before we set up the main tableau.
  * It is then no good to look for symmetries on possibly redundant constraints.
- * If the domain was extracted from the basic map, then there is
- * no need to add back those constraints again.
  */
 __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, unsigned flags)
 {
-	int max, full;
+	int max;
 
 	if (empty)
 		*empty = NULL;
 
-	full = ISL_FL_ISSET(flags, ISL_OPT_FULL);
-	if (full)
+	if (!ISL_FL_ISSET(flags, ISL_OPT_FULL))
+		bmap = isl_basic_map_intersect_domain(bmap,
+						    isl_basic_set_copy(dom));
+	else
 		dom = extract_domain(bmap, flags);
 
 	max = ISL_FL_ISSET(flags, ISL_OPT_MAX);
@@ -272,9 +276,6 @@ __isl_give TYPE *SF(isl_tab_basic_map_partial_lexopt,SUFFIX)(
 		return SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty,
 							    max);
 
-	if (!full)
-		bmap = isl_basic_map_intersect_domain(bmap,
-						    isl_basic_set_copy(dom));
 	bmap = isl_basic_map_detect_equalities(bmap);
 	bmap = isl_basic_map_remove_redundancies(bmap);
 
