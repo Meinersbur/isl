@@ -3,6 +3,7 @@
  * Copyright 2012-2013 Ecole Normale Superieure
  * Copyright 2014-2015 INRIA Rocquencourt
  * Copyright 2016      Sven Verdoolaege
+ * Copyright 2023      Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -11,6 +12,7 @@
  * and Ecole Normale Superieure, 45 rue d’Ulm, 75230 Paris, France
  * and Inria Paris - Rocquencourt, Domaine de Voluceau - Rocquencourt,
  * B.P. 105 - 78153 Le Chesnay, France
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <isl_ctx_private.h>
@@ -970,6 +972,77 @@ out:
 	return bmap;
 }
 
+/* Is the local variable at position "div" of "bmap"
+ * an integral integer division?
+ */
+static isl_bool is_known_integral_div(__isl_keep isl_basic_map *bmap, int div)
+{
+	isl_bool unknown;
+
+	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
+	if (unknown < 0 || unknown)
+		return isl_bool_not(unknown);
+	return isl_basic_map_div_is_integral(bmap, div);
+}
+
+/* Eliminate local variable "div" from "bmap", given
+ * that it represents an integer division with denominator 1.
+ *
+ * Construct an equality constraint that equates the local variable
+ * to the argument of the integer division and use that to eliminate
+ * the local variable.
+ */
+static __isl_give isl_basic_map *eliminate_integral_div(
+	__isl_take isl_basic_map *bmap, int div)
+{
+	isl_size total, v_div;
+	isl_vec *v;
+
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	total = isl_basic_map_dim(bmap, isl_dim_all);
+	if (v_div < 0 || total < 0)
+		return isl_basic_map_free(bmap);
+	v = isl_vec_alloc(isl_basic_map_get_ctx(bmap), 1 + total);
+	if (!v)
+		return isl_basic_map_free(bmap);
+	isl_seq_cpy(v->el, bmap->div[div] + 1, 1 + total);
+	isl_int_set_si(v->el[1 + v_div + div], -1);
+	bmap = eliminate_div(bmap, v->el, div, 1, 0);
+	isl_vec_free(v);
+
+	return bmap;
+}
+
+/* Eliminate all integer divisions with denominator 1.
+ */
+static __isl_give isl_basic_map *eliminate_integral_divs(
+	__isl_take isl_basic_map *bmap, int *progress)
+{
+	int i;
+	isl_size n_div;
+
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_div < 0)
+		return isl_basic_map_free(bmap);
+
+	for (i = 0; i < n_div; ++i) {
+		isl_bool eliminate;
+
+		eliminate = is_known_integral_div(bmap, i);
+		if (eliminate < 0)
+			return isl_basic_map_free(bmap);
+		if (!eliminate)
+			continue;
+
+		bmap = eliminate_integral_div(bmap, i);
+		mark_progress(progress);
+		i--;
+		n_div--;
+	}
+
+	return bmap;
+}
+
 static int n_pure_div_eq(__isl_keep isl_basic_map *bmap)
 {
 	int i, j;
@@ -1484,10 +1557,8 @@ static __isl_give isl_basic_map *eliminate_unit_div(
  * results in any changes.
  *
  * We skip integral divs, i.e., those with denominator 1, as we would
- * risk eliminating the div from the div constraints.  We do not need
- * to handle those divs here anyway since the div constraints will turn
- * out to form an equality and this equality can then be used to eliminate
- * the div from all constraints.
+ * risk eliminating the div from the div constraints.
+ * They are eliminated in eliminate_integral_divs instead.
  */
 static __isl_give isl_basic_map *eliminate_selected_unit_divs(
 	__isl_take isl_basic_map *bmap,
@@ -1610,6 +1681,7 @@ __isl_give isl_basic_map *isl_basic_map_simplify(__isl_take isl_basic_map *bmap)
 		bmap = eliminate_unit_divs(bmap, &progress);
 		bmap = eliminate_divs_eq(bmap, &progress);
 		bmap = eliminate_divs_ineq(bmap, &progress);
+		bmap = eliminate_integral_divs(bmap, &progress);
 		bmap = isl_basic_map_gauss(bmap, &progress);
 		/* requires equalities in normal form */
 		bmap = normalize_divs(bmap, &progress);
