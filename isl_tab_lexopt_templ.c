@@ -139,9 +139,16 @@ error:
 	return NULL;
 }
 
+static __isl_give TYPE *SF(basic_map_partial_lexopt_intersected,SUFFIX)(
+	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
+	__isl_give isl_set **empty, unsigned flags);
+
 /* Given that the output dimension of "bmap" at position "d" is equal to "aff",
  * exploit this information to reduce the effective dimensionality of "bmap" and
- * then call basic_map_partial_lexopt recursively.
+ * then call basic_map_partial_lexopt_intersected recursively.
+ * "flags" is simply passed along to the recursive call.
+ * If "flags" includes ISL_OPT_FULL, then "dom" is NULL and
+ * then also a NULL domain is passed to the recursive call.
  *
  * In particular, introduce a dimension in the context "dom" (and the domain
  * of "bmap") that is equal to "aff" and equate output dimension "d"
@@ -152,7 +159,8 @@ error:
  */
 static __isl_give TYPE *SF(basic_map_partial_lexopt_plugin,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
-	__isl_give isl_set **empty, int max, int d, __isl_take isl_aff *aff)
+	__isl_give isl_set **empty, unsigned flags, int d,
+	__isl_take isl_aff *aff)
 {
 	isl_size n_in;
 	isl_multi_aff *ma;
@@ -170,7 +178,8 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt_plugin,SUFFIX)(
 	dom = isl_basic_set_apply(dom, insert);
 	bmap = isl_basic_map_equate(bmap, isl_dim_in, n_in, isl_dim_out, d);
 
-	res = SF(basic_map_partial_lexopt,SUFFIX)(bmap, dom, empty, max);
+	res = SF(basic_map_partial_lexopt_intersected,SUFFIX)(bmap, dom, empty,
+								flags);
 	if (empty)
 		*empty = isl_set_preimage_multi_aff(*empty,
 						isl_multi_aff_copy(ma));
@@ -182,12 +191,7 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt_plugin,SUFFIX)(
 /* Recursive part of isl_tab_basic_map_partial_lexopt*, after detecting
  * equalities and removing redundant constraints.
  *
- * First check if some combination of constraints can be found that force
- * a given dimension to be equal to the floor or modulo
- * of some affine combination of the input dimensions.
- * If so, plug in this expression and continue.
- *
- * Otherwise, check if there are any parallel constraints (left).
+ * Check if there are any parallel constraints (left).
  * If not, we are in the base case.
  * If there are parallel constraints, we replace them by a single
  * constraint in basic_map_partial_lexopt_symm_pma and then call
@@ -197,18 +201,9 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, int max)
 {
-	int d;
 	isl_bool par = isl_bool_false;
 	int first, second;
 	isl_ctx *ctx;
-	isl_maybe_isl_aff div_mod;
-
-	div_mod = isl_basic_map_try_find_any_output_div_mod(bmap, &d);
-	if (div_mod.valid < 0)
-		goto error;
-	if (div_mod.valid)
-		return SF(basic_map_partial_lexopt_plugin,SUFFIX)(bmap, dom,
-						empty, max, d, div_mod.value);
 
 	if (!bmap)
 		goto error;
@@ -244,7 +239,12 @@ error:
  * then we compute the rational optimum.  Otherwise, we compute
  * the integral optimum.
  *
- * We perform some preprocessing.
+ * First check if some combination of constraints can be found that force
+ * a given dimension to be equal to the floor or modulo
+ * of some affine combination of the input dimensions.
+ * If so, plug in this expression and continue.
+ *
+ * Otherwise, perform some preprocessing.
  * As the PILP solver does not
  * handle implicit equalities very well, we first make sure all
  * the equalities are explicitly available.
@@ -258,7 +258,16 @@ static __isl_give TYPE *SF(basic_map_partial_lexopt_intersected,SUFFIX)(
 	__isl_take isl_basic_map *bmap, __isl_take isl_basic_set *dom,
 	__isl_give isl_set **empty, unsigned flags)
 {
+	int d;
 	int max;
+	isl_maybe_isl_aff div_mod;
+
+	div_mod = isl_basic_map_try_find_any_output_div_mod(bmap, &d);
+	if (div_mod.valid < 0)
+		bmap = isl_basic_map_free(bmap);
+	else if (div_mod.valid)
+		return SF(basic_map_partial_lexopt_plugin,SUFFIX)(bmap, dom,
+						empty, flags, d, div_mod.value);
 
 	if (empty)
 		*empty = NULL;
