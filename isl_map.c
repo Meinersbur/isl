@@ -3254,13 +3254,13 @@ static isl_bool detect_mod(__isl_keep isl_basic_map *bmap,
 	return isl_bool_true;
 }
 
-/* Given that inequality "ineq" of "bset" expresses a lower bound
- * on the variable at position "pos" in terms of the other variables,
- * extract this lower bound as a function of those other variables,
+/* Given an affine expression "aff" in the variables of "bset" that expresses
+ * a bound on the variable at position "pos" in terms of the other variables,
+ * extract this expression as a function of those other variables,
  * excluding any local variables.
  */
-static __isl_give isl_aff *extract_lower_bound_aff(
-	__isl_keep isl_basic_set *bset, int ineq, int pos)
+static __isl_give isl_aff *extract_aff(
+	__isl_keep isl_basic_set *bset, isl_int *aff, int pos)
 {
 	isl_size dim;
 	isl_ctx *ctx;
@@ -3274,8 +3274,21 @@ static __isl_give isl_aff *extract_lower_bound_aff(
 		return NULL;
 	ls = isl_local_space_from_space(isl_space_copy(space));
 	ctx = isl_basic_set_get_ctx(bset);
-	v = extract_bound_from_constraint(ctx, bset->ineq[ineq], dim, pos);
+	v = extract_bound_from_constraint(ctx, aff, dim, pos);
 	return isl_aff_alloc_vec(ls, v);
+}
+
+/* Given that inequality "ineq" of "bset" expresses a lower bound
+ * on the variable at position "pos" in terms of the other variables,
+ * extract this lower bound as a function of those other variables,
+ * excluding any local variables.
+ */
+static __isl_give isl_aff *extract_lower_bound_aff(
+	__isl_keep isl_basic_set *bset, int ineq, int pos)
+{
+	if (!bset)
+		return NULL;
+	return extract_aff(bset, bset->ineq[ineq], pos);
 }
 
 /* Given that there are two pairs of constraints
@@ -15138,20 +15151,9 @@ static __isl_give isl_aff *unwrap_plug_in(__isl_take isl_aff *aff, int is_set)
 static __isl_give isl_aff *extract_expr_aff(
 	__isl_keep isl_basic_set *bset, int eq, int pos)
 {
-	isl_size dim;
-	isl_ctx *ctx;
-	isl_vec *v;
-	isl_space *space;
-	isl_local_space *ls;
-
-	space = isl_basic_set_peek_space(bset);
-	dim = isl_space_dim(space, isl_dim_all);
-	if (dim < 0)
+	if (!bset)
 		return NULL;
-	ctx = isl_basic_set_get_ctx(bset);
-	v = extract_bound_from_constraint(ctx, bset->eq[eq], dim, pos);
-	ls = isl_local_space_from_space(isl_space_copy(space));
-	return isl_aff_alloc_vec(ls, v);
+	return extract_aff(bset, bset->eq[eq], pos);
 }
 
 /* Given the presence in "bmap" of an equality constraint "eq"
