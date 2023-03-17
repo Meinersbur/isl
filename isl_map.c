@@ -15156,6 +15156,23 @@ static __isl_give isl_aff *extract_expr_aff(
 	return extract_aff(bset, bset->eq[eq], pos);
 }
 
+/* Given an integer division "div" of the form
+ *
+ *	(f(x) + a i)//m
+ *
+ * with i the variable at position "pos" and f not involving
+ * any local variables, return the expression
+ *
+ *	-f(x)/a
+ */
+static __isl_give isl_aff *extract_div_expr_aff(
+	__isl_keep isl_basic_set *bset, int div, int pos)
+{
+	if (!bset)
+		return NULL;
+	return extract_aff(bset, bset->div[div] + 1, pos);
+}
+
 /* Given the presence in "bmap" of an equality constraint "eq"
  *
  *	f(x) + t m i + m n h(y) = 0
@@ -15212,7 +15229,8 @@ static __isl_give isl_aff *construct_mod(__isl_keep isl_basic_map *bmap,
 	return mod;
 }
 
-/* Look for a combination of constraints in "bmap" that ensure
+/* Look for a combination of constraints in "bmap" (including
+ * an equality constraint) that ensure
  * that output dimension "pos" is equal to some modulo expression
  * in the parameters and input dimensions and
  * return this expression if found.
@@ -15248,7 +15266,7 @@ static __isl_give isl_aff *construct_mod(__isl_keep isl_basic_map *bmap,
  *
  *	i = (-t f(x)/m - g(x)) mod n + g(x)
  */
-__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod(
+static __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod_eq(
 	__isl_keep isl_basic_map *bmap, int pos)
 {
 	int i, j;
@@ -15305,6 +15323,308 @@ __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod(
 error:
 	res.valid = isl_bool_error;
 	return res;
+}
+
+/* Given that the integer division "div" of "bmap" is of the form
+ *
+ *	(f(x) + t m i)//(m n)
+ *
+ * with t equal to 1 or -1 and n positive,
+ * while the inequality constraint "lower" is of the form
+ *
+ *	-g(x) + i >= 0
+ *
+ * with neither involving any local variables or output dimensions other than i,
+ * construct the expression
+ *
+ *	(t (n - 1) - t f(x)//m - g(x)) mod n + g(x)
+ *
+ * "pos" is the position of the variable i.
+ * "t" and "n" are the values t and n.
+ *
+ * The expression is first constructed in terms of the wrapped space of "bmap".
+ * Since this expression does not depend on the original output dimensions,
+ * these can be removed, resulting in an expression in terms
+ * of the input dimensions.
+ * If "bmap" is actually a set, then the resulting expression has no domain.
+ *
+ * First obtain the expressions
+ *
+ *	-t f(x)/m
+ *	g(x)
+ *
+ * multiply the first with -t, take the floor and multiply with -t again,
+ * to obtain
+ *
+ *	-t f(x)//m
+ *
+ * Add t (n - 1) and subtract g(x) to obtain
+ *
+ *	t (n - 1) - t f(x)//m - g(x)
+ *
+ * Finally, compute the modulo with respect to m and add g(x) back.
+ */
+static __isl_give isl_aff *construct_mod_ineq(__isl_keep isl_basic_map *bmap,
+	int pos, int div, int lower, int t, isl_int n)
+{
+	isl_ctx *ctx;
+	isl_basic_set *bset;
+	isl_aff *f, *g;
+	isl_val *v;
+	isl_bool is_set;
+
+	is_set = isl_basic_map_is_set(bmap);
+	if (is_set < 0)
+		return NULL;
+	ctx = isl_basic_map_get_ctx(bmap);
+
+	bset = wrap_for_plug_in(isl_basic_map_copy(bmap), is_set);
+	f = extract_div_expr_aff(bset, div, pos);
+	g = extract_lower_bound_aff(bset, lower, pos);
+	isl_basic_set_free(bset);
+
+	if (t > 0)
+		isl_aff_neg(f);
+	f = isl_aff_floor(f);
+	if (t > 0)
+		isl_aff_neg(f);
+
+	v = isl_val_int_from_isl_int(ctx, n);
+	v = isl_val_sub_ui(v, 1);
+	if (t < 0)
+		v = isl_val_neg(v);
+	f = isl_aff_add_constant_val(f, v);
+
+	f = isl_aff_sub(f, isl_aff_copy(g));
+	v = isl_val_int_from_isl_int(ctx, n);
+	f = isl_aff_mod_val(f, v);
+	f = isl_aff_add(f, g);
+
+	f = unwrap_plug_in(f, is_set);
+
+	return f;
+}
+
+/* Given that inequality constraint "ineq" of "bmap" is of the form
+ *
+ *	f(x) + t m i - m n e + c >= 0
+ *
+ * with integer division "e" of the form
+ *
+ *	e = (f(x) + t m i)//(m n)
+ *
+ * f(x) an expression in the parameters and input dimensions and
+ * t is +1 or -1,
+ * check whether c <= -(n - 1) m and then look for
+ * a pair of inequality constraints
+ *
+ *	-g(x) + i >= 0
+ *	 g(x) - i + d >= 0
+ *
+ * where g(x) is an expression in the parameters and input dimensions and
+ * d < n.
+ * If successful, return the expression
+ *
+ *	(t (n - 1) - t f(x)//m - g(x)) mod n + g(x)
+ *
+ * "v_out" is the position of the output dimensions among the variables.
+ * "pos" is the position of the output dimension i.
+ * "n_ineq" is the number of inequality constraints.
+ * "v_div" is the position of the local dimensions among the variables.
+ *
+ *
+ * First extract the constant value "n".
+ * If c' is the constant term of f(x), then the constant term
+ * of the inequality constraint is c' + c.
+ * Check that c' + c <= c' - (n - 1) m.
+ * If so, and if the pair of inequality constraints can be found,
+ * then extract the expression above.
+ */
+static __isl_give isl_maybe_isl_aff try_find_output_mod_ineq_at(
+	__isl_keep isl_basic_map *bmap, int v_out, int pos,
+	int ineq, int n_ineq, int v_div, int e)
+{
+	isl_int n, t;
+	isl_size lower;
+	isl_maybe_isl_aff res = { isl_bool_false, NULL };
+
+	isl_int_init(n);
+	isl_int_init(t);
+
+	isl_int_divexact(n, bmap->ineq[ineq][1 + v_div + e],
+				bmap->ineq[ineq][1 + v_out + pos]);
+	isl_int_abs(n, n);
+	isl_int_sub_ui(t, n, 1);
+	isl_int_mul(t, t, bmap->ineq[ineq][1 + v_out + pos]);
+	isl_int_abs(t, t);
+	isl_int_neg(t, t);
+	isl_int_add(t, t, bmap->div[e][1]);
+	if (isl_int_le(bmap->ineq[ineq][0], t)) {
+		lower = find_output_lower_mod_constraint(bmap, pos, n);
+		if (lower < n_ineq) {
+			int t;
+
+			t = isl_int_sgn(bmap->ineq[ineq][1 + v_out + pos]);
+			res.valid = isl_bool_true;
+			res.value = construct_mod_ineq(bmap, v_out + pos,
+							e, lower, t, n);
+		}
+	}
+
+	isl_int_clear(t);
+	isl_int_clear(n);
+
+	return res;
+}
+
+/* In the sequence of length "len" starting at "p",
+ * is the element at "pos" the only non-zero element?
+ */
+static int only_non_zero(isl_int *p, unsigned pos, unsigned len)
+{
+	if (isl_int_is_zero(p[pos]))
+		return 0;
+	return unique(p, pos, len);
+}
+
+/* Look for a combination of inequality constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some modulo expression
+ * in the parameters and input dimensions and
+ * return this expression if found.
+ *
+ * The constraints are assumed to have been sorted.
+ *
+ * In particular, look for an integer division of the form
+ *
+ *	e = (f(x) + t m i)//(m n)
+ *
+ * with a corresponding inequality constraint
+ *
+ *	f(x) + t m i - m n e + c >= 0					(*)
+ *
+ * and a pair of inequality constraints
+ *
+ *	-g(x) + i >= 0
+ *	 g(x) - i + d >= 0
+ *
+ * where f(x) and g(x) are expressions in the parameters and input dimensions,
+ * c <= -(n - 1) m
+ * t is +1 or -1, and
+ * d < n.
+ *
+ * Note that
+ *
+ *	e = (f(x) + t m i)//(m n) = (f(x)//m + t i)//n
+ *
+ * and so
+ *
+ *	f(x)//m + t i - (n - 1) <= n e <= f(x)//m + t i
+ *
+ * and in particular
+ *
+ *	f(x)//m <= - t i + n e + (n - 1)
+ *
+ * Constraint (*) implies
+ *
+ *	f(x) >= -t m i + m n e - c >= -t m i + m n e + (n - 1) m
+ *
+ * and so
+ *
+ *	f(x)//m >= - t i + n e + (n - 1)
+ *
+ * Together, this implies
+ *
+ *	f(x)//m = -t i + n e + (n - 1)
+ *	t i = n e + (n - 1) - f(x)//m
+ *	i = t n e + t (n - 1) - t f(x)//m
+ *	i - g(x) = t n e + t (n - 1) - t f(x)//m - g(x)
+ *
+ * and so, because 0 <= i - g(x) <= d < n,
+ *
+ *	i - g(x) = (t (n - 1) - t f(x)//m - g(x)) mod n
+ *
+ * That is,
+ *
+ *	i = (t (n - 1) - t f(x)//m - g(x)) mod n + g(x)
+ *
+ *
+ * First look for a suitable inequality constraint for (*),
+ * with the corresponding integer division.
+ * If any such combination is found, look for an appropriate g(x) and
+ * construct the corresponding expression in try_find_output_mod_ineq_at.
+ */
+static __isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod_ineq(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	int i;
+	isl_size n_ineq;
+	isl_size v_out, n_out;
+	isl_size v_div, n_div;
+	isl_maybe_isl_aff no = { isl_bool_false, NULL };
+	isl_maybe_isl_aff error = { isl_bool_error, NULL };
+
+	n_ineq = isl_basic_map_n_inequality(bmap);
+	v_out = isl_basic_map_var_offset(bmap, isl_dim_out);
+	n_out = isl_basic_map_dim(bmap, isl_dim_out);
+	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
+	n_div = isl_basic_map_dim(bmap, isl_dim_div);
+	if (n_ineq < 0 || v_out < 0 || n_out < 0 || v_div < 0 || n_div < 0)
+		return error;
+	if (n_div < 1 || n_ineq < 4)
+		return no;
+
+	for (i = 0; i < n_ineq; ++i) {
+		isl_bool unknown;
+		int e;
+
+		if (!only_non_zero(bmap->ineq[i] + 1 + v_out, pos, n_out))
+			continue;
+		e = isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_div, n_div);
+		if (e == -1)
+			continue;
+		unknown = isl_basic_map_div_is_marked_unknown(bmap, e);
+		if (unknown < 0)
+			return error;
+		if (unknown)
+			continue;
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + v_div, e))
+			continue;
+		if (isl_int_is_pos(bmap->ineq[i][1 + v_div + e]))
+			continue;
+		if (!isl_int_is_divisible_by(bmap->ineq[i][1 + v_div + e],
+					    bmap->ineq[i][1 + v_out + pos]))
+			continue;
+		if (!isl_int_abs_eq(bmap->ineq[i][1 + v_div + e],
+				bmap->div[e][0]))
+			continue;
+		if (!isl_seq_eq(bmap->ineq[i] + 1, bmap->div[e] + 2, v_div + e))
+			continue;
+		return try_find_output_mod_ineq_at(bmap, v_out, pos, i, n_ineq,
+							v_div, e);
+	}
+
+	return no;
+}
+
+/* Look for a combination of constraints in "bmap" that ensure
+ * that output dimension "pos" is equal to some modulo expression
+ * in the parameters and input dimensions and
+ * return this expression if found.
+ *
+ * The constraints are assumed to have been sorted.
+ *
+ * First look for a pattern involving an equality constraint and
+ * then look for a pattern involving only inequality constraints.
+ */
+__isl_give isl_maybe_isl_aff isl_basic_map_try_find_output_mod(
+	__isl_keep isl_basic_map *bmap, int pos)
+{
+	isl_maybe_isl_aff mod;
+
+	mod = isl_basic_map_try_find_output_mod_eq(bmap, pos);
+	if (mod.valid < 0 || mod.valid)
+		return mod;
+	return isl_basic_map_try_find_output_mod_ineq(bmap, pos);
 }
 
 /* Construct an isl_aff from the given domain local space "ls" and
