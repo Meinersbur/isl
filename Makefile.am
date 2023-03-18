@@ -30,11 +30,9 @@ if HAVE_CXX17
   noinst_PROGRAMS += isl_test_cpp17 isl_test_cpp17-checked
   TESTS += isl_test_cpp17 isl_test_cpp17-checked
 endif
-if HAVE_CLANG
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test_cpp-checked isl_test_cpp-checked-conversion
   TESTS += isl_test_cpp-checked isl_test_cpp-checked-conversion
-endif
 endif
 if HAVE_PYTHON
   TESTS += isl_test_python.py
