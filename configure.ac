@@ -116,9 +116,6 @@ fi
 
 AX_SUBMODULE(clang,system|no,no)
 AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
-AM_CONDITIONAL(HAVE_CPP_ISL_H,
-    [(test $with_clang = system -a "x$HAVE_CXX11" = "x1") || \
-     test -f $srcdir/include/isl/cpp.h])
 
 AX_SET_WARNING_FLAGS
 

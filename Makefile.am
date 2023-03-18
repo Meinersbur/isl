@@ -21,8 +21,7 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_flow isl_flow_cmp isl_schedule_cmp
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
-if HAVE_CPP_ISL_H
-  CPP_H = $(srcdir)/include/isl/cpp.h $(srcdir)/include/isl/typed_cpp.h
+CPP_H = $(srcdir)/include/isl/cpp.h $(srcdir)/include/isl/typed_cpp.h
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test2 isl_test_cpp
   TESTS += isl_test2 isl_test_cpp isl_test_cpp_failed.sh
@@ -30,7 +29,6 @@ endif
 if HAVE_CXX17
   noinst_PROGRAMS += isl_test_cpp17 isl_test_cpp17-checked
   TESTS += isl_test_cpp17 isl_test_cpp17-checked
-endif
 endif
 if HAVE_CLANG
 if HAVE_CXX11
