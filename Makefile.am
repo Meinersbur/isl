@@ -22,7 +22,7 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
 if HAVE_CPP_ISL_H
-  CPP_H = include/isl/cpp.h include/isl/typed_cpp.h
+  CPP_H = $(srcdir)/include/isl/cpp.h $(srcdir)/include/isl/typed_cpp.h
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test2 isl_test_cpp
   TESTS += isl_test2 isl_test_cpp isl_test_cpp_failed.sh
@@ -242,7 +242,7 @@ isl_test_LDADD = libisl.la @MP_LIBS@
 
 isl_test2_SOURCES = \
 	isl_test2.cc \
-	include/isl/cpp.h
+	$(srcdir)/include/isl/cpp.h
 isl_test2_LDFLAGS = @MP_LDFLAGS@
 isl_test2_LDADD = libisl.la @MP_LIBS@
 
@@ -321,7 +321,7 @@ isl_closure_SOURCES = \
 isl_test_cpp_CPPFLAGS = $(AM_CPPFLAGS) -UCOMPILE_ERROR
 isl_test_cpp_SOURCES = \
 	isl_test_cpp.cc \
-	include/isl/cpp.h
+	$(srcdir)/include/isl/cpp.h
 isl_test_cpp_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_LDADD = libisl.la @MP_LIBS@
 
@@ -333,31 +333,31 @@ EXTRA_PROGRAMS = isl_test_cpp_failed
 isl_test_cpp_failed_CPPFLAGS = $(AM_CPPFLAGS) -DCOMPILE_ERROR
 isl_test_cpp_failed_SOURCES = \
 	isl_test_cpp.cc \
-	include/isl/cpp.h
+	$(srcdir)/include/isl/cpp.h
 isl_test_cpp_failed_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_failed_LDADD = libisl.la @MP_LIBS@
 
 isl_test_cpp17_SOURCES = \
 	isl_test_cpp17.cc \
-	include/isl/cpp.h
+	$(srcdir)/include/isl/cpp.h
 isl_test_cpp17_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp17_LDADD = libisl.la @MP_LIBS@
 
 isl_test_cpp_checked_SOURCES = \
 	isl_test_cpp-checked.cc \
-	include/isl/cpp-checked.h
+	$(srcdir)/include/isl/cpp-checked.h
 isl_test_cpp_checked_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_checked_LDADD = libisl.la @MP_LIBS@
 
 isl_test_cpp17_checked_SOURCES = \
 	isl_test_cpp17-checked.cc \
-	include/isl/cpp.h
+	$(srcdir)/include/isl/cpp.h
 isl_test_cpp17_checked_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp17_checked_LDADD = libisl.la @MP_LIBS@
 
 isl_test_cpp_checked_conversion_SOURCES = \
 	isl_test_cpp-checked-conversion.cc \
-	include/isl/cpp-checked-conversion.h
+	$(srcdir)/include/isl/cpp-checked-conversion.h
 isl_test_cpp_checked_conversion_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_checked_conversion_LDADD = libisl.la @MP_LIBS@
 
@@ -372,17 +372,19 @@ interface/isldlname.py: libisl.la
 	$(AM_V_GEN)$(MKDIR_P) "interface" && \
 		$(GREP) dlname libisl.la | \
 		$(SED) -e 's/dlname/isl_dlname/' > $@
-interface/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) libdep.a
+$(srcdir)/interface/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) \
+		libdep.a
 	$(AM_V_GEN)interface/extract_interface$(BUILD_EXEEXT) \
 		--language=python $(includes) $(srcdir)/all.h \
 		> interface/isl.py.Tcore && mv interface/isl.py.Tcore $@
-interface/isl.py: python/isl.py.top interface/isldlname.py interface/isl.py.core
+interface/isl.py: python/isl.py.top interface/isldlname.py \
+		$(srcdir)/interface/isl.py.core
 	$(AM_V_GEN)cat interface/isldlname.py $(srcdir)/python/isl.py.top \
-		interface/isl.py.core > interface/isl.Tpy && \
+		$(srcdir)/interface/isl.py.core > interface/isl.Tpy && \
 		mv interface/isl.Tpy $@
 
-include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
-		cpp/cpp.h.top cpp/cpp.h.bot
+$(srcdir)/include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
+		libdep.a cpp/cpp.h.top cpp/cpp.h.bot
 	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
@@ -390,7 +392,8 @@ include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cat $(srcdir)/cpp/cpp.h.bot) \
 			> interface/cpp.Th && mv interface/cpp.Th $@
 
-include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
+$(srcdir)/include/isl/cpp-checked.h: \
+		interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
 	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h && \
@@ -401,7 +404,7 @@ include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 			> interface/cpp-checked.Th && \
 			mv interface/cpp-checked.Th $@
 
-include/isl/cpp-checked-conversion.h: \
+$(srcdir)/include/isl/cpp-checked-conversion.h: \
 		interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a \
 		cpp/cpp-checked-conversion.h.top \
@@ -415,7 +418,7 @@ include/isl/cpp-checked-conversion.h: \
 			> interface/cpp-checked-conversion.Th && \
 			mv interface/cpp-checked-conversion.Th $@
 
-include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
+$(srcdir)/include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a cpp/typed_cpp.h.top cpp/typed_cpp.h.bot
 	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
 	(cat $(srcdir)/cpp/typed_cpp.h.top && \
@@ -492,10 +495,10 @@ pkginclude_HEADERS = \
 	include/isl/vertices.h
 
 CPP_INTERFACES = \
-	include/isl/cpp.h \
-	include/isl/cpp-checked.h \
-	include/isl/cpp-checked-conversion.h \
-	include/isl/typed_cpp.h
+	$(srcdir)/include/isl/cpp.h \
+	$(srcdir)/include/isl/cpp-checked.h \
+	$(srcdir)/include/isl/cpp-checked-conversion.h \
+	$(srcdir)/include/isl/typed_cpp.h
 if HAVE_CLANG
 if HAVE_CXX11
     BUILT_CPP_INTERFACES = $(CPP_INTERFACES)
@@ -702,6 +705,8 @@ dist-hook:
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
 	(cd doc; make manual.pdf)
 	cp doc/manual.pdf $(distdir)/doc/
+	chmod -R u+w $(distdir)/include/isl
+	cp $(CPP_INTERFACES) $(distdir)/include/isl
 
 pkgconfigdir=$(pkgconfig_libdir)
 pkgconfig_DATA = $(pkgconfig_libfile)

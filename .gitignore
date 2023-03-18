@@ -57,3 +57,9 @@ test-driver
 isl_srcdir.c
 bound_test.sh
 pip_test.sh
+
+include/isl/cpp-checked-conversion.h
+include/isl/cpp-checked.h
+include/isl/cpp.h
+include/isl/typed_cpp.h
+interface/isl.py.core
