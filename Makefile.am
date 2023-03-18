@@ -369,7 +369,8 @@ libdep_a_SOURCES = dep.c
 if HAVE_CLANG
 if HAVE_CXX11
 interface/isldlname.py: libisl.la
-	$(AM_V_GEN) $(GREP) dlname libisl.la | \
+	$(AM_V_GEN)$(MKDIR_P) "interface" && \
+		$(GREP) dlname libisl.la | \
 		$(SED) -e 's/dlname/isl_dlname/' > $@
 interface/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) libdep.a
 	$(AM_V_GEN)interface/extract_interface$(BUILD_EXEEXT) \
