@@ -36,12 +36,12 @@ if HAVE_CLANG
 if HAVE_CXX11
   noinst_PROGRAMS += isl_test_cpp-checked isl_test_cpp-checked-conversion
   TESTS += isl_test_cpp-checked isl_test_cpp-checked-conversion
+endif
+endif
 if HAVE_PYTHON
   TESTS += isl_test_python.py
   noinst_PYTHON = interface/isl.py
   isl_test_python.py: interface/isl.py libisl.la
-endif
-endif
 endif
 TEST_EXTENSIONS = .py
 AM_TESTS_ENVIRONMENT = \
