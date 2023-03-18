@@ -371,12 +371,14 @@ if HAVE_CXX11
 interface/isldlname.py: libisl.la
 	$(AM_V_GEN) $(GREP) dlname libisl.la | \
 		$(SED) -e 's/dlname/isl_dlname/' > $@
-interface/isl.py: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
-		python/isl.py.top interface/isldlname.py
-	$(AM_V_GEN)(cat interface/isldlname.py $(srcdir)/python/isl.py.top && \
-		interface/extract_interface$(BUILD_EXEEXT) --language=python \
-			$(includes) $(srcdir)/all.h) \
-			> interface/isl.Tpy && mv interface/isl.Tpy $@
+interface/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) libdep.a
+	$(AM_V_GEN)interface/extract_interface$(BUILD_EXEEXT) \
+		--language=python $(includes) $(srcdir)/all.h \
+		> interface/isl.py.Tcore && mv interface/isl.py.Tcore $@
+interface/isl.py: python/isl.py.top interface/isldlname.py interface/isl.py.core
+	$(AM_V_GEN)cat interface/isldlname.py $(srcdir)/python/isl.py.top \
+		interface/isl.py.core > interface/isl.Tpy && \
+		mv interface/isl.Tpy $@
 
 include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp.h.top cpp/cpp.h.bot
@@ -502,6 +504,7 @@ BUILT_SOURCES = gitversion.h $(INTERFACES)
 CLEANFILES = \
 	gitversion.h \
 	interface/isldlname.py \
+	interface/isl.py.core \
 	interface/isl.py \
 	interface/isl.pyc \
 	interface/__pycache__/*.pyc \
@@ -683,6 +686,7 @@ EXTRA_DIST = \
 	imath/imath.h \
 	imath/imrat.c \
 	imath/imrat.h \
+	interface/isl.py.core \
 	all.h \
 	cpp \
 	python \
