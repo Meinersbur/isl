@@ -368,20 +368,11 @@ libdep_a_SOURCES = dep.c
 
 if HAVE_CLANG
 if HAVE_CXX11
-interface/isldlname.py: libisl.la
-	$(AM_V_GEN)$(MKDIR_P) "interface" && \
-		$(GREP) dlname libisl.la | \
-		$(SED) -e 's/dlname/isl_dlname/' > $@
 $(srcdir)/interface/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a
 	$(AM_V_GEN)interface/extract_interface$(BUILD_EXEEXT) \
 		--language=python $(includes) $(srcdir)/all.h \
 		> interface/isl.py.Tcore && mv interface/isl.py.Tcore $@
-interface/isl.py: python/isl.py.top interface/isldlname.py \
-		$(srcdir)/interface/isl.py.core
-	$(AM_V_GEN)cat interface/isldlname.py $(srcdir)/python/isl.py.top \
-		$(srcdir)/interface/isl.py.core > interface/isl.Tpy && \
-		mv interface/isl.Tpy $@
 
 $(srcdir)/include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a cpp/cpp.h.top cpp/cpp.h.bot
@@ -429,6 +420,16 @@ $(srcdir)/include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 			> interface/typed_cpp.Th && mv interface/typed_cpp.Th $@
 endif
 endif
+
+interface/isldlname.py: libisl.la
+	$(AM_V_GEN)$(MKDIR_P) "interface" && \
+		$(GREP) dlname libisl.la | \
+		$(SED) -e 's/dlname/isl_dlname/' > $@
+interface/isl.py: python/isl.py.top interface/isldlname.py \
+		$(srcdir)/interface/isl.py.core
+	$(AM_V_GEN)cat interface/isldlname.py $(srcdir)/python/isl.py.top \
+		$(srcdir)/interface/isl.py.core > interface/isl.Tpy && \
+		mv interface/isl.Tpy $@
 
 nodist_pkginclude_HEADERS = \
 	include/isl/stdint.h
@@ -502,10 +503,9 @@ CPP_INTERFACES = \
 if HAVE_CLANG
 if HAVE_CXX11
     BUILT_CPP_INTERFACES = $(CPP_INTERFACES)
-    INTERFACES = $(BUILT_CPP_INTERFACES) interface/isl.py
 endif
 endif
-BUILT_SOURCES = gitversion.h $(INTERFACES)
+BUILT_SOURCES = gitversion.h $(BUILT_CPP_INTERFACES) interface/isl.py
 CLEANFILES = \
 	gitversion.h \
 	interface/isldlname.py \
