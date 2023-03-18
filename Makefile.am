@@ -495,9 +495,10 @@ if HAVE_CXX11
 	include/isl/cpp-checked.h \
 	include/isl/cpp-checked-conversion.h \
 	include/isl/typed_cpp.h
+    INTERFACES = $(CPP_INTERFACES) interface/isl.py
 endif
 endif
-BUILT_SOURCES = gitversion.h $(CPP_INTERFACES)
+BUILT_SOURCES = gitversion.h $(INTERFACES)
 CLEANFILES = \
 	gitversion.h \
 	interface/isldlname.py \
