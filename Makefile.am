@@ -509,11 +509,9 @@ BUILT_SOURCES = gitversion.h $(INTERFACES)
 CLEANFILES = \
 	gitversion.h \
 	interface/isldlname.py \
-	interface/isl.py.core \
 	interface/isl.py \
 	interface/isl.pyc \
-	interface/__pycache__/*.pyc \
-	$(BUILT_CPP_INTERFACES)
+	interface/__pycache__/*.pyc
 
 DISTCLEANFILES = \
 	isl-uninstalled.sh \
