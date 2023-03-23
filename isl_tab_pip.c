@@ -225,6 +225,20 @@ static void sol_context_add_eq(struct isl_sol *sol, isl_int *eq, int check,
 		sol->error = 1;
 }
 
+/* Add inequality constraint "ineq" to the context of "sol".
+ * "check" is set if "ineq" is not known to be a valid constraint.
+ * "update" is set if ineq_sign() may still get called on the context.
+ */
+static void sol_context_add_ineq(struct isl_sol *sol, isl_int *ineq, int check,
+	int update)
+{
+	if (sol->error)
+		return;
+	sol->context->op->add_ineq(sol->context, ineq, check, update);
+	if (!sol->context->op->is_ok(sol->context))
+		sol->error = 1;
+}
+
 /* Push a partial solution represented by a domain and function "ma"
  * onto the stack of partial solutions.
  * If "ma" is NULL, then "dom" represents a part of the domain
@@ -3948,7 +3962,7 @@ static void find_in_pos(struct isl_sol *sol, struct isl_tab *tab, isl_int *ineq)
 
 	saved = sol->context->op->save(sol->context);
 
-	sol->context->op->add_ineq(sol->context, ineq, 0, 1);
+	sol_context_add_ineq(sol, ineq, 0, 1);
 
 	find_solutions(sol, tab);
 
@@ -3976,7 +3990,7 @@ static void no_sol_in_strict(struct isl_sol *sol,
 
 	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
-	sol->context->op->add_ineq(sol->context, ineq->el, 1, 0);
+	sol_context_add_ineq(sol, ineq->el, 1, 0);
 
 	empty = tab->empty;
 	tab->empty = 1;
@@ -4157,8 +4171,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			tab->row_sign[split] = isl_tab_row_neg;
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
 			isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
-			if (!sol->error)
-				context->op->add_ineq(context, ineq->el, 0, 1);
+			sol_context_add_ineq(sol, ineq->el, 0, 1);
 			isl_vec_free(ineq);
 			if (sol->error)
 				goto error;
@@ -4193,7 +4206,7 @@ static void find_solutions(struct isl_sol *sol, struct isl_tab *tab)
 			sol_inc_level(sol);
 			no_sol_in_strict(sol, tab, ineq);
 			isl_seq_neg(ineq->el, ineq->el, ineq->size);
-			context->op->add_ineq(context, ineq->el, 1, 1);
+			sol_context_add_ineq(sol, ineq->el, 1, 1);
 			isl_vec_free(ineq);
 			if (sol->error || !context->op->is_ok(context))
 				goto error;
