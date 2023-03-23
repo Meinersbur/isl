@@ -3964,8 +3964,6 @@ static void no_sol_in_strict(struct isl_sol *sol,
 	isl_int_sub_ui(ineq->el[0], ineq->el[0], 1);
 
 	sol->context->op->add_ineq(sol->context, ineq->el, 1, 0);
-	if (!sol->context)
-		goto error;
 
 	empty = tab->empty;
 	tab->empty = 1;
@@ -3975,6 +3973,8 @@ static void no_sol_in_strict(struct isl_sol *sol,
 	isl_int_add_ui(ineq->el[0], ineq->el[0], 1);
 
 	sol->context->op->restore(sol->context, saved);
+	if (!sol->context->op->is_ok(sol->context))
+		goto error;
 	return;
 error:
 	sol->error = 1;
