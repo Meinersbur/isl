@@ -3929,11 +3929,12 @@ static void find_in_pos(struct isl_sol *sol, struct isl_tab *tab, isl_int *ineq)
 
 	if (!sol->context)
 		goto error;
-	saved = sol->context->op->save(sol->context);
 
 	tab = isl_tab_dup(tab);
 	if (!tab)
 		goto error;
+
+	saved = sol->context->op->save(sol->context);
 
 	sol->context->op->add_ineq(sol->context, ineq, 0, 1);
 
