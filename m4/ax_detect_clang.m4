@@ -75,6 +75,8 @@ CC="$SAVE_CC"
 AC_LANG_PUSH(C++)
 
 SAVE_CPPFLAGS="$CPPFLAGS"
+SAVE_LDFLAGS="$LDFLAGS"
+
 CPPFLAGS="$CLANG_CXXFLAGS -I$srcdir $CPPFLAGS"
 AC_CHECK_HEADER([clang/Basic/SourceLocation.h], [],
 	[AC_MSG_ERROR([clang header file not found])])
@@ -233,9 +235,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_CHECK_HEADER([llvm/Option/Arg.h],
 	[AC_DEFINE([HAVE_LLVM_OPTION_ARG_H], [],
 		   [Define if llvm/Option/Arg.h exists])])
-CPPFLAGS="$SAVE_CPPFLAGS"
 
-SAVE_LDFLAGS="$LDFLAGS"
 LDFLAGS="$CLANG_LDFLAGS $LDFLAGS"
 
 # Use single libclang-cpp shared library when available.
@@ -253,6 +253,7 @@ else
 	CLANG_LIBS="-lclangFrontend -lclangSerialization $CLANG_LIBS"
 fi
 
+CPPFLAGS="$SAVE_CPPFLAGS"
 LDFLAGS="$SAVE_LDFLAGS"
 
 AC_LANG_POP
