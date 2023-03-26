@@ -375,7 +375,7 @@ interface/isl.py: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 	$(AM_V_GEN)(cat interface/isldlname.py $(srcdir)/python/isl.py.top && \
 		interface/extract_interface$(BUILD_EXEEXT) --language=python \
 			$(includes) $(srcdir)/all.h) \
-			> $@ || (rm $@ && false)
+			> interface/isl.Tpy && mv interface/isl.Tpy $@
 
 include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp.h.top cpp/cpp.h.bot
@@ -384,7 +384,7 @@ include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp.h.bot) \
-			> $@ || (rm $@ && false)
+			> interface/cpp.Th && mv interface/cpp.Th $@
 
 include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
@@ -394,7 +394,8 @@ include/isl/cpp-checked.h: interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
-			> $@ || (rm $@ && false)
+			> interface/cpp-checked.Th && \
+			mv interface/cpp-checked.Th $@
 
 include/isl/cpp-checked-conversion.h: \
 		interface/extract_interface$(BUILD_EXEEXT) \
@@ -407,7 +408,8 @@ include/isl/cpp-checked-conversion.h: \
 			--language=cpp-checked-conversion \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \
-			> $@ || (rm $@ && false)
+			> interface/cpp-checked-conversion.Th && \
+			mv interface/cpp-checked-conversion.Th $@
 
 include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a cpp/typed_cpp.h.top cpp/typed_cpp.h.bot
@@ -417,7 +419,7 @@ include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 			--language=template-cpp \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/typed_cpp.h.bot) \
-			> $@ || (rm $@ && false)
+			> interface/typed_cpp.Th && mv interface/typed_cpp.Th $@
 endif
 endif
 
