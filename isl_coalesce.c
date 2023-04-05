@@ -1283,12 +1283,13 @@ static int allow_wrap(struct isl_wraps *wraps, int row)
 /* Wrap "ineq" (or its opposite if "negate" is set) around "bound"
  * to include "set" and add the result in position "w" of "wraps".
  * "len" is the total number of coefficients in "bound" and "ineq".
- * Return 1 on success, 0 on failure and -1 on error.
+ * Return isl_bool_true on success, isl_bool_false on failure and
+ * isl_bool_error on error.
  * Wrapping can fail if the result of wrapping is equal to "bound"
  * or if we want to bound the sizes of the coefficients and
  * the wrapped constraint does not satisfy this bound.
  */
-static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
+static isl_bool add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
 	isl_int *ineq, unsigned len, __isl_keep isl_set *set, int negate)
 {
 	isl_seq_cpy(wraps->mat->row[w], bound, len);
@@ -1297,12 +1298,12 @@ static int add_wrap(struct isl_wraps *wraps, int w, isl_int *bound,
 		ineq = wraps->mat->row[w + 1];
 	}
 	if (!isl_set_wrap_facet(set, wraps->mat->row[w], ineq))
-		return -1;
+		return isl_bool_error;
 	if (isl_seq_eq(wraps->mat->row[w], bound, len))
-		return 0;
+		return isl_bool_false;
 	if (!allow_wrap(wraps, w))
-		return 0;
-	return 1;
+		return isl_bool_false;
+	return isl_bool_true;
 }
 
 /* This function has two modes of operations.
@@ -1344,7 +1345,7 @@ static isl_stat add_selected_wraps(struct isl_wraps *wraps,
 {
 	int l, m;
 	int w;
-	int added;
+	isl_bool added;
 	isl_basic_map *bmap = info->bmap;
 	isl_size total = isl_basic_map_dim(bmap, isl_dim_all);
 	unsigned len = 1 + total;
