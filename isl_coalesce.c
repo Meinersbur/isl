@@ -1455,7 +1455,7 @@ static isl_stat check_wraps(struct isl_wraps *wraps, int first,
 }
 
 /* Return a set that corresponds to the non-redundant constraints
- * (as recorded in tab) of bmap.
+ * (as recorded in info->tab) of info->bmap.
  *
  * It's important to remove the redundant constraints as some
  * of the other constraints may have been modified after the
@@ -1470,15 +1470,15 @@ static isl_stat check_wraps(struct isl_wraps *wraps, int first,
  * Otherwise the integer divisions could get dropped if the tab
  * turns out to be empty.
  */
-static __isl_give isl_set *set_from_updated_bmap(__isl_keep isl_basic_map *bmap,
-	struct isl_tab *tab)
+static __isl_give isl_set *set_from_updated_bmap(struct isl_coalesce_info *info)
 {
+	isl_basic_map *bmap;
 	isl_basic_set *bset;
 
-	bmap = isl_basic_map_copy(bmap);
+	bmap = isl_basic_map_copy(info->bmap);
 	bset = isl_basic_map_underlying_set(bmap);
 	bset = isl_basic_set_cow(bset);
-	bset = isl_basic_set_update_from_tab(bset, tab);
+	bset = isl_basic_set_update_from_tab(bset, info->tab);
 	return isl_set_from_basic_set(bset);
 }
 
@@ -1651,7 +1651,7 @@ static enum isl_change is_adj_ineq_extension(int i, int j,
 	if (total < 0 || n_eq_i < 0 || n_ineq_i < 0)
 		return isl_change_error;
 
-	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
+	set_j = set_from_updated_bmap(&info[j]);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
 	bound = isl_vec_alloc(ctx, 1 + total);
 	mat = isl_mat_alloc(ctx, 2 * n_eq_i + n_ineq_i, 1 + total);
@@ -1770,8 +1770,8 @@ static enum isl_change can_wrap_in_facet(int i, int j, int k,
 
 	if (total < 0)
 		return isl_change_error;
-	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
-	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
+	set_i = set_from_updated_bmap(&info[i]);
+	set_j = set_from_updated_bmap(&info[j]);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
 	mat = isl_mat_alloc(ctx, 2 * (info[i].bmap->n_eq + info[j].bmap->n_eq) +
 				    info[i].bmap->n_ineq + info[j].bmap->n_ineq,
@@ -1959,7 +1959,7 @@ static enum isl_change wrap_in_facets(int i, int j, int n,
 	max_wrap = 1 + 2 * info[j].bmap->n_eq + info[j].bmap->n_ineq;
 	max_wrap *= n;
 
-	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
+	set_i = set_from_updated_bmap(&info[i]);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
 	mat = isl_mat_alloc(ctx, max_wrap, 1 + total);
 	if (wraps_init(&wraps, mat, info, i, j) < 0)
@@ -2315,8 +2315,8 @@ static enum isl_change check_eq_adj_eq(int i, int j,
 
 	k = find_eq(&info[i], STATUS_ADJ_EQ);
 
-	set_i = set_from_updated_bmap(info[i].bmap, info[i].tab);
-	set_j = set_from_updated_bmap(info[j].bmap, info[j].tab);
+	set_i = set_from_updated_bmap(&info[i]);
+	set_j = set_from_updated_bmap(&info[j]);
 	ctx = isl_basic_map_get_ctx(info[i].bmap);
 	mat = isl_mat_alloc(ctx, 2 * (info[i].bmap->n_eq + info[j].bmap->n_eq) +
 				    info[i].bmap->n_ineq + info[j].bmap->n_ineq,
