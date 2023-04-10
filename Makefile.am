@@ -491,14 +491,15 @@ pkginclude_HEADERS = \
 	include/isl/version.h \
 	include/isl/vertices.h
 
-if HAVE_CLANG
-if HAVE_CXX11
-    CPP_INTERFACES = \
+CPP_INTERFACES = \
 	include/isl/cpp.h \
 	include/isl/cpp-checked.h \
 	include/isl/cpp-checked-conversion.h \
 	include/isl/typed_cpp.h
-    INTERFACES = $(CPP_INTERFACES) interface/isl.py
+if HAVE_CLANG
+if HAVE_CXX11
+    BUILT_CPP_INTERFACES = $(CPP_INTERFACES)
+    INTERFACES = $(BUILT_CPP_INTERFACES) interface/isl.py
 endif
 endif
 BUILT_SOURCES = gitversion.h $(INTERFACES)
@@ -509,7 +510,7 @@ CLEANFILES = \
 	interface/isl.py \
 	interface/isl.pyc \
 	interface/__pycache__/*.pyc \
-	$(CPP_INTERFACES)
+	$(BUILT_CPP_INTERFACES)
 
 DISTCLEANFILES = \
 	isl-uninstalled.sh \
