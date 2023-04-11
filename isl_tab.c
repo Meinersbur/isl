@@ -3072,26 +3072,26 @@ isl_stat isl_tab_swap_constraints(struct isl_tab *tab, int con1, int con2)
 /* Rotate the "n" constraints starting at "first" to the right,
  * putting the last constraint in the position of the first constraint.
  */
-static int rotate_constraints(struct isl_tab *tab, int first, int n)
+static isl_stat rotate_constraints(struct isl_tab *tab, int first, int n)
 {
 	int i, last;
 	struct isl_tab_var var;
 
 	if (n <= 1)
-		return 0;
+		return isl_stat_ok;
 
 	last = first + n - 1;
 	var = tab->con[last];
 	for (i = last; i > first; --i) {
 		tab->con[i] = tab->con[i - 1];
 		if (update_con_after_move(tab, i, i - 1) < 0)
-			return -1;
+			return isl_stat_error;
 	}
 	tab->con[first] = var;
 	if (update_con_after_move(tab, first, last) < 0)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Drop the "n" entries starting at position "first" in tab->con, moving all
