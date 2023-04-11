@@ -3051,6 +3051,9 @@ struct isl_expanded {
  * The facet corresponding to one of these two constraints is selected
  * in the tableau to ensure that the pair of inequality constraints
  * is treated as an equality constraint.
+ * Such implicit equality constraints need to be turned
+ * into explicit equality constraints to ensure both sides
+ * of the equality constraints are taken into account.
  *
  * The information in info->ineq is thrown away because it was
  * computed in terms of div constraints, while some of those
@@ -3097,6 +3100,8 @@ static isl_stat fix_constant_divs(struct isl_coalesce_info *info,
 
 	clear_status(info);
 	init_status(info);
+
+	info->bmap = isl_tab_make_equalities_explicit(info->tab, info->bmap);
 
 	return i < n ? isl_stat_error : isl_stat_ok;
 }

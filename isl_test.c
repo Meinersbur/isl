@@ -2410,6 +2410,10 @@ struct {
 	{ 1, "{ [a] : (a = 0 or ((1 + a) mod 2 = 0 and 0 < a <= 15) or "
 		"((a) mod 2 = 0 and 0 < a <= 15)) }" },
 	{ 1, "{ rat: [0:2]; rat: [1:3] }" },
+	{ 1, "{ [a] : 0 < a <= 341 or "
+		"(0 < a <= 700 and 360*floor(a/360) >= -340 + a) }" },
+	{ 0, "{ [a] : 0 < a <= 341 or "
+		"(0 < a <= 701 and 360*floor(a/360) >= -340 + a) }" },
 };
 
 /* A specialized coalescing test case that would result
