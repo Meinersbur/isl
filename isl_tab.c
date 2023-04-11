@@ -3072,7 +3072,7 @@ isl_stat isl_tab_swap_constraints(struct isl_tab *tab, int con1, int con2)
 /* Rotate the "n" constraints starting at "first" to the right,
  * putting the last constraint in the position of the first constraint.
  */
-static isl_stat rotate_constraints(struct isl_tab *tab, int first, int n)
+static isl_stat rotate_constraints_right(struct isl_tab *tab, int first, int n)
 {
 	int i, last;
 	struct isl_tab_var var;
@@ -3214,9 +3214,9 @@ __isl_give isl_basic_map *isl_tab_make_equalities_explicit(struct isl_tab *tab,
 		if (!isl_tab_is_equality(tab, bmap->n_eq + i))
 			continue;
 		isl_basic_map_inequality_to_equality(bmap, i);
-		if (rotate_constraints(tab, 0, tab->n_eq + i + 1) < 0)
+		if (rotate_constraints_right(tab, 0, tab->n_eq + i + 1) < 0)
 			return isl_basic_map_free(bmap);
-		if (rotate_constraints(tab, tab->n_eq + i + 1,
+		if (rotate_constraints_right(tab, tab->n_eq + i + 1,
 					bmap->n_ineq - i) < 0)
 			return isl_basic_map_free(bmap);
 		tab->n_eq++;
