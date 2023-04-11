@@ -862,6 +862,16 @@ isl_stat isl_tab_push_callback(struct isl_tab *tab,
 	return push_union(tab, isl_tab_undo_callback, u);
 }
 
+/* Push a record onto the undo stack indicating that inequality "ineq"
+ * has been turned into an equality constraint (in the first position).
+ */
+static isl_stat isl_tab_push_ineq_to_eq(struct isl_tab *tab, int ineq)
+{
+	union isl_tab_undo_val u = { .n = ineq };
+
+	return push_union(tab, isl_tab_undo_ineq_to_eq, u);
+}
+
 struct isl_tab *isl_tab_init_samples(struct isl_tab *tab)
 {
 	if (!tab)
@@ -3094,6 +3104,31 @@ static isl_stat rotate_constraints_right(struct isl_tab *tab, int first, int n)
 	return isl_stat_ok;
 }
 
+/* Rotate the "n" constraints starting at "first" to the left,
+ * putting the first constraint in the position of the last constraint.
+ */
+static isl_stat rotate_constraints_left(struct isl_tab *tab, int first, int n)
+{
+	int i, last;
+	struct isl_tab_var var;
+
+	if (n <= 1)
+		return isl_stat_ok;
+
+	last = first + n - 1;
+	var = tab->con[first];
+	for (i = first; i < last; ++i) {
+		tab->con[i] = tab->con[i + 1];
+		if (update_con_after_move(tab, i, i + 1) < 0)
+			return isl_stat_error;
+	}
+	tab->con[last] = var;
+	if (update_con_after_move(tab, last, first) < 0)
+		return isl_stat_error;
+
+	return isl_stat_ok;
+}
+
 /* Drop the "n" entries starting at position "first" in tab->con, moving all
  * subsequent entries down.
  * Since some of the entries of tab->row_var and tab->col_var contain
@@ -3191,12 +3226,18 @@ static __isl_give isl_basic_map *gauss_if_shared(__isl_take isl_basic_map *bmap,
  * If "tab" contains any constraints that are not in "bmap" then they
  * appear after those in "bmap" and they should be left untouched.
  *
+ * If the operation may need to be undone, then keep track
+ * of the inequality constraints that have been turned
+ * into equality constraints.
+ *
  * Note that this function only calls isl_basic_map_gauss
  * (in case some equality constraints got detected)
- * if "bmap" has more than one reference.
+ * if "bmap" has more than one reference and if the operation
+ * does not need to be undone.
  * If it only has a single reference, then it is left in a temporary state,
  * because the caller may require this state.
  * Calling isl_basic_map_gauss is then the responsibility of the caller.
+ * This is also the case if the operation may need to be undone.
  */
 __isl_give isl_basic_map *isl_tab_make_equalities_explicit(struct isl_tab *tab,
 	__isl_take isl_basic_map *bmap)
@@ -3220,12 +3261,53 @@ __isl_give isl_basic_map *isl_tab_make_equalities_explicit(struct isl_tab *tab,
 					bmap->n_ineq - i) < 0)
 			return isl_basic_map_free(bmap);
 		tab->n_eq++;
+		if (tab->need_undo)
+			isl_tab_push_ineq_to_eq(tab, i);
 	}
 
-	if (n_eq != tab->n_eq)
+	if (!tab->need_undo && n_eq != tab->n_eq)
 		bmap = gauss_if_shared(bmap, tab);
 
 	return bmap;
+}
+
+/* Undo the effect of turning an inequality constraint
+ * into an equality constraint in isl_tab_make_equalities_explicit.
+ * "ineq" is the original position of the inequality constraint that
+ * now appears as the first equality constraint.
+ *
+ * That is, the order
+ *
+ *		I E E E E E A A A L B B B B
+ *
+ * needs to be changed back into
+ *
+ *		E E E E E A A A I B B B B L
+ *
+ * where I is the inequality turned equality, the E are the original equalities,
+ * the A inequalities originally before I,
+ * the B inequalities originally after I and
+ * L the originally last inequality.
+ *
+ * Two groups of constraints therefore need to be rotated left,
+ * those up to and including the original position of I and
+ * those after this position.
+ */
+static isl_stat first_eq_to_ineq(struct isl_tab *tab, int ineq)
+{
+	unsigned n_ineq, n_eq;
+
+	if (!tab)
+		return isl_stat_error;
+
+	n_ineq = tab->n_con - tab->n_eq;
+	tab->n_eq--;
+	n_eq = tab->n_eq;
+	if (rotate_constraints_left(tab, 0, n_eq + ineq + 1) < 0)
+		return isl_stat_error;
+	if (rotate_constraints_left(tab, n_eq + ineq + 1, n_ineq - ineq) < 0)
+		return isl_stat_error;
+	return isl_stat_ok;
 }
 
 static int con_is_redundant(struct isl_tab *tab, struct isl_tab_var *var)
@@ -4002,6 +4084,8 @@ static isl_stat perform_undo(struct isl_tab *tab, struct isl_tab_undo *undo)
 		break;
 	case isl_tab_undo_callback:
 		return undo->u.callback->run(undo->u.callback);
+	case isl_tab_undo_ineq_to_eq:
+		return first_eq_to_ineq(tab, undo->u.n);
 	default:
 		isl_assert(tab->mat->ctx, 0, return isl_stat_error);
 	}

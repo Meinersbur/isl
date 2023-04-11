@@ -46,6 +46,7 @@ enum isl_tab_undo_type {
 	isl_tab_undo_drop_sample,
 	isl_tab_undo_saved_samples,
 	isl_tab_undo_callback,
+	isl_tab_undo_ineq_to_eq,
 };
 
 struct isl_tab_callback {
