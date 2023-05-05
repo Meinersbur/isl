@@ -271,6 +271,10 @@ if test "$have_lib_clang" = yes; then
 			[CLANG_LIBS="-lclang-cpp $CLANG_LIBS"],
 	      [AC_MSG_FAILURE([unable to link against libclang-cpp])])
 else
+	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
+	AC_CHECK_LIB([clangSupport], [main],
+		[LIB_CLANG_SUPPORT=-lclangSupport], [])
+	CLANG_LIBS="$LIB_CLANG_SUPPORT $CLANG_LIBS"
 	CLANG_LIBS="-lclangDriver -lclangBasic $CLANG_LIBS"
 	CLANG_LIBS="-lclangAnalysis -lclangAST -lclangLex $CLANG_LIBS"
 	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
