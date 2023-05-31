@@ -734,6 +734,23 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
 	return simpler;
 }
 
+/* If "c" is "simpler" than data->nonneg,
+ * then replace data->nonneg by the affine expression of "c" and
+ * set data->sign to "sign".
+ */
+static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
+	__isl_keep isl_constraint *c, int sign)
+{
+	if (!mod_constraint_is_simpler(data, c))
+		return isl_stat_ok;
+
+	isl_aff_free(data->nonneg);
+	data->nonneg = isl_constraint_get_aff(c);
+	data->sign = sign;
+
+	return isl_stat_non_null(data->nonneg);
+}
+
 /* Check if the coefficients of "c" are either equal or opposite to those
  * of data->div modulo data->d.  If so, and if "c" is "simpler" than
  * data->nonneg, then replace data->nonneg by the affine expression of "c"
@@ -810,17 +827,7 @@ static isl_stat check_parallel_or_opposite(struct isl_extract_mod_data *data,
 		}
 	}
 
-	if (mod_constraint_is_simpler(data, c)) {
-		isl_aff_free(data->nonneg);
-		data->nonneg = isl_constraint_get_aff(c);
-		data->sign = parallel ? 1 : -1;
-	}
-
-
-	if (data->sign != 0 && data->nonneg == NULL)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return replace_if_simpler(data, c, parallel ? 1 : -1);
 }
 
 /* Wrapper around check_parallel_or_opposite for use
