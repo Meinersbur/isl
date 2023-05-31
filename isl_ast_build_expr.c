@@ -754,6 +754,123 @@ static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
 	return isl_stat_non_null(data->nonneg);
 }
 
+/* Internal data structure used inside check_parallel_or_opposite.
+ *
+ * "data" is the information passed down from the caller.
+ * "c" is the constraint being inspected.
+ *
+ * "n" contains the number of parameters and the number of input dimensions and
+ * is set by the first call to parallel_or_opposite_scan.
+ * "parallel" is set as long as the coefficients of "c" are still potentially
+ * equal to those of data->div modulo data->d.
+ * "opposite" is set as long as the coefficients of "c" are still potentially
+ * opposite to those of data->div modulo data->d.
+ */
+struct isl_parallel_stat {
+	struct isl_extract_mod_data *data;
+	isl_constraint *c;
+
+	isl_size n[2];
+	isl_bool parallel;
+	isl_bool opposite;
+};
+
+/* Should the scan of coefficients be continued?
+ * That is, are the coefficients still (potentially) equal or opposite?
+ */
+static isl_bool parallel_or_opposite_continue(struct isl_parallel_stat *stat)
+{
+	if (stat->parallel < 0 || stat->opposite < 0)
+		return isl_bool_error;
+
+	return isl_bool_ok(stat->parallel || stat->opposite);
+}
+
+/* Is coefficient "i" of type "c_type" of stat->c potentially equal or
+ * opposite to coefficient "i" of type "a_type" of stat->data->div
+ * modulo stat->data->div?
+ * In particular, are they both zero or both non-zero?
+ *
+ * Note that while the coefficients of stat->data->div can be reasonably
+ * expected not to involve any coefficients that are multiples of stat->data->d,
+ * "c" may very well involve such coefficients.
+ * This means that some cases of equal or opposite constraints can be missed
+ * this way.
+ */
+static isl_bool parallel_or_opposite_feasible(struct isl_parallel_stat *stat,
+	enum isl_dim_type c_type, enum isl_dim_type a_type, int i)
+{
+	isl_bool a, b;
+
+	a = isl_constraint_involves_dims(stat->c, c_type, i, 1);
+	b = isl_aff_involves_dims(stat->data->div, a_type, i, 1);
+	if (a < 0 || b < 0)
+		return isl_bool_error;
+	if (a != b)
+		stat->parallel = stat->opposite = isl_bool_false;
+
+	return parallel_or_opposite_continue(stat);
+}
+
+/* Is coefficient "i" of type "c_type" of stat->c equal or
+ * opposite to coefficient "i" of type "a_type" of stat->data->div
+ * modulo stat->data->div?
+ */
+static isl_bool is_parallel_or_opposite(struct isl_parallel_stat *stat,
+	enum isl_dim_type c_type, enum isl_dim_type a_type, int i)
+{
+	isl_val *v1, *v2;
+
+	v1 = isl_constraint_get_coefficient_val(stat->c, c_type, i);
+	v2 = isl_aff_get_coefficient_val(stat->data->div, a_type, i);
+	if (stat->parallel) {
+		v1 = isl_val_sub(v1, isl_val_copy(v2));
+		stat->parallel = isl_val_is_divisible_by(v1, stat->data->d);
+		v1 = isl_val_add(v1, isl_val_copy(v2));
+	}
+	if (stat->opposite) {
+		v1 = isl_val_add(v1, isl_val_copy(v2));
+		stat->opposite = isl_val_is_divisible_by(v1, stat->data->d);
+	}
+	isl_val_free(v1);
+	isl_val_free(v2);
+
+	return parallel_or_opposite_continue(stat);
+}
+
+/* Scan the coefficients of stat->c to see if they are (potentially)
+ * equal or opposite to those of stat->data->div modulo stat->data->d,
+ * calling "fn" on each coefficient.
+ * IF "init" is set, then this is the first call to this function and
+ * then stat->n is initialized.
+ */
+static isl_bool parallel_or_opposite_scan(struct isl_parallel_stat *stat,
+	isl_bool (*fn)(struct isl_parallel_stat *stat,
+		enum isl_dim_type c_type, enum isl_dim_type a_type, int i),
+	int init)
+{
+	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
+	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
+	int i, t;
+
+	for (t = 0; t < 2; ++t) {
+		if (init) {
+			stat->n[t] = isl_constraint_dim(stat->c, c_type[t]);
+			if (stat->n[t] < 0)
+				return isl_bool_error;
+		}
+		for (i = 0; i < stat->n[t]; ++i) {
+			isl_bool ok;
+
+			ok = fn(stat, c_type[t], a_type[t], i);
+			if (ok < 0 || !ok)
+				return ok;
+		}
+	}
+
+	return isl_bool_true;
+}
+
 /* Check if the coefficients of "c" are either equal or opposite to those
  * of data->div modulo data->d.  If so, and if "c" is "simpler" than
  * data->nonneg, then replace data->nonneg by the affine expression of "c"
@@ -764,10 +881,6 @@ static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
  * Before we start the actual comparison, we first quickly check if
  * "c" and data->div have the same non-zero coefficients.
  * If not, then we assume that "c" is not of the desired form.
- * Note that while the coefficients of data->div can be reasonably expected
- * not to involve any coefficients that are multiples of d, "c" may
- * very well involve such coefficients.  This means that we may actually
- * miss some cases.
  *
  * If the constant term is "too large", then the constraint is rejected.
  * We do this to avoid picking up constraints that bound a variable
@@ -777,60 +890,28 @@ static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
 static isl_stat check_parallel_or_opposite(struct isl_extract_mod_data *data,
 	__isl_keep isl_constraint *c)
 {
-	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
-	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
-	int i, t;
-	isl_size n[2];
-	isl_bool parallel = isl_bool_true, opposite = isl_bool_true;
-	isl_bool skip;
+	struct isl_parallel_stat stat = {
+		.data = data,
+		.c = c,
+		.parallel = isl_bool_true,
+		.opposite = isl_bool_true,
+	};
+	isl_bool skip, ok;
 
-	for (t = 0; t < 2; ++t) {
-		n[t] = isl_constraint_dim(c, c_type[t]);
-		if (n[t] < 0)
-			return isl_stat_error;
-		for (i = 0; i < n[t]; ++i) {
-			isl_bool a, b;
-
-			a = isl_constraint_involves_dims(c, c_type[t], i, 1);
-			b = isl_aff_involves_dims(data->div, a_type[t], i, 1);
-			if (a < 0 || b < 0)
-				return isl_stat_error;
-			if (a != b)
-				return isl_stat_ok;
-		}
-	}
+	ok = parallel_or_opposite_scan(&stat,
+					&parallel_or_opposite_feasible, 1);
+	if (ok < 0 || !ok)
+		return isl_stat_non_error_bool(ok);
 
 	skip = has_large_constant_term(c);
 	if (skip < 0 || skip)
 		return isl_stat_non_error_bool(skip);
 
-	for (t = 0; t < 2; ++t) {
-		for (i = 0; i < n[t]; ++i) {
-			isl_val *v1, *v2;
+	ok = parallel_or_opposite_scan(&stat, &is_parallel_or_opposite, 0);
+	if (ok < 0 || !ok)
+		return isl_stat_non_error_bool(ok);
 
-			v1 = isl_constraint_get_coefficient_val(c,
-								c_type[t], i);
-			v2 = isl_aff_get_coefficient_val(data->div,
-								a_type[t], i);
-			if (parallel) {
-				v1 = isl_val_sub(v1, isl_val_copy(v2));
-				parallel = isl_val_is_divisible_by(v1, data->d);
-				v1 = isl_val_add(v1, isl_val_copy(v2));
-			}
-			if (opposite) {
-				v1 = isl_val_add(v1, isl_val_copy(v2));
-				opposite = isl_val_is_divisible_by(v1, data->d);
-			}
-			isl_val_free(v1);
-			isl_val_free(v2);
-			if (parallel < 0 || opposite < 0)
-				return isl_stat_error;
-			if (!parallel && !opposite)
-				return isl_stat_ok;
-		}
-	}
-
-	return replace_if_simpler(data, c, parallel ? 1 : -1);
+	return replace_if_simpler(data, c, stat.parallel ? 1 : -1);
 }
 
 /* Wrapper around check_parallel_or_opposite for use
