@@ -716,14 +716,14 @@ static isl_bool has_large_constant_term(__isl_keep isl_constraint *c)
  *
  * More detailed heuristics could be used if it turns out that there is a need.
  */
-static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
+static isl_bool mod_constraint_is_simpler(struct isl_extract_mod_data *data,
 	__isl_keep isl_constraint *c)
 {
 	isl_val *v1, *v2;
-	int simpler;
+	isl_bool simpler;
 
 	if (!data->nonneg)
-		return 1;
+		return isl_bool_true;
 
 	v1 = isl_val_abs(isl_constraint_get_constant_val(c));
 	v2 = isl_val_abs(isl_aff_get_constant_val(data->nonneg));
@@ -741,8 +741,11 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
 static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
 	__isl_keep isl_constraint *c, int sign)
 {
-	if (!mod_constraint_is_simpler(data, c))
-		return isl_stat_ok;
+	isl_bool simpler;
+
+	simpler = mod_constraint_is_simpler(data, c);
+	if (simpler < 0 || !simpler)
+		return isl_stat_non_error_bool(simpler);
 
 	isl_aff_free(data->nonneg);
 	data->nonneg = isl_constraint_get_aff(c);
