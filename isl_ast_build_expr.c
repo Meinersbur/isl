@@ -705,10 +705,11 @@ static isl_bool has_large_constant_term(__isl_keep isl_constraint *c)
 	return isl_bool_ok(sign > 0);
 }
 
-/* Is the affine expression of constraint "c" "simpler" than data->nonneg
+/* Is the affine expression with constant term returned by "get_constant"
+ * "simpler" than data->nonneg
  * for use in extracting a modulo expression?
  *
- * We currently only consider the constant term of the affine expression.
+ * Currently, only this constant term is considered.
  * In particular, we prefer the affine expression with the smallest constant
  * term.
  * This means that if there are two constraints, say x >= 0 and -x + 10 >= 0,
@@ -716,8 +717,9 @@ static isl_bool has_large_constant_term(__isl_keep isl_constraint *c)
  *
  * More detailed heuristics could be used if it turns out that there is a need.
  */
-static isl_bool mod_constraint_is_simpler(struct isl_extract_mod_data *data,
-	__isl_keep isl_constraint *c)
+static isl_bool is_simpler(struct isl_extract_mod_data *data,
+	__isl_give isl_val *get_constant(struct isl_extract_mod_data *data,
+		void *user), void *user)
 {
 	isl_val *v1, *v2;
 	isl_bool simpler;
@@ -725,13 +727,34 @@ static isl_bool mod_constraint_is_simpler(struct isl_extract_mod_data *data,
 	if (!data->nonneg)
 		return isl_bool_true;
 
-	v1 = isl_val_abs(isl_constraint_get_constant_val(c));
+	v1 = isl_val_abs(get_constant(data, user));
 	v2 = isl_val_abs(isl_aff_get_constant_val(data->nonneg));
 	simpler = isl_val_lt(v1, v2);
 	isl_val_free(v1);
 	isl_val_free(v2);
 
 	return simpler;
+}
+
+/* Return the constant term of "c".
+ */
+static __isl_give isl_val *get_constraint_constant(
+	struct isl_extract_mod_data *data, void *user)
+{
+	isl_constraint *c = user;
+
+	return isl_constraint_get_constant_val(c);
+}
+
+/* Is the affine expression of constraint "c" "simpler" than data->nonneg
+ * for use in extracting a modulo expression?
+ *
+ * The test is based on the constant term of "c".
+ */
+static isl_bool mod_constraint_is_simpler(struct isl_extract_mod_data *data,
+       __isl_keep isl_constraint *c)
+{
+	return is_simpler(data, &get_constraint_constant, c);
 }
 
 /* Replace data->nonneg by the affine expression "aff" and
