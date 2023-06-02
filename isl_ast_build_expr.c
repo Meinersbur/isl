@@ -689,6 +689,22 @@ error:
 	return isl_stat_error;
 }
 
+/* Does "c" have a constant term that is "too large"?
+ * Here, "too large" is fairly arbitrarily set to 1 << 15.
+ */
+static isl_bool has_large_constant_term(__isl_keep isl_constraint *c)
+{
+	isl_val *v;
+	int sign;
+
+	v = isl_val_abs(isl_constraint_get_constant_val(c));
+	if (!v)
+		return isl_bool_error;
+	sign = isl_val_cmp_si(v, 1 << 15);
+	isl_val_free(v);
+	return isl_bool_ok(sign > 0);
+}
+
 /* Is the affine expression of constraint "c" "simpler" than data->nonneg
  * for use in extracting a modulo expression?
  *
@@ -733,8 +749,7 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
  * very well involve such coefficients.  This means that we may actually
  * miss some cases.
  *
- * If the constant term is "too large", then the constraint is rejected,
- * where "too large" is fairly arbitrarily set to 1 << 15.
+ * If the constant term is "too large", then the constraint is rejected.
  * We do this to avoid picking up constraints that bound a variable
  * by a very large number, say the largest or smallest possible
  * variable in the representation of some integer type.
@@ -766,12 +781,13 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 	}
 
 	if (parallel || opposite) {
-		isl_val *v;
+		isl_bool skip;
 
-		v = isl_val_abs(isl_constraint_get_constant_val(c));
-		if (isl_val_cmp_si(v, 1 << 15) > 0)
+		skip = has_large_constant_term(c);
+		if (skip < 0)
+			goto error;
+		if (skip)
 			parallel = opposite = isl_bool_false;
-		isl_val_free(v);
 	}
 
 	for (t = 0; t < 2; ++t) {
