@@ -754,48 +754,40 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
  * by a very large number, say the largest or smallest possible
  * variable in the representation of some integer type.
  */
-static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
-	void *user)
+static isl_stat check_parallel_or_opposite(struct isl_extract_mod_data *data,
+	__isl_keep isl_constraint *c)
 {
-	struct isl_extract_mod_data *data = user;
 	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
 	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
 	int i, t;
 	isl_size n[2];
 	isl_bool parallel = isl_bool_true, opposite = isl_bool_true;
+	isl_bool skip;
 
 	for (t = 0; t < 2; ++t) {
 		n[t] = isl_constraint_dim(c, c_type[t]);
 		if (n[t] < 0)
-			goto error;
+			return isl_stat_error;
 		for (i = 0; i < n[t]; ++i) {
 			isl_bool a, b;
 
 			a = isl_constraint_involves_dims(c, c_type[t], i, 1);
 			b = isl_aff_involves_dims(data->div, a_type[t], i, 1);
 			if (a < 0 || b < 0)
-				goto error;
+				return isl_stat_error;
 			if (a != b)
-				parallel = opposite = isl_bool_false;
+				return isl_stat_ok;
 		}
 	}
 
-	if (parallel || opposite) {
-		isl_bool skip;
-
-		skip = has_large_constant_term(c);
-		if (skip < 0)
-			goto error;
-		if (skip)
-			parallel = opposite = isl_bool_false;
-	}
+	skip = has_large_constant_term(c);
+	if (skip < 0 || skip)
+		return isl_stat_non_error_bool(skip);
 
 	for (t = 0; t < 2; ++t) {
 		for (i = 0; i < n[t]; ++i) {
 			isl_val *v1, *v2;
 
-			if (!parallel && !opposite)
-				break;
 			v1 = isl_constraint_get_coefficient_val(c,
 								c_type[t], i);
 			v2 = isl_aff_get_coefficient_val(data->div,
@@ -812,25 +804,38 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
 			isl_val_free(v1);
 			isl_val_free(v2);
 			if (parallel < 0 || opposite < 0)
-				goto error;
+				return isl_stat_error;
+			if (!parallel && !opposite)
+				return isl_stat_ok;
 		}
 	}
 
-	if ((parallel || opposite) && mod_constraint_is_simpler(data, c)) {
+	if (mod_constraint_is_simpler(data, c)) {
 		isl_aff_free(data->nonneg);
 		data->nonneg = isl_constraint_get_aff(c);
 		data->sign = parallel ? 1 : -1;
 	}
 
-	isl_constraint_free(c);
 
 	if (data->sign != 0 && data->nonneg == NULL)
 		return isl_stat_error;
 
 	return isl_stat_ok;
-error:
+}
+
+/* Wrapper around check_parallel_or_opposite for use
+ * as a isl_basic_set_foreach_constraint callback.
+ */
+static isl_stat check_parallel_or_opposite_wrap(__isl_take isl_constraint *c,
+	void *user)
+{
+	struct isl_extract_mod_data *data = user;
+	isl_stat res;
+
+	res = check_parallel_or_opposite(data, c);
 	isl_constraint_free(c);
-	return isl_stat_error;
+
+	return res;
 }
 
 /* Given that data->v * div_i in data->aff is of the form
@@ -933,8 +938,8 @@ static isl_stat try_extract_mod(struct isl_extract_mod_data *data)
 	hull = isl_basic_set_remove_divs(hull);
 	data->sign = 0;
 	data->nonneg = NULL;
-	r = isl_basic_set_foreach_constraint(hull, &check_parallel_or_opposite,
-					data);
+	r = isl_basic_set_foreach_constraint(hull,
+					&check_parallel_or_opposite_wrap, data);
 	isl_basic_set_free(hull);
 
 	if (!data->sign || r < 0) {
