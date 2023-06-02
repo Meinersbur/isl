@@ -734,6 +734,19 @@ static isl_bool mod_constraint_is_simpler(struct isl_extract_mod_data *data,
 	return simpler;
 }
 
+/* Replace data->nonneg by the affine expression "aff" and
+ * set data->sign to "sign".
+ */
+static isl_stat replace_nonneg(struct isl_extract_mod_data *data,
+	__isl_take isl_aff *aff, int sign)
+{
+	isl_aff_free(data->nonneg);
+	data->nonneg = aff;
+	data->sign = sign;
+
+	return isl_stat_non_null(data->nonneg);
+}
+
 /* If "c" is "simpler" than data->nonneg,
  * then replace data->nonneg by the affine expression of "c" and
  * set data->sign to "sign".
@@ -747,11 +760,7 @@ static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
 	if (simpler < 0 || !simpler)
 		return isl_stat_non_error_bool(simpler);
 
-	isl_aff_free(data->nonneg);
-	data->nonneg = isl_constraint_get_aff(c);
-	data->sign = sign;
-
-	return isl_stat_non_null(data->nonneg);
+	return replace_nonneg(data, isl_constraint_get_aff(c), sign);
 }
 
 /* Internal data structure used inside check_parallel_or_opposite.
