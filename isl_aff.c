@@ -523,9 +523,13 @@ isl_size isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 isl_size isl_aff_domain_offset(__isl_keep isl_aff *aff, enum isl_dim_type type)
 {
 	isl_local_space *ls;
+	isl_size offset;
 
 	ls = isl_aff_peek_domain_local_space(aff);
-	return isl_local_space_offset(ls, type);
+	offset = isl_local_space_var_offset(ls, type);
+	if (offset < 0)
+		return isl_size_error;
+	return 1 + offset;
 }
 
 /* Return the position of the dimension of the given type and name
