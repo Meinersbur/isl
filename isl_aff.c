@@ -1476,15 +1476,15 @@ __isl_give isl_aff *isl_aff_neg(__isl_take isl_aff *aff)
 __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 {
 	int pos;
-	isl_size off;
+	isl_size v_div;
 	isl_size n;
 
 	n = isl_aff_domain_dim(aff, isl_dim_div);
-	off = isl_aff_domain_offset(aff, isl_dim_div);
-	if (n < 0 || off < 0)
+	v_div = isl_aff_domain_var_offset(aff, isl_dim_div);
+	if (n < 0 || v_div < 0)
 		return isl_aff_free(aff);
 
-	pos = isl_seq_last_non_zero(aff->v->el + 1 + off, n) + 1;
+	pos = isl_seq_last_non_zero(aff->v->el + 1 + 1 + v_div, n) + 1;
 	if (pos == n)
 		return aff;
 
@@ -1493,7 +1493,7 @@ __isl_give isl_aff *isl_aff_remove_unused_divs(__isl_take isl_aff *aff)
 		return NULL;
 
 	aff->ls = isl_local_space_drop_dims(aff->ls, isl_dim_div, pos, n - pos);
-	aff->v = isl_vec_drop_els(aff->v, 1 + off + pos, n - pos);
+	aff->v = isl_vec_drop_els(aff->v, 1 + 1 + v_div + pos, n - pos);
 	if (!aff->ls || !aff->v)
 		return isl_aff_free(aff);
 
