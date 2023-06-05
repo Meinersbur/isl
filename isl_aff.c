@@ -517,16 +517,26 @@ isl_size isl_aff_dim(__isl_keep isl_aff *aff, enum isl_dim_type type)
 	return isl_aff_domain_dim(aff, type);
 }
 
+/* Return the offset of the first variable of type "type" within
+ * the variables of the domain of "aff".
+ */
+static isl_size isl_aff_domain_var_offset(__isl_keep isl_aff *aff,
+	enum isl_dim_type type)
+{
+	isl_local_space *ls;
+
+	ls = isl_aff_peek_domain_local_space(aff);
+	return isl_local_space_var_offset(ls, type);
+}
+
 /* Return the offset of the first coefficient of type "type" in
  * the domain of "aff".
  */
 isl_size isl_aff_domain_offset(__isl_keep isl_aff *aff, enum isl_dim_type type)
 {
-	isl_local_space *ls;
 	isl_size offset;
 
-	ls = isl_aff_peek_domain_local_space(aff);
-	offset = isl_local_space_var_offset(ls, type);
+	offset = isl_aff_domain_var_offset(aff, type);
 	if (offset < 0)
 		return isl_size_error;
 	return 1 + offset;
