@@ -132,7 +132,7 @@ static __isl_give isl_ast_graft *at_each_domain(__isl_take isl_ast_graft *graft,
 }
 
 /* Generate a call expression for the single executed
- * domain element "map" and put a guard around it based its (simplified)
+ * domain element "map" and put a guard around it based on its (simplified)
  * domain.  "executed" is the original inverse schedule from which "map"
  * has been derived.  In particular, "map" is identical to "executed".
  * "executed" is only used if there is an at_each_domain callback.
