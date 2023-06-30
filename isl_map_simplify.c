@@ -347,6 +347,15 @@ static __isl_give isl_basic_map *normalize_div_expressions(
 	return bmap;
 }
 
+/* Some progress has been made.
+ * Set *progress if "progress" is not NULL.
+ */
+static void mark_progress(int *progress)
+{
+	if (progress)
+		*progress = 1;
+}
+
 /* Eliminate the variable at position "pos" from the constraints of "bmap"
  * using the equality constraint "eq".
  * If "keep_divs" is set, then try and preserve
@@ -377,8 +386,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 			continue;
 		if (isl_int_is_zero(bmap->eq[k][1+pos]))
 			continue;
-		if (progress)
-			*progress = 1;
+		mark_progress(progress);
 		isl_seq_elim(bmap->eq[k], eq, 1+pos, 1+total, NULL);
 		isl_seq_normalize(ctx, bmap->eq[k], 1 + total);
 	}
@@ -386,8 +394,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 	for (k = 0; k < bmap->n_ineq; ++k) {
 		if (isl_int_is_zero(bmap->ineq[k][1+pos]))
 			continue;
-		if (progress)
-			*progress = 1;
+		mark_progress(progress);
 		isl_seq_elim(bmap->ineq[k], eq, 1+pos, 1+total, NULL);
 		isl_seq_gcd(bmap->ineq[k], 1 + total, &ctx->normalize_gcd);
 		bmap = scale_down_inequality(bmap, k, ctx->normalize_gcd,
@@ -402,8 +409,7 @@ static __isl_give isl_basic_map *eliminate_var_using_equality(
 			continue;
 		if (isl_int_is_zero(bmap->div[k][1+1+pos]))
 			continue;
-		if (progress)
-			*progress = 1;
+		mark_progress(progress);
 		/* We need to be careful about circular definitions,
 		 * so for now we just remove the definition of div k
 		 * if the equality contains any divs.
@@ -511,7 +517,7 @@ static __isl_give isl_basic_map *eliminate_divs_eq(
 			if (!ok)
 				continue;
 			modified = 1;
-			*progress = 1;
+			mark_progress(progress);
 			bmap = eliminate_div(bmap, bmap->eq[i], d, 1, 1);
 			if (isl_basic_map_drop_equality(bmap, i) < 0)
 				return isl_basic_map_free(bmap);
@@ -550,7 +556,7 @@ static __isl_give isl_basic_map *eliminate_divs_ineq(
 				break;
 		if (i < bmap->n_ineq)
 			continue;
-		*progress = 1;
+		mark_progress(progress);
 		bmap = isl_basic_map_eliminate_vars(bmap, (off-1)+d, 1);
 		if (!bmap || ISL_F_ISSET(bmap, ISL_BASIC_MAP_EMPTY))
 			break;
@@ -639,8 +645,7 @@ static __isl_give isl_basic_map *set_div_from_eq(__isl_take isl_basic_map *bmap,
 	isl_seq_neg(bmap->div[div] + 1, bmap->eq[eq], 1 + total);
 	isl_int_set_si(bmap->div[div][1 + o_div + div], 0);
 	isl_int_set(bmap->div[div][0], bmap->eq[eq][o_div + div]);
-	if (progress)
-		*progress = 1;
+	mark_progress(progress);
 
 	return bmap;
 }
@@ -939,7 +944,7 @@ static __isl_give isl_basic_map *remove_duplicate_divs(
 				       bmap->div[index[h]-1], 2+total))
 				break;
 		if (index[h]) {
-			*progress = 1;
+			mark_progress(progress);
 			l = index[h] - 1;
 			elim_for[l] = k + 1;
 		}
@@ -1170,8 +1175,7 @@ static __isl_give isl_basic_map *normalize_divs(__isl_take isl_basic_map *bmap,
 	isl_mat_free(C2);
 	isl_mat_free(T);
 
-	if (progress)
-		*progress = 1;
+	mark_progress(progress);
 done:
 	ISL_F_SET(bmap, ISL_BASIC_MAP_NORMALIZED_DIVS);
 
@@ -1300,8 +1304,7 @@ static __isl_give isl_basic_map *check_for_div_constraints(
 			bmap = set_div_from_lower_bound(bmap, i, k);
 		else
 			bmap = set_div_from_lower_bound(bmap, i, l);
-		if (progress)
-			*progress = 1;
+		mark_progress(progress);
 		break;
 	}
 	return bmap;
@@ -1356,8 +1359,7 @@ __isl_give isl_basic_map *isl_basic_map_remove_duplicate_constraints(
 			 * will no longer be valid.
 			 * Plus, we probably we want to regauss first.
 			 */
-			if (progress)
-				*progress = 1;
+			mark_progress(progress);
 			isl_basic_map_drop_inequality(bmap, l);
 			isl_basic_map_inequality_to_equality(bmap, k);
 		} else
@@ -1384,8 +1386,8 @@ __isl_give isl_basic_map *isl_basic_map_detect_inequality_pairs(
 		duplicate = 0;
 		bmap = isl_basic_map_remove_duplicate_constraints(bmap,
 								&duplicate, 0);
-		if (progress && duplicate)
-			*progress = 1;
+		if (duplicate)
+			mark_progress(progress);
 	} while (duplicate);
 
 	return bmap;
@@ -1447,8 +1449,7 @@ static __isl_give isl_basic_map *eliminate_unit_div(
 		    !isl_int_is_negone(bmap->ineq[j][1 + v_div + div]))
 			continue;
 
-		if (progress)
-			*progress = 1;
+		mark_progress(progress);
 
 		s = isl_int_sgn(bmap->ineq[j][1 + v_div + div]);
 		isl_int_set_si(bmap->ineq[j][1 + v_div + div], 0);
