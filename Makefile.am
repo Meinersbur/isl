@@ -18,7 +18,7 @@ noinst_PROGRAMS = isl_test isl_polyhedron_sample isl_pip \
 	isl_polyhedron_detect_equalities \
 	isl_polyhedron_remove_redundant_equalities isl_cat \
 	isl_closure isl_bound isl_schedule isl_codegen isl_test_int \
-	isl_flow isl_flow_cmp isl_schedule_cmp
+	isl_flow isl_flow_cmp isl_schedule_cmp isl_autovec
 TESTS = isl_test codegen_test.sh pip_test.sh bound_test.sh isl_test_int \
 	flow_test.sh schedule_test.sh
 if HAVE_CPP_ISL_H
@@ -324,6 +324,11 @@ isl_test_cpp_SOURCES = \
 	include/isl/cpp.h
 isl_test_cpp_LDFLAGS = @MP_LDFLAGS@
 isl_test_cpp_LDADD = libisl.la @MP_LIBS@
+
+isl_autovec_SOURCES = \
+	isl_autovec.cc
+isl_autovec_LDFLAGS = @MP_LDFLAGS@
+isl_autovec_LDADD = libisl.la @MP_LIBS@
 
 # This program is not meant to be compiled by default.
 # In fact it is meant not to be compilable.
