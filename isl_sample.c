@@ -1071,8 +1071,8 @@ error:
 	return -1;
 }
 
-/* Compute and return an initial basis for the possibly
- * unbounded tableau "tab".  "tab_cone" is a tableau
+/* Compute an initial basis for the possibly unbounded tableau "tab"
+ * (storing it in tab->basis).  "tab_cone" is a tableau
  * for the corresponding recession cone.
  * Additionally, add constraints to "tab" that ensure
  * that any rational value for the unbounded directions
