@@ -178,7 +178,7 @@ error:
 
 /* Given a union of basic sets, construct the constraints for wrapping
  * a facet around one of its ridges.
- * In particular, if each of n the d-dimensional basic sets i in "set"
+ * In particular, if each of the n d-dimensional basic sets i in "set"
  * contains the origin, satisfies the constraints x_1 >= 0 and x_2 >= 0
  * and is defined by the constraints
  *				    [ 1 ]
