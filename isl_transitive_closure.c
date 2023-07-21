@@ -519,7 +519,7 @@ error:
 
 /* Given a set of offsets "delta", construct a relation of the
  * given dimension specification (Z^{n+1} -> Z^{n+1}) that
- * is an overapproximation of the relations that
+ * is an overapproximation of the relation that
  * maps an element x to any element that can be reached
  * by taking a non-negative number of steps along any of
  * the elements in "delta".
