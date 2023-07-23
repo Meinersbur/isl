@@ -107,7 +107,7 @@ struct isl_tab_undo {
  *
  * There are "n_var" variables in total.  The first "n_param" of these
  * are called parameters and the last "n_div" of these are called divs.
- * The basic tableau operations makes no distinction between different
+ * The basic tableau operations make no distinction between different
  * kinds of variables.  These special variables are only used while
  * solving PILP problems.
  *
