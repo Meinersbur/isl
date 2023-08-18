@@ -1593,8 +1593,8 @@ static int row_is_manifestly_non_integral(struct isl_tab *tab, int row)
 	if (tab->M && !isl_int_eq(tab->mat->row[row][2],
 				  tab->mat->row[row][0]))
 		return 0;
-	if (isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
-				    tab->n_col - tab->n_dead) != -1)
+	if (isl_seq_any_non_zero(tab->mat->row[row] + off + tab->n_dead,
+				    tab->n_col - tab->n_dead))
 		return 0;
 
 	return !isl_int_is_divisible_by(tab->mat->row[row][1],
@@ -2042,8 +2042,8 @@ static int row_is_manifestly_zero(struct isl_tab *tab, int row)
 		return 0;
 	if (row_is_big(tab, row))
 		return 0;
-	return isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
-					tab->n_col - tab->n_dead) == -1;
+	return !isl_seq_any_non_zero(tab->mat->row[row] + off + tab->n_dead,
+					tab->n_col - tab->n_dead);
 }
 
 /* Add an equality that is known to be valid for the given tableau.
@@ -3413,8 +3413,8 @@ int isl_tab_is_equality(struct isl_tab *tab, int con)
 	off = 2 + tab->M;
 	return isl_int_is_zero(tab->mat->row[row][1]) &&
 		!row_is_big(tab, row) &&
-		isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
-					tab->n_col - tab->n_dead) == -1;
+		!isl_seq_any_non_zero(tab->mat->row[row] + off + tab->n_dead,
+					tab->n_col - tab->n_dead);
 }
 
 /* Return the minimal value of the affine expression "f" with denominator
@@ -3530,7 +3530,6 @@ static isl_bool is_constant(struct isl_tab *tab, struct isl_tab_var *var,
 	isl_mat *mat = tab->mat;
 	int n;
 	int row;
-	int pos;
 
 	if (!var->is_row)
 		return isl_bool_false;
@@ -3538,8 +3537,7 @@ static isl_bool is_constant(struct isl_tab *tab, struct isl_tab_var *var,
 	if (row_is_big(tab, row))
 		return isl_bool_false;
 	n = tab->n_col - tab->n_dead;
-	pos = isl_seq_first_non_zero(mat->row[row] + off + tab->n_dead, n);
-	if (pos != -1)
+	if (isl_seq_any_non_zero(mat->row[row] + off + tab->n_dead, n))
 		return isl_bool_false;
 	if (value)
 		isl_int_divexact(*value, mat->row[row][1], mat->row[row][0]);
@@ -4135,6 +4133,7 @@ isl_stat isl_tab_rollback(struct isl_tab *tab, struct isl_tab_undo *snap)
 static enum isl_ineq_type separation_type(struct isl_tab *tab, unsigned row)
 {
 	int pos;
+	int separate;
 	unsigned off = 2 + tab->M;
 
 	if (tab->rational)
@@ -4156,11 +4155,11 @@ static enum isl_ineq_type separation_type(struct isl_tab *tab, unsigned row)
 			tab->mat->row[row][off + tab->n_dead + pos]))
 		return isl_ineq_separate;
 
-	pos = isl_seq_first_non_zero(
+	separate = isl_seq_any_non_zero(
 			tab->mat->row[row] + off + tab->n_dead + pos + 1,
 			tab->n_col - tab->n_dead - pos - 1);
 
-	return pos == -1 ? isl_ineq_adj_ineq : isl_ineq_separate;
+	return !separate ? isl_ineq_adj_ineq : isl_ineq_separate;
 }
 
 /* Check the effect of inequality "ineq" on the tableau "tab".

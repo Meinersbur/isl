@@ -368,9 +368,9 @@ static int purity(__isl_keep isl_basic_set *bset, isl_int *c, int *div_purity,
 		default: return IMPURE;
 		}
 	}
-	if (!p && isl_seq_first_non_zero(c + 1, nparam) == -1)
+	if (!p && !isl_seq_any_non_zero(c + 1, nparam))
 		return PURE_VAR;
-	if (!v && isl_seq_first_non_zero(c + 1 + nparam, d) == -1)
+	if (!v && !isl_seq_any_non_zero(c + 1 + nparam, d))
 		return PURE_PARAM;
 
 	empty = parametric_constant_never_positive(bset, c, div_purity);
@@ -413,9 +413,9 @@ static __isl_give int *get_div_purity(__isl_keep isl_basic_set *bset)
 			div_purity[i] = IMPURE;
 			continue;
 		}
-		if (isl_seq_first_non_zero(bset->div[i] + 2, nparam) != -1)
+		if (isl_seq_any_non_zero(bset->div[i] + 2, nparam))
 			p = 1;
-		if (isl_seq_first_non_zero(bset->div[i] + 2 + nparam, d) != -1)
+		if (isl_seq_any_non_zero(bset->div[i] + 2 + nparam, d))
 			v = 1;
 		for (j = 0; j < i; ++j) {
 			if (isl_int_is_zero(bset->div[i][2 + nparam + d + j]))

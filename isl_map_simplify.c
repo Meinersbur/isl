@@ -1056,7 +1056,7 @@ static int n_pure_div_eq(__isl_keep isl_basic_map *bmap)
 			--j;
 		if (j < 0)
 			break;
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + v_div, j) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i] + 1 + v_div, j))
 			return 0;
 	}
 	return i;
@@ -1332,8 +1332,8 @@ static isl_bool better_div_constraint(__isl_keep isl_basic_map *bmap,
 	if (isl_int_is_zero(bmap->div[div][0]))
 		return isl_bool_true;
 
-	if (isl_seq_last_non_zero(bmap->ineq[ineq] + total + div + 1,
-				  n_div - (div + 1)) >= 0)
+	if (isl_seq_any_non_zero(bmap->ineq[ineq] + total + div + 1,
+				  n_div - (div + 1)))
 		return isl_bool_false;
 
 	last_ineq = isl_seq_last_non_zero(bmap->ineq[ineq], total + div);
@@ -2100,14 +2100,14 @@ isl_bool isl_basic_map_is_div_constraint(__isl_keep isl_basic_map *bmap,
 				bmap->div[div][1], bmap->div[div][0]);
 		if (!neg)
 			return isl_bool_false;
-		if (isl_seq_first_non_zero(constraint+pos+1,
-					    bmap->n_div-div-1) != -1)
+		if (isl_seq_any_non_zero(constraint+pos+1,
+					    bmap->n_div-div-1))
 			return isl_bool_false;
 	} else if (isl_int_abs_eq(constraint[pos], bmap->div[div][0])) {
 		if (!isl_seq_eq(constraint, bmap->div[div]+1, pos))
 			return isl_bool_false;
-		if (isl_seq_first_non_zero(constraint+pos+1,
-					    bmap->n_div-div-1) != -1)
+		if (isl_seq_any_non_zero(constraint+pos+1,
+					    bmap->n_div-div-1))
 			return isl_bool_false;
 	} else
 		return isl_bool_false;
@@ -3417,8 +3417,7 @@ static int n_div_eq(__isl_keep isl_basic_map *bmap)
 	total -= n_div;
 
 	for (i = 0; i < bmap->n_eq; ++i)
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total,
-					    n_div) == -1)
+		if (!isl_seq_any_non_zero(bmap->eq[i] + 1 + total, n_div))
 			return i;
 
 	return bmap->n_eq;
@@ -3702,8 +3701,8 @@ static __isl_give isl_basic_map *reduce_stride_constraints(
 			isl_die(isl_basic_map_get_ctx(bmap), isl_error_internal,
 				"equality constraints modified unexpectedly",
 				goto error);
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + total + div + 1,
-						n_div - div - 1) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i] + 1 + total + div + 1,
+						n_div - div - 1))
 			continue;
 		if (isl_mat_row_gcd(A, i, &gcd) < 0)
 			goto error;
@@ -3935,8 +3934,7 @@ static __isl_give isl_basic_map *drop_inequalities(
 	while (bmap && i1 >= 0 && i2 >= 0) {
 		int cmp;
 
-		if (isl_seq_first_non_zero(bmap->ineq[i1] + 1 + total,
-					    extra) != -1) {
+		if (isl_seq_any_non_zero(bmap->ineq[i1] + 1 + total, extra)) {
 			--i1;
 			continue;
 		}
@@ -3993,8 +3991,7 @@ static __isl_give isl_basic_map *drop_equalities(
 	while (bmap && i1 >= 0 && i2 >= 0) {
 		int last1, last2;
 
-		if (isl_seq_first_non_zero(bmap->eq[i1] + 1 + total,
-					    extra) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i1] + 1 + total, extra))
 			break;
 		last1 = isl_seq_last_non_zero(bmap->eq[i1] + 1, total);
 		last2 = isl_seq_last_non_zero(context->eq[i2] + 1, total);
@@ -4368,7 +4365,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 		reduced = reduced_using_equalities(v->block.data, bmap2->eq[i],
 							bmap1, elim, total);
 		if (reduced && !isl_int_is_zero(v->block.data[0]) &&
-		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
+		    !isl_seq_any_non_zero(v->block.data + 1, total))
 			goto disjoint;
 	}
 	for (i = 0; i < bmap2->n_ineq; ++i) {
@@ -4376,7 +4373,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 		reduced = reduced_using_equalities(v->block.data,
 					bmap2->ineq[i], bmap1, elim, total);
 		if (reduced && isl_int_is_neg(v->block.data[0]) &&
-		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
+		    !isl_seq_any_non_zero(v->block.data + 1, total))
 			goto disjoint;
 	}
 	compute_elimination_index(bmap2, elim, total);
@@ -4385,7 +4382,7 @@ isl_bool isl_basic_map_plain_is_disjoint(__isl_keep isl_basic_map *bmap1,
 		reduced = reduced_using_equalities(v->block.data,
 					bmap1->ineq[i], bmap2, elim, total);
 		if (reduced && isl_int_is_neg(v->block.data[0]) &&
-		    isl_seq_first_non_zero(v->block.data + 1, total) == -1)
+		    !isl_seq_any_non_zero(v->block.data + 1, total))
 			goto disjoint;
 	}
 	isl_vec_free(v);
@@ -4691,10 +4688,10 @@ static isl_size div_find_coalesce(__isl_keep isl_basic_map *bmap, int *pairs,
 	v_div = isl_basic_map_var_offset(bmap, isl_dim_div);
 	if (v_div < 0)
 		return isl_size_error;
-	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + v_div, div) != -1)
+	if (isl_seq_any_non_zero(bmap->ineq[l] + 1 + v_div, div))
 		return n_div;
-	if (isl_seq_first_non_zero(bmap->ineq[l] + 1 + v_div + div + 1,
-				   n_div - div - 1) != -1)
+	if (isl_seq_any_non_zero(bmap->ineq[l] + 1 + v_div + div + 1,
+				   n_div - div - 1))
 		return n_div;
 	opp = is_opposite(bmap, l, u);
 	if (opp < 0 || !opp)
@@ -5669,7 +5666,7 @@ static isl_stat preimage(isl_int *c, __isl_keep isl_mat *T)
 	n = isl_mat_rows(T);
 	if (n < 0)
 		return isl_stat_error;
-	if (isl_seq_first_non_zero(c, n) == -1)
+	if (!isl_seq_any_non_zero(c, n))
 		return isl_stat_ok;
 	ctx = isl_mat_get_ctx(T);
 	v = isl_vec_alloc(ctx, n);
@@ -5805,8 +5802,8 @@ __isl_give isl_basic_map *isl_basic_map_drop_redundant_divs(
 		if (l < 0)
 			continue;
 		l += first;
-		if (isl_seq_first_non_zero(bmap->eq[i] + o_div + l + 1,
-					    n_div - (l + 1)) == -1)
+		if (!isl_seq_any_non_zero(bmap->eq[i] + o_div + l + 1,
+					    n_div - (l + 1)))
 			continue;
 		break;
 	}
@@ -5862,8 +5859,7 @@ static isl_bool has_multiple_var_equality(__isl_keep isl_basic_map *bmap)
 			return isl_bool_true;
 
 		j += 1;
-		k = isl_seq_first_non_zero(bmap->eq[i] + 1 + j, total - j);
-		if (k >= 0)
+		if (isl_seq_any_non_zero(bmap->eq[i] + 1 + j, total - j))
 			return isl_bool_true;
 	}
 

@@ -4377,8 +4377,7 @@ static int is_trivial(struct isl_sched_node *node, __isl_keep isl_vec *sol)
 	if (!node_sol)
 		return -1;
 
-	trivial = isl_seq_first_non_zero(node_sol->el,
-					node->nvar - node->rank) == -1;
+	trivial = !isl_seq_any_non_zero(node_sol->el, node->nvar - node->rank);
 
 	isl_vec_free(node_sol);
 

@@ -3103,8 +3103,8 @@ __isl_give isl_basic_set *isl_set_bounded_simple_hull(__isl_take isl_set *set)
 		for (j = 0; j < hull->n_eq; ++j) {
 			if (isl_int_is_zero(hull->eq[j][1 + nparam + i]))
 				continue;
-			if (isl_seq_first_non_zero(hull->eq[j]+1+nparam+i+1,
-						    left) == -1)
+			if (!isl_seq_any_non_zero(hull->eq[j]+1+nparam+i+1,
+						    left))
 				break;
 		}
 		if (j < hull->n_eq)
@@ -3113,10 +3113,10 @@ __isl_give isl_basic_set *isl_set_bounded_simple_hull(__isl_take isl_set *set)
 		for (j = 0; j < hull->n_ineq; ++j) {
 			if (isl_int_is_zero(hull->ineq[j][1 + nparam + i]))
 				continue;
-			if (isl_seq_first_non_zero(hull->ineq[j]+1+nparam+i+1,
-						    left) != -1 ||
-			    isl_seq_first_non_zero(hull->ineq[j]+1+nparam,
-						    i) != -1)
+			if (isl_seq_any_non_zero(hull->ineq[j]+1+nparam+i+1,
+						    left) ||
+			    isl_seq_any_non_zero(hull->ineq[j]+1+nparam,
+						    i))
 				continue;
 			if (isl_int_is_pos(hull->ineq[j][1 + nparam + i]))
 				lower = 1;

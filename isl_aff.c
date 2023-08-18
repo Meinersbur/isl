@@ -774,7 +774,7 @@ isl_bool isl_aff_is_nan(__isl_keep isl_aff *aff)
 	if (!aff)
 		return isl_bool_error;
 
-	return isl_bool_ok(isl_seq_first_non_zero(aff->v->el, 2) < 0);
+	return isl_bool_ok(!isl_seq_any_non_zero(aff->v->el, 2));
 }
 
 /* Are "aff1" and "aff2" obviously equal?
@@ -5575,10 +5575,10 @@ static __isl_give isl_pw_multi_aff *pw_multi_aff_from_map_check_strides(
 			if (!isl_int_is_one(eq[o_out + i]) &&
 			    !isl_int_is_negone(eq[o_out + i]))
 				continue;
-			if (isl_seq_first_non_zero(eq + o_out, i) != -1)
+			if (isl_seq_any_non_zero(eq + o_out, i))
 				continue;
-			if (isl_seq_first_non_zero(eq + o_out + i + 1,
-						    n_out - (i + 1)) != -1)
+			if (isl_seq_any_non_zero(eq + o_out + i + 1,
+						    n_out - (i + 1)))
 				continue;
 			isl_seq_gcd(eq + o_div, n_div, &gcd);
 			if (isl_int_is_zero(gcd))

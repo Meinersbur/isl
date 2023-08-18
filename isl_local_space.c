@@ -1379,8 +1379,7 @@ static isl_bool is_linear_div_constraint(__isl_keep isl_local_space *ls,
 	} else {
 		return isl_bool_false;
 	}
-	if (isl_seq_first_non_zero(constraint + pos + 1,
-				    ls->div->n_row - div - 1) != -1)
+	if (isl_seq_any_non_zero(constraint + pos + 1, ls->div->n_row - div - 1))
 		return isl_bool_false;
 	return isl_bool_true;
 }

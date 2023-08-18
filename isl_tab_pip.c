@@ -287,7 +287,7 @@ static isl_stat check_final_columns_are_zero(__isl_keep isl_mat *M,
 		return isl_stat_error;
 	n = cols - first;
 	for (i = 0; i < rows; ++i)
-		if (isl_seq_first_non_zero(M->row[i] + first, n) != -1)
+		if (isl_seq_any_non_zero(M->row[i] + first, n))
 			isl_die(isl_mat_get_ctx(M), isl_error_internal,
 				"final columns should be zero",
 				return isl_stat_error);
@@ -1568,8 +1568,8 @@ static int is_constant(struct isl_tab *tab, int row)
 {
 	unsigned off = 2 + tab->M;
 
-	return isl_seq_first_non_zero(tab->mat->row[row] + off + tab->n_dead,
-					tab->n_col - tab->n_dead) == -1;
+	return !isl_seq_any_non_zero(tab->mat->row[row] + off + tab->n_dead,
+					tab->n_col - tab->n_dead);
 }
 
 /* Is the given row a parametric constant?
@@ -4757,9 +4757,9 @@ static isl_bool parallel_constraints(__isl_keep isl_basic_map *bmap,
 		uint32_t hash;
 
 		info.val = bmap->ineq[i] + 1 + info.n_in;
-		if (isl_seq_first_non_zero(info.val, n_out) < 0)
+		if (!isl_seq_any_non_zero(info.val, n_out))
 			continue;
-		if (isl_seq_first_non_zero(info.val + n_out, n_div) >= 0)
+		if (isl_seq_any_non_zero(info.val + n_out, n_div))
 			continue;
 		if (!single_occurrence(info.n_in, bmap->ineq[i] + 1,
 					occurrences))
@@ -4910,8 +4910,8 @@ static isl_bool need_split_basic_map(__isl_keep isl_basic_map *bmap,
 			continue;
 		if (!isl_int_is_negone(bmap->ineq[i][1 + pos]))
 			return isl_bool_true;
-		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + pos + 1,
-					   total - pos - 1) >= 0)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + pos + 1,
+					   total - pos - 1))
 			return isl_bool_true;
 
 		for (j = 0; j < cst->n_row; ++j)

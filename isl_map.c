@@ -1089,20 +1089,20 @@ isl_bool isl_basic_set_eq_is_stride(__isl_keep isl_basic_set *bset, int i)
 	if (!isl_int_is_zero(bset->eq[i][0]))
 		return isl_bool_false;
 
-	if (isl_seq_first_non_zero(bset->eq[i] + 1, nparam) != -1)
+	if (isl_seq_any_non_zero(bset->eq[i] + 1, nparam))
 		return isl_bool_false;
 	pos1 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam, d);
 	if (pos1 == -1)
 		return isl_bool_false;
-	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + pos1 + 1,
-					d - pos1 - 1) != -1)
+	if (isl_seq_any_non_zero(bset->eq[i] + 1 + nparam + pos1 + 1,
+					d - pos1 - 1))
 		return isl_bool_false;
 
 	pos2 = isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d, n_div);
 	if (pos2 == -1)
 		return isl_bool_false;
-	if (isl_seq_first_non_zero(bset->eq[i] + 1 + nparam + d  + pos2 + 1,
-				   n_div - pos2 - 1) != -1)
+	if (isl_seq_any_non_zero(bset->eq[i] + 1 + nparam + d  + pos2 + 1,
+				   n_div - pos2 - 1))
 		return isl_bool_false;
 	if (!isl_int_is_one(bset->eq[i][1 + nparam + pos1]) &&
 	    !isl_int_is_negone(bset->eq[i][1 + nparam + pos1]))
@@ -1220,9 +1220,8 @@ isl_bool isl_basic_map_has_rational(__isl_keep isl_basic_map *bmap)
 			if (!isl_int_is_one(bmap->eq[i][1 + j]) &&
 			    !isl_int_is_negone(bmap->eq[i][1 + j]))
 				break;
-			j = isl_seq_first_non_zero(bmap->eq[i] + 1 + j + 1,
-						    total - j - 1);
-			if (j >= 0)
+			if (isl_seq_any_non_zero(bmap->eq[i] + 1 + j + 1,
+						    total - j - 1))
 				break;
 		}
 		if (i == bmap->n_eq)
@@ -2455,8 +2454,8 @@ static isl_size find_later_constraint_in_pair(__isl_keep isl_basic_map *bmap,
 		if (!isl_int_abs_eq(bmap->ineq[ineq][1 + last],
 				    bmap->ineq[j][1 + last]))
 			return n_ineq;
-		if (isl_seq_last_non_zero(bmap->ineq[j] + 1 + last + 1,
-					len - (last + 1)) != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[j] + 1 + last + 1,
+					len - (last + 1)))
 			return n_ineq;
 		if (!is_constraint_pair(bmap, ineq, j, last + 1))
 			continue;
@@ -2840,7 +2839,7 @@ isl_bool isl_basic_map_div_expr_involves_vars(__isl_keep isl_basic_map *bmap,
 	unknown = isl_basic_map_div_is_marked_unknown(bmap, div);
 	if (unknown < 0 || unknown)
 		return isl_bool_not(unknown);
-	if (isl_seq_first_non_zero(bmap->div[div] + 1 + 1 + first, n) >= 0)
+	if (isl_seq_any_non_zero(bmap->div[div] + 1 + 1 + first, n))
 		return isl_bool_true;
 
 	return isl_bool_false;
@@ -3233,10 +3232,7 @@ static isl_bool detect_mod(__isl_keep isl_basic_map *bmap,
 	if (i < 1)
 		return isl_bool_false;
 	for (i = j - 1; i >= 1; --i) {
-		int f;
-
-		f = isl_seq_first_non_zero(bmap->ineq[i] + 1 + v_div, n_div);
-		if (f != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + v_div, n_div))
 			continue;
 		if (!isl_int_is_one(bmap->ineq[i][1 + data->pos]) &&
 		    !isl_int_is_negone(bmap->ineq[i][1 + data->pos]))
@@ -3477,15 +3473,15 @@ isl_bool isl_basic_map_involves_dims(__isl_keep isl_basic_map *bmap,
 
 	first += isl_basic_map_offset(bmap, type);
 	for (i = 0; i < bmap->n_eq; ++i)
-		if (isl_seq_first_non_zero(bmap->eq[i] + first, n) >= 0)
+		if (isl_seq_any_non_zero(bmap->eq[i] + first, n))
 			return isl_bool_true;
 	for (i = 0; i < bmap->n_ineq; ++i)
-		if (isl_seq_first_non_zero(bmap->ineq[i] + first, n) >= 0)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + first, n))
 			return isl_bool_true;
 	for (i = 0; i < bmap->n_div; ++i) {
 		if (isl_int_is_zero(bmap->div[i][0]))
 			continue;
-		if (isl_seq_first_non_zero(bmap->div[i] + 1 + first, n) >= 0)
+		if (isl_seq_any_non_zero(bmap->div[i] + 1 + first, n))
 			return isl_bool_true;
 	}
 
@@ -3573,14 +3569,14 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_involving(
 		return NULL;
 
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) == -1)
+		if (!isl_seq_any_non_zero(bmap->eq[i] + 1 + first, n))
 			continue;
 		if (isl_basic_map_drop_equality(bmap, i) < 0)
 			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) == -1)
+		if (!isl_seq_any_non_zero(bmap->ineq[i] + 1 + first, n))
 			continue;
 		if (isl_basic_map_drop_inequality(bmap, i) < 0)
 			return isl_basic_map_free(bmap);
@@ -3623,14 +3619,14 @@ __isl_give isl_basic_map *isl_basic_map_drop_constraints_not_involving_dims(
 	first += isl_basic_map_offset(bmap, type) - 1;
 
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + first, n) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i] + 1 + first, n))
 			continue;
 		if (isl_basic_map_drop_equality(bmap, i) < 0)
 			return isl_basic_map_free(bmap);
 	}
 
 	for (i = bmap->n_ineq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->ineq[i] + 1 + first, n) != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + first, n))
 			continue;
 		if (isl_basic_map_drop_inequality(bmap, i) < 0)
 			return isl_basic_map_free(bmap);
@@ -10293,8 +10289,8 @@ static isl_size find_div(__isl_keep isl_basic_map *dst,
 	isl_assert(dst->ctx, div <= n_div, return isl_size_error);
 	for (i = div; i < n_div; ++i)
 		if (isl_seq_eq(dst->div[i], src->div[div], 1+1+v_div+div) &&
-		    isl_seq_first_non_zero(dst->div[i] + 1 + 1 + v_div + div,
-						n_div - div) == -1)
+		    !isl_seq_any_non_zero(dst->div[i] + 1 + 1 + v_div + div,
+						n_div - div))
 			return i;
 	return n_div;
 }
@@ -10710,9 +10706,9 @@ static isl_bool isl_basic_map_plain_has_fixed_var(
 				break;
 		if (d != pos)
 			continue;
-		if (isl_seq_first_non_zero(bmap->eq[i]+1, d) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i]+1, d))
 			return isl_bool_false;
-		if (isl_seq_first_non_zero(bmap->eq[i]+1+d+1, total-d-1) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i]+1+d+1, total-d-1))
 			return isl_bool_false;
 		if (!isl_int_is_one(bmap->eq[i][1+d]))
 			return isl_bool_false;
@@ -12345,7 +12341,7 @@ static isl_bool div_may_involve_output(__isl_keep isl_basic_map *bmap, int div)
 		return isl_bool_error;
 	o_out = isl_basic_map_offset(bmap, isl_dim_out);
 
-	if (isl_seq_first_non_zero(bmap->div[div] + 1 + o_out, n_out) != -1)
+	if (isl_seq_any_non_zero(bmap->div[div] + 1 + o_out, n_out))
 		return isl_bool_true;
 
 	n_div = isl_basic_map_dim(bmap, isl_dim_div);
@@ -12431,8 +12427,8 @@ static int find_modulo_constraint_pair(__isl_keep isl_basic_map *bmap,
 	for (i = 0; i < bmap->n_ineq; ++i) {
 		if (!isl_int_abs_eq(bmap->ineq[i][o_out + pos], ctx->one))
 			continue;
-		if (isl_seq_first_non_zero(bmap->ineq[i] + o_out + pos + 1,
-					n_out - (pos + 1)) != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + o_out + pos + 1,
+					n_out - (pos + 1)))
 			continue;
 		if (first_div_may_involve_output(bmap, bmap->ineq[i] + o_div,
 						0, n_div) < n_div)
@@ -12509,8 +12505,8 @@ int isl_basic_map_output_defining_equality(__isl_keep isl_basic_map *bmap,
 	for (j = 0; j < bmap->n_eq; ++j) {
 		if (isl_int_is_zero(bmap->eq[j][o_out + pos]))
 			continue;
-		if (isl_seq_first_non_zero(bmap->eq[j] + o_out + pos + 1,
-					n_out - (pos + 1)) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[j] + o_out + pos + 1,
+					n_out - (pos + 1)))
 			continue;
 		k = first_div_may_involve_output(bmap, bmap->eq[j] + o_div,
 						0, n_div);
@@ -12724,9 +12720,9 @@ int isl_map_is_translation(__isl_keep isl_map *map)
 
 static int unique(isl_int *p, unsigned pos, unsigned len)
 {
-	if (isl_seq_first_non_zero(p, pos) != -1)
+	if (isl_seq_any_non_zero(p, pos))
 		return 0;
-	if (isl_seq_first_non_zero(p + pos + 1, len - pos - 1) != -1)
+	if (isl_seq_any_non_zero(p + pos + 1, len - pos - 1))
 		return 0;
 	return 1;
 }
@@ -14949,10 +14945,9 @@ static isl_bool is_potential_div_constraint(__isl_keep isl_basic_map *bmap,
 		return isl_bool_false;
 	if (isl_int_is_negone(c[1 + v_out + d]))
 		return isl_bool_false;
-	if (isl_seq_first_non_zero(c + 1 + v_out, d) != -1)
+	if (isl_seq_any_non_zero(c + 1 + v_out, d))
 		return isl_bool_false;
-	if (isl_seq_first_non_zero(c + 1 + v_out + d + 1,
-				    v_div - (v_out + d + 1)) != -1)
+	if (isl_seq_any_non_zero(c + 1 + v_out + d + 1, v_div - (v_out + d + 1)))
 		return isl_bool_false;
 	for (i = 0; v_div + i < total; ++i) {
 		isl_bool known, involves;
@@ -15079,13 +15074,12 @@ static isl_size find_output_lower_mod_constraint(__isl_keep isl_basic_map *bmap,
 		if (!isl_int_is_one(bmap->ineq[i][1 + v_out + pos]) &&
 		    !isl_int_is_negone(bmap->ineq[i][1 + v_out + pos]))
 			continue;
-		if (isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_div,
-					    n_div) != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + v_div, n_div))
 			continue;
-		if (isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_out, pos) != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + v_out, pos))
 			continue;
-		if (isl_seq_last_non_zero(bmap->ineq[i] + 1 + v_out + pos + 1,
-					    n_out - (pos + 1)) != -1)
+		if (isl_seq_any_non_zero(bmap->ineq[i] + 1 + v_out + pos + 1,
+					    n_out - (pos + 1)))
 			continue;
 		j = find_earlier_constraint_in_pair(bmap, i, v_out + pos, v_div,
 						    n, &tmp);

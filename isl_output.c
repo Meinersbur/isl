@@ -1314,8 +1314,7 @@ static __isl_give isl_basic_map *drop_aff(__isl_take isl_basic_map *bmap,
 		goto error;
 
 	for (i = bmap->n_eq - 1; i >= 0; --i) {
-		if (isl_seq_first_non_zero(bmap->eq[i] + 1 + v_div,
-					    bmap->n_div) != -1)
+		if (isl_seq_any_non_zero(bmap->eq[i] + 1 + v_div, bmap->n_div))
 			continue;
 		for (j = 0; j < aff->n_eq; ++j) {
 			if (!isl_seq_eq(bmap->eq[i], aff->eq[j], 1 + v_div) &&

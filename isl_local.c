@@ -346,7 +346,7 @@ isl_bool isl_local_involves_vars(__isl_keep isl_local *local,
 			return isl_bool_error;
 		if (unknown)
 			continue;
-		if (isl_seq_first_non_zero(mat->row[i] + 1 + 1 + first, n) >= 0)
+		if (isl_seq_any_non_zero(mat->row[i] + 1 + 1 + first, n))
 			return isl_bool_true;
 	}
 

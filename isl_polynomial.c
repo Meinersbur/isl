@@ -4889,8 +4889,8 @@ static isl_stat split_periods(__isl_take isl_set *set,
 	for (i = 0; i < qp->div->n_row; ++i) {
 		enum isl_lp_result lp_res;
 
-		if (isl_seq_first_non_zero(qp->div->row[i] + 2 + div_pos,
-						qp->div->n_row) != -1)
+		if (isl_seq_any_non_zero(qp->div->row[i] + 2 + div_pos,
+						qp->div->n_row))
 			continue;
 
 		lp_res = isl_set_solve_lp(set, 0, qp->div->row[i] + 1,

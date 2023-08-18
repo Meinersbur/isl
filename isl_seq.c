@@ -224,6 +224,14 @@ int isl_seq_last_non_zero(isl_int *p, unsigned len)
 	return -1;
 }
 
+/* Does the sequence of length "len" starting at "p"
+ * contain any non-zero element?
+ */
+int isl_seq_any_non_zero(isl_int *p, unsigned len)
+{
+	return isl_seq_first_non_zero(p, len) != -1;
+}
+
 void isl_seq_abs_max(isl_int *p, unsigned len, isl_int *max)
 {
 	int i;

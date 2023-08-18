@@ -238,7 +238,7 @@ static isl_bool is_independent(__isl_keep isl_mat *facets, int n, isl_int *f)
 {
 	isl_size rank;
 
-	if (isl_seq_first_non_zero(f, facets->n_col) < 0)
+	if (!isl_seq_any_non_zero(f, facets->n_col))
 		return isl_bool_false;
 
 	isl_seq_cpy(facets->row[n], f, facets->n_col);
@@ -1509,7 +1509,7 @@ static int vertex_on_facet(__isl_keep isl_basic_set *vertex,
 	}
 	isl_int_clear(m);
 
-	return isl_seq_first_non_zero(v->el, v->size) == -1;
+	return !isl_seq_any_non_zero(v->el, v->size);
 }
 
 /* Triangulate the polytope spanned by the vertices with ids
@@ -1551,7 +1551,7 @@ static isl_stat triangulate(__isl_keep isl_cell *cell, __isl_keep isl_vec *v,
 	if (!ids)
 		goto error;
 	for (i = 0; i < bset->n_ineq; ++i) {
-		if (isl_seq_first_non_zero(bset->ineq[i] + 1 + nparam, d) == -1)
+		if (!isl_seq_any_non_zero(bset->ineq[i] + 1 + nparam, d))
 			continue;
 		if (vertex_on_facet(vertex, bset, i, v))
 			continue;
