@@ -377,7 +377,7 @@ static int greedy_search(isl_ctx *ctx, struct isl_tab *tab,
  * When ctx->opt->gbr is set to ISL_GBR_ALWAYS, then we allow the basis
  * reduction computation to return early.  That is, as soon as it
  * finds a reasonable first direction.
- */ 
+ */
 __isl_give isl_vec *isl_tab_sample(struct isl_tab *tab)
 {
 	unsigned dim;
