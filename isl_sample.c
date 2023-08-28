@@ -623,7 +623,7 @@ error:
  * After handling some trivial cases, we construct a tableau
  * and then use isl_tab_sample to find a sample, passing it
  * the identity matrix as initial basis.
- */ 
+ */
 static __isl_give isl_vec *sample_bounded(__isl_take isl_basic_set *bset)
 {
 	isl_size dim;
