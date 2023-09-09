@@ -2825,7 +2825,7 @@ __isl_give isl_basic_map *isl_basic_map_drop_unrelated_constraints(
 
 	dim = isl_basic_map_dim(bmap, isl_dim_all);
 	if (dim < 0)
-		return isl_basic_map_free(bmap);
+		goto error;
 
 	last = -1;
 	for (i = 0; i < dim; ++i)
@@ -2852,6 +2852,10 @@ __isl_give isl_basic_map *isl_basic_map_drop_unrelated_constraints(
 
 	free(group);
 	return bmap;
+error:
+	free(group);
+	isl_basic_map_free(bmap);
+	return NULL;
 }
 
 /* Drop constraints from "context" that are irrelevant for computing
