@@ -1937,6 +1937,17 @@ __isl_give isl_basic_map *isl_basic_map_insert_div(
 	return bmap;
 }
 
+/* Insert an extra integer division, prescribed by "div", to "bset"
+ * at (integer division) position "pos".
+ */
+__isl_give isl_basic_set *isl_basic_set_insert_div(
+	__isl_take isl_basic_set *bset, int pos, __isl_keep isl_vec *div)
+{
+	isl_basic_map *bmap = bset_to_bmap(bset);
+	bmap = isl_basic_map_insert_div(bmap, pos, div);
+	return bset_from_bmap(bmap);
+}
+
 isl_stat isl_basic_map_free_div(__isl_keep isl_basic_map *bmap, unsigned n)
 {
 	if (!bmap)
