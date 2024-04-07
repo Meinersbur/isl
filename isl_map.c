@@ -6162,6 +6162,23 @@ __isl_give isl_basic_map *isl_basic_map_add_div_constraints(
 	return bmap;
 }
 
+/* For the div d = floor(f/m) at position "pos", add the constraints
+ *
+ *		f - m d >= 0
+ *		-(f-(m-1)) + m d >= 0
+ *
+ * Note that the second constraint is the negation of
+ *
+ *		f - m d >= m
+ */
+__isl_give isl_basic_set *isl_basic_set_add_div_constraints(
+	__isl_take isl_basic_set *bset, unsigned pos)
+{
+	isl_basic_map *bmap = bset_to_bmap(bset);
+	bmap = isl_basic_map_add_div_constraints(bmap, pos);
+	return bset_from_bmap(bmap);
+}
+
 /* For each known div d = floor(f/m), add the constraints
  *
  *		f - m d >= 0
