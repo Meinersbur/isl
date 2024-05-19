@@ -1994,7 +1994,7 @@ static int test_gist(struct isl_ctx *ctx)
 		if (!equal_input)
 			isl_die(ctx, isl_error_unknown,
 				"gist modified input", return -1);
-		if (!equal_input)
+		if (!equal_intersection)
 			isl_die(ctx, isl_error_unknown,
 				"inconsistent gist test case", return -1);
 	}
