@@ -10299,9 +10299,15 @@ static isl_size find_div(__isl_keep isl_basic_map *dst,
 	return n_div;
 }
 
-/* Align the divs of "dst" to those of "src", adding divs from "src"
- * if needed.  That is, make sure that the first src->n_div divs
- * of the result are equal to those of src.
+/* Align the local variables of "dst" to those of "src",
+ * adding local variables from "src" if needed.
+ * That is, make sure that the first src->n_div local variables
+ * of the result correspond to those of src.
+ * For any integer division that is copied to "dst",
+ * the defining constraints are also introduced to "dst".
+ * For an existentially quantified variable (without an explicit definition)
+ * only an unconstrained existentially quantified variable
+ * in the same positions is introduced.
  * The integer division of "src" are assumed to be ordered.
  *
  * The integer divisions are swapped into the right position
@@ -10320,7 +10326,6 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	__isl_take isl_basic_map *dst, __isl_keep isl_basic_map *src)
 {
 	int i;
-	isl_bool known;
 	int extended;
 	isl_size v_div;
 	isl_size dst_n_div, src_n_div;
@@ -10332,14 +10337,6 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	if (src_n_div == 0)
 		return dst;
 
-	known = isl_basic_map_divs_known(src);
-	if (known < 0)
-		return isl_basic_map_free(dst);
-	if (!known)
-		isl_die(isl_basic_map_get_ctx(src), isl_error_invalid,
-			"some src divs are unknown",
-			return isl_basic_map_free(dst));
-
 	v_div = isl_basic_map_var_offset(src, isl_dim_div);
 	if (v_div < 0)
 		return isl_basic_map_free(dst);
@@ -10349,7 +10346,13 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 	if (dst_n_div < 0)
 		dst = isl_basic_map_free(dst);
 	for (i = 0; i < src_n_div; ++i) {
-		isl_size j = find_div(dst, src, i);
+		isl_bool known;
+		isl_size j;
+
+		known = isl_basic_map_div_is_known(src, i);
+		if (known < 0)
+			return isl_basic_map_free(dst);
+		j = known ? find_div(dst, src, i) : dst_n_div;
 		if (j < 0)
 			dst = isl_basic_map_free(dst);
 		if (j == dst_n_div) {
@@ -10366,6 +10369,8 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			if (j < 0)
 				return isl_basic_map_free(dst);
 			dst_n_div++;
+			if (!known)
+				continue;
 			isl_seq_cpy(dst->div[j], src->div[i], 1+1+v_div+i);
 			isl_seq_clr(dst->div[j]+1+1+v_div+i, dst_n_div - i);
 			dst = isl_basic_map_add_div_constraints(dst, j);

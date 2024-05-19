@@ -555,6 +555,14 @@ static void test_gist(isl::ctx ctx)
 	{ TWO("{ [i=0:] }"),
 	  "{ [i] : exists a, b: 2b > 2i - 5a > 8b -3 i and 3b > 2a }",
 	  "{ [i] }" },
+	{ TWO("{ [i] : exists (e0, e1: 3e1 >= 1 + 2e0 and "
+	    "8e1 <= -1 + 5i - 5e0 and 2e1 >= 1 + 2i - 5e0) }"),
+	  "{ [i] : i >= 0 }",
+	  "{ [i] : exists (e0, e1: 3e1 >= 1 + 2e0 and "
+	    "8e1 <= -1 + 5i - 5e0 and 2e1 >= 1 + 2i - 5e0) }" },
+	{ TWO("{ [i=0:10] : exists a, b: 2b > 2i - 5a > 8b -3 i and 3b > 2a }"),
+	  "{ [i=0:10] }",
+	  "{ [i] : exists a, b: 2b > 2i - 5a > 8b -3 i and 3b > 2a }" },
 	});
 
 	C(&gist<isl::set> , {
