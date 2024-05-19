@@ -223,6 +223,19 @@ static void test_ternary(isl::ctx ctx, const F &fn,
 	}
 }
 
+/* Run a sequence of tests of function "fn" with stringification "name" and
+ * with inputs and output described by "tests",
+ * throwing an exception when an unexpected result is produced.
+ *
+ * Simply call test_ternary.
+ */
+template <typename R, typename T, typename A1, typename A2>
+static void test(isl::ctx ctx, R fn(const T&, const A1&, const A2&),
+	const std::string &name, const std::vector<ternary> &tests)
+{
+	test_ternary<R, T, A1, A2>(ctx, fn, name, tests);
+}
+
 /* Run a sequence of tests of method "fn" with stringification "name" and
  * with inputs and output described by "tests",
  * throwing an exception when an unexpected result is produced.
@@ -498,10 +511,120 @@ static void test_lexmin(isl::ctx ctx)
 	});
 }
 
+/* Compute the gist of "obj" with respect to "context",
+ * with "copy" an independent copy of "obj",
+ * but also check that applying the gist operation does
+ * not modify the input set (an earlier version of isl would do that) and
+ * that the test case is consistent, i.e., that the gist has the same
+ * intersection with the context as the input set.
+ */
+template <typename T>
+T gist(const T &obj, const T &copy, const T &context)
+{
+	const auto &res = obj.gist(context);
+	if (!is_equal(obj, copy)) {
+		std::ostringstream ss;
+		ss << "gist changed " << copy << " into " << obj;
+		THROW_INVALID(ss.str().c_str());
+	}
+	if (!is_equal(obj.intersect(context), res.intersect(context))) {
+		std::ostringstream ss;
+		ss << "inconsistent "
+		   << obj << " % " << context << " = " << res;
+		THROW_INVALID(ss.str().c_str());
+	}
+	return res;
+}
+
+/* A helper macro for producing two instances of "x".
+ */
+#define TWO(x)	(x), (x)
+
 /* Perform some basic gist tests.
+ *
+ * The gist() function is given two identical inputs so that
+ * it can check that the input to the call to the gist method
+ * is not modified.
  */
 static void test_gist(isl::ctx ctx)
 {
+	C(&gist<isl::set> , {
+	{ TWO("{ [1, -1, 3] }"),
+	  "{ [1, b, 2 - b] : -1 <= b <= 2 }",
+	  "{ [a, -1, c] }" },
+	{ TWO("{ [a, b, c] : a <= 15 and a >= 1 }"),
+	  "{ [a, b, c] : exists (e0 = floor((-1 + a)/16): a >= 1 and "
+			"c <= 30 and 32e0 >= -62 + 2a + 2b - c and b >= 0) }",
+	  "{ [a, b, c] : a <= 15 }" },
+	{ TWO("{ : }"), "{ : 1 = 0 }", "{ : }" },
+	{ TWO("{ : 1 = 0 }"), "{ : 1 = 0 }", "{ : }" },
+	{ TWO("[M] -> { [x] : exists (e0 = floor((-2 + x)/3): 3e0 = -2 + x) }"),
+	  "[M] -> { [3M] }" , "[M] -> { [x] : 1 = 0 }" },
+	{ TWO("{ [m, n, a, b] : a <= 2147 + n }"),
+	  "{ [m, n, a, b] : (m >= 1 and n >= 1 and a <= 2148 - m and "
+			"b <= 2148 - n and b >= 0 and b >= 2149 - n - a) or "
+			"(n >= 1 and a >= 0 and b <= 2148 - n - a and "
+			"b >= 0) }",
+	  "{ [m, n, ku, kl] }" },
+	{ TWO("{ [a, a, b] : a >= 10 }"),
+	  "{ [a, b, c] : c >= a and c <= b and c >= 2 }",
+	  "{ [a, a, b] : a >= 10 }" },
+	{ TWO("{ [i, j] : i >= 0 and i + j >= 0 }"), "{ [i, j] : i <= 0 }",
+	  "{ [0, j] : j >= 0 }" },
+	/* Check that no constraints on i6 are introduced in the gist */
+	{ TWO("[t1] -> { [i4, i6] : exists (e0 = floor((1530 - 4t1 - 5i4)/20): "
+		"20e0 <= 1530 - 4t1 - 5i4 and 20e0 >= 1511 - 4t1 - 5i4 and "
+		"5e0 <= 381 - t1 and i4 <= 1) }"),
+	  "[t1] -> { [i4, i6] : exists (e0 = floor((-t1 + i6)/5): "
+		"5e0 = -t1 + i6 and i6 <= 6 and i6 >= 3) }",
+	  "[t1] -> { [i4, i6] : exists (e0 = floor((1530 - 4t1 - 5i4)/20): "
+		"i4 <= 1 and 5e0 <= 381 - t1 and 20e0 <= 1530 - 4t1 - 5i4 and "
+		"20e0 >= 1511 - 4t1 - 5i4) }" },
+	/* Check that no constraints on i6 are introduced in the gist */
+	{ TWO("[t1, t2] -> { [i4, i5, i6] : exists (e0 = floor((1 + i4)/2), "
+		"e1 = floor((1530 - 4t1 - 5i4)/20), "
+		"e2 = floor((-4t1 - 5i4 + 10*floor((1 + i4)/2))/20), "
+		"e3 = floor((-1 + i4)/2): t2 = 0 and 2e3 = -1 + i4 and "
+			"20e2 >= -19 - 4t1 - 5i4 + 10e0 and 5e2 <= 1 - t1 and "
+			"2e0 <= 1 + i4 and 2e0 >= i4 and "
+			"20e1 <= 1530 - 4t1 - 5i4 and "
+			"20e1 >= 1511 - 4t1 - 5i4 and i4 <= 1 and "
+			"5e1 <= 381 - t1 and 20e2 <= -4t1 - 5i4 + 10e0) }"),
+	  "[t1, t2] -> { [i4, i5, i6] : exists (e0 = floor((-17 + i4)/2), "
+		"e1 = floor((-t1 + i6)/5): 5e1 = -t1 + i6 and "
+			"2e0 <= -17 + i4 and 2e0 >= -18 + i4 and "
+			"10e0 <= -91 + 5i4 + 4i6 and "
+			"10e0 >= -105 + 5i4 + 4i6) }",
+	  "[t1, t2] -> { [i4, i5, i6] : exists (e0 = floor((381 - t1)/5), "
+		"e1 = floor((-1 + i4)/2): t2 = 0 and 2e1 = -1 + i4 and "
+		"i4 <= 1 and 5e0 <= 381 - t1 and 20e0 >= 1511 - 4t1 - 5i4) }" },
+	{ TWO("{ [0, 0, q, p] : -5 <= q <= 5 and p >= 0 }"),
+	  "{ [a, b, q, p] : b >= 1 + a }",
+	  "{ [a, b, q, p] : false }" },
+	{ TWO("[n] -> { [x] : x = n && x mod 32 = 0 }"),
+	  "[n] -> { [x] : x mod 32 = 0 }",
+	  "[n] -> { [x = n] }" },
+	{ TWO("{ [x] : x mod 6 = 0 }"), "{ [x] : x mod 3 = 0 }",
+	  "{ [x] : x mod 2 = 0 }" },
+	{ TWO("{ [x] : x mod 3200 = 0 }"), "{ [x] : x mod 10000 = 0 }",
+	  "{ [x] : x mod 128 = 0 }" },
+	{ TWO("{ [x] : x mod 3200 = 0 }"), "{ [x] : x mod 10 = 0 }",
+	  "{ [x] : x mod 3200 = 0 }" },
+	{ TWO("{ [a, b, c] : a mod 2 = 0 and a = c }"),
+	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
+	  "{ [a, b, c = a] }" },
+	{ TWO("{ [a, b, c] : a mod 6 = 0 and a = c }"),
+	  "{ [a, b, c] : b mod 2 = 0 and b = c }",
+	  "{ [a, b, c = a] : a mod 3 = 0 }" },
+	{ TWO("{ [x] : 0 <= x <= 4 or 6 <= x <= 9 }"),
+	  "{ [x] : 1 <= x <= 3 or 7 <= x <= 8 }",
+	  "{ [x] }" },
+	{ TWO("{ [x,y] : x < 0 and 0 <= y <= 4 or "
+			"x >= -2 and -x <= y <= 10 + x }"),
+	  "{ [x,y] : 1 <= y <= 3 }",
+	  "{ [x,y] }" },
+	});
+
 	C(arg<isl::set>(&isl::pw_aff::gist), {
 	{ "{ [x] -> [x] : x != 0 }", "{ [x] : x < -1 or x > 1 }",
 	  "{ [x] -> [x] }" },
