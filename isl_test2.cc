@@ -195,12 +195,12 @@ static void test(isl::ctx ctx, R (T::*fn)(A1) const, const std::string &name,
 	}
 }
 
-/* Run a sequence of tests of method "fn" with stringification "name" and
+/* Run a sequence of tests of function "fn" with stringification "name" and
  * with inputs and output described by "tests",
  * throwing an exception when an unexpected result is produced.
  */
-template <typename R, typename T, typename A1, typename A2>
-static void test(isl::ctx ctx, R (T::*fn)(A1, A2) const,
+template <typename R, typename T, typename A1, typename A2, typename F>
+static void test_ternary(isl::ctx ctx, const F &fn,
 	const std::string &name, const std::vector<ternary> &tests)
 {
 	for (const auto &test : tests) {
@@ -208,7 +208,7 @@ static void test(isl::ctx ctx, R (T::*fn)(A1, A2) const,
 		A1 arg1(ctx, test.arg2);
 		A2 arg2(ctx, test.arg3);
 		R expected(ctx, test.res);
-		const auto &res = (obj.*fn)(arg1, arg2);
+		const auto &res = fn(obj, arg1, arg2);
 		std::ostringstream ss;
 
 		if (is_equal(expected, res))
@@ -221,6 +221,23 @@ static void test(isl::ctx ctx, R (T::*fn)(A1, A2) const,
 		   << expected;
 		THROW_INVALID(ss.str().c_str());
 	}
+}
+
+/* Run a sequence of tests of method "fn" with stringification "name" and
+ * with inputs and output described by "tests",
+ * throwing an exception when an unexpected result is produced.
+ *
+ * Wrap the method pointer into a function taking an object reference and
+ * call test_ternary.
+ */
+template <typename R, typename T, typename A1, typename A2>
+static void test(isl::ctx ctx, R (T::*fn)(A1, A2) const,
+	const std::string &name, const std::vector<ternary> &tests)
+{
+	const auto &wrap = [&] (const T &o, const A1 &arg1, const A2 &arg2) {
+		return (o.*fn)(arg1, arg2);
+	};
+	test_ternary<R, T, A1, A2>(ctx, wrap, name, tests);
 }
 
 /* A helper macro that calls test with as implicit initial argument "ctx" and
