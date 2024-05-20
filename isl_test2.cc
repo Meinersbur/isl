@@ -548,6 +548,15 @@ T gist(const T &obj, const T &copy, const T &context)
  */
 static void test_gist(isl::ctx ctx)
 {
+	C(&gist<isl::basic_set> , {
+	{ TWO("{ [i=100:] }"),
+	  "{ [i] : exists a, b: 2b > 2i - 5a > 8b -3 i and 3b > 2a }",
+	  "{ [i=100:] }" },
+	{ TWO("{ [i=0:] }"),
+	  "{ [i] : exists a, b: 2b > 2i - 5a > 8b -3 i and 3b > 2a }",
+	  "{ [i] }" },
+	});
+
 	C(&gist<isl::set> , {
 	{ TWO("{ [1, -1, 3] }"),
 	  "{ [1, b, 2 - b] : -1 <= b <= 2 }",
