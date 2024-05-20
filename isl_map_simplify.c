@@ -2293,6 +2293,10 @@ static __isl_give isl_basic_map *isl_basic_map_remove_shifted_constraints(
 		return bmap;
 	}
 
+	context = isl_basic_map_drop_constraints_involving_unknown_divs(
+								context);
+	context = isl_basic_map_remove_unknown_divs(context);
+
 	bmap = isl_basic_map_order_divs(bmap);
 	context = isl_basic_map_align_divs(context, bmap);
 	bmap = isl_basic_map_align_divs(bmap, context);
