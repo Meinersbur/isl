@@ -10364,9 +10364,9 @@ __isl_give isl_basic_map *isl_basic_map_align_divs(
 			j = isl_basic_map_alloc_div(dst);
 			if (j < 0)
 				return isl_basic_map_free(dst);
-			isl_seq_cpy(dst->div[j], src->div[i], 1+1+v_div+i);
-			isl_seq_clr(dst->div[j]+1+1+v_div+i, dst->n_div - i);
 			dst_n_div++;
+			isl_seq_cpy(dst->div[j], src->div[i], 1+1+v_div+i);
+			isl_seq_clr(dst->div[j]+1+1+v_div+i, dst_n_div - i);
 			dst = isl_basic_map_add_div_constraints(dst, j);
 			if (!dst)
 				return isl_basic_map_free(dst);
