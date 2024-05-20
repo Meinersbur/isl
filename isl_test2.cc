@@ -196,7 +196,7 @@ static void test(isl::ctx ctx, R (T::*fn)(A1) const, const std::string &name,
 }
 
 /* Run a sequence of tests of method "fn" with stringification "name" and
- * with inputs and output described by "test",
+ * with inputs and output described by "tests",
  * throwing an exception when an unexpected result is produced.
  */
 template <typename R, typename T, typename A1, typename A2>
