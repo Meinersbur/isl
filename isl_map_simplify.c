@@ -2297,9 +2297,9 @@ static __isl_give isl_basic_map *isl_basic_map_remove_shifted_constraints(
 								context);
 	context = isl_basic_map_remove_unknown_divs(context);
 
-	bmap = isl_basic_map_order_divs(bmap);
-	context = isl_basic_map_align_divs(context, bmap);
+	context = isl_basic_map_order_divs(context);
 	bmap = isl_basic_map_align_divs(bmap, context);
+	context = isl_basic_map_align_divs(context, bmap);
 
 	bset = isl_basic_map_underlying_set(isl_basic_map_copy(bmap));
 	bset_context = isl_basic_map_underlying_set(context);
