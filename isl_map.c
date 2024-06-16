@@ -15097,6 +15097,39 @@ static isl_size find_output_lower_mod_constraint(__isl_keep isl_basic_map *bmap,
 	return n_ineq;
 }
 
+/* Turn "bmap" into a basic set for constructing an affine expression
+ * that can later be plugged into an output dimension of "bmap".
+ * "is_set" is set if "bmap" is actually a basic set already.
+ *
+ * If "bmap" is a basic set already, then simply cast it.
+ * Otherwise, wrap "bmap" into a basic set.
+ */
+static __isl_give isl_basic_set *wrap_for_plug_in(
+	__isl_take isl_basic_map *bmap, int is_set)
+{
+	if (is_set)
+		return bset_from_bmap(bmap);
+	else
+		return isl_basic_map_wrap(bmap);
+}
+
+/* Given an affine expression "aff" that was constructed on top of
+ * the result of wrap_for_plug_in and that does not depend on the output space,
+ * project out this output space.
+ * "is_set" is the same as in the call to wrap_for_plug_in.
+ *
+ * If "is_set" is set then the output space is actually the set space
+ * of the original basic set and this appears as the domain of "aff".
+ * Otherwise, the output space appears as the range in the nested domain.
+ */
+static __isl_give isl_aff *unwrap_plug_in(__isl_take isl_aff *aff, int is_set)
+{
+	if (is_set)
+		return isl_aff_project_domain_on_params(aff);
+	else
+		return isl_aff_domain_factor_domain(aff);
+}
+
 /* Given that equality "eq" of "bset" expresses
  * the variable at position "pos" in terms of the other variables,
  * extract this expression as a function of those other variables,
@@ -15163,10 +15196,7 @@ static __isl_give isl_aff *construct_mod(__isl_keep isl_basic_map *bmap,
 		return NULL;
 	ctx = isl_basic_map_get_ctx(bmap);
 
-	if (is_set)
-		bset = bset_from_bmap(isl_basic_map_copy(bmap));
-	else
-		bset = isl_basic_map_wrap(isl_basic_map_copy(bmap));
+	bset = wrap_for_plug_in(isl_basic_map_copy(bmap), is_set);
 	g = extract_lower_bound_aff(bset, lower, pos);
 	f = extract_expr_aff(bset, eq, pos);
 	isl_basic_set_free(bset);
@@ -15175,10 +15205,7 @@ static __isl_give isl_aff *construct_mod(__isl_keep isl_basic_map *bmap,
 	v = isl_val_int_from_isl_int(ctx, n);
 	mod = isl_aff_mod_val(mod, v);
 	mod = isl_aff_add(mod, g);
-	if (is_set)
-		mod = isl_aff_project_domain_on_params(mod);
-	else
-		mod = isl_aff_domain_factor_domain(mod);
+	mod = unwrap_plug_in(mod, is_set);
 
 	return mod;
 }
