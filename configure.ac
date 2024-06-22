@@ -40,6 +40,8 @@ AC_CHECK_PROG(PERL, perl, perl, [])
 AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex, [])
 AC_CHECK_PROG(POD2HTML, pod2html, pod2html, [])
 
+ISL_DETECT_DIFF_OPTIONS
+
 AC_SUBST(OS_SRCDIR)
 if test "$host_os" = "mingw32" -a -n "$CYGPATH"; then
 	OS_SRCDIR=`$CYGPATH -m "$srcdir"`

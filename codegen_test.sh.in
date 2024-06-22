@@ -1,5 +1,7 @@
 #!/bin/sh
 
+DIFF="@DIFF@"
+DIFF_OPTIONS="@DIFF_OPTIONS@"
 EXEEXT=@EXEEXT@
 srcdir=@srcdir@
 
@@ -17,7 +19,7 @@ for i in $srcdir/test_inputs/codegen/*.st \
 	dir=`dirname $i`
 	ref=$dir/$out
 	(./isl_codegen$EXEEXT < $i > $test &&
-	 diff -uw $ref $test && rm $test) || failed=1
+	 "$DIFF" $DIFF_OPTIONS -w $ref $test && rm $test) || failed=1
 done
 
 test $failed -eq 0 || exit
