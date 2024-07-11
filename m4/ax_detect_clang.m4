@@ -276,6 +276,7 @@ else
 	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangASTMatchers])
 	CLANG_LIBS="-lclangAnalysis -lclangAST -lclangLex $CLANG_LIBS"
 	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangEdit])
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangAPINotes])
 	CLANG_LIBS="-lclangParse -lclangSema $CLANG_LIBS"
 	CLANG_LIBS="-lclangFrontend -lclangSerialization $CLANG_LIBS"
 fi
