@@ -271,15 +271,10 @@ if test "$have_lib_clang" = yes; then
 			[CLANG_LIBS="-lclang-cpp $CLANG_LIBS"],
 	      [AC_MSG_FAILURE([unable to link against libclang-cpp])])
 else
-	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
-	AC_CHECK_LIB([clangSupport], [main],
-		[LIB_CLANG_SUPPORT=-lclangSupport], [])
-	CLANG_LIBS="$LIB_CLANG_SUPPORT $CLANG_LIBS"
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangSupport])
 	CLANG_LIBS="-lclangDriver -lclangBasic $CLANG_LIBS"
 	CLANG_LIBS="-lclangAnalysis -lclangAST -lclangLex $CLANG_LIBS"
-	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
-	AC_CHECK_LIB([clangEdit], [main], [LIB_CLANG_EDIT=-lclangEdit], [])
-	CLANG_LIBS="$LIB_CLANG_EDIT $CLANG_LIBS"
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangEdit])
 	CLANG_LIBS="-lclangParse -lclangSema $CLANG_LIBS"
 	CLANG_LIBS="-lclangFrontend -lclangSerialization $CLANG_LIBS"
 fi
@@ -289,4 +284,12 @@ LDFLAGS="$SAVE_LDFLAGS"
 LIBS="$SAVE_LIBS"
 
 AC_LANG_POP
+])
+
+# Check if the specified (clang) library exists and, if so,
+# add it to CLANG_LIBS.
+# SAVE_LDFLAGS is assumed to hold the original LDFLAGS.
+m4_define([_AX_DETECT_CLANG_ADD_CLANG_LIB], [
+	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
+	AC_CHECK_LIB($1, [main], [CLANG_LIBS="-l$1 $CLANG_LIBS"])
 ])
