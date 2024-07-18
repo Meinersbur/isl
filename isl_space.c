@@ -2437,7 +2437,7 @@ __isl_give isl_space *isl_space_bind_set(__isl_take isl_space *space,
 {
 	isl_space *tuple_space;
 
-	if (isl_space_check_is_set(space) < 0)
+	if (isl_space_check_is_proper_set(space) < 0)
 		return isl_space_free(space);
 	tuple_space = isl_multi_id_peek_space(tuple);
 	if (isl_space_check_equal_tuples(tuple_space, space) < 0)
