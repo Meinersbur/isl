@@ -3927,6 +3927,18 @@ static __isl_give isl_multi_pw_aff *isl_stream_read_with_params_multi_pw_aff(
 #include "isl_stream_read_with_params_templ.c"
 #include "isl_read_from_str_templ.c"
 
+/* Return an empty isl_union_pw_aff with parameter domain "dom".
+ */
+static __isl_give isl_union_pw_aff *empty_union_pw_aff_with_dom(
+	__isl_take isl_set *dom)
+{
+	isl_space *space;
+
+	space = isl_set_get_space(dom);
+	isl_set_free(dom);
+	return isl_union_pw_aff_empty_space(space);
+}
+
 /* Read the body of an isl_union_pw_aff from "s" with parameter domain "dom".
  */
 static __isl_give isl_union_pw_aff *read_union_pw_aff_with_dom(
@@ -3936,6 +3948,9 @@ static __isl_give isl_union_pw_aff *read_union_pw_aff_with_dom(
 	isl_union_pw_aff *upa = NULL;
 	isl_set *aff_dom;
 	int n;
+
+	if (isl_stream_next_token_is(s, '}'))
+		return empty_union_pw_aff_with_dom(dom);
 
 	n = v->n;
 	aff_dom = read_aff_domain(s, isl_set_copy(dom), v);

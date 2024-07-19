@@ -294,6 +294,8 @@ static const char *reparse_multi_union_pw_aff_tests[] = {
 	"A[{ S[x] -> [x + 1]; T[x] -> [x] }]",
 	"(A[{ S[x] -> [x + 1]; T[x] -> [x] }] : "
 		"{ S[x] : x > 0; T[y] : y >= 0 })",
+	"A[{ }]",
+	"A[{ }, { S[x] -> [x + 1]; T[x] -> [x] }]",
 };
 
 #undef BASE
