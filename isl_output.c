@@ -2756,6 +2756,14 @@ error:
 	return NULL;
 }
 
+/* Print dimension "pos" of data->space to "p" as a zero.
+ */
+static __isl_give isl_printer *print_dim_zero(__isl_take isl_printer *p,
+	struct isl_print_space_data *data, unsigned pos)
+{
+	return isl_printer_print_str(p, "0");
+}
+
 #undef BASE
 #define BASE	aff
 #include "isl_pw_print_templ.c"
