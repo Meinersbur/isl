@@ -18,11 +18,13 @@ static __isl_give isl_printer *FN(print_body_pw,BASE)(
 	__isl_take isl_printer *p, __isl_keep PW *pw)
 {
 	int i;
+	isl_size n;
 
-	if (!pw)
+	n = FN(PW,n_piece)(pw);
+	if (n < 0)
 		return isl_printer_free(p);
 
-	for (i = 0; i < pw->n; ++i) {
+	for (i = 0; i < n; ++i) {
 		EL *el;
 		isl_space *space;
 
