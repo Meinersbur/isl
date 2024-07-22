@@ -288,8 +288,8 @@ AC_LANG_POP
 
 # Check if the specified (clang) library exists and, if so,
 # add it to CLANG_LIBS.
-# SAVE_LDFLAGS is assumed to hold the original LDFLAGS.
+# SAVE_LIBS is assumed to hold the original LIBS.
 m4_define([_AX_DETECT_CLANG_ADD_CLANG_LIB], [
-	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
+	LIBS="$CLANG_LIBS $SAVE_LIBS"
 	AC_CHECK_LIB($1, [main], [CLANG_LIBS="-l$1 $CLANG_LIBS"])
 ])
