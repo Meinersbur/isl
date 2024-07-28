@@ -2431,7 +2431,7 @@ __isl_give isl_qpolynomial *isl_qpolynomial_var_on_domain(
 {
 	isl_size off;
 
-	if (isl_space_check_is_set(domain ) < 0)
+	if (isl_space_check_is_set(domain) < 0)
 		goto error;
 	if (isl_space_check_range(domain, type, pos, 1) < 0)
 		goto error;
