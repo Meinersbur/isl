@@ -8709,7 +8709,7 @@ __isl_give isl_multi_union_pw_aff *isl_multi_union_pw_aff_zero(
 
 	if (isl_space_check_is_proper_set(space) < 0)
 		goto error;
-	dim = isl_space_dim(space, isl_dim_out);
+	dim = isl_space_dim(space, isl_dim_set);
 	if (dim < 0)
 		goto error;
 	if (dim != 0)
