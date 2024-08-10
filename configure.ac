@@ -1,10 +1,10 @@
-AC_INIT([isl], [0.26], [isl-development@googlegroups.com])
+AC_INIT([isl], [0.27], [isl-development@googlegroups.com])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_SUBST(versioninfo)
-versioninfo=26:0:3
+versioninfo=27:0:4
 
 if test "x$prefix" != "xNONE"; then
 	prefix_wd=`cd $prefix && pwd`
