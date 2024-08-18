@@ -5255,13 +5255,15 @@ __isl_give isl_multi_aff *isl_aff_as_domain_extension(__isl_take isl_aff *aff)
 	if (is_set < 0)
 		return isl_multi_aff_from_aff(isl_aff_free(aff));
 
-	ma = isl_multi_aff_from_aff(aff);
-	if (!is_set) {
+	if (is_set) {
+		ma = isl_multi_aff_from_aff(aff);
+	} else {
 		isl_space *space;
 		isl_multi_aff *id;
 
 		space = isl_aff_get_domain_space(aff);
 		id = isl_multi_aff_identity(isl_space_map_from_set(space));
+		ma = isl_multi_aff_from_aff(aff);
 		ma = isl_multi_aff_range_product(id, ma);
 	}
 
