@@ -365,56 +365,67 @@ libdep_a_SOURCES = dep.c
 
 if HAVE_CLANG
 if HAVE_CXX11
-$(srcdir)/interface/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) \
-		libdep.a
-	$(AM_V_GEN)interface/extract_interface$(BUILD_EXEEXT) \
+CP_IF_DIFFERENT = "$(srcdir)/cp_if_different.sh"
+.gen/isl.py.core: interface/extract_interface$(BUILD_EXEEXT) libdep.a
+	$(AM_V_GEN)$(MKDIR_P) ".gen" && \
+	interface/extract_interface$(BUILD_EXEEXT) \
 		--language=python $(includes) $(srcdir)/all.h \
-		> interface/isl.py.Tcore && mv interface/isl.py.Tcore $@
+		> .gen/isl.py.Tcore && mv .gen/isl.py.Tcore $@
+$(srcdir)/interface/isl.py.core: .gen/isl.py.core
+	$(AM_V_at)$(CP_IF_DIFFERENT) .gen/isl.py.core $@
 
-$(srcdir)/include/isl/cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
+.gen/cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a cpp/cpp.h.top cpp/cpp.h.bot
-	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
+	$(AM_V_GEN)$(MKDIR_P) ".gen" && \
 	(cat $(srcdir)/cpp/cpp.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) --language=cpp \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp.h.bot) \
-			> interface/cpp.Th && mv interface/cpp.Th $@
+			> .gen/cpp.Th && mv .gen/cpp.Th $@
+$(srcdir)/include/isl/cpp.h: .gen/cpp.h
+	$(AM_V_at)$(CP_IF_DIFFERENT) .gen/cpp.h $@
 
-$(srcdir)/include/isl/cpp-checked.h: \
+.gen/cpp-checked.h: \
 		interface/extract_interface$(BUILD_EXEEXT) libdep.a \
 		cpp/cpp-checked.h.top cpp/cpp-checked.h.bot
-	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
+	$(AM_V_GEN)$(MKDIR_P) ".gen" && \
 	(cat $(srcdir)/cpp/cpp-checked.h.top $(srcdir)/all.h && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked.h.bot) \
-			> interface/cpp-checked.Th && \
-			mv interface/cpp-checked.Th $@
+			> .gen/cpp-checked.Th && \
+			mv .gen/cpp-checked.Th $@
+$(srcdir)/include/isl/cpp-checked.h: .gen/cpp-checked.h
+	$(AM_V_at)$(CP_IF_DIFFERENT) .gen/cpp-checked.h $@
 
-$(srcdir)/include/isl/cpp-checked-conversion.h: \
+.gen/cpp-checked-conversion.h: \
 		interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a \
 		cpp/cpp-checked-conversion.h.top \
 		cpp/cpp-checked-conversion.h.bot
-	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
+	$(AM_V_GEN)$(MKDIR_P) ".gen" && \
 	(cat $(srcdir)/cpp/cpp-checked-conversion.h.top && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=cpp-checked-conversion \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/cpp-checked-conversion.h.bot) \
-			> interface/cpp-checked-conversion.Th && \
-			mv interface/cpp-checked-conversion.Th $@
+			> .gen/cpp-checked-conversion.Th && \
+			mv .gen/cpp-checked-conversion.Th $@
+$(srcdir)/include/isl/cpp-checked-conversion.h: .gen/cpp-checked-conversion.h
+	$(AM_V_at)$(CP_IF_DIFFERENT) .gen/cpp-checked-conversion.h $@
 
-$(srcdir)/include/isl/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
+.gen/typed_cpp.h: interface/extract_interface$(BUILD_EXEEXT) \
 		libdep.a cpp/typed_cpp.h.top cpp/typed_cpp.h.bot
-	$(AM_V_GEN)$(MKDIR_P) "include/isl" && \
+	$(AM_V_GEN)$(MKDIR_P) ".gen" && \
 	(cat $(srcdir)/cpp/typed_cpp.h.top && \
 		interface/extract_interface$(BUILD_EXEEXT) \
 			--language=template-cpp \
 			$(includes) $(srcdir)/all.h && \
 		cat $(srcdir)/cpp/typed_cpp.h.bot) \
-			> interface/typed_cpp.Th && mv interface/typed_cpp.Th $@
+			> .gen/typed_cpp.Th && mv .gen/typed_cpp.Th $@
+$(srcdir)/include/isl/typed_cpp.h: .gen/typed_cpp.h
+	$(AM_V_at)$(CP_IF_DIFFERENT) .gen/typed_cpp.h $@
 endif
 endif
 
@@ -511,6 +522,11 @@ CLEANFILES = \
 	interface/__pycache__/*.pyc
 
 DISTCLEANFILES = \
+	.gen/cpp.h \
+	.gen/cpp-checked-conversion.h \
+	.gen/cpp-checked.h \
+	.gen/isl.py.core \
+	.gen/typed_cpp.h \
 	isl-uninstalled.sh \
 	isl-uninstalled.pc \
 	isl.pc \
@@ -694,6 +710,7 @@ EXTRA_DIST = \
 	isl_test_cpp_failed.sh \
 	isl_test_cpp17-generic.cc \
 	isl_test_python.py \
+	cp_if_different.sh \
 	test_inputs
 
 dist-hook:

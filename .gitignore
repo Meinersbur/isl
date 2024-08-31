@@ -4,6 +4,7 @@
 *.la
 
 .deps/
+.gen/
 .libs/
 Makefile
 Makefile.in
