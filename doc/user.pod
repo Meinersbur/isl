@@ -6450,8 +6450,16 @@ variables, then the result of these operations is currently undefined.
 		__isl_take isl_map *map,
 		__isl_take isl_map_list *list);
 
+	#include <isl/union_set.h>
+	__isl_give isl_union_set *
+	isl_union_set_plain_unshifted_simple_hull(
+		__isl_take isl_union_set *uset);
+
 	#include <isl/union_map.h>
 	__isl_give isl_union_map *isl_union_map_simple_hull(
+		__isl_take isl_union_map *umap);
+	__isl_give isl_union_map *
+	isl_union_map_plain_unshifted_simple_hull(
 		__isl_take isl_union_map *umap);
 
 These functions compute a single basic set or relation
