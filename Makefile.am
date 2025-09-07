@@ -513,7 +513,7 @@ if HAVE_CXX11
     BUILT_CPP_INTERFACES = $(CPP_INTERFACES)
 endif
 endif
-BUILT_SOURCES = gitversion.h $(BUILT_CPP_INTERFACES) interface/isl.py
+BUILT_SOURCES = gitversion.h $(BUILT_CPP_INTERFACES)
 CLEANFILES = \
 	gitversion.h \
 	interface/isldlname.py \
@@ -725,6 +725,8 @@ pkgconfig_DATA = $(pkgconfig_libfile)
 
 gitversion.h: @GIT_HEAD@
 	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@
+
+all-local: interface/isl.py
 
 install-data-local: $(srcdir)/libisl-gdb.py
 	@libisl=`sed -ne "/^library_names=/{s/.*='//;s/'$$//;s/ .*//;p;}" \
