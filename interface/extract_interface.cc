@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
 	MyASTConsumer consumer;
 	Sema *sema = new Sema(PP, Clang->getASTContext(), consumer);
 
-	Diags.getClient()->BeginSourceFile(LO, &PP);
+	Diags.getClient()->BeginSourceFile(Clang->getLangOpts(), &PP);
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
 
