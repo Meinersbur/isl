@@ -132,13 +132,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <clang/Basic/TargetInfo.h>]], [[
 	TargetInfo::CreateTargetInfo(*Diags, TO);
 ]])], [AC_DEFINE([CREATETARGETINFO_TAKES_POINTER], [],
 	      [Define if TargetInfo::CreateTargetInfo takes pointer])])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[[#include <clang/Lex/HeaderSearchOptions.h>]], [[
-	using namespace clang;
-	HeaderSearchOptions HSO;
-	HSO.AddPath("", frontend::Angled, false, false);
-]])], [AC_DEFINE([ADDPATH_TAKES_4_ARGUMENTS], [],
-	[Define if HeaderSearchOptions::AddPath takes 4 arguments])])
 AC_EGREP_HEADER([getNumParams],
 	[clang/AST/CanonicalType.h],
 	[AC_DEFINE([getNumArgs], [getNumParams],

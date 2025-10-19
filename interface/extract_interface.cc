@@ -328,8 +328,6 @@ static void create_preprocessor(CompilerInstance *Clang)
 
 #endif
 
-#ifdef ADDPATH_TAKES_4_ARGUMENTS
-
 /* Add "Path" to the header search options.
  *
  * Do not take into account sysroot, i.e., set ignoreSysRoot to true.
@@ -338,19 +336,6 @@ void add_path(HeaderSearchOptions &HSO, string Path)
 {
 	HSO.AddPath(Path, frontend::Angled, false, true);
 }
-
-#else
-
-/* Add "Path" to the header search options.
- *
- * Do not take into account sysroot, i.e., set IsSysRootRelative to false.
- */
-void add_path(HeaderSearchOptions &HSO, string Path)
-{
-	HSO.AddPath(Path, frontend::Angled, true, false, false);
-}
-
-#endif
 
 #ifdef HAVE_SETMAINFILEID
 
