@@ -79,6 +79,8 @@
 #include "cpp_conversion.h"
 #include "template_cpp.h"
 
+namespace clang { namespace driver { class Job; } }
+
 using namespace std;
 using namespace clang;
 using namespace clang::driver;
@@ -167,8 +169,6 @@ static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 {
 	return new Driver(binary, llvm::sys::getDefaultTargetTriple(), Diags);
 }
-
-namespace clang { namespace driver { class Job; } }
 
 /* Clang changed its API from 3.5 to 3.6 and once more in 3.7.
  * We fix this with a simple overloaded function here.
