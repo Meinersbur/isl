@@ -392,8 +392,8 @@ template <class T>
 struct HasGetFileRef<T, ::void_t<decltype(&T::getFileRef)>> :
     public std::true_type {};
 
-/* Return the FileEntryRef/FileEntry corresponding to the given file name
- * in the given compiler instances, ignoring any error.
+/* Return the FileEntryRef/FileEntry corresponding to the given file name or
+ * an error if anything went wrong.
  *
  * If T (= FileManager) has a getFileRef method, then call that and
  * return a FileEntryRef.
@@ -402,18 +402,21 @@ struct HasGetFileRef<T, ::void_t<decltype(&T::getFileRef)>> :
 template <typename T,
 	typename std::enable_if<HasGetFileRef<T>::value, bool>::type = true>
 static auto getFile(T& obj, const std::string &filename)
-	-> decltype(*obj.getFileRef(filename))
+	-> llvm::ErrorOr<decltype(*obj.getFileRef(filename))>
 {
 	auto file = obj.getFileRef(filename);
-	assert(file);
+	if (!file)
+	    return std::error_code();
 	return *file;
 }
 template <typename T,
 	typename std::enable_if<!HasGetFileRef<T>::value, bool>::type = true>
-static const FileEntry *getFile(T& obj, const std::string &filename)
+static llvm::ErrorOr<const FileEntry *> getFile(T& obj,
+	const std::string &filename)
 {
 	const FileEntry *file = ignore_error(obj.getFile(filename));
-	assert(file);
+	if (!file)
+	    return std::error_code();
 	return file;
 }
 
@@ -491,7 +494,8 @@ int main(int argc, char *argv[])
 	PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(), LO);
 
 	auto file = getFile(Clang->getFileManager(), InputFilename);
-	create_main_file_id(Clang->getSourceManager(), file);
+	assert(file);
+	create_main_file_id(Clang->getSourceManager(), *file);
 
 	Clang->createASTContext();
 	MyASTConsumer consumer;
