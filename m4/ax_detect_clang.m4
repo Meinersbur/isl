@@ -121,9 +121,6 @@ AC_EGREP_HEADER([void HandleTopLevelDecl\(], [clang/AST/ASTConsumer.h],
 		   [Return type of HandleTopLevelDeclReturn])
 	 AC_DEFINE([HandleTopLevelDeclContinue], [true],
 		   [Return type of HandleTopLevelDeclReturn])])
-AC_CHECK_HEADER([clang/Basic/DiagnosticOptions.h],
-	[AC_DEFINE([HAVE_BASIC_DIAGNOSTICOPTIONS_H], [],
-		   [Define if clang/Basic/DiagnosticOptions.h exists])])
 AC_CHECK_HEADER([clang/Lex/PreprocessorOptions.h],
 	[AC_DEFINE([HAVE_LEX_PREPROCESSOROPTIONS_H], [],
 		   [Define if clang/Lex/PreprocessorOptions.h exists])], [],

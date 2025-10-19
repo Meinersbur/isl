@@ -57,6 +57,7 @@
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Basic/Builtins.h>
+#include <clang/Basic/DiagnosticOptions.h>
 #include <clang/Basic/FileSystemOptions.h>
 #include <clang/Basic/FileManager.h>
 #include <clang/Basic/TargetOptions.h>
@@ -67,11 +68,6 @@
 #include <clang/Driver/Tool.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
-#ifdef HAVE_BASIC_DIAGNOSTICOPTIONS_H
-#include <clang/Basic/DiagnosticOptions.h>
-#else
-#include <clang/Frontend/DiagnosticOptions.h>
-#endif
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Frontend/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
@@ -284,22 +280,10 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	return invocation;
 }
 
-#ifdef HAVE_BASIC_DIAGNOSTICOPTIONS_H
-
 static TextDiagnosticPrinter *construct_printer(void)
 {
 	return new TextDiagnosticPrinter(llvm::errs(), new DiagnosticOptions());
 }
-
-#else
-
-static TextDiagnosticPrinter *construct_printer(void)
-{
-	DiagnosticOptions DO;
-	return new TextDiagnosticPrinter(llvm::errs(), DO);
-}
-
-#endif
 
 #ifdef CREATETARGETINFO_TAKES_SHARED_PTR
 
