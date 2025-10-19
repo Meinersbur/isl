@@ -427,6 +427,8 @@ struct Wrap {
 	virtual void add_paths(HeaderSearchOptions &HSO) = 0;
 	/* Add required macro definitions to "PO". */
 	virtual void add_macros(PreprocessorOptions &PO) = 0;
+	/* Handle an error opening the file. */
+	virtual void handle_error() = 0;
 	/* Parse the file, returning true if no error was encountered. */
 	virtual bool handle(CompilerInstance *Clang) = 0;
 
@@ -462,7 +464,11 @@ struct Wrap {
 		PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(),
 							LO);
 		auto file = getFile(Clang->getFileManager(), filename);
-		assert(file);
+		if (!file) {
+			handle_error();
+			delete Clang;
+			return false;
+		}
 		create_main_file_id(Clang->getSourceManager(), *file);
 
 		Clang->createASTContext();
@@ -480,6 +486,7 @@ struct Extractor : public Wrap {
 	virtual TextDiagnosticPrinter *construct_printer() override;
 	virtual void add_paths(HeaderSearchOptions &HSO) override;
 	virtual void add_macros(PreprocessorOptions &PO) override;
+	virtual void handle_error() override;
 	virtual bool handle(CompilerInstance *Clang) override;
 };
 
@@ -511,6 +518,13 @@ void Extractor::add_macros(PreprocessorOptions &PO)
 	    "__attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_constructor=__attribute__((annotate(\"isl_constructor\"))) __attribute__((annotate(\"isl_export\")))");
 	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
+}
+
+/* Handle an error opening the file.
+ */
+void Extractor::handle_error()
+{
+	assert(false);
 }
 
 /* Create an interface generator for the selected language and
