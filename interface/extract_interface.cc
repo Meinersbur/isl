@@ -323,7 +323,7 @@ static void create_main_file_id(SourceManager &SM, const T &file)
 
 #ifdef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
 
-#include "set_lang_defaults_arg4.h"
+#include "isl-interface/set_lang_defaults_arg4.h"
 
 static void set_lang_defaults(CompilerInstance *Clang)
 {

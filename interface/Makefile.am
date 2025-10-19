@@ -19,7 +19,7 @@ extract_interface_SOURCES = \
 	cpp_conversion.cc \
 	plain_cpp.h \
 	plain_cpp.cc \
-	set_lang_defaults_arg4.h \
+	include/isl-interface/set_lang_defaults_arg4.h \
 	template_cpp.h \
 	template_cpp.cc \
 	extract_interface.h \

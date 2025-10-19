@@ -145,7 +145,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <clang/Lex/PreprocessorOptions.h>
 	#include <clang/Frontend/CompilerInstance.h>
 
-	#include "set_lang_defaults_arg4.h"
+	#include "include/isl-interface/set_lang_defaults_arg4.h"
 ]], [[
 	using namespace clang;
 	CompilerInstance *Clang;
