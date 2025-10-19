@@ -136,13 +136,6 @@ AC_EGREP_HEADER([getReturnType],
 	[clang/AST/CanonicalType.h], [],
 	[AC_DEFINE([getReturnType], [getResultType],
 	    [Define to getResultType for older versions of clang])])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[[#include <clang/Frontend/CompilerInstance.h>]], [[
-	using namespace clang;
-	CompilerInstance *Clang;
-	Clang->createPreprocessor(TU_Complete);
-]])], [AC_DEFINE([CREATEPREPROCESSOR_TAKES_TUKIND], [],
-[Define if CompilerInstance::createPreprocessor takes TranslationUnitKind])])
 AC_EGREP_HEADER([setMainFileID], [clang/Basic/SourceManager.h],
 	[AC_DEFINE([HAVE_SETMAINFILEID], [],
 	[Define if SourceManager has a setMainFileID method])])

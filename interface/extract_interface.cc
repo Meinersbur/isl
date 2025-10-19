@@ -312,21 +312,10 @@ static void create_diagnostics(CompilerInstance *Clang)
 	Clang->createDiagnostics(construct_printer());
 }
 
-#ifdef CREATEPREPROCESSOR_TAKES_TUKIND
-
 static void create_preprocessor(CompilerInstance *Clang)
 {
 	Clang->createPreprocessor(TU_Complete);
 }
-
-#else
-
-static void create_preprocessor(CompilerInstance *Clang)
-{
-	Clang->createPreprocessor();
-}
-
-#endif
 
 /* Add "Path" to the header search options.
  *
