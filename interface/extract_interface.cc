@@ -290,7 +290,7 @@ static void create_preprocessor(CompilerInstance *Clang)
  *
  * Do not take into account sysroot, i.e., set ignoreSysRoot to true.
  */
-void add_path(HeaderSearchOptions &HSO, std::string Path)
+static void add_path(HeaderSearchOptions &HSO, std::string Path)
 {
 	HSO.AddPath(Path, frontend::Angled, false, true);
 }
