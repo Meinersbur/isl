@@ -307,21 +307,10 @@ static TargetInfo *create_target_info(CompilerInstance *Clang,
 
 #endif
 
-#ifdef CREATEDIAGNOSTICS_TAKES_ARG
-
-static void create_diagnostics(CompilerInstance *Clang)
-{
-	Clang->createDiagnostics(0, NULL, construct_printer());
-}
-
-#else
-
 static void create_diagnostics(CompilerInstance *Clang)
 {
 	Clang->createDiagnostics(construct_printer());
 }
-
-#endif
 
 #ifdef CREATEPREPROCESSOR_TAKES_TUKIND
 
