@@ -71,11 +71,7 @@
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Frontend/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
-#ifdef HAVE_LEX_PREPROCESSOROPTIONS_H
 #include <clang/Lex/PreprocessorOptions.h>
-#else
-#include <clang/Frontend/PreprocessorOptions.h>
-#endif
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Parse/ParseAST.h>
 #include <clang/Sema/Sema.h>
