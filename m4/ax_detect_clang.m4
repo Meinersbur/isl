@@ -103,9 +103,6 @@ AC_EGREP_HEADER([ArrayRef.*CommandLineArgs],
 		[Define if CompilerInvocation::CreateFromArgs takes
 		 ArrayRef])
 	])
-AC_EGREP_HEADER([CXXIsProduction], [clang/Driver/Driver.h],
-	[AC_DEFINE([HAVE_CXXISPRODUCTION], [],
-		[Define if Driver constructor takes CXXIsProduction argument])])
 AC_EGREP_HEADER([ IsProduction], [clang/Driver/Driver.h],
 	[AC_DEFINE([HAVE_ISPRODUCTION], [],
 		[Define if Driver constructor takes IsProduction argument])])

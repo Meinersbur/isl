@@ -179,13 +179,7 @@ struct MyASTConsumer : public ASTConsumer {
 	}
 };
 
-#ifdef HAVE_CXXISPRODUCTION
-static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
-{
-	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
-			    "", false, false, Diags);
-}
-#elif defined(HAVE_ISPRODUCTION)
+#if defined(HAVE_ISPRODUCTION)
 static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 {
 	return new Driver(binary, llvm::sys::getDefaultTargetTriple(),
