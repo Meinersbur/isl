@@ -234,11 +234,11 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	DiagnosticsEngine &Diags)
 {
 	const char *binary = ISL_CLANG_PREFIX"/bin/clang";
-	const unique_ptr<Driver> driver(construct_driver(binary, Diags));
+	const std::unique_ptr<Driver> driver(construct_driver(binary, Diags));
 	std::vector<const char *> Argv;
 	Argv.push_back(binary);
 	Argv.push_back(filename);
-	const unique_ptr<Compilation> compilation(
+	const std::unique_ptr<Compilation> compilation(
 		driver->BuildCompilation(llvm::ArrayRef<const char *>(Argv)));
 	JobList &Jobs = compilation->getJobs();
 
@@ -259,7 +259,7 @@ static CompilerInvocation *construct_invocation(const char *filename,
 static TargetInfo *create_target_info(CompilerInstance *Clang,
 	DiagnosticsEngine &Diags)
 {
-	shared_ptr<TargetOptions> TO = Clang->getInvocation().TargetOpts;
+	std::shared_ptr<TargetOptions> TO = Clang->getInvocation().TargetOpts;
 	TO->Triple = llvm::sys::getDefaultTargetTriple();
 	return TargetInfo::CreateTargetInfo(Diags, TO);
 }
@@ -290,7 +290,7 @@ static void create_preprocessor(CompilerInstance *Clang)
  *
  * Do not take into account sysroot, i.e., set ignoreSysRoot to true.
  */
-void add_path(HeaderSearchOptions &HSO, string Path)
+void add_path(HeaderSearchOptions &HSO, std::string Path)
 {
 	HSO.AddPath(Path, frontend::Angled, false, true);
 }
