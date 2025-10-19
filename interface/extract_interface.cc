@@ -84,9 +84,19 @@ namespace clang { namespace driver { class Job; } }
 using namespace std;
 using namespace clang;
 using namespace clang::driver;
+
+namespace isl {
+namespace clang {
+
+using namespace ::clang;
+using namespace ::clang::driver;
+
 #ifdef HAVE_LLVM_OPTION_ARG_H
 using namespace llvm::opt;
 #endif
+
+} // namespace clang
+} // namespace isl
 
 static llvm::cl::opt<string> InputFilename(llvm::cl::Positional,
 			llvm::cl::Required, llvm::cl::desc("<input file>"));
@@ -99,8 +109,14 @@ static llvm::cl::opt<string> OutputLanguage(llvm::cl::Required,
 	llvm::cl::desc("Bindings to generate"),
 	llvm::cl::value_desc("name"));
 
+namespace isl {
+namespace clang {
+
 static const char *ResourceDir =
 	ISL_CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING;
+
+} // namespace clang
+} // namespace isl
 
 /* Does decl have an attribute of the following form?
  *
@@ -164,6 +180,9 @@ struct MyASTConsumer : public ASTConsumer {
 		return HandleTopLevelDeclContinue;
 	}
 };
+
+namespace isl {
+namespace clang {
 
 static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 {
@@ -487,10 +506,13 @@ struct Wrap {
 	}
 };
 
+} // namespace clang
+} // namespace isl
+
 /* A class specializing the Wrap helper class for
  * extracting the isl interface.
  */
-struct Extractor : public Wrap {
+struct Extractor : public isl::clang::Wrap {
 	virtual TextDiagnosticPrinter *construct_printer() override;
 	virtual void suppress_errors(DiagnosticsEngine &Diags) override;
 	virtual void add_paths(HeaderSearchOptions &HSO) override;
@@ -517,7 +539,7 @@ void Extractor::suppress_errors(DiagnosticsEngine &Diags)
 void Extractor::add_paths(HeaderSearchOptions &HSO)
 {
 	for (llvm::cl::list<string>::size_type i = 0; i < Includes.size(); ++i)
-		add_path(HSO, Includes[i]);
+		isl::clang::add_path(HSO, Includes[i]);
 }
 
 /* Add required macro definitions to "PO".
