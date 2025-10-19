@@ -254,11 +254,6 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	return invocation;
 }
 
-static TextDiagnosticPrinter *construct_printer(void)
-{
-	return new TextDiagnosticPrinter(llvm::errs(), new DiagnosticOptions());
-}
-
 #ifdef CREATETARGETINFO_TAKES_SHARED_PTR
 
 static TargetInfo *create_target_info(CompilerInstance *Clang,
@@ -420,6 +415,104 @@ static llvm::ErrorOr<const FileEntry *> getFile(T& obj,
 	return file;
 }
 
+/* A helper class handling the invocation of clang on a file and
+ * allowing a derived class to perform the actual parsing
+ * in an overridden handle() method.
+ * Other virtual methods allow different kinds of configuration.
+ */
+struct Wrap {
+	/* Construct a TextDiagnosticPrinter. */
+	virtual TextDiagnosticPrinter *construct_printer() = 0;
+	/* Add required search paths to "HSO". */
+	virtual void add_paths(HeaderSearchOptions &HSO) = 0;
+	/* Add required macro definitions to "PO". */
+	virtual void add_macros(PreprocessorOptions &PO) = 0;
+	/* Parse the file, returning true if no error was encountered. */
+	virtual bool handle(CompilerInstance *Clang) = 0;
+
+	/* Invoke clang on "filename", passing control to the handle() method
+	 * for parsing.
+	 */
+	bool invoke(const char *filename) {
+		CompilerInstance *Clang = new CompilerInstance();
+		create_diagnostics(Clang);
+		DiagnosticsEngine &Diags = Clang->getDiagnostics();
+		Diags.setSuppressSystemWarnings(true);
+		TargetInfo *target = create_target_info(Clang, Diags);
+		Clang->setTarget(target);
+		set_lang_defaults(Clang);
+		CompilerInvocation *invocation =
+			construct_invocation(filename, Diags);
+		if (invocation)
+			set_invocation(Clang, invocation);
+		Diags.setClient(construct_printer());
+		Clang->createFileManager();
+		Clang->createSourceManager(Clang->getFileManager());
+		HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
+		LangOptions &LO = Clang->getLangOpts();
+		PreprocessorOptions &PO = Clang->getPreprocessorOpts();
+		HSO.ResourceDir = ResourceDir;
+
+		add_paths(HSO);
+		add_macros(PO);
+
+		create_preprocessor(Clang);
+		Preprocessor &PP = Clang->getPreprocessor();
+
+		PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(),
+							LO);
+		auto file = getFile(Clang->getFileManager(), filename);
+		assert(file);
+		create_main_file_id(Clang->getSourceManager(), *file);
+
+		Clang->createASTContext();
+		bool ok = handle(Clang);
+		delete Clang;
+
+		return ok;
+	}
+};
+
+/* A class specializing the Wrap helper class for
+ * extracting the isl interface.
+ */
+struct Extractor : public Wrap {
+	virtual TextDiagnosticPrinter *construct_printer() override;
+	virtual void add_paths(HeaderSearchOptions &HSO) override;
+	virtual void add_macros(PreprocessorOptions &PO) override;
+	virtual bool handle(CompilerInstance *Clang) override;
+};
+
+/* Construct a TextDiagnosticPrinter.
+ */
+TextDiagnosticPrinter *Extractor::construct_printer(void)
+{
+	return new TextDiagnosticPrinter(llvm::errs(), new DiagnosticOptions());
+}
+
+/* Add required search paths to "HSO".
+ */
+void Extractor::add_paths(HeaderSearchOptions &HSO)
+{
+	for (llvm::cl::list<string>::size_type i = 0; i < Includes.size(); ++i)
+		add_path(HSO, Includes[i]);
+}
+
+/* Add required macro definitions to "PO".
+ */
+void Extractor::add_macros(PreprocessorOptions &PO)
+{
+	PO.addMacroDef("__isl_give=__attribute__((annotate(\"isl_give\")))");
+	PO.addMacroDef("__isl_keep=__attribute__((annotate(\"isl_keep\")))");
+	PO.addMacroDef("__isl_take=__attribute__((annotate(\"isl_take\")))");
+	PO.addMacroDef("__isl_export=__attribute__((annotate(\"isl_export\")))");
+	PO.addMacroDef("__isl_overload="
+	    "__attribute__((annotate(\"isl_overload\"))) "
+	    "__attribute__((annotate(\"isl_export\")))");
+	PO.addMacroDef("__isl_constructor=__attribute__((annotate(\"isl_constructor\"))) __attribute__((annotate(\"isl_export\")))");
+	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
+}
+
 /* Create an interface generator for the selected language and
  * then use it to generate the interface.
  */
@@ -452,55 +545,15 @@ static void generate(MyASTConsumer &consumer, SourceManager &SM)
 	gen->generate();
 }
 
-int main(int argc, char *argv[])
+/* Parse the current source file, returning true if no error was encountered.
+ */
+bool Extractor::handle(CompilerInstance *Clang)
 {
-	llvm::cl::ParseCommandLineOptions(argc, argv);
-
-	CompilerInstance *Clang = new CompilerInstance();
-	create_diagnostics(Clang);
-	DiagnosticsEngine &Diags = Clang->getDiagnostics();
-	Diags.setSuppressSystemWarnings(true);
-	TargetInfo *target = create_target_info(Clang, Diags);
-	Clang->setTarget(target);
-	set_lang_defaults(Clang);
-	CompilerInvocation *invocation =
-		construct_invocation(InputFilename.c_str(), Diags);
-	if (invocation)
-		set_invocation(Clang, invocation);
-	Diags.setClient(construct_printer());
-	Clang->createFileManager();
-	Clang->createSourceManager(Clang->getFileManager());
-	HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
-	LangOptions &LO = Clang->getLangOpts();
-	PreprocessorOptions &PO = Clang->getPreprocessorOpts();
-	HSO.ResourceDir = ResourceDir;
-
-	for (llvm::cl::list<string>::size_type i = 0; i < Includes.size(); ++i)
-		add_path(HSO, Includes[i]);
-
-	PO.addMacroDef("__isl_give=__attribute__((annotate(\"isl_give\")))");
-	PO.addMacroDef("__isl_keep=__attribute__((annotate(\"isl_keep\")))");
-	PO.addMacroDef("__isl_take=__attribute__((annotate(\"isl_take\")))");
-	PO.addMacroDef("__isl_export=__attribute__((annotate(\"isl_export\")))");
-	PO.addMacroDef("__isl_overload="
-	    "__attribute__((annotate(\"isl_overload\"))) "
-	    "__attribute__((annotate(\"isl_export\")))");
-	PO.addMacroDef("__isl_constructor=__attribute__((annotate(\"isl_constructor\"))) __attribute__((annotate(\"isl_export\")))");
-	PO.addMacroDef("__isl_subclass(super)=__attribute__((annotate(\"isl_subclass(\" #super \")\"))) __attribute__((annotate(\"isl_export\")))");
-
-	create_preprocessor(Clang);
 	Preprocessor &PP = Clang->getPreprocessor();
-
-	PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(), LO);
-
-	auto file = getFile(Clang->getFileManager(), InputFilename);
-	assert(file);
-	create_main_file_id(Clang->getSourceManager(), *file);
-
-	Clang->createASTContext();
 	MyASTConsumer consumer;
 	Sema *sema = new Sema(PP, Clang->getASTContext(), consumer);
 
+	DiagnosticsEngine &Diags = Clang->getDiagnostics();
 	Diags.getClient()->BeginSourceFile(Clang->getLangOpts(), &PP);
 	ParseAST(*sema);
 	Diags.getClient()->EndSourceFile();
@@ -508,10 +561,20 @@ int main(int argc, char *argv[])
 	generate(consumer, Clang->getSourceManager());
 
 	delete sema;
-	delete Clang;
+
+	return !Diags.hasErrorOccurred();
+}
+
+int main(int argc, char *argv[])
+{
+	llvm::cl::ParseCommandLineOptions(argc, argv);
+
+	Extractor extractor;
+	bool ok = extractor.invoke(InputFilename.c_str());
+
 	llvm::llvm_shutdown();
 
-	if (Diags.hasErrorOccurred())
+	if (!ok)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
