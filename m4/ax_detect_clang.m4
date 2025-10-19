@@ -119,13 +119,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <clang/Basic/TargetInfo.h>]], [[
 	TargetInfo::CreateTargetInfo(*Diags, TO);
 ]])], [AC_DEFINE([CREATETARGETINFO_TAKES_SHARED_PTR], [],
 	      [Define if TargetInfo::CreateTargetInfo takes shared_ptr])])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <clang/Basic/TargetInfo.h>]], [[
-	using namespace clang;
-	TargetOptions *TO;
-	DiagnosticsEngine *Diags;
-	TargetInfo::CreateTargetInfo(*Diags, TO);
-]])], [AC_DEFINE([CREATETARGETINFO_TAKES_POINTER], [],
-	      [Define if TargetInfo::CreateTargetInfo takes pointer])])
 AC_EGREP_HEADER([getReturnType],
 	[clang/AST/CanonicalType.h], [],
 	[AC_DEFINE([getReturnType], [getResultType],

@@ -269,16 +269,6 @@ static TargetInfo *create_target_info(CompilerInstance *Clang,
 	return TargetInfo::CreateTargetInfo(Diags, TO);
 }
 
-#elif defined(CREATETARGETINFO_TAKES_POINTER)
-
-static TargetInfo *create_target_info(CompilerInstance *Clang,
-	DiagnosticsEngine &Diags)
-{
-	TargetOptions &TO = Clang->getTargetOpts();
-	TO.Triple = llvm::sys::getDefaultTargetTriple();
-	return TargetInfo::CreateTargetInfo(Diags, &TO);
-}
-
 #else
 
 static TargetInfo *create_target_info(CompilerInstance *Clang,
