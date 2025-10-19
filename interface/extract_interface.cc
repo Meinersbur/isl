@@ -423,6 +423,8 @@ static llvm::ErrorOr<const FileEntry *> getFile(T& obj,
 struct Wrap {
 	/* Construct a TextDiagnosticPrinter. */
 	virtual TextDiagnosticPrinter *construct_printer() = 0;
+	/* Suppress any errors, if needed. */
+	virtual void suppress_errors(DiagnosticsEngine &Diags) = 0;
 	/* Add required search paths to "HSO". */
 	virtual void add_paths(HeaderSearchOptions &HSO) = 0;
 	/* Add required macro definitions to "PO". */
@@ -440,6 +442,7 @@ struct Wrap {
 		create_diagnostics(Clang);
 		DiagnosticsEngine &Diags = Clang->getDiagnostics();
 		Diags.setSuppressSystemWarnings(true);
+		suppress_errors(Diags);
 		TargetInfo *target = create_target_info(Clang, Diags);
 		Clang->setTarget(target);
 		set_lang_defaults(Clang);
@@ -484,6 +487,7 @@ struct Wrap {
  */
 struct Extractor : public Wrap {
 	virtual TextDiagnosticPrinter *construct_printer() override;
+	virtual void suppress_errors(DiagnosticsEngine &Diags) override;
 	virtual void add_paths(HeaderSearchOptions &HSO) override;
 	virtual void add_macros(PreprocessorOptions &PO) override;
 	virtual void handle_error() override;
@@ -495,6 +499,12 @@ struct Extractor : public Wrap {
 TextDiagnosticPrinter *Extractor::construct_printer(void)
 {
 	return new TextDiagnosticPrinter(llvm::errs(), new DiagnosticOptions());
+}
+
+/* Suppress any errors, if needed.
+ */
+void Extractor::suppress_errors(DiagnosticsEngine &Diags)
+{
 }
 
 /* Add required search paths to "HSO".
