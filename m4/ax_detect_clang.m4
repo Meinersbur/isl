@@ -97,9 +97,6 @@ AC_EGREP_HEADER([getImmediateExpansionRange], [clang/Basic/SourceManager.h],
 	[getImmediateInstantiationRange],
 	[Define to getImmediateInstantiationRange for older versions of clang])]
 )
-AC_EGREP_HEADER([DiagnosticsEngine], [clang/Basic/Diagnostic.h], [],
-	[AC_DEFINE([DiagnosticsEngine], [Diagnostic],
-	[Define to Diagnostic for older versions of clang])])
 AC_EGREP_HEADER([ArrayRef], [clang/Driver/Driver.h],
 	[AC_DEFINE([USE_ARRAYREF], [],
 		[Define if Driver::BuildCompilation takes ArrayRef])
