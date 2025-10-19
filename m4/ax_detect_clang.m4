@@ -130,9 +130,6 @@ AC_EGREP_HEADER([getReturnType],
 	[clang/AST/CanonicalType.h], [],
 	[AC_DEFINE([getReturnType], [getResultType],
 	    [Define to getResultType for older versions of clang])])
-AC_EGREP_HEADER([setMainFileID], [clang/Basic/SourceManager.h],
-	[AC_DEFINE([HAVE_SETMAINFILEID], [],
-	[Define if SourceManager has a setMainFileID method])])
 AC_CHECK_HEADER([llvm/ADT/OwningPtr.h],
 	[AC_DEFINE([HAVE_ADT_OWNINGPTR_H], [],
 		   [Define if llvm/ADT/OwningPtr.h exists])])

@@ -318,23 +318,12 @@ void add_path(HeaderSearchOptions &HSO, string Path)
 	HSO.AddPath(Path, frontend::Angled, false, true);
 }
 
-#ifdef HAVE_SETMAINFILEID
-
 template <typename T>
 static void create_main_file_id(SourceManager &SM, const T &file)
 {
 	SM.setMainFileID(SM.createFileID(file, SourceLocation(),
 					SrcMgr::C_User));
 }
-
-#else
-
-static void create_main_file_id(SourceManager &SM, const FileEntry *file)
-{
-	SM.createMainFileID(file);
-}
-
-#endif
 
 #ifdef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
 
