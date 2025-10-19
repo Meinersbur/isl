@@ -283,7 +283,7 @@ static TargetInfo *create_target_info(CompilerInstance *Clang,
 
 static void create_diagnostics(CompilerInstance *Clang)
 {
-	Clang->createDiagnostics(construct_printer());
+	Clang->createDiagnostics();
 }
 
 static void create_preprocessor(CompilerInstance *Clang)
@@ -464,6 +464,7 @@ int main(int argc, char *argv[])
 		construct_invocation(InputFilename.c_str(), Diags);
 	if (invocation)
 		set_invocation(Clang, invocation);
+	Diags.setClient(construct_printer());
 	Clang->createFileManager();
 	Clang->createSourceManager(Clang->getFileManager());
 	HeaderSearchOptions &HSO = Clang->getHeaderSearchOpts();
