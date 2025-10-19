@@ -103,12 +103,6 @@ AC_EGREP_HEADER([ArrayRef.*CommandLineArgs],
 		[Define if CompilerInvocation::CreateFromArgs takes
 		 ArrayRef])
 	])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <clang/Driver/Driver.h>]], [[
-	using namespace clang;
-	DiagnosticsEngine *Diags;
-	new driver::Driver("", "", "", *Diags);
-]])], [AC_DEFINE([DRIVER_CTOR_TAKES_DEFAULTIMAGENAME], [],
-	      [Define if Driver constructor takes default image name])])
 AC_EGREP_HEADER([void HandleTopLevelDecl\(], [clang/AST/ASTConsumer.h],
 	[AC_DEFINE([HandleTopLevelDeclReturn], [void],
 		   [Return type of HandleTopLevelDeclReturn])
