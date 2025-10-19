@@ -179,8 +179,6 @@ struct MyASTConsumer : public ASTConsumer {
 	}
 };
 
-#ifdef USE_ARRAYREF
-
 #ifdef HAVE_CXXISPRODUCTION
 static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 {
@@ -291,16 +289,6 @@ static CompilerInvocation *construct_invocation(const char *filename,
 	create_from_args(*invocation, &args, Diags);
 	return invocation;
 }
-
-#else
-
-static CompilerInvocation *construct_invocation(const char *filename,
-	DiagnosticsEngine &Diags)
-{
-	return NULL;
-}
-
-#endif
 
 #ifdef HAVE_BASIC_DIAGNOSTICOPTIONS_H
 

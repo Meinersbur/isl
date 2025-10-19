@@ -97,15 +97,11 @@ AC_EGREP_HEADER([getImmediateExpansionRange], [clang/Basic/SourceManager.h],
 	[getImmediateInstantiationRange],
 	[Define to getImmediateInstantiationRange for older versions of clang])]
 )
-AC_EGREP_HEADER([ArrayRef], [clang/Driver/Driver.h],
-	[AC_DEFINE([USE_ARRAYREF], [],
-		[Define if Driver::BuildCompilation takes ArrayRef])
-	AC_EGREP_HEADER([ArrayRef.*CommandLineArgs],
-		[clang/Frontend/CompilerInvocation.h],
-		[AC_DEFINE([CREATE_FROM_ARGS_TAKES_ARRAYREF], [],
-			[Define if CompilerInvocation::CreateFromArgs takes
-			 ArrayRef])
-		])
+AC_EGREP_HEADER([ArrayRef.*CommandLineArgs],
+	[clang/Frontend/CompilerInvocation.h],
+	[AC_DEFINE([CREATE_FROM_ARGS_TAKES_ARRAYREF], [],
+		[Define if CompilerInvocation::CreateFromArgs takes
+		 ArrayRef])
 	])
 AC_EGREP_HEADER([CXXIsProduction], [clang/Driver/Driver.h],
 	[AC_DEFINE([HAVE_CXXISPRODUCTION], [],
