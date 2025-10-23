@@ -268,22 +268,21 @@ public:
     static constexpr bool value = type::value;
 };
 
-/* Return the FileEntryRef/FileEntry corresponding to the given file name or
- * an error if anything went wrong.
+/* Return a wrapper around the FileEntryRef/FileEntry
+ * corresponding to the given file name.  The wrapper evaluates
+ * to false if an error occurs.
  *
  * If T (= FileManager) has a getFileRef method, then call that and
- * return a FileEntryRef.
- * Otherwise, call getFile and return a FileEntry (pointer).
+ * return an llvm::Expected<clang::FileEntryRef>.
+ * Otherwise, call getFile and return a FileEntry (pointer) embedded
+ * in an llvm::ErrorOr.
  */
 template <typename T,
 	typename std::enable_if<HasGetFileRef<T>::value, bool>::type = true>
 static auto getFile(T& obj, const std::string &filename)
-	-> llvm::ErrorOr<decltype(*obj.getFileRef(filename))>
+	-> decltype(obj.getFileRef(filename))
 {
-	auto file = obj.getFileRef(filename);
-	if (!file)
-	    return std::error_code();
-	return *file;
+	return obj.getFileRef(filename);
 }
 template <typename T,
 	typename std::enable_if<!HasGetFileRef<T>::value, bool>::type = true>
