@@ -977,15 +977,16 @@ static int parse_str_option(struct isl_arg *decl, char **arg,
 static int isl_arg_str_list_append(struct isl_arg *decl, void *opt,
 	const char *s)
 {
+	const char **new_list;
 	int *n = (int *)(((char *) opt) + decl->u.str_list.offset_n);
-	const char **list = *(const char ***)(((char *) opt) + decl->offset);
+	const char ***list = (const char ***)(((char *) opt) + decl->offset);
 
-	list = realloc(list, (*n + 1) * sizeof(char *));
-	if (!list)
+	new_list = realloc(*list, (*n + 1) * sizeof(char *));
+	if (!new_list)
 		return -1;
-	*(const char ***)(((char *) opt) + decl->offset) = list;
-	list[*n] = strdup(s);
-	return isl_stat_non_null(list[(*n)++]);
+	*list = new_list;
+	new_list[*n] = strdup(s);
+	return isl_stat_non_null(new_list[(*n)++]);
 }
 
 static int parse_str_list_option(struct isl_arg *decl, char **arg,
