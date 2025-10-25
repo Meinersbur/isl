@@ -86,7 +86,7 @@ typedef enum {
 	isl_stat_error = -1,
 	isl_stat_ok = 0
 } isl_stat;
-isl_stat isl_stat_non_null(void *obj);
+isl_stat isl_stat_non_null(const void *obj);
 typedef enum {
 	isl_bool_error = -1,
 	isl_bool_false = 0,
