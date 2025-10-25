@@ -454,7 +454,7 @@ static void set_lang_defaults(CompilerInstance *Clang)
 static void set_invocation(CompilerInstance *Clang,
 	CompilerInvocation *invocation)
 {
-	Clang->setInvocation(std::make_shared<CompilerInvocation>(*invocation));
+	Clang->setInvocation(std::shared_ptr<CompilerInvocation>(invocation));
 }
 
 #else
