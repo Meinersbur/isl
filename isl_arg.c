@@ -985,8 +985,7 @@ static int isl_arg_str_list_append(struct isl_arg *decl, void *opt,
 		return -1;
 	*(const char ***)(((char *) opt) + decl->offset) = list;
 	list[*n] = strdup(s);
-	(*n)++;
-	return 0;
+	return isl_stat_non_null(list[(*n)++]);
 }
 
 static int parse_str_list_option(struct isl_arg *decl, char **arg,
