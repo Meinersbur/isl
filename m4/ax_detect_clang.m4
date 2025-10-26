@@ -40,7 +40,7 @@ AC_DEFINE_UNQUOTED(ISL_CLANG_PREFIX,
 # If $CLANG_PREFIX/bin/clang cannot find the standard include files,
 # then see if setting sysroot to `xcode-select -p`/SDKs/MacOSX.sdk helps.
 # This may be required on some versions of OS X since they lack /usr/include.
-# If so, set CLANG_SYSROOT accordingly.
+# If so, set ISL_CLANG_SYSROOT accordingly.
 SAVE_CC="$CC"
 CC="$CLANG_PREFIX/bin/clang"
 AC_MSG_CHECKING(
@@ -67,7 +67,7 @@ if test "x$found_header" != "xyes"; then
 	if test "x$found_header" != "xyes"; then
 		AC_MSG_ERROR([Cannot find standard include files])
 	else
-		AC_DEFINE_UNQUOTED([CLANG_SYSROOT], ["$sysroot"],
+		AC_DEFINE_UNQUOTED([ISL_CLANG_SYSROOT], ["$sysroot"],
 			[Define to sysroot if needed])
 	fi
 fi

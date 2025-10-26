@@ -205,20 +205,20 @@ static void create_from_args(CompilerInvocation &invocation,
 
 #endif
 
-#ifdef CLANG_SYSROOT
+#ifdef ISL_CLANG_SYSROOT
 /* Set sysroot if required.
  *
- * If CLANG_SYSROOT is defined, then set it to this value.
+ * If ISL_CLANG_SYSROOT is defined, then set it to this value.
  */
 static void set_sysroot(ArgStringList &args)
 {
 	args.push_back("-isysroot");
-	args.push_back(CLANG_SYSROOT);
+	args.push_back(ISL_CLANG_SYSROOT);
 }
 #else
 /* Set sysroot if required.
  *
- * If CLANG_SYSROOT is not defined, then it does not need to be set.
+ * If ISL_CLANG_SYSROOT is not defined, then it does not need to be set.
  */
 static void set_sysroot(ArgStringList &args)
 {
