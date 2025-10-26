@@ -170,6 +170,14 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_CHECK_HEADER([llvm/Option/Arg.h],
 	[AC_DEFINE([HAVE_LLVM_OPTION_ARG_H], [],
 		   [Define if llvm/Option/Arg.h exists])])
+# llvmorg-20-init-12950-gbdd10d9d249b
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+	       [[#include <clang/Frontend/CompilerInstance.h>]], [[
+       clang::CompilerInstance *Clang;
+       Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+]])], [AC_DEFINE([CREATEDIAGNOSTICS_TAKES_VFS], [],
+       [Define if CompilerInstance::createDiagnostics takes VFS])])
+
 
 LDFLAGS="$CLANG_LDFLAGS $LDFLAGS"
 

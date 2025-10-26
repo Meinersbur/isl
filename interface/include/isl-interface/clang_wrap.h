@@ -152,10 +152,21 @@ static TargetInfo *create_target_info(CompilerInstance *Clang,
 
 #endif
 
+#ifdef CREATEDIAGNOSTICS_TAKES_VFS
+
+static void create_diagnostics(CompilerInstance *Clang)
+{
+	Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+}
+
+#else
+
 static void create_diagnostics(CompilerInstance *Clang)
 {
 	Clang->createDiagnostics();
 }
+
+#endif
 
 static void create_preprocessor(CompilerInstance *Clang)
 {
