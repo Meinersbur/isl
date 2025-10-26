@@ -98,7 +98,7 @@ static llvm::cl::opt<string> OutputLanguage(llvm::cl::Required,
 	llvm::cl::value_desc("name"));
 
 static const char *ResourceDir =
-	CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING;
+	ISL_CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING;
 
 /* Does decl have an attribute of the following form?
  *
@@ -233,7 +233,7 @@ static void set_sysroot(ArgStringList &args)
 static CompilerInvocation *construct_invocation(const char *filename,
 	DiagnosticsEngine &Diags)
 {
-	const char *binary = CLANG_PREFIX"/bin/clang";
+	const char *binary = ISL_CLANG_PREFIX"/bin/clang";
 	const unique_ptr<Driver> driver(construct_driver(binary, Diags));
 	std::vector<const char *> Argv;
 	Argv.push_back(binary);

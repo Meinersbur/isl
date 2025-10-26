@@ -34,7 +34,8 @@ if test $? -eq 0; then
 	CLANG_LIBS="$CLANG_LIBS $systemlibs"
 fi
 CLANG_PREFIX=`$LLVM_CONFIG --prefix`
-AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"], [Clang installation prefix])
+AC_DEFINE_UNQUOTED(ISL_CLANG_PREFIX,
+	["$CLANG_PREFIX"], [Clang installation prefix])
 
 # If $CLANG_PREFIX/bin/clang cannot find the standard include files,
 # then see if setting sysroot to `xcode-select -p`/SDKs/MacOSX.sdk helps.
