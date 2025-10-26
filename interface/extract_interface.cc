@@ -374,18 +374,23 @@ static const FileEntry *ignore_error(const T obj)
 	return ignore_error_helper(obj, 0, NULL);
 }
 
-/* This is identical to std::void_t in C++17.
- */
-template< class... >
-using void_t = void;
-
 /* A template class with value true if "T" has a getFileRef method.
  */
-template <class T, class = void>
-struct HasGetFileRef : public std::false_type {};
-template <class T>
-struct HasGetFileRef<T, ::void_t<decltype(&T::getFileRef)>> :
-    public std::true_type {};
+template <typename T>
+struct HasGetFileRef {
+private:
+    template <typename U>
+    static auto test(int) ->
+	decltype(std::declval<U>().
+	    getFileRef(std::declval<const std::string &>()), std::true_type());
+
+    template <typename>
+    static std::false_type test(...);
+
+public:
+    using type = decltype(test<T>(0));
+    static constexpr bool value = type::value;
+};
 
 /* Return the FileEntryRef/FileEntry corresponding to the given file name or
  * an error if anything went wrong.
