@@ -38,8 +38,11 @@ using namespace ::clang::driver;
 using namespace llvm::opt;
 #endif
 
-static const char *ResourceDir =
-	ISL_CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING;
+#ifndef ISL_CLANG_RESOURCE_DIR
+#define ISL_CLANG_RESOURCE_DIR \
+	ISL_CLANG_PREFIX "/lib/clang/" CLANG_VERSION_STRING
+#endif
+static const char *ResourceDir = ISL_CLANG_RESOURCE_DIR;
 
 static Driver *construct_driver(const char *binary, DiagnosticsEngine &Diags)
 {

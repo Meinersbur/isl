@@ -37,6 +37,16 @@ CLANG_PREFIX=`$LLVM_CONFIG --prefix`
 AC_DEFINE_UNQUOTED(ISL_CLANG_PREFIX,
 	["$CLANG_PREFIX"], [Clang installation prefix])
 
+AC_MSG_CHECKING([for clang resource directory])
+CLANG_RESOURCE_DIR=`$CLANG_PREFIX/bin/clang -print-resource-dir 2>/dev/null`
+if test $? -eq 0 && test "x$CLANG_RESOURCE_DIR" != "x"; then
+	AC_MSG_RESULT([$CLANG_RESOURCE_DIR])
+	AC_DEFINE_UNQUOTED(ISL_CLANG_RESOURCE_DIR,
+		["$CLANG_RESOURCE_DIR"], [Clang resource directory])
+else
+	AC_MSG_RESULT([not found or not supported])
+fi
+
 # If $CLANG_PREFIX/bin/clang cannot find the standard include files,
 # then see if setting sysroot to `xcode-select -p`/SDKs/MacOSX.sdk helps.
 # This may be required on some versions of OS X since they lack /usr/include.
