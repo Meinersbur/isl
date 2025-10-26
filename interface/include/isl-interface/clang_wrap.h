@@ -351,6 +351,8 @@ struct Wrap {
 		LangOptions &LO = Clang->getLangOpts();
 		PreprocessorOptions &PO = Clang->getPreprocessorOpts();
 		HSO.ResourceDir = ResourceDir;
+		HSO.AddPath(ISL_CLANG_RESOURCE_DIR "/include",
+			clang::frontend::System, false, false);
 
 		add_paths(HSO);
 		add_macros(PO);
