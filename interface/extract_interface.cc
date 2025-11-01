@@ -160,7 +160,7 @@ struct Extractor : public isl::clang::Wrap {
  */
 TextDiagnosticPrinter *Extractor::construct_printer(void)
 {
-	return new TextDiagnosticPrinter(llvm::errs(), new DiagnosticOptions());
+	return new TextDiagnosticPrinter(llvm::errs(), getDiagnosticOptions());
 }
 
 /* Suppress any errors, if needed.

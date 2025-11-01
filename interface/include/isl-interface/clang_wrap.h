@@ -295,6 +295,13 @@ static llvm::ErrorOr<const FileEntry *> getFile(T& obj,
  * Other virtual methods allow different kinds of configuration.
  */
 struct Wrap {
+	/* Return a valid DiagnosticOptions argument for
+	 * the TextDiagnosticPrinter constructor.
+	 */
+	DiagnosticOptions *getDiagnosticOptions() {
+		return new DiagnosticOptions();
+	}
+
 	/* Construct a TextDiagnosticPrinter. */
 	virtual TextDiagnosticPrinter *construct_printer() = 0;
 	/* Suppress any errors, if needed. */
