@@ -167,16 +167,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			LangStandard::lang_unspecified);
 ]])], [AC_DEFINE([SETLANGDEFAULTS_TAKES_5_ARGUMENTS], [],
 	[Define if CompilerInvocation::setLangDefaults takes 5 arguments])])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-	#include <clang/Frontend/CompilerInstance.h>
-	#include <clang/Frontend/CompilerInvocation.h>
-]], [[
-	using namespace clang;
-	CompilerInvocation *invocation;
-	CompilerInstance *Clang;
-	Clang->setInvocation(std::make_shared<CompilerInvocation>(*invocation));
-]])], [AC_DEFINE([SETINVOCATION_TAKES_SHARED_PTR], [],
-	[Defined if CompilerInstance::setInvocation takes a shared_ptr])])
 AC_CHECK_HEADER([llvm/Option/Arg.h],
 	[AC_DEFINE([HAVE_LLVM_OPTION_ARG_H], [],
 		   [Define if llvm/Option/Arg.h exists])])

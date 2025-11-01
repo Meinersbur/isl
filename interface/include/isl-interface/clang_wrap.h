@@ -109,8 +109,8 @@ static void set_sysroot(ArgStringList &args)
  * The arguments are mainly useful for setting up the system include
  * paths on newer clangs and on some platforms.
  */
-static CompilerInvocation *construct_invocation(const char *filename,
-	DiagnosticsEngine &Diags)
+static void construct_invocation(CompilerInstance *Clang,
+	const char *filename, DiagnosticsEngine &Diags)
 {
 	const char *binary = ISL_CLANG_PREFIX"/bin/clang";
 	const std::unique_ptr<Driver> driver(construct_driver(binary, Diags));
@@ -123,14 +123,12 @@ static CompilerInvocation *construct_invocation(const char *filename,
 
 	Command *cmd = cast<Command>(ClangAPI::command(*Jobs.begin()));
 	if (strcmp(cmd->getCreator().getName(), "clang"))
-		return NULL;
+		return;
 
 	ArgStringList args = cmd->getArguments();
 	set_sysroot(args);
 
-	CompilerInvocation *invocation = new CompilerInvocation;
-	create_from_args(*invocation, &args, Diags);
-	return invocation;
+	create_from_args(Clang->getInvocation(), &args, Diags);
 }
 
 #ifdef CREATETARGETINFO_TAKES_SHARED_PTR
@@ -212,24 +210,6 @@ static void set_lang_defaults(CompilerInstance *Clang)
 {
 	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
 					    LangStandard::lang_unspecified);
-}
-
-#endif
-
-#ifdef SETINVOCATION_TAKES_SHARED_PTR
-
-static void set_invocation(CompilerInstance *Clang,
-	CompilerInvocation *invocation)
-{
-	Clang->setInvocation(std::shared_ptr<CompilerInvocation>(invocation));
-}
-
-#else
-
-static void set_invocation(CompilerInstance *Clang,
-	CompilerInvocation *invocation)
-{
-	Clang->setInvocation(invocation);
 }
 
 #endif
@@ -340,10 +320,7 @@ struct Wrap {
 		TargetInfo *target = create_target_info(Clang, Diags);
 		Clang->setTarget(target);
 		set_lang_defaults(Clang);
-		CompilerInvocation *invocation =
-			construct_invocation(filename, Diags);
-		if (invocation)
-			set_invocation(Clang, invocation);
+		construct_invocation(Clang, filename, Diags);
 		Diags.setClient(construct_printer());
 		Clang->createFileManager();
 		Clang->createSourceManager(Clang->getFileManager());
