@@ -295,17 +295,70 @@ static llvm::ErrorOr<const FileEntry *> getFile(T& obj,
 	return file;
 }
 
+/* A template class with value true if the constructor of the template argument
+ * takes a reference to a DiagnosticOptions object.
+ */
+ISL_VALID_EXPR_FOR_TEMPLATE_ARG(TakesDiagnosticOptionsRef,
+	new U(llvm::errs(), std::declval<DiagnosticOptions &>()))
+
+/* Return the type of the DiagnosticOptions argument of the constructor of "T".
+ *
+ * If TakesDiagnosticOptionsRef holds, then this is a reference
+ * to a DiagnosticOptions object.
+ * Otherwise, it is a pointer to such an object.
+ */
+template <typename T,
+	typename std::enable_if<TakesDiagnosticOptionsRef<T>::value,
+				bool>::type = true>
+static DiagnosticOptions &diag_opts_type();
+template <typename T,
+	typename std::enable_if<!TakesDiagnosticOptionsRef<T>::value,
+				bool>::type = true>
+static DiagnosticOptions *diag_opts_type();
+
 /* A helper class handling the invocation of clang on a file and
  * allowing a derived class to perform the actual parsing
  * in an overridden handle() method.
  * Other virtual methods allow different kinds of configuration.
  */
 struct Wrap {
+	/* The type of the DiagnosticOptions argument
+	 * of the TextDiagnosticPrinter constructor.
+	 */
+	using DiagOptsType = decltype(diag_opts_type<TextDiagnosticPrinter>());
+	/* A local DiagnosticOptions object that is used
+	 * if TextDiagnosticPrinter takes a reference
+	 * to a DiagnosticOptions object.
+	 */
+	DiagnosticOptions DiagOpts;
+
+	/* Return a valid DiagnosticOptions argument
+	 * for the constructor of "T".
+	 * If "T" takes a reference, then
+	 * this is a reference to the DiagOpts field.
+	 * Otherwise, it is a pointer to a new object.
+	 */
+	template <typename T,
+		typename std::enable_if<TakesDiagnosticOptionsRef<T>::value,
+					bool>::type = true>
+	DiagnosticOptions &getDiagOpts() {
+		return DiagOpts;
+	}
+	template <typename T,
+		typename std::enable_if<!TakesDiagnosticOptionsRef<T>::value,
+					bool>::type = true>
+	DiagnosticOptions *getDiagOpts() {
+		return new DiagnosticOptions();
+	}
+
 	/* Return a valid DiagnosticOptions argument for
 	 * the TextDiagnosticPrinter constructor.
+	 * If TextDiagnosticPrinter takes a reference, then
+	 * this is a reference to the DiagOpts field.
+	 * Otherwise, it is a pointer to a new object.
 	 */
-	DiagnosticOptions *getDiagnosticOptions() {
-		return new DiagnosticOptions();
+	DiagOptsType getDiagnosticOptions() {
+		return getDiagOpts<TextDiagnosticPrinter>();
 	}
 
 	/* Construct a TextDiagnosticPrinter. */
