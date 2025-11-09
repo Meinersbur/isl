@@ -38,11 +38,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <type_traits>
-#ifdef HAVE_ADT_OWNINGPTR_H
-#include <llvm/ADT/OwningPtr.h>
-#else
 #include <memory>
-#endif
 #ifdef HAVE_LLVM_OPTION_ARG_H
 #include <llvm/Option/Arg.h>
 #endif
@@ -88,10 +84,6 @@ using namespace clang;
 using namespace clang::driver;
 #ifdef HAVE_LLVM_OPTION_ARG_H
 using namespace llvm::opt;
-#endif
-
-#ifdef HAVE_ADT_OWNINGPTR_H
-#define unique_ptr	llvm::OwningPtr
 #endif
 
 static llvm::cl::opt<string> InputFilename(llvm::cl::Positional,

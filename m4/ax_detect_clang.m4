@@ -130,9 +130,6 @@ AC_EGREP_HEADER([getReturnType],
 	[clang/AST/CanonicalType.h], [],
 	[AC_DEFINE([getReturnType], [getResultType],
 	    [Define to getResultType for older versions of clang])])
-AC_CHECK_HEADER([llvm/ADT/OwningPtr.h],
-	[AC_DEFINE([HAVE_ADT_OWNINGPTR_H], [],
-		   [Define if llvm/ADT/OwningPtr.h exists])])
 AC_EGREP_HEADER([initializeBuiltins],
 	[clang/Basic/Builtins.h], [],
 	[AC_DEFINE([initializeBuiltins], [InitializeBuiltins],
