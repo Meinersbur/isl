@@ -244,23 +244,29 @@ static const FileEntry *ignore_error(const T obj)
 	return ignore_error_helper(obj, 0, NULL);
 }
 
-/* A template class with value true if "T" has a getFileRef method.
+/* Define a template class "CLASS" with value true
+ * if "EXPR" is valid for its template argument (available as "U" in "EXPR").
  */
-template <typename T>
-struct HasGetFileRef {
-private:
-    template <typename U>
-    static auto test(int) ->
-	decltype(std::declval<U>().
-	    getFileRef(std::declval<const std::string &>()), std::true_type());
-
-    template <typename>
-    static std::false_type test(...);
-
-public:
-    using type = decltype(test<T>(0));
-    static constexpr bool value = type::value;
+#define ISL_VALID_EXPR_FOR_TEMPLATE_ARG(CLASS, EXPR)			\
+template <typename T>							\
+struct CLASS {								\
+private:								\
+    template <typename U>						\
+    static auto test(int) -> decltype(EXPR, std::true_type());		\
+									\
+    template <typename>							\
+    static std::false_type test(...);					\
+									\
+public:									\
+    using type = decltype(test<T>(0));					\
+    static constexpr bool value = type::value;				\
 };
+
+/* A template class with value true if the template argument
+ * has a getFileRef method.
+ */
+ISL_VALID_EXPR_FOR_TEMPLATE_ARG(HasGetFileRef,
+	std::declval<U>().getFileRef(std::declval<const std::string &>()))
 
 /* Return a wrapper around the FileEntryRef/FileEntry
  * corresponding to the given file name.  The wrapper evaluates
