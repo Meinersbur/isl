@@ -13,17 +13,6 @@
  */
 __isl_give MULTI(BASE) *FN(MULTI(BASE),floor)(__isl_take MULTI(BASE) *multi)
 {
-	int i;
-
-	multi = FN(MULTI(BASE),cow)(multi);
-	if (!multi)
-		return NULL;
-
-	for (i = 0; i < multi->n; ++i) {
-		multi->u.p[i] = FN(EL,floor)(multi->u.p[i]);
-		if (!multi->u.p[i])
-			return FN(MULTI(BASE),free)(multi);
-	}
-
-	return multi;
+	S(MULTI(BASE),un_op_control) control = { .fn_el = &FN(EL,floor) };
+	return FN(MULTI(BASE),un_op)(multi, &control);
 }

@@ -309,6 +309,8 @@ __isl_give isl_basic_set *isl_set_unshifted_simple_hull_from_set_list(
 	__isl_take isl_set *set, __isl_take isl_set_list *list);
 __isl_give isl_basic_set *isl_set_bounded_simple_hull(__isl_take isl_set *set);
 
+__isl_export
+__isl_give isl_set *isl_set_wrapped_reverse(__isl_take isl_set *set);
 __isl_give isl_set *isl_set_union_disjoint(
 	__isl_take isl_set *set1, __isl_take isl_set *set2);
 __isl_export
@@ -488,6 +490,7 @@ __isl_give isl_set *isl_set_gist_basic_set(__isl_take isl_set *set,
 __isl_export
 __isl_give isl_set *isl_set_gist(__isl_take isl_set *set,
 	__isl_take isl_set *context);
+__isl_export
 __isl_give isl_set *isl_set_gist_params(__isl_take isl_set *set,
 	__isl_take isl_set *context);
 isl_stat isl_set_dim_residue_class_val(__isl_keep isl_set *set,
@@ -558,6 +561,7 @@ __isl_give isl_set *isl_set_align_params(__isl_take isl_set *set,
 	__isl_take isl_space *model);
 __isl_give isl_basic_set *isl_basic_set_drop_unused_params(
 	__isl_take isl_basic_set *bset);
+__isl_export
 __isl_give isl_set *isl_set_drop_unused_params(__isl_take isl_set *set);
 
 __isl_give isl_mat *isl_basic_set_equalities_matrix(

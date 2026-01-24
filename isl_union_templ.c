@@ -201,9 +201,7 @@ static __isl_give UNION *FN(UNION,add_part_generic)(__isl_take UNION *u,
 			goto error;
 		entry->data = FN(PART,union_add_)(entry->data,
 						FN(PART,copy)(part));
-		if (!entry->data)
-			goto error;
-		empty = FN(PART,IS_ZERO)(part);
+		empty = FN(PART,IS_ZERO)(entry->data);
 		if (empty < 0)
 			goto error;
 		if (empty)
@@ -455,13 +453,12 @@ error:
 __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 	__isl_take isl_space *model)
 {
+	isl_space *space;
 	isl_bool equal_params;
 	isl_reordering *r;
 
-	if (!u || !model)
-		goto error;
-
-	equal_params = isl_space_has_equal_params(u->space, model);
+	space = FN(UNION,peek_space)(u);
+	equal_params = isl_space_has_equal_params(space, model);
 	if (equal_params < 0)
 		goto error;
 	if (equal_params) {
@@ -469,7 +466,7 @@ __isl_give UNION *FN(UNION,align_params)(__isl_take UNION *u,
 		return u;
 	}
 
-	r = isl_parameter_alignment_reordering(u->space, model);
+	r = isl_parameter_alignment_reordering(space, model);
 	isl_space_free(model);
 
 	return FN(UNION,realign_domain)(u, r);
@@ -523,6 +520,20 @@ error:
 	FN(UNION,free)(u2);
 	return NULL;
 }
+
+#if !DEFAULT_IS_ZERO
+
+/* Compute the sum of "u1" and "u2" on the union of their domains,
+ * with the actual sum on the shared domain and
+ * the defined expression on the symmetric difference of the domains.
+ */
+__isl_give UNION *FN(UNION,union_add)(__isl_take UNION *u1,
+	__isl_take UNION *u2)
+{
+	return FN(UNION,union_add_)(u1, u2);
+}
+
+#endif
 
 __isl_give UNION *FN(FN(UNION,from),BASE)(__isl_take PART *part)
 {
@@ -649,15 +660,6 @@ __isl_give UNION *FN(UNION,add)(__isl_take UNION *u1, __isl_take UNION *u2)
 	return FN(UNION,match_bin_op)(u1, u2, &FN(PART,add));
 #endif
 }
-
-#ifndef NO_SUB
-/* Subtract "u2" from "u1" and return the result.
- */
-__isl_give UNION *FN(UNION,sub)(__isl_take UNION *u1, __isl_take UNION *u2)
-{
-	return FN(UNION,match_bin_op)(u1, u2, &FN(PART,sub));
-}
-#endif
 
 S(UNION,any_set_data) {
 	isl_set *set;
@@ -1311,6 +1313,49 @@ __isl_give UNION *FN(UNION,drop_dims)( __isl_take UNION *u,
 	space = isl_space_drop_dims(space, type, first, n);
 	return FN(UNION,transform_space)(u, space, &control);
 }
+
+/* isl_union_*_every_* callback that checks whether "pw"
+ * does not involve the parameter at position "pos".
+ */
+static isl_bool FN(UNION,el_does_not_involve_param_at)(__isl_keep PW *pw,
+	void *user)
+{
+	unsigned *pos = user;
+
+	return isl_bool_not(FN(PW,involves_dims)(pw, isl_dim_param, *pos, 1));
+}
+
+/* This is a specialized version of isl_union_*_involves_dims for use
+ * by isl_union_*_drop_unused_params.
+ *
+ * In particular, this function is only called on individual parameters,
+ * so only this case needs to be supported.
+ */
+static isl_bool FN(UNION,involves_dims)(__isl_take UNION *u,
+	enum isl_dim_type type, unsigned first, unsigned n)
+{
+	isl_bool none;
+
+	if (type != isl_dim_param)
+		isl_die(FN(UNION,get_ctx)(u), isl_error_invalid,
+			"only parameters can be involved",
+			return isl_bool_error);
+	if (n != 1)
+		isl_die(FN(UNION,get_ctx)(u), isl_error_unsupported,
+			"only check for single parameter is supported",
+			return isl_bool_error);
+
+	none = FN(FN(UNION,every),BASE)(u,
+			&FN(UNION,el_does_not_involve_param_at), &first);
+
+	return isl_bool_not(none);
+}
+
+#undef TYPE
+#define TYPE	UNION
+static
+#include "isl_check_named_params_templ.c"
+#include "isl_drop_unused_params_templ.c"
 
 /* Internal data structure for isl_union_*_set_dim_name.
  * pos is the position of the parameter that needs to be renamed.
