@@ -50,7 +50,7 @@ __isl_give MULTI(BASE) *FN(isl_stream_read_multi,BASE)(
 
 	dom = isl_set_universe(isl_space_params_alloc(s->ctx, 0));
 	if (next_is_tuple(s)) {
-		dom = read_map_tuple(s, dom, isl_dim_param, v, 1, 0);
+		dom = read_map_tuple(s, dom, isl_dim_param, v, 0);
 		if (isl_stream_eat(s, ISL_TOKEN_TO))
 			goto error;
 	}
@@ -79,16 +79,6 @@ error:
 	return NULL;
 }
 
-/* Read a multi expression from "str".
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),read_from_str)(isl_ctx *ctx,
-	const char *str)
-{
-	MULTI(BASE) *multi;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	multi = FN(isl_stream_read_multi,BASE)(s);
-	isl_stream_free(s);
-	return multi;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	CAT(multi_,BASE)
+#include "isl_read_from_str_templ.c"

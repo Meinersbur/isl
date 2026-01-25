@@ -270,6 +270,8 @@ struct isl_sched_node *isl_sched_graph_find_node(isl_ctx *ctx,
 isl_stat isl_sched_graph_detect_ccs(isl_ctx *ctx, struct isl_sched_graph *graph,
 	isl_bool (*follows)(int i, int j, void *user));
 
+__isl_give isl_union_set *isl_sched_graph_extract_scc(isl_ctx *ctx,
+	struct isl_sched_graph *graph, int scc);
 __isl_give isl_union_set_list *isl_sched_graph_extract_sccs(isl_ctx *ctx,
 	struct isl_sched_graph *graph);
 isl_stat isl_sched_graph_extract_sub_graph(isl_ctx *ctx,

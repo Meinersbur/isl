@@ -2,7 +2,7 @@
  * Copyright 2010      INRIA Saclay
  * Copyright 2013      Ecole Normale Superieure
  * Copyright 2015      Sven Verdoolaege
- * Copyright 2019      Cerebras Systems
+ * Copyright 2019,2022 Cerebras Systems
  *
  * Use of this software is governed by the MIT license
  *
@@ -11,6 +11,7 @@
  * 91893 Orsay, France
  * and Ecole Normale Superieure, 45 rue d'Ulm, 75230 Paris, France
  * and Cerebras Systems, 175 S San Antonio Rd, Los Altos, CA, USA
+ * and Cerebras Systems, 1237 E Arques Ave, Sunnyvale, CA, USA
  */
 
 #include <isl_map_private.h>
@@ -56,6 +57,11 @@ static
 #include "isl_type_has_equal_space_templ.c"
 static
 #include "isl_type_check_equal_space_templ.c"
+
+#undef TYPE
+#define TYPE isl_point
+
+#include "isl_check_named_params_templ.c"
 
 __isl_give isl_point *isl_point_alloc(__isl_take isl_space *space,
 	__isl_take isl_vec *vec)
@@ -304,6 +310,60 @@ static isl_size isl_point_var_offset(__isl_keep isl_point *pnt,
 	return pnt ? isl_space_offset(pnt->dim, type) : isl_size_error;
 }
 
+/* Reorder the coordinates of "pnt" based on the given reordering.
+ */
+static __isl_give isl_point *isl_point_reorder(__isl_take isl_point *pnt,
+	__isl_take isl_reordering *r)
+{
+	isl_vec *vec;
+
+	isl_space_free(isl_point_take_space(pnt));
+	pnt = isl_point_restore_space(pnt, isl_reordering_get_space(r));
+
+	vec = isl_point_take_vec(pnt);
+	vec = isl_vec_reorder(vec, 1, isl_reordering_copy(r));
+	pnt = isl_point_restore_vec(pnt, vec);
+
+	return pnt;
+}
+
+/* Align the parameters of "pnt" along those of "model".
+ *
+ * Note that "model" is not allowed to have any parameters
+ * that do not already appear in "pnt" since "pnt" does not specify
+ * any value for such parameters.
+ */
+__isl_give isl_point *isl_point_align_params(__isl_take isl_point *pnt,
+	__isl_take isl_space *model)
+{
+	isl_space *space;
+	isl_bool equal_params;
+
+	space = isl_point_peek_space(pnt);
+	equal_params = isl_space_has_equal_params(space, model);
+	if (equal_params < 0)
+		goto error;
+	if (!equal_params) {
+		isl_reordering *r;
+
+		r = isl_parameter_alignment_reordering(space, model);
+		if (!r)
+			goto error;
+		if (r->src_len != r->dst_len)
+			isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
+				"no value specified for some parameters",
+				r = isl_reordering_free(r));
+		pnt = isl_point_reorder(pnt, r);
+	}
+
+	isl_space_free(model);
+	return pnt;
+error:
+	isl_space_free(model);
+	isl_point_free(pnt);
+	return NULL;
+}
+
 #undef TYPE
 #define TYPE	isl_point
 static
@@ -392,7 +452,10 @@ __isl_give isl_multi_val *isl_point_get_multi_val(__isl_keep isl_point *pnt)
 __isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
 	enum isl_dim_type type, int pos, __isl_take isl_val *v)
 {
-	if (!pnt || !v)
+	isl_size off;
+
+	off = isl_space_offset(isl_point_peek_space(pnt), type);
+	if (off < 0 || !v)
 		goto error;
 	if (isl_point_is_void(pnt))
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
@@ -403,7 +466,7 @@ __isl_give isl_point *isl_point_set_coordinate_val(__isl_take isl_point *pnt,
 		isl_die(isl_point_get_ctx(pnt), isl_error_invalid,
 			"expecting rational value", goto error);
 
-	pos += isl_space_offset(isl_point_peek_space(pnt), type);
+	pos += off;
 	if (isl_int_eq(pnt->vec->el[1 + pos], v->n) &&
 	    isl_int_eq(pnt->vec->el[0], v->d)) {
 		isl_val_free(v);
@@ -761,8 +824,12 @@ static __isl_give isl_printer *print_coordinate(__isl_take isl_printer *p,
 	struct isl_print_space_data *data, unsigned pos)
 {
 	isl_point *pnt = data->user;
+	isl_size off;
 
-	pos += isl_space_offset(data->space, data->type);
+	off = isl_space_offset(data->space, data->type);
+	if (off < 0)
+		return isl_printer_free(p);
+	pos += off;
 	p = isl_printer_print_isl_int(p, pnt->vec->el[1 + pos]);
 	if (!isl_int_is_one(pnt->vec->el[0])) {
 		p = isl_printer_print_str(p, "/");

@@ -48,6 +48,7 @@ int isl_union_map_find_dim_by_name(__isl_keep isl_union_map *umap,
 __isl_export
 __isl_give isl_union_map *isl_union_map_universe(
 	__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_set *isl_union_map_params(__isl_take isl_union_map *umap);
 __isl_export
 __isl_give isl_union_set *isl_union_map_domain(__isl_take isl_union_map *umap);
@@ -80,6 +81,8 @@ __isl_give isl_union_map *isl_union_map_polyhedral_hull(
 __isl_give isl_union_map *isl_union_map_remove_redundancies(
 	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_simple_hull(
+	__isl_take isl_union_map *umap);
+__isl_give isl_union_map *isl_union_map_plain_unshifted_simple_hull(
 	__isl_take isl_union_map *umap);
 __isl_export
 __isl_give isl_union_map *isl_union_map_coalesce(
@@ -226,6 +229,9 @@ __isl_give isl_union_map *isl_union_map_preimage_range_union_pw_multi_aff(
 __isl_export
 __isl_give isl_union_map *isl_union_map_reverse(__isl_take isl_union_map *umap);
 __isl_export
+__isl_give isl_union_map *isl_union_map_domain_reverse(
+	__isl_take isl_union_map *umap);
+__isl_export
 __isl_give isl_union_map *isl_union_map_range_reverse(
 	__isl_take isl_union_map *umap);
 __isl_export
@@ -242,11 +248,20 @@ __isl_give isl_union_map *isl_union_map_deltas_map(
 __isl_export
 __isl_give isl_union_map *isl_union_set_identity(__isl_take isl_union_set *uset);
 
+__isl_overload
+__isl_give isl_union_map *isl_union_map_project_out_param_id(
+	__isl_take isl_union_map *umap, __isl_take isl_id *id);
+__isl_overload
+__isl_give isl_union_map *isl_union_map_project_out_param_id_list(
+	__isl_take isl_union_map *umap, __isl_take isl_id_list *list);
 __isl_give isl_union_map *isl_union_map_project_out(
 	__isl_take isl_union_map *umap,
 	enum isl_dim_type type, unsigned first, unsigned n);
 __isl_export
 __isl_give isl_union_map *isl_union_map_project_out_all_params(
+	__isl_take isl_union_map *umap);
+__isl_export
+__isl_give isl_union_map *isl_union_map_drop_unused_params(
 	__isl_take isl_union_map *umap);
 __isl_give isl_union_map *isl_union_map_remove_divs(
 	__isl_take isl_union_map *bmap);

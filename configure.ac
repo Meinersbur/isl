@@ -1,10 +1,10 @@
-AC_INIT([isl], [0.24], [isl@meinersbur.de])
+AC_INIT([isl], [0.27], [isl@meinersbur.de])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_SUBST(versioninfo)
-versioninfo=24:0:1
+versioninfo=27:0:4
 
 if test "x$prefix" != "xNONE"; then
 	prefix_wd=`cd $prefix && pwd`
@@ -30,7 +30,7 @@ AX_CXX_COMPILE_STDCXX_11_NO_OVERRIDE
 AX_CXX_COMPILE_STDCXX_17([], [optional])
 
 AC_PROG_GREP
-AC_PROG_LIBTOOL
+LT_INIT
 AC_PROG_SED
 AM_PATH_PYTHON([3.6], [], [:])
 AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
@@ -39,6 +39,8 @@ AC_CHECK_PROG(CYGPATH, cygpath, cygpath, [])
 AC_CHECK_PROG(PERL, perl, perl, [])
 AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex, [])
 AC_CHECK_PROG(POD2HTML, pod2html, pod2html, [])
+
+ISL_DETECT_DIFF_OPTIONS
 
 AC_SUBST(OS_SRCDIR)
 if test "$host_os" = "mingw32" -a -n "$CYGPATH"; then
@@ -116,9 +118,6 @@ fi
 
 AX_SUBMODULE(clang,system|no,no)
 AM_CONDITIONAL(HAVE_CLANG, test $with_clang = system)
-AM_CONDITIONAL(HAVE_CPP_ISL_H,
-    [(test $with_clang = system -a "x$HAVE_CXX11" = "x1") || \
-     test -f $srcdir/include/isl/cpp.h])
 
 AX_SET_WARNING_FLAGS
 

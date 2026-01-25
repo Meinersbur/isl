@@ -1,35 +1,61 @@
 # ===========================================================================
-#       http://www.nongnu.org/autoconf-archive/ax_cflags_warn_all.html
+#    https://www.gnu.org/software/autoconf-archive/ax_cflags_warn_all.html
 # ===========================================================================
 #
 # SYNOPSIS
 #
-#   AX_CFLAGS_WARN_ALL [(shellvar [,default, [A/NA]])]
+#   AX_CFLAGS_WARN_ALL   [(shellvar[, default[, action-if-found[, action-if-not-found]]])]
+#   AX_CXXFLAGS_WARN_ALL [(shellvar[, default[, action-if-found[, action-if-not-found]]])]
+#   AX_FCFLAGS_WARN_ALL  [(shellvar[, default[, action-if-found[, action-if-not-found]]])]
 #
 # DESCRIPTION
 #
-#   Try to find a compiler option that enables most reasonable warnings.
+#   Specify compiler options that enable most reasonable warnings.  For the
+#   GNU Compiler Collection (GCC), for example, it will be "-Wall".  The
+#   result is added to shellvar, one of CFLAGS, CXXFLAGS or FCFLAGS if the
+#   first parameter is not specified.
 #
-#   For the GNU CC compiler it will be -Wall (and -ansi -pedantic) The
-#   result is added to the shellvar being CFLAGS by default.
+#   Each of these macros accepts the following optional arguments:
 #
-#   Currently this macro knows about GCC, Solaris C compiler, Digital Unix C
-#   compiler, C for AIX Compiler, HP-UX C compiler, IRIX C compiler, NEC
-#   SX-5 (Super-UX 10) C compiler, and Cray J90 (Unicos 10.0.0.8) C
-#   compiler.
+#     - $1 - shellvar
+#         shell variable to use (CFLAGS, CXXFLAGS or FCFLAGS if not
+#         specified, depending on macro)
 #
-#    - $1 shell-variable-to-add-to : CFLAGS
-#    - $2 add-value-if-not-found : nothing
-#    - $3 action-if-found : add value to shellvariable
-#    - $4 action-if-not-found : nothing
+#     - $2 - default
+#         value to use for flags if compiler vendor cannot be determined (by
+#         default, "")
+#
+#     - $3 - action-if-found
+#         action to take if the compiler vendor has been successfully
+#         determined (by default, add the appropriate compiler flags to
+#         shellvar)
+#
+#     - $4 - action-if-not-found
+#         action to take if the compiler vendor has not been determined or
+#         is unknown (by default, add the default flags, or "" if not
+#         specified, to shellvar)
+#
+#   These macros use AX_COMPILER_VENDOR to determine which flags should be
+#   returned for a given compiler.  Not all compilers currently have flags
+#   defined for them; patches are welcome.  If need be, compiler flags may
+#   be made language-dependent: use a construct like the following:
+#
+#     [vendor_name], [m4_if(_AC_LANG_PREFIX,[C],   VAR="--relevant-c-flags",dnl
+#                     m4_if(_AC_LANG_PREFIX,[CXX], VAR="--relevant-c++-flags",dnl
+#                     m4_if(_AC_LANG_PREFIX,[FC],  VAR="--relevant-fortran-flags",dnl
+#                     VAR="$2"; FOUND="no")))],
+#
+#   Note: These macros also depend on AX_PREPEND_FLAG.
 #
 # LICENSE
 #
 #   Copyright (c) 2008 Guido U. Draheim <guidod@gmx.de>
+#   Copyright (c) 2010 Rhys Ulerich <rhys.ulerich@gmail.com>
+#   Copyright (c) 2018 John Zaitseff <J.Zaitseff@zap.org.au>
 #
 #   This program is free software; you can redistribute it and/or modify it
 #   under the terms of the GNU General Public License as published by the
-#   Free Software Foundation; either version 2 of the License, or (at your
+#   Free Software Foundation; either version 3 of the License, or (at your
 #   option) any later version.
 #
 #   This program is distributed in the hope that it will be useful, but
@@ -38,7 +64,7 @@
 #   Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License along
-#   with this program. If not, see <http://www.gnu.org/licenses/>.
+#   with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 #   As a special exception, the respective Autoconf Macro's copyright owner
 #   gives unlimited permission to copy, distribute and modify the configure
@@ -53,97 +79,80 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-AC_DEFUN([AX_CFLAGS_WARN_ALL],[dnl
-AS_VAR_PUSHDEF([FLAGS],[CFLAGS])dnl
-AS_VAR_PUSHDEF([VAR],[ac_cv_cflags_warn_all])dnl
-AC_CACHE_CHECK([m4_ifval($1,$1,FLAGS) for maximum warnings],
-VAR,[VAR="no, unknown"
- AC_LANG_SAVE
- AC_LANG_C
- ac_save_[]FLAGS="$[]FLAGS"
-for ac_arg dnl
-in "-pedantic  % -Wall"       dnl   GCC
-   "-xstrconst % -v"          dnl Solaris C
-   "-std1      % -verbose -w0 -warnprotos" dnl Digital Unix
-   "-qlanglvl=ansi % -qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd" dnl AIX
-   "-ansi -ansiE % -fullwarn" dnl IRIX
-   "+ESlit     % +w1"         dnl HP-UX C
-   "-Xc        % -pvctl[,]fullmsg" dnl NEC SX-5 (Super-UX 10)
-   "-h conform % -h msglevel 2" dnl Cray C (Unicos)
-   #
-do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
-   AC_TRY_COMPILE([],[return 0;],
-   [VAR=`echo $ac_arg | sed -e 's,.*% *,,'` ; break])
-done
- FLAGS="$ac_save_[]FLAGS"
- AC_LANG_RESTORE
-])
-case ".$VAR" in
-     .ok|.ok,*) m4_ifvaln($3,$3) ;;
-   .|.no|.no,*) m4_ifvaln($4,$4,[m4_ifval($2,[
-        AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])
-                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])]) ;;
-   *) m4_ifvaln($3,$3,[
-   if echo " $[]m4_ifval($1,$1,FLAGS) " | grep " $VAR " 2>&1 >/dev/null
-   then AC_RUN_LOG([: m4_ifval($1,$1,FLAGS) does contain $VAR])
-   else AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"])
-                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"
-   fi ]) ;;
-esac
-AS_VAR_POPDEF([VAR])dnl
-AS_VAR_POPDEF([FLAGS])dnl
-])
+#serial 25
 
-dnl the only difference - the LANG selection... and the default FLAGS
+AC_DEFUN([AX_FLAGS_WARN_ALL], [
+    AX_REQUIRE_DEFINED([AX_PREPEND_FLAG])dnl
+    AC_REQUIRE([AX_COMPILER_VENDOR])dnl
 
-AC_DEFUN([AX_CXXFLAGS_WARN_ALL],[dnl
-AS_VAR_PUSHDEF([FLAGS],[CXXFLAGS])dnl
-AS_VAR_PUSHDEF([VAR],[ax_cv_cxxflags_warn_all])dnl
-AC_CACHE_CHECK([m4_ifval($1,$1,FLAGS) for maximum warnings],
-VAR,[VAR="no, unknown"
- AC_LANG_SAVE
- AC_LANG_CPLUSPLUS
- ac_save_[]FLAGS="$[]FLAGS"
-for ac_arg dnl
-in "-pedantic  % -Wall"       dnl   GCC
-   "-xstrconst % -v"          dnl Solaris C
-   "-std1      % -verbose -w0 -warnprotos" dnl Digital Unix
-   "-qlanglvl=ansi % -qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd" dnl AIX
-   "-ansi -ansiE % -fullwarn" dnl IRIX
-   "+ESlit     % +w1"         dnl HP-UX C
-   "-Xc        % -pvctl[,]fullmsg" dnl NEC SX-5 (Super-UX 10)
-   "-h conform % -h msglevel 2" dnl Cray C (Unicos)
-   #
-do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
-   AC_TRY_COMPILE([],[return 0;],
-   [VAR=`echo $ac_arg | sed -e 's,.*% *,,'` ; break])
-done
- FLAGS="$ac_save_[]FLAGS"
- AC_LANG_RESTORE
-])
-case ".$VAR" in
-     .ok|.ok,*) m4_ifvaln($3,$3) ;;
-   .|.no|.no,*) m4_ifvaln($4,$4,[m4_ifval($2,[
-        AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])
-                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])]) ;;
-   *) m4_ifvaln($3,$3,[
-   if echo " $[]m4_ifval($1,$1,FLAGS) " | grep " $VAR " 2>&1 >/dev/null
-   then AC_RUN_LOG([: m4_ifval($1,$1,FLAGS) does contain $VAR])
-   else AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"])
-                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"
-   fi ]) ;;
-esac
-AS_VAR_POPDEF([VAR])dnl
-AS_VAR_POPDEF([FLAGS])dnl
-])
+    AS_VAR_PUSHDEF([FLAGS], [m4_default($1,_AC_LANG_PREFIX[]FLAGS)])dnl
+    AS_VAR_PUSHDEF([VAR],   [ac_cv_[]_AC_LANG_ABBREV[]flags_warn_all])dnl
+    AS_VAR_PUSHDEF([FOUND], [ac_save_[]_AC_LANG_ABBREV[]flags_warn_all_found])dnl
 
-dnl  implementation tactics:
-dnl   the for-argument contains a list of options. The first part of
-dnl   these does only exist to detect the compiler - usually it is
-dnl   a global option to enable -ansi or -extrawarnings. All other
-dnl   compilers will fail about it. That was needed since a lot of
-dnl   compilers will give false positives for some option-syntax
-dnl   like -Woption or -Xoption as they think of it is a pass-through
-dnl   to later compile stages or something. The "%" is used as a
-dnl   delimimiter. A non-option comment can be given after "%%" marks
-dnl   which will be shown but not added to the respective C/CXXFLAGS.
+    AC_CACHE_CHECK([FLAGS for most reasonable warnings], VAR, [
+	VAR=""
+	FOUND="yes"
+	dnl  Cases are listed in the order found in ax_compiler_vendor.m4
+	AS_CASE("$ax_cv_[]_AC_LANG_ABBREV[]_compiler_vendor",
+	    [intel],		[VAR="-w2"],
+	    [ibm],		[VAR="-qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd"],
+	    [pathscale],	[],
+	    [clang],		[VAR="-Wall"],
+	    [cray],		[VAR="-h msglevel 2"],
+	    [fujitsu],		[],
+	    [sdcc],		[],
+	    [sx],		[VAR="-pvctl[,]fullmsg"],
+	    [portland],		[],
+	    [gnu],		[VAR="-Wall"],
+	    [sun],		[VAR="-v"],
+	    [hp],		[VAR="+w1"],
+	    [dec],		[VAR="-verbose -w0 -warnprotos"],
+	    [borland],		[],
+	    [comeau],		[],
+	    [kai],		[],
+	    [lcc],		[],
+	    [sgi],		[VAR="-fullwarn"],
+	    [microsoft],	[],
+	    [metrowerks],	[],
+	    [watcom],		[],
+	    [tcc],		[],
+	    [unknown],		[
+				    VAR="$2"
+				    FOUND="no"
+				],
+				[
+				    AC_MSG_WARN([Unknown compiler vendor returned by [AX_COMPILER_VENDOR]])
+				    VAR="$2"
+				    FOUND="no"
+				]
+	)
+
+	AS_IF([test "x$FOUND" = "xyes"], [dnl
+	    m4_default($3, [AS_IF([test "x$VAR" != "x"], [AX_PREPEND_FLAG([$VAR], [FLAGS])])])
+	], [dnl
+	    m4_default($4, [m4_ifval($2, [AX_PREPEND_FLAG([$VAR], [FLAGS])], [true])])
+	])dnl
+    ])dnl
+
+    AS_VAR_POPDEF([FOUND])dnl
+    AS_VAR_POPDEF([VAR])dnl
+    AS_VAR_POPDEF([FLAGS])dnl
+])dnl AX_FLAGS_WARN_ALL
+
+AC_DEFUN([AX_CFLAGS_WARN_ALL], [dnl
+    AC_LANG_PUSH([C])
+    AX_FLAGS_WARN_ALL([$1], [$2], [$3], [$4])
+    AC_LANG_POP([C])
+])dnl
+
+AC_DEFUN([AX_CXXFLAGS_WARN_ALL], [dnl
+    AC_LANG_PUSH([C++])
+    AX_FLAGS_WARN_ALL([$1], [$2], [$3], [$4])
+    AC_LANG_POP([C++])
+])dnl
+
+AC_DEFUN([AX_FCFLAGS_WARN_ALL], [dnl
+    AC_LANG_PUSH([Fortran])
+    AX_FLAGS_WARN_ALL([$1], [$2], [$3], [$4])
+    AC_LANG_POP([Fortran])
+])dnl

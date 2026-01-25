@@ -283,18 +283,9 @@ __isl_give isl_id *isl_stream_read_id(__isl_keep isl_stream *s)
 	return id;
 }
 
-/* Read an isl_id object from the string "str".
- */
-__isl_give isl_id *isl_id_read_from_str(isl_ctx *ctx, const char *str)
-{
-	isl_id *id;
-	isl_stream *s = isl_stream_new_str(ctx, str);
-	if (!s)
-		return NULL;
-	id = isl_stream_read_id(s);
-	isl_stream_free(s);
-	return id;
-}
+#undef TYPE_BASE
+#define TYPE_BASE	id
+#include "isl_read_from_str_templ.c"
 
 /* Is "id1" (obviously) equal to "id2"?
  *

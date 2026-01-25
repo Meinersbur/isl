@@ -14,6 +14,7 @@
 
 #include "isl_mat_private.h"
 #include "isl_scheduler_clustering.h"
+#include "isl_scheduler_scc.h"
 #include "isl_seq.h"
 #include "isl_tarjan.h"
 
@@ -1432,6 +1433,34 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
 	return isl_stat_ok;
 }
 
+/* Call isl_schedule_node_compute_finish_band on each of the clusters in "c" and
+ * update "node" to arrange for them to be executed in an order
+ * possibly involving set nodes that generalizes the topological order
+ * determined by the scc fields of the nodes in "graph".
+ *
+ * Note that at this stage, there are graph->scc clusters and
+ * their positions in c->cluster are determined by the values
+ * of c->scc_cluster.
+ *
+ * Construct an isl_scc_graph and perform the decomposition
+ * using this graph.
+ */
+static __isl_give isl_schedule_node *finish_bands_decompose(
+	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
+	struct isl_clustering *c)
+{
+	isl_ctx *ctx;
+	struct isl_scc_graph *scc_graph;
+
+	ctx = isl_schedule_node_get_ctx(node);
+
+	scc_graph = isl_scc_graph_from_sched_graph(ctx, graph, c);
+	node = isl_scc_graph_decompose(scc_graph, node);
+	isl_scc_graph_free(scc_graph);
+
+	return node;
+}
+
 /* Call isl_schedule_node_compute_finish_band on each of the clusters in "c"
  * in their topological order.  This order is determined by the scc
  * fields of the nodes in "graph".
@@ -1441,6 +1470,15 @@ static isl_stat compute_weights(struct isl_sched_graph *graph,
  * a sequence node.  Also, in this case, the cluster necessarily contains
  * the SCC at position 0 in the original graph and is therefore also
  * stored in the first cluster of "c".
+ *
+ * If there are more than two clusters left, then some subsets of the clusters
+ * may still be independent of each other.  These could then still
+ * be reordered with respect to each other.  Call finish_bands_decompose
+ * to try and construct an ordering involving set and sequence nodes
+ * that generalizes the topological order.
+ * Note that at the outermost level there can be no independent components
+ * because isl_schedule_node_compute_wcc_clustering is called
+ * on a (weakly) connected component.
  */
 static __isl_give isl_schedule_node *finish_bands_clustering(
 	__isl_take isl_schedule_node *node, struct isl_sched_graph *graph,
@@ -1453,6 +1491,8 @@ static __isl_give isl_schedule_node *finish_bands_clustering(
 	if (graph->scc == 1)
 		return isl_schedule_node_compute_finish_band(node,
 							&c->cluster[0], 0);
+	if (graph->scc > 2)
+		return finish_bands_decompose(node, graph, c);
 
 	ctx = isl_schedule_node_get_ctx(node);
 

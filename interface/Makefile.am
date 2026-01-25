@@ -2,6 +2,10 @@ ACLOCAL_AMFLAGS = -I ../m4
 AUTOMAKE_OPTIONS = nostdinc
 
 noinst_PROGRAMS = extract_interface
+pkginclude_HEADERS = \
+	include/isl-interface/clang_wrap.h \
+	include/isl-interface/config.h \
+	include/isl-interface/set_lang_defaults_arg4.h
 
 includes = -I$(top_builddir) -I$(top_srcdir) \
 	-I$(top_builddir)/include -I$(top_srcdir)/include
@@ -19,7 +23,6 @@ extract_interface_SOURCES = \
 	cpp_conversion.cc \
 	plain_cpp.h \
 	plain_cpp.cc \
-	set_lang_defaults_arg4.h \
 	template_cpp.h \
 	template_cpp.cc \
 	extract_interface.h \

@@ -40,6 +40,8 @@ static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff,
 /* Internal data structure used inside isl_ast_expr_add_term.
  * The domain of "build" is used to simplify the expressions.
  * "build" needs to be set by the caller of isl_ast_expr_add_term.
+ * "ls" is the domain local space of the affine expression
+ * of which a term is being added.
  * "cst" is the constant term of the expression in which the added term
  * appears.  It may be modified by isl_ast_expr_add_term.
  *
@@ -48,6 +50,7 @@ static __isl_give isl_aff *oppose_div_arg(__isl_take isl_aff *aff,
  */
 struct isl_ast_add_term_data {
 	isl_ast_build *build;
+	isl_local_space *ls;
 	isl_val *cst;
 	isl_val *v;
 };
@@ -72,23 +75,23 @@ struct isl_ast_add_term_data {
  * Similarly, if floor(cst/v) is zero, then there is no point in
  * checking again.
  */
-static int is_non_neg_after_stealing(__isl_keep isl_aff *aff,
+static isl_bool is_non_neg_after_stealing(__isl_keep isl_aff *aff,
 	__isl_keep isl_val *d, struct isl_ast_add_term_data *data)
 {
 	isl_aff *shifted;
 	isl_val *shift;
-	int is_zero;
-	int non_neg;
+	isl_bool is_zero;
+	isl_bool non_neg;
 
 	if (isl_val_sgn(data->cst) != isl_val_sgn(data->v))
-		return 0;
+		return isl_bool_false;
 
 	shift = isl_val_div(isl_val_copy(data->cst), isl_val_copy(data->v));
 	shift = isl_val_floor(shift);
 	is_zero = isl_val_is_zero(shift);
 	if (is_zero < 0 || is_zero) {
 		isl_val_free(shift);
-		return is_zero < 0 ? -1 : 0;
+		return isl_bool_not(is_zero);
 	}
 	shift = isl_val_mul(shift, isl_val_copy(d));
 	shifted = isl_aff_copy(aff);
@@ -147,11 +150,26 @@ static __isl_give isl_aff *steal_from_cst(__isl_take isl_aff *aff,
 	return isl_aff_add_constant_val(aff, shift);
 }
 
-/* Create an isl_ast_expr evaluating the div at position "pos" in "ls".
+/* Construct an expression representing the binary operation "type"
+ * (some division or modulo) applied to the expressions
+ * constructed from "aff" and "v".
+ */
+static __isl_give isl_ast_expr *div_mod(enum isl_ast_expr_op_type type,
+	__isl_take isl_aff *aff, __isl_take isl_val *v,
+	__isl_keep isl_ast_build *build)
+{
+	isl_ast_expr *expr1, *expr2;
+
+	expr1 = isl_ast_expr_from_aff(aff, build);
+	expr2 = isl_ast_expr_from_val(v);
+	return isl_ast_expr_alloc_binary(type, expr1, expr2);
+}
+
+/* Create an isl_ast_expr evaluating the div at position "pos" in data->ls.
  * The result is simplified in terms of data->build->domain.
  * This function may change (the sign of) data->v.
  *
- * "ls" is known to be non-NULL.
+ * data->ls is known to be non-NULL.
  *
  * Let the div be of the form floor(e/d).
  * If the ast_build_prefer_pdiv option is set then we check if "e"
@@ -182,22 +200,21 @@ static __isl_give isl_aff *steal_from_cst(__isl_take isl_aff *aff,
  * with s the minimal shift that makes the argument non-negative.
  */
 static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
-	__isl_keep isl_local_space *ls, int pos)
+	int pos)
 {
-	isl_ctx *ctx = isl_local_space_get_ctx(ls);
+	isl_ctx *ctx = isl_local_space_get_ctx(data->ls);
 	isl_aff *aff;
-	isl_ast_expr *num, *den;
 	isl_val *d;
 	enum isl_ast_expr_op_type type;
 
-	aff = isl_local_space_get_div(ls, pos);
+	aff = isl_local_space_get_div(data->ls, pos);
 	d = isl_aff_get_denominator_val(aff);
 	aff = isl_aff_scale_val(aff, isl_val_copy(d));
-	den = isl_ast_expr_from_val(isl_val_copy(d));
 
 	type = isl_ast_expr_op_fdiv_q;
 	if (isl_options_get_ast_build_prefer_pdiv(ctx)) {
-		int non_neg = isl_ast_build_aff_is_nonneg(data->build, aff);
+		isl_bool non_neg;
+		non_neg = isl_ast_build_aff_is_nonneg(data->build, aff);
 		if (non_neg >= 0 && !non_neg) {
 			isl_aff *opp = oppose_div_arg(isl_aff_copy(aff),
 							isl_val_copy(d));
@@ -220,49 +237,47 @@ static __isl_give isl_ast_expr *var_div(struct isl_ast_add_term_data *data,
 			type = isl_ast_expr_op_pdiv_q;
 	}
 
-	isl_val_free(d);
-	num = isl_ast_expr_from_aff(aff, data->build);
-	return isl_ast_expr_alloc_binary(type, num, den);
+	return div_mod(type, aff, d, data->build);
 }
 
-/* Create an isl_ast_expr evaluating the specified dimension of "ls".
+/* Create an isl_ast_expr evaluating the specified dimension of data->ls.
  * The result is simplified in terms of data->build->domain.
  * This function may change (the sign of) data->v.
  *
  * The isl_ast_expr is constructed based on the type of the dimension.
  * - divs are constructed by var_div
  * - set variables are constructed from the iterator isl_ids in data->build
- * - parameters are constructed from the isl_ids in "ls"
+ * - parameters are constructed from the isl_ids in data->ls
  */
 static __isl_give isl_ast_expr *var(struct isl_ast_add_term_data *data,
-	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos)
+	enum isl_dim_type type, int pos)
 {
-	isl_ctx *ctx = isl_local_space_get_ctx(ls);
+	isl_ctx *ctx = isl_local_space_get_ctx(data->ls);
 	isl_id *id;
 
 	if (type == isl_dim_div)
-		return var_div(data, ls, pos);
+		return var_div(data, pos);
 
 	if (type == isl_dim_set) {
 		id = isl_ast_build_get_iterator_id(data->build, pos);
 		return isl_ast_expr_from_id(id);
 	}
 
-	if (!isl_local_space_has_dim_id(ls, type, pos))
+	if (!isl_local_space_has_dim_id(data->ls, type, pos))
 		isl_die(ctx, isl_error_internal, "unnamed dimension",
 			return NULL);
-	id = isl_local_space_get_dim_id(ls, type, pos);
+	id = isl_local_space_get_dim_id(data->ls, type, pos);
 	return isl_ast_expr_from_id(id);
 }
 
 /* Does "expr" represent the zero integer?
  */
-static int ast_expr_is_zero(__isl_keep isl_ast_expr *expr)
+static isl_bool ast_expr_is_zero(__isl_keep isl_ast_expr *expr)
 {
 	if (!expr)
-		return -1;
+		return isl_bool_error;
 	if (expr->type != isl_ast_expr_int)
-		return 0;
+		return isl_bool_false;
 	return isl_val_is_zero(expr->u.v);
 }
 
@@ -343,10 +358,8 @@ static __isl_give isl_ast_expr *isl_ast_expr_mod(__isl_keep isl_val *v,
 	if (!aff)
 		return NULL;
 
-	expr = isl_ast_expr_from_aff(isl_aff_copy(aff), build);
-
-	c = isl_ast_expr_from_val(isl_val_copy(d));
-	expr = isl_ast_expr_alloc_binary(isl_ast_expr_op_pdiv_r, expr, c);
+	expr = div_mod(isl_ast_expr_op_pdiv_r,
+			isl_aff_copy(aff), isl_val_copy(d), build);
 
 	if (!isl_val_is_one(v)) {
 		c = isl_ast_expr_from_val(isl_val_copy(v));
@@ -394,7 +407,7 @@ error:
 	return NULL;
 }
 
-/* Add an expression for "*v" times the specified dimension of "ls"
+/* Add an expression for "*v" times the specified dimension of data->ls
  * to expr.
  * If the dimension is an integer division, then this function
  * may modify data->cst in order to make the numerator non-negative.
@@ -418,8 +431,7 @@ error:
  *
  */
 static __isl_give isl_ast_expr *isl_ast_expr_add_term(
-	__isl_take isl_ast_expr *expr,
-	__isl_keep isl_local_space *ls, enum isl_dim_type type, int pos,
+	__isl_take isl_ast_expr *expr, enum isl_dim_type type, int pos,
 	__isl_take isl_val *v, struct isl_ast_add_term_data *data)
 {
 	isl_ast_expr *term;
@@ -428,7 +440,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_add_term(
 		return NULL;
 
 	data->v = v;
-	term = var(data, ls, type, pos);
+	term = var(data, type, pos);
 	v = data->v;
 
 	if (isl_val_is_neg(v) && !ast_expr_is_zero(expr)) {
@@ -485,6 +497,9 @@ error:
  * "div" is the argument of the div, with the denominator removed
  * "d" is the original denominator of the argument of the div
  *
+ * If set, then "partial" is the (positively weighted) sum
+ * of the affine expressions of one or more previously considered constraints
+ * that could still be complemented to an expression equal to "div".
  * "nonneg" is an affine expression that is non-negative over "build"
  * and that can be used to extract a modulo expression from "div".
  * In particular, if "sign" is 1, then the coefficients of "nonneg"
@@ -506,6 +521,7 @@ struct isl_extract_mod_data {
 	isl_val *d;
 	isl_aff *div;
 
+	isl_aff *partial;
 	isl_aff *nonneg;
 	int sign;
 };
@@ -569,7 +585,7 @@ static isl_bool is_even_test(struct isl_extract_mod_data *data,
  *
  * Also, if "lin - 1" is non-negative, then "lin" is non-negative too.
  */
-static int extract_term_and_mod(struct isl_extract_mod_data *data,
+static isl_stat extract_term_and_mod(struct isl_extract_mod_data *data,
 	__isl_take isl_aff *term, __isl_take isl_aff *arg)
 {
 	isl_bool even;
@@ -605,9 +621,9 @@ static int extract_term_and_mod(struct isl_extract_mod_data *data,
 	else
 		data->add = isl_aff_add(data->add, term);
 	if (!data->add)
-		return -1;
+		return isl_stat_error;
 
-	return 0;
+	return isl_stat_ok;
 }
 
 /* Given that data->v * div_i in data->aff is of the form
@@ -628,7 +644,7 @@ static int extract_term_and_mod(struct isl_extract_mod_data *data,
  *
  * to data->neg or data->pos depending on the sign of -f.
  */
-static int extract_mod(struct isl_extract_mod_data *data)
+static isl_stat extract_mod(struct isl_extract_mod_data *data)
 {
 	return extract_term_and_mod(data, isl_aff_copy(data->div),
 			isl_aff_copy(data->div));
@@ -652,9 +668,9 @@ static int extract_mod(struct isl_extract_mod_data *data)
  *
  * This function may modify data->div.
  */
-static int extract_nonneg_mod(struct isl_extract_mod_data *data)
+static isl_stat extract_nonneg_mod(struct isl_extract_mod_data *data)
 {
-	int mod;
+	isl_bool mod;
 
 	mod = isl_ast_build_aff_is_nonneg(data->build, data->div);
 	if (mod < 0)
@@ -671,16 +687,33 @@ static int extract_nonneg_mod(struct isl_extract_mod_data *data)
 		return extract_mod(data);
 	}
 
-	return 0;
+	return isl_stat_ok;
 error:
 	data->aff = isl_aff_free(data->aff);
-	return -1;
+	return isl_stat_error;
 }
 
-/* Is the affine expression of constraint "c" "simpler" than data->nonneg
+/* Does "c" have a constant term that is "too large"?
+ * Here, "too large" is fairly arbitrarily set to 1 << 15.
+ */
+static isl_bool has_large_constant_term(__isl_keep isl_constraint *c)
+{
+	isl_val *v;
+	int sign;
+
+	v = isl_val_abs(isl_constraint_get_constant_val(c));
+	if (!v)
+		return isl_bool_error;
+	sign = isl_val_cmp_si(v, 1 << 15);
+	isl_val_free(v);
+	return isl_bool_ok(sign > 0);
+}
+
+/* Is the affine expression with constant term returned by "get_constant"
+ * "simpler" than data->nonneg
  * for use in extracting a modulo expression?
  *
- * We currently only consider the constant term of the affine expression.
+ * Currently, only this constant term is considered.
  * In particular, we prefer the affine expression with the smallest constant
  * term.
  * This means that if there are two constraints, say x >= 0 and -x + 10 >= 0,
@@ -688,16 +721,17 @@ error:
  *
  * More detailed heuristics could be used if it turns out that there is a need.
  */
-static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
-	__isl_keep isl_constraint *c)
+static isl_bool is_simpler(struct isl_extract_mod_data *data,
+	__isl_give isl_val *get_constant(struct isl_extract_mod_data *data,
+		void *user), void *user)
 {
 	isl_val *v1, *v2;
-	int simpler;
+	isl_bool simpler;
 
 	if (!data->nonneg)
-		return 1;
+		return isl_bool_true;
 
-	v1 = isl_val_abs(isl_constraint_get_constant_val(c));
+	v1 = isl_val_abs(get_constant(data, user));
 	v2 = isl_val_abs(isl_aff_get_constant_val(data->nonneg));
 	simpler = isl_val_lt(v1, v2);
 	isl_val_free(v1);
@@ -706,96 +740,396 @@ static int mod_constraint_is_simpler(struct isl_extract_mod_data *data,
 	return simpler;
 }
 
+/* Return the constant term of "c".
+ */
+static __isl_give isl_val *get_constraint_constant(
+	struct isl_extract_mod_data *data, void *user)
+{
+	isl_constraint *c = user;
+
+	return isl_constraint_get_constant_val(c);
+}
+
+/* Is the affine expression of constraint "c" "simpler" than data->nonneg
+ * for use in extracting a modulo expression?
+ *
+ * The test is based on the constant term of "c".
+ */
+static isl_bool mod_constraint_is_simpler(struct isl_extract_mod_data *data,
+       __isl_keep isl_constraint *c)
+{
+	return is_simpler(data, &get_constraint_constant, c);
+}
+
+/* Replace data->nonneg by the affine expression "aff" and
+ * set data->sign to "sign".
+ */
+static isl_stat replace_nonneg(struct isl_extract_mod_data *data,
+	__isl_take isl_aff *aff, int sign)
+{
+	isl_aff_free(data->nonneg);
+	data->nonneg = aff;
+	data->sign = sign;
+
+	return isl_stat_non_null(data->nonneg);
+}
+
+/* If "c" is "simpler" than data->nonneg,
+ * then replace data->nonneg by the affine expression of "c" and
+ * set data->sign to "sign".
+ */
+static isl_stat replace_if_simpler(struct isl_extract_mod_data *data,
+	__isl_keep isl_constraint *c, int sign)
+{
+	isl_bool simpler;
+
+	simpler = mod_constraint_is_simpler(data, c);
+	if (simpler < 0 || !simpler)
+		return isl_stat_non_error_bool(simpler);
+
+	return replace_nonneg(data, isl_constraint_get_aff(c), sign);
+}
+
+/* Internal data structure used inside check_parallel_or_opposite.
+ *
+ * "data" is the information passed down from the caller.
+ * "c" is the constraint being inspected.
+ *
+ * "n" contains the number of parameters and the number of input dimensions and
+ * is set by the first call to parallel_or_opposite_scan.
+ * "parallel" is set as long as the coefficients of "c" are still potentially
+ * equal to those of data->div modulo data->d.
+ * "opposite" is set as long as the coefficients of "c" are still potentially
+ * opposite to those of data->div modulo data->d.
+ * "partial" is set if the coefficients of "c" are still potentially
+ * a subset of those of data->div.
+ * "final" is set is the coefficients in data->partial together with those
+ * of "c" still cover the coefficients of data->div.
+ *
+ * If "f" is set, then it is the factor with which the coefficients
+ * of "c" need to be multiplied to match those of data->div.
+ */
+struct isl_parallel_stat {
+	struct isl_extract_mod_data *data;
+	isl_constraint *c;
+
+	isl_size n[2];
+	isl_bool parallel;
+	isl_bool opposite;
+	isl_bool partial;
+	int final;
+
+	isl_val *f;
+};
+
+/* Should the scan of coefficients be continued?
+ * That is, are the coefficients still (potentially) (partially) equal or
+ * opposite?
+ */
+static isl_bool parallel_or_opposite_continue(struct isl_parallel_stat *stat)
+{
+	if (stat->parallel < 0 || stat->opposite < 0 || stat->partial < 0)
+		return isl_bool_error;
+
+	return isl_bool_ok(stat->parallel || stat->opposite || stat->partial);
+}
+
+/* Is coefficient "i" of type "c_type" of stat->c potentially equal or
+ * opposite to coefficient "i" of type "a_type" of stat->data->div
+ * modulo stat->data->div?
+ * In particular, are they both zero or both non-zero?
+ *
+ * Note that while the coefficients of stat->data->div can be reasonably
+ * expected not to involve any coefficients that are multiples of stat->data->d,
+ * "c" may very well involve such coefficients.
+ * This means that some cases of equal or opposite constraints can be missed
+ * this way.
+ *
+ * If the coefficient of stat->data->div is zero, but that of "c" is not,
+ * then the coefficients of "c" cannot form a subset of those
+ * of stat->data->div.
+ * If the coefficient of stat->data->div is not zero,
+ * then check that it does not appear in both "c" and stat->data->partial.
+ * If it does not appear in either, then it must appear in some later constraint
+ * and "c" can therefore not be the last in the sequence of constraints
+ * that sum up to stat->data->div.
+ */
+static isl_bool parallel_or_opposite_feasible(struct isl_parallel_stat *stat,
+	enum isl_dim_type c_type, enum isl_dim_type a_type, int i)
+{
+	isl_bool a, b;
+
+	a = isl_constraint_involves_dims(stat->c, c_type, i, 1);
+	b = isl_aff_involves_dims(stat->data->div, a_type, i, 1);
+	if (a < 0 || b < 0)
+		return isl_bool_error;
+	if (a != b)
+		stat->parallel = stat->opposite = isl_bool_false;
+	if (!stat->partial)
+		return parallel_or_opposite_continue(stat);
+	if (!b && a)
+		stat->partial = isl_bool_false;
+	if (b && (a || stat->final) && stat->data->partial) {
+		isl_bool c;
+
+		c = isl_aff_involves_dims(stat->data->partial, a_type, i, 1);
+		if (c < 0)
+			return isl_bool_error;
+		if (a && c)
+			stat->partial = isl_bool_false;
+		if (!a && !c)
+			stat->final = 0;
+	}
+
+	return parallel_or_opposite_continue(stat);
+}
+
+/* Update stat->partial based on the coefficient "v1" of stat->c and
+ * "v2" of stat->data->div, where "v2" is known not to be zero.
+ * "v1" may be modified by this function and the modified value is returned.
+ * This function may also set stat->f.
+ *
+ * If "v1" is zero, then no update needs to be performed.
+ * Otherwise, stat->partial can only remain set if "c" is part
+ * of some positively weighted sum that is equal to stat->data->div.
+ * This means that v2 divided by v1 needs to be a positive integer.
+ * This quotient is stored in stat->f.  If this quotient has already
+ * been set for a previous coefficient, then it needs to be the same.
+ */
+static __isl_give isl_val *update_is_partial(struct isl_parallel_stat *stat,
+	__isl_take isl_val *v1, __isl_keep isl_val *v2)
+{
+	if (!stat->partial)
+		return v1;
+	if (isl_val_is_zero(v1))
+		return v1;
+
+	stat->partial = isl_val_is_divisible_by(v2, v1);
+	if (stat->partial < 0 || !stat->partial)
+		return v1;
+
+	v1 = isl_val_div(isl_val_copy(v2), v1);
+	stat->partial = isl_val_is_pos(v1);
+	if (stat->partial < 0 || !stat->partial)
+		return v1;
+	if (!stat->f)
+		stat->f = isl_val_copy(v1);
+	stat->partial = isl_val_eq(v1, stat->f);
+	return v1;
+}
+
+/* Is coefficient "i" of type "c_type" of stat->c equal or
+ * opposite to coefficient "i" of type "a_type" of stat->data->div
+ * modulo stat->data->div, or
+ * could stat->c be part of a positively weighted sum equal to stat->data->div?
+ * This function may set stat->f (at most once).
+ *
+ * If the coefficient of stat->data->div is zero,
+ * then parallel_or_opposite_feasible has already checked
+ * that the coefficient of stat->c is zero as well,
+ * so no further checks are needed.
+ */
+static isl_bool is_parallel_or_opposite(struct isl_parallel_stat *stat,
+	enum isl_dim_type c_type, enum isl_dim_type a_type, int i)
+{
+	isl_val *v1, *v2;
+	isl_bool b;
+
+	b = isl_aff_involves_dims(stat->data->div, a_type, i, 1);
+	if (b < 0 || !b)
+		return isl_bool_not(b);
+
+	v1 = isl_constraint_get_coefficient_val(stat->c, c_type, i);
+	v2 = isl_aff_get_coefficient_val(stat->data->div, a_type, i);
+	if (stat->parallel) {
+		v1 = isl_val_sub(v1, isl_val_copy(v2));
+		stat->parallel = isl_val_is_divisible_by(v1, stat->data->d);
+		v1 = isl_val_add(v1, isl_val_copy(v2));
+	}
+	if (stat->opposite) {
+		v1 = isl_val_add(v1, isl_val_copy(v2));
+		stat->opposite = isl_val_is_divisible_by(v1, stat->data->d);
+	}
+	v1 = update_is_partial(stat, v1, v2);
+	isl_val_free(v1);
+	isl_val_free(v2);
+
+	return parallel_or_opposite_continue(stat);
+}
+
+/* Scan the coefficients of stat->c to see if they are (potentially)
+ * equal or opposite to those of stat->data->div modulo stat->data->d,
+ * calling "fn" on each coefficient.
+ * IF "init" is set, then this is the first call to this function and
+ * then stat->n is initialized.
+ */
+static isl_bool parallel_or_opposite_scan(struct isl_parallel_stat *stat,
+	isl_bool (*fn)(struct isl_parallel_stat *stat,
+		enum isl_dim_type c_type, enum isl_dim_type a_type, int i),
+	int init)
+{
+	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
+	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
+	int i, t;
+
+	for (t = 0; t < 2; ++t) {
+		if (init) {
+			stat->n[t] = isl_constraint_dim(stat->c, c_type[t]);
+			if (stat->n[t] < 0)
+				return isl_bool_error;
+		}
+		for (i = 0; i < stat->n[t]; ++i) {
+			isl_bool ok;
+
+			ok = fn(stat, c_type[t], a_type[t], i);
+			if (ok < 0 || !ok)
+				return ok;
+		}
+	}
+
+	return isl_bool_true;
+}
+
+/* Update stat->data->partial with stat->c.
+ *
+ * In particular, if stat->c with weight stat->f turns out
+ * to potentially be a part of a weighted sum equal to stat->data->div
+ * (i.e., stat->partial is set), then add this scaled version of stat->c
+ * to stat->data->partial or initialize stat->data->partial if it has not
+ * been set yet.
+ */
+static isl_stat update_partial(struct isl_parallel_stat *stat)
+{
+	isl_aff *aff;
+
+	if (!stat->partial)
+		return isl_stat_ok;
+
+	aff = isl_constraint_get_aff(stat->c);
+	aff = isl_aff_scale_val(aff, isl_val_copy(stat->f));
+	if (!stat->data->partial)
+		stat->data->partial = aff;
+	else
+		stat->data->partial = isl_aff_add(stat->data->partial, aff);
+
+	return isl_stat_non_null(stat->data->partial);
+}
+
+/* Return the constant term of data->partial.
+ */
+static __isl_give isl_val *get_partial_constant(
+	struct isl_extract_mod_data *data, void *user)
+{
+	return isl_aff_get_constant_val(data->partial);
+}
+
+/* Is the affine expression data->partial "simpler" than data->nonneg
+ * for use in extracting a modulo expression?
+ *
+ * The test is based on the constant term of data->partial.
+ */
+static isl_bool partial_is_simpler(struct isl_extract_mod_data *data)
+{
+	return is_simpler(data, &get_partial_constant, NULL);
+}
+
+/* If stat->data->partial is complete and is "simpler" than data->nonneg,
+ * then replace stat->data->nonneg by stat->data->partial.
+ */
+static isl_stat replace_by_partial_if_simpler(struct isl_parallel_stat *stat)
+{
+	isl_bool simpler;
+	isl_aff *partial;
+
+	if (!stat->final)
+		return isl_stat_ok;
+
+	simpler = partial_is_simpler(stat->data);
+	if (simpler < 0 || !simpler)
+		return isl_stat_non_error_bool(simpler);
+
+	partial = stat->data->partial;
+	stat->data->partial = NULL;
+
+	return replace_nonneg(stat->data, partial, 1);
+}
+
 /* Check if the coefficients of "c" are either equal or opposite to those
  * of data->div modulo data->d.  If so, and if "c" is "simpler" than
  * data->nonneg, then replace data->nonneg by the affine expression of "c"
  * and set data->sign accordingly.
+ * Also check if "c" is part of a positively weighted sum of constraints
+ * that is equal to data->div, where each constraint has distinct non-zero
+ * coefficients.  If "c" is the last constraint in this sum
+ * (and the sum is "simpler" than data->nonneg)
+ * then also replace data->nonneg by this sum.
+ * If "c" is equal or opposite to data->div, then it is not considered
+ * to be part of a sum.
  *
  * Both "c" and data->div are assumed not to involve any integer divisions.
  *
  * Before we start the actual comparison, we first quickly check if
  * "c" and data->div have the same non-zero coefficients.
  * If not, then we assume that "c" is not of the desired form.
- * Note that while the coefficients of data->div can be reasonably expected
- * not to involve any coefficients that are multiples of d, "c" may
- * very well involve such coefficients.  This means that we may actually
- * miss some cases.
  *
- * If the constant term is "too large", then the constraint is rejected,
- * where "too large" is fairly arbitrarily set to 1 << 15.
+ * If the constant term is "too large", then the constraint is rejected.
  * We do this to avoid picking up constraints that bound a variable
  * by a very large number, say the largest or smallest possible
  * variable in the representation of some integer type.
  */
-static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
+static isl_stat check_parallel_or_opposite(struct isl_extract_mod_data *data,
+	__isl_keep isl_constraint *c)
+{
+	struct isl_parallel_stat stat = {
+		.data = data,
+		.c = c,
+		.parallel = isl_bool_true,
+		.opposite = isl_bool_true,
+		.partial = isl_bool_true,
+		.final = data->partial != NULL,
+		.f = NULL,
+	};
+	isl_bool skip, ok;
+
+	ok = parallel_or_opposite_scan(&stat,
+					&parallel_or_opposite_feasible, 1);
+	if (ok < 0 || !ok)
+		return isl_stat_non_error_bool(ok);
+
+	skip = has_large_constant_term(c);
+	if (skip < 0 || skip)
+		return isl_stat_non_error_bool(skip);
+
+	if (stat.parallel || stat.opposite)
+		stat.partial = isl_bool_false;
+
+	ok = parallel_or_opposite_scan(&stat, &is_parallel_or_opposite, 0);
+	if (ok >= 0 && ok)
+		if (update_partial(&stat) < 0)
+			ok = isl_bool_error;
+	isl_val_free(stat.f);
+	if (ok < 0 || !ok)
+		return isl_stat_non_error_bool(ok);
+
+	if (stat.partial)
+		return replace_by_partial_if_simpler(&stat);
+
+	return replace_if_simpler(data, c, stat.parallel ? 1 : -1);
+}
+
+/* Wrapper around check_parallel_or_opposite for use
+ * as a isl_basic_set_foreach_constraint callback.
+ */
+static isl_stat check_parallel_or_opposite_wrap(__isl_take isl_constraint *c,
 	void *user)
 {
 	struct isl_extract_mod_data *data = user;
-	enum isl_dim_type c_type[2] = { isl_dim_param, isl_dim_set };
-	enum isl_dim_type a_type[2] = { isl_dim_param, isl_dim_in };
-	int i, t;
-	isl_size n[2];
-	int parallel = 1, opposite = 1;
+	isl_stat res;
 
-	for (t = 0; t < 2; ++t) {
-		n[t] = isl_constraint_dim(c, c_type[t]);
-		if (n[t] < 0)
-			return isl_stat_error;
-		for (i = 0; i < n[t]; ++i) {
-			int a, b;
-
-			a = isl_constraint_involves_dims(c, c_type[t], i, 1);
-			b = isl_aff_involves_dims(data->div, a_type[t], i, 1);
-			if (a != b)
-				parallel = opposite = 0;
-		}
-	}
-
-	if (parallel || opposite) {
-		isl_val *v;
-
-		v = isl_val_abs(isl_constraint_get_constant_val(c));
-		if (isl_val_cmp_si(v, 1 << 15) > 0)
-			parallel = opposite = 0;
-		isl_val_free(v);
-	}
-
-	for (t = 0; t < 2; ++t) {
-		for (i = 0; i < n[t]; ++i) {
-			isl_val *v1, *v2;
-
-			if (!parallel && !opposite)
-				break;
-			v1 = isl_constraint_get_coefficient_val(c,
-								c_type[t], i);
-			v2 = isl_aff_get_coefficient_val(data->div,
-								a_type[t], i);
-			if (parallel) {
-				v1 = isl_val_sub(v1, isl_val_copy(v2));
-				parallel = isl_val_is_divisible_by(v1, data->d);
-				v1 = isl_val_add(v1, isl_val_copy(v2));
-			}
-			if (opposite) {
-				v1 = isl_val_add(v1, isl_val_copy(v2));
-				opposite = isl_val_is_divisible_by(v1, data->d);
-			}
-			isl_val_free(v1);
-			isl_val_free(v2);
-		}
-	}
-
-	if ((parallel || opposite) && mod_constraint_is_simpler(data, c)) {
-		isl_aff_free(data->nonneg);
-		data->nonneg = isl_constraint_get_aff(c);
-		data->sign = parallel ? 1 : -1;
-	}
-
+	res = check_parallel_or_opposite(data, c);
 	isl_constraint_free(c);
 
-	if (data->sign != 0 && data->nonneg == NULL)
-		return isl_stat_error;
-
-	return isl_stat_ok;
+	return res;
 }
 
 /* Given that data->v * div_i in data->aff is of the form
@@ -830,6 +1164,10 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
  * guaranteed to be non-negative on data->build), where we remove
  * any integer divisions from the constraints and skip this step
  * if "div" itself involves any integer divisions.
+ * The following cases are considered for div':
+ * - individual constraints, or
+ * - a sum of constraints that involve disjoint sets of variables and
+ *   where the sum is exactly equal to div (i.e., e = 0).
  * If we cannot find an appropriate expression this way, then
  * we pass control to extract_nonneg_mod where check
  * if div or "-div + d -1" themselves happen to be
@@ -856,8 +1194,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
  *
  * Note that the above is only a very simple heuristic for finding an
  * appropriate expression.  We could try a bit harder by also considering
- * sums of constraints that involve disjoint sets of variables or
- * we could consider arbitrary linear combinations of constraints,
+ * arbitrary linear combinations of constraints,
  * although that could potentially be much more expensive as it involves
  * the solution of an LP problem.
  *
@@ -877,7 +1214,7 @@ static isl_stat check_parallel_or_opposite(__isl_take isl_constraint *c,
  * Alternatively, we could first compute the dual of the domain
  * and plug in the constraints on the coefficients.
  */
-static int try_extract_mod(struct isl_extract_mod_data *data)
+static isl_stat try_extract_mod(struct isl_extract_mod_data *data)
 {
 	isl_basic_set *hull;
 	isl_val *v1, *v2;
@@ -898,8 +1235,10 @@ static int try_extract_mod(struct isl_extract_mod_data *data)
 	hull = isl_basic_set_remove_divs(hull);
 	data->sign = 0;
 	data->nonneg = NULL;
-	r = isl_basic_set_foreach_constraint(hull, &check_parallel_or_opposite,
-					data);
+	data->partial = NULL;
+	r = isl_basic_set_foreach_constraint(hull,
+					&check_parallel_or_opposite_wrap, data);
+	isl_aff_free(data->partial);
 	isl_basic_set_free(hull);
 
 	if (!data->sign || r < 0) {
@@ -937,7 +1276,7 @@ static int try_extract_mod(struct isl_extract_mod_data *data)
 				    isl_aff_copy(data->div), data->nonneg);
 error:
 	data->aff = isl_aff_free(data->aff);
-	return -1;
+	return isl_stat_error;
 }
 
 /* Check if "data->aff" involves any (implicit) modulo computations based
@@ -1051,6 +1390,81 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 	return data.aff;
 }
 
+/* Call "fn" on every non-zero coefficient of "aff",
+ * passing it in the type of dimension (in terms of the domain),
+ * the position and the value, as long as "fn" returns isl_bool_true.
+ * If "reverse" is set, then the coefficients are considered in reverse order
+ * within each type.
+ */
+static isl_bool every_non_zero_coefficient(__isl_keep isl_aff *aff,
+	int reverse,
+	isl_bool (*fn)(enum isl_dim_type type, int pos, __isl_take isl_val *v,
+		void *user),
+	void *user)
+{
+	int i, j;
+	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
+	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
+	isl_val *v;
+
+	for (i = 0; i < 3; ++i) {
+		isl_size n;
+
+		n = isl_aff_dim(aff, t[i]);
+		if (n < 0)
+			return isl_bool_error;
+		for (j = 0; j < n; ++j) {
+			isl_bool ok;
+			int pos;
+
+			pos = reverse ? n - 1 - j : j;
+			v = isl_aff_get_coefficient_val(aff, t[i], pos);
+			ok = isl_val_is_zero(v);
+			if (ok >= 0 && !ok)
+				ok = fn(l[i], pos, v, user);
+			else
+				isl_val_free(v);
+			if (ok < 0 || !ok)
+				return ok;
+		}
+	}
+
+	return isl_bool_true;
+}
+
+/* Internal data structure for extract_rational.
+ *
+ * "d" is the denominator of the original affine expression.
+ * "ls" is its domain local space.
+ * "rat" collects the rational part.
+ */
+struct isl_ast_extract_rational_data {
+	isl_val *d;
+	isl_local_space *ls;
+
+	isl_aff *rat;
+};
+
+/* Given a non-zero term in an affine expression equal to "v" times
+ * the variable of type "type" at position "pos",
+ * add it to data->rat if "v" is not a multiple of data->d.
+ */
+static isl_bool add_rational(enum isl_dim_type type, int pos,
+	__isl_take isl_val *v, void *user)
+{
+	struct isl_ast_extract_rational_data *data = user;
+	isl_aff *rat;
+
+	if (isl_val_is_divisible_by(v, data->d)) {
+		isl_val_free(v);
+		return isl_bool_true;
+	}
+	rat = isl_aff_var_on_domain(isl_local_space_copy(data->ls), type, pos);
+	rat = isl_aff_scale_val(rat, v);
+	data->rat = isl_aff_add(data->rat, rat);
+	return isl_bool_true;
+}
+
 /* Check if aff involves any non-integer coefficients.
  * If so, split aff into
  *
@@ -1062,80 +1476,95 @@ static __isl_give isl_aff *extract_modulos(__isl_take isl_aff *aff,
 static __isl_give isl_aff *extract_rational(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_expr **expr, __isl_keep isl_ast_build *build)
 {
-	int i, j;
-	isl_size n;
-	isl_aff *rat = NULL;
-	isl_local_space *ls = NULL;
+	struct isl_ast_extract_rational_data data = { NULL };
 	isl_ast_expr *rat_expr;
-	isl_val *v, *d;
-	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
-	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
+	isl_val *v;
 
 	if (!aff)
 		return NULL;
-	d = isl_aff_get_denominator_val(aff);
-	if (!d)
+	data.d = isl_aff_get_denominator_val(aff);
+	if (!data.d)
 		goto error;
-	if (isl_val_is_one(d)) {
-		isl_val_free(d);
+	if (isl_val_is_one(data.d)) {
+		isl_val_free(data.d);
 		return aff;
 	}
 
-	aff = isl_aff_scale_val(aff, isl_val_copy(d));
+	aff = isl_aff_scale_val(aff, isl_val_copy(data.d));
 
-	ls = isl_aff_get_domain_local_space(aff);
-	rat = isl_aff_zero_on_domain(isl_local_space_copy(ls));
+	data.ls = isl_aff_get_domain_local_space(aff);
+	data.rat = isl_aff_zero_on_domain(isl_local_space_copy(data.ls));
 
-	for (i = 0; i < 3; ++i) {
-		n = isl_aff_dim(aff, t[i]);
-		if (n < 0)
-			goto error;
-		for (j = 0; j < n; ++j) {
-			isl_aff *rat_j;
-
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
-			if (!v)
-				goto error;
-			if (isl_val_is_divisible_by(v, d)) {
-				isl_val_free(v);
-				continue;
-			}
-			rat_j = isl_aff_var_on_domain(isl_local_space_copy(ls),
-							l[i], j);
-			rat_j = isl_aff_scale_val(rat_j, v);
-			rat = isl_aff_add(rat, rat_j);
-		}
-	}
+	if (every_non_zero_coefficient(aff, 0, &add_rational, &data) < 0)
+		goto error;
 
 	v = isl_aff_get_constant_val(aff);
-	if (isl_val_is_divisible_by(v, d)) {
+	if (isl_val_is_divisible_by(v, data.d)) {
 		isl_val_free(v);
 	} else {
 		isl_aff *rat_0;
 
-		rat_0 = isl_aff_val_on_domain(isl_local_space_copy(ls), v);
-		rat = isl_aff_add(rat, rat_0);
+		rat_0 = isl_aff_val_on_domain(isl_local_space_copy(data.ls), v);
+		data.rat = isl_aff_add(data.rat, rat_0);
 	}
 
-	isl_local_space_free(ls);
+	isl_local_space_free(data.ls);
 
-	aff = isl_aff_sub(aff, isl_aff_copy(rat));
-	aff = isl_aff_scale_down_val(aff, isl_val_copy(d));
+	aff = isl_aff_sub(aff, isl_aff_copy(data.rat));
+	aff = isl_aff_scale_down_val(aff, isl_val_copy(data.d));
 
-	rat_expr = isl_ast_expr_from_aff(rat, build);
-	rat_expr = isl_ast_expr_div(rat_expr, isl_ast_expr_from_val(d));
+	rat_expr = div_mod(isl_ast_expr_op_div, data.rat, data.d, build);
 	*expr = ast_expr_add(*expr, rat_expr);
 
 	return aff;
 error:
-	isl_aff_free(rat);
-	isl_local_space_free(ls);
+	isl_aff_free(data.rat);
+	isl_local_space_free(data.ls);
 	isl_aff_free(aff);
-	isl_val_free(d);
+	isl_val_free(data.d);
 	return NULL;
 }
 
-/* Construct an isl_ast_expr that evaluates the affine expression "aff",
+/* Internal data structure for isl_ast_expr_from_aff.
+ *
+ * "term" contains the information for adding a term.
+ * "expr" collects the results.
+ */
+struct isl_ast_add_terms_data {
+	struct isl_ast_add_term_data *term;
+	isl_ast_expr *expr;
+};
+
+/* Given a non-zero term in an affine expression equal to "v" times
+ * the variable of type "type" at position "pos",
+ * add the corresponding AST expression to data->expr.
+ */
+static isl_bool add_term(enum isl_dim_type type, int pos,
+	__isl_take isl_val *v, void *user)
+{
+	struct isl_ast_add_terms_data *data = user;
+
+	data->expr =
+		isl_ast_expr_add_term(data->expr, type, pos, v, data->term);
+
+	return isl_bool_true;
+}
+
+/* Add terms to "expr" for each variable in "aff".
+ * The result is simplified in terms of data->build->domain.
+ */
+static __isl_give isl_ast_expr *add_terms(__isl_take isl_ast_expr *expr,
+	__isl_keep isl_aff *aff, struct isl_ast_add_term_data *data)
+{
+	struct isl_ast_add_terms_data terms_data = { data, expr };
+
+	if (every_non_zero_coefficient(aff, 0, &add_term, &terms_data) < 0)
+		return isl_ast_expr_free(terms_data.expr);
+
+	return terms_data.expr;
+}
+
+/* Construct an isl_ast_expr that evaluates the affine expression "aff".
  * The result is simplified in terms of build->domain.
  *
  * We first extract hidden modulo computations from the affine expression
@@ -1146,15 +1575,9 @@ error:
 __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	__isl_keep isl_ast_build *build)
 {
-	int i, j;
-	isl_size n;
-	isl_val *v;
 	isl_ctx *ctx = isl_aff_get_ctx(aff);
 	isl_ast_expr *expr, *expr_neg;
-	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
-	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
-	isl_local_space *ls;
-	struct isl_ast_add_term_data data;
+	struct isl_ast_add_term_data term_data;
 
 	if (!aff)
 		return NULL;
@@ -1167,68 +1590,70 @@ __isl_give isl_ast_expr *isl_ast_expr_from_aff(__isl_take isl_aff *aff,
 	aff = extract_modulos(aff, &expr, &expr_neg, build);
 	expr = ast_expr_sub(expr, expr_neg);
 
-	ls = isl_aff_get_domain_local_space(aff);
+	term_data.build = build;
+	term_data.ls = isl_aff_get_domain_local_space(aff);
+	term_data.cst = isl_aff_get_constant_val(aff);
+	expr = add_terms(expr, aff, &term_data);
 
-	data.build = build;
-	data.cst = isl_aff_get_constant_val(aff);
-	for (i = 0; i < 3; ++i) {
-		n = isl_aff_dim(aff, t[i]);
-		if (n < 0)
-			expr = isl_ast_expr_free(expr);
-		for (j = 0; j < n; ++j) {
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
-			if (!v)
-				expr = isl_ast_expr_free(expr);
-			if (isl_val_is_zero(v)) {
-				isl_val_free(v);
-				continue;
-			}
-			expr = isl_ast_expr_add_term(expr,
-							ls, l[i], j, v, &data);
-		}
-	}
+	expr = isl_ast_expr_add_int(expr, term_data.cst);
+	isl_local_space_free(term_data.ls);
 
-	expr = isl_ast_expr_add_int(expr, data.cst);
-
-	isl_local_space_free(ls);
 	isl_aff_free(aff);
 	return expr;
 }
 
-/* Add terms to "expr" for each variable in "aff" with a coefficient
- * with sign equal to "sign".
- * The result is simplified in terms of data->build->domain.
+/* Internal data structure for coefficients_of_sign.
+ *
+ * "sign" is the sign of the coefficients that should be retained.
+ * "aff" is the affine expression of which some coefficients are zeroed out.
  */
-static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
-	__isl_keep isl_aff *aff, int sign, struct isl_ast_add_term_data *data)
+struct isl_ast_coefficients_of_sign_data {
+	int sign;
+	isl_aff *aff;
+};
+
+/* Clear the specified coefficient of data->aff if the value "v"
+ * does not have the required sign.
+ */
+static isl_bool clear_opposite_sign(enum isl_dim_type type, int pos,
+	__isl_take isl_val *v, void *user)
 {
-	int i, j;
-	isl_val *v;
-	enum isl_dim_type t[] = { isl_dim_param, isl_dim_in, isl_dim_div };
-	enum isl_dim_type l[] = { isl_dim_param, isl_dim_set, isl_dim_div };
-	isl_local_space *ls;
+	struct isl_ast_coefficients_of_sign_data *data = user;
 
-	ls = isl_aff_get_domain_local_space(aff);
+	if (type == isl_dim_set)
+		type = isl_dim_in;
+	if (data->sign * isl_val_sgn(v) < 0)
+		data->aff = isl_aff_set_coefficient_si(data->aff, type, pos, 0);
+	isl_val_free(v);
 
-	for (i = 0; i < 3; ++i) {
-		isl_size n = isl_aff_dim(aff, t[i]);
-		if (n < 0)
-			expr = isl_ast_expr_free(expr);
-		for (j = 0; j < n; ++j) {
-			v = isl_aff_get_coefficient_val(aff, t[i], j);
-			if (sign * isl_val_sgn(v) <= 0) {
-				isl_val_free(v);
-				continue;
-			}
-			v = isl_val_abs(v);
-			expr = isl_ast_expr_add_term(expr,
-						ls, l[i], j, v, data);
-		}
-	}
+	return isl_bool_true;
+}
 
-	isl_local_space_free(ls);
+/* Extract the coefficients of "aff" (excluding the constant term)
+ * that have the given sign.
+ *
+ * Take a copy of "aff" and clear the coefficients that do not have
+ * the required sign.
+ * Consider the coefficients in reverse order since clearing
+ * the coefficient of an integer division in data.aff
+ * could result in the removal of that integer division from data.aff,
+ * changing the positions of all subsequent integer divisions of data.aff,
+ * while those of "aff" remain the same.
+ */
+static __isl_give isl_aff *coefficients_of_sign(__isl_take isl_aff *aff,
+	int sign)
+{
+	struct isl_ast_coefficients_of_sign_data data;
 
-	return expr;
+	data.sign = sign;
+	data.aff = isl_aff_copy(aff);
+	if (every_non_zero_coefficient(aff, 1, &clear_opposite_sign, &data) < 0)
+		data.aff = isl_aff_free(data.aff);
+	isl_aff_free(aff);
+
+	data.aff = isl_aff_set_constant_si(data.aff, 0);
+
+	return data.aff;
 }
 
 /* Should the constant term "v" be considered positive?
@@ -1240,13 +1665,17 @@ static __isl_give isl_ast_expr *add_signed_terms(__isl_take isl_ast_expr *expr,
  * This results in slightly shorter expressions and may reduce the risk
  * of overflows.
  */
-static int constant_is_considered_positive(__isl_keep isl_val *v,
+static isl_bool constant_is_considered_positive(__isl_keep isl_val *v,
 	__isl_keep isl_ast_expr *pos, __isl_keep isl_ast_expr *neg)
 {
-	if (ast_expr_is_zero(pos))
-		return 1;
-	if (ast_expr_is_zero(neg))
-		return 0;
+	isl_bool zero;
+
+	zero = ast_expr_is_zero(pos);
+	if (zero < 0 || zero)
+		return zero;
+	zero = ast_expr_is_zero(neg);
+	if (zero < 0 || zero)
+		return isl_bool_not(zero);
 	return isl_val_is_pos(v);
 }
 
@@ -1276,11 +1705,11 @@ static int constant_is_considered_positive(__isl_keep isl_val *v,
  *
  * where e and e' differ by a constant.
  */
-static int is_stride_constraint(__isl_keep isl_aff *aff, int pos)
+static isl_bool is_stride_constraint(__isl_keep isl_aff *aff, int pos)
 {
 	isl_aff *div;
 	isl_val *c, *d;
-	int eq;
+	isl_bool eq;
 
 	div = isl_aff_get_div(aff, pos);
 	c = isl_aff_get_coefficient_val(aff, isl_dim_div, pos);
@@ -1379,7 +1808,102 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
 	return expr;
 }
 
-/* Construct an isl_ast_expr that evaluates the condition "constraint",
+/* Construct an isl_ast_expr evaluating
+ *
+ *	"expr_pos" == "expr_neg", if "eq" is set, or
+ *	"expr_pos" >= "expr_neg", if "eq" is not set
+ *
+ * However, if "expr_pos" is an integer constant (and "expr_neg" is not),
+ * then the two expressions are interchanged.  This ensures that,
+ * e.g., "i <= 5" is constructed rather than "5 >= i".
+ */
+static __isl_give isl_ast_expr *construct_constraint_expr(int eq,
+	__isl_take isl_ast_expr *expr_pos, __isl_take isl_ast_expr *expr_neg)
+{
+	isl_ast_expr *expr;
+	enum isl_ast_expr_op_type type;
+	int pos_is_cst, neg_is_cst;
+
+	pos_is_cst = isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int;
+	neg_is_cst = isl_ast_expr_get_type(expr_neg) == isl_ast_expr_int;
+	if (pos_is_cst && !neg_is_cst) {
+		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_le;
+		expr = isl_ast_expr_alloc_binary(type, expr_neg, expr_pos);
+	} else {
+		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_ge;
+		expr = isl_ast_expr_alloc_binary(type, expr_pos, expr_neg);
+	}
+
+	return expr;
+}
+
+/* Construct an isl_ast_expr that evaluates the condition "aff" == 0
+ * (if "eq" is set) or "aff" >= 0 (otherwise).
+ * The result is simplified in terms of build->domain.
+ *
+ * We first extract hidden modulo computations from "aff"
+ * and then collect all the terms with a positive coefficient in cons_pos
+ * and the terms with a negative coefficient in cons_neg.
+ *
+ * The result is then essentially of the form
+ *
+ *	(isl_ast_expr_op_ge, expr(pos), expr(-neg)))
+ *
+ * or
+ *
+ *	(isl_ast_expr_op_eq, expr(pos), expr(-neg)))
+ *
+ * However, if there are no terms with positive coefficients (or no terms
+ * with negative coefficients), then the constant term is added to "pos"
+ * (or "neg"), ignoring the sign of the constant term.
+ */
+static __isl_give isl_ast_expr *isl_ast_expr_from_constraint_no_stride(
+	int eq, __isl_take isl_aff *aff, __isl_keep isl_ast_build *build)
+{
+	isl_bool cst_is_pos;
+	isl_ctx *ctx;
+	isl_ast_expr *expr_pos;
+	isl_ast_expr *expr_neg;
+	isl_aff *aff_pos, *aff_neg;
+	struct isl_ast_add_term_data data;
+
+	ctx = isl_aff_get_ctx(aff);
+	expr_pos = isl_ast_expr_alloc_int_si(ctx, 0);
+	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
+
+	aff = extract_modulos(aff, &expr_pos, &expr_neg, build);
+
+	data.build = build;
+	data.ls = isl_aff_get_domain_local_space(aff);
+	data.cst = isl_aff_get_constant_val(aff);
+
+	aff_pos = coefficients_of_sign(isl_aff_copy(aff), 1);
+	aff_neg = isl_aff_neg(coefficients_of_sign(aff, -1));
+
+	expr_pos = add_terms(expr_pos, aff_pos, &data);
+	data.cst = isl_val_neg(data.cst);
+	expr_neg = add_terms(expr_neg, aff_neg, &data);
+	data.cst = isl_val_neg(data.cst);
+	isl_local_space_free(data.ls);
+
+	cst_is_pos =
+	    constant_is_considered_positive(data.cst, expr_pos, expr_neg);
+	if (cst_is_pos < 0)
+		expr_pos = isl_ast_expr_free(expr_pos);
+
+	if (cst_is_pos) {
+		expr_pos = isl_ast_expr_add_int(expr_pos, data.cst);
+	} else {
+		data.cst = isl_val_neg(data.cst);
+		expr_neg = isl_ast_expr_add_int(expr_neg, data.cst);
+	}
+
+	isl_aff_free(aff_pos);
+	isl_aff_free(aff_neg);
+	return construct_constraint_expr(eq, expr_pos, expr_neg);
+}
+
+/* Construct an isl_ast_expr that evaluates the condition "constraint".
  * The result is simplified in terms of build->domain.
  *
  * We first check if the constraint is an equality of the form
@@ -1394,55 +1918,27 @@ static __isl_give isl_ast_expr *extract_stride_constraint(
  *
  *	(isl_ast_expr_op_eq,
  *		(isl_ast_expr_op_zdiv_r, expr(e), expr(d)), expr(0))
- *
- * Otherwise, let the constraint by either "a >= 0" or "a == 0".
- * We first extract hidden modulo computations from "a"
- * and then collect all the terms with a positive coefficient in cons_pos
- * and the terms with a negative coefficient in cons_neg.
- *
- * The result is then of the form
- *
- *	(isl_ast_expr_op_ge, expr(pos), expr(-neg)))
- *
- * or
- *
- *	(isl_ast_expr_op_eq, expr(pos), expr(-neg)))
- *
- * However, if the first expression is an integer constant (and the second
- * is not), then we swap the two expressions.  This ensures that we construct,
- * e.g., "i <= 5" rather than "5 >= i".
- *
- * Furthermore, is there are no terms with positive coefficients (or no terms
- * with negative coefficients), then the constant term is added to "pos"
- * (or "neg"), ignoring the sign of the constant term.
  */
 static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 	__isl_take isl_constraint *constraint, __isl_keep isl_ast_build *build)
 {
 	int i;
 	isl_size n;
-	isl_ctx *ctx;
-	isl_ast_expr *expr_pos;
-	isl_ast_expr *expr_neg;
-	isl_ast_expr *expr;
 	isl_aff *aff;
-	int eq;
-	enum isl_ast_expr_op_type type;
-	struct isl_ast_add_term_data data;
-
-	if (!constraint)
-		return NULL;
+	isl_bool eq;
 
 	aff = isl_constraint_get_aff(constraint);
 	eq = isl_constraint_is_equality(constraint);
 	isl_constraint_free(constraint);
+	if (eq < 0)
+		goto error;
 
 	n = isl_aff_dim(aff, isl_dim_div);
 	if (n < 0)
 		aff = isl_aff_free(aff);
 	if (eq && n > 0)
 		for (i = 0; i < n; ++i) {
-			int is_stride;
+			isl_bool is_stride;
 			is_stride = is_stride_constraint(aff, i);
 			if (is_stride < 0)
 				goto error;
@@ -1450,37 +1946,7 @@ static __isl_give isl_ast_expr *isl_ast_expr_from_constraint(
 				return extract_stride_constraint(aff, i, build);
 		}
 
-	ctx = isl_aff_get_ctx(aff);
-	expr_pos = isl_ast_expr_alloc_int_si(ctx, 0);
-	expr_neg = isl_ast_expr_alloc_int_si(ctx, 0);
-
-	aff = extract_modulos(aff, &expr_pos, &expr_neg, build);
-
-	data.build = build;
-	data.cst = isl_aff_get_constant_val(aff);
-	expr_pos = add_signed_terms(expr_pos, aff, 1, &data);
-	data.cst = isl_val_neg(data.cst);
-	expr_neg = add_signed_terms(expr_neg, aff, -1, &data);
-	data.cst = isl_val_neg(data.cst);
-
-	if (constant_is_considered_positive(data.cst, expr_pos, expr_neg)) {
-		expr_pos = isl_ast_expr_add_int(expr_pos, data.cst);
-	} else {
-		data.cst = isl_val_neg(data.cst);
-		expr_neg = isl_ast_expr_add_int(expr_neg, data.cst);
-	}
-
-	if (isl_ast_expr_get_type(expr_pos) == isl_ast_expr_int &&
-	    isl_ast_expr_get_type(expr_neg) != isl_ast_expr_int) {
-		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_le;
-		expr = isl_ast_expr_alloc_binary(type, expr_neg, expr_pos);
-	} else {
-		type = eq ? isl_ast_expr_op_eq : isl_ast_expr_op_ge;
-		expr = isl_ast_expr_alloc_binary(type, expr_pos, expr_neg);
-	}
-
-	isl_aff_free(aff);
-	return expr;
+	return isl_ast_expr_from_constraint_no_stride(eq, aff, build);
 error:
 	isl_aff_free(aff);
 	return NULL;
@@ -1878,17 +2344,13 @@ static __isl_give isl_ast_expr *ast_expr_from_aff_list(
 	op_type = state == isl_state_min ? isl_ast_expr_op_min
 					 : isl_ast_expr_op_max;
 	expr = isl_ast_expr_alloc_op(isl_ast_build_get_ctx(build), op_type, n);
-	if (!expr)
-		goto error;
 
 	for (i = 0; i < n; ++i) {
 		isl_ast_expr *expr_i;
 
 		aff = isl_aff_list_get_aff(list, i);
 		expr_i = isl_ast_expr_from_aff(aff, build);
-		if (!expr_i)
-			goto error;
-		expr->u.op.args[i] = expr_i;
+		expr = isl_ast_expr_op_add_arg(expr, expr_i);
 	}
 
 	isl_aff_list_free(list);
@@ -1899,21 +2361,22 @@ error:
 	return NULL;
 }
 
-/* Extend the expression in "next" to take into account
+/* Extend the list of expressions in "next" to take into account
  * the piece at position "pos" in "data", allowing for a further extension
  * for the next piece(s).
- * In particular, "next" is set to a select operation that selects
+ * In particular, "next" is extended with a select operation that selects
  * an isl_ast_expr corresponding to data->aff_list on data->set and
  * to an expression that will be filled in by later calls.
- * Return a pointer to this location.
+ * Return a pointer to the arguments of this select operation.
  * Afterwards, the state of "data" is set to isl_state_none.
  *
  * The constraints of data->set are added to the generated
  * constraints of the build such that they can be exploited to simplify
  * the AST expression constructed from data->aff_list.
  */
-static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
-	int pos, isl_ast_expr **next)
+static isl_ast_expr_list **add_intermediate_piece(
+	struct isl_from_pw_aff_data *data,
+	int pos, isl_ast_expr_list **next)
 {
 	isl_ctx *ctx;
 	isl_ast_build *build;
@@ -1926,26 +2389,26 @@ static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
 	ternary = isl_ast_expr_alloc_op(ctx, isl_ast_expr_op_select, 3);
 	gist = isl_set_gist(isl_set_copy(set), isl_set_copy(data->dom));
 	arg = isl_ast_build_expr_from_set_internal(data->build, gist);
-	ternary = isl_ast_expr_set_op_arg(ternary, 0, arg);
+	ternary = isl_ast_expr_op_add_arg(ternary, arg);
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_restrict_generated(build, set);
 	arg = ast_expr_from_aff_list(data->p[pos].aff_list,
 					data->p[pos].state, build);
 	data->p[pos].aff_list = NULL;
 	isl_ast_build_free(build);
-	ternary = isl_ast_expr_set_op_arg(ternary, 1, arg);
+	ternary = isl_ast_expr_op_add_arg(ternary, arg);
 	data->p[pos].state = isl_state_none;
 	if (!ternary)
 		return NULL;
 
-	*next = ternary;
-	return &ternary->u.op.args[2];
+	*next = isl_ast_expr_list_add(*next, ternary);
+	return &ternary->u.op.args;
 }
 
-/* Extend the expression in "next" to take into account
+/* Extend the list of expressions in "next" to take into account
  * the final piece, located at position "pos" in "data".
- * In particular, "next" is set to evaluate data->aff_list
- * and the domain is ignored.
+ * In particular, "next" is extended with an expression
+ * to evaluate data->aff_list and the domain is ignored.
  * Return isl_stat_ok on success and isl_stat_error on failure.
  *
  * The constraints of data->set are however added to the generated
@@ -1953,9 +2416,10 @@ static isl_ast_expr **add_intermediate_piece(struct isl_from_pw_aff_data *data,
  * the AST expression constructed from data->aff_list.
  */
 static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
-	int pos, isl_ast_expr **next)
+	int pos, isl_ast_expr_list **next)
 {
 	isl_ast_build *build;
+	isl_ast_expr *last;
 
 	if (data->p[pos].state == isl_state_none)
 		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
@@ -1964,8 +2428,9 @@ static isl_stat add_last_piece(struct isl_from_pw_aff_data *data,
 	build = isl_ast_build_copy(data->build);
 	build = isl_ast_build_restrict_generated(build, data->p[pos].set);
 	data->p[pos].set = NULL;
-	*next = ast_expr_from_aff_list(data->p[pos].aff_list,
+	last = ast_expr_from_aff_list(data->p[pos].aff_list,
 						data->p[pos].state, build);
+	*next = isl_ast_expr_list_add(*next, last);
 	data->p[pos].aff_list = NULL;
 	isl_ast_build_free(build);
 	data->p[pos].state = isl_state_none;
@@ -2006,17 +2471,25 @@ static int sort_pieces_cmp(const void *p1, const void *p2, void *arg)
  *
  * Construct intermediate AST expressions for the initial pieces and
  * finish off with the final pieces.
+ *
+ * Any piece that is not the very first is added to the list of arguments
+ * of the previously constructed piece.
+ * In order not to have to special case the first piece,
+ * an extra list is created to hold the final result.
  */
 static isl_ast_expr *build_pieces(struct isl_from_pw_aff_data *data)
 {
 	int i;
-	isl_ast_expr *res = NULL;
-	isl_ast_expr **next = &res;
+	isl_ctx *ctx;
+	isl_ast_expr_list *res_list;
+	isl_ast_expr_list **next = &res_list;
+	isl_ast_expr *res;
 
 	if (data->p[data->n].state != isl_state_none)
 		data->n++;
+	ctx = isl_ast_build_get_ctx(data->build);
 	if (data->n == 0)
-		isl_die(isl_ast_build_get_ctx(data->build), isl_error_invalid,
+		isl_die(ctx, isl_error_invalid,
 			"cannot handle void expression", return NULL);
 
 	for (i = 0; i < data->n; ++i) {
@@ -2028,18 +2501,26 @@ static isl_ast_expr *build_pieces(struct isl_from_pw_aff_data *data)
 
 	if (isl_sort(data->p, data->n, sizeof(data->p[0]),
 			&sort_pieces_cmp, NULL) < 0)
-		return isl_ast_expr_free(res);
+		return NULL;
 
+	res_list = isl_ast_expr_list_alloc(ctx, 1);
+	if (!res_list)
+		return NULL;
 	for (i = 0; i + 1 < data->n; ++i) {
 		next = add_intermediate_piece(data, i, next);
 		if (!next)
-			return isl_ast_expr_free(res);
+			goto error;
 	}
 
 	if (add_last_piece(data, data->n - 1, next) < 0)
-		return isl_ast_expr_free(res);
+		goto error;
 
+	res = isl_ast_expr_list_get_at(res_list, 0);
+	isl_ast_expr_list_free(res_list);
 	return res;
+error:
+	isl_ast_expr_list_free(res_list);
+	return NULL;
 }
 
 /* Is the domain of the current entry of "data", which is assumed
@@ -2364,14 +2845,14 @@ static __isl_give isl_ast_expr *isl_ast_build_with_arguments(
 
 	n = isl_multi_pw_aff_dim(mpa, isl_dim_out);
 	expr = n >= 0 ? isl_ast_expr_alloc_op(ctx, type, 1 + n) : NULL;
-	expr = isl_ast_expr_set_op_arg(expr, 0, arg0);
+	expr = isl_ast_expr_op_add_arg(expr, arg0);
 	for (i = 0; i < n; ++i) {
 		isl_pw_aff *pa;
 		isl_ast_expr *arg;
 
 		pa = isl_multi_pw_aff_get_pw_aff(mpa, i);
 		arg = isl_ast_build_expr_from_pw_aff_internal(build, pa);
-		expr = isl_ast_expr_set_op_arg(expr, 1 + i, arg);
+		expr = isl_ast_expr_op_add_arg(expr, arg);
 	}
 
 	isl_multi_pw_aff_free(mpa);

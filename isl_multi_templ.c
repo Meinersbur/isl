@@ -411,10 +411,11 @@ error:
 __isl_give MULTI(BASE) *FN(MULTI(BASE),reset_domain_space)(
 	__isl_take MULTI(BASE) *multi, __isl_take isl_space *domain)
 {
-	isl_space *space;
+	isl_space *space, *multi_space;
 
+	multi_space = FN(MULTI(BASE),get_space)(multi);
 	space = isl_space_extend_domain_with_range(isl_space_copy(domain),
-						isl_space_copy(multi->space));
+						multi_space);
 	return FN(MULTI(BASE),reset_space_and_domain)(multi, space, domain);
 }
 
@@ -481,6 +482,7 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 {
 	isl_ctx *ctx;
 	isl_bool equal_params;
+	isl_space *domain_space;
 	isl_reordering *exp;
 
 	if (!multi || !model)
@@ -508,9 +510,9 @@ __isl_give MULTI(BASE) *FN(MULTI(BASE),align_params)(
 		if (!multi)
 			goto error;
 	}
-	exp = isl_parameter_alignment_reordering(multi->space, model);
-	exp = isl_reordering_extend_space(exp,
-				    FN(MULTI(BASE),get_domain_space)(multi));
+	domain_space = FN(MULTI(BASE),get_domain_space)(multi);
+	exp = isl_parameter_alignment_reordering(domain_space, model);
+	isl_space_free(domain_space);
 	multi = FN(MULTI(BASE),realign_domain)(multi, exp);
 
 	isl_space_free(model);
@@ -951,27 +953,9 @@ static isl_bool FN(MULTI(BASE),every)(__isl_keep MULTI(BASE) *multi,
 	return isl_bool_true;
 }
 
-/* Convert a multiple expression defined over a parameter domain
- * into one that is defined over a zero-dimensional set.
- */
-__isl_give MULTI(BASE) *FN(MULTI(BASE),from_range)(
-	__isl_take MULTI(BASE) *multi)
-{
-	isl_space *space;
-
-	if (!multi)
-		return NULL;
-	if (!isl_space_is_set(multi->space))
-		isl_die(FN(MULTI(BASE),get_ctx)(multi), isl_error_invalid,
-			"not living in a set space",
-			return FN(MULTI(BASE),free)(multi));
-
-	space = FN(MULTI(BASE),get_space)(multi);
-	space = isl_space_from_range(space);
-	multi = FN(MULTI(BASE),reset_space)(multi, space);
-
-	return multi;
-}
+#undef TYPE
+#define TYPE MULTI(BASE)
+#include "isl_from_range_templ.c"
 
 /* Are "multi1" and "multi2" obviously equal?
  */
