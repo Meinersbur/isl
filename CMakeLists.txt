@@ -232,6 +232,11 @@ configure_file("${ISL_BINARY_DIR}/include/isl/stdint.h.tmp"
 configure_file("isl_config.h.cmake" "${ISL_BINARY_DIR}/isl_config.h")
 configure_file("isl_srcdir.c.cmake" "${ISL_BINARY_DIR}/isl_srcdir.c")
 
+# FIXME: codegen_test.sh passes -w option that cmake's compare_files rejects
+#set(DIFF "${CMAKE_COMMAND}")
+#set(DIFF_OPTIONS "-E compare_files --ignore-eol")
+set(DIFF "diff")
+set(DIFF_OPTIONS "-u")
 set(EXEEXT "${CMAKE_EXECUTABLE_SUFFIX}")
 set(srcdir "${ISL_SOURCE_DIR}")
 configure_file("codegen_test.sh.in" "${ISL_BINARY_DIR}/codegen_test.sh" @ONLY)
@@ -300,6 +305,7 @@ set (libisl_common_sources
 	isl_schedule_constraints.c
 	isl_scheduler.c
 	isl_scheduler_clustering.c
+	isl_scheduler_scc.c
 	isl_set_list.c
 	isl_sort.c
 	isl_space.c
@@ -460,7 +466,7 @@ add_dependencies(check ${check_depends})
 
 # Installing
 
-install(TARGETS isl 
+install(TARGETS isl
   EXPORT islTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

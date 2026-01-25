@@ -1,14 +1,16 @@
 
 add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc plain_cpp.cc template_cpp.cc)
 
-target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+configure_file("../isl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/isl-interface/config.h")
+
+target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include" "${ISL_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/include" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 if (MSVC)
 else ()
   target_compile_options(extract_interface PUBLIC -fno-rtti)
 endif ()
-target_compile_definitions(extract_interface PRIVATE 
+target_compile_definitions(extract_interface PRIVATE
   ADDPATH_TAKES_4_ARGUMENTS
-  "CLANG_PREFIX=\"${CLANG_INSTALL_PREFIX}\"" 
+  "ISL_CLANG_PREFIX=\"${CLANG_INSTALL_PREFIX}\""
   CREATEPREPROCESSOR_TAKES_TUKIND
   CREATETARGETINFO_TAKES_SHARED_PTR
   CREATE_FROM_ARGS_TAKES_ARRAYREF
@@ -16,7 +18,7 @@ target_compile_definitions(extract_interface PRIVATE
   HAVE_DLFCN_H=1
   HAVE_INTTYPES_H=1
   HAVE_LEX_PREPROCESSOROPTIONS_H
-  HAVE_LLVM_OPTION_ARG_H 
+  HAVE_LLVM_OPTION_ARG_H
   HAVE_MEMORY_H=1
   HAVE_SETMAINFILEID
   HAVE_STDINT_H=1
@@ -26,6 +28,8 @@ target_compile_definitions(extract_interface PRIVATE
   HAVE_SYS_STAT_H=1
   HAVE_SYS_TYPES_H=1
   HAVE_UNISTD_H=1
+  HAVE_TARGETPARSER_HOST_H=1
+  SETLANGDEFAULTS=LangOptions
   HandleTopLevelDeclContinue=true
   HandleTopLevelDeclReturn=bool
   "IK_C=Language::C"
