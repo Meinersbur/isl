@@ -27,7 +27,7 @@ void* dlsym(void* handle, const char* symbol) { return nullptr; }
 #define __isl_give
 #define __isl_keep
 
-
+typedef  void (*freefunc_t)(void *);
 
 template<typename T>
 struct Argprinter {
@@ -462,6 +462,7 @@ static std::ostream& openLogfile();
 static void escape(std::ostream &OS, const std::string& name, const std::string& val);
 static void escape(std::ostream& OS, const std::string& name, void *val);
 static void escape(std::ostream& OS, const std::string& name, int val) ;
+static void escape(std::ostream& OS, const std::string& name, freefunc_t val) ;
 
 template<typename RetTy, typename ...ParamTy>
 struct Callbacker<RetTy(ParamTy...)> : public CallbackBase {
@@ -508,7 +509,7 @@ static void* openlibisl() {
 	if (!handle) {
 		const char* libpath = getenv("ISLTRACE_LIBISL");
 		if (!libpath)
-			libpath = "/home/meinersbur/build/llvm-project/release-shared/lib/libPollyISL.so"; // "libisl.so";
+			libpath = "/home/meinersbur/src/llvm/main/release/lib/libPollyISL.so"; // "libisl.so";
 		handle = dlopen(libpath, RTLD_NOW);
 		if (!handle) {
 			fprintf(stderr, "Could not open true libpath at %s\n",libpath);
@@ -690,6 +691,12 @@ static void escape(std::ostream& OS, const std::string& name, void *val) {
 static void escape(std::ostream& OS, const std::string& name, int val) {
 	OS << ' ' << name << '=' << val;
 }
+
+
+static void escape(std::ostream& OS, const std::string& name, freefunc_t val) {
+	OS << ' ' << name << '=' << (void*)val;
+}
+
 
 
 static const char* getLogpath() {
@@ -1837,7 +1844,7 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 			OS << "\nreturn";
 			escape(OS, "fname", getBase().name);
 			escape(OS, "rettype", getBase().rettystr);
-			if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>) {
+			if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>)  {
 				escape(OS, "retptr", retval);
 			}	else {
 				std::ostringstream kOS;

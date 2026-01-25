@@ -314,6 +314,8 @@ set (libisl_common_sources
 	isl_vec.c
 	isl_version.c
 	isl_vertices.c
+  isl_scheduler_clustering.c
+  isl_scheduler_scc.c
 )
 
 set(libisl_gmp_sources
