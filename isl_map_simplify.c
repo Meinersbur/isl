@@ -6470,8 +6470,14 @@ __isl_give isl_basic_map *isl_basic_map_reduce_coefficients(
 		ISL_F_CLR(bmap, ISL_BASIC_MAP_NO_REDUNDANT);
 		bmap = isl_basic_map_detect_inequality_pairs(bmap, &progress);
 		if (progress) {
+			isl_bool empty;
+
 			bmap = isl_basic_map_gauss(bmap, NULL);
-			bmap = reduce_coefficients(bmap, &data);
+			empty = isl_basic_map_plain_is_empty(bmap);
+			if (empty < 0)
+				goto error;
+			if (!empty)
+				bmap = reduce_coefficients(bmap, &data);
 			bmap = eliminate_divs_eq(bmap, &progress);
 		}
 	}
