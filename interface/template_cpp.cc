@@ -429,6 +429,12 @@ static Signature bin_map_domain =
 	{ { Domain, Range }, { { Domain, Range }, { Domain } } };
 static Signature bin_map_range =
 	{ { Domain, Range }, { { Domain, Range }, { Range } } };
+static Signature bin_map_domain_wrapped_domain =
+	{ { { Domain, Domain2 }, Range },
+	  { { { Domain, Domain2 }, Range }, { Domain } } };
+static Signature bin_map_range_wrapped_domain =
+	{ { Domain, { Range, Range2 } },
+	  { { Domain, { Range, Range2 } }, { Range } } };
 
 /* Signatures for binary operations, where the second argument
  * is an identifier (with an anonymous tuple).
@@ -529,17 +535,40 @@ static Signature each_map =
 	{ { Res }, { { Domain, Range }, { Res }, { Domain, Range } } };
 static std::vector<Signature> each = { each_params, each_set, each_map };
 
+/* Signatures for isl_*_list_foreach_scc.
+ *
+ * The first callback takes two elements with the same tuple kinds.
+ * The second callback takes a list with the same tuple kinds.
+ */
+static Signature each_scc_params =
+	{ { Res }, { { }, { Res }, { }, { }, { Res }, { } } };
+static Signature each_scc_set =
+	{ { Res }, { { Domain },
+		     { Res }, { Domain }, { Domain },
+		     { Res }, { Domain } } };
+static Signature each_scc_map =
+	{ { Res }, { { Domain, Range },
+		     { Res }, { Domain, Range }, { Domain, Range },
+		     { Res }, { Domain, Range } } };
+static std::vector<Signature> each_scc =
+	{ each_scc_params, each_scc_set, each_scc_map };
+
 /* Signature for creating a map from a range,
  * where the domain is given by an extra argument.
  */
 static Signature map_from_range_and_domain =
 	{ { Domain, Range }, { { Range }, { Domain } } };
 
-/* Signature for creating a map from a domain,
- * where the range is given by an extra argument.
+
+/* Signatures for creating a set from a parameter set or
+ * a map from a domain,
+ * where the domain/range is given by an extra argument.
  */
+static Signature set_from_params = { { Domain }, { { }, { Domain } } };
 static Signature map_from_domain_and_range =
 	{ { Domain, Range }, { { Domain }, { Range } } };
+static std::vector<Signature> from_domain =
+	{ set_from_params, map_from_domain_and_range };
 
 /* Signatures for creating an anonymous set from a parameter set
  * or a map from a domain, where the range is anonymous.
@@ -549,11 +578,6 @@ static Signature anonymous_map_from_domain =
 	{ { Domain, Anonymous }, { { Domain } } };
 static std::vector<Signature> anonymous_from_domain =
 	{ anonymous_set_from_params, anonymous_map_from_domain };
-
-/* Signature for creating a set from a parameter set,
- * where the domain is given by an extra argument.
- */
-static Signature set_from_params = { { Domain }, { { }, { Domain } } };
 
 /* Signatures for creating an anonymous function from a domain,
  * where the second argument is an identifier (with an anonymous tuple).
@@ -590,7 +614,11 @@ static std::vector<Signature> fn_domain = { domain, set_params };
 
 /* Signatures for interchanging (wrapped) domain and range.
  */
+static Signature set_reverse =
+	{ { { Range, Domain } }, { { { Domain, Range } } } };
 static Signature map_reverse = { { Range, Domain }, { { Domain, Range } } };
+static Signature map_domain_reverse =
+	{ { { Domain2, Domain }, Range }, { { { Domain, Domain2 }, Range } } };
 static Signature map_range_reverse =
 	{ { Domain, { Range2, Range } }, { { Domain, { Range, Range2 } } } };
 
@@ -779,7 +807,7 @@ member_methods {
 	{ "ceil",		fn_un_op },
 	{ "coalesce",		un_op },
 	{ "cond",		fn_ter_op },
-	{ "constant_multi_val",	range_op },
+	{ "constant",		range_op },
 	{ "curry",		{ curry } },
 	{ "deltas",		{ transformation_domain } },
 	{ "detect_equalities",	un_op },
@@ -790,7 +818,10 @@ member_methods {
 				{ domain_factor_range } },
 	{ "domain_map",		{ domain_map } },
 	{ "domain_product",	{ domain_product } },
+	{ "domain_reverse",	{ map_domain_reverse } },
 	{ "drop",		ter_int_int },
+	{ "drop_all_params",	un_op },
+	{ "drop_unused_params",	un_op },
 	{ "eq_at",		{ map_cmp } },
 	{ "every",		each },
 	{ "extract",		bin_op },
@@ -798,10 +829,12 @@ member_methods {
 	{ "flatten_range",	flatten_range },
 	{ "floor",		fn_un_op },
 	{ "foreach",		each },
+	{ "foreach_scc",	each_scc },
 	{ "ge_set",		{ set_join } },
 	{ "gt_set",		{ set_join } },
 	{ "gist",		bin_op },
 	{ "gist_domain",	{ bin_map_domain } },
+	{ "gist_params",	{ bin_set_params, bin_map_params } },
 	{ "identity",		{ un_map, set_to_map } },
 	{ "identity_on_domain",	{ set_to_map } },
 	{ "indicator_function",	anonymous_from_domain },
@@ -809,7 +842,11 @@ member_methods {
 	{ "intersect",		bin_op },
 	{ "intersect_params",	{ bin_set_params, bin_map_params } },
 	{ "intersect_domain",	{ bin_map_domain } },
+	{ "intersect_domain_wrapped_domain",
+				{ bin_map_domain_wrapped_domain } },
 	{ "intersect_range",	{ bin_map_range } },
+	{ "intersect_range_wrapped_domain",
+				{ bin_map_range_wrapped_domain } },
 	{ "lattice_tile",	{ un_set } },
 	{ "le_set",		{ set_join } },
 	{ "lt_set",		{ set_join } },
@@ -823,11 +860,13 @@ member_methods {
 	{ "lower_bound",	fn_bin_op },
 	{ "map_from_set",	{ set_to_map } },
 	{ "max",		min_max },
+	{ "max_val",		range_op },
 	{ "max_multi_val",	range_op },
 	{ "min",		min_max },
+	{ "min_val",		range_op },
 	{ "min_multi_val",	range_op },
 	{ "mod",		bin_val },
-	{ "on_domain",		{ map_from_domain_and_range } },
+	{ "on_domain",		from_domain },
 	{ "neg",		fn_un_op },
 	{ "offset",		fn_un_op },
 	{ "param_on_domain",	anonymous_from_domain_bin_anon },
@@ -878,9 +917,19 @@ member_methods {
 	{ "unwrap",		{ unwrap } },
 	{ "upper_bound",	fn_bin_op },
 	{ "wrap",		{ wrap } },
+	{ "wrapped_reverse",	{ set_reverse } },
 	{ "zero",		fn_un_op },
 	{ "zero_on_domain",	{ anonymous_map_from_domain } },
 };
+
+/* Signatures for constructors of multi-expressions
+ * from a space and a list, with a special case for multi-union-expressions.
+ */
+static Signature from_list_set = { { Domain }, { { Domain }, { Anonymous } } };
+static Signature from_list_map =
+	{ { Domain, Range }, { { Domain, Range }, { Domain, Anonymous } } };
+static Signature from_list_map_union =
+	{ { Domain, Range }, { { Range }, { Domain, Anonymous } } };
 
 /* Signatures for methods of types containing a given substring
  * that override the default signatures, where larger substrings
@@ -889,6 +938,15 @@ member_methods {
  * In particular, "gist" is usually a regular binary operation,
  * but for any type derived from "aff", the argument refers
  * to the domain of the function.
+ *
+ * When constructing a multi-expression from a space and a list,
+ * the kind of the space is usually the same as that of
+ * the constructed multi-expression.  However, if the constructed object
+ * is a multi-union-expression, then the space is the fixed range space
+ * of the multi-union-expression, so it always has a single tuple.
+ * This happens in particular for constructing objects
+ * of type "multi_union_pw_aff".
+ * See also the "space" method below.
  *
  * The "size" method can usually simply be inherited from
  * the corresponding plain C++ type, but for a "fixed_box",
@@ -908,6 +966,9 @@ member_methods {
 static const infix_map_map special_member_methods {
 	{ "gist",
 	  { { "aff",		{ bin_set_params, bin_map_domain } } }
+	},
+	{ "multi_union_pw_aff",
+	  { { "space",		{ from_list_set, from_list_map_union } } }
 	},
 	{ "size",
 	  { { "fixed_box",	range_op } },
@@ -1021,22 +1082,34 @@ static std::vector<Kind> add_name(const std::vector<Kind> &tuples)
 	return named;
 }
 
-/* Add a template class called "name", of which the methods are described
- * by "clazz" and where the corresponding base type has kinds "base_kinds".
+/* Look up the (initial) specializations of the class called "name".
+ * If no specializations have been defined, then return an empty vector.
  *
+ * Start from the initial specializations of the corresponding base type.
  * If this template class is a multi-expression, then it was derived
  * from an anonymous function type.  Replace the final Anonymous
  * tuple kind by a placeholder in this case.
  */
+static std::vector<Kind> lookup_class_tuples(const std::string &name)
+{
+	std::string base = base_type(name);
+
+	if (base_kinds.count(base) == 0)
+		return { };
+	if (name.find("multi_") != std::string::npos)
+		return add_name(base_kinds.at(base));
+	return base_kinds.at(base);
+}
+
+/* Add a template class called "name", of which the methods are described
+ * by "clazz" and the initial specializations by "class_tuples".
+ */
 void template_cpp_generator::add_template_class(const isl_class &clazz,
-	const std::string &name, const std::vector<Kind> &base_kinds)
+	const std::string &name, const std::vector<Kind> &class_tuples)
 {
 	auto isl_namespace = cpp_type_printer().isl_namespace();
 	auto super = isl_namespace + name;
-	auto class_tuples = base_kinds;
 
-	if (name.find("multi_") != std::string::npos)
-		class_tuples = add_name(class_tuples);
 	template_classes.emplace(name,
 		template_class{name, super, clazz, class_tuples});
 }
@@ -1062,11 +1135,11 @@ template_cpp_generator::template_cpp_generator(clang::SourceManager &SM,
 	for (const auto &kvp : classes) {
 		const auto &clazz = kvp.second;
 		std::string name = type2cpp(clazz);
-		std::string base = base_type(name);
+		const auto &class_tuples = lookup_class_tuples(name);
 
-		if (base_kinds.count(base) == 0)
+		if (class_tuples.empty())
 			continue;
-		add_template_class(clazz, name, base_kinds.at(base));
+		add_template_class(clazz, name, class_tuples);
 	}
 }
 
@@ -1557,22 +1630,25 @@ void template_cpp_generator::method_decl_printer::print_method_sig(
 }
 
 /* Return the total number of arguments in the signature for "method",
- * taking into account a possible callback argument.
+ * taking into account any possible callback arguments.
  *
  * In particular, if the method has a callback argument,
  * then the return kind of the callback appears at the position
  * of the callback and the kinds of the arguments (except
  * the user pointer argument) appear in the following positions.
+ * The user pointer argument that follows the callback argument
+ * is also removed.
  */
 static int total_params(const Method &method)
 {
 	int n = method.num_params();
 
-	if (method.callback) {
-		auto callback_type = method.callback->getType();
-		auto callback = generator::extract_prototype(callback_type);
+	for (const auto &callback : method.callbacks) {
+		auto callback_type = callback->getType();
+		auto proto = generator::extract_prototype(callback_type);
 
-		n += callback->getNumArgs() - 1;
+		n += proto->getNumParams() - 1;
+		n -= 1;
 	}
 
 	return n;
@@ -1632,7 +1708,7 @@ void template_cpp_generator::method_impl_printer::print_constructor_body(
 	const auto &base_name = instance.base_name();
 
 	os << "  : " << base_name;
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		os << method.fd->getParamDecl(i)->getName().str();
 	});
 	os << "\n";
@@ -1645,6 +1721,7 @@ void template_cpp_generator::method_impl_printer::print_constructor_body(
  * calling "print_arg" with the type and the name of the arguments,
  * where the type is obtained from "type_printer" with argument positions
  * shifted by "shift".
+ * None of the arguments should be skipped.
  */
 static void print_callback_args(std::ostream &os,
 	const FunctionProtoType *callback, const cpp_type_printer &type_printer,
@@ -1652,48 +1729,42 @@ static void print_callback_args(std::ostream &os,
 	const std::function<void(const std::string &type,
 		const std::string &name)> &print_arg)
 {
-	auto n_arg = callback->getNumArgs() - 1;
+	auto n_arg = callback->getNumParams() - 1;
 
 	Method::print_arg_list(os, 0, n_arg, [&] (int i) {
-		auto type = callback->getArgType(i);
+		auto type = callback->getParamType(i);
 		auto name = "arg" + std::to_string(i);
 		auto cpptype = type_printer.param(shift + i, type);
 
 		print_arg(cpptype, name);
+
+		return false;
 	});
 }
 
-/* Print a lambda for passing to the plain method corresponding to "method"
- * with signature "sig".
- *
- * The method is assumed to have only the callback as argument,
- * which means the arguments of the callback are shifted by 2
- * with respect to the arguments of the signature
- * (one for the position of the callback argument plus
- * one for the return kind of the callback).
+/* Print a lambda corresponding to "callback"
+ * with signature "sig" and argument positions shifted by "shift".
  *
  * The lambda takes arguments with plain isl types and
  * calls the callback of "method" with templated arguments.
  */
-static void print_callback_lambda(std::ostream &os, const Method &method,
-	const Signature &sig)
+static void print_callback_lambda(std::ostream &os, ParmVarDecl *callback,
+	const Signature &sig, int shift)
 {
-	auto callback_type = method.callback->getType();
-	auto callback_name = method.callback->getName().str();
-	auto callback = generator::extract_prototype(callback_type);
+	auto callback_type = callback->getType();
+	auto callback_name = callback->getName().str();
+	auto proto = generator::extract_prototype(callback_type);
 
-	if (method.num_params() != 2)
-		generator::die("callback is assumed to be single argument");
-
-	os << "  auto lambda = [&] ";
-	print_callback_args(os, callback, cpp_type_printer(), 2,
+	os << "  auto lambda_" << callback_name << " = [&] ";
+	print_callback_args(os, proto, cpp_type_printer(), shift,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << " " << name;
 		});
 	os << " {\n";
 
 	os << "    return " << callback_name;
-	print_callback_args(os, callback, template_cpp_arg_type_printer(sig), 2,
+	print_callback_args(os, proto, template_cpp_arg_type_printer(sig),
+		shift,
 		[&] (const std::string &type, const std::string &name) {
 			os << type << "(" << name << ")";
 		});
@@ -1702,13 +1773,40 @@ static void print_callback_lambda(std::ostream &os, const Method &method,
 	os << "  };\n";
 }
 
+/* Print lambdas for passing to the plain method corresponding to "method"
+ * with signature "sig".
+ *
+ * The method is assumed to have only callbacks as argument,
+ * which means the arguments of the first callback are shifted by 2
+ * with respect to the arguments of the signature
+ * (one for the position of the callback argument plus
+ * one for the return kind of the callback).
+ * The arguments of a subsequent callback are shifted by
+ * the number of arguments of the previous callback minus one
+ * for the user pointer plus one for the return kind.
+ */
+static void print_callback_lambdas(std::ostream &os, const Method &method,
+	const Signature &sig)
+{
+	int shift;
+
+	if (method.num_params() != 1 + 2 * method.callbacks.size())
+		generator::die("callbacks are assumed to be only arguments");
+
+	shift = 2;
+	for (const auto &callback : method.callbacks) {
+		print_callback_lambda(os, callback, sig, shift);
+		shift += generator::prototype_n_args(callback->getType());
+	}
+}
+
 /* Print a definition of the member method "method", which is known
  * to have a callback argument, with signature "sig".
  *
- * First print a lambda for passing to the corresponding plain method and
+ * First print lambdas for passing to the corresponding plain method and
  * calling the callback of "method" with templated arguments.
- * Then call the plain method, replacing the original callback
- * by the lambda.
+ * Then call the plain method, replacing the original callbacks
+ * by the lambdas.
  *
  * The return value is assumed to be isl_bool or isl_stat
  * so that no conversion to a template type is required.
@@ -1724,17 +1822,16 @@ void template_cpp_generator::method_impl_printer::print_callback_method_body(
 
 	os << "{\n";
 
-	print_callback_lambda(os, method, sig);
+	print_callback_lambdas(os, method, sig);
 
 	os << "  return ";
 	os << base_name << "::" << method.name;
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		auto param = method.fd->getParamDecl(i);
 
-		if (param == method.callback)
-			os << "lambda";
-		else
-			os << param->getName().str();
+		if (generator::is_callback(param->getType()))
+			os << "lambda_";
+		os << param->getName().str();
 	});
 	os << ";\n";
 
@@ -1756,7 +1853,7 @@ void template_cpp_generator::method_impl_printer::print_method_body(
 	os << "{\n";
 	os << "  auto res = ";
 	os << base_name << "::" << method.name;
-	method.print_cpp_arg_list(os, [&] (int i) {
+	method.print_cpp_arg_list(os, [&] (int i, int arg) {
 		os << method.fd->getParamDecl(i)->getName().str();
 	});
 	os << ";\n";
@@ -1776,7 +1873,7 @@ void template_cpp_generator::method_impl_printer::print_method_body(
  * Otherwise print the method header, preceded by the template parameters,
  * if needed.
  * The body depends on whether the method is a constructor or
- * takes a callback.
+ * takes any callbacks.
  */
 void template_cpp_generator::method_impl_printer::print_method_sig(
 	const Method &method, const Signature &sig, bool deleted)
@@ -1790,7 +1887,7 @@ void template_cpp_generator::method_impl_printer::print_method_sig(
 	os << "\n";
 	if (method.kind == Method::Kind::constructor)
 		print_constructor_body(method, sig);
-	else if (method.callback)
+	else if (method.callbacks.size() != 0)
 		print_callback_method_body(method, sig);
 	else
 		print_method_body(method, sig);
@@ -1815,13 +1912,6 @@ void template_cpp_generator::class_printer::print_static_method(
 {
 	print_special_method(method, static_methods);
 }
-
-/* Signatures for constructors of multi-expressions
- * from a space and a list.
- */
-static Signature from_list_set = { { Domain }, { { Domain }, { Anonymous } } };
-static Signature from_list_map =
-	{ { Domain, Range }, { { Domain, Range }, { Domain, Anonymous } } };
 
 /* Signatures for constructors from a string.
  */
@@ -2283,6 +2373,79 @@ void template_cpp_generator::class_printer::add_specialization(
 	instance.template_class.add_specialization(maybe_unified.second);
 }
 
+/* Does the type of the parameter at position "i" of "method" necessarily
+ * have a final Anonymous tuple?
+ *
+ * If the parameter is not of an isl type or if no specializations
+ * have been defined for the type, then it can be considered anonymous.
+ * Otherwise, if any specialization represents an anonymous function,
+ * then every specialization does, so simply check
+ * the first specialization.
+ */
+static bool param_is_anon(const Method &method, int i)
+{
+	ParmVarDecl *param = method.get_param(i);
+	QualType type = param->getOriginalType();
+
+	if (cpp_generator::is_isl_type(type)) {
+		const auto &name = type->getPointeeType().getAsString();
+		const auto &cpp = cpp_generator::type2cpp(name);
+		const auto &tuples = lookup_class_tuples(cpp);
+
+		if (tuples.empty())
+			return true;
+		return tuples[0].is_anon();
+	}
+
+	return true;
+}
+
+/* Replace the final tuple of "arg_kind" by Anonymous in "sig" and
+ * return the update signature,
+ * unless this would affect the class instance "instance_kind".
+ *
+ * If the original "instance_kind" is a special case
+ * of the result of the substitution, then "instance_kind"
+ * is not affected and the substitution can be applied
+ * to the entire signature.
+ */
+static Signature specialize_anonymous_arg(const Signature &sig,
+	const Kind &arg_kind, const Kind &instance_kind)
+{
+	const auto &subs = compute_unifier(arg_kind.back(), Anonymous);
+	const auto &specialized_instance = instance_kind.apply(subs);
+
+	if (!specializer(specialized_instance, instance_kind).first)
+		return sig;
+
+	return sig.apply(subs);
+}
+
+/* If any of the arguments of "method" is of a type that necessarily
+ * has a final Anonymous tuple, but the corresponding entry
+ * in the signature "sig" is not Anonymous, then replace
+ * that entry by Anonymous and return the updated signature,
+ * unless this would affect the class instance "instance_kind".
+ */
+static Signature specialize_anonymous_args(const Signature &sig,
+	const Method &method, const Kind &instance_kind)
+{
+	auto specialized_sig = sig;
+
+	method.on_cpp_arg_list([&] (int i, int arg) {
+		const auto &arg_kind = sig.args[arg];
+
+		if (arg_kind.is_anon())
+			return;
+		if (!param_is_anon(method, i))
+			return;
+		specialized_sig = specialize_anonymous_arg(specialized_sig,
+					arg_kind, instance_kind);
+	});
+
+	return specialized_sig;
+}
+
 /* Print a declaration or definition of the method "method"
  * if the template class specialization matches "match_arg".
  * Return true if so.
@@ -2295,6 +2458,7 @@ void template_cpp_generator::class_printer::add_specialization(
  * If the template class specialization is a special case of
  * (the renamed) "match_arg"
  * then apply the specializer to the complete (renamed) signature,
+ * specialize any anonymous arguments,
  * check that the return kind is allowed and, if so,
  * print the declaration or definition using the specialized signature.
  *
@@ -2311,6 +2475,8 @@ bool template_cpp_generator::class_printer::print_matching_method(
 	if (maybe_specializer.first) {
 		const auto &specializer = maybe_specializer.second;
 		auto specialized_sig = sig.apply(rename).apply(specializer);
+		specialized_sig = specialize_anonymous_args(specialized_sig,
+							method, instance.kind);
 		if (!is_return_kind(method, specialized_sig.ret))
 			return false;
 
@@ -2533,17 +2699,17 @@ const std::string name_without_return(const Method &method)
 }
 
 /* If this method has a callback, then remove the type
- * of the first argument of the callback from the name of the method.
+ * of the first argument of the first callback from the name of the method.
  * Otherwise, simply return the name of the method.
  */
 const std::string callback_name(const Method &method)
 {
-	if (!method.callback)
+	if (method.callbacks.size() == 0)
 		return method.name;
 
-	auto type = method.callback->getType();
+	auto type = method.callbacks.at(0)->getType();
 	auto callback = cpp_generator::extract_prototype(type);
-	auto arg_type = plain_type(callback->getArgType(0));
+	auto arg_type = plain_type(callback->getParamType(0));
 	return generator::drop_suffix(method.name, "_" + arg_type);
 }
 

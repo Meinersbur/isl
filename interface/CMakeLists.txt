@@ -1,6 +1,8 @@
 
+#add_executable(extract_interface extract_interface.cc generator.cc)
 add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc plain_cpp.cc template_cpp.cc trace.cc)
-target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+
+target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/interface/include"  "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 if (MSVC)
 else ()
   target_compile_options(extract_interface PUBLIC -fno-rtti)
@@ -64,10 +66,10 @@ endfunction()
 
 
 
-gen_interface(interface-python python python.h)
-gen_interface(interface-cpp cpp cpp.h)
-gen_interface(interface-cpp-checked cpp-checked cpp-checked.h)
-gen_interface(interface-cpp-checked-conversion cpp-checked-conversion cpp-checked-conversion.h)
+#gen_interface(interface-python python python.h)
+#gen_interface(interface-cpp cpp cpp.h)
+#gen_interface(interface-cpp-checked cpp-checked cpp-checked.h)
+#gen_interface(interface-cpp-checked-conversion cpp-checked-conversion cpp-checked-conversion.h)
 gen_interface(interface-trace trace libtrace.inc.cpp)
 
 

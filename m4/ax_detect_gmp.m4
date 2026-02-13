@@ -14,13 +14,13 @@ system)
 	CPPFLAGS="$MP_CPPFLAGS $CPPFLAGS"
 	LDFLAGS="$MP_LDFLAGS $LDFLAGS"
 	LIBS="$MP_LIBS $LIBS"
-	AC_CHECK_HEADER([gmp.h], [], [AC_ERROR([gmp.h header not found])])
-	AC_CHECK_LIB([gmp], [main], [], [AC_ERROR([gmp library not found])])
+	AC_CHECK_HEADER([gmp.h], [], [AC_MSG_ERROR([gmp.h header not found])])
+	AC_CHECK_LIB([gmp], [main], [], [AC_MSG_ERROR([gmp library not found])])
 	AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <gmp.h>]], [[
 		mpz_t n, d;
 		if (mpz_divisible_p(n, d))
 			mpz_divexact_ui(n, n, 4);
-	]])], [], [AC_ERROR([gmp library too old])])
+	]])], [], [AC_MSG_ERROR([gmp library too old])])
 	CPPFLAGS="$SAVE_CPPFLAGS"
 	LDFLAGS="$SAVE_LDFLAGS"
 	LIBS="$SAVE_LIBS"

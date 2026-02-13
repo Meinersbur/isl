@@ -32,7 +32,7 @@
 #   and this notice are preserved. This file is offered as-is, without any
 #   warranty.
 
-#serial 18
+#serial 21
 
 AU_ALIAS([AC_PROG_CC_FOR_BUILD], [AX_PROG_CC_FOR_BUILD])
 AC_DEFUN([AX_PROG_CC_FOR_BUILD], [dnl
@@ -44,6 +44,8 @@ dnl Use the standard macros, but make them use other variable names
 dnl
 pushdef([ac_cv_prog_CPP], ac_cv_build_prog_CPP)dnl
 pushdef([ac_cv_prog_cc_c89], ac_cv_build_prog_cc_c89)dnl
+pushdef([ac_cv_prog_cc_c99], ac_cv_build_prog_cc_c99)dnl
+pushdef([ac_cv_prog_cc_c11], ac_cv_build_prog_cc_c11)dnl
 pushdef([ac_cv_prog_gcc], ac_cv_build_prog_gcc)dnl
 pushdef([ac_cv_prog_cc_works], ac_cv_build_prog_cc_works)dnl
 pushdef([ac_cv_prog_cc_cross], ac_cv_build_prog_cc_cross)dnl
@@ -86,7 +88,21 @@ AS_IF([test -n "$build"],      [ac_build_tool_prefix="$build-"],
       [test -n "$build_alias"],[ac_build_tool_prefix="$build_alias-"])
 
 AC_LANG_PUSH([C])
+
+dnl The pushdef([ac_cv_c_compiler_gnu], ...) currently does not cover
+dnl the use of this variable in _AC_LANG_COMPILER_GNU called by
+dnl AC_PROG_CC. Unset this cache variable temporarily as a workaround.
+was_set_c_compiler_gnu=${[ac_cv_c_compiler_gnu]+y}
+AS_IF([test ${was_set_c_compiler_gnu}],
+    [saved_c_compiler_gnu=$[ac_cv_c_compiler_gnu]
+    AS_UNSET([[ac_cv_c_compiler_gnu]])])
+
 AC_PROG_CC
+
+dnl Restore ac_cv_c_compiler_gnu
+AS_IF([test ${was_set_c_compiler_gnu}],
+  [[ac_cv_c_compiler_gnu]=$[saved_c_compiler_gnu]])
+
 _AC_COMPILER_EXEEXT
 _AC_COMPILER_OBJEXT
 AC_PROG_CPP
@@ -135,10 +151,36 @@ dnl ac_link, ac_compiler_gnu (dependant on the current
 dnl language after popping):
 AC_LANG_POP([C])
 
-dnl Finally, set Makefile variables
+dnl Finally, set Makefile variables using the ac_cv_build_* variables
 dnl
 AC_SUBST(BUILD_EXEEXT)dnl
 AC_SUBST(BUILD_OBJEXT)dnl
+dnl Since autoconf 2.70, the call to AC_SUBST in the following lines
+dnl of _AC_COMPILER_EXEEXT
+dnl     AC_SUBST([EXEEXT], [$ac_cv_exeext])dnl
+dnl     ac_exeext=$EXEEXT
+dnl no longer sets BUILD_EXEEXT, but EXEEXT instead.
+dnl This means not only that BUILD_EXEEXT is not getting set,
+dnl but also that the original EXEEXT is overwritten
+dnl by a possibly different value.  Furthermore, ac_build_exeext
+dnl is assigned an undefined value.
+dnl Restore EXEEXT to the original value and
+dnl set BUILD_EXEEXT and ac_build_exeext.
+dnl Similarly for _AC_COMPILER_OBJEXT and OBJEXT.
+m4_version_prereq([2.70],[dnl
+EXEEXT=$ac_cv_exeext
+BUILD_EXEEXT=$ac_cv_build_exeext; ac_build_exeext=$ac_cv_build_exeext
+OBJEXT=$ac_cv_objext
+BUILD_OBJEXT=$ac_cv_build_objext; ac_build_objext=$ac_cv_build_objext],[[]])
+dnl Similarly to _AC_COMPILER_EXEEXT and _AC_COMPILER_OBJEXT,
+dnl the line
+dnl	AC_SUBST([$1DEPMODE], [depmode=$am_cv_$1_dependencies_compiler_type])
+dnl of _AM_DEPENDENCIES no longer sets CCDEPMODE_FOR_BUILD,
+dnl but overrides CCDEPMODE.
+dnl Restore CCDEPMODE and set CCDEPMODE_FOR_BUILD.
+AC_SUBST(CCDEPMODE_FOR_BUILD)dnl
+CCDEPMODE=depmode=$am_cv_CC_dependencies_compiler_type
+CCDEPMODE_FOR_BUILD=depmode=$am_cv_build_CC_dependencies_compiler_type
 AC_SUBST([CFLAGS_FOR_BUILD])dnl
 AC_SUBST([CPPFLAGS_FOR_BUILD])dnl
 AC_SUBST([LDFLAGS_FOR_BUILD])dnl

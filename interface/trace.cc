@@ -365,7 +365,9 @@ void trace_generator::generate() {
         bool isIdGetUser = (FName == "isl_id_get_user");
       //  bool isIdSetUser = (FName == "isl_id_set_user");
         bool isIdSetFreeUser = (FName == "isl_id_set_free_user");
-		bool isUnsupported = FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call";
+       bool isIdGetFreeUser = (FName == "isl_id_get_free_user");
+
+		bool isUnsupported = FName == "isl_access_info_alloc" || FName == "isl_basic_set_multiplicative_call" /*|| isIdGetFreeUser*/;
 		QualType RetTy = FD->getReturnType();
 		bool hasRetVal = !RetTy->isVoidType() ;
 		bool hasRetPtr = hasRetVal && RetTy->isPointerType() && !isFreeFunc;
@@ -432,8 +434,10 @@ void trace_generator::generate() {
 			}
 		}
 
-		OS << getTy(FD->getReturnType()) << " " << FName << "(" << paramlist << ") {\n";
-		OS << "  using FuncTy = " << getTy(FD->getReturnType()) << "(" << tylist << ");\n";
+std::string retty = isIdGetFreeUser ?  "freefunc_t" : getTy(FD->getReturnType()) ;
+
+		OS << retty << " " << FName << "(" << paramlist << ") {\n";
+		OS << "  using FuncTy = " << retty << "(" << tylist << ");\n";
 		//OS << "  using RetTy = " << getTy(RetTy) << ";\n";
 		if (hasRetPtr) {
 		//	OS << "  using RetObjTy = " << getTy(RetTy->getPointeeType()) << ";\n";
@@ -449,7 +453,7 @@ void trace_generator::generate() {
 			continue;
 		}
 
-        auto callClass = "IslCall";
+        auto callClass    = "IslCall";
         if (isIdAlloc)
             callClass = "IslIdAllocCall";
         else if (isIdGetUser)

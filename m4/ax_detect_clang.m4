@@ -34,12 +34,23 @@ if test $? -eq 0; then
 	CLANG_LIBS="$CLANG_LIBS $systemlibs"
 fi
 CLANG_PREFIX=`$LLVM_CONFIG --prefix`
-AC_DEFINE_UNQUOTED(CLANG_PREFIX, ["$CLANG_PREFIX"], [Clang installation prefix])
+AC_DEFINE_UNQUOTED(ISL_CLANG_PREFIX,
+	["$CLANG_PREFIX"], [Clang installation prefix])
+
+AC_MSG_CHECKING([for clang resource directory])
+CLANG_RESOURCE_DIR=`$CLANG_PREFIX/bin/clang -print-resource-dir 2>/dev/null`
+if test $? -eq 0 && test "x$CLANG_RESOURCE_DIR" != "x"; then
+	AC_MSG_RESULT([$CLANG_RESOURCE_DIR])
+	AC_DEFINE_UNQUOTED(ISL_CLANG_RESOURCE_DIR,
+		["$CLANG_RESOURCE_DIR"], [Clang resource directory])
+else
+	AC_MSG_RESULT([not found or not supported])
+fi
 
 # If $CLANG_PREFIX/bin/clang cannot find the standard include files,
 # then see if setting sysroot to `xcode-select -p`/SDKs/MacOSX.sdk helps.
 # This may be required on some versions of OS X since they lack /usr/include.
-# If so, set CLANG_SYSROOT accordingly.
+# If so, set ISL_CLANG_SYSROOT accordingly.
 SAVE_CC="$CC"
 CC="$CLANG_PREFIX/bin/clang"
 AC_MSG_CHECKING(
@@ -66,7 +77,7 @@ if test "x$found_header" != "xyes"; then
 	if test "x$found_header" != "xyes"; then
 		AC_MSG_ERROR([Cannot find standard include files])
 	else
-		AC_DEFINE_UNQUOTED([CLANG_SYSROOT], ["$sysroot"],
+		AC_DEFINE_UNQUOTED([ISL_CLANG_SYSROOT], ["$sysroot"],
 			[Define to sysroot if needed])
 	fi
 fi
@@ -75,12 +86,19 @@ CC="$SAVE_CC"
 AC_LANG_PUSH(C++)
 
 SAVE_CPPFLAGS="$CPPFLAGS"
+SAVE_LDFLAGS="$LDFLAGS"
+SAVE_LIBS="$LIBS"
+
 CPPFLAGS="$CLANG_CXXFLAGS -I$srcdir $CPPFLAGS"
 AC_CHECK_HEADER([clang/Basic/SourceLocation.h], [],
-	[AC_ERROR([clang header file not found])])
-AC_EGREP_HEADER([getDefaultTargetTriple], [llvm/Support/Host.h], [],
-	[AC_DEFINE([getDefaultTargetTriple], [getHostTriple],
-	[Define to getHostTriple for older versions of clang])])
+	[AC_MSG_ERROR([clang header file not found])])
+AC_CHECK_HEADER([llvm/TargetParser/Host.h],
+	[AC_DEFINE([HAVE_TARGETPARSER_HOST_H], [],
+		   [Define if llvm/TargetParser/Host.h exists])],
+	[AC_EGREP_HEADER([getDefaultTargetTriple], [llvm/Support/Host.h], [],
+		[AC_DEFINE([getDefaultTargetTriple], [getHostTriple],
+		[Define to getHostTriple for older versions of clang])])
+	])
 AC_EGREP_HEADER([getExpansionLineNumber], [clang/Basic/SourceLocation.h], [],
 	[AC_DEFINE([getExpansionLineNumber], [getInstantiationLineNumber],
 	[Define to getInstantiationLineNumber for older versions of clang])])
@@ -90,31 +108,12 @@ AC_EGREP_HEADER([getImmediateExpansionRange], [clang/Basic/SourceManager.h],
 	[getImmediateInstantiationRange],
 	[Define to getImmediateInstantiationRange for older versions of clang])]
 )
-AC_EGREP_HEADER([DiagnosticsEngine], [clang/Basic/Diagnostic.h], [],
-	[AC_DEFINE([DiagnosticsEngine], [Diagnostic],
-	[Define to Diagnostic for older versions of clang])])
-AC_EGREP_HEADER([ArrayRef], [clang/Driver/Driver.h],
-	[AC_DEFINE([USE_ARRAYREF], [],
-		[Define if Driver::BuildCompilation takes ArrayRef])
-	AC_EGREP_HEADER([ArrayRef.*CommandLineArgs],
-		[clang/Frontend/CompilerInvocation.h],
-		[AC_DEFINE([CREATE_FROM_ARGS_TAKES_ARRAYREF], [],
-			[Define if CompilerInvocation::CreateFromArgs takes
-			 ArrayRef])
-		])
+AC_EGREP_HEADER([ArrayRef.*CommandLineArgs],
+	[clang/Frontend/CompilerInvocation.h],
+	[AC_DEFINE([CREATE_FROM_ARGS_TAKES_ARRAYREF], [],
+		[Define if CompilerInvocation::CreateFromArgs takes
+		 ArrayRef])
 	])
-AC_EGREP_HEADER([CXXIsProduction], [clang/Driver/Driver.h],
-	[AC_DEFINE([HAVE_CXXISPRODUCTION], [],
-		[Define if Driver constructor takes CXXIsProduction argument])])
-AC_EGREP_HEADER([ IsProduction], [clang/Driver/Driver.h],
-	[AC_DEFINE([HAVE_ISPRODUCTION], [],
-		[Define if Driver constructor takes IsProduction argument])])
-AC_TRY_COMPILE([#include <clang/Driver/Driver.h>], [
-	using namespace clang;
-	DiagnosticsEngine *Diags;
-	new driver::Driver("", "", "", *Diags);
-], [AC_DEFINE([DRIVER_CTOR_TAKES_DEFAULTIMAGENAME], [],
-	      [Define if Driver constructor takes default image name])])
 AC_EGREP_HEADER([void HandleTopLevelDecl\(], [clang/AST/ASTConsumer.h],
 	[AC_DEFINE([HandleTopLevelDeclReturn], [void],
 		   [Return type of HandleTopLevelDeclReturn])
@@ -124,62 +123,17 @@ AC_EGREP_HEADER([void HandleTopLevelDecl\(], [clang/AST/ASTConsumer.h],
 		   [Return type of HandleTopLevelDeclReturn])
 	 AC_DEFINE([HandleTopLevelDeclContinue], [true],
 		   [Return type of HandleTopLevelDeclReturn])])
-AC_CHECK_HEADER([clang/Basic/DiagnosticOptions.h],
-	[AC_DEFINE([HAVE_BASIC_DIAGNOSTICOPTIONS_H], [],
-		   [Define if clang/Basic/DiagnosticOptions.h exists])])
-AC_CHECK_HEADER([clang/Lex/PreprocessorOptions.h],
-	[AC_DEFINE([HAVE_LEX_PREPROCESSOROPTIONS_H], [],
-		   [Define if clang/Lex/PreprocessorOptions.h exists])], [],
-	[#include <clang/Basic/LLVM.h>])
-AC_TRY_COMPILE([#include <clang/Basic/TargetInfo.h>], [
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <clang/Basic/TargetInfo.h>]], [[
 	using namespace clang;
 	std::shared_ptr<TargetOptions> TO;
 	DiagnosticsEngine *Diags;
 	TargetInfo::CreateTargetInfo(*Diags, TO);
-], [AC_DEFINE([CREATETARGETINFO_TAKES_SHARED_PTR], [],
+]])], [AC_DEFINE([CREATETARGETINFO_TAKES_SHARED_PTR], [],
 	      [Define if TargetInfo::CreateTargetInfo takes shared_ptr])])
-AC_TRY_COMPILE([#include <clang/Basic/TargetInfo.h>], [
-	using namespace clang;
-	TargetOptions *TO;
-	DiagnosticsEngine *Diags;
-	TargetInfo::CreateTargetInfo(*Diags, TO);
-], [AC_DEFINE([CREATETARGETINFO_TAKES_POINTER], [],
-	      [Define if TargetInfo::CreateTargetInfo takes pointer])])
-AC_TRY_COMPILE([#include <clang/Frontend/CompilerInstance.h>], [
-	using namespace clang;
-	DiagnosticConsumer *client;
-	CompilerInstance *Clang;
-	Clang->createDiagnostics(client);
-], [], [AC_DEFINE([CREATEDIAGNOSTICS_TAKES_ARG], [],
-	[Define if CompilerInstance::createDiagnostics takes argc and argv])])
-AC_TRY_COMPILE([#include <clang/Lex/HeaderSearchOptions.h>], [
-	using namespace clang;
-	HeaderSearchOptions HSO;
-	HSO.AddPath("", frontend::Angled, false, false);
-], [AC_DEFINE([ADDPATH_TAKES_4_ARGUMENTS], [],
-	[Define if HeaderSearchOptions::AddPath takes 4 arguments])])
-AC_EGREP_HEADER([getNumParams],
-	[clang/AST/CanonicalType.h],
-	[AC_DEFINE([getNumArgs], [getNumParams],
-	    [Define to getNumParams for newer versions of clang])
-	 AC_DEFINE([getArgType], [getParamType],
-	    [Define to getParamType for newer versions of clang])])
 AC_EGREP_HEADER([getReturnType],
 	[clang/AST/CanonicalType.h], [],
 	[AC_DEFINE([getReturnType], [getResultType],
 	    [Define to getResultType for older versions of clang])])
-AC_TRY_COMPILE([#include <clang/Frontend/CompilerInstance.h>], [
-	using namespace clang;
-	CompilerInstance *Clang;
-	Clang->createPreprocessor(TU_Complete);
-], [AC_DEFINE([CREATEPREPROCESSOR_TAKES_TUKIND], [],
-[Define if CompilerInstance::createPreprocessor takes TranslationUnitKind])])
-AC_EGREP_HEADER([setMainFileID], [clang/Basic/SourceManager.h],
-	[AC_DEFINE([HAVE_SETMAINFILEID], [],
-	[Define if SourceManager has a setMainFileID method])])
-AC_CHECK_HEADER([llvm/ADT/OwningPtr.h],
-	[AC_DEFINE([HAVE_ADT_OWNINGPTR_H], [],
-		   [Define if llvm/ADT/OwningPtr.h exists])])
 AC_EGREP_HEADER([initializeBuiltins],
 	[clang/Basic/Builtins.h], [],
 	[AC_DEFINE([initializeBuiltins], [InitializeBuiltins],
@@ -190,57 +144,96 @@ AC_EGREP_HEADER([IK_C], [clang/Frontend/FrontendOptions.h], [],
 	 AC_DEFINE_UNQUOTED([IK_C], [$IK_C],
 	 [Define to Language::C or InputKind::C for newer versions of clang])
 	])
-AC_TRY_COMPILE([
+# llvmorg-15-init-7544-g93471e65df48
+AC_EGREP_HEADER([setLangDefaults], [clang/Basic/LangOptions.h],
+	[SETLANGDEFAULTS=LangOptions],
+	[SETLANGDEFAULTS=CompilerInvocation])
+AC_DEFINE_UNQUOTED([SETLANGDEFAULTS], [$SETLANGDEFAULTS],
+	[Define to class with setLangDefaults method])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#include <clang/Basic/TargetOptions.h>
 	#include <clang/Lex/PreprocessorOptions.h>
 	#include <clang/Frontend/CompilerInstance.h>
 
-	#include "set_lang_defaults_arg4.h"
-], [
+	#include "include/isl-interface/set_lang_defaults_arg4.h"
+]], [[
 	using namespace clang;
 	CompilerInstance *Clang;
 	TargetOptions TO;
 	llvm::Triple T(TO.Triple);
 	PreprocessorOptions PO;
-	CompilerInvocation::setLangDefaults(Clang->getLangOpts(), IK_C,
+	SETLANGDEFAULTS::setLangDefaults(Clang->getLangOpts(), IK_C,
 			T, setLangDefaultsArg4(PO),
 			LangStandard::lang_unspecified);
-], [AC_DEFINE([SETLANGDEFAULTS_TAKES_5_ARGUMENTS], [],
+]])], [AC_DEFINE([SETLANGDEFAULTS_TAKES_5_ARGUMENTS], [],
 	[Define if CompilerInvocation::setLangDefaults takes 5 arguments])])
-AC_TRY_COMPILE([
-	#include <clang/Frontend/CompilerInstance.h>
-	#include <clang/Frontend/CompilerInvocation.h>
-], [
-	using namespace clang;
-	CompilerInvocation *invocation;
-	CompilerInstance *Clang;
-	Clang->setInvocation(std::make_shared<CompilerInvocation>(*invocation));
-], [AC_DEFINE([SETINVOCATION_TAKES_SHARED_PTR], [],
-	[Defined if CompilerInstance::setInvocation takes a shared_ptr])])
 AC_CHECK_HEADER([llvm/Option/Arg.h],
 	[AC_DEFINE([HAVE_LLVM_OPTION_ARG_H], [],
 		   [Define if llvm/Option/Arg.h exists])])
-CPPFLAGS="$SAVE_CPPFLAGS"
+# llvmorg-20-init-12950-gbdd10d9d249b
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+	       [[#include <clang/Frontend/CompilerInstance.h>]], [[
+       clang::CompilerInstance *Clang;
+       Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+]])], [AC_DEFINE([CREATEDIAGNOSTICS_TAKES_VFS], [],
+       [Define if CompilerInstance::createDiagnostics takes VFS])])
 
-SAVE_LDFLAGS="$LDFLAGS"
+
 LDFLAGS="$CLANG_LDFLAGS $LDFLAGS"
+
+# A test program for checking whether linking against libclang-cpp works.
+m4_define([_AX_DETECT_CLANG_PROGRAM], [AC_LANG_PROGRAM(
+	[[#include <clang/Frontend/CompilerInstance.h>]],
+	[[
+		new clang::CompilerInstance();
+	]])])
 
 # Use single libclang-cpp shared library when available.
 # Otherwise, use a selection of clang libraries that appears to work.
 AC_CHECK_LIB([clang-cpp], [main], [have_lib_clang=yes], [have_lib_clang=no])
 if test "$have_lib_clang" = yes; then
-	CLANG_LIBS="-lclang-cpp $CLANG_LIBS"
+	# The LLVM libraries may be linked into libclang-cpp already.
+	# Linking against them again can cause errors about options
+	# being registered more than once.
+	# Check whether linking against libclang-cpp requires
+	# linking against the LLVM libraries as well.
+	# Fail if linking fails with or without the LLVM libraries.
+	AC_MSG_CHECKING([whether libclang-cpp needs LLVM libraries])
+	LIBS="-lclang-cpp $SAVE_LIBS"
+	AC_LINK_IFELSE([_AX_DETECT_CLANG_PROGRAM], [clangcpp_needs_llvm=no], [
+		LIBS="-lclang-cpp $CLANG_LIBS $SAVE_LIBS"
+		AC_LINK_IFELSE([_AX_DETECT_CLANG_PROGRAM],
+			[clangcpp_needs_llvm=yes],
+			[clangcpp_needs_llvm=unknown])
+	])
+	AC_MSG_RESULT([$clangcpp_needs_llvm])
+	AS_IF([test "$clangcpp_needs_llvm" = "no"],
+			[CLANG_LIBS="-lclang-cpp"],
+	      [test "$clangcpp_needs_llvm" = "yes"],
+			[CLANG_LIBS="-lclang-cpp $CLANG_LIBS"],
+	      [AC_MSG_FAILURE([unable to link against libclang-cpp])])
 else
-	CLANG_LIBS="-lclangBasic -lclangDriver $CLANG_LIBS"
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangSupport])
+	CLANG_LIBS="-lclangDriver -lclangBasic $CLANG_LIBS"
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangASTMatchers])
 	CLANG_LIBS="-lclangAnalysis -lclangAST -lclangLex $CLANG_LIBS"
-	LDFLAGS="$CLANG_LDFLAGS $CLANG_LIBS $SAVE_LDFLAGS"
-	AC_CHECK_LIB([clangEdit], [main], [LIB_CLANG_EDIT=-lclangEdit], [])
-	CLANG_LIBS="$LIB_CLANG_EDIT $CLANG_LIBS"
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangEdit])
+	_AX_DETECT_CLANG_ADD_CLANG_LIB([clangAPINotes])
 	CLANG_LIBS="-lclangParse -lclangSema $CLANG_LIBS"
 	CLANG_LIBS="-lclangFrontend -lclangSerialization $CLANG_LIBS"
 fi
 
+CPPFLAGS="$SAVE_CPPFLAGS"
 LDFLAGS="$SAVE_LDFLAGS"
+LIBS="$SAVE_LIBS"
 
 AC_LANG_POP
+])
+
+# Check if the specified (clang) library exists and, if so,
+# add it to CLANG_LIBS.
+# SAVE_LIBS is assumed to hold the original LIBS.
+m4_define([_AX_DETECT_CLANG_ADD_CLANG_LIB], [
+	LIBS="$CLANG_LIBS $SAVE_LIBS"
+	AC_CHECK_LIB($1, [main], [CLANG_LIBS="-l$1 $CLANG_LIBS"])
 ])
