@@ -25,6 +25,8 @@ extract_interface_SOURCES = \
 	plain_cpp.cc \
 	template_cpp.h \
 	template_cpp.cc \
+	trace.h \
+	trace.cc \	
 	extract_interface.h \
 	extract_interface.cc
 extract_interface_LDFLAGS = $(CLANG_LDFLAGS) $(CLANG_RFLAG)

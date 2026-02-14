@@ -1,0 +1,21 @@
+BasedOnStyle: GNU
+
+ColumnLimit: 80
+SortIncludes: false
+
+TabWidth: 4
+UseTab: Always
+IndentWidth: 4
+ContinuationIndentWidth: 4
+
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+SpaceBeforeParens: ControlStatements
+BreakBeforeBraces: Custom
+BraceWrapping: { AfterFunction: true }
+AlignAfterOpenBracket: DontAlign
+SpaceAfterCStyleCast: true
+AllowShortFunctionsOnASingleLine: false
+
+BinPackParameters: true
+AllowAllParametersOfDeclarationOnNextLine: false

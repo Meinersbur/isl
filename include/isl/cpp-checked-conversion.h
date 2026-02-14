@@ -390,6 +390,14 @@ id_to_id uncheck(checked::id_to_id obj) {
 	return manage(obj.copy());
 }
 
+checked::id_to_pw_aff check(id_to_pw_aff obj) {
+	return checked::manage(obj.copy());
+}
+
+id_to_pw_aff uncheck(checked::id_to_pw_aff obj) {
+	return manage(obj.copy());
+}
+
 checked::map check(map obj) {
 	return checked::manage(obj.copy());
 }
@@ -403,6 +411,14 @@ checked::map_list check(map_list obj) {
 }
 
 map_list uncheck(checked::map_list obj) {
+	return manage(obj.copy());
+}
+
+checked::map_to_basic_set check(map_to_basic_set obj) {
+	return checked::manage(obj.copy());
+}
+
+map_to_basic_set uncheck(checked::map_to_basic_set obj) {
 	return manage(obj.copy());
 }
 
@@ -483,6 +499,14 @@ checked::pw_multi_aff_list check(pw_multi_aff_list obj) {
 }
 
 pw_multi_aff_list uncheck(checked::pw_multi_aff_list obj) {
+	return manage(obj.copy());
+}
+
+checked::pw_qpolynomial check(pw_qpolynomial obj) {
+	return checked::manage(obj.copy());
+}
+
+pw_qpolynomial uncheck(checked::pw_qpolynomial obj) {
 	return manage(obj.copy());
 }
 
@@ -667,6 +691,14 @@ checked::union_pw_multi_aff check(union_pw_multi_aff obj) {
 }
 
 union_pw_multi_aff uncheck(checked::union_pw_multi_aff obj) {
+	return manage(obj.copy());
+}
+
+checked::union_pw_qpolynomial check(union_pw_qpolynomial obj) {
+	return checked::manage(obj.copy());
+}
+
+union_pw_qpolynomial uncheck(checked::union_pw_qpolynomial obj) {
 	return manage(obj.copy());
 }
 

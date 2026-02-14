@@ -58,3 +58,16 @@ test-driver
 isl_srcdir.c
 bound_test.sh
 pip_test.sh
+
+# Build artifacts
+/isl_test_imath
+/isl_test_int
+/isl_codegen
+
+# CMake generated files
+/CMakeCache.txt
+/CMakeFiles/
+/CTestTestfile.cmake
+/cmake_install.cmake
+/build.ninja
+/rules.ninja

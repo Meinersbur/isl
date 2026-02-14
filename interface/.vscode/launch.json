@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "reduce.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/reduce.py",
+            "console": "integratedTerminal",
+          //  "args": ["/home/meinersbur/src/llvm/main/release/reduced.c", "-o", "reduced.c"],
+             "args": ["/home/meinersbur/src/isl/interface/prev_reduced.c", "-o", "reduced.c"],
+            "justMyCode": false
+        },
+        {
+            "name": "trace2c.py writec",
+            "type": "python",
+            "request": "launch",
+            "program": "trace2c.py",
+            "console": "integratedTerminal",
+            "args": [
+                "C:/Users/meinersbur/build/llvm-project/quast-p8/isltrace.log",
+                "-o",
+                "C:/Users/meinersbur/build/llvm-project/quast-p8/isltrace.c"
+            ],
+            "python": "${command:python.interpreterPath}",
+            "justMyCode": true
+        },
+        {
+            "name": "trace2c.py --reduce",
+            "type": "python",
+            "request": "launch",
+            "program": "trace2c.py",
+            "console": "integratedTerminal",
+            "args": [
+                "C:/Users/meinersbur/build/llvm-project/isltrace.log",
+                "--reduce"
+            ], //"-o", "C:/Users/meinersbur/build/isl/traceresult/isltrace.c"],
+            "python": "${command:python.interpreterPath}",
+            "justMyCode": true
+        }
+    ]
+}

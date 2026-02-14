@@ -6,7 +6,11 @@
 #include <string>
 #include <vector>
 
+#include <llvm/Support/Compiler.h>
 #include <clang/AST/Decl.h>
+
+
+#define LLVM_ATTRIBUTE_NORETURN
 
 using namespace std;
 using namespace clang;
@@ -172,8 +176,8 @@ private:
 public:
 	static std::string drop_suffix(const std::string &s,
 		const std::string &suffix);
-	static void die(const char *msg) __attribute__((noreturn));
-	static void die(string msg) __attribute__((noreturn));
+	static LLVM_ATTRIBUTE_NORETURN void die(const char *msg);
+	static LLVM_ATTRIBUTE_NORETURN void die(string msg) ;
 	static vector<string> find_superclasses(Decl *decl);
 	static bool is_subclass(FunctionDecl *decl);
 	static bool is_overload(Decl *decl);

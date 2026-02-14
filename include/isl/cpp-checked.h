@@ -198,21 +198,66 @@ inline size manage(isl_size val)
 }
 } // namespace isl
 
-#include <isl/id.h>
 #include <isl/id_to_id.h>
-#include <isl/space.h>
-#include <isl/val.h>
 #include <isl/aff.h>
-#include <isl/set.h>
-#include <isl/map.h>
-#include <isl/ilp.h>
-#include <isl/union_set.h>
-#include <isl/union_map.h>
+#include <isl/aff_type.h>
+#include <isl/arg.h>
+#include <isl/ast.h>
+#include <isl/ast_build.h>
+#include <isl/ast_type.h>
+#include <isl/constraint.h>
+#include <isl/ctx.h>
+#include <isl/fixed_box.h>
 #include <isl/flow.h>
+#include <isl/hash.h>
+//#include <isl/hmap.h>
+//#include <isl/hmap_templ.c>
+#include <isl/id.h>
+#include <isl/id_to_ast_expr.h>
+#include <isl/id_to_id.h>
+#include <isl/id_to_pw_aff.h>
+#include <isl/id_type.h>
+#include <isl/ilp.h>
+#include <isl/list.h>
+#include <isl/local_space.h>
+#include <isl/lp.h>
+#include <isl/map.h>
+#include <isl/map_to_basic_set.h>
+#include <isl/map_type.h>
+#include <isl/mat.h>
+#include <isl/maybe.h>
+#include <isl/maybe_ast_expr.h>
+#include <isl/maybe_basic_set.h>
+#include <isl/maybe_id.h>
+#include <isl/maybe_pw_aff.h>
+//#include <isl/maybe_templ.h>
+#include <isl/multi.h>
+#include <isl/obj.h>
+#include <isl/options.h>
+#include <isl/point.h>
+#include <isl/polynomial.h>
+#include <isl/polynomial_type.h>
+#include <isl/printer.h>
+#include <isl/printer_type.h>
 #include <isl/schedule.h>
 #include <isl/schedule_node.h>
-#include <isl/ast_build.h>
-#include <isl/fixed_box.h>
+#include <isl/schedule_type.h>
+#include <isl/set.h>
+#include <isl/set_type.h>
+#include <isl/space.h>
+#include <isl/space_type.h>
+#include <isl/stream.h>
+#include <isl/stride_info.h>
+#include <isl/union_map.h>
+#include <isl/union_map_type.h>
+#include <isl/union_set.h>
+#include <isl/union_set_type.h>
+#include <isl/val.h>
+//#include <isl/val_gmp.h>
+#include <isl/val_type.h>
+#include <isl/vec.h>
+#include <isl/version.h>
+#include <isl/vertices.h>
 
 namespace isl {
 
@@ -266,8 +311,10 @@ class id;
 class id_list;
 class id_to_ast_expr;
 class id_to_id;
+class id_to_pw_aff;
 class map;
 class map_list;
+class map_to_basic_set;
 class multi_aff;
 class multi_id;
 class multi_pw_aff;
@@ -278,6 +325,7 @@ class pw_aff;
 class pw_aff_list;
 class pw_multi_aff;
 class pw_multi_aff_list;
+class pw_qpolynomial;
 class schedule;
 class schedule_constraints;
 class schedule_node;
@@ -301,6 +349,7 @@ class union_map;
 class union_pw_aff;
 class union_pw_aff_list;
 class union_pw_multi_aff;
+class union_pw_qpolynomial;
 class union_set;
 class union_set_list;
 class val;
@@ -1898,6 +1947,38 @@ class id_to_id {
   inline isl::checked::id_to_id set(const std::string &key, const std::string &val) const;
 };
 
+// declarations for isl::id_to_pw_aff
+inline id_to_pw_aff manage(__isl_take isl_id_to_pw_aff *ptr);
+inline id_to_pw_aff manage_copy(__isl_keep isl_id_to_pw_aff *ptr);
+
+class id_to_pw_aff {
+  friend inline id_to_pw_aff manage(__isl_take isl_id_to_pw_aff *ptr);
+  friend inline id_to_pw_aff manage_copy(__isl_keep isl_id_to_pw_aff *ptr);
+
+ protected:
+  isl_id_to_pw_aff *ptr = nullptr;
+
+  inline explicit id_to_pw_aff(__isl_take isl_id_to_pw_aff *ptr);
+
+ public:
+  inline /* implicit */ id_to_pw_aff();
+  inline /* implicit */ id_to_pw_aff(const id_to_pw_aff &obj);
+  inline explicit id_to_pw_aff(isl::checked::ctx ctx, int min_size);
+  inline explicit id_to_pw_aff(isl::checked::ctx ctx, const std::string &str);
+  inline id_to_pw_aff &operator=(id_to_pw_aff obj);
+  inline ~id_to_pw_aff();
+  inline __isl_give isl_id_to_pw_aff *copy() const &;
+  inline __isl_give isl_id_to_pw_aff *copy() && = delete;
+  inline __isl_keep isl_id_to_pw_aff *get() const;
+  inline __isl_give isl_id_to_pw_aff *release();
+  inline bool is_null() const;
+  inline isl::checked::ctx ctx() const;
+
+  inline boolean plain_is_equal(const isl::checked::id_to_pw_aff &hmap2) const;
+  inline isl::checked::id_to_pw_aff set(isl::checked::id key, isl::checked::pw_aff val) const;
+  inline isl::checked::id_to_pw_aff set(const std::string &key, const isl::checked::pw_aff &val) const;
+};
+
 // declarations for isl::map
 inline map manage(__isl_take isl_map *ptr);
 inline map manage_copy(__isl_keep isl_map *ptr);
@@ -2146,6 +2227,37 @@ class map_list {
   inline isl::checked::map_list insert(unsigned int pos, isl::checked::map el) const;
   inline isl::checked::map_list set_at(int index, isl::checked::map el) const;
   inline class size size() const;
+};
+
+// declarations for isl::map_to_basic_set
+inline map_to_basic_set manage(__isl_take isl_map_to_basic_set *ptr);
+inline map_to_basic_set manage_copy(__isl_keep isl_map_to_basic_set *ptr);
+
+class map_to_basic_set {
+  friend inline map_to_basic_set manage(__isl_take isl_map_to_basic_set *ptr);
+  friend inline map_to_basic_set manage_copy(__isl_keep isl_map_to_basic_set *ptr);
+
+ protected:
+  isl_map_to_basic_set *ptr = nullptr;
+
+  inline explicit map_to_basic_set(__isl_take isl_map_to_basic_set *ptr);
+
+ public:
+  inline /* implicit */ map_to_basic_set();
+  inline /* implicit */ map_to_basic_set(const map_to_basic_set &obj);
+  inline explicit map_to_basic_set(isl::checked::ctx ctx, int min_size);
+  inline explicit map_to_basic_set(isl::checked::ctx ctx, const std::string &str);
+  inline map_to_basic_set &operator=(map_to_basic_set obj);
+  inline ~map_to_basic_set();
+  inline __isl_give isl_map_to_basic_set *copy() const &;
+  inline __isl_give isl_map_to_basic_set *copy() && = delete;
+  inline __isl_keep isl_map_to_basic_set *get() const;
+  inline __isl_give isl_map_to_basic_set *release();
+  inline bool is_null() const;
+  inline isl::checked::ctx ctx() const;
+
+  inline boolean plain_is_equal(const isl::checked::map_to_basic_set &hmap2) const;
+  inline isl::checked::map_to_basic_set set(isl::checked::map key, isl::checked::basic_set val) const;
 };
 
 // declarations for isl::multi_aff
@@ -3167,6 +3279,36 @@ class pw_multi_aff_list {
   inline isl::checked::pw_multi_aff_list insert(unsigned int pos, isl::checked::pw_multi_aff el) const;
   inline isl::checked::pw_multi_aff_list set_at(int index, isl::checked::pw_multi_aff el) const;
   inline class size size() const;
+};
+
+// declarations for isl::pw_qpolynomial
+inline pw_qpolynomial manage(__isl_take isl_pw_qpolynomial *ptr);
+inline pw_qpolynomial manage_copy(__isl_keep isl_pw_qpolynomial *ptr);
+
+class pw_qpolynomial {
+  friend inline pw_qpolynomial manage(__isl_take isl_pw_qpolynomial *ptr);
+  friend inline pw_qpolynomial manage_copy(__isl_keep isl_pw_qpolynomial *ptr);
+
+ protected:
+  isl_pw_qpolynomial *ptr = nullptr;
+
+  inline explicit pw_qpolynomial(__isl_take isl_pw_qpolynomial *ptr);
+
+ public:
+  inline /* implicit */ pw_qpolynomial();
+  inline /* implicit */ pw_qpolynomial(const pw_qpolynomial &obj);
+  inline explicit pw_qpolynomial(isl::checked::ctx ctx, const std::string &str);
+  inline pw_qpolynomial &operator=(pw_qpolynomial obj);
+  inline ~pw_qpolynomial();
+  inline __isl_give isl_pw_qpolynomial *copy() const &;
+  inline __isl_give isl_pw_qpolynomial *copy() && = delete;
+  inline __isl_keep isl_pw_qpolynomial *get() const;
+  inline __isl_give isl_pw_qpolynomial *release();
+  inline bool is_null() const;
+  inline isl::checked::ctx ctx() const;
+
+  inline isl::checked::set domain() const;
+  inline isl::checked::val eval(isl::checked::point pnt) const;
 };
 
 // declarations for isl::schedule
@@ -4257,6 +4399,36 @@ class union_pw_multi_aff {
   inline isl::checked::union_pw_multi_aff subtract_domain(isl::checked::space space) const;
   inline isl::checked::union_pw_multi_aff subtract_domain(isl::checked::union_set uset) const;
   inline isl::checked::union_pw_multi_aff union_add(isl::checked::union_pw_multi_aff upma2) const;
+};
+
+// declarations for isl::union_pw_qpolynomial
+inline union_pw_qpolynomial manage(__isl_take isl_union_pw_qpolynomial *ptr);
+inline union_pw_qpolynomial manage_copy(__isl_keep isl_union_pw_qpolynomial *ptr);
+
+class union_pw_qpolynomial {
+  friend inline union_pw_qpolynomial manage(__isl_take isl_union_pw_qpolynomial *ptr);
+  friend inline union_pw_qpolynomial manage_copy(__isl_keep isl_union_pw_qpolynomial *ptr);
+
+ protected:
+  isl_union_pw_qpolynomial *ptr = nullptr;
+
+  inline explicit union_pw_qpolynomial(__isl_take isl_union_pw_qpolynomial *ptr);
+
+ public:
+  inline /* implicit */ union_pw_qpolynomial();
+  inline /* implicit */ union_pw_qpolynomial(const union_pw_qpolynomial &obj);
+  inline explicit union_pw_qpolynomial(isl::checked::ctx ctx, const std::string &str);
+  inline union_pw_qpolynomial &operator=(union_pw_qpolynomial obj);
+  inline ~union_pw_qpolynomial();
+  inline __isl_give isl_union_pw_qpolynomial *copy() const &;
+  inline __isl_give isl_union_pw_qpolynomial *copy() && = delete;
+  inline __isl_keep isl_union_pw_qpolynomial *get() const;
+  inline __isl_give isl_union_pw_qpolynomial *release();
+  inline bool is_null() const;
+  inline isl::checked::ctx ctx() const;
+
+  inline isl::checked::union_set domain() const;
+  inline isl::checked::val eval(isl::checked::point pnt) const;
 };
 
 // declarations for isl::union_set
@@ -9594,6 +9766,100 @@ inline std::ostream &operator<<(std::ostream &os, const id_to_id &obj)
   return os;
 }
 
+// implementations for isl::id_to_pw_aff
+id_to_pw_aff manage(__isl_take isl_id_to_pw_aff *ptr) {
+  return id_to_pw_aff(ptr);
+}
+id_to_pw_aff manage_copy(__isl_keep isl_id_to_pw_aff *ptr) {
+  ptr = isl_id_to_pw_aff_copy(ptr);
+  return id_to_pw_aff(ptr);
+}
+
+id_to_pw_aff::id_to_pw_aff(__isl_take isl_id_to_pw_aff *ptr)
+    : ptr(ptr) {}
+
+id_to_pw_aff::id_to_pw_aff()
+    : ptr(nullptr) {}
+
+id_to_pw_aff::id_to_pw_aff(const id_to_pw_aff &obj)
+    : ptr(nullptr)
+{
+  ptr = obj.copy();
+}
+
+id_to_pw_aff::id_to_pw_aff(isl::checked::ctx ctx, int min_size)
+{
+  auto res = isl_id_to_pw_aff_alloc(ctx.release(), min_size);
+  ptr = res;
+}
+
+id_to_pw_aff::id_to_pw_aff(isl::checked::ctx ctx, const std::string &str)
+{
+  auto res = isl_id_to_pw_aff_read_from_str(ctx.release(), str.c_str());
+  ptr = res;
+}
+
+id_to_pw_aff &id_to_pw_aff::operator=(id_to_pw_aff obj) {
+  std::swap(this->ptr, obj.ptr);
+  return *this;
+}
+
+id_to_pw_aff::~id_to_pw_aff() {
+  if (ptr)
+    isl_id_to_pw_aff_free(ptr);
+}
+
+__isl_give isl_id_to_pw_aff *id_to_pw_aff::copy() const & {
+  return isl_id_to_pw_aff_copy(ptr);
+}
+
+__isl_keep isl_id_to_pw_aff *id_to_pw_aff::get() const {
+  return ptr;
+}
+
+__isl_give isl_id_to_pw_aff *id_to_pw_aff::release() {
+  isl_id_to_pw_aff *tmp = ptr;
+  ptr = nullptr;
+  return tmp;
+}
+
+bool id_to_pw_aff::is_null() const {
+  return ptr == nullptr;
+}
+
+isl::checked::ctx id_to_pw_aff::ctx() const {
+  return isl::checked::ctx(isl_id_to_pw_aff_get_ctx(ptr));
+}
+
+boolean id_to_pw_aff::plain_is_equal(const isl::checked::id_to_pw_aff &hmap2) const
+{
+  auto res = isl_id_to_pw_aff_plain_is_equal(get(), hmap2.get());
+  return manage(res);
+}
+
+isl::checked::id_to_pw_aff id_to_pw_aff::set(isl::checked::id key, isl::checked::pw_aff val) const
+{
+  auto res = isl_id_to_pw_aff_set(copy(), key.release(), val.release());
+  return manage(res);
+}
+
+isl::checked::id_to_pw_aff id_to_pw_aff::set(const std::string &key, const isl::checked::pw_aff &val) const
+{
+  return this->set(isl::checked::id(ctx(), key), val);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const id_to_pw_aff &obj)
+{
+  char *str = isl_id_to_pw_aff_to_str(obj.get());
+  if (!str) {
+    os.setstate(std::ios_base::badbit);
+    return os;
+  }
+  os << str;
+  free(str);
+  return os;
+}
+
 // implementations for isl::map
 map manage(__isl_take isl_map *ptr) {
   return map(ptr);
@@ -10840,6 +11106,95 @@ class size map_list::size() const
 inline std::ostream &operator<<(std::ostream &os, const map_list &obj)
 {
   char *str = isl_map_list_to_str(obj.get());
+  if (!str) {
+    os.setstate(std::ios_base::badbit);
+    return os;
+  }
+  os << str;
+  free(str);
+  return os;
+}
+
+// implementations for isl::map_to_basic_set
+map_to_basic_set manage(__isl_take isl_map_to_basic_set *ptr) {
+  return map_to_basic_set(ptr);
+}
+map_to_basic_set manage_copy(__isl_keep isl_map_to_basic_set *ptr) {
+  ptr = isl_map_to_basic_set_copy(ptr);
+  return map_to_basic_set(ptr);
+}
+
+map_to_basic_set::map_to_basic_set(__isl_take isl_map_to_basic_set *ptr)
+    : ptr(ptr) {}
+
+map_to_basic_set::map_to_basic_set()
+    : ptr(nullptr) {}
+
+map_to_basic_set::map_to_basic_set(const map_to_basic_set &obj)
+    : ptr(nullptr)
+{
+  ptr = obj.copy();
+}
+
+map_to_basic_set::map_to_basic_set(isl::checked::ctx ctx, int min_size)
+{
+  auto res = isl_map_to_basic_set_alloc(ctx.release(), min_size);
+  ptr = res;
+}
+
+map_to_basic_set::map_to_basic_set(isl::checked::ctx ctx, const std::string &str)
+{
+  auto res = isl_map_to_basic_set_read_from_str(ctx.release(), str.c_str());
+  ptr = res;
+}
+
+map_to_basic_set &map_to_basic_set::operator=(map_to_basic_set obj) {
+  std::swap(this->ptr, obj.ptr);
+  return *this;
+}
+
+map_to_basic_set::~map_to_basic_set() {
+  if (ptr)
+    isl_map_to_basic_set_free(ptr);
+}
+
+__isl_give isl_map_to_basic_set *map_to_basic_set::copy() const & {
+  return isl_map_to_basic_set_copy(ptr);
+}
+
+__isl_keep isl_map_to_basic_set *map_to_basic_set::get() const {
+  return ptr;
+}
+
+__isl_give isl_map_to_basic_set *map_to_basic_set::release() {
+  isl_map_to_basic_set *tmp = ptr;
+  ptr = nullptr;
+  return tmp;
+}
+
+bool map_to_basic_set::is_null() const {
+  return ptr == nullptr;
+}
+
+isl::checked::ctx map_to_basic_set::ctx() const {
+  return isl::checked::ctx(isl_map_to_basic_set_get_ctx(ptr));
+}
+
+boolean map_to_basic_set::plain_is_equal(const isl::checked::map_to_basic_set &hmap2) const
+{
+  auto res = isl_map_to_basic_set_plain_is_equal(get(), hmap2.get());
+  return manage(res);
+}
+
+isl::checked::map_to_basic_set map_to_basic_set::set(isl::checked::map key, isl::checked::basic_set val) const
+{
+  auto res = isl_map_to_basic_set_set(copy(), key.release(), val.release());
+  return manage(res);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const map_to_basic_set &obj)
+{
+  char *str = isl_map_to_basic_set_to_str(obj.get());
   if (!str) {
     os.setstate(std::ios_base::badbit);
     return os;
@@ -15625,6 +15980,89 @@ inline std::ostream &operator<<(std::ostream &os, const pw_multi_aff_list &obj)
   return os;
 }
 
+// implementations for isl::pw_qpolynomial
+pw_qpolynomial manage(__isl_take isl_pw_qpolynomial *ptr) {
+  return pw_qpolynomial(ptr);
+}
+pw_qpolynomial manage_copy(__isl_keep isl_pw_qpolynomial *ptr) {
+  ptr = isl_pw_qpolynomial_copy(ptr);
+  return pw_qpolynomial(ptr);
+}
+
+pw_qpolynomial::pw_qpolynomial(__isl_take isl_pw_qpolynomial *ptr)
+    : ptr(ptr) {}
+
+pw_qpolynomial::pw_qpolynomial()
+    : ptr(nullptr) {}
+
+pw_qpolynomial::pw_qpolynomial(const pw_qpolynomial &obj)
+    : ptr(nullptr)
+{
+  ptr = obj.copy();
+}
+
+pw_qpolynomial::pw_qpolynomial(isl::checked::ctx ctx, const std::string &str)
+{
+  auto res = isl_pw_qpolynomial_read_from_str(ctx.release(), str.c_str());
+  ptr = res;
+}
+
+pw_qpolynomial &pw_qpolynomial::operator=(pw_qpolynomial obj) {
+  std::swap(this->ptr, obj.ptr);
+  return *this;
+}
+
+pw_qpolynomial::~pw_qpolynomial() {
+  if (ptr)
+    isl_pw_qpolynomial_free(ptr);
+}
+
+__isl_give isl_pw_qpolynomial *pw_qpolynomial::copy() const & {
+  return isl_pw_qpolynomial_copy(ptr);
+}
+
+__isl_keep isl_pw_qpolynomial *pw_qpolynomial::get() const {
+  return ptr;
+}
+
+__isl_give isl_pw_qpolynomial *pw_qpolynomial::release() {
+  isl_pw_qpolynomial *tmp = ptr;
+  ptr = nullptr;
+  return tmp;
+}
+
+bool pw_qpolynomial::is_null() const {
+  return ptr == nullptr;
+}
+
+isl::checked::ctx pw_qpolynomial::ctx() const {
+  return isl::checked::ctx(isl_pw_qpolynomial_get_ctx(ptr));
+}
+
+isl::checked::set pw_qpolynomial::domain() const
+{
+  auto res = isl_pw_qpolynomial_domain(copy());
+  return manage(res);
+}
+
+isl::checked::val pw_qpolynomial::eval(isl::checked::point pnt) const
+{
+  auto res = isl_pw_qpolynomial_eval(copy(), pnt.release());
+  return manage(res);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const pw_qpolynomial &obj)
+{
+  char *str = isl_pw_qpolynomial_to_str(obj.get());
+  if (!str) {
+    os.setstate(std::ios_base::badbit);
+    return os;
+  }
+  os << str;
+  free(str);
+  return os;
+}
+
 // implementations for isl::schedule
 schedule manage(__isl_take isl_schedule *ptr) {
   return schedule(ptr);
@@ -20033,6 +20471,89 @@ isl::checked::union_pw_multi_aff union_pw_multi_aff::union_add(isl::checked::uni
 inline std::ostream &operator<<(std::ostream &os, const union_pw_multi_aff &obj)
 {
   char *str = isl_union_pw_multi_aff_to_str(obj.get());
+  if (!str) {
+    os.setstate(std::ios_base::badbit);
+    return os;
+  }
+  os << str;
+  free(str);
+  return os;
+}
+
+// implementations for isl::union_pw_qpolynomial
+union_pw_qpolynomial manage(__isl_take isl_union_pw_qpolynomial *ptr) {
+  return union_pw_qpolynomial(ptr);
+}
+union_pw_qpolynomial manage_copy(__isl_keep isl_union_pw_qpolynomial *ptr) {
+  ptr = isl_union_pw_qpolynomial_copy(ptr);
+  return union_pw_qpolynomial(ptr);
+}
+
+union_pw_qpolynomial::union_pw_qpolynomial(__isl_take isl_union_pw_qpolynomial *ptr)
+    : ptr(ptr) {}
+
+union_pw_qpolynomial::union_pw_qpolynomial()
+    : ptr(nullptr) {}
+
+union_pw_qpolynomial::union_pw_qpolynomial(const union_pw_qpolynomial &obj)
+    : ptr(nullptr)
+{
+  ptr = obj.copy();
+}
+
+union_pw_qpolynomial::union_pw_qpolynomial(isl::checked::ctx ctx, const std::string &str)
+{
+  auto res = isl_union_pw_qpolynomial_read_from_str(ctx.release(), str.c_str());
+  ptr = res;
+}
+
+union_pw_qpolynomial &union_pw_qpolynomial::operator=(union_pw_qpolynomial obj) {
+  std::swap(this->ptr, obj.ptr);
+  return *this;
+}
+
+union_pw_qpolynomial::~union_pw_qpolynomial() {
+  if (ptr)
+    isl_union_pw_qpolynomial_free(ptr);
+}
+
+__isl_give isl_union_pw_qpolynomial *union_pw_qpolynomial::copy() const & {
+  return isl_union_pw_qpolynomial_copy(ptr);
+}
+
+__isl_keep isl_union_pw_qpolynomial *union_pw_qpolynomial::get() const {
+  return ptr;
+}
+
+__isl_give isl_union_pw_qpolynomial *union_pw_qpolynomial::release() {
+  isl_union_pw_qpolynomial *tmp = ptr;
+  ptr = nullptr;
+  return tmp;
+}
+
+bool union_pw_qpolynomial::is_null() const {
+  return ptr == nullptr;
+}
+
+isl::checked::ctx union_pw_qpolynomial::ctx() const {
+  return isl::checked::ctx(isl_union_pw_qpolynomial_get_ctx(ptr));
+}
+
+isl::checked::union_set union_pw_qpolynomial::domain() const
+{
+  auto res = isl_union_pw_qpolynomial_domain(copy());
+  return manage(res);
+}
+
+isl::checked::val union_pw_qpolynomial::eval(isl::checked::point pnt) const
+{
+  auto res = isl_union_pw_qpolynomial_eval(copy(), pnt.release());
+  return manage(res);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const union_pw_qpolynomial &obj)
+{
+  char *str = isl_union_pw_qpolynomial_to_str(obj.get());
   if (!str) {
     os.setstate(std::ios_base::badbit);
     return os;

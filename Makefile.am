@@ -426,6 +426,18 @@ $(srcdir)/include/isl/cpp-checked-conversion.h: .gen/cpp-checked-conversion.h
 			> .gen/typed_cpp.Th && mv .gen/typed_cpp.Th $@
 $(srcdir)/include/isl/typed_cpp.h: .gen/typed_cpp.h
 	$(AM_V_at)$(CP_IF_DIFFERENT) .gen/typed_cpp.h $@
+	
+	
+trace.inc.cpp: \
+		interface/extract_interface$(BUILD_EXEEXT) \
+		libdep.a
+	(interface/extract_interface$(BUILD_EXEEXT) \
+			--language=trace \
+			$(includes) $(srcdir)/all.h) \
+			> $@ || (rm $@ && false)			
+			
+	
+	
 endif
 endif
 
