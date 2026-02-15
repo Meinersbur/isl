@@ -1,0 +1,22 @@
+./test_inputs/schedule/bounded_coefficients.sc
+./test_inputs/schedule/carry_bounded_coefficients.sc
+./test_inputs/schedule/disjunctive_domain.sc
+./test_inputs/schedule/feautrier_compressed.sc
+./test_inputs/schedule/flat1.sc
+./test_inputs/schedule/flat2.sc
+./test_inputs/schedule/flat3.sc
+./test_inputs/schedule/flat4.sc
+./test_inputs/schedule/flat5.sc
+./test_inputs/schedule/flat6.sc
+./test_inputs/schedule/fork1.sc
+./test_inputs/schedule/fork2.sc
+./test_inputs/schedule/fork3.sc
+./test_inputs/schedule/leyin1.sc
+./test_inputs/schedule/leyin2a.sc
+./test_inputs/schedule/leyin2b.sc
+./test_inputs/schedule/max_coincidence.sc
+./test_inputs/schedule/nana.sc
+./test_inputs/schedule/niewang.sc
+./test_inputs/schedule/nomax_coincidence.sc
+./test_inputs/schedule/poliwoda.sc
+PASS schedule_test.sh (exit status: 0)

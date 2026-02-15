@@ -367,7 +367,7 @@ def _get_mutators(origlines):
     yield from _get_mutators_literal_replacement(origlines)
 
 
-def _check_trace(tmpdir, lines, define_interstingness=False):
+def _check_trace(tmpdir, lines, define_interestingness=False):
     global interesting_retcode, interesting_stdout, interesting_stderr
 
     builddir = mkpath(tempfile.mkdtemp(dir=tmpdir))
@@ -380,12 +380,12 @@ def _check_trace(tmpdir, lines, define_interstingness=False):
     if not ccret.success:
         return MALFORMED, builddir
 
-    exeret = invoke.run(exefile, return_stdout=True, return_stderr=True,nerror=invoke.Invoke.IGNORE,cwd=builddir)
+    exeret = invoke.run(exefile, return_stdout=True, return_stderr=True,onerror=invoke.Invoke.IGNORE,cwd=builddir)
     if exeret.success:
          # No crash?
          return BORING, builddir
 
-    if define_interstingness:
+    if define_interestingness:
         interesting_retcode = exeret.exitcode
         interesting_stdout = exeret.stdout
         interesting_stderr = exeret.stderr
@@ -428,7 +428,7 @@ def _reduce(tmpdir: pathlib.Path, tracesrc: pathlib.Path,outfile: pathlib.Path):
     _write_tracelines(origlines, outfile=outfile)
     _write_tracelines(origlines, _get_reduced_file())
 
-    originterestingness,_ =  _check_trace(tmpdir,origlines, define_interstingness=True)
+    originterestingness,_ =  _check_trace(tmpdir,origlines, define_interestingness=True)
     if originterestingness != INTERESTING:
         print("Original program is not interesting", file=sys.stderr)
         exit(1)

@@ -106,6 +106,10 @@ class IslCall(Stmt):
             self.retobj=None
             self.desc=None
 
+        # Wether the has been seen to finish
+        # (otherwise it means it has crashed during the call)
+        self.seenreturn = False
+
     def addArg(self, arg):
         self.args.append(arg)
 
@@ -331,6 +335,8 @@ def parse_return(rettype,fname,retval=None,retptr=None,desc=None):
     assert lastcall.hasret
     assert lastcall.retobj == None
 
+    assert not lastcall.seenreturn , "Should not see the same call to return twice"
+    lastcall.seenreturn=True
     if retptr!=None:
         retptr=int(retptr,0)
         lastcall.retobj = registerObj(ptr=retptr,ty=rettype,lvl=toplevel)
@@ -481,19 +487,17 @@ prologue="""#include <stdio.h>
 """
 
 
-def gen_arg(arg, call: Stmt, level: Level, mutations):
-    origarg=arg
-    while True:
-        if not arg.IsPtr:
-            break
-        obj = arg.obj
-        if obj not in mutations.objs_replaced:
-            break
-        arg = mutations.objs_replaced[obj]
-    if origarg!=arg:
-        arg=arg.clone()
-        arg.name=origarg.name
-
+def gen_arg(arg, call: Stmt, level: Level):
+    if call and  call.funcname == "isl_options_set_on_error":
+        if arg.name == "val":
+            match arg.val:
+                case "0":
+                    return "ISL_ON_ERROR_WARN"
+                case "1":
+                    return "ISL_ON_ERROR_CONTINUE"
+                case "2":
+                    return "ISL_ON_ERROR_ABORT"
+                # otherwise fall back to default arg formatting
     if arg.IsCb:
         callbacker = arg.callbacker
         return callbacker.name
@@ -513,34 +517,25 @@ def gen_arg(arg, call: Stmt, level: Level, mutations):
 
     assert False, "implement this case" 
 
-def get_repl_obj(obj,mutations):
-    while obj in mutations.objs_replaced:
-        obj = mutations.objs_replaced[obj].obj
-    return obj
 
-def gen_call(call: Stmt, level: Level, mutations, reachability):
-    if call.hasret and call.retobj and call.retobj.IsObj  and call.retobj.name == 'umap28':
-                c=4
-    if call in mutations.calls_removed:
-        return
-    if call in mutations.calls_replaced:
-        replcall = mutations.calls_replaced[call]
-        yield from gen_call(call=replcall,level=level,mutations=mutations,reachability=reachability)
-        return
-
+def gen_call(call: Stmt, level: Level, reachability):
     if call.IsCall:
         funcname = call.funcname
         
+        if not call.seenreturn:
+            yield "fflush(stdout);"
+            yield 'fprintf(stderr, "Crash expected here:\n");'
+
         argstr = []
         for arg in call.args:
-            argstr.append(gen_arg(arg,call,level,mutations=mutations))
+            argstr.append(gen_arg(arg,call,level))
         if call.isspecial!=None:
             argstr[call.isspecial] += ')'
 
         callstr = f"{funcname}({', '.join(argstr)});"
 
         if call.hasret:
-            retobj = call.retobj # get_repl_obj(call.retobj,mutations=mutations)
+            retobj = call.retobj
             descstr = f" // {call.desc}" if call.desc else ""
             if retobj!=None and not retobj.IsNull and retobj in reachability.reachable_objs:
                 if  retobj not in reachability.globobjs: #retobj.islocal:
@@ -575,7 +570,7 @@ def gen_globvars(mainlevel,reachability):
         yield f"{obj.ty} {obj.name};"
 
 
-def gen_callbacker(callbacker:Callbacker,genbody:bool,mutations,reachability):
+def gen_callbacker(callbacker:Callbacker,genbody:bool,reachability):
     if callbacker not in reachability.reachable_callbackers:
         return
 
@@ -604,10 +599,10 @@ def gen_callbacker(callbacker:Callbacker,genbody:bool,mutations,reachability):
             yield f"      {argobj.name} = param{i};"
 
         for call in invok.calls:
-            for line in gen_call(call,level=invok,mutations=mutations,reachability=reachability):
+            for line in gen_call(call,level=invok,reachability=reachability):
                 yield f"      {line}"
         if callbacker.hasret:
-            retstr = gen_arg(invok.retarg, None, level=invok, mutations=mutations)
+            retstr = gen_arg(invok.retarg, None, level=invok)
             yield f"      return {retstr};"
         yield "    } break;"
     yield "    default:"
@@ -617,44 +612,44 @@ def gen_callbacker(callbacker:Callbacker,genbody:bool,mutations,reachability):
     yield "}"
 
 
-def gen_callbacks(mainlevel,mutations,reachability):
+def gen_callbacks(mainlevel,reachability):
     global callbackers
 
     # Forward declarations
     for cb in callbackers.values():
-        yield from gen_callbacker(callbacker=cb,genbody=False,mutations=mutations,reachability=reachability)
+        yield from gen_callbacker(callbacker=cb,genbody=False,reachability=reachability)
     yield ""
 
     # Definitions
     for cb in callbackers.values():
-        yield from gen_callbacker(callbacker=cb,genbody=True,mutations=mutations,reachability=reachability)
+        yield from gen_callbacker(callbacker=cb,genbody=True,reachability=reachability)
         yield ""
 
 
-def gen_main(mainlevel,mutations,reachability):      
+def gen_main(mainlevel,reachability):
     for call in mainlevel.calls:
-        yield from gen_call(call,level=mainlevel,mutations=mutations,reachability=reachability)
+        yield from gen_call(call,level=mainlevel,reachability=reachability)
 
 
 
-def writeoutput(out,mainlevel,mutations,reachability=None):
+def writeoutput(out,mainlevel,reachability=None):
     if not reachability:
-        reachability=update_uses(mainlevel,mutations=mutations)
+        reachability=update_uses(mainlevel)
 
     print(prologue,file=out)
-    print("// variables used accross callbacks",file=out)
+    print("// variables used across callbacks",file=out)
     for line in gen_globvars(mainlevel=mainlevel,reachability=reachability):
         print(line,file=out)
     print("",file=out)
 
-    for line in gen_callbacks(mainlevel=mainlevel,mutations=mutations,reachability=reachability):
+    for line in gen_callbacks(mainlevel=mainlevel,reachability=reachability):
         print(line,file=out)
 
     print("int main() {",file=out)
     for line in gen_version(mainlevel=mainlevel):
         print(f"  {line}",file=out)
     print("",file=out)
-    for line in gen_main(mainlevel=mainlevel,mutations=mutations,reachability=reachability):
+    for line in gen_main(mainlevel=mainlevel,reachability=reachability):
         print(f"  {line}",file=out)
     print("  return EXIT_SUCCESS;",file=out)
     print("}",file=out)
@@ -675,8 +670,8 @@ def check_validity(mainlevel,mutations,reachability):
 
 SKIP = NamedSentinel("SKIP")
 
-def check_trace(mainlevel,mutations):
-    reachability = update_uses(mainlevel,mutations=mutations) 
+def check_trace(mainlevel):
+    reachability = update_uses(mainlevel)
     #if not check_validity(mainlevel,mutations,reachability=reachability):
     #    return SKIP
 
@@ -724,7 +719,7 @@ class Reachability:
         self.globobjs=globobjs
 
 
-def update_uses(mainlevel,mutations):
+def update_uses(mainlevel):
     levels=set()
     callbackers=set()
     objs=set()
@@ -749,10 +744,6 @@ def update_uses(mainlevel,mutations):
             if obj.IsObj and obj.name == 'node2':
                 d=4
 
-            if obj in mutations.objs_replaced:
-                repl = mutations.objs_replaced[obj]
-                update_uses_arg(call, repl,lvl)  
-                return
 
             if obj and obj.IsObj:
                 objs.add(obj)
@@ -763,24 +754,12 @@ def update_uses(mainlevel,mutations):
             #obj.use(lvl)
     def update_uses_level(lvl):
         for call in lvl.calls:
-            if call.hasret and call.retobj and call.retobj.IsObj  and  call.retobj.name == 'umap28':
-                c=3
-            if False:
-                abort()
-
-            if call in mutations.calls_removed:
-                continue
-            while call in mutations.calls_replaced: 
-                call = mutations.calls_replaced[call]
-
             if call.IsCall:
                 for arg in call.args:
                     update_uses_arg(call,arg,lvl)
             if call.hasret:
                 retobj = call.retobj
                 if retobj and retobj.IsObj:
-                    if retobj in mutations.objs_replaced:
-                        continue
                     objs.add(retobj)
                     defined.add(retobj)
                     assert retobj.deflvl==lvl
@@ -791,300 +770,14 @@ def update_uses(mainlevel,mutations):
 
 
 
-class Mutations:
-    def __init__(self):
-        self.calls_removed=set()
-        self.calls_replaced=dict()
-        #self.args_replaced=dict()
-        self.objs_replaced=dict()
-
-
-    def clone(self):
-        result = Mutations()
-        result.calls_removed=self.calls_removed.copy()
-        result.calls_replaced=self.calls_replaced.copy()
-        #result.args_replaced=self.args_replaced.copy()
-        result.objs_replaced=self.objs_replaced.copy()
-        return result
-
-
-def make_remove_call_closure(i,call):
-    def mut_remove_call(mutations):
-        result = mutations
-        result.calls_removed.add(call)
-        if call.hasret and call.retobj and call.retobj.IsObj:
-            result.objs_replaced[call.retobj] = IslPtrArg(name=None,ty=call.retobj.ty,obj=nullobj)
-        return result
-    return mut_remove_call
-
-def mut_remove_calls(mainlevel):    
-    for i,call in enumerate(mainlevel.allcalls):        
-        if call.IsCall:
-            yield make_remove_call_closure(i,call)
-
-
-def make_forward_arg_closure(call,arg):
-    def mut_forward_arg(mutations):
-        #mutations.calls_removed.add(call)
-        mutations.objs_replaced[call.retobj] = arg
-        return mutations
-    return mut_forward_arg
-
-def mut_forward_arg(mainlevel): 
-    for i,call in enumerate(mainlevel.allcalls):
-        if call.IsCall:
-            if not (call.hasret and call.retobj and call.retobj.IsObj):
-                continue
-            retobj = call.retobj  
-            for arg in call.args:
-                if not arg.IsPtr:
-                    continue
-                obj = arg.obj
-                if not obj.IsObj:
-                    continue
-                if retobj.ty != obj.ty:
-                    continue
-                yield make_forward_arg_closure(call,arg)
-
-        
-
-def make_replace_from_string_closure(call,read_fnname,ctx_argidx,ctx_fname,str): 
-    def mut_replace_call(mutations):
-        retobj = call.retobj
-        if ctx_fname:
-            replcall = IslCall(funcname=f'{read_fnname}({ctx_fname}',hasret=True,retty=call.retty,isspecial=0)
-        else:
-            replcall = IslCall(funcname=read_fnname,hasret=True,retty=call.retty)
-        replcall.args.append(call.args[0])
-        replcall.args.append(IslValArg(name='str',ty= 'char *', val=f'"{str}"' ))
-        replcall.retobj = retobj # IslMemObj(name=retobj.name,ty=retobj.ty,ptr=retobj.ptr,deflvl=retobj.deflvl)
-
-        mutations.calls_replaced[call] = replcall
-        #mutations.objs_replaced[retobj] = IslPtrArg( name=None,ty=retobj.ty,obj=  replcall.retobj)
-        return mutations
-    return mut_replace_call
-
-
-
-def mut_replace_from_string(mainlevel): 
-    for i,call in enumerate(mainlevel.allcalls):
-        if call.IsCall:
-            if not (call.hasret and call.retobj and call.retobj.IsObj):
-                continue
-            if not call.desc:
-                continue
-            if call.funcname.endswith("_copy") or call.funcname.endswith("_read_from_str") :
-                continue
-            retobj = call.retobj
-            callname = get_readfromstr_func(retobj.ty)
-            if not callname:
-                continue
-            ctxargi = -1
-            ctxargcallname = None
-            for i, arg in enumerate(call.args):
-                if arg.ty=='isl_ctx *' or arg.ty=='isl_ctx*':
-                    ctxargi = i
-                    break
-                ctxargcallname = get_getctx_func(arg.ty)
-                if ctxargcallname:
-                    ctxargi = i
-                    break
-            if ctxargi==-1:
-                continue            
-            yield make_replace_from_string_closure(call,callname,ctxargi,ctxargcallname,call.desc)
-
-
-
-def make_replace_id_alloc_closure(call): 
-    def mut_replace_call(mutations):
-        replcall = IslCall(funcname=call.funcname,hasret=True,retty=call.retty)
-        replcall.args = call.args[:]
-        replcall.args[2] = IslValArg(name=call.args[2].name,ty=call.args[2].ty,val='NULL')
-        replcall.retobj = call.retobj
-        mutations.calls_replaced[call] = replcall
-        return mutations
-    return mut_replace_call
-
-
-def mut_id_alloc(mainlevel): 
-    for i,call in enumerate(mainlevel.allcalls):
-        if not call.IsCall:
-            continue
-        if not call.funcname == 'isl_id_alloc':
-            continue
-        yield make_replace_id_alloc_closure(call)
-
-
-def make_replace_all_id_alloc_closure(mainlevel): 
-    def mut_replace_call(mutations):
-        for mut in mut_id_alloc(mainlevel):
-            mutations=mut(mutations)
-        return mutations
-    return mut_replace_call
-
-
-
-def get_mutators(mainlevel):
-    yield make_replace_all_id_alloc_closure(mainlevel)
-    yield from mut_id_alloc(mainlevel)
-    yield from mut_remove_calls(mainlevel)
-    yield from mut_forward_arg(mainlevel)
-    yield from mut_replace_from_string(mainlevel)
-
-
-
-
-class TaskResult:
-    def __init__(self,result,pos,testme):
-        self.result=result
-        self.pos=pos
-        self.testme=testme
-
-def make_task(data,avail,combinefn,testfn,l,pos):
-    select = avail[pos:pos+l]
-    testme = combinefn(data, select)
-    result = testfn(testme)
-    return TaskResult(result,pos,testme)
-
-
-def bisect_concurrent(data, avail, combinefn, testfn):
-    length = max(1, len(avail) // 32)
-    while length > 0:
-        def run_tasks(choose,startpos,l):
-            if True:
-                ex = futures.ThreadPoolExecutor(max_workers=os.cpu_count()-1) # os.cpu_count()
-                tasks = [ex.submit(make_task, data,avail, combinefn, testfn, l, pos) for pos in range(startpos, len(avail), l)]
-                fut = futures.as_completed(tasks)
-                results = (f.result() for f in fut)
-            else:
-                ex = None
-                results = (make_task(data, choose, combinefn, testfn, l, pos) for pos in  range(startpos, len(avail), l))
-            for result in results:
-                if not result.result:
-                    # not interesting anymore: discard and wait for next
-                    continue
-
-                #for i in range(result.pos,result.pos+l):
-                #    mut = choose[i]
-                #    result.testme = mut(result.testme)
-
-                # still interesting: stop all other tasks
-                print(f"### Mutating {result.pos}..{result.pos}+{l} (of {len(choose)}) remains interesting", file=sys.stderr)
-                print(f"### Contains {len(result.testme.calls_removed)} removed calls", file=sys.stderr)
-                print(f"### Contains {len(result.testme.calls_replaced)} replaced calls", file=sys.stderr)
-                print(f"### Contains {len(result.testme.objs_replaced)} replaced objects", file=sys.stderr)
-                if ex:
-                    ex.shutdown(wait=False,cancel_futures=True)
-                return result
-            return None
-
-        def run_with_length(l,shuffle):
-            if shuffle:
-                print(f"### Trying shuffled size {l}", file=sys.stderr)
-            else:
-                print(f"### Trying sequential size {l}", file=sys.stderr)
-            nonlocal avail,data
-
-            choose=avail
-            if shuffle:
-                choose=choose.copy()
-                random.shuffle(choose)
-
-            changed = False
-            startpos = 0
-            while startpos < len(choose):
-                if startpos > 0:
-                    print(f"### Restarting at pos {startpos}", file=sys.stderr)
-
-                result = run_tasks(choose=choose,startpos=startpos,l=l)
-                if result == None:
-                    # nothing more to explore
-                    break
-
-                # make permanent and continue at same pos (assuming all previous pos have failed)
-                pos = result.pos
-                del choose[pos:pos+l]
-                data=result.testme
-                startpos = pos
-                changed = True
-
-            if shuffle:
-                # Reconstruct original order
-                newavail=[]
-                s={*choose}
-                for d in avail:
-                    if d in s:
-                        newavail.append(d)
-                avail=newavail
-
-            return changed
-             
-
-        changed1 = run_with_length(length,shuffle=False)
-        changed2 = run_with_length(length,shuffle=True)
-        changed = changed1 or changed2
-
-        #if changed:
-        #    # Restart to ensure fixpoint
-        #    l = len(avail)//32
-        #    continue
-        if length <= 1 and not changed:
-            # Cannot go any smaller: reduction done
-            break
-        length = max(1, (length+1) // 2)
-
-    print("Bisection done", file=sys.stderr)
-    return data
-
-
-def reduce_trace(mainlevel):
-    mutators = [mut for mut in get_mutators(mainlevel=mainlevel)]
-    if False:
-        for i in range(0,len(mutators)):
-            select = mutators[i:1]
-            data= Mutations()
-            for mut in select:
-                data=mut(data)
-            check_trace(mainlevel,mutations=data)
-
-    mutations = Mutations()
-    interesting = check_trace(mainlevel=mainlevel,mutations=mutations)
-    if interesting==False or interesting==SKIP:
-        print("Something went wrong: reference is not interesting/does not compile", file=sys.stderr)
-        sys.exit(1)
-
-    
-    def combinefn(last,new):
-        last = last.clone()
-        for mut in new:
-            last = mut(last)
-        return last
-    def testfn(trial):
-        result = check_trace(mainlevel=mainlevel, mutations=trial)
-        if result == False:
-            print("Invalid", file=sys.stderr)
-        return result == interesting
-    cur = bisect_concurrent(data=mutations,avail=mutators,combinefn=combinefn,testfn=testfn)
-
-    with outfile.with_suffix('_reduced.c').open(mode='w') as out:
-        writeoutput(out,mainlevel=mainlevel,mutations=cur)
-
-    if changes:
-        print("changes apply. Retry from the beginning?",file=sys.stderr)
-    else:
-        print("fixpoint reached",file=sys.stderr)
-
-
 def main():
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('logfile')
     parser.add_argument('--outfile', '-o')
-    parser.add_argument('--reduce', action='store_true')
 
     args = parser.parse_args()
     logfile = mkpath(args.logfile)
     outfile = mkpath(args.outfile)
-    reduce = args.reduce
     if not outfile:
         outfile = logfile.with_suffix('.c')
 
@@ -1092,17 +785,14 @@ def main():
     global callstack
     callstack = [mainlevel]
 
-    with logfile.open(mode='r') as log:        
+    with logfile.open(mode='r') as log:
         for line in log:
             parse(line)
     assert len(callstack)==1
 
 
-    if reduce:
-        reduce_trace(mainlevel)
-    else:
-        with outfile.open(mode='w') as out:
-            writeoutput(out,mainlevel=mainlevel,mutations=Mutations())
+    with outfile.open(mode='w') as out:
+            writeoutput(out,mainlevel=mainlevel)
 
 
 

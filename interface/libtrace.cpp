@@ -1799,6 +1799,8 @@ struct IslCallImpl<RetTy(ParmTy...)> : public IslCallBase {
 template<typename T>
 struct IslCall;
 
+
+#if 0
 template<typename... ParmTy>
 struct IslCall<void(ParmTy...)>: public IslCallImpl<void(ParmTy...)> {
 	using FuncTy = void(ParmTy...);
@@ -1815,8 +1817,7 @@ struct IslCall<void(ParmTy...)>: public IslCallImpl<void(ParmTy...)> {
 		execOrig();
 	}
 };
-
-
+#endif
 
 
 
@@ -1832,7 +1833,7 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 	}
 
 	RetTy apply() {
-	  getBase().beforeCall("call_func");
+	    getBase().beforeCall("call_func");
 		RetTy retval = execOrig();
 
 		if constexpr (std::is_pointer_v<RetTy>) {
@@ -1844,7 +1845,9 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 			OS << "\nreturn";
 			escape(OS, "fname", getBase().name);
 			escape(OS, "rettype", getBase().rettystr);
-			if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>)  {
+			if constexpr (std::is_same_v<RetTy,void>)  {
+				// No object to print for void return
+			else if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>)  {
 				escape(OS, "retptr", retval);
 			}	else {
 				std::ostringstream kOS;

@@ -13446,6 +13446,91 @@ isl.isl_id_to_id_free.argtypes = [c_void_p]
 isl.isl_id_to_id_to_str.restype = POINTER(c_char)
 isl.isl_id_to_id_to_str.argtypes = [c_void_p]
 
+class id_to_pw_aff(object):
+    def __init__(self, *args, **keywords):
+        if "ptr" in keywords:
+            self.ctx = keywords["ctx"]
+            self.ptr = keywords["ptr"]
+            return
+        if len(args) == 1 and type(args[0]) == int:
+            self.ctx = Context.getDefaultInstance()
+            self.ptr = isl.isl_id_to_pw_aff_alloc(self.ctx, args[0])
+            return
+        if len(args) == 1 and type(args[0]) == str:
+            self.ctx = Context.getDefaultInstance()
+            self.ptr = isl.isl_id_to_pw_aff_read_from_str(self.ctx, args[0].encode('ascii'))
+            return
+        raise Error
+    def __del__(self):
+        if hasattr(self, 'ptr'):
+            isl.isl_id_to_pw_aff_free(self.ptr)
+    def __str__(arg0):
+        try:
+            if not arg0.__class__ is id_to_pw_aff:
+                arg0 = id_to_pw_aff(arg0)
+        except:
+            raise
+        ptr = isl.isl_id_to_pw_aff_to_str(arg0.ptr)
+        res = cast(ptr, c_char_p).value.decode('ascii')
+        libc.free(ptr)
+        return res
+    def __repr__(self):
+        s = str(self)
+        if '"' in s:
+            return 'isl.id_to_pw_aff("""%s""")' % s
+        else:
+            return 'isl.id_to_pw_aff("%s")' % s
+    def plain_is_equal(arg0, arg1):
+        try:
+            if not arg0.__class__ is id_to_pw_aff:
+                arg0 = id_to_pw_aff(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is id_to_pw_aff:
+                arg1 = id_to_pw_aff(arg1)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_id_to_pw_aff_plain_is_equal(arg0.ptr, arg1.ptr)
+        if res < 0:
+            raise Error
+        return bool(res)
+    def set(arg0, arg1, arg2):
+        try:
+            if not arg0.__class__ is id_to_pw_aff:
+                arg0 = id_to_pw_aff(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is id:
+                arg1 = id(arg1)
+        except:
+            raise
+        try:
+            if not arg2.__class__ is pw_aff:
+                arg2 = pw_aff(arg2)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_id_to_pw_aff_set(isl.isl_id_to_pw_aff_copy(arg0.ptr), isl.isl_id_copy(arg1.ptr), isl.isl_pw_aff_copy(arg2.ptr))
+        obj = id_to_pw_aff(ctx=ctx, ptr=res)
+        return obj
+
+isl.isl_id_to_pw_aff_alloc.restype = c_void_p
+isl.isl_id_to_pw_aff_alloc.argtypes = [Context, c_int]
+isl.isl_id_to_pw_aff_read_from_str.restype = c_void_p
+isl.isl_id_to_pw_aff_read_from_str.argtypes = [Context, c_char_p]
+isl.isl_id_to_pw_aff_plain_is_equal.argtypes = [c_void_p, c_void_p]
+isl.isl_id_to_pw_aff_set.restype = c_void_p
+isl.isl_id_to_pw_aff_set.argtypes = [c_void_p, c_void_p, c_void_p]
+isl.isl_id_to_pw_aff_copy.restype = c_void_p
+isl.isl_id_to_pw_aff_copy.argtypes = [c_void_p]
+isl.isl_id_to_pw_aff_free.restype = c_void_p
+isl.isl_id_to_pw_aff_free.argtypes = [c_void_p]
+isl.isl_id_to_pw_aff_to_str.restype = POINTER(c_char)
+isl.isl_id_to_pw_aff_to_str.argtypes = [c_void_p]
+
 class map_list(object):
     def __init__(self, *args, **keywords):
         if "ptr" in keywords:
@@ -13675,6 +13760,91 @@ isl.isl_map_list_free.restype = c_void_p
 isl.isl_map_list_free.argtypes = [c_void_p]
 isl.isl_map_list_to_str.restype = POINTER(c_char)
 isl.isl_map_list_to_str.argtypes = [c_void_p]
+
+class map_to_basic_set(object):
+    def __init__(self, *args, **keywords):
+        if "ptr" in keywords:
+            self.ctx = keywords["ctx"]
+            self.ptr = keywords["ptr"]
+            return
+        if len(args) == 1 and type(args[0]) == int:
+            self.ctx = Context.getDefaultInstance()
+            self.ptr = isl.isl_map_to_basic_set_alloc(self.ctx, args[0])
+            return
+        if len(args) == 1 and type(args[0]) == str:
+            self.ctx = Context.getDefaultInstance()
+            self.ptr = isl.isl_map_to_basic_set_read_from_str(self.ctx, args[0].encode('ascii'))
+            return
+        raise Error
+    def __del__(self):
+        if hasattr(self, 'ptr'):
+            isl.isl_map_to_basic_set_free(self.ptr)
+    def __str__(arg0):
+        try:
+            if not arg0.__class__ is map_to_basic_set:
+                arg0 = map_to_basic_set(arg0)
+        except:
+            raise
+        ptr = isl.isl_map_to_basic_set_to_str(arg0.ptr)
+        res = cast(ptr, c_char_p).value.decode('ascii')
+        libc.free(ptr)
+        return res
+    def __repr__(self):
+        s = str(self)
+        if '"' in s:
+            return 'isl.map_to_basic_set("""%s""")' % s
+        else:
+            return 'isl.map_to_basic_set("%s")' % s
+    def plain_is_equal(arg0, arg1):
+        try:
+            if not arg0.__class__ is map_to_basic_set:
+                arg0 = map_to_basic_set(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is map_to_basic_set:
+                arg1 = map_to_basic_set(arg1)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_map_to_basic_set_plain_is_equal(arg0.ptr, arg1.ptr)
+        if res < 0:
+            raise Error
+        return bool(res)
+    def set(arg0, arg1, arg2):
+        try:
+            if not arg0.__class__ is map_to_basic_set:
+                arg0 = map_to_basic_set(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is map:
+                arg1 = map(arg1)
+        except:
+            raise
+        try:
+            if not arg2.__class__ is basic_set:
+                arg2 = basic_set(arg2)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_map_to_basic_set_set(isl.isl_map_to_basic_set_copy(arg0.ptr), isl.isl_map_copy(arg1.ptr), isl.isl_basic_set_copy(arg2.ptr))
+        obj = map_to_basic_set(ctx=ctx, ptr=res)
+        return obj
+
+isl.isl_map_to_basic_set_alloc.restype = c_void_p
+isl.isl_map_to_basic_set_alloc.argtypes = [Context, c_int]
+isl.isl_map_to_basic_set_read_from_str.restype = c_void_p
+isl.isl_map_to_basic_set_read_from_str.argtypes = [Context, c_char_p]
+isl.isl_map_to_basic_set_plain_is_equal.argtypes = [c_void_p, c_void_p]
+isl.isl_map_to_basic_set_set.restype = c_void_p
+isl.isl_map_to_basic_set_set.argtypes = [c_void_p, c_void_p, c_void_p]
+isl.isl_map_to_basic_set_copy.restype = c_void_p
+isl.isl_map_to_basic_set_copy.argtypes = [c_void_p]
+isl.isl_map_to_basic_set_free.restype = c_void_p
+isl.isl_map_to_basic_set_free.argtypes = [c_void_p]
+isl.isl_map_to_basic_set_to_str.restype = POINTER(c_char)
+isl.isl_map_to_basic_set_to_str.argtypes = [c_void_p]
 
 class multi_id(object):
     def __init__(self, *args, **keywords):
@@ -14810,6 +14980,75 @@ isl.isl_pw_multi_aff_list_free.restype = c_void_p
 isl.isl_pw_multi_aff_list_free.argtypes = [c_void_p]
 isl.isl_pw_multi_aff_list_to_str.restype = POINTER(c_char)
 isl.isl_pw_multi_aff_list_to_str.argtypes = [c_void_p]
+
+class pw_qpolynomial(object):
+    def __init__(self, *args, **keywords):
+        if "ptr" in keywords:
+            self.ctx = keywords["ctx"]
+            self.ptr = keywords["ptr"]
+            return
+        if len(args) == 1 and type(args[0]) == str:
+            self.ctx = Context.getDefaultInstance()
+            self.ptr = isl.isl_pw_qpolynomial_read_from_str(self.ctx, args[0].encode('ascii'))
+            return
+        raise Error
+    def __del__(self):
+        if hasattr(self, 'ptr'):
+            isl.isl_pw_qpolynomial_free(self.ptr)
+    def __str__(arg0):
+        try:
+            if not arg0.__class__ is pw_qpolynomial:
+                arg0 = pw_qpolynomial(arg0)
+        except:
+            raise
+        ptr = isl.isl_pw_qpolynomial_to_str(arg0.ptr)
+        res = cast(ptr, c_char_p).value.decode('ascii')
+        libc.free(ptr)
+        return res
+    def __repr__(self):
+        s = str(self)
+        if '"' in s:
+            return 'isl.pw_qpolynomial("""%s""")' % s
+        else:
+            return 'isl.pw_qpolynomial("%s")' % s
+    def domain(arg0):
+        try:
+            if not arg0.__class__ is pw_qpolynomial:
+                arg0 = pw_qpolynomial(arg0)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_pw_qpolynomial_domain(isl.isl_pw_qpolynomial_copy(arg0.ptr))
+        obj = set(ctx=ctx, ptr=res)
+        return obj
+    def eval(arg0, arg1):
+        try:
+            if not arg0.__class__ is pw_qpolynomial:
+                arg0 = pw_qpolynomial(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is point:
+                arg1 = point(arg1)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_pw_qpolynomial_eval(isl.isl_pw_qpolynomial_copy(arg0.ptr), isl.isl_point_copy(arg1.ptr))
+        obj = val(ctx=ctx, ptr=res)
+        return obj
+
+isl.isl_pw_qpolynomial_read_from_str.restype = c_void_p
+isl.isl_pw_qpolynomial_read_from_str.argtypes = [Context, c_char_p]
+isl.isl_pw_qpolynomial_domain.restype = c_void_p
+isl.isl_pw_qpolynomial_domain.argtypes = [c_void_p]
+isl.isl_pw_qpolynomial_eval.restype = c_void_p
+isl.isl_pw_qpolynomial_eval.argtypes = [c_void_p, c_void_p]
+isl.isl_pw_qpolynomial_copy.restype = c_void_p
+isl.isl_pw_qpolynomial_copy.argtypes = [c_void_p]
+isl.isl_pw_qpolynomial_free.restype = c_void_p
+isl.isl_pw_qpolynomial_free.argtypes = [c_void_p]
+isl.isl_pw_qpolynomial_to_str.restype = POINTER(c_char)
+isl.isl_pw_qpolynomial_to_str.argtypes = [c_void_p]
 
 class schedule(object):
     def __init__(self, *args, **keywords):
@@ -18063,6 +18302,75 @@ isl.isl_union_pw_aff_list_free.restype = c_void_p
 isl.isl_union_pw_aff_list_free.argtypes = [c_void_p]
 isl.isl_union_pw_aff_list_to_str.restype = POINTER(c_char)
 isl.isl_union_pw_aff_list_to_str.argtypes = [c_void_p]
+
+class union_pw_qpolynomial(object):
+    def __init__(self, *args, **keywords):
+        if "ptr" in keywords:
+            self.ctx = keywords["ctx"]
+            self.ptr = keywords["ptr"]
+            return
+        if len(args) == 1 and type(args[0]) == str:
+            self.ctx = Context.getDefaultInstance()
+            self.ptr = isl.isl_union_pw_qpolynomial_read_from_str(self.ctx, args[0].encode('ascii'))
+            return
+        raise Error
+    def __del__(self):
+        if hasattr(self, 'ptr'):
+            isl.isl_union_pw_qpolynomial_free(self.ptr)
+    def __str__(arg0):
+        try:
+            if not arg0.__class__ is union_pw_qpolynomial:
+                arg0 = union_pw_qpolynomial(arg0)
+        except:
+            raise
+        ptr = isl.isl_union_pw_qpolynomial_to_str(arg0.ptr)
+        res = cast(ptr, c_char_p).value.decode('ascii')
+        libc.free(ptr)
+        return res
+    def __repr__(self):
+        s = str(self)
+        if '"' in s:
+            return 'isl.union_pw_qpolynomial("""%s""")' % s
+        else:
+            return 'isl.union_pw_qpolynomial("%s")' % s
+    def domain(arg0):
+        try:
+            if not arg0.__class__ is union_pw_qpolynomial:
+                arg0 = union_pw_qpolynomial(arg0)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_union_pw_qpolynomial_domain(isl.isl_union_pw_qpolynomial_copy(arg0.ptr))
+        obj = union_set(ctx=ctx, ptr=res)
+        return obj
+    def eval(arg0, arg1):
+        try:
+            if not arg0.__class__ is union_pw_qpolynomial:
+                arg0 = union_pw_qpolynomial(arg0)
+        except:
+            raise
+        try:
+            if not arg1.__class__ is point:
+                arg1 = point(arg1)
+        except:
+            raise
+        ctx = arg0.ctx
+        res = isl.isl_union_pw_qpolynomial_eval(isl.isl_union_pw_qpolynomial_copy(arg0.ptr), isl.isl_point_copy(arg1.ptr))
+        obj = val(ctx=ctx, ptr=res)
+        return obj
+
+isl.isl_union_pw_qpolynomial_read_from_str.restype = c_void_p
+isl.isl_union_pw_qpolynomial_read_from_str.argtypes = [Context, c_char_p]
+isl.isl_union_pw_qpolynomial_domain.restype = c_void_p
+isl.isl_union_pw_qpolynomial_domain.argtypes = [c_void_p]
+isl.isl_union_pw_qpolynomial_eval.restype = c_void_p
+isl.isl_union_pw_qpolynomial_eval.argtypes = [c_void_p, c_void_p]
+isl.isl_union_pw_qpolynomial_copy.restype = c_void_p
+isl.isl_union_pw_qpolynomial_copy.argtypes = [c_void_p]
+isl.isl_union_pw_qpolynomial_free.restype = c_void_p
+isl.isl_union_pw_qpolynomial_free.argtypes = [c_void_p]
+isl.isl_union_pw_qpolynomial_to_str.restype = POINTER(c_char)
+isl.isl_union_pw_qpolynomial_to_str.argtypes = [c_void_p]
 
 class union_set_list(object):
     def __init__(self, *args, **keywords):
