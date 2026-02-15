@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/reduce.py",
             "console": "integratedTerminal",
-          //  "args": ["/home/meinersbur/src/llvm/main/release/reduced.c", "-o", "reduced.c"],
-             "args": ["/home/meinersbur/src/isl/interface/prev_reduced.c", "-o", "reduced.c"],
+           "args": ["/home/meinersbur/src/llvm/main/release/isltrace.c", "-o", "/home/meinersbur/src/llvm/main/release/reduced.c"],
+          //   "args": ["/home/meinersbur/src/isl/interface/prev_reduced.c", "-o", "reduced.c"],
             "justMyCode": false
         },
         {

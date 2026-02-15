@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/extract_interface.dir/extract_interface.o CMakeFiles/extract_interface.dir/generator.o -o extract_interface  -lclangBasic -lclangAnalysis -lclangAST -lclangLex -lclangEdit -lclangParse -lclangSema -lclangFrontend -lclangSerialization 

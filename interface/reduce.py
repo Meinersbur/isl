@@ -7,11 +7,8 @@ import tempfile
 import tool.invoke as invoke
 from tool.support import *
 import itertools
-import math
 import concurrent.futures
 import threading
-import time
-import random
 import re
 import  collections
 
@@ -23,12 +20,16 @@ INTERESTING = NamedSentinel("INTERESTING")
 BORING = NamedSentinel("BORING")
 
 
+_id_re = re.compile('[a-zA-Z_][a-zA-Z0-9_]+')
+_stmt_call_re = re.compile(r'^\s*((?P<ltype>isl\_[a-zA-Z0-9_]+)\s*\*\s*(?P<lvar>[a-zA-Z0-9_]+)\s*\=\s*)?(?P<funcname>[a-zA-Z0-9_]+)\s*(\((?P<args>.*)\)\s*)?\;\s*$')
+_dumpfile_re = re.compile(r'dump\_[a-z_]+\_(?P<line>[0-9]+)\.txt')
+
 
 class ThreadPoolGeneratedQueue:
     def __init__(self,max_workers,*args,**kwargs):
         self.max_workers = max_workers
         self.stop_event = threading.Event()
-        self.pool =  concurrent.futures.ThreadPoolExecutor(*args,max_workers=max_workers,**kwargs)
+        self.pool = concurrent.futures.ThreadPoolExecutor(*args,max_workers=max_workers,**kwargs)
 
         # Dictionary to track active futures: {future: task_data}
         self.futures=dict()
@@ -79,9 +80,7 @@ class ThreadPoolGeneratedQueue:
 
 
 
-_id_re = re.compile('[a-zA-Z_][a-zA-Z0-9_]+')
-_stmt_call_re = re.compile(r'^\s*((?P<ltype>isl\_[a-zA-Z0-9_]+)\s*\*\s*(?P<lvar>[a-zA-Z0-9_]+)\s*\=\s*)?(?P<funcname>[a-zA-Z0-9_]+)\s*(\((?P<args>.*)\)\s*)?\;\s*$')
-_dumpfile_re = re.compile(r'dump\_[a-z]+\_(?P<line>[0-9]+)\.txt')
+
 
 class Tracesrc:
     class Stmt:
@@ -108,7 +107,8 @@ class Tracesrc:
 
     def __init__(self,lines ,occurances):
         self.lines = lines # Assumed to be the only reference / becoming the owner
-        self.occurances  = occurances or dict()
+        self.occurances = occurances or dict()
+        self.idreplaces = dict()
         self.dumps = [None] * len(lines)
 
 
@@ -136,7 +136,7 @@ class Tracesrc:
             if m:
                 args = m['args']
                 if args is not None:
-                    args =  args.split(',') if args.strip() else []
+                    args =  args.split(',') if args.strip() else [] # TOOD: do not split string arguments
                     args = [a.strip() for a in args]
                 stmt = Tracesrc.Stmt(ltype=m['ltype'],lvar = m['lvar'], funcname =m['funcname'],args=args)
                 parsedlines [i] =stmt
@@ -145,16 +145,33 @@ class Tracesrc:
 
 
 
+def _make_lines(lines):
+    for line in lines.lines:
+        if line is not None:
+            line =str(line)
+            if lines.idreplaces:
+                ids =  list(_id_re.finditer (line))
+                for id in reversed(ids):
+                    repl = lines.idreplaces.get( id[0])
+                    if repl is None:
+                        continue
+                    line = f'{line[:id.start()]}{repl}{line[id.end():]}'
+            yield str(line)
+
 
 def _write_tracelines(lines, outfile, format=True ):
         with outfile.open('w+') as f:
-            for line in lines.lines:
-                if line is None:
-                    continue
+            for line in _make_lines(lines):
                 print(line,file=f)
 
         if format:
             invoke.call("clang-format", '-i', '--style={BasedOnStyle: llvm, ColumnLimit: 0}', outfile, )
+
+
+def _cleanup(lines):
+    result =  list(_make_lines(lines))
+    return Tracesrc.parse(result)
+
 
 
 
@@ -211,7 +228,7 @@ def _get_mutators_null_args(origlines):
                 continue
             if line.args is None:
                  continue
-            if line.funcname == 'isl_set_read_from_str':
+            if line.funcname in ['isl_set_read_from_str', 'isl_union_set_read_from_str', 'fflush', 'printf', 'fprintf']:
                  continue
 
             for j,arg in enumerate(line.args) :
@@ -247,28 +264,31 @@ def _get_mutators_forward_assign(origlines):
                     if not isinstance(stmt,Tracesrc.Stmt):
                         return None
                     if stmt.args is not None:
-                         raise CannotMutate()
+                         return None
 
                     lhs = stmt.lvar
                     rhs = stmt.funcname
 
-                    for k, stmt in enumerate(lines.lines) : # FIXME: This takes a lot of time
-                        if k == i:
-                             continue
-                        if not isinstance(stmt,Tracesrc.Stmt):
-                            continue
-                        if stmt.args is None:
-                             if stmt.funcname == lhs:
-                                  lines.lines[k] = Tracesrc.Stmt(ltype=stmt.ltype, lvar = stmt.lvar, funcname=rhs, args=None)
-                        else:
-                            newargs = stmt.args.copy()
-                            any = False
-                            for j, arg in enumerate(stmt.args):
-                                if arg == lhs:
-                                     newargs[j] = rhs
-                                     any = True
-                            if any:
-                                lines.lines[k] = Tracesrc.Stmt(ltype=stmt.ltype, lvar = stmt.lvar, funcname=stmt.funcname, args=newargs)
+                    if True:
+                         lines.idreplaces[lhs] = rhs
+                    else:
+                        for k, stmt in enumerate(lines.lines) : # FIXME: This takes a lot of time
+                            if k == i:
+                                continue
+                            if not isinstance(stmt,Tracesrc.Stmt):
+                                continue
+                            if stmt.args is None:
+                                if stmt.funcname == lhs:
+                                    lines.lines[k] = Tracesrc.Stmt(ltype=stmt.ltype, lvar = stmt.lvar, funcname=rhs, args=None)
+                            else:
+                                newargs = stmt.args.copy()
+                                any = False
+                                for j, arg in enumerate(stmt.args):
+                                    if arg == lhs:
+                                        newargs[j] = rhs
+                                        any = True
+                                if any:
+                                    lines.lines[k] = Tracesrc.Stmt(ltype=stmt.ltype, lvar = stmt.lvar, funcname=stmt.funcname, args=newargs)
                     lines.lines[i] = None
                     return lines
             yield forward_assign
@@ -281,14 +301,14 @@ def _get_mutators_skip_call(origlines):
             continue
         if line.args is None:
             continue
-        if line.funcname in ['isl_set_read_from_str', 'printf']:
+        if line.funcname in ['isl_set_read_from_str', 'isl_union_set_read_from_str', 'fflush', 'printf', 'fprintf']:
             continue
 
         for j,arg in enumerate(line.args):
              def skip_call(lines,i=i,j=j):
                     stmt = lines.lines[i]
                     if not isinstance(stmt,Tracesrc.Stmt):
-                        raise CannotMutate()
+                        return None
                     if stmt.args is None:
                         return None
 
@@ -328,7 +348,7 @@ def _get_mutators_literal_replacement(origlines):
 
             # TODO: Escape thedump
             # TODO: Assumes there is only one isl_context and its name is ctx1
-            lines.lines [i] = f'  {stmt.ltype} *{stmt.lvar} = isl_set_read_from_str(ctx1, "{thedump}");'
+            lines.lines [i] = f'  {stmt.ltype} *{stmt.lvar} = {stmt.ltype}_read_from_str(ctx1, "{thedump}");'
 
             return lines
         yield replace_with_literal
@@ -347,18 +367,38 @@ def _get_mutators(origlines):
     yield from _get_mutators_literal_replacement(origlines)
 
 
-def _check_trace(tmpdir , lines):
+def _check_trace(tmpdir, lines, define_interstingness=False):
+    global interesting_retcode, interesting_stdout, interesting_stderr
+
     builddir = mkpath(tempfile.mkdtemp(dir=tmpdir))
 
     tracesrc = builddir / 'isltrace.c'
     _write_tracelines(lines, tracesrc,format=False)
 
     exefile  = builddir / 'isltrace'
-    ccret = invoke.diag( 'gcc', '-fmax-errors=1', '-g', '-Werror=incompatible-pointer-types', '-I', '/home/meinersbur/src/isl/include', tracesrc,  '-L', '/home/meinersbur/src/isl/.libs',  '-lisl',  '-lgmp', '-o', exefile, onerror=invoke.Invoke.IGNORE, cwd=builddir)
+    ccret = invoke.call( 'gcc', '-fmax-errors=1', '-g', '-Werror=incompatible-pointer-types', '-Werror=implicit-function-declaration', '-I', '/home/meinersbur/src/isl/include', tracesrc,  '/home/meinersbur/src/isl/.libs/libisl.a',  '-lgmp', '-o', exefile, onerror=invoke.Invoke.IGNORE, cwd=builddir)
     if not ccret.success:
         return MALFORMED, builddir
 
-    exeret = invoke.diag(exefile, return_stdout=True, return_stderr=True,cwd=builddir)
+    exeret = invoke.run(exefile, return_stdout=True, return_stderr=True,nerror=invoke.Invoke.IGNORE,cwd=builddir)
+    if exeret.success:
+         # No crash?
+         return BORING, builddir
+
+    if define_interstingness:
+        interesting_retcode = exeret.exitcode
+        interesting_stdout = exeret.stdout
+        interesting_stderr = exeret.stderr
+        return INTERESTING, builddir
+    else:
+         if interesting_retcode != exeret.exitcode:
+              return SKIP, builddir
+         if   interesting_stdout != exeret.stdout:
+              return SKIP, builddir
+         if    interesting_stderr != exeret.stderr:
+              return SKIP, builddir
+         return INTERESTING, builddir
+
     if not exeret.success:
         return SKIP, builddir
 
@@ -371,13 +411,6 @@ def _check_trace(tmpdir , lines):
     return BORING, builddir
 
 
-
-def _cleanup(lines):
-    result = []
-    for line in lines.lines:
-        if line is not None:
-            result.append( str(line))
-    return Tracesrc.parse(result)
 
 
 
@@ -395,9 +428,9 @@ def _reduce(tmpdir: pathlib.Path, tracesrc: pathlib.Path,outfile: pathlib.Path):
     _write_tracelines(origlines, outfile=outfile)
     _write_tracelines(origlines, _get_reduced_file())
 
-    originterestingness,_ =  _check_trace(tmpdir,origlines)
+    originterestingness,_ =  _check_trace(tmpdir,origlines, define_interstingness=True)
     if originterestingness != INTERESTING:
-        print("Original program is not iteresting", file=sys.stderr)
+        print("Original program is not interesting", file=sys.stderr)
         exit(1)
 
 
@@ -414,15 +447,18 @@ def _reduce(tmpdir: pathlib.Path, tracesrc: pathlib.Path,outfile: pathlib.Path):
                          continue
                     if line.lvar is None:
                         continue
-                    if line.ltype not in ['isl_set']:
+                    if line.ltype not in ['isl_set', 'isl_union_set']:
                         continue
-                    if line.funcname == "isl_set_read_from_str":
+                    if line.funcname in ["isl_set_read_from_str", "isl_union_set_read_from_str"]:
                          continue
-                    dumpsrc.lines[i] = f'{line} dump_isl_set({line.lvar}, {i});'
+                    dumpsrc.lines[i] = f'{line} dump_{line.ltype}({line.lvar}, {i});'
 
                 dumpsrc.lines[0:0] = ['''
 #include <stdio.h>
 #include <isl/set.h>
+#include <isl/union_set.h>
+''',
+'''
 __isl_give isl_printer *isl_printer_set_dump(__isl_take isl_printer *p, int dump);
 void dump_isl_set(isl_set *obj, int line) {
 	if (!obj)
@@ -437,7 +473,24 @@ void dump_isl_set(isl_set *obj, int line) {
 	isl_printer_free(p);
     fclose(f);
 }
-''']
+''',
+'''
+  __isl_give isl_printer *isl_printer_union_set_dump(__isl_take isl_printer *p, int dump);
+void dump_isl_union_set(isl_union_set *obj, int line) {
+	if (!obj)
+	 	return;
+    char dumppath[260];
+    sprintf(dumppath, "dump_union_set_%d.txt", line);
+    FILE *f = fopen(dumppath, "w");
+	isl_printer *p = isl_printer_to_file(isl_union_set_get_ctx(obj), f);
+	p = isl_printer_set_dump(p, 1);
+	p = isl_printer_print_union_set(p, obj);
+	p = isl_printer_end_line(p);
+	isl_printer_free(p);
+    fclose(f);
+}
+''',
+]
 
                 dumpinterestingness,dumpdir = _check_trace(tmpdir, dumpsrc)
                 assert dumpinterestingness == INTERESTING, "Even with printing it should be interesting"
@@ -535,7 +588,7 @@ void dump_isl_set(isl_set *obj, int line) {
         reducedfile = _get_reduced_file()
         _write_tracelines(reducedlines, reducedfile)
         print(f"### New reduction found: {reducedfile}" , file=sys.stderr)
-        origlines = _cleanup(reducedlines)
+        origlines = _cleanup(reducedlines )
 
     print("### Reduction completed" , file=sys.stderr)
 

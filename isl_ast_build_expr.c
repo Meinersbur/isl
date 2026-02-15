@@ -1005,6 +1005,9 @@ static isl_stat update_partial(struct isl_parallel_stat *stat)
 	if (!stat->partial)
 		return isl_stat_ok;
 
+	isl_assert(isl_ast_build_get_ctx(stat->data->build), stat->f,
+		return isl_stat_error);
+
 	aff = isl_constraint_get_aff(stat->c);
 	aff = isl_aff_scale_val(aff, isl_val_copy(stat->f));
 	if (!stat->data->partial)
