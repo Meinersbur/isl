@@ -18,6 +18,17 @@ else ()
 endif ()
 set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
+
+# TODO: Extract from configure.ac
+#set(ISL_VERSION_MAJOR 0)
+#set(ISL_VERSION_MINOR 24)
+#set(ISL_VERSION_PATCH 0)
+
+file(STRINGS "${ISL_SOURCE_DIR}/configure.ac" configure_ac_init REGEX "AC\_INIT")
+string(REGEX MATCH "\\\[([0-9.]+)\\\]" configure_ac_init_ver "${configure_ac_init}")
+set(ISL_VERSION "${CMAKE_MATCH_1}")
+
+#find_package(LLVM REQUIRED NO_DEFAULT_PATH)
 find_package(Clang QUIET)
 find_package(Python QUIET)
 
@@ -28,29 +39,23 @@ set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
 set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")
 
 ## Configure options
-set(ISL_INT "imath" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
+set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
 option(ISL_SMALL_INT_OPT "Use small integer optimization" ON)
 
 
 # Process configure options
-if (NOT ISL_INT MATCHES "^imath|gmp$")
-  message(FATAL_ERROR "Unsupported option for ISL_INT: ${ISL_INT}")
-endif ()
-
 set(USE_GMP_FOR_MP OFF)
-if (ISL_INT STREQUAL "gmp")
-  set(USE_GMP_FOR_MP ON)
-endif ()
-
 set(USE_IMATH_FOR_MP OFF)
-if (ISL_INT STREQUAL "imath")
+set(USE_SMALL_INT_OPT OFF)
+if (ISL_INT STREQUAL "gmp$")
+  set(USE_GMP_FOR_MP ON)
+elseif (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
-endif ()
-
-if (ISL_SMALL_INT_OPT)
-  set(USE_SMALL_INT_OPT ON)
+  if (ISL_SMALL_INT_OPT)
+    set(USE_SMALL_INT_OPT ON)
+  endif ()
 else ()
-  set(USE_SMALL_INT_OPT OFF)
+  message(FATAL_ERROR "Unsupported option for ISL_INT: ${ISL_INT}")
 endif ()
 
 
@@ -82,11 +87,11 @@ elseif ()
   set(ISL_GIT_HEAD_ID "UNKNOWN")
 endif ()
 
-message(STATUS "ISL version: ${GIT_HEAD_ID}")
+
 
 # Determine compiler characteristics
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-  set(CMAKE_COMPILER_IS_CLANGCC ON)
+  set(CMAKE_COMPILER_IS_CLANGCC ON) # TODO: rename, not a cmake var
 endif()
 
 include(CheckCSourceCompiles)
@@ -231,12 +236,17 @@ configure_file("${ISL_BINARY_DIR}/include/isl/stdint.h.tmp"
 configure_file("isl_config.h.cmake" "${ISL_BINARY_DIR}/isl_config.h")
 configure_file("isl_srcdir.c.cmake" "${ISL_BINARY_DIR}/isl_srcdir.c")
 
+# FIXME: codegen_test.sh passes -w option that cmake's compare_files rejects
+#set(DIFF "${CMAKE_COMMAND}")
+#set(DIFF_OPTIONS "-E compare_files --ignore-eol")
+set(DIFF "diff")
+set(DIFF_OPTIONS "-u")
 set(EXEEXT "${CMAKE_EXECUTABLE_SUFFIX}")
 set(srcdir "${ISL_SOURCE_DIR}")
 configure_file("codegen_test.sh.in" "${ISL_BINARY_DIR}/codegen_test.sh" @ONLY)
 
 # ISL files to compile
-set (libisl_common_sources
+set(libisl_common_sources
 	isl_aff.c
 	isl_aff_map.c
 	isl_affine_hull.c
@@ -298,6 +308,8 @@ set (libisl_common_sources
 	isl_schedule_tree.c
 	isl_schedule_constraints.c
 	isl_scheduler.c
+	isl_scheduler_clustering.c
+	isl_scheduler_scc.c
 	isl_set_list.c
 	isl_sort.c
 	isl_space.c
@@ -341,14 +353,11 @@ set(libisl_imath32_sources
 
 set(libisl_sources ${libisl_common_sources})
 if (USE_GMP_FOR_MP)
-  message(STATUS "Integer implementation: GNU MP")
   list(APPEND libisl_sources ${libisl_gmp_sources})
 elseif (USE_IMATH_FOR_MP)
   if (USE_SMALL_INT_OPT)
-    message(STATUS "Integer implementation: imath with sio32")
     list(APPEND libisl_sources ${libisl_imath32_sources})
   else ()
-    message(STATUS "Integer implementation: imath")
     list(APPEND libisl_sources ${libisl_imath_sources})
   endif ()
 endif ()
@@ -383,7 +392,12 @@ macro (add_isl_executable _name)
 endmacro ()
 
 
+
 add_isl_executable(isl_test "${ISL_SOURCE_DIR}/isl_test.c")
+if (Clang_FOUND AND Python_FOUND)
+  add_isl_executable(isl_test2 "${ISL_SOURCE_DIR}/isl_test2.cc")
+  add_dependencies(isl_test2 interface-cpp)
+endif ()
 add_isl_executable(isl_test_int "${ISL_SOURCE_DIR}/isl_test_int.c")
 if (USE_IMATH_FOR_MP)
   add_isl_executable(isl_test_imath "${ISL_SOURCE_DIR}/isl_test_imath.c")
@@ -398,7 +412,12 @@ add_isl_executable(isl_closure "${ISL_SOURCE_DIR}/closure.c")
 add_isl_executable(isl_bound "${ISL_SOURCE_DIR}/bound.c")
 add_isl_executable(isl_codegen "${ISL_SOURCE_DIR}/codegen.c")
 
-if (Clang_FOUND)
+
+if (NOT Clang_FOUND)
+  message(STATUS "Not generating non-C bindings: No Clang")
+elseif (NOT Python_FOUND)
+  message(STATUS "Not generating non-C bindings: No Python")
+else ()
   add_subdirectory(interface)
 endif ()
 
@@ -406,6 +425,7 @@ endif ()
 # Testing
 enable_testing()
 
+set(check_depends isl_test isl_test_int isl_codegen)
 add_test(NAME isl_test_int
   COMMAND "$<TARGET_FILE:isl_test_int>"
 )
@@ -413,10 +433,17 @@ if (USE_IMATH_FOR_MP)
 	add_test(NAME isl_test_imath
 		COMMAND "$<TARGET_FILE:isl_test_imath>"
 	)
+	list(APPEND check_depends isl_test_imath)
 endif ()
 add_test(NAME isl_test
   COMMAND "$<TARGET_FILE:isl_test>"
 )
+if (Clang_FOUND AND Python_FOUND)
+  add_test(NAME isl_test2
+    COMMAND "$<TARGET_FILE:isl_test2>"
+  )
+  list(APPEND check_depends isl_test2)
+endif ()
 add_test(NAME codegen_test
   COMMAND "${ISL_BINARY_DIR}/codegen_test.sh"
 )
@@ -502,3 +529,88 @@ install(
 #  COMPONENT
 #    Devel
 )
+
+
+set(ctest_test_args --output-on-failure)
+
+include(ProcessorCount)
+ProcessorCount(JOBS)
+if(NOT JOBS EQUAL 0)
+  list(APPEND ctest_test_args --jobs ${JOBS})
+endif()
+
+if(CMAKE_CONFIGURATION_TYPES)
+  list(APPEND check_command --build-config "$<CONFIGURATION>")
+endif()
+
+# CMake also has a "test" target, but it does not build dependencies/
+add_custom_target(check
+  COMMAND "${CMAKE_CTEST_COMMAND}" ${ctest_test_args}
+  VERBATIM
+  USES_TERMINAL
+)
+add_dependencies(check ${check_depends})
+
+
+
+
+# Installing
+
+install(TARGETS isl
+  EXPORT islTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(
+  FILES
+    include/isl/ctx.h
+    include/isl/aff.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#  COMPONENT Devel
+)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
+  VERSION "${ISL_VERSION}"
+  COMPATIBILITY AnyNewerVersion
+)
+
+
+set(ConfigPackageLocation lib/cmake/isl)
+set(targets_export_name "islTargets")
+configure_package_config_file(
+  "cmake/islConfig.cmake.in"
+  "islConfig.cmake"
+  INSTALL_DESTINATION  "${ConfigPackageLocation}"
+  PATH_VARS CMAKE_INSTALL_LIBDIR
+)
+
+
+install(EXPORT islTargets
+  FILE
+    islTargets.cmake
+  DESTINATION
+    ${ConfigPackageLocation}
+)
+
+
+
+message("################################################################################")
+message("# Configuration summary:")
+message("# ISL version: ${ISL_VERSION} (${ISL_GIT_HEAD_ID})")
+if (USE_GMP_FOR_MP)
+    message("# Integer implementation: GNU MP")
+elseif (USE_IMATH_FOR_MP AND USE_SMALL_INT_OPT)
+    message("# Integer implementation: imath with sio32")
+elseif (USE_IMATH_FOR_MP)
+    message("# Integer implementation: imath")
+endif ()
+if (TARGET extract_interface)
+  message("# Language bindings generation: yes")
+else ()
+  message("# Language bindings generation: no")
+endif ()
+message("################################################################################")
