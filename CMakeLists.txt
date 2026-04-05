@@ -3,12 +3,6 @@ cmake_minimum_required(VERSION 3.12)
 
 project("isl" C CXX)
 
-# TODO: Extract from configure.ac
-set(ISL_VERSION_MAJOR 0)
-set(ISL_VERSION_MINOR 24)
-set(ISL_VERSION_PATCH 0)
-
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
   set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
@@ -18,6 +12,16 @@ else ()
   message(FATAL_ERROR "Cannot find ISL source dir")
 endif ()
 set(ISL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
+
+# TODO: Extract from configure.ac
+#set(ISL_VERSION_MAJOR 0)
+#set(ISL_VERSION_MINOR 24)
+#set(ISL_VERSION_PATCH 0)
+
+file(STRINGS "${ISL_SOURCE_DIR}/configure.ac" configure_ac_init REGEX "AC\_INIT")
+string(REGEX MATCH "\\\[([0-9.]+)\\\]" configure_ac_init_ver "${configure_ac_init}")
+set(ISL_VERSION "${CMAKE_MATCH_1}")
 
 find_package(Clang QUIET)
 find_package(Python QUIET)
@@ -29,29 +33,23 @@ set(IMATH_SOURCE_DIR "${ISL_SOURCE_DIR}/imath")
 set(IMATH_BINARY_DIR "${ISL_BINARY_DIR}/imath")
 
 ## Configure options
-set(ISL_INT "imath" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
+set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
 option(ISL_SMALL_INT_OPT "Use small integer optimization" ON)
 
 
 # Process configure options
-if (NOT ISL_INT MATCHES "^imath|gmp$")
-  message(FATAL_ERROR "Unsupported option for ISL_INT: ${ISL_INT}")
-endif ()
-
 set(USE_GMP_FOR_MP OFF)
-if (ISL_INT STREQUAL "gmp")
-  set(USE_GMP_FOR_MP ON)
-endif ()
-
 set(USE_IMATH_FOR_MP OFF)
-if (ISL_INT STREQUAL "imath")
+set(USE_SMALL_INT_OPT OFF)
+if (ISL_INT STREQUAL "gmp$")
+  set(USE_GMP_FOR_MP ON)
+elseif (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
-endif ()
-
-if (ISL_SMALL_INT_OPT AND (NOT USE_GMP_FOR_MP))
-  set(USE_SMALL_INT_OPT ON)
+  if (ISL_SMALL_INT_OPT)
+    set(USE_SMALL_INT_OPT ON)
+  endif ()
 else ()
-  set(USE_SMALL_INT_OPT OFF)
+  message(FATAL_ERROR "Unsupported option for ISL_INT: ${ISL_INT}")
 endif ()
 
 
@@ -83,11 +81,11 @@ elseif ()
   set(ISL_GIT_HEAD_ID "UNKNOWN")
 endif ()
 
-message(STATUS "ISL version: ${GIT_HEAD_ID}")
+
 
 # Determine compiler characteristics
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-  set(CMAKE_COMPILER_IS_CLANGCC ON)
+  set(CMAKE_COMPILER_IS_CLANGCC ON) # TODO: rename, not a cmake var
 endif()
 
 include(CheckCSourceCompiles)
@@ -242,7 +240,7 @@ set(srcdir "${ISL_SOURCE_DIR}")
 configure_file("codegen_test.sh.in" "${ISL_BINARY_DIR}/codegen_test.sh" @ONLY)
 
 # ISL files to compile
-set (libisl_common_sources
+set(libisl_common_sources
 	isl_aff.c
 	isl_aff_map.c
 	isl_affine_hull.c
@@ -347,14 +345,11 @@ set(libisl_imath32_sources
 
 set(libisl_sources ${libisl_common_sources})
 if (USE_GMP_FOR_MP)
-  message(STATUS "Integer implementation: GNU MP")
   list(APPEND libisl_sources ${libisl_gmp_sources})
 elseif (USE_IMATH_FOR_MP)
   if (USE_SMALL_INT_OPT)
-    message(STATUS "Integer implementation: imath with sio32")
     list(APPEND libisl_sources ${libisl_imath32_sources})
   else ()
-    message(STATUS "Integer implementation: imath")
     list(APPEND libisl_sources ${libisl_imath_sources})
   endif ()
 endif ()
@@ -409,7 +404,12 @@ add_isl_executable(isl_closure "${ISL_SOURCE_DIR}/closure.c")
 add_isl_executable(isl_bound "${ISL_SOURCE_DIR}/bound.c")
 add_isl_executable(isl_codegen "${ISL_SOURCE_DIR}/codegen.c")
 
-if (Clang_FOUND AND Python_FOUND)
+
+if (NOT Clang_FOUND)
+  message(STATUS "Not generating non-C bindings: No Clang")
+elseif (NOT Python_FOUND)
+  message(STATUS "Not generating non-C bindings: No Python")
+else ()
   add_subdirectory(interface)
 endif ()
 
@@ -484,7 +484,7 @@ install(
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
-  VERSION "${ISL_VERSION_MAJOR}.${ISL_VERSION_MINOR}.${ISL_VERSION_PATCH}"
+  VERSION "${ISL_VERSION}"
   COMPATIBILITY AnyNewerVersion
 )
 
@@ -506,3 +506,21 @@ install(EXPORT islTargets
     ${ConfigPackageLocation}
 )
 
+
+
+message("################################################################################")
+message("# Configuration summary:")
+message("# ISL version: ${ISL_VERSION} (${ISL_GIT_HEAD_ID})")
+if (USE_GMP_FOR_MP)
+    message("# Integer implementation: GNU MP")
+elseif (USE_IMATH_FOR_MP AND USE_SMALL_INT_OPT)
+    message("# Integer implementation: imath with sio32")
+elseif (USE_IMATH_FOR_MP)
+    message("# Integer implementation: imath")
+endif ()
+if (TARGET extract_interface)
+  message("# Language bindings generation: yes")
+else ()
+  message("# Language bindings generation: no")
+endif ()
+message("################################################################################")

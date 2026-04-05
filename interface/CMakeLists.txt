@@ -1,5 +1,12 @@
-
-add_executable(extract_interface extract_interface.cc generator.cc python.cc cpp.cc cpp_conversion.cc plain_cpp.cc template_cpp.cc)
+add_executable(extract_interface
+  extract_interface.cc
+  generator.cc
+  python.cc
+  cpp.cc
+  cpp_conversion.cc
+  plain_cpp.cc
+  template_cpp.cc
+)
 
 configure_file("../isl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/isl-interface/config.h")
 
