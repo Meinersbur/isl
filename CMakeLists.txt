@@ -1,5 +1,5 @@
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 
 project("isl" C CXX)
 
@@ -47,7 +47,7 @@ option(ISL_SMALL_INT_OPT "Use small integer optimization" ON)
 set(USE_GMP_FOR_MP OFF)
 set(USE_IMATH_FOR_MP OFF)
 set(USE_SMALL_INT_OPT OFF)
-if (ISL_INT STREQUAL "gmp$")
+if (ISL_INT STREQUAL "gmp")
   set(USE_GMP_FOR_MP ON)
 elseif (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
@@ -459,13 +459,13 @@ set(Upstream_VERSION 3.4.1)
 include(GenerateExportHeader)
 
 #add_library(ClimbingStats SHARED climbingstats.cpp)
-generate_export_header(isl)
-set_property(TARGET isl PROPERTY VERSION ${Upstream_VERSION})
-set_property(TARGET isl PROPERTY SOVERSION 3)
-set_property(TARGET isl PROPERTY INTERFACE_ClimbingStats_MAJOR_VERSION 3)
-set_property(TARGET isl APPEND PROPERTY
-  COMPATIBLE_INTERFACE_STRING isl_MAJOR_VERSION
-)
+#generate_export_header(isl)
+#set_property(TARGET isl PROPERTY VERSION ${Upstream_VERSION})
+#set_property(TARGET isl PROPERTY SOVERSION 3)
+#set_property(TARGET isl PROPERTY INTERFACE_ClimbingStats_MAJOR_VERSION 3)
+#set_property(TARGET isl APPEND PROPERTY
+#  COMPATIBLE_INTERFACE_STRING isl_MAJOR_VERSION
+#)
 
 install(TARGETS isl EXPORT islTargets
   LIBRARY DESTINATION lib
@@ -484,51 +484,51 @@ install(
 #    Devel
 )
 
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
-  VERSION ${Upstream_VERSION}
-  COMPATIBILITY AnyNewerVersion
-)
+#include(CMakePackageConfigHelpers)
+#write_basic_package_version_file(
+#  "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
+#  VERSION ${Upstream_VERSION}
+#  COMPATIBILITY AnyNewerVersion
+#)
 
-export(EXPORT islTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/islTargets.cmake"
-#  NAMESPACE Upstream::
-)
+#export(EXPORT islTargets
+#  FILE "${CMAKE_CURRENT_BINARY_DIR}/islTargets.cmake"
+##  NAMESPACE Upstream::
+#)
 
 
 # See https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
-set(ConfigPackageLocation lib/cmake/isl)
-set(targets_export_name "islTargets")
+#set(ConfigPackageLocation lib/cmake/isl)
+#set(targets_export_name "islTargets")
 #configure_file(cmake/islConfig.cmake
 #  "${CMAKE_CURRENT_BINARY_DIR}/islConfig.cmake"
 #  @ONLY
 #)
-configure_package_config_file(
-  "cmake/islConfig.cmake.in"
-  "islConfig.cmake"
-  INSTALL_DESTINATION  "${ConfigPackageLocation}"
-  PATH_VARS CMAKE_INSTALL_LIBDIR
-)
+#configure_package_config_file(
+#  "cmake/islConfig.cmake.in"
+#  "islConfig.cmake"
+#  INSTALL_DESTINATION "${ConfigPackageLocation}"
+#  PATH_VARS CMAKE_INSTALL_LIBDIR
+#)
 
 
-install(EXPORT islTargets
-  FILE
-    islTargets.cmake
-#  NAMESPACE
-#    Upstream::
-  DESTINATION
-    ${ConfigPackageLocation}
-)
-install(
-  FILES
-    cmake/ClimbingStatsConfig.cmake
-    "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
-  DESTINATION
-    ${ConfigPackageLocation}
-#  COMPONENT
-#    Devel
-)
+#install(EXPORT islTargets
+#  FILE
+#    islTargets.cmake
+##  NAMESPACE
+##    Upstream::
+#  DESTINATION
+#    ${ConfigPackageLocation}
+#)
+#install(
+#  FILES
+#    cmake/ClimbingStatsConfig.cmake
+#    "${CMAKE_CURRENT_BINARY_DIR}/islConfigVersion.cmake"
+#  DESTINATION
+#    ${ConfigPackageLocation}
+##  COMPONENT
+##    Devel
+#)
 
 
 set(ctest_test_args --output-on-failure)
@@ -589,12 +589,12 @@ configure_package_config_file(
 )
 
 
-install(EXPORT islTargets
-  FILE
-    islTargets.cmake
-  DESTINATION
-    ${ConfigPackageLocation}
-)
+#install(EXPORT islTargets
+#  FILE
+#    islTargets.cmake
+#  DESTINATION
+#    ${ConfigPackageLocation}
+#)
 
 
 
@@ -608,8 +608,11 @@ elseif (USE_IMATH_FOR_MP AND USE_SMALL_INT_OPT)
 elseif (USE_IMATH_FOR_MP)
     message("# Integer implementation: imath")
 endif ()
-if (TARGET extract_interface)
-  message("# Language bindings generation: yes")
+if (TARGET interface)
+  get_property(_interfaces GLOBAL PROPERTY ISL_INTERFACES)
+  #list(JOIN "${_interfaces}" " " _interfaces)
+  string(JOIN " " _interfaces ${_interfaces})
+  message("# Language bindings: ${_interfaces}")
 else ()
   message("# Language bindings generation: no")
 endif ()

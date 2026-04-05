@@ -71,3 +71,6 @@ pip_test.sh
 /cmake_install.cmake
 /build.ninja
 /rules.ninja
+
+# git merge process
+*.orig
