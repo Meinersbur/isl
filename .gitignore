@@ -85,12 +85,5 @@ pip_test.sh
 /interface/extract_interface
 
 # Generated bindings
-# Some of them have been added to the repository, but we do not want to diverge
-# from the upstream-provided version, so do not check them in.
-# git update-index --assume-unchanged interface/cpp.h
-# git update-index --assume-unchanged interface/python.h
-/interface/cpp.h
-/interface/python.h
-/interface/cpp-checked-conversion.h
-/interface/cpp-checked.h
-/interface/typed_cpp.h
+# This is the only one not checked into the repository -- forgotten?
+/include/isl/python.h

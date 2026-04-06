@@ -8,10 +8,17 @@ add_executable(extract_interface
   template_cpp.cc
 )
 
-configure_file("../isl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/isl-interface/config.h")
+# I think extract_interface is supposed to have its own header config.h separate from  ${ISL_BINARY_DIR}/isl_config.h, but that seems to have been applied inconsistently
+# These include paths are such as mess
+configure_file("${ISL_SOURCE_DIR}/isl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/isl-interface/config.h")
+target_include_directories(extract_interface PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/include" #include "isl-interface/clang_wrap.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/include" #include <isl-interface/config.h>
+  "${ISL_BINARY_DIR}"                   #include "isl_config.h"
+  "${ISL_SOURCE_DIR}"                   #include <isl_config_post.h>
+  ${CLANG_INCLUDE_DIRS}
+)
 
-target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/include" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
-target_include_directories(extract_interface PRIVATE "include/" "${ISL_BINARY_DIR}/include")
 
 if (MSVC)
 else ()
@@ -56,10 +63,17 @@ set_property(GLOBAL
   PROPERTY ISL_INTERFACES ""
 )
 
-
+# Note that some header files have the same name:
+#
+#  * ${CMAKE_CURRENT_SOURCE_DIR}/python.h used by extract_interface and the generated ${ISL_BINARY_DIR}/include/isl/python.h
+#  * ${CMAKE_CURRENT_SOURCE_DIR}/cpp.h used by extract_interface and the generated ${ISL_BINARY_DIR}/include/isl/cpp.h
+#
+# Totally not confusing!
 function(gen_interface TARGET GENERATOR OUTFILE)
   cmake_parse_arguments(ARG "" "" "PREPEND;APPEND" ${ARGN})
-  cmake_path(APPEND "${ISL_BINARY_DIR}/include/isl/" "${OUTFILE}" OUTPUT_VARIABLE _outpath)
+
+  cmake_path(SET _outpath "${ISL_BINARY_DIR}/include/isl/")
+  cmake_path(APPEND _outpath "${OUTFILE}")
 
   set(_more)
   foreach (_prepend IN LISTS  ARG_PREPEND)
@@ -70,7 +84,7 @@ function(gen_interface TARGET GENERATOR OUTFILE)
   endforeach ()
   add_custom_command(
     OUTPUT "${_outpath}"
-    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${_outpath}" ${_more} $<TARGET_FILE:extract_interface> --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
+    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${_outpath}" ${_more} "$<TARGET_FILE:extract_interface>" --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
     DEPENDS redirect_to_file.py
     IMPLICIT_DEPENDS "${ISL_SOURCE_DIR}/all.h"
   )
@@ -86,10 +100,11 @@ function(gen_interface TARGET GENERATOR OUTFILE)
   )
 endfunction()
 
+
 add_custom_target(interface ALL)
-gen_interface(interface-python python python.h)
-gen_interface(interface-cpp cpp cpp.h PREPEND "${ISL_SOURCE_DIR}/cpp/cpp.h.top" "${ISL_SOURCE_DIR}/all.h" APPEND "${ISL_SOURCE_DIR}/cpp/cpp.h.bot") 
-gen_interface(interface-cpp-checked cpp-checked cpp-checked.h PREPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked.h.top" "${ISL_SOURCE_DIR}/all.h" APPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked.h.bot")
-gen_interface(interface-cpp-checked-conversion cpp-checked-conversion cpp-checked-conversion.h PREPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked-conversion.h.top" APPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked-conversion.h.bot")
-gen_interface(interface-template-cpp template-cpp typed_cpp.h PREPEND "${ISL_SOURCE_DIR}/cpp/typed_cpp.h.top" APPEND "${ISL_SOURCE_DIR}/cpp/typed_cpp.h.bot")
+gen_interface(interface-python                 python                 "python.h")
+gen_interface(interface-cpp                    cpp                    "cpp.h"                    PREPEND "${ISL_SOURCE_DIR}/cpp/cpp.h.top"         "${ISL_SOURCE_DIR}/all.h" APPEND "${ISL_SOURCE_DIR}/cpp/cpp.h.bot")
+gen_interface(interface-cpp-checked            cpp-checked            "cpp-checked.h"            PREPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked.h.top" "${ISL_SOURCE_DIR}/all.h" APPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked.h.bot")
+gen_interface(interface-cpp-checked-conversion cpp-checked-conversion "cpp-checked-conversion.h" PREPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked-conversion.h.top"                APPEND "${ISL_SOURCE_DIR}/cpp/cpp-checked-conversion.h.bot")
+gen_interface(interface-template-cpp           template-cpp           "typed_cpp.h"              PREPEND "${ISL_SOURCE_DIR}/cpp/typed_cpp.h.top"                             APPEND "${ISL_SOURCE_DIR}/cpp/typed_cpp.h.bot")
 
