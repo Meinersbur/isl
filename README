@@ -1,21 +1,23 @@
-Integer Set Library (ISL)
-branch with CMake build system
--------------------------
+Integer Set Library (ISL) branch with CMake build system
+--------------------------------------------------------
 
-The orignal project's website can be found at http://isl.gforge.inria.fr/ and
+The orignal project's website can be found at https://libisl.sourceforge.io/ and
 its discussion takes place on the mailing list isl-development@googlegroups.com.
+Web frontend: https://groups.google.com/g/isl-development
 
-For discussions about this branch please use the Github tools
-(https://github.com/Meinersbur/isl) or contact the author (isl@meinersbur.de).
+For discussions about this branch please use the GitHub tools
+(https://github.com/Meinersbur/isl), and the pull request tied to this branch:
+https://github.com/Meinersbur/isl/pull/11
+
 
 This branch adds the files necessary to compile ISL using CMake. It is not a
 feature-complete replacement of the autotools build system, but has been created
-for convinience in order to user builder such as Ninja or Visual Studio. The
+for convenience in order to use builders such as Ninja or Visual Studio. The
 autotools-based build system remains in place.
 
 
 Original README
--------------------------
+---------------
 isl is a thread-safe C library for manipulating sets and relations
 of integer points bounded by affine constraints.  The descriptions of
 the sets and relations may involve both parameters and existentially
