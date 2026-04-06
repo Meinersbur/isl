@@ -10,7 +10,9 @@ add_executable(extract_interface
 
 configure_file("../isl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/isl-interface/config.h")
 
-target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include" "${ISL_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/include" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/include" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+target_include_directories(extract_interface PRIVATE "include/" "${ISL_BINARY_DIR}/include")
+
 if (MSVC)
 else ()
   target_compile_options(extract_interface PUBLIC -fno-rtti)
@@ -50,10 +52,14 @@ target_compile_definitions(extract_interface PRIVATE
 target_link_libraries(extract_interface PRIVATE clangBasic clangAnalysis clangAST clangLex clangEdit clangParse clangSema clangFrontend clangSerialization)
 
 
+set_property(GLOBAL
+  PROPERTY ISL_INTERFACES ""
+)
+
 
 function(gen_interface TARGET GENERATOR OUTFILE)
   cmake_parse_arguments(ARG "" "" "PREPEND;APPEND" ${ARGN})
-  set(_outpath "${ISL_BINARY_DIR}/include/isl/${OUTFILE}")
+  cmake_path(APPEND "${ISL_BINARY_DIR}/include/isl/" "${OUTFILE}" OUTPUT_VARIABLE _outpath)
 
   set(_more)
   foreach (_prepend IN LISTS  ARG_PREPEND)
@@ -64,16 +70,20 @@ function(gen_interface TARGET GENERATOR OUTFILE)
   endforeach ()
   add_custom_command(
     OUTPUT "${_outpath}"
-    COMMAND ${Python_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${_outpath}" ${_more} $<TARGET_FILE:extract_interface> --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
-    DEPENDS  redirect_to_file.py
+    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${_outpath}" ${_more} $<TARGET_FILE:extract_interface> --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
+    DEPENDS redirect_to_file.py
     IMPLICIT_DEPENDS "${ISL_SOURCE_DIR}/all.h"
   )
 
   add_custom_target(${TARGET}
-    DEPENDS "${_outpath}" 
+    DEPENDS "${_outpath}"
   )
   add_dependencies(${TARGET} extract_interface)
-  add_dependencies(interface ${TARGET} )
+  add_dependencies(interface ${TARGET})
+
+  set_property(GLOBAL
+    APPEND PROPERTY ISL_INTERFACES "${GENERATOR}"
+  )
 endfunction()
 
 add_custom_target(interface ALL)

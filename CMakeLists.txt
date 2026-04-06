@@ -1,5 +1,5 @@
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 
 project("isl" C CXX)
 
@@ -41,7 +41,7 @@ option(ISL_SMALL_INT_OPT "Use small integer optimization" ON)
 set(USE_GMP_FOR_MP OFF)
 set(USE_IMATH_FOR_MP OFF)
 set(USE_SMALL_INT_OPT OFF)
-if (ISL_INT STREQUAL "gmp$")
+if (ISL_INT STREQUAL "gmp")
   set(USE_GMP_FOR_MP ON)
 elseif (ISL_INT STREQUAL "imath")
   set(USE_IMATH_FOR_MP ON)
@@ -320,6 +320,8 @@ set(libisl_common_sources
 	isl_vec.c
 	isl_version.c
 	isl_vertices.c
+	isl_scheduler_clustering.c
+	isl_scheduler_scc.c
 )
 
 set(libisl_gmp_sources
@@ -518,8 +520,10 @@ elseif (USE_IMATH_FOR_MP AND USE_SMALL_INT_OPT)
 elseif (USE_IMATH_FOR_MP)
     message("# Integer implementation: imath")
 endif ()
-if (TARGET extract_interface)
-  message("# Language bindings generation: yes")
+if (TARGET interface)
+  get_property(_interfaces GLOBAL PROPERTY ISL_INTERFACES)
+  string(JOIN " " _interfaces ${_interfaces})
+  message("# Language bindings: ${_interfaces}")
 else ()
   message("# Language bindings generation: no")
 endif ()
