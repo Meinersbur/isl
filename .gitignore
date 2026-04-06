@@ -59,11 +59,6 @@ isl_srcdir.c
 bound_test.sh
 pip_test.sh
 
-# Build artifacts
-/isl_test_imath
-/isl_test_int
-/isl_codegen
-
 # CMake generated files
 /CMakeCache.txt
 /CMakeFiles/
@@ -71,3 +66,31 @@ pip_test.sh
 /cmake_install.cmake
 /build.ninja
 /rules.ninja
+/.ninja_deps
+/.ninja_log
+
+# Configure-written files
+*.tmp
+/codegen_test.sh
+/interface/cmake_install.cmake
+/interface/include/isl-interface/config.h
+/islConfig.cmake
+/islConfigVersion.cmake
+
+# Build artifacts
+/isl_test_imath
+/isl_test_int
+/isl_codegen
+/isl_test2
+/interface/extract_interface
+
+# Generated bindings
+# Some of them have been added to the repository, but we do not want to diverge
+# from the upstream-provided version, so do not check them in.
+# git update-index --assume-unchanged interface/cpp.h
+# git update-index --assume-unchanged interface/python.h
+/interface/cpp.h
+/interface/python.h
+/interface/cpp-checked-conversion.h
+/interface/cpp-checked.h
+/interface/typed_cpp.h
