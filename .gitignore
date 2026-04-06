@@ -73,4 +73,6 @@ pip_test.sh
 /rules.ninja
 
 # git merge process
-*.orig__pycache__
+*.orig
+__pycache__
+

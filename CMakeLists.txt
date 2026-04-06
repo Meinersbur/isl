@@ -3,11 +3,6 @@ cmake_minimum_required(VERSION 3.20)
 
 project("isl" C CXX)
 
-# TODO: Extract from configure.ac
-set(ISL_VERSION_MAJOR 0 CACHE STRING "major version" FORCE)
-set(ISL_VERSION_MINOR 23 CACHE STRING "minor version" FORCE)
-
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/isl/isl_ctx.c")
   set(ISL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/isl")
@@ -28,7 +23,6 @@ file(STRINGS "${ISL_SOURCE_DIR}/configure.ac" configure_ac_init REGEX "AC\_INIT"
 string(REGEX MATCH "\\\[([0-9.]+)\\\]" configure_ac_init_ver "${configure_ac_init}")
 set(ISL_VERSION "${CMAKE_MATCH_1}")
 
-#find_package(LLVM REQUIRED NO_DEFAULT_PATH)
 find_package(Clang QUIET)
 find_package(Python QUIET)
 
@@ -326,8 +320,8 @@ set(libisl_common_sources
 	isl_vec.c
 	isl_version.c
 	isl_vertices.c
-  isl_scheduler_clustering.c
-  isl_scheduler_scc.c
+	isl_scheduler_clustering.c
+	isl_scheduler_scc.c
 )
 
 set(libisl_gmp_sources
@@ -449,7 +443,30 @@ add_test(NAME codegen_test
 )
 
 
+set(ctest_test_args --output-on-failure)
 
+include(ProcessorCount)
+ProcessorCount(JOBS)
+if(NOT JOBS EQUAL 0)
+  list(APPEND ctest_test_args --jobs ${JOBS})
+endif()
+
+if(CMAKE_CONFIGURATION_TYPES)
+  list(APPEND check_command --build-config "$<CONFIGURATION>")
+endif()
+
+# CMake also has a "test" target, but it does not build dependencies/
+add_custom_target(check
+  COMMAND "${CMAKE_CTEST_COMMAND}" ${ctest_test_args}
+  VERBATIM
+  USES_TERMINAL
+)
+add_dependencies(check ${check_depends})
+
+
+
+
+# Installing
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
@@ -467,19 +484,19 @@ include(GenerateExportHeader)
 #  COMPATIBLE_INTERFACE_STRING isl_MAJOR_VERSION
 #)
 
-install(TARGETS isl EXPORT islTargets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-install(
-  FILES
-    include/isl/ctx.h
-    include/isl/aff.h
-    "${CMAKE_CURRENT_BINARY_DIR}/isl_export.h"
-  DESTINATION
-    include
+#install(TARGETS isl EXPORT islTargets
+#  LIBRARY DESTINATION lib
+#  ARCHIVE DESTINATION lib
+#  RUNTIME DESTINATION bin
+#  INCLUDES DESTINATION include
+#)
+#install(
+#  FILES
+#    include/isl/ctx.h
+#    include/isl/aff.h
+#    "${CMAKE_CURRENT_BINARY_DIR}/isl_export.h"
+#  DESTINATION
+#    include
 #  COMPONENT
 #    Devel
 )
@@ -530,32 +547,6 @@ install(
 ##    Devel
 #)
 
-
-set(ctest_test_args --output-on-failure)
-
-include(ProcessorCount)
-ProcessorCount(JOBS)
-if(NOT JOBS EQUAL 0)
-  list(APPEND ctest_test_args --jobs ${JOBS})
-endif()
-
-if(CMAKE_CONFIGURATION_TYPES)
-  list(APPEND check_command --build-config "$<CONFIGURATION>")
-endif()
-
-# CMake also has a "test" target, but it does not build dependencies/
-add_custom_target(check
-  COMMAND "${CMAKE_CTEST_COMMAND}" ${ctest_test_args}
-  VERBATIM
-  USES_TERMINAL
-)
-add_dependencies(check ${check_depends})
-
-
-
-
-# Installing
-
 install(TARGETS isl
   EXPORT islTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -589,12 +580,12 @@ configure_package_config_file(
 )
 
 
-#install(EXPORT islTargets
-#  FILE
-#    islTargets.cmake
-#  DESTINATION
-#    ${ConfigPackageLocation}
-#)
+install(EXPORT islTargets
+  FILE
+    islTargets.cmake
+  DESTINATION
+    ${ConfigPackageLocation}
+)
 
 
 
@@ -610,7 +601,6 @@ elseif (USE_IMATH_FOR_MP)
 endif ()
 if (TARGET interface)
   get_property(_interfaces GLOBAL PROPERTY ISL_INTERFACES)
-  #list(JOIN "${_interfaces}" " " _interfaces)
   string(JOIN " " _interfaces ${_interfaces})
   message("# Language bindings: ${_interfaces}")
 else ()

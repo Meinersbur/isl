@@ -9,14 +9,9 @@ add_executable(extract_interface
   trace.cc
 )
 
-
-
-
-
 configure_file("../isl_config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/include/isl-interface/config.h")
 
-#target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/interface/include"  "${ISL_BINARY_DIR}" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
- target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/include" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+target_include_directories(extract_interface PRIVATE "${ISL_SOURCE_DIR}" "${ISL_SOURCE_DIR}/include" "${ISL_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/include" ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 target_include_directories(extract_interface PRIVATE "include/" "${ISL_BINARY_DIR}/include")
 
 if (MSVC)
@@ -58,10 +53,6 @@ target_compile_definitions(extract_interface PRIVATE
 target_link_libraries(extract_interface PRIVATE clangBasic clangAnalysis clangAST clangLex clangEdit clangParse clangSema clangFrontend clangSerialization)
 
 
-
-
-
-
 set_property(GLOBAL
   PROPERTY ISL_INTERFACES ""
 )
@@ -91,28 +82,9 @@ function(gen_interface TARGET GENERATOR OUTFILE)
   add_dependencies(${TARGET} extract_interface)
   add_dependencies(interface ${TARGET})
 
-set_property(GLOBAL
-  APPEND PROPERTY ISL_INTERFACES "${GENERATOR}"
-)
-
-#  if (Python_FOUND)
-#    add_custom_command(
-#      OUTPUT "${OUTFILE}"
-#      COMMAND ${Python_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/redirect_to_file.py" "${OUTFILE}" $<TARGET_FILE:extract_interface> --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h"
-#      DEPENDS extract_interface
-#      IMPLICIT_DEPENDS C "${ISL_SOURCE_DIR}/all.h"
-#    )
-#  else ()
-#    add_custom_command(
-#      OUTPUT "${OUTFILE}"
-#      COMMAND extract_interface --language=${GENERATOR} "-I${ISL_BINARY_DIR}/include" "-I${ISL_SOURCE_DIR}/include" "${ISL_SOURCE_DIR}/all.h" > "${OUTFILE}"
-#      DEPENDS extract_interface
-#      IMPLICIT_DEPENDS C "${ISL_SOURCE_DIR}/all.h"
-#    )
-#  endif ()
-#  add_custom_target(${TARGET} ALL
-#    DEPENDS "${OUTFILE}"
-#  )
+  set_property(GLOBAL
+    APPEND PROPERTY ISL_INTERFACES "${GENERATOR}"
+  )
 endfunction()
 
 add_custom_target(interface ALL)
