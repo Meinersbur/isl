@@ -1796,9 +1796,10 @@ struct IslCallImpl<RetTy(ParmTy...)> : public IslCallBase {
 
 
 
-template<typename T>
+template<typename FuncTy>
 struct IslCall;
 
+#if 0
 template<typename... ParmTy>
 struct IslCall<void(ParmTy...)>: public IslCallImpl<void(ParmTy...)> {
 	using FuncTy = void(ParmTy...);
@@ -1815,10 +1816,11 @@ struct IslCall<void(ParmTy...)>: public IslCallImpl<void(ParmTy...)> {
 		execOrig();
 	}
 };
+#endif
 
 
 
-
+struct VoidDummy {};
 
 template<typename RetTy, typename... ParmTy>
 struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
@@ -1832,18 +1834,34 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 	}
 
 	RetTy apply() {
-	  getBase().beforeCall("call_func");
-		RetTy retval = execOrig();
+		if constexpr (std::is_void_v<RetTy>) {
+			getBase().beforeCall("call_proc");
+		} else {
+	  	getBase().beforeCall("call_func");
+		}
+
+using StorageTy = std::conditional_t<std::is_void_v<RetTy>, VoidDummy, RetTy>;
+StorageTy retval;
+	if constexpr (std::is_same_v<RetTy,void>) {
+		execOrig();
+	} else {
+		 retval = execOrig();
 
 		if constexpr (std::is_pointer_v<RetTy>) {
 			using PointerT = std::remove_pointer_t<RetTy>;
 			retval = ObjCow<PointerT>::cow(retval);
 		}
+	}
 
-			auto& OS = openLogfile();
-			OS << "\nreturn";
-			escape(OS, "fname", getBase().name);
-			escape(OS, "rettype", getBase().rettystr);
+
+		auto& OS = openLogfile();
+		OS << "\nreturn";
+		escape(OS, "fname", getBase().name);
+		escape(OS, "rettype", getBase().rettystr);
+
+		if constexpr (std::is_void_v<RetTy>) {
+			return;
+		} else {
 			if constexpr (std::is_pointer_v<RetTy> && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>)  {
 				escape(OS, "retptr", retval);
 			}	else {
@@ -1852,8 +1870,6 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 				escape(OS, "retval", kOS.str());
 			}
 
-			//if constexpr (std::is_pointer_v<RetTy>  && !std::is_same_v<RetTy,char*>&& !std::is_same_v<RetTy,const char*>) {
-			//	using PointerT = std::remove_pointer_t<RetTy>;
 			if (getEnablePrint()) {
 				std::ostringstream dOS;
 				ResultObjPrinter<RetTy>::printResult(dOS, retval);
@@ -1861,9 +1877,9 @@ struct IslCall<RetTy(ParmTy...)> : public IslCallImpl<RetTy(ParmTy...)> {
 				if (!desc.empty())
 					escape(OS, "desc", desc);
 			}
-			//}
 
 			return retval;
+		}
 	}
 };
 

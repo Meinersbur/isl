@@ -390,7 +390,7 @@ class Invoke:
 
     # Execute as if this is the command itself
     def run(self, onerror=None, print_stdout=True, print_stderr=True, **kwargs):
-        return self.execute(onerror=first_defined(onerror, Invoke.ABORT), print_stdout=print_stdout, print_stderr=print_stderr, **kwargs).exitcode
+        return self.execute(onerror=first_defined(onerror, Invoke.ABORT), print_stdout=print_stdout, print_stderr=print_stderr, **kwargs)
 
     # Diagnostic mode, execute with additional info
     def diag(self, onerror=None, print_stdout=False, print_stderr=False, print_prefixed=True, print_command=True, print_exitcode=True, **kwargs):
@@ -402,7 +402,7 @@ class Invoke:
 
     # Like call, but to get the command's result
     def query(self, onerror=None, **kwargs) -> str:
-        return self.execute(onerror=first_defined(onerror, Invoke.EXCEPTION), return_stdout=True, **kwargs).stdout
+        return self.execute(onerror=first_defined(onerror, Invoke.EXCEPTION), return_stdout=True, **kwargs)
 
 
 

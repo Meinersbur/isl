@@ -376,7 +376,12 @@ def _check_trace(tmpdir, lines, define_interestingness=False):
     _write_tracelines(lines, tracesrc,format=False)
 
     exefile  = builddir / 'isltrace'
-    ccret = invoke.call( 'gcc', '-fmax-errors=1', '-g', '-Werror=incompatible-pointer-types', '-Werror=implicit-function-declaration', '-I', '/home/meinersbur/src/isl/include', tracesrc,  '/home/meinersbur/src/isl/.libs/libisl.a',  '-lgmp', '-o', exefile, onerror=invoke.Invoke.IGNORE, cwd=builddir)
+    ccret = invoke.call( 'cc', '-fmax-errors=1', '-g', '-Werror=incompatible-pointer-types', '-Werror=implicit-function-declaration',
+                        tracesrc,
+                        '-I', '/home/meinersbur/src/isl/include',
+                        '-I', '/home/meinersbur/build/isl/release_cmake/include',
+                        '/home/meinersbur/build/isl/release_cmake/libisl.a',
+                        '-lgmp', '-o', exefile, onerror=invoke.Invoke.IGNORE, cwd=builddir)
     if not ccret.success:
         return MALFORMED, builddir
 

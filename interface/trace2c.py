@@ -99,7 +99,7 @@ class IslCall(Stmt):
         self.args =[]
         self.isspecial = isspecial
         self.hasret=hasret
-        if hasret:
+        if True: #if hasret:
             #self.retarg=None
             #self.retval=None
             self.retty=retty
@@ -332,10 +332,10 @@ def parse_return(rettype,fname,retval=None,retptr=None,desc=None):
     toplevel =getToplevel()
     lastcall = toplevel.getLastcall()
     assert lastcall.funcname==fname
-    assert lastcall.hasret
+    #assert lastcall.hasret
     assert lastcall.retobj == None
 
-    assert not lastcall.seenreturn , "Should not see the same call to return twice"
+    assert not lastcall.seenreturn, "Should not see the same call to return twice"
     lastcall.seenreturn=True
     if retptr!=None:
         retptr=int(retptr,0)
@@ -521,10 +521,10 @@ def gen_arg(arg, call: Stmt, level: Level):
 def gen_call(call: Stmt, level: Level, reachability):
     if call.IsCall:
         funcname = call.funcname
-        
+
         if not call.seenreturn:
-            yield "fflush(stdout);"
-            yield 'fprintf(stderr, "Crash expected here:\n");'
+            yield 'fflush(stdout);'
+            yield r'fprintf(stderr, "Crash expected here:\n");'
 
         argstr = []
         for arg in call.args:
@@ -546,6 +546,10 @@ def gen_call(call: Stmt, level: Level, reachability):
                 yield f"{callstr}{descstr}"
         else:
             yield callstr
+
+        if not call.seenreturn:
+           yield r'fprintf(stderr, "Not crashed?\n");'
+
     elif call.IsPredef:
         yield call.code
     else:
