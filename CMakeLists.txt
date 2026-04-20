@@ -468,6 +468,9 @@ add_dependencies(check ${check_depends})
 
 # Installing
 
+# https://www.studyplan.dev/cmake/cmake-file-sets
+# Don't do the FILE_SET stuff
+
 install(TARGETS isl
   EXPORT islTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
