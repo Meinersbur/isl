@@ -58,3 +58,32 @@ test-driver
 isl_srcdir.c
 bound_test.sh
 pip_test.sh
+
+# CMake generated files
+/CMakeCache.txt
+/CMakeFiles/
+/CTestTestfile.cmake
+/cmake_install.cmake
+/build.ninja
+/rules.ninja
+/.ninja_deps
+/.ninja_log
+
+# Configure-written files
+*.tmp
+/codegen_test.sh
+/interface/cmake_install.cmake
+/interface/include/isl-interface/config.h
+/islConfig.cmake
+/islConfigVersion.cmake
+
+# Build artifacts
+/isl_test_imath
+/isl_test_int
+/isl_codegen
+/isl_test2
+/interface/extract_interface
+
+# Generated bindings
+# This is the only one not checked into the repository -- forgotten?
+/include/isl/python.h

@@ -13,5 +13,5 @@ const char *isl_version(void)
 	"-32"
 #endif
 #endif
-	"\n";
+	"-cmake\n";
 }
